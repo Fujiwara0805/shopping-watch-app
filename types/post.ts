@@ -5,14 +5,14 @@ export interface Post {
     name: string;
     avatar: string;
   };
+  storeId: string;
   storeName: string;
-  content: string;
-  image: string | null;
   category: string;
+  content: string;
+  image?: string | null;
   discountRate: number;
-  remainingItems: number;
-  expiryTime: string | null;
-  createdAt: string;
-  likes: number;
-  comments: number;
+  expiryOption: '1h' | '3h' | '24h';
+  createdAt: number;
+  expiresAt: number;
+  likesCount: number;
 }

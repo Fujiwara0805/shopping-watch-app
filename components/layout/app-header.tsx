@@ -25,30 +25,33 @@ export function AppHeader() {
       case '/notifications':
         return '通知';
       default:
-        return 'お惣菜ウォッチャー';
+        return '';
     }
   };
   
   // Mock notification count - in real app this would come from backend
   const notificationCount = 3;
 
+  const showLogo = pathname === '/timeline';
+  const title = getPageTitle();
+
   return (
     <header className="sticky top-0 z-10 bg-background border-b border-border">
       <motion.div 
-        className="h-14 px-4 flex items-center justify-between"
+        className="h-14 px-4 flex items-center justify-center relative"
         initial={{ y: -10, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.3 }}
       >
-        <div className="flex items-center">
-          {pathname === '/timeline' ? (
-            <Logo withText size="small" />
-          ) : (
-            <h1 className="font-bold text-lg">{getPageTitle()}</h1>
-          )}
+        <div className="absolute left-4 flex items-center">
+          {showLogo && <Logo withText size="small" />}
         </div>
         
-        <div className="flex items-center space-x-2">
+        {!showLogo && title && (
+          <h1 className="font-bold text-3xl text-center">{title}</h1>
+        )}
+        
+        <div className="absolute right-4 flex items-center space-x-2">
           <Button variant="ghost" size="icon" asChild>
             <Link href="/search">
               <Search className="h-5 w-5" />

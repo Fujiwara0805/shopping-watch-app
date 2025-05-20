@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { Camera, Upload, X } from 'lucide-react';
+import { Camera, Upload, X, Store as StoreIcon, LayoutGrid, ClipboardList, Image as ImageIcon, Percent, CalendarClock, PackageIcon, Calculator, ClockIcon } from 'lucide-react';
 import AppLayout from '@/components/layout/app-layout';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -33,6 +33,7 @@ const postSchema = z.object({
   discountRate: z.number().min(10, { message: '10%以上で入力してください' }).max(90, { message: '90%以下で入力してください' }),
   expiryTime: z.string().optional(),
   remainingItems: z.string().optional(),
+  expiryOption: z.enum(['1h', '3h', '24h'], { required_error: '掲載期間を選択してください' }),
 });
 
 type PostFormValues = z.infer<typeof postSchema>;
@@ -67,8 +68,12 @@ export default function PostPage() {
       discountRate: 30,
       expiryTime: '',
       remainingItems: '',
+      expiryOption: '3h',
     },
+    mode: 'onChange',
   });
+  
+  const { isValid } = form.formState;
   
   const onSubmit = (values: PostFormValues) => {
     console.log({ ...values, image: imageSrc });
@@ -146,8 +151,8 @@ export default function PostPage() {
 
       const request: google.maps.places.PlaceSearchRequest = {
         location: new window.google.maps.LatLng(latitude, longitude),
-        radius: 50,
-        type: 'store'
+        radius: 100,
+        keyword: 'スーパーマーケット OR コンビニエンスストア OR デパート OR ショッピングモール OR 小売店',
       };
 
       console.log("PostPage: Calling nearbySearch with request:", request);
@@ -164,11 +169,11 @@ export default function PostPage() {
           console.log("PostPage: Fetched stores:", fetchedStores);
           setAvailableStores(fetchedStores);
           if (fetchedStores.length === 0) {
-            setStoreSearchError("周辺500m以内に店舗が見つかりませんでした。");
+            setStoreSearchError("周辺100m以内に店舗が見つかりませんでした。");
           }
         } else if (status === window.google.maps.places.PlacesServiceStatus.ZERO_RESULTS) {
           console.log("PostPage: No stores found (ZERO_RESULTS).");
-          setStoreSearchError("周辺500m以内に店舗が見つかりませんでした。");
+          setStoreSearchError("周辺100m以内に店舗が見つかりませんでした。");
         } else {
           console.error("PostPage: Error fetching stores. Status:", status, "Pagination:", pagination);
           setStoreSearchError(`店舗の検索に失敗しました。(${status})`);
@@ -222,7 +227,7 @@ export default function PostPage() {
 
   return (
     <AppLayout>
-      <div className="p-4">
+      <div className="p-4 pb-24">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <FormField
@@ -230,7 +235,9 @@ export default function PostPage() {
               name="storeId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>お店</FormLabel>
+                  <FormLabel className="text-2xl flex items-center">
+                    <StoreIcon className="mr-2 h-6 w-6" /> お店
+                  </FormLabel>
                   <Select 
                     onValueChange={field.onChange} 
                     defaultValue={field.value} 
@@ -245,22 +252,22 @@ export default function PostPage() {
                     }
                   >
                     <FormControl>
-                      <SelectTrigger>
+                      <SelectTrigger className="text-lg">
                         <SelectValue placeholder={getSelectPlaceholder()} />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
                       {permissionState === 'prompt' && !locationLoading && (
                         <div className="p-2 text-center">
-                           <p className="text-sm text-muted-foreground mb-2">お店の検索には位置情報の許可が必要です。</p>
-                          <Button type="button" onClick={requestLocation} size="sm">
+                          <p className="text-lg text-muted-foreground mb-2">お店の検索には位置情報の許可が必要です。</p>
+                          <Button type="button" onClick={requestLocation} size="sm" className="text-lg">
                             位置情報の利用を許可する
                           </Button>
                         </div>
                       )}
                       {permissionState === 'granted' && !locationError && !storeSearchError && availableStores.length > 0 &&
                         availableStores.map((store) => (
-                          <SelectItem key={store.id} value={store.id}>
+                          <SelectItem key={store.id} value={store.id} className="text-lg">
                             {store.name}
                           </SelectItem>
                         ))
@@ -277,7 +284,9 @@ export default function PostPage() {
               name="category"
               render={({ field }) => (
                 <FormItem className="space-y-3">
-                  <FormLabel>カテゴリ</FormLabel>
+                  <FormLabel className="text-2xl flex items-center">
+                    <LayoutGrid className="mr-2 h-6 w-6" /> カテゴリ
+                  </FormLabel>
                   <FormControl>
                     <RadioGroup
                       onValueChange={field.onChange}
@@ -294,7 +303,7 @@ export default function PostPage() {
                           <Label
                             htmlFor={`category-${category}`}
                             className={cn(
-                              "flex flex-col items-center justify-between rounded-md border-2 border-muted p-3",
+                              "flex flex-col items-center justify-between rounded-md border-2 border-muted p-3 text-lg",
                               "hover:border-primary peer-data-[state=checked]:border-primary",
                               "peer-data-[state=checked]:bg-primary/10"
                             )}
@@ -315,11 +324,14 @@ export default function PostPage() {
               name="content"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>内容</FormLabel>
+                  <FormLabel className="text-2xl flex items-center">
+                    <ClipboardList className="mr-2 h-6 w-6" /> 内容
+                  </FormLabel>
                   <FormControl>
                     <Textarea
                       placeholder="値引き内容や商品の状態を入力してください"
-                      className="resize-none"
+                      className="resize-none text-lg"
+                      rows={5}
                       {...field}
                     />
                   </FormControl>
@@ -329,7 +341,9 @@ export default function PostPage() {
             />
             
             <div className="space-y-2">
-              <Label>写真 (任意)</Label>
+              <Label className="text-2xl flex items-center">
+                <ImageIcon className="mr-2 h-6 w-6" /> 写真 (任意)
+              </Label>
               <div className="border-2 border-dashed rounded-md p-4 text-center">
                 {imageSrc ? (
                   <div className="relative">
@@ -351,15 +365,19 @@ export default function PostPage() {
                 ) : (
                   <div className="py-4">
                     <Camera className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                    <p className="text-sm text-muted-foreground mb-2">
+                    <p className="text-lg text-muted-foreground mb-2">
                       写真をアップロードしてください
+                    </p>
+                    <p className="text-xs text-red-500 mb-2">
+                      ※陳列している商品の画像はアップしないでください。<br />
+                      購入後の商品の画像をアップしてください。
                     </p>
                     <div className="flex justify-center gap-2">
                       <Button 
                         type="button" 
                         variant="outline" 
                         size="sm"
-                        className="relative"
+                        className="relative text-lg"
                       >
                         <input
                           type="file"
@@ -381,7 +399,9 @@ export default function PostPage() {
               name="discountRate"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>値引き率: {field.value}%</FormLabel>
+                  <FormLabel className="text-2xl flex items-center">
+                    <Calculator className="mr-2 h-6 w-6" /> 値引き率: {field.value}%
+                  </FormLabel>
                   <FormControl>
                     <Slider
                       min={10}
@@ -403,10 +423,13 @@ export default function PostPage() {
                 name="expiryTime"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>消費期限 (任意)</FormLabel>
+                    <FormLabel className="text-lg flex items-center">
+                      <CalendarClock className="mr-2 h-5 w-5" /> 消費期限 (任意)
+                    </FormLabel>
                     <FormControl>
                       <Input 
                         type="date"
+                        className="text-lg"
                         {...field}
                       />
                     </FormControl>
@@ -420,16 +443,19 @@ export default function PostPage() {
                 name="remainingItems"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>残り数量 (任意)</FormLabel>
+                    <FormLabel className="text-lg flex items-center">
+                      <PackageIcon className="mr-2 h-5 w-5" /> 残り数量 (任意)
+                    </FormLabel>
                     <FormControl>
                       <div className="flex">
                         <Input
                           type="number"
                           min="1"
                           placeholder="10"
+                          className="text-lg"
                           {...field}
                         />
-                        <span className="ml-2 flex items-center text-muted-foreground">点</span>
+                        <span className="ml-2 flex items-center text-muted-foreground text-lg">点</span>
                       </div>
                     </FormControl>
                     <FormMessage />
@@ -437,11 +463,62 @@ export default function PostPage() {
                 )}
               />
             </div>
+
+            <FormField
+              control={form.control}
+              name="expiryOption"
+              render={({ field }) => (
+                <FormItem className="space-y-3">
+                  <FormLabel className="text-2xl flex items-center">
+                    <ClockIcon className="mr-2 h-6 w-6" /> 掲載期間
+                  </FormLabel>
+                  <FormControl>
+                    <RadioGroup
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                      className="grid grid-cols-3 gap-2"
+                    >
+                      {[
+                        { value: '1h', label: '1時間' },
+                        { value: '3h', label: '3時間' },
+                        { value: '24h', label: '24時間' },
+                      ].map((option) => (
+                        <div key={option.value}>
+                          <RadioGroupItem
+                            value={option.value}
+                            id={`expiryOption-${option.value}`}
+                            className="peer sr-only"
+                          />
+                          <Label
+                            htmlFor={`expiryOption-${option.value}`}
+                            className={cn(
+                              "flex flex-col items-center justify-center rounded-md border-2 border-muted p-3 text-lg h-full",
+                              "hover:border-primary peer-data-[state=checked]:border-primary",
+                              "peer-data-[state=checked]:bg-primary/10"
+                            )}
+                          >
+                            {option.label}
+                          </Label>
+                        </div>
+                      ))}
+                    </RadioGroup>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             
             <motion.div
               whileTap={{ scale: 0.98 }}
             >
-              <Button type="submit" className="w-full mt-6">
+              <Button 
+                type="submit" 
+                className={cn(
+                  "w-full mt-6 text-xl",
+                  !isValid && "bg-gray-400 cursor-not-allowed hover:bg-gray-400"
+                )}
+                disabled={!isValid}
+              >
                 投稿する
               </Button>
             </motion.div>
