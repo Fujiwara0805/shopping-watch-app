@@ -6,7 +6,7 @@ import { StoreInfoCard } from '@/components/map/store-info-card';
 import { mockStores } from '@/lib/mock-data';
 import { Store } from '@/types/store';
 import { Button } from '@/components/ui/button';
-import { Compass, MapPin, AlertTriangle, List } from 'lucide-react';
+import { Compass, MapPin, AlertTriangle, List, X } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   AlertDialog,
@@ -24,14 +24,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
+import { X as CloseIcon } from 'lucide-react';
 
 declare global {
   interface Window {
@@ -427,49 +420,41 @@ export function MapView() {
           if (!mapInitialized) {
             return <MessageCard icon={MapPin} title="マップを初期化中..." message="地図データを読み込んでいます..." />;
           }
-          // mapInitialized が true なら、マップは map-container-for-ref の中に描画されているはずなので、
-          // このブロックでは何も表示しないか、マップ上のUI (selectedStoreなど) を表示する
           return null; 
         }
-        // フォールバック (予期せぬ状態)
         return <MessageCard icon={AlertTriangle} title="問題が発生しました" message="現在マップを表示できません。ページを再読み込みしてください。" variant="warning"> {/* ... 再読み込みボタン ... */} </MessageCard>;
       })()}
 
-      {/* 新しいDialogベースのStoreInfoCard表示 */}
+      {/* 店舗情報表示 (モーダルではなく全画面オーバーレイメッセージカード形式) */}
       {selectedStore && !initializationError && (
-        <Dialog open={!!selectedStore} onOpenChange={(isOpen) => { if (!isOpen) setSelectedStore(null); }}>
-          <DialogContent
-            className="w-[90vw] max-w-[500px] rounded-lg 
-                       fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2
-                       flex flex-col  /* flex-colを追加 */
-                       max-h-[85vh]    /* DialogContent自体に最大高さを設定 (例: 85vh) */
-                       overflow-hidden /* DialogContent自体がはみ出さないように */
-                       p-0            /* パディングは内部で管理 */
-                      "
-            aria-describedby={selectedStore.address ? "store-address-description" : undefined}
-          >
-            <DialogHeader className="p-4 pb-0 shrink-0"> {/* ヘッダーは縮まない */}
-              <DialogTitle>{selectedStore.name}</DialogTitle>
-              {selectedStore.address && (
-                <DialogDescription id="store-address-description">
-                  {selectedStore.address}
-                </DialogDescription>
-              )}
-            </DialogHeader>
-            {/* このdivがコンテンツエリアで、ここがスクロールする */}
-            <div className="p-4 overflow-y-auto grow"> {/* growで残りの高さを取る */}
+        <div className="fixed inset-0 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm z-40"> {/* z-indexをMessageCardより少し低くするか同じにする */}
+          <div className="bg-card p-0 sm:p-0 rounded-xl shadow-2xl w-full max-w-md border relative flex flex-col max-h-[90vh] overflow-hidden">
+            {/* 閉じるボタン */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute top-2 right-2 z-10 rounded-full"
+              onClick={() => setSelectedStore(null)}
+              aria-label="閉じる"
+            >
+              <CloseIcon className="h-5 w-5" />
+            </Button>
+            
+            {/* StoreInfoCardを内包するスクロール可能なエリア */}
+            <div className="overflow-y-auto grow p-4 pt-8"> {/* p-4 pt-8 で閉じるボタンと被らないように調整 */}
               <StoreInfoCard
                 store={selectedStore}
                 isFavorite={favoritePlaceIds.includes(selectedStore.id)}
                 onToggleFavorite={() => toggleFavoritePlace(selectedStore.id)}
-                onClose={() => setSelectedStore(null)}
+                onClose={() => setSelectedStore(null)} 
               />
             </div>
-            <DialogFooter className="p-4 pt-0 shrink-0"> {/* フッターは縮まない */}
-              <Button variant="outline" onClick={() => setSelectedStore(null)}>閉じる</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+             {/* 必要であればフッターを追加 (例:アクションボタンなど) */}
+            {/* <div className="p-4 border-t shrink-0">
+              <Button variant="outline" className="w-full" onClick={() => setSelectedStore(null)}>閉じる</Button>
+            </div> */}
+          </div>
+        </div>
       )}
 
       {/* マップが初期化された後に表示するUI (selectedStoreカードや現在地ボタンなど) */}
