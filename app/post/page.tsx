@@ -1,9 +1,8 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { useEffect } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -17,8 +16,15 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { mockStores } from '@/lib/mock-data';
 import { cn } from '@/lib/utils';
+import { useGeolocation } from '@/lib/hooks/use-geolocation';
+import { Store } from '@/types/store';
+
+declare global {
+  interface Window {
+    google: any;
+  }
+}
 
 const postSchema = z.object({
   storeId: z.string({ required_error: 'お店を選択してください' }),
@@ -31,16 +37,26 @@ const postSchema = z.object({
 
 type PostFormValues = z.infer<typeof postSchema>;
 
+type DisplayStore = Pick<Store, 'name'> & { id: string };
+
 export default function PostPage() {
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const router = useRouter();
-  
-  useEffect(() => {
-    const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
-    if (!isLoggedIn) {
-      router.push('/login');
-    }
-  }, [router]);
+  const {
+    latitude,
+    longitude,
+    loading: locationLoading,
+    error: locationError,
+    permissionState,
+    requestLocation
+  } = useGeolocation();
+
+  const [availableStores, setAvailableStores] = useState<DisplayStore[]>([]);
+  const [storeSearchLoading, setStoreSearchLoading] = useState(false);
+  const [storeSearchError, setStoreSearchError] = useState<string | null>(null);
+  const [googleMapsApiLoaded, setGoogleMapsApiLoaded] = useState(false);
+  const placesServiceRef = useRef<google.maps.places.PlacesService | null>(null);
+  const hasLoggedApiCheckInitiationRef = useRef(false);
   
   const form = useForm<PostFormValues>({
     resolver: zodResolver(postSchema),
@@ -56,9 +72,6 @@ export default function PostPage() {
   
   const onSubmit = (values: PostFormValues) => {
     console.log({ ...values, image: imageSrc });
-    
-    // In a real app, we'd save this to a database
-    // For demo purposes, we'll just navigate back to the timeline
     setTimeout(() => {
       router.push('/timeline');
     }, 1000);
@@ -67,8 +80,6 @@ export default function PostPage() {
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // In a real app, we'd upload this to a server
-      // For demo purposes, we'll just use a local URL
       const reader = new FileReader();
       reader.onload = (event) => {
         setImageSrc(event.target?.result as string);
@@ -81,6 +92,134 @@ export default function PostPage() {
     setImageSrc(null);
   };
 
+  useEffect(() => {
+    const checkGoogleApi = () => {
+      if (
+        typeof window.google !== 'undefined' &&
+        typeof window.google.maps !== 'undefined' &&
+        typeof window.google.maps.places !== 'undefined' &&
+        typeof window.google.maps.places.PlacesService === 'function'
+      ) {
+        console.log("PostPage: Google Maps API with PlacesService loaded successfully.");
+        setGoogleMapsApiLoaded(true);
+        if (!placesServiceRef.current) {
+          const mapDivForService = document.createElement('div');
+          placesServiceRef.current = new window.google.maps.places.PlacesService(mapDivForService);
+          console.log("PostPage: PlacesService initialized.");
+        }
+      } else {
+        if (!hasLoggedApiCheckInitiationRef.current) {
+            console.log("PostPage: Google Maps API with PlacesService not yet loaded, starting to poll...");
+            hasLoggedApiCheckInitiationRef.current = true;
+        }
+        setTimeout(checkGoogleApi, 500);
+      }
+    };
+
+    if (!googleMapsApiLoaded && !hasLoggedApiCheckInitiationRef.current) {
+        checkGoogleApi();
+    }
+  }, [googleMapsApiLoaded]);
+
+  useEffect(() => {
+    if (permissionState === 'granted' && !latitude && !longitude && !locationLoading) {
+      console.log("PostPage: Permission is granted, and location not yet available. Requesting location...");
+      requestLocation();
+    }
+  }, [permissionState, latitude, longitude, locationLoading, requestLocation]);
+
+  useEffect(() => {
+    console.log("PostPage: Store search useEffect triggered. Deps:", {
+      permissionState,
+      latitude,
+      longitude,
+      googleMapsApiLoaded,
+      locationLoading,
+      placesServiceExists: !!placesServiceRef.current
+    });
+
+    if (permissionState === 'granted' && latitude && longitude && googleMapsApiLoaded && placesServiceRef.current && !locationLoading) {
+      console.log("PostPage: Conditions met for nearbySearch. Initializing search...");
+      setStoreSearchLoading(true);
+      setStoreSearchError(null);
+      setAvailableStores([]);
+
+      const request: google.maps.places.PlaceSearchRequest = {
+        location: new window.google.maps.LatLng(latitude, longitude),
+        radius: 50,
+        type: 'store'
+      };
+
+      console.log("PostPage: Calling nearbySearch with request:", request);
+      placesServiceRef.current.nearbySearch(request, (results, status, pagination) => {
+        console.log("PostPage: nearbySearch callback. Status:", status, "Results:", results);
+        setStoreSearchLoading(false);
+        if (status === window.google.maps.places.PlacesServiceStatus.OK && results) {
+          const fetchedStores: DisplayStore[] = results
+            .filter(place => place.place_id && place.name)
+            .map(place => ({
+              id: place.place_id!,
+              name: place.name!,
+            }));
+          console.log("PostPage: Fetched stores:", fetchedStores);
+          setAvailableStores(fetchedStores);
+          if (fetchedStores.length === 0) {
+            setStoreSearchError("周辺500m以内に店舗が見つかりませんでした。");
+          }
+        } else if (status === window.google.maps.places.PlacesServiceStatus.ZERO_RESULTS) {
+          console.log("PostPage: No stores found (ZERO_RESULTS).");
+          setStoreSearchError("周辺500m以内に店舗が見つかりませんでした。");
+        } else {
+          console.error("PostPage: Error fetching stores. Status:", status, "Pagination:", pagination);
+          setStoreSearchError(`店舗の検索に失敗しました。(${status})`);
+        }
+      });
+    } else {
+      console.log("PostPage: Conditions NOT met for nearbySearch or already loading/error.");
+      // 各条件がなぜ満たされなかったのかをログに出力
+      if (permissionState !== 'granted') console.log("PostPage: Reason: permissionState is not 'granted'");
+      if (!latitude || !longitude) console.log("PostPage: Reason: latitude or longitude is missing");
+      if (!googleMapsApiLoaded) console.log("PostPage: Reason: googleMapsApiLoaded is false");
+      if (!placesServiceRef.current) console.log("PostPage: Reason: placesServiceRef.current is null");
+      if (locationLoading) console.log("PostPage: Reason: locationLoading is true");
+    }
+  }, [latitude, longitude, permissionState, googleMapsApiLoaded, locationLoading]); // placesServiceRef.current は依存配列に含めない
+
+  const getSelectPlaceholder = () => {
+    if (permissionState === 'pending' || locationLoading) return "現在地を取得中...";
+    if (permissionState === 'prompt') return "お店を検索するには位置情報の許可が必要です";
+    if (permissionState === 'denied') return "位置情報がブロックされています";
+    if (locationError) return `位置情報エラー: ${locationError}`;
+    if (storeSearchLoading) return "お店を検索中...";
+    if (storeSearchError) return storeSearchError;
+    if (!googleMapsApiLoaded) return "地図サービスの読み込み待ち...";
+    if (permissionState === 'granted' && availableStores.length === 0 && !storeSearchLoading && !storeSearchError) return "周辺500m以内に店舗が見つかりません";
+    return "お店を選択してください";
+  };
+
+  // デバッグ用: 現在の主要なstateを表示
+  console.log("PostPage DEBUG:", {
+    permissionState,
+    latitude,
+    longitude,
+    locationLoading,
+    locationError,
+    googleMapsApiLoaded, // ★ PlacesService の準備ができているか
+    storeSearchLoading,  // ★ 店舗検索中か
+    storeSearchError,    // ★ 店舗検索エラーはあるか
+    availableStoresLength: availableStores.length, // ★ 取得できた店舗数
+    isSelectDisabled: ( // ★ セレクトボックスが無効化されるかどうかの計算
+      locationLoading ||
+      storeSearchLoading ||
+      (permissionState !== 'granted' && permissionState !== 'prompt') ||
+      !!locationError ||
+      !!storeSearchError ||
+      !googleMapsApiLoaded ||
+      (availableStores.length === 0 && permissionState === 'granted' && !storeSearchError)
+    ),
+    currentPlaceholder: getSelectPlaceholder(), // ★ 現在のプレースホルダーの内容
+  });
+
   return (
     <AppLayout>
       <div className="p-4">
@@ -92,18 +231,40 @@ export default function PostPage() {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>お店</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select 
+                    onValueChange={field.onChange} 
+                    defaultValue={field.value} 
+                    disabled={
+                      locationLoading || 
+                      storeSearchLoading || 
+                      (permissionState !== 'granted' && permissionState !== 'prompt') ||
+                      !!locationError ||
+                      !!storeSearchError ||
+                      !googleMapsApiLoaded ||
+                      (availableStores.length === 0 && permissionState === 'granted' && !storeSearchError)
+                    }
+                  >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="お店を選択してください" />
+                        <SelectValue placeholder={getSelectPlaceholder()} />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {mockStores.map((store) => (
-                        <SelectItem key={store.id} value={store.id}>
-                          {store.name}
-                        </SelectItem>
-                      ))}
+                      {permissionState === 'prompt' && !locationLoading && (
+                        <div className="p-2 text-center">
+                           <p className="text-sm text-muted-foreground mb-2">お店の検索には位置情報の許可が必要です。</p>
+                          <Button type="button" onClick={requestLocation} size="sm">
+                            位置情報の利用を許可する
+                          </Button>
+                        </div>
+                      )}
+                      {permissionState === 'granted' && !locationError && !storeSearchError && availableStores.length > 0 &&
+                        availableStores.map((store) => (
+                          <SelectItem key={store.id} value={store.id}>
+                            {store.name}
+                          </SelectItem>
+                        ))
+                      }
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -245,7 +406,7 @@ export default function PostPage() {
                     <FormLabel>消費期限 (任意)</FormLabel>
                     <FormControl>
                       <Input 
-                        type="time"
+                        type="date"
                         {...field}
                       />
                     </FormControl>

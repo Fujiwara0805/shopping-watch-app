@@ -4,10 +4,8 @@ export interface Store {
   address: string;
   latitude: number;
   longitude: number;
-  openStatus: 'open' | 'closed';
-  openingHours: string;
   phone: string;
-  distance: number;
   hasDiscount: boolean;
   posts: number;
+  types?: string[];
 }

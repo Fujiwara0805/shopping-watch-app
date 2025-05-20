@@ -6,7 +6,7 @@ import { StoreInfoCard } from '@/components/map/store-info-card';
 import { mockStores } from '@/lib/mock-data';
 import { Store } from '@/types/store';
 import { Button } from '@/components/ui/button';
-import { Compass, MapPin, AlertTriangle, List, X } from 'lucide-react';
+import { MapPin, AlertTriangle, List, X, Heart } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   AlertDialog,
@@ -53,7 +53,7 @@ export function MapView() {
 
   const [map, setMap] = useState<any | null>(null);
   const [selectedStore, setSelectedStore] = useState<Store | null>(null);
-  const [markers, setMarkers] = useState<any[]>([]);
+  const [favoriteMarkers, setFavoriteMarkers] = useState<any[]>([]);
   const [googleMapsLoaded, setGoogleMapsLoaded] = useState(false);
   const { 
     latitude, 
@@ -133,7 +133,7 @@ export function MapView() {
     const placesService = new window.google.maps.places.PlacesService(currentMap);
     const request = {
       placeId: placeId,
-      fields: ['place_id', 'name', 'formatted_address', 'geometry', 'types', 'icon_background_color', 'icon_mask_base_uri'],
+      fields: ['place_id', 'name', 'formatted_address', 'geometry', 'types', 'website', 'formatted_phone_number', 'photos', 'rating', 'user_ratings_total', 'icon'],
     };
 
     console.log("MapView: Fetching details for Place ID:", placeId);
@@ -148,18 +148,19 @@ export function MapView() {
         
         if (place.types && (place.types.includes('supermarket') || place.types.includes('store') || place.types.includes('grocery_or_supermarket') || place.types.includes('department_store') || place.types.includes('convenience_store') || place.types.includes('shopping_mall'))) {
           console.log("MapView: Clicked POI is a relevant store type. Proceeding.");
-          const storeData: Partial<Store> = {
-            id: place.place_id || '',
+          
+          const storeData: Store = {
+            id: place.place_id || `temp-id-${Math.random()}`,
             name: place.name || '名称不明',
             address: place.formatted_address || '住所不明',
             latitude: place.geometry?.location?.lat() || 0,
             longitude: place.geometry?.location?.lng() || 0,
+            types: place.types || [],
             hasDiscount: false, 
-            openStatus: undefined,
-            distance: 0,
+            phone: place.formatted_phone_number || '',
             posts: 0,
           };
-          setSelectedStore(storeData as Store);
+          setSelectedStore(storeData);
         } else {
           console.log("MapView: Clicked POI is NOT a relevant store type. Types:", place.types);
           setSelectedStore(null);
@@ -291,12 +292,6 @@ export function MapView() {
     // setMap はステートセッターなので依存配列に不要
   ]);
   
-  const handleCurrentLocation = () => {
-    if (!map || !latitude || !longitude || typeof window.google === 'undefined' || typeof window.google.maps === 'undefined') return;
-    map.panTo({ lat: latitude, lng: longitude });
-    map.setZoom(15);
-  };
-
   const handleAllowLocation = () => {
     console.log("MapView: User clicked 'Allow' location.");
     requestLocation();
@@ -344,6 +339,90 @@ export function MapView() {
     }
   }, [permissionState, latitude, longitude, locationLoading, requestLocation, initializationError]);
 
+  // ★ 新しいuseEffect: お気に入り店舗マーカーの描画・更新
+  useEffect(() => {
+    if (!map || !googleMapsLoaded || !window.google || !window.google.maps) {
+      return;
+    }
+
+    // 既存のお気に入りマーカーをクリア
+    favoriteMarkers.forEach(marker => marker.setMap(null));
+    setFavoriteMarkers([]); // ステートもクリア
+
+    const newFavoriteMarkers: any[] = [];
+
+    favoritePlaceIds.forEach(placeId => {
+      // お気に入り店舗の詳細情報を取得 (PlacesServiceを使用)
+      // 注意: この処理はAPIコールを伴うため、大量のお気に入りがある場合はパフォーマンスに影響する可能性あり
+      // 本来は、お気に入り登録時にもっと詳細な店舗情報をDBなどに保存し、そこから読み出すのが理想
+      const placesService = new window.google.maps.places.PlacesService(map);
+      const request = {
+        placeId: placeId,
+        fields: ['name', 'geometry', 'place_id', 'types', /*その他必要なフィールド*/], 
+      };
+
+      placesService.getDetails(request, (place: google.maps.places.PlaceResult | null, status: google.maps.places.PlacesServiceStatus) => {
+        if (status === window.google.maps.places.PlacesServiceStatus.OK && place && place.geometry && place.geometry.location) {
+          const heartIcon = {
+            // lucide-reactのHeartアイコンをSVG文字列として使うか、
+            // もしくは適切なSVGパスデータを直接指定します。
+            // ここでは簡単なSVGの例（実際のHeartアイコンとは異なります）
+            // path: 'M0-20.2c-5.3 0-9.7 4.4-9.7 9.8 0 5.4 4.4 9.8 9.7 9.8s9.7-4.4 9.7-9.8c0-5.4-4.4-9.8-9.7-9.8z', // これはただの円
+            path: window.google.maps.SymbolPath.CIRCLE, // 簡単な例として円を使用。ハートSVGに置き換える
+            fillColor: 'red',
+            fillOpacity: 0.8,
+            strokeWeight: 0,
+            rotation: 0,
+            scale: 10, // アイコンのサイズ
+            anchor: new window.google.maps.Point(0, 0), // アイコンのアンカーポイント
+          };
+          
+          // ハートのSVGパスの例 (これはあくまで一例であり、表示の調整が必要です)
+          // 参考: https://developers.google.com/maps/documentation/javascript/symbols#vector_paths
+          const heartSvgPath = "M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z";
+
+
+          const marker = new window.google.maps.Marker({
+            position: place.geometry.location,
+            map: map,
+            title: place.name || 'お気に入り店舗',
+            icon: { // カスタムアイコン設定
+              path: heartSvgPath, // SVGパス
+              fillColor: '#FF0000', // 赤色
+              fillOpacity: 1,
+              strokeColor: '#FFFFFF', // 白い輪郭
+              strokeWeight: 0.5,
+              scale: 1.2, // サイズ調整
+              anchor: new window.google.maps.Point(12, 12) // SVGの原点に依存 (24x24のViewBoxを想定)
+            },
+            zIndex: 999 // 他のPOIより手前に表示されるように
+          });
+
+          // マーカークリックでお店情報を表示
+          marker.addListener('click', () => {
+            // fetchPlaceDetails を再利用するか、
+            // placeオブジェクトからStore型に変換してsetSelectedStoreする
+            const storeData: Partial<Store> = {
+              id: place.place_id || '',
+              name: place.name || '名称不明',
+              address: place.formatted_address || '住所不明', // formatted_addressもfieldsに追加が必要
+              latitude: place.geometry?.location?.lat() || 0,
+              longitude: place.geometry?.location?.lng() || 0,
+              // ...その他必要な情報
+            };
+            fetchPlaceDetails(place.place_id!, map); // place_idがあるのでfetchPlaceDetailsを呼ぶ
+            // setSelectedStore(storeData as Store); // または直接セット
+          });
+          newFavoriteMarkers.push(marker);
+        } else {
+          console.error(`Failed to get details for favorite place ${placeId}. Status: ${status}`);
+        }
+      });
+    });
+    setFavoriteMarkers(newFavoriteMarkers);
+
+  }, [map, googleMapsLoaded, favoritePlaceIds, fetchPlaceDetails]); // fetchPlaceDetails も依存に追加
+
   // --- UIレンダリング ---
   console.log("MapView: Component rendering or re-rendering END - Before return statement. Current state:", {permissionState, latitude, longitude, mapInitialized, initializationError, mapNodeExists: !!mapNode, favoritePlaceIds});
   return (
@@ -386,7 +465,7 @@ export function MapView() {
           );
         }
         if (locationLoading && permissionState !== 'granted' && permissionState !== 'denied' && permissionState !== 'unavailable') {
-          return <MessageCard icon={Compass} title="位置情報取得中..." message="現在地を特定しています..." />;
+          return <MessageCard icon={MapPin} title="位置情報取得中..." message="現在地を特定しています..." />;
         }
         if (permissionState === 'unavailable' || permissionState === 'denied' || (locationError && !locationLoading) || (permissionState === 'granted' && (!latitude || !longitude) && !locationLoading && !initializationError) ) {
           
@@ -404,7 +483,7 @@ export function MapView() {
             {/* 再試行ボタン等のchildrenはここに追加 */}
             {(permissionState !== 'unavailable' && permissionState !== 'denied') && (
                 <Button onClick={requestLocation} size="lg" className="mt-6 w-full sm:w-auto">
-                    <Compass className="h-5 w-5 mr-2" />
+                    <MapPin className="h-5 w-5 mr-2" />
                     位置情報を再取得
                 </Button>
             )}
@@ -437,7 +516,7 @@ export function MapView() {
               onClick={() => setSelectedStore(null)}
               aria-label="閉じる"
             >
-              <CloseIcon className="h-5 w-5" />
+              <X className="h-5 w-5" />
             </Button>
             
             {/* StoreInfoCardを内包するスクロール可能なエリア */}
@@ -455,42 +534,6 @@ export function MapView() {
             </div> */}
           </div>
         </div>
-      )}
-
-      {/* マップが初期化された後に表示するUI (selectedStoreカードや現在地ボタンなど) */}
-      {mapInitialized && map && ( 
-        <>
-          <TooltipProvider delayDuration={300}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span tabIndex={0} className={`absolute right-4 top-4 z-10 ${permissionState !== 'granted' ? 'cursor-not-allowed' : ''}`}>
-                  <Button
-                    variant="default"
-                    size="icon"
-                    className="bg-background/80 backdrop-blur-sm rounded-full"
-                    onClick={handleCurrentLocation}
-                    disabled={locationLoading || permissionState !== 'granted'}
-                    aria-label="現在地に戻る"
-                  >
-                    <Compass className="h-5 w-5" />
-                  </Button>
-                </span>
-              </TooltipTrigger>
-              {/* Tooltipを表示する条件: ローディング中、または許可がない、または許可はあるが座標がない場合 */}
-              {(locationLoading || permissionState !== 'granted' || (permissionState === 'granted' && (!latitude || !longitude))) && (
-                <TooltipContent side="bottom" className="max-w-xs">
-                  {/* 各状態に応じたメッセージ出し分け */}
-                  {locationLoading && <p>位置情報を読み込み中です...</p>}
-                  {!locationLoading && permissionState === 'denied' && <p>位置情報の利用が拒否されています。ブラウザまたは端末の設定で許可してください。</p>}
-                  {!locationLoading && permissionState === 'prompt' && <p>位置情報の利用がまだ許可されていません。許可ダイアログで「許可」を選択してください。</p>}
-                  {!locationLoading && permissionState === 'pending' && <p>位置情報の許可を確認中です。</p>}
-                  {!locationLoading && permissionState === 'unavailable' && <p>お使いの環境では位置情報を取得できません。</p>}
-                  {!locationLoading && permissionState === 'granted' && (!latitude || !longitude) && <p>現在地を特定中です。しばらくお待ちください。</p>}
-                </TooltipContent>
-              )}
-            </Tooltip>
-          </TooltipProvider>
-        </>
       )}
     </div>
   );

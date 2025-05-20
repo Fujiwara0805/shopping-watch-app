@@ -35,14 +35,17 @@ export function MainNav() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   
   useEffect(() => {
+    // ログイン状態のチェックは残しても良いが、リダイレクトは行わないようにする
     setIsLoggedIn(localStorage.getItem('isLoggedIn') === 'true');
   }, []);
   
   const handlePostClick = (e: React.MouseEvent) => {
+    /*
     if (!isLoggedIn) {
       e.preventDefault();
       window.location.href = '/login';
     }
+    */
   };
 
   return (

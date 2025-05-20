@@ -31,19 +31,9 @@ export function StoreCard({ store, isFavorite, onToggleFavorite }: StoreCardProp
             </p>
             
             <div className="flex items-center gap-2 mt-2">
-              <Badge variant="outline" className="bg-primary/10">
-                {store.distance}km
-              </Badge>
+              {/* store.distance の表示は前回削除済み */}
               
-              {store.openStatus === 'open' ? (
-                <Badge variant="outline" className="bg-green-100 text-green-800">
-                  営業中
-                </Badge>
-              ) : (
-                <Badge variant="outline" className="bg-gray-100 text-gray-800">
-                  営業時間外
-                </Badge>
-              )}
+              {/* {store.openStatus === 'open' ? ( <Badge>...</Badge> ) : ( <Badge>...</Badge> )} を削除 */}
             </div>
           </div>
           
