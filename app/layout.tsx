@@ -1,5 +1,5 @@
 import './globals.css';
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Noto_Sans_JP } from 'next/font/google';
 import { Toaster } from '@/components/ui/toaster';
 import { ThemeProvider } from '@/components/theme/theme-provider';
@@ -13,9 +13,15 @@ const notoSansJP = Noto_Sans_JP({
 export const metadata: Metadata = {
   title: 'お惣菜ウォッチャー',
   description: '近所のスーパーのお惣菜情報をリアルタイムでお届けします',
-  viewport: 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no',
-  themeColor: '#FF6B35',
   manifest: '/manifest.json',
+};
+
+export const viewport: Viewport = {
+  themeColor: '#FF6B35',
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 export default function RootLayout({

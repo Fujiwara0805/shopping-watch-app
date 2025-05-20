@@ -30,7 +30,7 @@ export default function AppLayout({
     <div className="flex flex-col h-screen bg-background">
       {showHeader && <AppHeader />}
       
-      <main className={`flex-1 overflow-auto pb-safe ${showNav ? 'pb-16' : ''}`}>
+      <main className={`flex-1 relative`}>
         <motion.div
           key={pathname}
           initial="hidden"
@@ -38,7 +38,7 @@ export default function AppLayout({
           exit="exit"
           variants={variants}
           transition={{ duration: 0.3, type: 'tween' }}
-          className="min-h-full"
+          className={`absolute inset-0 overflow-auto pb-safe ${showNav ? 'pb-16' : ''}`}
         >
           {children}
         </motion.div>

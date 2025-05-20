@@ -68,6 +68,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@types/google.maps": "^3.58.1",
     "@types/node": "^22.15.19",
     "@types/react": "^18.2.48",
     "@types/react-dom": "^18.2.18"

@@ -6,21 +6,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { useState } from 'react';
 import { Store } from '@/types/store';
 
 interface StoreInfoCardProps {
   store: Store;
   onClose: () => void;
+  isFavorite: boolean;
+  onToggleFavorite: () => void;
 }
 
-export function StoreInfoCard({ store, onClose }: StoreInfoCardProps) {
-  const [isFavorite, setIsFavorite] = useState(false);
-  
-  const toggleFavorite = () => {
-    setIsFavorite(!isFavorite);
-  };
-
+export function StoreInfoCard({ store, onClose, isFavorite, onToggleFavorite }: StoreInfoCardProps) {
   return (
     <motion.div
       initial={{ y: 100, opacity: 0 }}
@@ -63,7 +58,7 @@ export function StoreInfoCard({ store, onClose }: StoreInfoCardProps) {
               className={cn(
                 isFavorite ? "text-yellow-500" : "text-muted-foreground"
               )}
-              onClick={toggleFavorite}
+              onClick={onToggleFavorite}
             >
               <Star className={cn("h-5 w-5 mr-1", isFavorite && "fill-current")} />
               {isFavorite ? 'お気に入り済み' : 'お気に入り追加'}
