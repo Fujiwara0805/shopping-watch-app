@@ -1,143 +1,143 @@
 "use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { motion } from 'framer-motion';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm } from 'react-hook-form';
-import { z } from 'zod';
-import { Eye, EyeOff, ArrowRight } from 'lucide-react';
+import { useSession, signIn } from "next-auth/react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import AppLayout from "@/components/layout/app-layout";
+import { LineIcon } from "@/components/common/icons/LineIcon";
+import { Loader2, AlertTriangle } from "lucide-react";
+import { motion } from "framer-motion";
 
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Logo } from '@/components/common/logo';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-
-const loginSchema = z.object({
-  email: z.string().email({ message: 'メールアドレスの形式が正しくありません' }),
-  password: z.string().min(6, { message: 'パスワードは6文字以上で入力してください' }),
-});
-
-export default function Login() {
-  const [showPassword, setShowPassword] = useState(false);
+export default function LoginPage() {
+  const { data: session, status } = useSession();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const form = useForm<z.infer<typeof loginSchema>>({
-    resolver: zodResolver(loginSchema),
-    defaultValues: {
-      email: '',
-      password: '',
-    },
-  });
+  useEffect(() => {
+    const nextAuthError = searchParams.get("error");
+    if (nextAuthError) {
+      switch (nextAuthError) {
+        case "OAuthAccountNotLinked":
+          setError("このLINEアカウントは、他の方法で登録された既存のアカウントとは紐付けられません。");
+          break;
+        case "Callback":
+          setError("LINEアカウントでのログインに失敗しました。時間をおいて再度お試しください。(コールバックエラー)");
+          break;
+        default:
+          setError(`ログインエラーが発生しました: ${nextAuthError}`);
+      }
+    }
+  }, [searchParams]);
 
-  const onSubmit = (values: z.infer<typeof loginSchema>) => {
-    // Mock login for demo purposes
-    console.log('Login values:', values);
-    localStorage.setItem('isLoggedIn', 'true');
-    router.push('/timeline');
+  useEffect(() => {
+    if (status === "authenticated") {
+      const callbackUrl = searchParams.get("callbackUrl") || "/timeline";
+      router.replace(callbackUrl);
+    }
+  }, [status, router, searchParams]);
+
+  const handleLineLogin = async () => {
+    setIsLoading(true);
+    setError(null);
+    await signIn("line", { redirect: false });
   };
 
-  return (
-    <div className="h-screen flex flex-col bg-background">
-      <header className="p-4 flex justify-center items-center">
-        <Logo withText size="medium" />
-      </header>
-      
-      <main className="flex-1 flex items-center justify-center p-6">
+  if (status === "loading" && !isLoading) {
+    return (
+      <AppLayout showHeader={false} showNav={false}>
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="w-full max-w-md"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="flex flex-col items-center justify-center min-h-screen p-4 bg-slate-50 dark:bg-slate-900"
         >
-          <Card>
-            <CardHeader>
-              <CardTitle>ログイン</CardTitle>
-              <CardDescription>アカウントにログインしてお得情報を確認しましょう</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                  <FormField
-                    control={form.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>メールアドレス</FormLabel>
-                        <FormControl>
-                          <Input 
-                            placeholder="your@email.com" 
-                            type="email" 
-                            {...field} 
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="password"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>パスワード</FormLabel>
-                        <FormControl>
-                          <div className="relative">
-                            <Input 
-                              placeholder="パスワードを入力" 
-                              type={showPassword ? "text" : "password"} 
-                              {...field} 
-                            />
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              className="absolute right-2 top-1/2 transform -translate-y-1/2"
-                              onClick={() => setShowPassword(!showPassword)}
-                            >
-                              {showPassword ? (
-                                <EyeOff className="h-4 w-4" />
-                              ) : (
-                                <Eye className="h-4 w-4" />
-                              )}
-                            </Button>
-                          </div>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <Button type="submit" className="w-full">
-                    ログイン
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </form>
-              </Form>
-            </CardContent>
-            <CardFooter className="flex flex-col space-y-4">
-              <div className="text-sm text-center">
-                アカウントをお持ちでない場合は、
-                <Link href="/register" className="text-primary font-medium hover:underline">
-                  登録
-                </Link>
-                してください。
-              </div>
-            </CardFooter>
-          </Card>
+          <Loader2 className="h-16 w-16 animate-spin text-primary mb-6" />
+          <p className="text-lg text-muted-foreground">読み込み中...</p>
         </motion.div>
-      </main>
-    </div>
+      </AppLayout>
+    );
+  }
+
+  if (status === "unauthenticated") {
+    return (
+      <AppLayout showHeader={false} showNav={false}>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.3 }}
+          className="flex flex-col items-center justify-center min-h-screen p-4 bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 dark:from-slate-800 dark:via-slate-900 dark:to-black"
+        >
+          <motion.div
+            initial={{ y: -20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.2, duration: 0.4 }}
+            className="bg-card p-8 rounded-xl shadow-2xl w-full max-w-sm text-center border dark:border-slate-700"
+          >
+            <motion.h1 
+              className="text-4xl font-bold text-primary mb-3"
+              initial={{ letterSpacing: "-0.05em" }}
+              animate={{ letterSpacing: "0em" }}
+              transition={{ delay: 0.3, duration: 0.5 }}
+            >
+              おかえりなさい
+            </motion.h1>
+            <p className="text-muted-foreground mb-8">
+              LINEアカウントで簡単ログイン！<br />お得な情報を見つけよう。
+            </p>
+
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-destructive/10 border border-destructive/50 text-destructive p-3 rounded-md mb-6 flex items-start space-x-2"
+              >
+                <AlertTriangle className="h-5 w-5 mt-0.5 flex-shrink-0" />
+                <p className="text-sm text-left">{error}</p>
+              </motion.div>
+            )}
+            
+            <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }}>
+              <Button 
+                onClick={handleLineLogin} 
+                disabled={isLoading}
+                className="w-full bg-[#00C300] hover:bg-[#00B300] text-white text-lg py-7 shadow-lg flex items-center justify-center space-x-3 rounded-lg"
+              >
+                {isLoading ? (
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                ) : (
+                  <>
+                    <LineIcon className="w-7 h-7" />
+                    <span className="font-semibold">LINEでログイン</span>
+                  </>
+                )}
+              </Button>
+            </motion.div>
+
+            <p className="text-xs text-muted-foreground mt-8">
+              ログインすることで、
+              <a href="/terms" className="underline hover:text-primary transition-colors">利用規約</a>および
+              <a href="/privacy" className="underline hover:text-primary transition-colors">プライバシーポリシー</a>
+              に同意したものとみなされます。
+            </p>
+          </motion.div>
+        </motion.div>
+      </AppLayout>
+    );
+  }
+
+  return (
+     <AppLayout showHeader={false} showNav={false}>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="flex flex-col items-center justify-center min-h-screen p-4 bg-slate-50 dark:bg-slate-900"
+        >
+          <Loader2 className="h-16 w-16 animate-spin text-primary mb-6" />
+          <p className="text-lg text-muted-foreground">ようこそ、{session?.user?.name || 'ユーザー'}さん</p>
+          <p className="text-sm text-muted-foreground mt-2">まもなくリダイレクトします...</p>
+        </motion.div>
+      </AppLayout>
   );
 }

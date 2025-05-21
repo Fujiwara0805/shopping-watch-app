@@ -37,6 +37,7 @@
     "@radix-ui/react-toggle": "^1.1.0",
     "@radix-ui/react-toggle-group": "^1.1.0",
     "@radix-ui/react-tooltip": "^1.1.2",
+    "@supabase/supabase-js": "^2.49.7",
     "autoprefixer": "^10.4.16",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
@@ -49,6 +50,7 @@
     "input-otp": "^1.2.4",
     "lucide-react": "^0.446.0",
     "next": "^14.1.0",
+    "next-auth": "^4.24.11",
     "next-themes": "^0.3.0",
     "postcss": "^8.4.35",
     "react": "^18.2.0",
@@ -64,6 +66,7 @@
     "tailwindcss": "^3.4.1",
     "tailwindcss-animate": "^1.0.7",
     "typescript": "^5.3.3",
+    "uuid": "^11.1.0",
     "vaul": "^0.9.9",
     "zod": "^3.23.8"
   },
@@ -71,6 +74,7 @@
     "@types/google.maps": "^3.58.1",
     "@types/node": "^22.15.19",
     "@types/react": "^18.2.48",
-    "@types/react-dom": "^18.2.18"
+    "@types/react-dom": "^18.2.18",
+    "@types/uuid": "^10.0.0"
   }
 }

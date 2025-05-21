@@ -27,7 +27,7 @@ export default function AppLayout({
   };
 
   return (
-    <div className="flex flex-col h-screen bg-background">
+    <div className="flex flex-col min-h-screen bg-background">
       {showHeader && <AppHeader />}
       
       <main className={`flex-1 relative`}>
@@ -38,7 +38,7 @@ export default function AppLayout({
           exit="exit"
           variants={variants}
           transition={{ duration: 0.3, type: 'tween' }}
-          className={`absolute inset-0 overflow-auto pb-safe ${showNav ? 'pb-16' : ''}`}
+          className={`absolute inset-0 overflow-y-auto pb-safe ${showNav ? 'pb-16 md:pb-0' : 'pb-0'}`}
         >
           {children}
         </motion.div>
