@@ -1,18 +1,28 @@
 export interface Post {
   id: string;
-  author: {
-    id: string;
-    name: string;
-    avatar: string;
-  };
-  storeId: string;
-  storeName: string;
+  app_profile_id: string; // postsテーブルの実際の外部キーカラム名
+  store_id: string;
+  store_name: string;
   category: string;
   content: string;
-  image?: string | null;
-  discountRate: number;
-  expiryOption: '1h' | '3h' | '24h';
-  createdAt: number;
-  expiresAt: number;
-  likesCount: number;
+  image_url?: string | null;
+  discount_rate: number;
+  price?: number | null;
+  expiry_option: '1h' | '3h' | '24h';
+  created_at: string;
+  expires_at: string;
+  likes_count: number;
+  post_likes?: Array<{ user_id: string }>;
+}
+
+export interface AuthorProfile {
+  display_name: string | null;
+  avatar_url: string | null;     // これは app_profiles テーブルの実際のカラム名に合わせてください
+  // id?: string;
+}
+
+// PostWithAuthor は Post の全プロパティを持ち、さらに author オブジェクトを持つ
+export interface PostWithAuthor extends Omit<Post, 'app_profile_id'> {
+  author: AuthorProfile | null;
+  isLikedByCurrentUser?: boolean;
 }

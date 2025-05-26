@@ -26,29 +26,37 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   
-  // Get user data from localStorage
+  // Get user data from localStorage and handle redirection
   useEffect(() => {
     const userData = localStorage.getItem('user');
-    if (userData) {
-      setUser(JSON.parse(userData));
+    const parsedUser: User | null = userData ? JSON.parse(userData) : null;
+
+    // Determine if profile is considered "not set"
+    // For now, we consider it not set if no user data is found in localStorage
+    // A more robust check could involve checking specific fields or a flag
+    if (!parsedUser || parsedUser.displayName === 'ゲストユーザー' && parsedUser.email === 'guest@example.com') {
+      // If profile is not set, redirect to profile edit/setup page
+      router.push('/profile/setup');
     } else {
-      // Create default user data if not exists
-      const defaultUser = {
-        displayName: 'ゲストユーザー',
-        email: 'guest@example.com',
-      };
-      setUser(defaultUser);
-      localStorage.setItem('user', JSON.stringify(defaultUser));
-    }
-    
-    // Simulate loading delay
-    setTimeout(() => {
+      // If user data exists, set the user state and proceed
+      setUser(parsedUser);
       setLoading(false);
-    }, 1000);
-  }, []);
+    }
+
+    // Simulate loading delay only if profile data was found
+    // If redirecting, no need for the loading state here
+    if (parsedUser && !(parsedUser.displayName === 'ゲストユーザー' && parsedUser.email === 'guest@example.com')) {
+      setTimeout(() => {
+        setLoading(false);
+      }, 1000);
+    }
+
+  }, [router]); // Add router to dependency array as recommended by Next.js hooks
   
   const handleLogout = () => {
     localStorage.removeItem('isLoggedIn');
+    // Optionally clear user data from localStorage on logout as well
+    localStorage.removeItem('user');
     router.push('/login');
   };
   
@@ -86,12 +94,15 @@ export default function ProfilePage() {
                 </div>
               </div>
               
-              <Button 
-                variant="ghost" 
+              <Button
+                variant="ghost"
                 size="icon"
                 asChild
               >
-                <motion.div whileTap={{ scale: 0.95 }}>
+                <motion.div
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => router.push('/profile/edit')}
+                >
                   <Edit className="h-5 w-5" />
                 </motion.div>
               </Button>

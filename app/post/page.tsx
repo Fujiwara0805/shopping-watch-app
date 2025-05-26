@@ -23,6 +23,7 @@ import { useSession } from "next-auth/react";
 import { Loader2 } from "lucide-react";
 import { supabase } from '@/lib/supabaseClient';
 import { calculateExpiresAt } from '@/lib/expires-at-date';
+import { v4 as uuidv4 } from 'uuid';
 
 declare global {
   interface Window {
@@ -35,18 +36,29 @@ const postSchema = z.object({
   storeName: z.string({ required_error: "お店の名前が取得できませんでした。"}),
   category: z.string({ required_error: 'カテゴリを選択してください' }),
   content: z.string().min(5, { message: '5文字以上入力してください' }).max(200, { message: '200文字以内で入力してください' }),
-  discountRate: z.number().min(10, { message: '10%以上で入力してください' }).max(90, { message: '90%以下で入力してください' }),
-  price: z.preprocess( // 文字列で入力されることを想定し、数値に変換
+  discountRate: z.preprocess(
     (val) => {
+      if (typeof val === 'string' && val === '') return undefined;
+      const num = parseInt(String(val), 10);
+      return isNaN(num) ? undefined : num;
+    },
+    z.number({ invalid_type_error: '有効な数値を入力してください' })
+     .min(0, { message: '0%以上で入力してください' })
+     .max(100, { message: '100%以下で入力してください' })
+     .optional()
+  ),
+  price: z.preprocess(
+    (val) => {
+      if (typeof val === 'string' && val === '') return undefined;
       if (typeof val === 'string') {
-        const num = parseInt(val.replace(/,/g, ''), 10); // カンマを除去して数値に
+        const num = parseInt(val.replace(/,/g, ''), 10);
         return isNaN(num) ? undefined : num;
       }
       return val;
     },
     z.number({ invalid_type_error: '有効な数値を入力してください' })
-     .positive({ message: '価格は0より大きい値を入力してください' }) // 0円商品はありえない想定なら
-     .optional() // 価格は任意入力とする場合
+     .positive({ message: '価格は0より大きい値を入力してください' })
+     .optional()
   ),
   expiryTime: z.string().optional(),
   remainingItems: z.string().optional(),
@@ -60,7 +72,10 @@ type DisplayStore = Pick<Store, 'name'> & { id: string };
 export default function PostPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [imageSrc, setImageSrc] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const {
     latitude,
     longitude,
@@ -84,7 +99,7 @@ export default function PostPage() {
       storeName: '',
       category: '',
       content: '',
-      discountRate: 30,
+      discountRate: undefined,
       price: undefined,
       expiryTime: '',
       remainingItems: '',
@@ -93,50 +108,101 @@ export default function PostPage() {
     mode: 'onChange',
   });
   
-  const { isValid } = form.formState;
+  const { isValid, isSubmitting } = form.formState;
   
   const onSubmit = async (values: PostFormValues) => {
-    console.log({ ...values, image: imageSrc });
-    const postData = {
-      author_id: session?.user.id,
-      store_id: values.storeId,
-      store_name: values.storeName,
-      category: values.category,
-      content: values.content,
-      image_url: imageSrc,
-      discount_rate: values.discountRate,
-      price: values.price,
-      expiry_option: values.expiryOption,
-      created_at: new Date().toISOString(),
-      expires_at: calculateExpiresAt(values.expiryOption).toISOString(),
-    };
+    if (!session?.user?.id) {
+      console.log("PostPage: User not logged in, redirecting to login page.");
+      router.push(`/login?callbackUrl=${encodeURIComponent(window.location.pathname)}`);
+      return;
+    }
 
-    const { error: insertError } = await supabase.from('posts').insert(postData);
+    form.clearErrors("root.serverError");
+    setIsUploading(true);
+    setSubmitError(null);
 
-    if (insertError) {
-      console.error("PostPage: Error inserting post:", insertError);
-      setStoreSearchError("投稿に失敗しました。");
-    } else {
-      console.log("PostPage: Post inserted successfully");
-      setTimeout(() => {
-        router.push('/timeline');
-      }, 1000);
+    let imageUrl = null;
+
+    try {
+      if (imageFile) {
+        const fileExt = imageFile.name.split('.').pop();
+        const fileName = `${uuidv4()}.${fileExt}`;
+        const filePath = `public/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('post_images')
+          .upload(filePath, imageFile, {
+            cacheControl: '3600',
+            upsert: false,
+          });
+
+        if (uploadError) {
+          console.error("PostPage: Error uploading image:", uploadError);
+          throw new Error(`画像のアップロードに失敗しました: ${uploadError.message}`);
+        }
+
+        const { data: urlData } = supabase.storage.from('post_images').getPublicUrl(filePath);
+        if (!urlData?.publicUrl) {
+          throw new Error("画像のURL取得に失敗しました。");
+        }
+        imageUrl = urlData.publicUrl;
+      }
+
+      const postData = {
+        author_id: session.user.id,
+        store_id: values.storeId,
+        store_name: values.storeName,
+        category: values.category,
+        content: values.content,
+        image_url: imageUrl,
+        discount_rate: values.discountRate,
+        price: values.price,
+        expiry_option: values.expiryOption,
+        created_at: new Date().toISOString(),
+        expires_at: calculateExpiresAt(values.expiryOption).toISOString(),
+      };
+
+      const { error: insertError } = await supabase.from('posts').insert(postData);
+
+      if (insertError) {
+        console.error("PostPage: Error inserting post:", insertError);
+        throw new Error(`投稿の保存に失敗しました: ${insertError.message}`);
+      }
+
+      console.log("PostPage: Post inserted successfully with image:", imageUrl);
+      form.reset();
+      setImageFile(null);
+      setImagePreviewUrl(null);
+      router.push('/timeline');
+
+    } catch (error: any) {
+      console.error("PostPage: onSubmit error:", error);
+      setSubmitError(error.message || "投稿処理中にエラーが発生しました。");
+    } finally {
+      setIsUploading(false);
     }
   };
   
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      setImageFile(file);
       const reader = new FileReader();
-      reader.onload = (event) => {
-        setImageSrc(event.target?.result as string);
+      reader.onloadend = () => {
+        setImagePreviewUrl(reader.result as string);
       };
       reader.readAsDataURL(file);
+      setSubmitError(null);
     }
   };
   
   const removeImage = () => {
-    setImageSrc(null);
+    setImageFile(null);
+    setImagePreviewUrl(null);
+    const fileInput = document.getElementById('image-upload') as HTMLInputElement;
+    if (fileInput) {
+      fileInput.value = '';
+    }
   };
 
   useEffect(() => {
@@ -223,14 +289,13 @@ export default function PostPage() {
       });
     } else {
       console.log("PostPage: Conditions NOT met for nearbySearch or already loading/error.");
-      // 各条件がなぜ満たされなかったのかをログに出力
       if (permissionState !== 'granted') console.log("PostPage: Reason: permissionState is not 'granted'");
       if (!latitude || !longitude) console.log("PostPage: Reason: latitude or longitude is missing");
       if (!googleMapsApiLoaded) console.log("PostPage: Reason: googleMapsApiLoaded is false");
       if (!placesServiceRef.current) console.log("PostPage: Reason: placesServiceRef.current is null");
       if (locationLoading) console.log("PostPage: Reason: locationLoading is true");
     }
-  }, [latitude, longitude, permissionState, googleMapsApiLoaded, locationLoading]); // placesServiceRef.current は依存配列に含めない
+  }, [latitude, longitude, permissionState, googleMapsApiLoaded, locationLoading]);
 
   useEffect(() => {
     if (status !== "loading" && !session) {
@@ -250,18 +315,17 @@ export default function PostPage() {
     return "お店を選択してください";
   };
 
-  // デバッグ用: 現在の主要なstateを表示
   console.log("PostPage DEBUG:", {
     permissionState,
     latitude,
     longitude,
     locationLoading,
     locationError,
-    googleMapsApiLoaded, // ★ PlacesService の準備ができているか
-    storeSearchLoading,  // ★ 店舗検索中か
-    storeSearchError,    // ★ 店舗検索エラーはあるか
-    availableStoresLength: availableStores.length, // ★ 取得できた店舗数
-    isSelectDisabled: ( // ★ セレクトボックスが無効化されるかどうかの計算
+    googleMapsApiLoaded,
+    storeSearchLoading,
+    storeSearchError,
+    availableStoresLength: availableStores.length,
+    isSelectDisabled: (
       locationLoading ||
       storeSearchLoading ||
       (permissionState !== 'granted' && permissionState !== 'prompt') ||
@@ -270,7 +334,7 @@ export default function PostPage() {
       !googleMapsApiLoaded ||
       (availableStores.length === 0 && permissionState === 'granted' && !storeSearchError)
     ),
-    currentPlaceholder: getSelectPlaceholder(), // ★ 現在のプレースホルダーの内容
+    currentPlaceholder: getSelectPlaceholder(),
   });
 
   if (status === "loading") {
@@ -286,29 +350,76 @@ export default function PostPage() {
   if (session) {
     return (
       <AppLayout>
-        <div className="p-4 pb-24">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="container mx-auto max-w-lg p-4 md:p-8"
+        >
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pb-20">
+              <FormItem>
+                <FormLabel className="text-xl mb-2 flex items-center">
+                  <ImageIcon className="mr-2 h-7 w-7" />
+                  商品画像 (任意)
+                </FormLabel>
+                <FormControl>
+                  <div className="flex flex-col items-center space-y-3 p-6 border-2 border-dashed rounded-lg hover:border-primary transition-colors cursor-pointer bg-card">
+                    <Input
+                      id="image-upload"
+                      type="file"
+                      accept="image/png, image/jpeg, image/webp"
+                      onChange={handleImageUpload}
+                      className="hidden"
+                      disabled={isUploading}
+                    />
+                    {imagePreviewUrl ? (
+                      <div className="relative group">
+                        <img src={imagePreviewUrl} alt="プレビュー" className="max-h-60 rounded-md object-contain" />
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="icon"
+                          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={removeImage}
+                          disabled={isUploading}
+                        >
+                          <X className="h-5 w-5" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <label htmlFor="image-upload" className="flex flex-col items-center space-y-2 cursor-pointer text-muted-foreground">
+                        <Upload className="h-12 w-12" />
+                        <p className="text-lg">画像をアップロード</p>
+                        <p className="text-xs">PNG, JPG, WEBP (最大5MB)</p>
+                      </label>
+                    )}
+                  </div>
+                </FormControl>
+                <p className="text-xs text-red-500 mt-1">※陳列している商品の画像はアップしないでください。購入後の商品の画像をアップしてください。</p>
+              </FormItem>
+
               <FormField
                 control={form.control}
                 name="storeId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-2xl flex items-center">
-                      <StoreIcon className="mr-2 h-6 w-6" /> お店
+                    <FormLabel className="text-xl font-semibold flex items-center">
+                      <StoreIcon className="mr-2 h-6 w-6" />お店
                     </FormLabel>
-                    <Select 
-                      onValueChange={field.onChange} 
-                      defaultValue={field.value} 
-                      disabled={
-                        locationLoading || 
-                        storeSearchLoading || 
-                        (permissionState !== 'granted' && permissionState !== 'prompt') ||
-                        !!locationError ||
-                        !!storeSearchError ||
-                        !googleMapsApiLoaded ||
-                        (availableStores.length === 0 && permissionState === 'granted' && !storeSearchError)
-                      }
+                    {(availableStores.length === 0 && permissionState === 'granted' && !storeSearchLoading && !storeSearchError && !locationLoading) || permissionState === 'denied' || !!locationError ? (
+                      <p className="text-sm text-muted-foreground mt-1">
+                        ※お店が選択できない場合は一度「お店を探す」画面を確認してください。
+                      </p>
+                    ) : null}
+                    <Select
+                      onValueChange={(value) => {
+                        field.onChange(value);
+                        const selectedStore = availableStores.find(s => s.id === value);
+                        form.setValue('storeName', selectedStore?.name || '');
+                      }}
+                      defaultValue={field.value}
+                      disabled={storeSearchLoading || availableStores.length === 0 || isUploading}
                     >
                       <FormControl>
                         <SelectTrigger className="text-lg">
@@ -316,21 +427,11 @@ export default function PostPage() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {permissionState === 'prompt' && !locationLoading && (
-                          <div className="p-2 text-center">
-                            <p className="text-lg text-muted-foreground mb-2">お店の検索には位置情報の許可が必要です。</p>
-                            <Button type="button" onClick={requestLocation} size="sm" className="text-lg">
-                              位置情報の利用を許可する
-                            </Button>
-                          </div>
-                        )}
-                        {permissionState === 'granted' && !locationError && !storeSearchError && availableStores.length > 0 &&
-                          availableStores.map((store) => (
-                            <SelectItem key={store.id} value={store.id} className="text-lg">
-                              {store.name}
-                            </SelectItem>
-                          ))
-                        }
+                        {availableStores.map((store) => (
+                          <SelectItem key={store.id} value={store.id} className="text-lg">
+                            {store.name}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -338,12 +439,14 @@ export default function PostPage() {
                 )}
               />
               
+              <input type="hidden" {...form.register("storeName")} />
+
               <FormField
                 control={form.control}
                 name="category"
                 render={({ field }) => (
                   <FormItem className="space-y-3">
-                    <FormLabel className="text-2xl flex items-center">
+                    <FormLabel className="text-xl flex font-semibold items-center">
                       <LayoutGrid className="mr-2 h-6 w-6" /> カテゴリ
                     </FormLabel>
                     <FormControl>
@@ -383,7 +486,7 @@ export default function PostPage() {
                 name="content"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-2xl flex items-center">
+                    <FormLabel className="text-xl flex font-semibold items-center">
                       <ClipboardList className="mr-2 h-6 w-6" /> 内容
                     </FormLabel>
                     <FormControl>
@@ -399,74 +502,20 @@ export default function PostPage() {
                 )}
               />
               
-              <div className="space-y-2">
-                <Label className="text-2xl flex items-center">
-                  <ImageIcon className="mr-2 h-6 w-6" /> 写真 (任意)
-                </Label>
-                <div className="border-2 border-dashed rounded-md p-4 text-center">
-                  {imageSrc ? (
-                    <div className="relative">
-                      <img
-                        src={imageSrc}
-                        alt="商品の写真"
-                        className="mx-auto h-48 object-cover rounded-md"
-                      />
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="icon"
-                        className="absolute top-2 right-2 h-8 w-8"
-                        onClick={removeImage}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="py-4">
-                      <Camera className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                      <p className="text-lg text-muted-foreground mb-2">
-                        写真をアップロードしてください
-                      </p>
-                      <p className="text-xs text-red-500 mb-2">
-                        ※陳列している商品の画像はアップしないでください。<br />
-                        購入後の商品の画像をアップしてください。
-                      </p>
-                      <div className="flex justify-center gap-2">
-                        <Button 
-                          type="button" 
-                          variant="outline" 
-                          size="sm"
-                          className="relative text-lg"
-                        >
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={handleImageUpload}
-                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                          />
-                          <Upload className="h-4 w-4 mr-1" />
-                          アップロード
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-              
               <FormField
                 control={form.control}
                 name="discountRate"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-2xl flex items-center">
-                      <Calculator className="mr-2 h-6 w-6" /> 値引き率: {field.value}%
+                    <FormLabel className="text-xl flex items-center">
+                      <Calculator className="mr-2 h-6 w-6" /> 値引き率 (任意): {field.value === undefined ? '-' : `${field.value}%`}
                     </FormLabel>
                     <FormControl>
                       <Slider
-                        min={10}
-                        max={90}
-                        step={5}
-                        value={[field.value]}
+                        min={0}
+                        max={100}
+                        step={1}
+                        value={[field.value === undefined ? 0 : field.value]}
                         onValueChange={(vals) => field.onChange(vals[0])}
                         className="py-4"
                       />
@@ -481,25 +530,22 @@ export default function PostPage() {
                 name="price"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-2xl flex items-center">
-                      <JapaneseYen className="mr-2 h-6 w-6" /> 価格 (任意)
-                    </FormLabel>
+                    <FormLabel className="text-xl flex items-center"><JapaneseYen className="mr-2 h-6 w-6" />価格 (税込・任意)</FormLabel>
                     <FormControl>
-                      <div className="relative">
-                        <Input
-                          type="text"
-                          inputMode="numeric"
-                          placeholder="例: 1500"
-                          className="text-lg pl-7"
-                          {...field}
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            const numericValue = value.replace(/[^0-9]/g, '');
-                            field.onChange(numericValue === '' ? undefined : numericValue);
-                          }}
-                        />
-                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-lg text-muted-foreground">¥</span>
-                      </div>
+                      <Input
+                        type="number"
+                        placeholder="例: 500"
+                        {...field}
+                        value={field.value === undefined ? '' : String(field.value)}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          if (value === '' || /^[0-9]+$/.test(value)) {
+                             field.onChange(value === '' ? undefined : parseInt(value, 10));
+                          }
+                        }}
+                        className="text-lg"
+                        disabled={isUploading}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -520,6 +566,7 @@ export default function PostPage() {
                           type="date"
                           className="text-lg"
                           {...field}
+                          value={field.value || ''}
                         />
                       </FormControl>
                       <FormMessage />
@@ -543,6 +590,7 @@ export default function PostPage() {
                             placeholder="10"
                             className="text-lg"
                             {...field}
+                            value={field.value || ''}
                           />
                           <span className="ml-2 flex items-center text-muted-foreground text-lg">点</span>
                         </div>
@@ -558,7 +606,7 @@ export default function PostPage() {
                 name="expiryOption"
                 render={({ field }) => (
                   <FormItem className="space-y-3">
-                    <FormLabel className="text-2xl flex items-center">
+                    <FormLabel className="text-xl flex font-semibold items-center">
                       <ClockIcon className="mr-2 h-6 w-6" /> 掲載期間
                     </FormLabel>
                     <FormControl>
@@ -597,23 +645,25 @@ export default function PostPage() {
                 )}
               />
               
-              <motion.div
-                whileTap={{ scale: 0.98 }}
-              >
-                <Button 
-                  type="submit" 
+              {submitError && (
+                <p className="text-sm text-destructive text-center bg-destructive/10 p-3 rounded-md">{submitError}</p>
+              )}
+
+              <motion.div whileTap={{ scale: 0.98 }}>
+                <Button
+                  type="submit"
+                  disabled={!isValid || isSubmitting || isUploading}
                   className={cn(
-                    "w-full mt-6 text-xl",
-                    !isValid && "bg-gray-400 cursor-not-allowed hover:bg-gray-400"
+                    "w-full text-xl py-3",
+                    (!isValid || isSubmitting || isUploading) && "bg-gray-400 cursor-not-allowed hover:bg-gray-400"
                   )}
-                  disabled={!isValid}
                 >
-                  投稿する
+                  {(isSubmitting || isUploading) ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : "投稿する"}
                 </Button>
               </motion.div>
             </form>
           </Form>
-        </div>
+        </motion.div>
       </AppLayout>
     );
   }

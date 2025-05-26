@@ -1,9 +1,9 @@
 export interface Profile {
   id: string; // users.id と一致
-  username: string | null;
+  display_name: string | null; // ニックネーム
   avatar_url: string | null;
-  full_name: string | null; // LINEの表示名など、必要に応じて
   updated_at: string | null;
+  bio: string | null; // 自己紹介
   // 必要に応じて他のプロフィール項目を追加
 }
 

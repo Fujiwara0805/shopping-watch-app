@@ -25,11 +25,12 @@ const profileSchema = z.object({
 
 type ProfileFormValues = z.infer<typeof profileSchema>;
 
-export default function ProfileEditPage() {
+// コンポーネント名を ProfileSetupPage に変更
+export default function ProfileSetupPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
-  const [profileLoading, setProfileLoading] = useState(false);
+  const [profileLoading, setProfileLoading] = useState(false); // セットアップ時は常にfalseで良い
   const [isSaving, setIsSaving] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
@@ -38,58 +39,31 @@ export default function ProfileEditPage() {
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
-      username: '',
-      bio: '',
+      username: '', // 新規登録時は常に空
+      bio: '', // 新規登録時は常に空
     },
     mode: 'onChange',
   });
 
   const { isValid, isSubmitting } = form.formState;
 
+  // useEffectを新規登録用に調整
   useEffect(() => {
     if (status === "loading") return;
 
     if (!session) {
-      console.log("ProfileEditPage: User not logged in, redirecting to login page.");
+      console.log("ProfileSetupPage: User not logged in, redirecting to login page.");
+      // ログインページへのリダイレクト
       router.replace(`/login?callbackUrl=${encodeURIComponent(window.location.pathname)}`);
     } else {
-      fetchProfile(session.user.id as string);
+       // セッションがあればローディング終了。新規登録のためプロフィール読み込みは行わない
       setLoading(false);
+      console.log("ProfileSetupPage: User session found, ready for setup.");
     }
   }, [session, status, router]);
 
-  const fetchProfile = async (userId: string) => {
-    setProfileLoading(true);
-    setSubmitError(null);
-    try {
-      const { data, error } = await supabase
-        .from('app_profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-      if (error && error.code !== 'PGRST116') {
-        throw error;
-      }
-
-      if (data) {
-        form.reset({
-          username: data.display_name || '',
-          bio: data.bio || '',
-        });
-        setAvatarPreviewUrl(data.avatar_url || null);
-        console.log("ProfileEditPage: Fetched existing profile:", data);
-      } else {
-        console.log("ProfileEditPage: No existing profile found.");
-      }
-
-    } catch (error: any) {
-      console.error("ProfileEditPage: Error fetching profile:", error);
-      setSubmitError("プロフィールの読み込みに失敗しました: " + error.message);
-    } finally {
-      setProfileLoading(false);
-    }
-  };
+  // 新規登録なのでfetchProfileは不要。削除またはコメントアウトします。
+  // const fetchProfile = async (userId: string) => { ... };
 
   const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -122,7 +96,7 @@ export default function ProfileEditPage() {
 
   const onSubmit = async (values: ProfileFormValues) => {
     if (!session?.user?.id) {
-      console.error("ProfileEditPage: Save attempt without session user ID.");
+      console.error("ProfileSetupPage: Save attempt without session user ID.");
       setSubmitError("ユーザーIDが見つかりません。再度ログインしてください。");
       return;
     }
@@ -146,7 +120,7 @@ export default function ProfileEditPage() {
           });
 
         if (uploadError) {
-          console.error("ProfileEditPage: Error uploading avatar:", uploadError);
+          console.error("ProfileSetupPage: Error uploading avatar:", uploadError);
           throw new Error(`アバター画像のアップロードに失敗しました: ${uploadError.message}`);
         }
 
@@ -165,32 +139,35 @@ export default function ProfileEditPage() {
         display_name: values.username,
         bio: values.bio,
         avatar_url: avatarUrl,
-        updated_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(), // 新規登録時もupdated_atを設定
       };
 
+      // Supabaseへの保存処理 (upsertを使用)
       const { error: upsertError } = await supabase
         .from('app_profiles')
-        .upsert(profileData, { onConflict: 'id' });
+        .upsert(profileData, { onConflict: 'id' }); // onConflict: 'id' で新規登録と更新を兼ねる
 
       if (upsertError) {
-        console.error("ProfileEditPage: Error upserting profile:", upsertError);
+        console.error("ProfileSetupPage: Error saving profile:", upsertError);
         throw new Error(`プロフィールの保存に失敗しました: ${upsertError.message}`);
       }
 
-      console.log("ProfileEditPage: Profile saved successfully.");
+      console.log("ProfileSetupPage: Profile saved successfully.");
 
-      const callbackUrl = new URLSearchParams(window.location.search).get('callbackUrl') || '/timeline';
-      router.push(callbackUrl);
+      // 保存後、プロフィールページまたはタイムラインページへ遷移
+      // 新規登録後はプロフィールページへ遷移するのが自然かもしれません
+      router.push('/profile'); // 例: プロフィールページへ遷移
 
     } catch (error: any) {
-      console.error("ProfileEditPage: onSubmit error:", error);
+      console.error("ProfileSetupPage: onSubmit error:", error);
       setSubmitError(error.message || "プロフィールの保存処理中にエラーが発生しました。");
     } finally {
       setIsSaving(false);
     }
   };
 
-  if (status === "loading" || loading) {
+  // ローディング表示はセッションローディングのみで良い
+  if (status === "loading") {
     return (
       <AppLayout>
         <div className="flex items-center justify-center min-h-screen">
@@ -200,6 +177,7 @@ export default function ProfileEditPage() {
     );
   }
 
+  // セッションがあり、かつコンポーネント固有のローディングが終わったら表示
   if (session && !loading) {
     return (
       <AppLayout>
@@ -209,7 +187,8 @@ export default function ProfileEditPage() {
           transition={{ duration: 0.5 }}
           className="container mx-auto max-w-lg p-4 md:p-8"
         >
-           <h1 className="text-3xl font-bold text-center mb-6">プロフィール編集</h1>
+           {/* タイトルを新規登録用に変更 */}
+           <h1 className="text-3xl font-bold text-center mb-6">プロフィール新規登録</h1>
 
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -297,19 +276,21 @@ export default function ProfileEditPage() {
                 <p className="text-sm text-destructive text-center bg-destructive/10 p-3 rounded-md">{submitError}</p>
               )}
 
-              {profileLoading && (
+               {/* 新規登録時はプロフィール読み込みローディングは不要なので削除 */}
+              {/* {profileLoading && (
                  <div className="flex items-center justify-center">
                    <Loader2 className="mr-2 h-6 w-6 animate-spin text-primary" /> プロフィール読み込み中...
                  </div>
-               )}
+               )} */}
 
               <motion.div whileTap={{ scale: 0.98 }}>
                 <Button
                   type="submit"
-                  disabled={!isValid || isSaving || profileLoading}
+                  // 新規登録時はプロフィール読み込みは関係ないので profileLoading を削除
+                  disabled={!isValid || isSaving}
                   className="w-full text-xl py-3"
                 >
-                  {isSaving ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : "保存する"}
+                  {isSaving ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : "登録する"} {/* ボタンテキストも変更 */}
                 </Button>
               </motion.div>
             </form>
