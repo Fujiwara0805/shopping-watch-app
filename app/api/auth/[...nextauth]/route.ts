@@ -1,23 +1,13 @@
 import NextAuth, { AuthOptions, Profile as NextAuthProfile, Account as NextAuthAccount, User as NextAuthUser } from 'next-auth';
-import LineProvider from 'next-auth/providers/line';
+import GoogleProvider from 'next-auth/providers/google';
 import { supabase } from '@/lib/supabaseClient';
 import { v4 as uuidv4 } from 'uuid';
 
-interface LineProfile extends NextAuthProfile {
-  sub: string; // LINEのユーザーID (必須)
-  name?: string;
-  picture?: string;
-  email?: string; // LINE Profile+で取得可能 (要申請・LINE側でのユーザー同意)
-}
-
 export const authOptions: AuthOptions = {
   providers: [
-    LineProvider({
-      clientId: process.env.LINE_CLIENT_ID!,
-      clientSecret: process.env.LINE_CLIENT_SECRET!,
-      // LINEからemailを取得するには、LINE Developers Consoleで「メールアドレス取得権限」を申請し、
-      // ユーザーが同意した場合にのみ取得可能です。
-      // authorization: { params: { scope: "profile openid email" } }, // emailスコープを追加する場合
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     }),
   ],
   session: {
@@ -26,107 +16,110 @@ export const authOptions: AuthOptions = {
   secret: process.env.NEXTAUTH_SECRET, // .env.localで設定したシークレット
   callbacks: {
     async jwt({ token, user, account, profile }) {
-      // 初期サインイン時 (LINEから返却されたprofile情報がある)
-      if (account && user && profile) {
-        const lineProfile = profile as LineProfile; // LINEから返ってくるプロファイル情報
-        token.provider = account.provider; // 'line'
-        token.lineId = lineProfile.sub;    // LINE User ID (subクレーム)
+      console.log("JWT Callback: Triggered");
+      if (account && user && profile && profile.sub) {
+        console.log("JWT Callback: Initial sign-in with provider data.", { provider: account.provider, profileSub: profile.sub });
+        token.provider = account.provider;
+        token.providerAccountId = profile.sub;
 
         try {
-          // 1. Supabaseの`users`テーブルでLINE IDを検索
           let { data: existingUser, error: fetchError } = await supabase
-            .from('users')
-            .select('id, email, line_id') // `users`テーブルから必要な情報を取得
-            .eq('line_id', lineProfile.sub)
+            .from('app_users')
+            .select('id, email, google_id') // 'name', 'image' を削除
+            .eq('google_id', profile.sub)
             .single();
 
-          if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116は '単一行が見つかりません'
-            console.error('Error fetching user from Supabase by line_id:', fetchError);
-            throw new Error('Supabase user fetch failed');
+          if (fetchError && fetchError.code !== 'PGRST116') {
+            console.error('JWT Callback: Error fetching user from app_users by google_id:', JSON.stringify(fetchError, null, 2));
+            token.error = "SupabaseFetchError_app_users";
+            return token;
           }
 
           if (existingUser) {
-            // 既存ユーザーの場合、そのユーザーのシステムID (`users.id`) をトークンに格納
-            token.userId = existingUser.id; // Supabaseの`users.id` (UUID)
+            console.log("JWT Callback: Existing user found in app_users:", JSON.stringify(existingUser, null, 2));
+            token.userId = existingUser.id;
+            token.email = existingUser.email; // DBのemail
+            // Googleのprofileからnameとpictureを取得してトークンに直接入れる
+            token.name = profile.name;
+            token.picture = profile.image;
 
-            // (任意) LINEプロファイル情報で既存のemailなどを更新する場合
-            if (lineProfile.email && lineProfile.email !== existingUser.email) {
-              const { error: updateUserError } = await supabase
-                .from('users')
-                .update({ email: lineProfile.email, updated_at: new Date().toISOString() })
-                .eq('id', existingUser.id);
-              if (updateUserError) {
-                console.warn('Failed to update user email in Supabase:', updateUserError);
-              }
-            }
           } else {
-            // 新規ユーザーの場合、Supabaseの`users`テーブルに新しいレコードを作成
-            const newUserId = uuidv4(); // 新しいシステムユーザーID (UUID)を生成
-            const newUserPayload: { id: string; line_id: string; email?: string; created_at: string; updated_at: string } = {
+            console.log("JWT Callback: New user for app_users. Creating record.");
+            const newUserId = uuidv4();
+            const newUserPayload = { // 'name', 'image' を削除
               id: newUserId,
-              line_id: lineProfile.sub,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
+              google_id: profile.sub,
+              email: profile.email,
+              // created_at, updated_at はSupabaseが自動設定することが多い
             };
-            if (lineProfile.email) { // LINEからemailが取得できた場合のみセット
-              newUserPayload.email = lineProfile.email;
-            }
+
+            console.log("JWT Callback: New app_users payload:", JSON.stringify(newUserPayload, null, 2));
 
             const { data: newSupabaseUser, error: insertError } = await supabase
-              .from('users')
+              .from('app_users')
               .insert(newUserPayload)
-              .select('id') // 挿入されたユーザーのIDを取得
+              .select('id, email') // 'name', 'image' を削除
               .single();
 
             if (insertError) {
-              console.error('Error inserting new user to Supabase:', insertError);
-              throw new Error('Supabase user creation failed');
+              console.error('JWT Callback: Error inserting new user to app_users:', JSON.stringify(insertError, null, 2));
+              token.error = "SupabaseInsertError_app_users";
+              return token;
             }
+
             if (newSupabaseUser) {
-              token.userId = newSupabaseUser.id; // 新しく作成された`users.id`をトークンに格納
+              console.log("JWT Callback: New user created successfully in app_users:", JSON.stringify(newSupabaseUser, null, 2));
+              token.userId = newSupabaseUser.id;
+              token.email = newSupabaseUser.email;
+              // Googleのprofileからnameとpictureを取得してトークンに直接入れる
+              token.name = profile.name;
+              token.picture = profile.image;
             } else {
-              console.error('New Supabase user data is null after insert.');
-              throw new Error('Supabase user creation returned null');
+              console.error('JWT Callback: New app_users data is null after insert.');
+              token.error = "SupabaseInsertReturnedNull_app_users";
+              return token;
             }
           }
-
-          // トークンにLINEの表示名と画像URLも一時的に含める (セッションコールバックで使用)
-          token.name = lineProfile.name;
-          token.picture = lineProfile.picture;
-
-        } catch (e) {
-          const errorMessage = e instanceof Error ? e.message : String(e);
-          console.error("JWT Callback Error:", errorMessage);
-          token.error = "CallbackError"; // エラー情報をトークンに含める
-          // 認証エラーとするため、userId など必須情報を削除または未設定にする
+        } catch (e: any) {
+          console.error("JWT Callback: General Catch Block Error (app_users context):", e.message, e.stack);
+          token.error = "JwtCallbackError_app_users";
           delete token.userId;
-          delete token.lineId;
         }
+      } else if (token.providerAccountId && token.provider) {
+        console.log("JWT Callback: Existing token - session refresh (app_users context).", { userId: token.userId });
+      } else {
+        console.log("JWT Callback: Account, User, or Profile missing (app_users context).");
       }
-      return token; // JWTトークンを返す
+
+      console.log("JWT Callback: Returning token (app_users context):", JSON.stringify(token, null, 2));
+      return token;
     },
     async session({ session, token }) {
-      // JWTトークンからセッションオブジェクトに必要な情報を詰める
+      console.log("Session Callback: Triggered with token (app_users context):", JSON.stringify(token, null, 2));
       if (token.userId) {
-        session.user.id = token.userId as string; // `users.id` (UUID) をセッションに設定
+        session.user.id = token.userId as string;
       }
-      // NextAuthのデフォルトのname, imageはLINEのものをそのまま使う場合
+      if (token.email) {
+        session.user.email = token.email as string;
+      }
+      // nameとpictureはprofileから直接トークンに入っているので、そのままsessionに渡る
       if (token.name) {
         session.user.name = token.name as string;
       }
       if (token.picture) {
         session.user.image = token.picture as string;
       }
-      // (任意) LINE IDをセッションに含めたい場合
-      // if (token.lineId) {
-      //   (session.user as any).lineId = token.lineId as string;
-      // }
 
       if (token.error) {
-        (session as any).error = token.error; // エラー情報をセッションに渡す
-        // エラーがある場合はユーザー情報をクリアするなど、セッションを無効化する処理も検討
+        (session as any).error = token.error;
+        console.warn("Session Callback: Error propagated from JWT token (app_users context):", token.error);
+      } else {
+        if ((session as any).error) {
+          delete (session as any).error;
+        }
       }
-      return session; // セッションオブジェクトを返す
+      console.log("Session Callback: Returning session (app_users context):", JSON.stringify(session, null, 2));
+      return session;
     },
   },
   // pages: { // カスタムログインページを指定する場合 (今回はapp/login/page.tsxを使用)
@@ -143,16 +136,16 @@ export { handler as GET, handler as POST };
 declare module 'next-auth' {
   interface Session {
     user: {
-      id?: string; // Supabaseの`users.id` (UUID)
+      id?: string; // Supabaseの`app_users.id` (UUID)
     } & NextAuthUser; // name, email, image をNextAuthのデフォルトから継承
   }
 }
 
 declare module 'next-auth/jwt' {
   interface JWT {
-    userId?: string;   // Supabaseの`users.id` (UUID)
-    lineId?: string;   // LINE User ID
-    provider?: string; // 認証プロバイダー (例: 'line')
+    userId?: string;   // Supabaseの`app_users.id` (UUID)
+    providerAccountId?: string;   // プロバイダーのユーザーID (例: Googleのsub)
+    provider?: string; // 認証プロバイダー (例: 'google')
     // name, pictureはNextAuth/jwtのデフォルトに既に存在する可能性があるが、明示的に追加も可
   }
 }

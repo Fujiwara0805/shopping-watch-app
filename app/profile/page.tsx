@@ -10,233 +10,312 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { PostCard } from '@/components/posts/post-card';
-import { mockPosts } from '@/lib/mock-data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { useSession, signOut } from 'next-auth/react';
+import { supabase } from '@/lib/supabaseClient';
+import { PostWithAuthor, AuthorProfile } from '@/types/post';
 
-interface User {
-  displayName: string;
-  email: string;
-  avatar?: string;
+interface AppProfile {
+  id: string;
+  user_id: string;
+  display_name: string;
+  bio?: string | null;
+  avatar_url?: string | null;
+  updated_at?: string;
 }
 
 export default function ProfilePage() {
-  const [user, setUser] = useState<User | null>(null);
+  const { data: session, status } = useSession();
+  const [profile, setProfile] = useState<AppProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [userPosts, setUserPosts] = useState<PostWithAuthor[]>([]);
+  const [loadingPosts, setLoadingPosts] = useState(true);
   const router = useRouter();
   
-  // Get user data from localStorage and handle redirection
   useEffect(() => {
-    const userData = localStorage.getItem('user');
-    const parsedUser: User | null = userData ? JSON.parse(userData) : null;
-
-    // Determine if profile is considered "not set"
-    // For now, we consider it not set if no user data is found in localStorage
-    // A more robust check could involve checking specific fields or a flag
-    if (!parsedUser || parsedUser.displayName === 'ゲストユーザー' && parsedUser.email === 'guest@example.com') {
-      // If profile is not set, redirect to profile edit/setup page
-      router.push('/profile/setup');
-    } else {
-      // If user data exists, set the user state and proceed
-      setUser(parsedUser);
-      setLoading(false);
+    if (status === 'loading') {
+      return;
     }
 
-    // Simulate loading delay only if profile data was found
-    // If redirecting, no need for the loading state here
-    if (parsedUser && !(parsedUser.displayName === 'ゲストユーザー' && parsedUser.email === 'guest@example.com')) {
-      setTimeout(() => {
+    if (!session || !session.user?.id) {
+      router.push('/login?callbackUrl=/profile');
+      return;
+    }
+
+    const fetchProfileAndPosts = async () => {
+      setLoading(true);
+      setLoadingPosts(true);
+      try {
+        const { data: appProfileData, error: profileError } = await supabase
+          .from('app_profiles')
+          .select('*')
+          .eq('user_id', session.user!.id!)
+          .single();
+
+        if (profileError && profileError.code !== 'PGRST116') {
+          console.error('Error fetching profile from app_profiles:', profileError);
+          setLoading(false);
+          setLoadingPosts(false);
+          return;
+        }
+
+        if (appProfileData) {
+          setProfile(appProfileData);
+
+          const { data: postsData, error: postsError } = await supabase
+            .from('posts')
+            .select(`
+              id,
+              app_profile_id,
+              store_id,
+              store_name,
+              category,
+              content,
+              image_url,
+              discount_rate,
+              price,
+              expiry_option,
+              created_at,
+              likes_count,
+              app_profiles (
+                display_name,
+                avatar_url
+              )
+            `)
+            .eq('app_profile_id', appProfileData.id)
+            .order('created_at', { ascending: false });
+
+          if (postsError) {
+            console.error('Error fetching posts:', postsError);
+          } else if (postsData) {
+            const fetchedPosts: PostWithAuthor[] = postsData.map((p: any) => {
+              let expires_at_string = new Date().toISOString();
+              if (p.expiry_option && p.created_at) {
+                  const createdAtDate = new Date(p.created_at);
+                  if (p.expiry_option === '1h') createdAtDate.setHours(createdAtDate.getHours() + 1);
+                  else if (p.expiry_option === '3h') createdAtDate.setHours(createdAtDate.getHours() + 3);
+                  else if (p.expiry_option === '24h') createdAtDate.setHours(createdAtDate.getHours() + 24);
+                  expires_at_string = createdAtDate.toISOString();
+              }
+
+              return {
+                id: p.id,
+                store_id: p.store_id,
+                store_name: p.store_name,
+                category: p.category,
+                content: p.content,
+                image_url: p.image_url,
+                discount_rate: p.discount_rate,
+                price: p.price,
+                expiry_option: p.expiry_option,
+                created_at: p.created_at,
+                expires_at: expires_at_string,
+                likes_count: p.likes_count || 0,
+                likes: p.likes_count || 0,
+                comments: 0,
+
+                author: p.app_profiles ? {
+                  display_name: p.app_profiles.display_name,
+                  avatar_url: p.app_profiles.avatar_url,
+                } : null,
+              };
+            });
+            setUserPosts(fetchedPosts);
+          }
+        } else {
+          console.log('No profile found in app_profiles, redirecting to setup.');
+          router.push('/profile/setup');
+          return;
+        }
+      } catch (e) {
+        console.error('An unexpected error occurred while fetching data:', e);
+      } finally {
         setLoading(false);
-      }, 1000);
-    }
+        setLoadingPosts(false);
+      }
+    };
 
-  }, [router]); // Add router to dependency array as recommended by Next.js hooks
+    fetchProfileAndPosts();
+
+  }, [session, status, router]);
   
-  const handleLogout = () => {
-    localStorage.removeItem('isLoggedIn');
-    // Optionally clear user data from localStorage on logout as well
-    localStorage.removeItem('user');
+  const handleLogout = async () => {
+    await signOut({ redirect: false, callbackUrl: '/login' });
     router.push('/login');
   };
   
-  // Filter posts by the current user
-  const userPosts = mockPosts.filter(post => 
-    post.author.name === user?.displayName
-  );
+  if (status === 'loading' || loading) {
+    return (
+      <AppLayout>
+        <div className="flex flex-col items-center justify-center min-h-screen">
+          <Skeleton className="h-16 w-16 rounded-full mb-2" />
+          <Skeleton className="h-5 w-40 mb-1" />
+          <Skeleton className="h-4 w-32 mb-6" />
+          <Skeleton className="h-32 w-full max-w-md" />
+        </div>
+      </AppLayout>
+    );
+  }
+  
+  if (!profile) {
+    return (
+        <AppLayout>
+            <div className="flex items-center justify-center min-h-screen">
+                <p>プロフィール情報を読み込めませんでした。</p>
+            </div>
+        </AppLayout>
+    );
+  }
   
   return (
     <AppLayout>
       <div className="p-4">
-        {loading ? (
-          <div className="space-y-4">
-            <div className="flex items-center space-x-4">
-              <Skeleton className="h-16 w-16 rounded-full" />
-              <div className="space-y-2">
-                <Skeleton className="h-5 w-40" />
-                <Skeleton className="h-4 w-24" />
-              </div>
+        <div className="flex justify-between items-start mb-6">
+          <div className="flex items-center space-x-4">
+            <Avatar className="h-16 w-16">
+              {profile.avatar_url ? (
+                <AvatarImage
+                  src={supabase.storage.from('avatars').getPublicUrl(profile.avatar_url).data.publicUrl}
+                  alt={profile.display_name ?? 'User Avatar'}
+                />
+              ) : (
+                <AvatarFallback>{profile.display_name?.charAt(0).toUpperCase() ?? 'U'}</AvatarFallback>
+              )}
+            </Avatar>
+            
+            <div>
+              <h1 className="text-xl font-bold">{profile.display_name}</h1>
+              <p className="text-sm text-muted-foreground">{session?.user?.email}</p>
             </div>
-            <Skeleton className="h-32 w-full" />
           </div>
-        ) : (
-          <>
-            <div className="flex justify-between items-start mb-6">
-              <div className="flex items-center space-x-4">
-                <Avatar className="h-16 w-16">
-                  <AvatarImage src={user?.avatar} alt={user?.displayName} />
-                  <AvatarFallback>{user?.displayName.charAt(0)}</AvatarFallback>
-                </Avatar>
-                
-                <div>
-                  <h1 className="text-xl font-bold">{user?.displayName}</h1>
-                  <p className="text-sm text-muted-foreground">{user?.email}</p>
-                </div>
-              </div>
-              
-              <Button
-                variant="ghost"
-                size="icon"
-                asChild
-              >
-                <motion.div
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => router.push('/profile/edit')}
+          
+          <Button
+            variant="ghost"
+            size="icon"
+            asChild
+          >
+            <motion.div
+              whileTap={{ scale: 0.95 }}
+              onClick={() => router.push('/profile/edit')}
+            >
+              <Edit className="h-5 w-5" />
+            </motion.div>
+          </Button>
+        </div>
+        
+        <div className="grid grid-cols-3 gap-2 mb-6">
+          <div className="flex flex-col items-center justify-center p-3 bg-muted rounded-lg">
+            <p className="text-xl font-bold">{userPosts.length}</p>
+            <p className="text-xs text-muted-foreground">投稿</p>
+          </div>
+          <div className="flex flex-col items-center justify-center p-3 bg-muted rounded-lg">
+            <p className="text-xl font-bold">0</p>
+            <p className="text-xs text-muted-foreground">お気に入り店舗</p>
+          </div>
+          <div className="flex flex-col items-center justify-center p-3 bg-muted rounded-lg">
+            <p className="text-xl font-bold">0</p>
+            <p className="text-xs text-muted-foreground">貢献度</p>
+          </div>
+        </div>
+        
+        <Tabs defaultValue="posts">
+          <TabsList className="grid grid-cols-3 mb-4">
+            <TabsTrigger value="posts">投稿履歴</TabsTrigger>
+            <TabsTrigger value="favorites">お気に入り</TabsTrigger>
+            <TabsTrigger value="settings">設定</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="posts" className="space-y-4">
+            {loadingPosts ? (
+              <>
+                <Skeleton className="h-48 w-full rounded-lg" />
+                <Skeleton className="h-48 w-full rounded-lg" />
+              </>
+            ) : userPosts.length > 0 ? (
+              userPosts.map(post => (
+                <PostCard key={post.id} post={post} />
+              ))
+            ) : (
+              <div className="p-8 text-center">
+                <p className="text-muted-foreground">まだ投稿がありません</p>
+                <Button 
+                  variant="link" 
+                  onClick={() => router.push('/post/new')}
+                  className="mt-2"
                 >
-                  <Edit className="h-5 w-5" />
-                </motion.div>
-              </Button>
+                  最初の投稿を作成する
+                </Button>
+              </div>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="favorites">
+            <div className="p-8 text-center">
+              <p className="text-muted-foreground">お気に入り機能は準備中です。</p>
             </div>
-            
-            <div className="grid grid-cols-3 gap-2 mb-6">
-              <div className="flex flex-col items-center justify-center p-3 bg-muted rounded-lg">
-                <p className="text-xl font-bold">{userPosts.length}</p>
-                <p className="text-xs text-muted-foreground">投稿</p>
-              </div>
-              <div className="flex flex-col items-center justify-center p-3 bg-muted rounded-lg">
-                <p className="text-xl font-bold">5</p>
-                <p className="text-xs text-muted-foreground">お気に入り店舗</p>
-              </div>
-              <div className="flex flex-col items-center justify-center p-3 bg-muted rounded-lg">
-                <p className="text-xl font-bold">12</p>
-                <p className="text-xs text-muted-foreground">貢献度</p>
-              </div>
-            </div>
-            
-            <Tabs defaultValue="posts">
-              <TabsList className="grid grid-cols-3 mb-4">
-                <TabsTrigger value="posts">投稿履歴</TabsTrigger>
-                <TabsTrigger value="favorites">お気に入り</TabsTrigger>
-                <TabsTrigger value="settings">設定</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="posts" className="space-y-4">
-                {userPosts.length > 0 ? (
-                  userPosts.map(post => (
-                    <PostCard key={post.id} post={post} />
-                  ))
-                ) : (
-                  <div className="p-8 text-center">
-                    <p className="text-muted-foreground">まだ投稿がありません</p>
-                    <Button 
-                      variant="link" 
-                      onClick={() => router.push('/post')}
-                      className="mt-2"
-                    >
-                      最初の投稿を作成する
-                    </Button>
-                  </div>
-                )}
-              </TabsContent>
-              
-              <TabsContent value="favorites">
-                <div className="space-y-4">
-                  {mockPosts.slice(0, 2).map(post => (
-                    <PostCard key={post.id} post={post} />
-                  ))}
-                  
-                  <div className="p-4 border rounded-lg">
-                    <div className="flex items-start space-x-3">
-                      <MapPin className="text-primary h-5 w-5" />
-                      <div>
-                        <h3 className="font-medium">お気に入り店舗</h3>
-                        <p className="text-sm text-muted-foreground">5件のスーパーをお気に入りに登録しています</p>
-                        <Button 
-                          variant="link" 
-                          size="sm" 
-                          className="p-0 h-auto mt-1"
-                          onClick={() => router.push('/map')}
-                        >
-                          <Heart className="h-4 w-4 mr-1" />
-                          お気に入り店舗を管理
-                        </Button>
-                      </div>
+          </TabsContent>
+          
+          <TabsContent value="settings">
+            <div className="space-y-6">
+              <div>
+                <h3 className="font-medium mb-2">通知設定</h3>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="push-notifications">プッシュ通知</Label>
+                      <p className="text-xs text-muted-foreground">お気に入り店舗の値引き情報をお知らせします</p>
                     </div>
+                    <Switch id="push-notifications" defaultChecked />
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="email-notifications">メール通知</Label>
+                      <p className="text-xs text-muted-foreground">メールでお得情報をお知らせします</p>
+                    </div>
+                    <Switch id="email-notifications" />
                   </div>
                 </div>
-              </TabsContent>
+              </div>
               
-              <TabsContent value="settings">
-                <div className="space-y-6">
-                  <div>
-                    <h3 className="font-medium mb-2">通知設定</h3>
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <div className="space-y-0.5">
-                          <Label htmlFor="push-notifications">プッシュ通知</Label>
-                          <p className="text-xs text-muted-foreground">お気に入り店舗の値引き情報をお知らせします</p>
-                        </div>
-                        <Switch id="push-notifications" defaultChecked />
-                      </div>
-                      
-                      <div className="flex items-center justify-between">
-                        <div className="space-y-0.5">
-                          <Label htmlFor="email-notifications">メール通知</Label>
-                          <p className="text-xs text-muted-foreground">メールでお得情報をお知らせします</p>
-                        </div>
-                        <Switch id="email-notifications" />
-                      </div>
-                    </div>
-                  </div>
+              <Separator />
+              
+              <div>
+                <h3 className="font-medium mb-2">アカウント</h3>
+                <div className="space-y-2">
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start" 
+                    onClick={() => router.push('/profile/edit')}
+                  >
+                    <Settings className="mr-2 h-4 w-4" />
+                    アカウント設定
+                  </Button>
                   
-                  <Separator />
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start" 
+                    onClick={() => { /* TODO: 通知設定ページへ */ }}
+                  >
+                    <Bell className="mr-2 h-4 w-4" />
+                    通知設定
+                  </Button>
                   
-                  <div>
-                    <h3 className="font-medium mb-2">アカウント</h3>
-                    <div className="space-y-2">
-                      <Button 
-                        variant="outline" 
-                        className="w-full justify-start" 
-                        onClick={() => {}}
-                      >
-                        <Settings className="mr-2 h-4 w-4" />
-                        アカウント設定
-                      </Button>
-                      
-                      <Button 
-                        variant="outline" 
-                        className="w-full justify-start" 
-                        onClick={() => {}}
-                      >
-                        <Bell className="mr-2 h-4 w-4" />
-                        通知設定
-                      </Button>
-                      
-                      <Button 
-                        variant="outline" 
-                        className="w-full justify-start text-destructive" 
-                        onClick={handleLogout}
-                      >
-                        <LogOut className="mr-2 h-4 w-4" />
-                        ログアウト
-                      </Button>
-                    </div>
-                  </div>
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start text-destructive" 
+                    onClick={handleLogout}
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    ログアウト
+                  </Button>
                 </div>
-              </TabsContent>
-            </Tabs>
-          </>
-        )}
+              </div>
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </AppLayout>
   );
