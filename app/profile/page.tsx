@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Bell, LogOut, Settings, Edit, MapPin, Heart } from 'lucide-react';
+import { Bell, LogOut, Settings, Edit, MapPin, Heart, Store as StoreIcon } from 'lucide-react';
 import AppLayout from '@/components/layout/app-layout';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -24,6 +24,12 @@ interface AppProfile {
   bio?: string | null;
   avatar_url?: string | null;
   updated_at?: string;
+  favorite_store_1_id?: string | null;
+  favorite_store_1_name?: string | null;
+  favorite_store_2_id?: string | null;
+  favorite_store_2_name?: string | null;
+  favorite_store_3_id?: string | null;
+  favorite_store_3_name?: string | null;
 }
 
 export default function ProfilePage() {
@@ -34,6 +40,9 @@ export default function ProfilePage() {
   const [loadingPosts, setLoadingPosts] = useState(true);
   const router = useRouter();
   
+  // ポイント表示用の仮のstate (将来的にはprofileオブジェクトから取得)
+  const [userPoints, setUserPoints] = useState(0); // 仮に0ポイントで初期化
+
   useEffect(() => {
     if (status === 'loading') {
       return;
@@ -50,7 +59,9 @@ export default function ProfilePage() {
       try {
         const { data: appProfileData, error: profileError } = await supabase
           .from('app_profiles')
-          .select('*')
+          .select(
+            '*, favorite_store_1_id, favorite_store_1_name, favorite_store_2_id, favorite_store_2_name, favorite_store_3_id, favorite_store_3_name'
+          )
           .eq('user_id', session.user!.id!)
           .single();
 
@@ -63,6 +74,8 @@ export default function ProfilePage() {
 
         if (appProfileData) {
           setProfile(appProfileData);
+          // TODO: 将来的には appProfileData からポイントを取得する
+          // setUserPoints(appProfileData.points || 0); 
 
           const { data: postsData, error: postsError } = await supabase
             .from('posts')
@@ -205,26 +218,31 @@ export default function ProfilePage() {
           </Button>
         </div>
         
-        <div className="grid grid-cols-3 gap-2 mb-6">
-          <div className="flex flex-col items-center justify-center p-3 bg-muted rounded-lg">
-            <p className="text-xl font-bold">{userPosts.length}</p>
-            <p className="text-xs text-muted-foreground">投稿</p>
-          </div>
-          <div className="flex flex-col items-center justify-center p-3 bg-muted rounded-lg">
-            <p className="text-xl font-bold">0</p>
-            <p className="text-xs text-muted-foreground">お気に入り店舗</p>
-          </div>
-          <div className="flex flex-col items-center justify-center p-3 bg-muted rounded-lg">
-            <p className="text-xl font-bold">0</p>
-            <p className="text-xs text-muted-foreground">貢献度</p>
-          </div>
+        {/* 投稿数とポイント表示 */}
+        <div className="grid grid-cols-2 gap-4 mb-6 text-center">
+          <motion.div 
+            className="p-4 bg-card rounded-lg shadow-sm"
+            whileHover={{ scale: 1.05 }}
+            transition={{ type: "spring", stiffness: 300 }}
+          >
+            <p className="text-2xl font-bold">{userPosts.length}</p>
+            <p className="text-sm text-muted-foreground">投稿数</p>
+          </motion.div>
+          <motion.div 
+            className="p-4 bg-card rounded-lg shadow-sm"
+            whileHover={{ scale: 1.05 }}
+            transition={{ type: "spring", stiffness: 300 }}
+          >
+            <p className="text-2xl font-bold">{userPoints}</p> 
+            <p className="text-sm text-muted-foreground">ポイント</p>
+          </motion.div>
         </div>
         
-        <Tabs defaultValue="posts">
-          <TabsList className="grid grid-cols-3 mb-4">
+        <Tabs defaultValue="posts" className="w-full">
+          <TabsList className="grid w-full grid-cols-3 bg-muted/50 mb-4">
             <TabsTrigger value="posts">投稿履歴</TabsTrigger>
-            <TabsTrigger value="favorites">お気に入り</TabsTrigger>
-            <TabsTrigger value="settings">設定</TabsTrigger>
+            <TabsTrigger value="favorites" className="text-base">お気に入り</TabsTrigger>
+            <TabsTrigger value="settings" className="text-base">設定</TabsTrigger>
           </TabsList>
           
           <TabsContent value="posts" className="space-y-4">
@@ -252,8 +270,42 @@ export default function ProfilePage() {
           </TabsContent>
           
           <TabsContent value="favorites">
-            <div className="p-8 text-center">
-              <p className="text-muted-foreground">お気に入り機能は準備中です。</p>
+            <div className="space-y-4 mt-4">
+              <h2 className="text-xl font-semibold">お気に入り店舗</h2>
+              {profile && (profile.favorite_store_1_id || profile.favorite_store_2_id || profile.favorite_store_3_id) ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {[
+                    { id: profile.favorite_store_1_id, name: profile.favorite_store_1_name },
+                    { id: profile.favorite_store_2_id, name: profile.favorite_store_2_name },
+                    { id: profile.favorite_store_3_id, name: profile.favorite_store_3_name },
+                  ]
+                    .filter(store => store.id && store.name)
+                    .map((store, index) => (
+                      <motion.div
+                        key={store.id || index}
+                        className="p-4 border rounded-lg shadow-sm bg-card"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3, delay: index * 0.1 }}
+                      >
+                        <div className="flex items-center space-x-3">
+                          <StoreIcon className="h-8 w-8 text-primary" />
+                          <div>
+                            <p className="font-semibold text-lg">{store.name}</p>
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
+                </div>
+              ) : (
+                <div className="text-center text-muted-foreground py-8">
+                  <Heart className="mx-auto h-12 w-12 mb-2" />
+                  <p>お気に入り店舗はまだ登録されていません。</p>
+                  <Button variant="link" onClick={() => router.push('/profile/edit')} className="mt-2">
+                    プロフィール編集画面から追加する
+                  </Button>
+                </div>
+              )}
             </div>
           </TabsContent>
           

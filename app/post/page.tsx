@@ -24,6 +24,7 @@ import { Loader2 } from "lucide-react";
 import { supabase } from '@/lib/supabaseClient';
 import { calculateExpiresAt } from '@/lib/expires-at-date';
 import { v4 as uuidv4 } from 'uuid';
+import FavoriteStoreInput from '@/components/profile/FavoriteStoreInput';
 
 declare global {
   interface Window {
@@ -85,13 +86,6 @@ export default function PostPage() {
     requestLocation
   } = useGeolocation();
 
-  const [availableStores, setAvailableStores] = useState<DisplayStore[]>([]);
-  const [storeSearchLoading, setStoreSearchLoading] = useState(false);
-  const [storeSearchError, setStoreSearchError] = useState<string | null>(null);
-  const [googleMapsApiLoaded, setGoogleMapsApiLoaded] = useState(false);
-  const placesServiceRef = useRef<google.maps.places.PlacesService | null>(null);
-  const hasLoggedApiCheckInitiationRef = useRef(false);
-  
   const form = useForm<PostFormValues>({
     resolver: zodResolver(postSchema),
     defaultValues: {
@@ -214,98 +208,6 @@ export default function PostPage() {
   };
 
   useEffect(() => {
-    const checkGoogleApi = () => {
-      if (
-        typeof window.google !== 'undefined' &&
-        typeof window.google.maps !== 'undefined' &&
-        typeof window.google.maps.places !== 'undefined' &&
-        typeof window.google.maps.places.PlacesService === 'function'
-      ) {
-        console.log("PostPage: Google Maps API with PlacesService loaded successfully.");
-        setGoogleMapsApiLoaded(true);
-        if (!placesServiceRef.current) {
-          const mapDivForService = document.createElement('div');
-          placesServiceRef.current = new window.google.maps.places.PlacesService(mapDivForService);
-          console.log("PostPage: PlacesService initialized.");
-        }
-      } else {
-        if (!hasLoggedApiCheckInitiationRef.current) {
-            console.log("PostPage: Google Maps API with PlacesService not yet loaded, starting to poll...");
-            hasLoggedApiCheckInitiationRef.current = true;
-        }
-        setTimeout(checkGoogleApi, 500);
-      }
-    };
-
-    if (!googleMapsApiLoaded && !hasLoggedApiCheckInitiationRef.current) {
-        checkGoogleApi();
-    }
-  }, [googleMapsApiLoaded]);
-
-  useEffect(() => {
-    if (permissionState === 'granted' && !latitude && !longitude && !locationLoading) {
-      console.log("PostPage: Permission is granted, and location not yet available. Requesting location...");
-      requestLocation();
-    }
-  }, [permissionState, latitude, longitude, locationLoading, requestLocation]);
-
-  useEffect(() => {
-    console.log("PostPage: Store search useEffect triggered. Deps:", {
-      permissionState,
-      latitude,
-      longitude,
-      googleMapsApiLoaded,
-      locationLoading,
-      placesServiceExists: !!placesServiceRef.current
-    });
-
-    if (permissionState === 'granted' && latitude && longitude && googleMapsApiLoaded && placesServiceRef.current && !locationLoading) {
-      console.log("PostPage: Conditions met for nearbySearch. Initializing search...");
-      setStoreSearchLoading(true);
-      setStoreSearchError(null);
-      setAvailableStores([]);
-
-      const request: google.maps.places.PlaceSearchRequest = {
-        location: new window.google.maps.LatLng(latitude, longitude),
-        radius: 100,
-        keyword: 'スーパーマーケット OR コンビニエンスストア OR デパート OR ショッピングモール OR 小売店',
-      };
-
-      console.log("PostPage: Calling nearbySearch with request:", request);
-      placesServiceRef.current.nearbySearch(request, (results, status, pagination) => {
-        console.log("PostPage: nearbySearch callback. Status:", status, "Results:", results);
-        setStoreSearchLoading(false);
-        if (status === window.google.maps.places.PlacesServiceStatus.OK && results) {
-          const fetchedStores: DisplayStore[] = results
-            .filter(place => place.place_id && place.name)
-            .map(place => ({
-              id: place.place_id!,
-              name: place.name!,
-            }));
-          console.log("PostPage: Fetched stores:", fetchedStores);
-          setAvailableStores(fetchedStores);
-          if (fetchedStores.length === 0) {
-            setStoreSearchError("周辺100m以内に店舗が見つかりませんでした。");
-          }
-        } else if (status === window.google.maps.places.PlacesServiceStatus.ZERO_RESULTS) {
-          console.log("PostPage: No stores found (ZERO_RESULTS).");
-          setStoreSearchError("周辺100m以内に店舗が見つかりませんでした。");
-        } else {
-          console.error("PostPage: Error fetching stores. Status:", status, "Pagination:", pagination);
-          setStoreSearchError(`店舗の検索に失敗しました。(${status})`);
-        }
-      });
-    } else {
-      console.log("PostPage: Conditions NOT met for nearbySearch or already loading/error.");
-      if (permissionState !== 'granted') console.log("PostPage: Reason: permissionState is not 'granted'");
-      if (!latitude || !longitude) console.log("PostPage: Reason: latitude or longitude is missing");
-      if (!googleMapsApiLoaded) console.log("PostPage: Reason: googleMapsApiLoaded is false");
-      if (!placesServiceRef.current) console.log("PostPage: Reason: placesServiceRef.current is null");
-      if (locationLoading) console.log("PostPage: Reason: locationLoading is true");
-    }
-  }, [latitude, longitude, permissionState, googleMapsApiLoaded, locationLoading]);
-
-  useEffect(() => {
     if (status !== "loading" && !session) {
       router.replace(`/login?callbackUrl=${encodeURIComponent(window.location.pathname)}`);
     }
@@ -316,10 +218,8 @@ export default function PostPage() {
     if (permissionState === 'prompt') return "お店を検索するには位置情報の許可が必要です";
     if (permissionState === 'denied') return "位置情報がブロックされています";
     if (locationError) return `位置情報エラー: ${locationError}`;
-    if (storeSearchLoading) return "お店を検索中...";
-    if (storeSearchError) return storeSearchError;
-    if (!googleMapsApiLoaded) return "地図サービスの読み込み待ち...";
-    if (permissionState === 'granted' && availableStores.length === 0 && !storeSearchLoading && !storeSearchError) return "周辺500m以内に店舗が見つかりません";
+    if (locationLoading) return "お店を検索中...";
+    if (permissionState === 'granted' && latitude && longitude && !locationLoading) return "周辺500m以内に店舗が見つかりません";
     return "お店を選択してください";
   };
 
@@ -329,18 +229,11 @@ export default function PostPage() {
     longitude,
     locationLoading,
     locationError,
-    googleMapsApiLoaded,
-    storeSearchLoading,
-    storeSearchError,
-    availableStoresLength: availableStores.length,
+    availableStoresLength: 0,
     isSelectDisabled: (
       locationLoading ||
-      storeSearchLoading ||
-      (permissionState !== 'granted' && permissionState !== 'prompt') ||
       !!locationError ||
-      !!storeSearchError ||
-      !googleMapsApiLoaded ||
-      (availableStores.length === 0 && permissionState === 'granted' && !storeSearchError)
+      permissionState !== 'granted'
     ),
     currentPlaceholder: getSelectPlaceholder(),
   });
@@ -415,33 +308,21 @@ export default function PostPage() {
                     <FormLabel className="text-xl font-semibold flex items-center">
                       <StoreIcon className="mr-2 h-6 w-6" />お店
                     </FormLabel>
-                    {(availableStores.length === 0 && permissionState === 'granted' && !storeSearchLoading && !storeSearchError && !locationLoading) || permissionState === 'denied' || !!locationError ? (
-                      <p className="text-sm text-muted-foreground mt-1">
-                        ※お店が選択できない場合は一度「お店を探す」画面を確認してください。
-                      </p>
-                    ) : null}
-                    <Select
-                      onValueChange={(value) => {
-                        field.onChange(value);
-                        const selectedStore = availableStores.find(s => s.id === value);
-                        form.setValue('storeName', selectedStore?.name || '');
-                      }}
-                      defaultValue={field.value}
-                      disabled={storeSearchLoading || availableStores.length === 0 || isUploading}
-                    >
-                      <FormControl>
-                        <SelectTrigger className="text-lg">
-                          <SelectValue placeholder={getSelectPlaceholder()} />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {availableStores.map((store) => (
-                          <SelectItem key={store.id} value={store.id} className="text-lg">
-                            {store.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <FormControl>
+                      <FavoriteStoreInput
+                        value={{ id: field.value, name: form.getValues("storeName") }}
+                        onChange={(store) => {
+                          if (store) {
+                            form.setValue("storeId", store.id, { shouldValidate: true });
+                            form.setValue("storeName", store.name, { shouldValidate: true });
+                          } else {
+                            form.setValue("storeId", "", { shouldValidate: true });
+                            form.setValue("storeName", "", { shouldValidate: true });
+                          }
+                        }}
+                        placeholder="お店を検索または選択してください"
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}

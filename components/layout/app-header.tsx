@@ -52,11 +52,11 @@ export function AppHeader() {
         )}
         
         <div className="absolute right-4 flex items-center space-x-2">
-          <Button variant="ghost" size="icon" asChild>
+          {/* <Button variant="ghost" size="icon" asChild>
             <Link href="/search">
               <Search className="h-5 w-5" />
             </Link>
-          </Button>
+          </Button> */}
           
           <Button variant="ghost" size="icon" className="relative" asChild>
             <Link href="/notifications">

@@ -38,7 +38,7 @@ export default function AppLayout({
           exit="exit"
           variants={variants}
           transition={{ duration: 0.3, type: 'tween' }}
-          className={`absolute inset-0 overflow-y-auto pb-safe ${showNav ? 'pb-16 md:pb-0' : 'pb-0'}`}
+          className={`absolute inset-0 overflow-y-auto pb-safe ${showNav ? 'pb-16 md:pb-0' : 'pb-0'} flex flex-col`}
         >
           {children}
         </motion.div>
