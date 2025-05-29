@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { motion } from 'framer-motion';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import AppLayout from '@/components/layout/app-layout';
@@ -12,9 +12,10 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Loader2, User as UserIcon, Info, Image as ImageIcon, X, Upload } from 'lucide-react';
+import { Loader2, User as UserIcon, Info, Image as ImageIcon, X, Upload, Store } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { v4 as uuidv4 } from 'uuid';
+import FavoriteStoreInput from '@/components/profile/FavoriteStoreInput';
 
 // app_profiles テーブルの型定義 (仮。必要に応じて調整)
 interface AppProfile {
@@ -25,11 +26,20 @@ interface AppProfile {
   avatar_url?: string | null;
   updated_at?: string; // Supabaseが自動更新するなら不要な場合も
   // created_at?: string;
+  favorite_store_1_id?: string | null;
+  favorite_store_1_name?: string | null;
+  favorite_store_2_id?: string | null;
+  favorite_store_2_name?: string | null;
+  favorite_store_3_id?: string | null;
+  favorite_store_3_name?: string | null;
 }
 
 const profileSchema = z.object({
   username: z.string().min(2, { message: 'ニックネームは2文字以上で入力してください。' }).max(30, { message: 'ニックネームは30文字以内で入力してください。' }),
   bio: z.string().max(160, { message: '自己紹介は160文字以内で入力してください。' }).optional(),
+  favoriteStore1: z.object({ id: z.string().optional(), name: z.string().optional() }).nullable().optional(),
+  favoriteStore2: z.object({ id: z.string().optional(), name: z.string().optional() }).nullable().optional(),
+  favoriteStore3: z.object({ id: z.string().optional(), name: z.string().optional() }).nullable().optional(),
 });
 
 type ProfileFormValues = z.infer<typeof profileSchema>;
@@ -48,6 +58,9 @@ export default function ProfileSetupPage() {
     defaultValues: {
       username: '',
       bio: '',
+      favoriteStore1: null,
+      favoriteStore2: null,
+      favoriteStore3: null,
     },
     mode: 'onChange',
   });
@@ -110,6 +123,8 @@ export default function ProfileSetupPage() {
   };
 
   const onSubmit = async (values: ProfileFormValues) => {
+    console.log("ProfileSetupPage onSubmit - Form values:", values);
+
     if (!session?.user?.id) {
       console.error("ProfileSetupPage: Save attempt without session user ID (app_users.id).");
       setSubmitError("ユーザー認証情報が見つかりません。再度ログインしてください。");
@@ -154,6 +169,12 @@ export default function ProfileSetupPage() {
         bio: values.bio || null,
         avatar_url: uploadedAvatarPath,
         updated_at: new Date().toISOString(),
+        favorite_store_1_id: values.favoriteStore1?.id || null,
+        favorite_store_1_name: values.favoriteStore1?.name || null,
+        favorite_store_2_id: values.favoriteStore2?.id || null,
+        favorite_store_2_name: values.favoriteStore2?.name || null,
+        favorite_store_3_id: values.favoriteStore3?.id || null,
+        favorite_store_3_name: values.favoriteStore3?.name || null,
       };
 
       const { error: saveError } = await supabase
@@ -195,7 +216,7 @@ export default function ProfileSetupPage() {
           transition={{ duration: 0.5 }}
           className="container mx-auto max-w-lg p-4 md:p-8"
         >
-           <h1 className="text-3xl font-bold text-center mb-6">プロフィール新規登録</h1>
+           <h1 className="text-3xl font-bold text-center mb-8 mt-4">プロフィール新規登録</h1>
            {!session.user.id && !loading && (
              <div className="text-center p-4 my-4 text-red-700 bg-red-100 rounded-md">
                <p>ユーザー情報の読み込みに問題が発生しました。お手数ですが、再度ログインし直してください。</p>
@@ -204,7 +225,7 @@ export default function ProfileSetupPage() {
            )}
 
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 pb-20">
               <FormItem>
                 <FormLabel className="text-xl flex items-center">
                   <ImageIcon className="mr-2 h-6 w-6" /> プロフィール画像 (任意)
@@ -250,14 +271,9 @@ export default function ProfileSetupPage() {
                 name="username"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-xl flex items-center"><UserIcon className="mr-2 h-6 w-6" /> ニックネーム</FormLabel>
+                    <FormLabel className="text-lg flex items-center"><UserIcon className="mr-2 h-5 w-5" />ニックネーム</FormLabel>
                     <FormControl>
-                      <Input
-                        placeholder="ニックネームを入力"
-                        className="text-lg"
-                        {...field}
-                        disabled={isSaving}
-                      />
+                      <Input placeholder="例: ショッピング好き" {...field} disabled={isSaving} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -269,33 +285,98 @@ export default function ProfileSetupPage() {
                 name="bio"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-xl flex items-center"><Info className="mr-2 h-6 w-6" /> 自己紹介 (任意)</FormLabel>
+                    <FormLabel className="text-lg flex items-center"><Info className="mr-2 h-5 w-5" />自己紹介 (任意)</FormLabel>
                     <FormControl>
-                      <Textarea
-                        placeholder="自己紹介を入力してください"
-                        className="resize-none text-lg"
-                        rows={4}
-                        {...field}
+                      <Textarea placeholder="例: 都内でお得な情報を見つけるのが好きです！よろしくお願いします。" {...field} disabled={isSaving} rows={4} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="favoriteStore1"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-lg flex items-center">
+                      <Store className="mr-2 h-5 w-5 text-primary" /> お気に入り店舗1 (任意)
+                    </FormLabel>
+                    <FormControl>
+                      <FavoriteStoreInput
+                        placeholder="店舗を検索して選択"
+                        value={field.value === null ? undefined : field.value}
+                        onChange={(value) => {
+                          console.log(`FavoriteStore1 changed in Controller:`, value);
+                          field.onChange(value);
+                        }}
                         disabled={isSaving}
+                        ref={field.ref}
                       />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              {submitError && !form.formState.errors.username && (
-                <p className="text-sm text-destructive text-center bg-destructive/10 p-3 rounded-md">{submitError}</p>
+
+              <FormField
+                control={form.control}
+                name="favoriteStore2"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-lg flex items-center">
+                      <Store className="mr-2 h-5 w-5 text-primary" /> お気に入り店舗2 (任意)
+                    </FormLabel>
+                    <FormControl>
+                      <FavoriteStoreInput
+                        placeholder="店舗を検索して選択"
+                        value={field.value === null ? undefined : field.value}
+                        onChange={(value) => {
+                          console.log(`FavoriteStore2 changed in Controller:`, value);
+                          field.onChange(value);
+                        }}
+                        disabled={isSaving}
+                        ref={field.ref}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="favoriteStore3"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-lg flex items-center">
+                      <Store className="mr-2 h-5 w-5 text-primary" /> お気に入り店舗3 (任意)
+                    </FormLabel>
+                    <FormControl>
+                      <FavoriteStoreInput
+                        placeholder="店舗を検索して選択"
+                        value={field.value === null ? undefined : field.value}
+                        onChange={(value) => {
+                          console.log(`FavoriteStore3 changed in Controller:`, value);
+                          field.onChange(value);
+                        }}
+                        disabled={isSaving}
+                        ref={field.ref}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              {submitError && (
+                <p className="text-sm font-medium text-destructive bg-destructive/10 p-3 rounded-md">{submitError}</p>
               )}
 
-              <motion.div whileTap={{ scale: 0.98 }}>
-                <Button
-                  type="submit"
-                  disabled={!isValid || isSaving || !session.user?.id}
-                  className="w-full text-xl py-3"
-                >
-                  {isSaving ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : "登録する"}
-                </Button>
-              </motion.div>
+              <Button type="submit" className="w-full" disabled={isSaving || !isValid}>
+                {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                プロフィールを保存する
+              </Button>
             </form>
           </Form>
         </motion.div>

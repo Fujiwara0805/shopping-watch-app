@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { motion } from 'framer-motion';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import AppLayout from '@/components/layout/app-layout';
@@ -12,9 +12,10 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Loader2, User as UserIcon, Info, Image as ImageIcon, X, Upload } from 'lucide-react';
+import { Loader2, User as UserIcon, Info, Image as ImageIcon, X, Upload, Store } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { v4 as uuidv4 } from 'uuid';
+import FavoriteStoreInput from '@/components/profile/FavoriteStoreInput';
 
 interface AppProfile {
   id: string;
@@ -23,11 +24,20 @@ interface AppProfile {
   bio?: string | null;
   avatar_url?: string | null;
   updated_at?: string;
+  favorite_store_1_id?: string | null;
+  favorite_store_1_name?: string | null;
+  favorite_store_2_id?: string | null;
+  favorite_store_2_name?: string | null;
+  favorite_store_3_id?: string | null;
+  favorite_store_3_name?: string | null;
 }
 
 const profileSchema = z.object({
   username: z.string().min(2, { message: 'ニックネームは2文字以上で入力してください。' }).max(30, { message: 'ニックネームは30文字以内で入力してください。' }),
   bio: z.string().max(160, { message: '自己紹介は160文字以内で入力してください。' }).optional(),
+  favoriteStore1: z.object({ id: z.string().optional(), name: z.string().optional() }).nullable().optional(),
+  favoriteStore2: z.object({ id: z.string().optional(), name: z.string().optional() }).nullable().optional(),
+  favoriteStore3: z.object({ id: z.string().optional(), name: z.string().optional() }).nullable().optional(),
 });
 
 type ProfileFormValues = z.infer<typeof profileSchema>;
@@ -48,6 +58,9 @@ export default function ProfileEditPage() {
     defaultValues: {
       username: '',
       bio: '',
+      favoriteStore1: null,
+      favoriteStore2: null,
+      favoriteStore3: null,
     },
     mode: 'onChange',
   });
@@ -63,6 +76,12 @@ export default function ProfileEditPage() {
     } else {
       fetchProfileByAppUserId(session.user.id);
       setLoading(false);
+      if (session?.supabaseAccessToken) {
+        supabase.auth.setSession({
+          access_token: session.supabaseAccessToken as string,
+          refresh_token: (session.supabaseRefreshToken as string) || '',
+        });
+      }
     }
   }, [session, status, router]);
 
@@ -84,6 +103,15 @@ export default function ProfileEditPage() {
         form.reset({
           username: data.display_name || '',
           bio: data.bio || '',
+          favoriteStore1: data.favorite_store_1_id && data.favorite_store_1_name
+            ? { id: data.favorite_store_1_id, name: data.favorite_store_1_name }
+            : null,
+          favoriteStore2: data.favorite_store_2_id && data.favorite_store_2_name
+            ? { id: data.favorite_store_2_id, name: data.favorite_store_2_name }
+            : null,
+          favoriteStore3: data.favorite_store_3_id && data.favorite_store_3_name
+            ? { id: data.favorite_store_3_id, name: data.favorite_store_3_name }
+            : null,
         });
         setCurrentProfileId(data.id);
         if (data.avatar_url) {
@@ -136,12 +164,13 @@ export default function ProfileEditPage() {
   };
 
   const onSubmit = async (values: ProfileFormValues) => {
+    console.log("ProfileEditPage onSubmit - Form values:", values);
     if (!session?.user?.id) {
       console.error("ProfileEditPage: Save attempt without session user ID.");
       setSubmitError("ユーザーIDが見つかりません。再度ログインしてください。");
       return;
     }
-    if (!currentProfileId && !avatarFile && !values.username) {
+    if (!currentProfileId) {
         setSubmitError("更新対象のプロフィール情報が読み込めていません。");
         return;
     }
@@ -151,60 +180,60 @@ export default function ProfileEditPage() {
 
     let objectPathToSave: string | null = null;
 
-    if (avatarPreviewUrl && !avatarFile) {
+    if (avatarFile) {
+      const fileExt = avatarFile.name.split('.').pop();
+      const userFolder = session.user.id;
+      const uniqueFileName = `${uuidv4()}.${fileExt}`;
+      objectPathToSave = `${userFolder}/${uniqueFileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(objectPathToSave, avatarFile, {
+          cacheControl: '3600',
+          upsert: true,
+        });
+
+      if (uploadError) {
+        console.error("ProfileEditPage: Error uploading new avatar:", uploadError);
+        throw new Error(`アバター画像のアップロードに失敗しました: ${uploadError.message}`);
+      }
+    } else if (avatarPreviewUrl) {
         const { data: fetchedProfile } = await supabase.from('app_profiles').select('avatar_url').eq('user_id', session.user.id).single();
         objectPathToSave = fetchedProfile?.avatar_url || null;
+    } else {
+      objectPathToSave = null;
     }
 
     try {
-      if (avatarFile) {
-        const fileExt = avatarFile.name.split('.').pop();
-        const userFolder = session.user.id;
-        const uniqueFileName = `${uuidv4()}.${fileExt}`;
-        objectPathToSave = `${userFolder}/${uniqueFileName}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from('avatars')
-          .upload(objectPathToSave, avatarFile, {
-            cacheControl: '3600',
-            upsert: true,
-          });
-
-        if (uploadError) {
-          console.error("ProfileEditPage: Error uploading avatar:", uploadError);
-          throw new Error(`アバター画像のアップロードに失敗しました: ${uploadError.message}`);
-        }
-      } else if (avatarPreviewUrl === null && avatarFile === null) {
-         objectPathToSave = null;
-      }
-
-      const profileUpdateData: Omit<AppProfile, 'id' | 'user_id' | 'updated_at'> & { updated_at: string } = {
+      const profileUpdateData = {
         display_name: values.username,
         bio: values.bio || null,
         avatar_url: objectPathToSave,
         updated_at: new Date().toISOString(),
+        favorite_store_1_id: values.favoriteStore1?.id || null,
+        favorite_store_1_name: values.favoriteStore1?.name || null,
+        favorite_store_2_id: values.favoriteStore2?.id || null,
+        favorite_store_2_name: values.favoriteStore2?.name || null,
+        favorite_store_3_id: values.favoriteStore3?.id || null,
+        favorite_store_3_name: values.favoriteStore3?.name || null,
       };
 
-      if (currentProfileId) {
-        const { error: updateError } = await supabase
-          .from('app_profiles')
-          .update(profileUpdateData)
-          .eq('id', currentProfileId);
+      const { error: updateError } = await supabase
+        .from('app_profiles')
+        .update(profileUpdateData)
+        .eq('id', currentProfileId);
 
-        if (updateError) {
-          console.error("ProfileEditPage: Error updating profile:", updateError);
-          throw new Error(`プロフィールの更新に失敗しました: ${updateError.message}`);
-        }
-      } else {
-         throw new Error("更新対象のプロフィールIDが見つかりません。");
+      if (updateError) {
+        console.error("ProfileEditPage: Error updating profile:", updateError);
+        throw new Error(`プロフィールの更新に失敗しました: ${updateError.message}`);
       }
 
-      console.log("ProfileEditPage: Profile saved successfully.");
-      router.push('/profile/setup/complete');
+      console.log("ProfileEditPage: Profile updated successfully.");
+      router.push('/profile/setup/complete?edited=true');
 
     } catch (error: any) {
       console.error("ProfileEditPage: onSubmit error:", error);
-      setSubmitError(error.message || "プロフィールの保存処理中にエラーが発生しました。");
+      setSubmitError(error.message || "プロフィールの更新処理中にエラーが発生しました。");
     } finally {
       setIsSaving(false);
     }
@@ -242,7 +271,7 @@ export default function ProfileEditPage() {
 
         {currentProfileId && (
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pb-20">
             <FormItem>
               <FormLabel className="text-xl flex items-center">
                 <ImageIcon className="mr-2 h-6 w-6" /> プロフィール画像 (任意)
@@ -309,15 +338,90 @@ export default function ProfileEditPage() {
                 </FormItem>
               )}
             />
-            <motion.div whileTap={{ scale: 0.98 }}>
-              <Button
-                type="submit"
-                disabled={!isValid || isSaving || profileLoading }
-                className="w-full text-xl py-3"
-              >
-                {isSaving ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : "保存する"}
-              </Button>
-            </motion.div>
+
+            <FormField
+              control={form.control}
+              name="favoriteStore1"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-lg flex items-center">
+                    <Store className="mr-2 h-5 w-5 text-primary" /> お気に入り店舗1 (任意)
+                  </FormLabel>
+                  <FormControl>
+                    <FavoriteStoreInput
+                      placeholder="店舗を検索して選択"
+                      value={field.value === null ? undefined : field.value}
+                      onChange={(value) => {
+                        console.log(`EditPage FavoriteStore1 changed:`, value);
+                        field.onChange(value);
+                      }}
+                      disabled={isSaving}
+                      ref={field.ref}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="favoriteStore2"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-lg flex items-center">
+                    <Store className="mr-2 h-5 w-5 text-primary" /> お気に入り店舗2 (任意)
+                  </FormLabel>
+                  <FormControl>
+                    <FavoriteStoreInput
+                      placeholder="店舗を検索して選択"
+                      value={field.value === null ? undefined : field.value}
+                      onChange={(value) => {
+                        console.log(`EditPage FavoriteStore2 changed:`, value);
+                        field.onChange(value);
+                      }}
+                      disabled={isSaving}
+                      ref={field.ref}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="favoriteStore3"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-lg flex items-center">
+                    <Store className="mr-2 h-5 w-5 text-primary" /> お気に入り店舗3 (任意)
+                  </FormLabel>
+                  <FormControl>
+                    <FavoriteStoreInput
+                      placeholder="店舗を検索して選択"
+                      value={field.value === null ? undefined : field.value}
+                      onChange={(value) => {
+                        console.log(`EditPage FavoriteStore3 changed:`, value);
+                        field.onChange(value);
+                      }}
+                      disabled={isSaving}
+                      ref={field.ref}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            {submitError && (
+                <p className="text-sm font-medium text-destructive bg-destructive/10 p-3 rounded-md">{submitError}</p>
+              )}
+
+            <Button type="submit" className="w-full" disabled={isSaving || !isValid}>
+              {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              プロフィールを更新する
+            </Button>
           </form>
         </Form>
         )}

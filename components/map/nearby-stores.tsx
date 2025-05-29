@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { StoreCard } from '@/components/map/store-card';
 import { Store } from '@/types/store';
 import { useGeolocation } from '@/lib/hooks/use-geolocation';
+import { useGoogleMapsApi } from '@/components/providers/GoogleMapsApiProvider';
 
 declare global {
   interface Window {
@@ -26,11 +27,11 @@ const ITEMS_PER_PAGE = 5;
 const MAX_PAGE_FETCHES = 3;
 
 export function NearbyStores() {
+  const { isLoaded: googleMapsApiLoaded, loadError: googleMapsApiLoadError } = useGoogleMapsApi();
   const [searchTerm, setSearchTerm] = useState('');
   const [fetchedStores, setFetchedStores] = useState<Store[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [googleMapsApiLoaded, setGoogleMapsApiLoaded] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -65,19 +66,6 @@ export function NearbyStores() {
     );
   };
 
-  useEffect(() => {
-    const checkGoogleApi = () => {
-      if (typeof window.google !== 'undefined' && window.google.maps && window.google.maps.places) {
-        setGoogleMapsApiLoaded(true);
-      } else {
-        setTimeout(checkGoogleApi, 200);
-      }
-    };
-    if (typeof window !== 'undefined') {
-      checkGoogleApi();
-    }
-  }, []);
-
   const placesServiceRef = useRef<google.maps.places.PlacesService | null>(null);
   const allFetchedStoresRef = useRef<Store[]>([]);
   const fetchAttemptCountRef = useRef<number>(0);
@@ -87,6 +75,13 @@ export function NearbyStores() {
     status: google.maps.places.PlacesServiceStatus,
     pagination: google.maps.places.PlaceSearchPagination | null
   ) => {
+    if (!googleMapsApiLoaded) {
+        console.warn("NearbyStores: handleSearchResponse called but API not loaded.");
+        setIsLoading(false);
+        setError("店舗検索サービスが利用できません。");
+        return;
+    }
+
     if (status === window.google.maps.places.PlacesServiceStatus.OK && results) {
       console.log(`NearbyStores: Page ${fetchAttemptCountRef.current} successful. API returned results count: ${results.length}`);
       results.forEach((place, index) => {
@@ -149,13 +144,20 @@ export function NearbyStores() {
            setIsLoading(false);
        }
     }
-  }, [setFetchedStores, setIsLoading, setError]);
+  }, [googleMapsApiLoaded]);
 
   const performNearbySearch = useCallback(async () => {
+    if (googleMapsApiLoadError) {
+        setError(`店舗検索サービスエラー: ${googleMapsApiLoadError.message}`);
+        setIsLoading(false);
+        return;
+    }
     if (!googleMapsApiLoaded || !latitude || !longitude || permissionState !== 'granted') {
-      if (permissionState !== 'granted' && permissionState !== 'prompt' && permissionState !== 'pending') {
+      if (!googleMapsApiLoaded && !googleMapsApiLoadError) setError("店舗検索サービスを読み込み中です...");
+      else if (permissionState !== 'granted' && permissionState !== 'prompt' && permissionState !== 'pending') {
          setError("位置情報の利用が許可されていません。");
       }
+      setIsLoading(false);
       return;
     }
 
@@ -168,32 +170,53 @@ export function NearbyStores() {
     fetchAttemptCountRef.current = 1;
     console.log("NearbyStores: Performing initial nearby search (Page 1) with lat:", latitude, "lng:", longitude);
 
-    if (!placesServiceRef.current && typeof window.google !== 'undefined' && window.google.maps && window.google.maps.places) {
+    if (!placesServiceRef.current) {
       const mapDivForService = document.createElement('div');
       placesServiceRef.current = new window.google.maps.places.PlacesService(mapDivForService);
     }
     
     const request: google.maps.places.PlaceSearchRequest = {
       location: new window.google.maps.LatLng(latitude, longitude),
-      radius: 100,
-      keyword: 'スーパーマーケット OR コンビニエンスストア OR デパート OR ショッピングモール OR 小売店',
+      rankBy: window.google.maps.places.RankBy.DISTANCE,
+      keyword: 'スーパー OR コンビニ OR デパート OR ショッピングモール OR 食品',
     };
+    
+    let searchKeywords = ['store', 'shop', 'スーパー', 'コンビニ', 'デパート', 'ショッピングモール', '食品'];
+    if (searchTerm) {
+        searchKeywords = [searchTerm, ...searchKeywords];
+    }
+    if (selectedCategory) {
+        request.type = selectedCategory;
+    } else {
+        request.keyword = searchKeywords.join(' OR ');
+    }
 
     if (placesServiceRef.current) {
       placesServiceRef.current.nearbySearch(request, handleSearchResponse);
     } else {
-      console.error("NearbyStores: PlacesService is not initialized.");
+      console.error("NearbyStores: PlacesService is not initialized (should not happen if API is loaded).");
       setIsLoading(false);
       setError("店舗検索サービスの初期化に失敗しました。");
     }
-  }, [googleMapsApiLoaded, latitude, longitude, permissionState, handleSearchResponse]);
+  }, [
+    googleMapsApiLoaded, 
+    googleMapsApiLoadError,
+    latitude, 
+    longitude, 
+    permissionState, 
+    handleSearchResponse,
+    searchTerm,
+    selectedCategory
+  ]);
 
   useEffect(() => {
-    console.log("NearbyStores: useEffect for performNearbySearch triggered. Deps met?", { latitude, longitude, permissionState, googleMapsApiLoaded, locationLoading });
-    if (latitude && longitude && permissionState === 'granted' && googleMapsApiLoaded && !locationLoading) {
+    console.log("NearbyStores: useEffect for performNearbySearch triggered. Deps met?", { latitude, longitude, permissionState, googleMapsApiLoaded, locationLoading, googleMapsApiLoadError });
+    if (latitude && longitude && permissionState === 'granted' && googleMapsApiLoaded && !googleMapsApiLoadError && !locationLoading) {
       performNearbySearch();
+    } else if (googleMapsApiLoadError) {
+        setError(`店舗検索サービスの読み込みに失敗: ${googleMapsApiLoadError.message}`);
     }
-  }, [latitude, longitude, permissionState, googleMapsApiLoaded, locationLoading, performNearbySearch]);
+  }, [latitude, longitude, permissionState, googleMapsApiLoaded, googleMapsApiLoadError, locationLoading, performNearbySearch]);
 
   useEffect(() => {
     if (permissionState === 'granted' && !latitude && !longitude && !locationLoading && !error) {
@@ -222,11 +245,26 @@ export function NearbyStores() {
     currentPage * ITEMS_PER_PAGE
   );
 
-  if (!googleMapsApiLoaded || locationLoading) {
+  if (googleMapsApiLoadError) {
     return (
-      <div className="flex items-center justify-center h-full">
+        <div className="flex flex-col items-center justify-center h-64 p-4 text-center">
+            <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
+            <h3 className="text-lg font-semibold mb-2">店舗検索エラー</h3>
+            <p className="text-muted-foreground">
+                店舗検索サービスの読み込みに失敗しました。
+                ({googleMapsApiLoadError.message})
+            </p>
+        </div>
+    );
+  }
+
+  if (!googleMapsApiLoaded || (permissionState === 'granted' && locationLoading && fetchedStores.length === 0) ) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <p className="ml-2">読み込み中...</p>
+        <p className="mt-2 text-muted-foreground">
+            { !googleMapsApiLoaded ? "店舗検索サービスを準備中..." : "現在地周辺の店舗を検索中..." }
+        </p>
       </div>
     );
   }
