@@ -70,7 +70,14 @@ const NewPostCard: React.FC<PostCardProps> = ({ post, onLike, onShare, currentUs
   const { data: session } = useSession();
 
   const authorName = post.author?.display_name || '匿名ユーザー';
-  const authorAvatar = post.author?.avatar_url || undefined;
+  
+  const authorAvatar = post.author?.avatar_url
+    ? supabase.storage.from('avatars').getPublicUrl(post.author.avatar_url).data.publicUrl
+    : undefined;
+
+  const postImageUrl = post.image_url
+    ? supabase.storage.from('images').getPublicUrl(post.image_url).data.publicUrl
+    : null;
 
   const handleLikeClick = async () => {
     if (!session?.user?.id) {
@@ -126,8 +133,8 @@ const NewPostCard: React.FC<PostCardProps> = ({ post, onLike, onShare, currentUs
           </div>
         </div>
         
-        {post.image_url && (
-          <img src={post.image_url} alt="投稿画像" className="w-full h-60 object-cover rounded-md mb-3" />
+        {postImageUrl && (
+          <img src={postImageUrl} alt="投稿画像" className="w-full h-60 object-cover rounded-md mb-3" />
         )}
         
         <h3 className="text-xl font-semibold mb-1 text-primary">{post.store_name} - {post.category}</h3>

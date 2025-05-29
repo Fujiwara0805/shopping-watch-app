@@ -108,7 +108,7 @@ export default function PostPage() {
     mode: 'onChange',
   });
   
-  const { isValid, isSubmitting } = form.formState;
+  const { formState: { isValid, isSubmitting } } = form;
   
   const onSubmit = async (values: PostFormValues) => {
     if (!session?.user?.id) {
@@ -121,40 +121,48 @@ export default function PostPage() {
     setIsUploading(true);
     setSubmitError(null);
 
-    let imageUrl = null;
+    let imageUrlToSave: string | null = null;
 
     try {
+      const { data: userProfile, error: profileError } = await supabase
+        .from('app_profiles')
+        .select('id')
+        .eq('user_id', session.user.id)
+        .single();
+
+      if (profileError || !userProfile) {
+        console.error("PostPage: Error fetching user profile or profile not found:", profileError);
+        throw new Error("投稿者のプロフィール情報が見つかりません。");
+      }
+      const appProfileId = userProfile.id;
+
       if (imageFile) {
         const fileExt = imageFile.name.split('.').pop();
-        const fileName = `${uuidv4()}.${fileExt}`;
-        const filePath = `public/${fileName}`;
+        const userFolder = session.user.id;
+        const uniqueFileName = `${uuidv4()}.${fileExt}`;
+        const objectPath = `${userFolder}/${uniqueFileName}`;
 
         const { error: uploadError } = await supabase.storage
-          .from('post_images')
-          .upload(filePath, imageFile, {
+          .from('images')
+          .upload(objectPath, imageFile, {
             cacheControl: '3600',
-            upsert: false,
+            upsert: true,
           });
 
         if (uploadError) {
           console.error("PostPage: Error uploading image:", uploadError);
           throw new Error(`画像のアップロードに失敗しました: ${uploadError.message}`);
         }
-
-        const { data: urlData } = supabase.storage.from('post_images').getPublicUrl(filePath);
-        if (!urlData?.publicUrl) {
-          throw new Error("画像のURL取得に失敗しました。");
-        }
-        imageUrl = urlData.publicUrl;
+        imageUrlToSave = objectPath;
       }
 
       const postData = {
-        author_id: session.user.id,
+        app_profile_id: appProfileId,
         store_id: values.storeId,
         store_name: values.storeName,
         category: values.category,
         content: values.content,
-        image_url: imageUrl,
+        image_url: imageUrlToSave,
         discount_rate: values.discountRate,
         price: values.price,
         expiry_option: values.expiryOption,
@@ -169,11 +177,11 @@ export default function PostPage() {
         throw new Error(`投稿の保存に失敗しました: ${insertError.message}`);
       }
 
-      console.log("PostPage: Post inserted successfully with image:", imageUrl);
+      console.log("PostPage: Post inserted successfully with image path:", imageUrlToSave);
       form.reset();
       setImageFile(null);
       setImagePreviewUrl(null);
-      router.push('/timeline');
+      router.push('/post/complete');
 
     } catch (error: any) {
       console.error("PostPage: onSubmit error:", error);
