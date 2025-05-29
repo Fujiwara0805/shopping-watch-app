@@ -130,8 +130,8 @@ export function MapSearchControl({
 
   return (
     <motion.div
-      className={`absolute top-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-md z-10 ${className}`}
-      initial={{ y: -20, opacity: 0 }}
+      className={`relative w-full ${className || ''}`}
+      initial={{ y: 0, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.3 }}
     >

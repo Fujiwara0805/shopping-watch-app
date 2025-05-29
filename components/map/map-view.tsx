@@ -162,33 +162,34 @@ export function MapView() {
 
   useEffect(() => {
     if (map && latitude && longitude) {
-      // console.log("MapView: Map, latitude, or longitude changed.");
-    }
-  }, [map, latitude, longitude]);
-
-  useEffect(() => {
-    if (map && latitude && longitude) {
+      const userPosition = new window.google.maps.LatLng(latitude, longitude);
       if (userLocationMarker) {
-        userLocationMarker.setPosition(new window.google.maps.LatLng(latitude, longitude));
+        userLocationMarker.setPosition(userPosition);
       } else {
+        // 星形のSVGパス (簡易的なもの)
+        // viewBox="0 0 24 24" を想定したパス
+        const starPath = "M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z";
+
         const newUserLocationMarker = new window.google.maps.Marker({
-          position: { lat: latitude, lng: longitude },
+          position: userPosition,
           map: map,
           title: "あなたの現在地",
           icon: {
-            path: window.google.maps.SymbolPath.CIRCLE,
-            scale: 8,
-            fillColor: "#4285F4",
+            path: starPath,
+            fillColor: '#FFD700', // 金色に近い黄色
             fillOpacity: 1,
-            strokeWeight: 2,
-            strokeColor: "white",
-          }
+            strokeColor: '#B8860B', // 暗めの金色 (枠線)
+            strokeWeight: 1,
+            scale: 1.5, // アイコンのサイズ調整
+            anchor: new window.google.maps.Point(12, 12), // SVGの中心点をアンカーに (viewBoxの中心)
+          },
+          // animation: window.google.maps.Animation.DROP, // 星アイコンの場合はDROPアニメーションは合わないかも
         });
         setUserLocationMarker(newUserLocationMarker);
       }
 
       console.log("MapView: User location updated, recentering map and setting/updating user marker.");
-      map.panTo(new window.google.maps.LatLng(latitude, longitude));
+      map.panTo(userPosition);
       const currentZoom = map.getZoom();
       if (currentZoom !== undefined && currentZoom < 15) {
         map.setZoom(15);
@@ -293,15 +294,18 @@ export function MapView() {
       <div ref={mapContainerRef} id="map-canvas" className="h-full w-full bg-muted" />
 
       {map && googleMapsLoaded && mapInitialized && (
-        <div className="absolute top-0 left-0 right-0 z-20 px-4 pt-[calc(56px_+_env(safe-area-inset-top)_+_1rem)] sm:px-6 md:px-8">
-          <div className="pt-14">
-            <MapSearchControl
-              map={map}
-              userLocation={latitude && longitude ? new google.maps.LatLng(latitude, longitude) : null}
-              onPlaceSelected={handlePlaceSelected}
-              onSearchError={handleSearchError}
-            />
-          </div>
+        <div 
+          className="absolute top-0 left-1/2 -translate-x-1/2 z-20 w-[calc(100%-2rem)] max-w-md sm:max-w-lg"
+          style={{ 
+            paddingTop: `calc(56px + env(safe-area-inset-top, 0px) + 0.5rem)`
+          }}
+        >
+          <MapSearchControl
+            map={map}
+            userLocation={latitude && longitude ? new google.maps.LatLng(latitude, longitude) : null}
+            onPlaceSelected={handlePlaceSelected}
+            onSearchError={handleSearchError}
+          />
         </div>
       )}
       
