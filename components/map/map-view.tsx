@@ -38,7 +38,7 @@ export function MapView() {
   console.log("MapView: Component rendering or re-rendering START");
   const { isLoaded: googleMapsLoaded, loadError: googleMapsLoadError } = useGoogleMapsApi();
 
-  const mapContainerRef = useRef<HTMLDivElement | null>(null); 
+  const mapContainerRef = useRef<HTMLDivElement | null>(null);
 
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const { 
@@ -60,7 +60,13 @@ export function MapView() {
   const [userLocationMarker, setUserLocationMarker] = useState<google.maps.Marker | null>(null);
 
   useEffect(() => {
-    if (permissionState === 'prompt' || (permissionState === 'denied' && !locationError?.includes("ブロックされて") && !locationError?.includes("利用できません"))) {
+    if (permissionState === 'prompt' || 
+        (permissionState === 'denied' && 
+         !locationError?.includes("ブロックされて") && 
+         !locationError?.includes("利用できません") &&
+         !locationError?.includes("User denied Geolocation")
+        )) {
+      console.log("MapView: setShowCustomPermissionDialog to true due to permissionState:", permissionState, "locationError:", locationError);
       setShowCustomPermissionDialog(true);
     } else {
       setShowCustomPermissionDialog(false);
@@ -70,12 +76,14 @@ export function MapView() {
   const handleAllowLocation = (option: 'once' | 'while-using') => {
     setShowCustomPermissionDialog(false);
     if (permissionState !== 'granted') {
+        console.log("MapView: requestLocation called from handleAllowLocation");
         requestLocation();
     }
   };
 
   const handleDenyLocation = () => {
     setShowCustomPermissionDialog(false);
+    console.log("MapView: Location denied via custom dialog.");
   };
 
   const MessageCard = ({ icon: Icon, title, message, children, variant = 'default' }: {
@@ -107,35 +115,28 @@ export function MapView() {
 
   useEffect(() => {
     if (permissionState === 'granted' && !latitude && !longitude && !locationLoading && !map && !initializationError) {
-      console.log("MapView: Requesting location as permission is granted but no coordinates yet.");
+      console.log("MapView: Requesting location as permission is granted but no coordinates yet (useEffect 1).");
       requestLocation();
     }
   }, [permissionState, latitude, longitude, locationLoading, map, initializationError, requestLocation]);
 
   useEffect(() => {
-    if (googleMapsLoaded && mapContainerRef.current && !map && !googleMapsLoadError) { 
-      console.log("MapView: Initializing map (mapContainerRef.current is available).");
-      setInitializationError(null); 
+    if (googleMapsLoaded && mapContainerRef.current && !map && !googleMapsLoadError && latitude && longitude) {
+      console.log("MapView: Initializing map (all conditions met: googleMapsLoaded, mapContainerRef, no map, no loadError, location available).");
+      setInitializationError(null);
 
-      let initialCenter: google.maps.LatLngLiteral = { lat: 35.6809591, lng: 139.7673068 }; // デフォルトを東京駅に戻す
-      if (latitude && longitude) {
-        initialCenter = { lat: latitude, lng: longitude };
-      } else if (permissionState === 'granted' && !locationLoading) {
-        console.log("MapView: Permission granted, but location not yet available for initial center. Map will center on default, may re-center later.");
-      } else if (permissionState !== 'granted' && permissionState !== 'pending') {
-         console.log("MapView: Location permission not granted. Centering on default for initial center.");
-      }
+      const initialCenter = { lat: latitude, lng: longitude };
 
       try {
         const mapOptions: google.maps.MapOptions = {
           center: initialCenter,
-          zoom: (latitude && longitude) ? 15 : 10, // 初期ズームも元に戻す
+          zoom: 15,
           clickableIcons: true,
           disableDefaultUI: true,
           zoomControl: true,
           gestureHandling: 'greedy',
         };
-        
+
         const newMapInstance = new window.google.maps.Map(mapContainerRef.current, mapOptions);
         setMap(newMapInstance);
         setMapInitialized(true);
@@ -147,16 +148,21 @@ export function MapView() {
         setMapInitialized(false);
       }
     } else if (googleMapsLoadError) {
-        console.error("MapView: Google Maps API load error:", googleMapsLoadError.message);
-        setInitializationError(`地図APIの読み込みに失敗しました: ${googleMapsLoadError.message}`);
-    } else if (googleMapsLoaded && !mapContainerRef.current && !map) { // mapInitialized条件を削除
-        console.warn("MapView: Google Maps loaded, but mapContainerRef.current is STILL not available.");
+      console.error("MapView: Google Maps API load error:", googleMapsLoadError.message);
+      setInitializationError(`地図APIの読み込みに失敗しました: ${googleMapsLoadError.message}`);
+    } else if (googleMapsLoaded && !mapContainerRef.current && !map && !mapInitialized) {
+      console.warn("MapView: Google Maps loaded, but mapContainerRef.current is STILL not available (and map not initialized).");
+    } else if (googleMapsLoaded && mapContainerRef.current && !map && !googleMapsLoadError && !(latitude && longitude) && (permissionState === 'denied' || (locationError && permissionState !== 'prompt'))) {
+      console.warn("MapView: Cannot initialize map. Location permission denied or error, and not in prompt state. Location:", latitude, longitude, "Error:", locationError, "Permission:", permissionState);
+       if (!initializationError) {
+           setInitializationError("位置情報が利用できないため地図を表示できません。設定を確認し、再度お試しください。");
+       }
     }
-  }, [googleMapsLoaded, map, latitude, longitude, permissionState, locationLoading, googleMapsLoadError]); // 依存配列からmapInitializedを削除
+  }, [googleMapsLoaded, map, latitude, longitude, permissionState, locationLoading, googleMapsLoadError, mapInitialized]);
 
   useEffect(() => {
     if (map && latitude && longitude) {
-      // このuseEffectは空のままでしたが、念のため残します。
+      // console.log("MapView: Map, latitude, or longitude changed.");
     }
   }, [map, latitude, longitude]);
 
@@ -180,11 +186,11 @@ export function MapView() {
         });
         setUserLocationMarker(newUserLocationMarker);
       }
-      
+
       console.log("MapView: User location updated, recentering map and setting/updating user marker.");
       map.panTo(new window.google.maps.LatLng(latitude, longitude));
-      const currentZoom = map.getZoom(); // undefinedチェックを元に戻します
-      if (currentZoom !== undefined && currentZoom < 15) { // undefinedチェックは残した方が安全ですが、元に戻す指示なので厳密には前の状態に
+      const currentZoom = map.getZoom();
+      if (currentZoom !== undefined && currentZoom < 15) {
         map.setZoom(15);
       }
     } else if (userLocationMarker) {
@@ -231,46 +237,46 @@ export function MapView() {
     }
     const lat = place.geometry.location.lat();
     const lng = place.geometry.location.lng();
-    
+
     const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}&query_place_id=${place.place_id}`;
     window.open(googleMapsUrl, '_blank');
   };
 
-  console.log("MapView: Component rendering or re-rendering END - Before return statement. Current state:", {permissionState, latitude, longitude, mapInitialized, initializationError, mapContainerRefExists: !!mapContainerRef.current, googleMapsLoaded});
+  console.log("MapView: Component rendering or re-rendering END - Before return statement. Current state:", {permissionState, latitude, longitude, mapInitialized, initializationError, mapContainerRefExists: !!mapContainerRef.current, googleMapsLoaded, locationLoading});
 
   if (googleMapsLoadError) {
     return <MessageCard title="エラー" message={`地図の読み込みに失敗しました: ${googleMapsLoadError.message}`} variant="destructive" icon={AlertTriangle} />;
   }
+
+  if (initializationError && !mapInitialized) {
+     return <MessageCard title="エラー" message={initializationError} variant="destructive" icon={AlertTriangle} />;
+  }
+
+  if (!googleMapsLoaded) {
+    return (
+      <div className="relative h-full w-full">
+        <div ref={mapContainerRef} id="map-canvas-placeholder" className="h-full w-full bg-muted opacity-0 pointer-events-none" />
+        <div className="absolute inset-0 flex items-center justify-center bg-background/50 z-20">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            <p className="ml-2 text-muted-foreground">地図サービスを準備中...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (locationLoading && !showCustomPermissionDialog && !mapInitialized && !initializationError) {
+    return (
+      <div className="relative h-full w-full">
+        <div ref={mapContainerRef} id="map-canvas-placeholder" className="h-full w-full bg-muted opacity-0 pointer-events-none" />
+        <div className="absolute inset-0 flex items-center justify-center bg-background/50 z-20">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            <p className="ml-2 text-muted-foreground">現在位置を取得中...</p>
+        </div>
+      </div>
+    );
+  }
   
-  // ローディング表示のロジックを元に戻す
   if (!mapInitialized && !initializationError) {
-    if (!googleMapsLoaded) {
-        return (
-            <div className="absolute inset-0 flex items-center justify-center bg-background/50 z-20">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-                <p className="ml-2 text-muted-foreground">地図サービスを準備中...</p>
-            </div>
-        );
-    }
-    // mapContainerRef.current のチェックを元に戻す
-    if (!mapContainerRef.current && googleMapsLoaded) {
-         return (
-            <div className="relative h-full w-full">
-                <div ref={mapContainerRef} id="map-canvas" className="h-full w-full bg-muted" />
-                <div className="absolute inset-0 flex items-center justify-center bg-background/50 z-20">
-                    <p className="text-muted-foreground">地図表示エリアを準備中...</p>
-                </div>
-            </div>
-         );
-    }
-    if (locationLoading && permissionState === 'granted') {
-        return (
-            <div className="absolute inset-0 flex items-center justify-center bg-background/50 z-20">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-                <p className="ml-2 text-muted-foreground">現在位置を取得中...</p>
-            </div>
-        );
-    }
      return (
         <div className="relative h-full w-full">
             <div ref={mapContainerRef} id="map-canvas" className="h-full w-full bg-muted" />
@@ -282,22 +288,21 @@ export function MapView() {
     );
   }
   
-  if (initializationError) {
-     return <MessageCard title="初期化エラー" message={initializationError} variant="destructive" icon={AlertTriangle} />;
-  }
-
   return (
-    <div className="relative h-full w-full">
+    <div className="relative h-full w-full overflow-hidden">
       <div ref={mapContainerRef} id="map-canvas" className="h-full w-full bg-muted" />
 
-      {/* MapSearchControl の位置を元に戻す */}
-      {map && googleMapsLoaded && (
-        <MapSearchControl
-          map={map}
-          userLocation={latitude && longitude ? new google.maps.LatLng(latitude, longitude) : null}
-          onPlaceSelected={handlePlaceSelected}
-          onSearchError={handleSearchError}
-        />
+      {map && googleMapsLoaded && mapInitialized && (
+        <div className="absolute top-0 left-0 right-0 z-20 px-4 pt-[calc(56px_+_env(safe-area-inset-top)_+_1rem)] sm:px-6 md:px-8">
+          <div className="pt-14">
+            <MapSearchControl
+              map={map}
+              userLocation={latitude && longitude ? new google.maps.LatLng(latitude, longitude) : null}
+              onPlaceSelected={handlePlaceSelected}
+              onSearchError={handleSearchError}
+            />
+          </div>
+        </div>
       )}
       
       <LocationPermissionDialog
@@ -307,44 +312,48 @@ export function MapView() {
         appName="お惣菜ウォッチャー" 
       />
       
-      {permissionState === 'denied' && !showCustomPermissionDialog && locationError && ( // !initializationError 条件を削除
+      {permissionState === 'denied' && !showCustomPermissionDialog && locationError && (
          <MessageCard 
             title="位置情報を取得できません" 
-            message={locationError} 
+            message={locationError}
             variant="warning" 
             icon={MapPin}
           >
-            <Button onClick={requestLocation}>再度許可を求める</Button>
+            <Button onClick={() => { console.log("MapView: Retry permission clicked."); requestLocation(); }}>再度許可を求める</Button>
          </MessageCard>
       )}
 
-      {selectedPlace && selectedPlace.geometry && map && (
+      {initializationError && mapInitialized && (
+          <MessageCard title="エラー" message={initializationError} variant="destructive" icon={AlertTriangle} />
+      )}
+
+      {selectedPlace && selectedPlace.geometry && map && mapInitialized && (
         <motion.div
-          className="absolute bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-md z-10 p-4 bg-background rounded-xl shadow-xl flex items-center justify-between"
+          className="absolute bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-1.5rem)] sm:w-auto sm:max-w-md z-10 p-3 bg-background rounded-lg shadow-xl flex items-center justify-between"
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 20, opacity: 0 }}
           transition={{ duration: 0.3 }}
         >
-          <div>
-            <h3 className="font-semibold text-lg">{selectedPlace.name}</h3>
+          <div className="overflow-hidden mr-2">
+            <h3 className="font-semibold text-sm sm:text-base truncate">{selectedPlace.name}</h3>
             {distanceToSelectedPlace && (
-              <p className="text-sm text-muted-foreground">
+              <p className="text-xs sm:text-sm text-muted-foreground">
                 現在地からの距離: {distanceToSelectedPlace}
               </p>
             )}
-            <p className="text-xs text-muted-foreground truncate max-w-[200px] sm:max-w-xs">
+            <p className="text-xs text-muted-foreground truncate max-w-[160px] xs:max-w-[180px] sm:max-w-xs">
                 {selectedPlace.formatted_address}
             </p>
           </div>
           <Button
-            size="lg"
+            size="sm" 
             onClick={() => openGoogleMapsNavigation(selectedPlace)}
-            className="flex-shrink-0 bg-primary hover:bg-primary/90 text-primary-foreground ml-2"
+            className="flex-shrink-0 bg-primary hover:bg-primary/90 text-primary-foreground px-2 py-1 sm:px-3 sm:py-2"
             aria-label="Googleマップで経路を表示"
           >
-            <Navigation className="h-5 w-5 mr-2" />
-            経路
+            <Navigation className="h-4 w-4 sm:h-5 sm:w-5 sm:mr-1" />
+            <span className="hidden sm:inline">経路</span>
           </Button>
         </motion.div>
       )}
