@@ -22,6 +22,10 @@ export function AppHeader() {
         return '新規投稿';
       case '/profile':
         return 'マイページ';
+      case '/profile/edit':
+        return 'プロフィール編集';
+      case '/profile/setup':
+        return 'プロフィール作成';
       case '/notifications':
         return '通知';
       default:
@@ -32,7 +36,7 @@ export function AppHeader() {
   // Mock notification count - in real app this would come from backend
   const notificationCount = 3;
 
-  const showLogo = pathname === '/timeline';
+  const showLogo = false;
   const title = getPageTitle();
 
   return (
