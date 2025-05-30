@@ -25,6 +25,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { calculateExpiresAt } from '@/lib/expires-at-date';
 import { v4 as uuidv4 } from 'uuid';
 import FavoriteStoreInput from '@/components/profile/FavoriteStoreInput';
+import { CustomModal } from '@/components/ui/custom-modal';
 
 declare global {
   interface Window {
@@ -77,6 +78,8 @@ export default function PostPage() {
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [formDataToSubmit, setFormDataToSubmit] = useState<PostFormValues | null>(null);
   const {
     latitude,
     longitude,
@@ -104,7 +107,7 @@ export default function PostPage() {
   
   const { formState: { isValid, isSubmitting } } = form;
   
-  const onSubmit = async (values: PostFormValues) => {
+  const handleActualSubmit = async (values: PostFormValues) => {
     if (!session?.user?.id) {
       console.log("PostPage: User not logged in, redirecting to login page.");
       router.push(`/login?callbackUrl=${encodeURIComponent(window.location.pathname)}`);
@@ -114,6 +117,7 @@ export default function PostPage() {
     form.clearErrors("root.serverError");
     setIsUploading(true);
     setSubmitError(null);
+    setShowConfirmModal(false);
 
     let imageUrlToSave: string | null = null;
 
@@ -184,7 +188,18 @@ export default function PostPage() {
       setIsUploading(false);
     }
   };
+
+  const triggerConfirmationModal = (values: PostFormValues) => {
+    setFormDataToSubmit(values);
+    setShowConfirmModal(true);
+  };
   
+  const handleConfirmSubmit = () => {
+    if (formDataToSubmit) {
+      handleActualSubmit(formDataToSubmit);
+    }
+  };
+
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -258,7 +273,7 @@ export default function PostPage() {
           className="container mx-auto max-w-lg p-4 md:p-8"
         >
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pb-20">
+            <form onSubmit={form.handleSubmit(triggerConfirmationModal)} className="space-y-6 pb-20">
               <FormItem>
                 <FormLabel className="text-xl mb-2 flex items-center">
                   <ImageIcon className="mr-2 h-7 w-7" />
@@ -397,7 +412,7 @@ export default function PostPage() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-xl flex items-center">
-                      <Calculator className="mr-2 h-6 w-6" /> 値引き率 (任意): {field.value === undefined ? '-' : `${field.value}%`}
+                      <Calculator className="mr-2 h-6 w-6" /> 値引き率 (任意): {field.value === undefined ? `0%` : `${field.value}%`}
                     </FormLabel>
                     <FormControl>
                       <Slider
@@ -552,6 +567,34 @@ export default function PostPage() {
               </motion.div>
             </form>
           </Form>
+          <CustomModal
+            isOpen={showConfirmModal}
+            onClose={() => {
+              setShowConfirmModal(false);
+              setFormDataToSubmit(null);
+            }}
+            title="投稿内容の確認"
+            description="投稿した記事は後から削除や編集を行うことはできません。本当に投稿しますか？"
+          >
+            <div className="pt-2">
+              <p className="text-sm text-destructive">
+                投稿した記事は後から削除や編集を行うことはできません。
+                <br/>
+                本当に投稿しますか？
+              </p>
+              <div className="mt-6 flex justify-end space-x-3">
+                <Button variant="outline" onClick={() => {
+                  setShowConfirmModal(false);
+                  setFormDataToSubmit(null);
+                }} disabled={isUploading}>
+                  キャンセル
+                </Button>
+                <Button onClick={handleConfirmSubmit} disabled={isUploading}>
+                  {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "OK"}
+                </Button>
+              </div>
+            </div>
+          </CustomModal>
         </motion.div>
       </AppLayout>
     );
