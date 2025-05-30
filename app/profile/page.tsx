@@ -39,6 +39,7 @@ export default function ProfilePage() {
   const [userPosts, setUserPosts] = useState<PostWithAuthor[]>([]);
   const [loadingPosts, setLoadingPosts] = useState(true);
   const router = useRouter();
+  const [activeTab, setActiveTab] = useState("posts");
   
   // ポイント表示用の仮のstate (将来的にはprofileオブジェクトから取得)
   const [userPoints, setUserPoints] = useState(0); // 仮に0ポイントで初期化
@@ -240,21 +241,31 @@ export default function ProfilePage() {
             </motion.div>
           </div>
         </div>
-        
+      </div>
+      
+      {/* 単一の Tabs コンポーネントでラップ */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         {/* タブヘッダー部分 */}
-        <div className="px-4 pb-3">
-          <Tabs defaultValue="posts" className="w-full">
+        <div className="sticky top-[calc(var(--header-height,0px)+1px)] z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b px-4 pb-3">
+          {/* 上のヘッダーの高さを考慮して top 位置を調整する必要があるかもしれません。
+              ここでは仮に var(--header-height) としていますが、実際のヘッダーの高さに合わせて調整してください。
+              現状のコードではプロフィールヘッダーが固定されているため、その高さを考慮します。
+              プロフィールヘッダーの正確な高さが不明なため、一旦 `180px` のような固定値で試すか、
+              JavaScriptで動的に計算するなどの対応が必要になります。
+              簡単のため、ここでは `top-0` のままにして、スクロール追従ヘッダーは一旦なくし、
+              タブヘッダーがコンテンツと一緒にスクロールするようにします。
+              より良いUIのためには、ヘッダーの高さを正確に把握し、stickyのtop値を調整することが推奨されます。
+          */}
+           <div className="px-4 pb-3 sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
             <TabsList className="grid w-full grid-cols-3 bg-muted/50">
               <TabsTrigger value="posts">投稿履歴</TabsTrigger>
               <TabsTrigger value="favorites" className="text-base">お気に入り</TabsTrigger>
               <TabsTrigger value="settings" className="text-base">設定</TabsTrigger>
             </TabsList>
-          </Tabs>
+          </div>
         </div>
-      </div>
-      
-      {/* タブコンテンツ部分 - スクロール可能領域 */}
-      <Tabs defaultValue="posts" className="w-full">
+
+        {/* タブコンテンツ部分 - スクロール可能領域 */}
         {/* 投稿履歴タブ */}
         <TabsContent value="posts" className="mt-0">
           {loadingPosts ? (
