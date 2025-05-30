@@ -258,7 +258,6 @@ export default function ProfileEditPage() {
         transition={{ duration: 0.5 }}
         className="container mx-auto max-w-lg p-4 md:p-8"
       >
-         <h1 className="text-3xl font-bold text-center mb-2">プロフィール編集</h1>
          {submitError && !form.formState.errors.username && !form.formState.errors.bio && (
             <p className="text-sm text-destructive text-center bg-destructive/10 p-3 rounded-md mb-4">{submitError}</p>
           )}

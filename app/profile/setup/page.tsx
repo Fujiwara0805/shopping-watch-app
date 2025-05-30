@@ -216,7 +216,6 @@ export default function ProfileSetupPage() {
           transition={{ duration: 0.5 }}
           className="container mx-auto max-w-lg p-4 md:p-8"
         >
-           <h1 className="text-3xl font-bold text-center mb-8 mt-4">プロフィール新規登録</h1>
            {!session.user.id && !loading && (
              <div className="text-center p-4 my-4 text-red-700 bg-red-100 rounded-md">
                <p>ユーザー情報の読み込みに問題が発生しました。お手数ですが、再度ログインし直してください。</p>
