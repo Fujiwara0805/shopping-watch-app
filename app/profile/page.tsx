@@ -184,93 +184,135 @@ export default function ProfilePage() {
   
   return (
     <AppLayout>
-      <div className="p-4">
-        <div className="flex justify-between items-start mb-6">
-          <div className="flex items-center space-x-4">
-            <Avatar className="h-16 w-16">
-              {profile.avatar_url ? (
-                <AvatarImage
-                  src={supabase.storage.from('avatars').getPublicUrl(profile.avatar_url).data.publicUrl}
-                  alt={profile.display_name ?? 'User Avatar'}
-                />
-              ) : (
-                <AvatarFallback>{profile.display_name?.charAt(0).toUpperCase() ?? 'U'}</AvatarFallback>
-              )}
-            </Avatar>
-            
-            <div>
-              <h1 className="text-xl font-bold">{profile.display_name}</h1>
-              <p className="text-sm text-muted-foreground">{session?.user?.email}</p>
+      {/* プロフィールヘッダー部分 - 完全固定 */}
+      <div className="sticky top-0 z-20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
+        <div className="p-4">
+          <div className="flex justify-between items-start mb-6">
+            <div className="flex items-center space-x-4">
+              <Avatar className="h-16 w-16">
+                {profile.avatar_url ? (
+                  <AvatarImage
+                    src={supabase.storage.from('avatars').getPublicUrl(profile.avatar_url).data.publicUrl}
+                    alt={profile.display_name ?? 'User Avatar'}
+                  />
+                ) : (
+                  <AvatarFallback>{profile.display_name?.charAt(0).toUpperCase() ?? 'U'}</AvatarFallback>
+                )}
+              </Avatar>
+              
+              <div>
+                <h1 className="text-xl font-bold">{profile.display_name}</h1>
+                <p className="text-sm text-muted-foreground">{session?.user?.email}</p>
+              </div>
             </div>
+            
+            <Button
+              variant="ghost"
+              size="icon"
+              asChild
+            >
+              <motion.div
+                whileTap={{ scale: 0.95 }}
+                onClick={() => router.push('/profile/edit')}
+              >
+                <Edit className="h-5 w-5" />
+              </motion.div>
+            </Button>
           </div>
           
-          <Button
-            variant="ghost"
-            size="icon"
-            asChild
-          >
-            <motion.div
-              whileTap={{ scale: 0.95 }}
-              onClick={() => router.push('/profile/edit')}
+          {/* 投稿数とポイント表示 */}
+          <div className="grid grid-cols-2 gap-4 text-center mb-4">
+            <motion.div 
+              className="p-4 bg-card rounded-lg shadow-sm"
+              whileHover={{ scale: 1.05 }}
+              transition={{ type: "spring", stiffness: 300 }}
             >
-              <Edit className="h-5 w-5" />
+              <p className="text-2xl font-bold">{userPosts.length}</p>
+              <p className="text-sm text-muted-foreground">投稿数</p>
             </motion.div>
-          </Button>
+            <motion.div 
+              className="p-4 bg-card rounded-lg shadow-sm"
+              whileHover={{ scale: 1.05 }}
+              transition={{ type: "spring", stiffness: 300 }}
+            >
+              <p className="text-2xl font-bold">{userPoints}</p> 
+              <p className="text-sm text-muted-foreground">ポイント</p>
+            </motion.div>
+          </div>
         </div>
         
-        {/* 投稿数とポイント表示 */}
-        <div className="grid grid-cols-2 gap-4 mb-6 text-center">
-          <motion.div 
-            className="p-4 bg-card rounded-lg shadow-sm"
-            whileHover={{ scale: 1.05 }}
-            transition={{ type: "spring", stiffness: 300 }}
-          >
-            <p className="text-2xl font-bold">{userPosts.length}</p>
-            <p className="text-sm text-muted-foreground">投稿数</p>
-          </motion.div>
-          <motion.div 
-            className="p-4 bg-card rounded-lg shadow-sm"
-            whileHover={{ scale: 1.05 }}
-            transition={{ type: "spring", stiffness: 300 }}
-          >
-            <p className="text-2xl font-bold">{userPoints}</p> 
-            <p className="text-sm text-muted-foreground">ポイント</p>
-          </motion.div>
+        {/* タブヘッダー部分 */}
+        <div className="px-4 pb-3">
+          <Tabs defaultValue="posts" className="w-full">
+            <TabsList className="grid w-full grid-cols-3 bg-muted/50">
+              <TabsTrigger value="posts">投稿履歴</TabsTrigger>
+              <TabsTrigger value="favorites" className="text-base">お気に入り</TabsTrigger>
+              <TabsTrigger value="settings" className="text-base">設定</TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
-        
-        <Tabs defaultValue="posts" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 bg-muted/50 mb-4">
-            <TabsTrigger value="posts">投稿履歴</TabsTrigger>
-            <TabsTrigger value="favorites" className="text-base">お気に入り</TabsTrigger>
-            <TabsTrigger value="settings" className="text-base">設定</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="posts" className="space-y-4">
-            {loadingPosts ? (
-              <>
-                <Skeleton className="h-48 w-full rounded-lg" />
-                <Skeleton className="h-48 w-full rounded-lg" />
-              </>
-            ) : userPosts.length > 0 ? (
-              userPosts.map(post => (
-                <PostCard key={post.id} post={post} />
-              ))
-            ) : (
-              <div className="p-8 text-center">
-                <p className="text-muted-foreground">まだ投稿がありません</p>
-                <Button 
-                  variant="link" 
-                  onClick={() => router.push('/post/new')}
-                  className="mt-2"
-                >
-                  最初の投稿を作成する
-                </Button>
+      </div>
+      
+      {/* タブコンテンツ部分 - スクロール可能領域 */}
+      <Tabs defaultValue="posts" className="w-full">
+        {/* 投稿履歴タブ */}
+        <TabsContent value="posts" className="mt-0">
+          {loadingPosts ? (
+            <div className="p-4 space-y-4">
+              <Skeleton className="h-48 w-full rounded-lg" />
+              <Skeleton className="h-48 w-full rounded-lg" />
+            </div>
+          ) : userPosts.length > 0 ? (
+            <div 
+              className="custom-scrollbar overscroll-none"
+              style={{ 
+                height: 'calc(100vh - 380px)',
+                maxHeight: 'calc(100vh - 380px)',
+                overflowY: 'auto',
+                overflowX: 'hidden'
+              }}
+            >
+              <div className="p-4 space-y-4 pb-safe">
+                {userPosts.map((post, index) => (
+                  <motion.div
+                    key={post.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: index * 0.1 }}
+                  >
+                    <PostCard post={post} />
+                  </motion.div>
+                ))}
+                {/* 最後の投稿の下に余白を追加 */}
+                <div className="h-4"></div>
               </div>
-            )}
-          </TabsContent>
-          
-          <TabsContent value="favorites">
-            <div className="space-y-4 mt-4">
+            </div>
+          ) : (
+            <div className="p-8 text-center">
+              <p className="text-muted-foreground">まだ投稿がありません</p>
+              <Button 
+                variant="link" 
+                onClick={() => router.push('/post/new')}
+                className="mt-2"
+              >
+                最初の投稿を作成する
+              </Button>
+            </div>
+          )}
+        </TabsContent>
+        
+        {/* お気に入りタブ */}
+        <TabsContent value="favorites" className="mt-0">
+          <div 
+            className="custom-scrollbar overscroll-none"
+            style={{ 
+              height: 'calc(100vh - 380px)',
+              maxHeight: 'calc(100vh - 380px)',
+              overflowY: 'auto',
+              overflowX: 'hidden'
+            }}
+          >
+            <div className="p-4 space-y-4 pb-safe">
               <h2 className="text-xl font-semibold">お気に入り店舗</h2>
               {profile && (profile.favorite_store_1_id || profile.favorite_store_2_id || profile.favorite_store_3_id) ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -306,11 +348,24 @@ export default function ProfilePage() {
                   </Button>
                 </div>
               )}
+              {/* 余白を追加 */}
+              <div className="h-4"></div>
             </div>
-          </TabsContent>
-          
-          <TabsContent value="settings">
-            <div className="space-y-6">
+          </div>
+        </TabsContent>
+        
+        {/* 設定タブ */}
+        <TabsContent value="settings" className="mt-0">
+          <div 
+            className="custom-scrollbar overscroll-none"
+            style={{ 
+              height: 'calc(100vh - 380px)',
+              maxHeight: 'calc(100vh - 380px)',
+              overflowY: 'auto',
+              overflowX: 'hidden'
+            }}
+          >
+            <div className="p-4 space-y-6 pb-safe">
               <div>
                 <h3 className="font-medium mb-2">通知設定</h3>
                 <div className="space-y-3">
@@ -365,10 +420,12 @@ export default function ProfilePage() {
                   </Button>
                 </div>
               </div>
+              {/* 余白を追加 */}
+              <div className="h-4"></div>
             </div>
-          </TabsContent>
-        </Tabs>
-      </div>
+          </div>
+        </TabsContent>
+      </Tabs>
     </AppLayout>
   );
 }
