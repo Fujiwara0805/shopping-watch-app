@@ -13,6 +13,7 @@ import { PostWithAuthor, AuthorProfile } from '@/types/post';
 import { useSession } from 'next-auth/react';
 import { LayoutGrid } from 'lucide-react';
 import { CustomModal } from '@/components/ui/custom-modal';
+import AppLayout from '@/components/layout/app-layout';
 
 function formatTimeAgo(timestamp: number): string {
   const now = Date.now();
@@ -206,14 +207,21 @@ const NewPostCard: React.FC<PostCardProps> = ({ post, onLike, currentUserId }) =
 export default function Timeline() {
   const [posts, setPosts] = useState<ExtendedPostWithAuthor[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<string>('all');
+  const [hasMore, setHasMore] = useState(true);
   const { data: session } = useSession();
   const currentUserId = session?.user?.id;
 
-  const fetchPosts = useCallback(async () => {
-    setLoading(true);
+  const fetchPosts = useCallback(async (offset = 0, isInitial = false) => {
+    if (isInitial) {
+      setLoading(true);
+    } else {
+      setLoadingMore(true);
+    }
     setError(null);
+    
     try {
       const now = new Date().toISOString();
       let query = supabase
@@ -236,7 +244,7 @@ export default function Timeline() {
         `)
         .gt('expires_at', now)
         .order('created_at', { ascending: false })
-        .limit(20);
+        .range(offset, offset + 19); // 20件ずつ取得
 
       if (activeFilter !== 'all') {
         query = query.eq('category', activeFilter);
@@ -255,18 +263,48 @@ export default function Timeline() {
         likes_count: post.post_likes.length,
       }));
 
-      setPosts(processedPosts as ExtendedPostWithAuthor[]);
+      if (isInitial) {
+        setPosts(processedPosts as ExtendedPostWithAuthor[]);
+      } else {
+        setPosts(prevPosts => [...prevPosts, ...processedPosts as ExtendedPostWithAuthor[]]);
+      }
+
+      // 20件未満の場合、これ以上データがないと判断
+      setHasMore(data.length === 20);
     } catch (e: any) {
       console.error("投稿の取得に失敗しました:", e);
       setError("投稿の読み込みに失敗しました。しばらくしてから再度お試しください。");
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   }, [activeFilter, currentUserId]);
 
   useEffect(() => {
-    fetchPosts();
+    fetchPosts(0, true);
   }, [fetchPosts]);
+
+  const loadMorePosts = useCallback(() => {
+    if (!loadingMore && hasMore) {
+      fetchPosts(posts.length, false);
+    }
+  }, [fetchPosts, posts.length, loadingMore, hasMore]);
+
+  // スクロール監視のためのeffect
+  useEffect(() => {
+    const handleScroll = (event: Event) => {
+      const target = event.target as HTMLElement;
+      if (target.scrollTop + target.clientHeight >= target.scrollHeight - 100) {
+        loadMorePosts();
+      }
+    };
+
+    const scrollContainer = document.querySelector('.timeline-scroll-container');
+    if (scrollContainer) {
+      scrollContainer.addEventListener('scroll', handleScroll);
+      return () => scrollContainer.removeEventListener('scroll', handleScroll);
+    }
+  }, [loadMorePosts]);
 
   const handleLike = async (postId: string, isLiked: boolean) => {
     if (!currentUserId) return;
@@ -295,54 +333,112 @@ export default function Timeline() {
 
   if (loading && posts.length === 0) {
     return (
-      <>
-        <PostFilter activeFilter={activeFilter} setActiveFilter={setActiveFilter} />
-        <div className="grid gap-6 mt-6 sm:grid-cols-2 lg:grid-cols-3">
-          {[...Array(6)].map((_, i) => (
-            <Skeleton key={i} className="h-[400px] w-full rounded-xl" />
-          ))}
+      <AppLayout>
+        {/* フィルター部分 - 固定 */}
+        <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
+          <div className="p-4">
+            <PostFilter activeFilter={activeFilter} setActiveFilter={setActiveFilter} />
+          </div>
         </div>
-      </>
+        
+        {/* ローディング表示 */}
+        <div className="p-4">
+          <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {[...Array(8)].map((_, i) => (
+              <Skeleton key={i} className="h-[400px] w-full rounded-xl" />
+            ))}
+          </div>
+        </div>
+      </AppLayout>
     );
   }
 
   if (error) {
     return (
-      <div className="text-center">
-        <p className="text-destructive text-lg">{error}</p>
-        <Button onClick={fetchPosts} className="mt-4">再試行</Button>
-      </div>
+      <AppLayout>
+        <div className="p-4">
+          <div className="text-center">
+            <p className="text-destructive text-lg">{error}</p>
+            <Button onClick={() => fetchPosts(0, true)} className="mt-4">再試行</Button>
+          </div>
+        </div>
+      </AppLayout>
     );
   }
 
   return (
-    <>
-      <PostFilter activeFilter={activeFilter} setActiveFilter={setActiveFilter} />
-      {loading && posts.length > 0 && (
-        <div className="text-center py-4">
-          <p>更新中...</p>
+    <AppLayout>
+      {/* フィルター部分 - 固定 */}
+      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
+        <div className="p-4">
+          <PostFilter activeFilter={activeFilter} setActiveFilter={setActiveFilter} />
         </div>
-      )}
-      {posts.length === 0 && !loading ? (
-        <div className="text-center py-10">
-          <LayoutGrid size={48} className="mx-auto text-muted-foreground mb-4" />
-          <p className="text-xl text-muted-foreground">このカテゴリの投稿はまだありません。</p>
+      </div>
+      
+      {/* 投稿一覧部分 - スクロール可能 */}
+      <div 
+        className="timeline-scroll-container custom-scrollbar overscroll-none"
+        style={{ 
+          height: 'calc(100vh - 120px)', // フィルター部分の高さを引く
+          maxHeight: 'calc(100vh - 120px)',
+          overflowY: 'auto',
+          overflowX: 'hidden'
+        }}
+      >
+        <div className="p-4 pb-safe">
+          {posts.length === 0 && !loading ? (
+            <div className="text-center py-10">
+              <LayoutGrid size={48} className="mx-auto text-muted-foreground mb-4" />
+              <p className="text-xl text-muted-foreground">このカテゴリの投稿はまだありません。</p>
+            </div>
+          ) : (
+            <motion.div
+              layout
+              className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+            >
+              <AnimatePresence mode="popLayout">
+                {posts.map((post, index) => (
+                  <motion.div
+                    key={post.id}
+                    layout
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ duration: 0.3, delay: index * 0.05 }}
+                  >
+                    <NewPostCard 
+                      post={post} 
+                      onLike={handleLike}
+                      currentUserId={currentUserId}
+                    />
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </motion.div>
+          )}
+          
+          {/* 追加読み込み中の表示 */}
+          {loadingMore && (
+            <div className="mt-6">
+              <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {[...Array(4)].map((_, i) => (
+                  <Skeleton key={`loading-${i}`} className="h-[400px] w-full rounded-xl" />
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {/* すべて読み込み完了の表示 */}
+          {!hasMore && posts.length > 0 && (
+            <div className="text-center py-8">
+              <p className="text-muted-foreground">すべての投稿を読み込みました</p>
+            </div>
+          )}
+          
+          {/* 最後の余白 */}
+          <div className="h-4"></div>
         </div>
-      ) : (
-        <motion.div
-          layout
-          className="grid gap-4 sm:gap-6 mt-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-        >
-          {posts.map(post => (
-            <NewPostCard 
-              key={post.id} 
-              post={post} 
-              onLike={handleLike}
-              currentUserId={currentUserId}
-            />
-          ))}
-        </motion.div>
-      )}
-    </>
+      </div>
+    </AppLayout>
   );
 }
