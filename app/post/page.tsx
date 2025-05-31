@@ -120,6 +120,7 @@ export default function PostPage() {
     setShowConfirmModal(false);
 
     let imageUrlToSave: string | null = null;
+    let createdPostId: string | null = null;
 
     try {
       const { data: userProfile, error: profileError } = await supabase
@@ -164,18 +165,59 @@ export default function PostPage() {
         discount_rate: values.discountRate,
         price: values.price,
         expiry_option: values.expiryOption,
-        created_at: new Date().toISOString(),
         expires_at: calculateExpiresAt(values.expiryOption).toISOString(),
       };
 
-      const { error: insertError } = await supabase.from('posts').insert(postData);
+      const { data: insertedPost, error: insertError } = await supabase
+        .from('posts')
+        .insert(postData)
+        .select('id, store_id, store_name, app_profile_id')
+        .single();
 
-      if (insertError) {
+      if (insertError || !insertedPost) {
         console.error("PostPage: Error inserting post:", insertError);
-        throw new Error(`投稿の保存に失敗しました: ${insertError.message}`);
+        throw new Error(`投稿の保存に失敗しました: ${insertError?.message || "Unknown error"}`);
+      }
+      
+      createdPostId = insertedPost.id;
+      console.log("PostPage: Post inserted successfully with ID:", createdPostId, "Image path:", imageUrlToSave);
+
+      if (createdPostId && insertedPost.store_id && insertedPost.store_name && insertedPost.app_profile_id) {
+        try {
+          const functionUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/notify-favorite-store-post`;
+          const response = await fetch(functionUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+            },
+            body: JSON.stringify({
+              postId: createdPostId,
+              storeId: insertedPost.store_id,
+              storeName: insertedPost.store_name,
+              postCreatorProfileId: insertedPost.app_profile_id,
+            }),
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            console.error('PostPage: Failed to call notify function:', response.status, errorData);
+          } else {
+            const result = await response.json();
+            console.log('PostPage: Notify function called successfully:', result.message);
+          }
+        } catch (notifyError: any) {
+          console.error('PostPage: Error calling notify function:', notifyError?.message || notifyError);
+        }
+      } else {
+        console.warn("PostPage: Missing data for notification, skipping notify function call.", {
+          createdPostId,
+          storeId: insertedPost?.store_id,
+          storeName: insertedPost?.store_name,
+          appProfileId: insertedPost?.app_profile_id
+        });
       }
 
-      console.log("PostPage: Post inserted successfully with image path:", imageUrlToSave);
       form.reset();
       setImageFile(null);
       setImagePreviewUrl(null);

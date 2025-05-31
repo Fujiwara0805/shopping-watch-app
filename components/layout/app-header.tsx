@@ -7,9 +7,11 @@ import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/common/logo';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
+import { useNotification } from '@/contexts/NotificationContext';
 
 export function AppHeader() {
   const pathname = usePathname();
+  const { unreadCount, isLoading } = useNotification();
   
   // Get page title based on current path
   const getPageTitle = () => {
@@ -33,9 +35,6 @@ export function AppHeader() {
     }
   };
   
-  // Mock notification count - in real app this would come from backend
-  const notificationCount = 3;
-
   const showLogo = false;
   const title = getPageTitle();
 
@@ -65,12 +64,20 @@ export function AppHeader() {
           <Button variant="ghost" size="icon" className="relative" asChild>
             <Link href="/notifications">
               <Bell className="h-5 w-5" />
-              {notificationCount > 0 && (
-                <Badge 
-                  className="absolute -top-1 -right-1 px-1.5 py-0.5 min-w-[1.25rem] h-5 flex items-center justify-center bg-accent text-accent-foreground"
+              {!isLoading && unreadCount > 0 && (
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: "spring", stiffness: 500, damping: 20 }}
+                  className="absolute -top-1 -right-1"
                 >
-                  {notificationCount}
-                </Badge>
+                  <Badge 
+                    variant="destructive"
+                    className="px-1.5 py-0.5 min-w-[1.25rem] h-5 flex items-center justify-center text-xs"
+                  >
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </Badge>
+                </motion.div>
               )}
             </Link>
           </Button>
