@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Disc as Discount, ShoppingBag, User, Loader2 } from 'lucide-react';
+import { Disc as Discount, ShoppingBag, User, Loader2, Trash2, MailCheck, Square, CheckSquare } from 'lucide-react';
 import AppLayout from '@/components/layout/app-layout';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Profile } from '@/types/profile';
 import { Notification } from '@/types/notification';
@@ -12,12 +11,20 @@ import { supabase } from '@/lib/supabaseClient';
 import { useSession } from 'next-auth/react';
 import { formatDistanceToNowStrict } from 'date-fns';
 import { ja } from 'date-fns/locale';
+import { useRouter } from 'next/navigation';
+import { CustomModal } from '@/components/ui/custom-modal';
 
 export default function NotificationsPage() {
   const { data: session, status: sessionStatus } = useSession();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentUserAppProfileId, setCurrentUserAppProfileId] = useState<string | null>(null);
+  const router = useRouter();
+
+  const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
+  const [notificationToDeleteId, setNotificationToDeleteId] = useState<string | null>(null);
+
+  const [selectedNotifications, setSelectedNotifications] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const fetchUserAppProfileId = async () => {
@@ -138,33 +145,96 @@ export default function NotificationsPage() {
     }
   };
   
-  const markAllAsRead = async () => {
-    const unreadNotificationIds = notifications
-      .filter(n => !n.is_read)
-      .map(n => n.id);
+  const handleMarkSelectedAsRead = async () => {
+    if (selectedNotifications.size === 0 || !currentUserAppProfileId) return;
 
-    if (unreadNotificationIds.length === 0) return;
-
+    const idsToMarkRead = Array.from(selectedNotifications);
+    
     setNotifications(prev =>
-      prev.map(notification => ({ ...notification, is_read: true }))
+      prev.map(n => 
+        idsToMarkRead.includes(n.id) ? { ...n, is_read: true } : n
+      )
     );
+    setSelectedNotifications(new Set());
+
     try {
       const { error } = await supabase
         .from('notifications')
         .update({ is_read: true })
-        .in('id', unreadNotificationIds)
-        .eq('user_id', currentUserAppProfileId!);
+        .in('id', idsToMarkRead)
+        .eq('user_id', currentUserAppProfileId);
       if (error) {
-        console.error('Error marking all notifications as read:', error);
+        console.error('Error marking selected notifications as read:', error);
         fetchNotifications();
       }
     } catch (e) {
-      console.error('Unexpected error marking all as read:', e);
+      console.error('Unexpected error marking selected as read:', e);
       fetchNotifications();
     }
   };
 
-  const unreadCount = notifications.filter(n => !n.is_read).length;
+  const handleDeleteNotification = async (id: string) => {
+    setNotificationToDeleteId(id);
+    setShowDeleteConfirmModal(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!notificationToDeleteId || !currentUserAppProfileId) return;
+
+    setShowDeleteConfirmModal(false);
+
+    setNotifications(prev => prev.filter(notification => notification.id !== notificationToDeleteId));
+    setSelectedNotifications(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(notificationToDeleteId);
+      return newSet;
+    });
+
+    try {
+      const { error } = await supabase
+        .from('notifications')
+        .delete()
+        .eq('id', notificationToDeleteId)
+        .eq('user_id', currentUserAppProfileId);
+      if (error) {
+        console.error('Error deleting notification:', error);
+        fetchNotifications();
+      }
+    } catch (e) {
+      console.error('Unexpected error deleting notification:', e);
+      fetchNotifications();
+    } finally {
+      setNotificationToDeleteId(null);
+    }
+  };
+
+  const handleDeleteSelectedNotifications = async () => {
+    if (selectedNotifications.size === 0 || !currentUserAppProfileId) return;
+
+    if (!confirm('選択された通知をすべて削除してもよろしいですか？この操作は元に戻せません。')) {
+      return;
+    }
+
+    const idsToDelete = Array.from(selectedNotifications);
+    
+    setNotifications(prev => prev.filter(n => !idsToDelete.includes(n.id)));
+    setSelectedNotifications(new Set());
+
+    try {
+      const { error } = await supabase
+        .from('notifications')
+        .delete()
+        .in('id', idsToDelete)
+        .eq('user_id', currentUserAppProfileId);
+      if (error) {
+        console.error('Error deleting selected notifications:', error);
+        fetchNotifications();
+      }
+    } catch (e) {
+      console.error('Unexpected error deleting selected notifications:', e);
+      fetchNotifications();
+    }
+  };
 
   const getIconForType = (type: string) => {
     switch (type) {
@@ -189,6 +259,26 @@ export default function NotificationsPage() {
     }
   };
 
+  const handleToggleSelectNotification = (id: string) => {
+    setSelectedNotifications(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
+  };
+
+  const handleSelectAllNotifications = () => {
+    if (selectedNotifications.size === notifications.length && notifications.length > 0) {
+      setSelectedNotifications(new Set());
+    } else {
+      setSelectedNotifications(new Set(notifications.map(n => n.id)));
+    }
+  };
+
   const renderNotificationList = (items: Notification[]) => {
     if (loading && notifications.length === 0) {
       return (
@@ -207,39 +297,55 @@ export default function NotificationsPage() {
     
     return (
       <AnimatePresence initial={false}>
-        {items.map((notification, index) => (
-          <motion.div
-            key={notification.id}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, height: 0, marginBottom: 0 }}
-            transition={{ duration: 0.2, delay: index * 0.05 }}
-            className="relative"
-            onClick={() => !notification.is_read && markAsRead(notification.id)}
-          >
-            <div className={`p-4 border-b flex items-start space-x-3 cursor-pointer transition-colors ${notification.is_read ? 'bg-transparent hover:bg-muted/10' : 'bg-primary/5 hover:bg-primary/10'}`}>
-              <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
-                {getIconForType(notification.type)}
+        {items.map((notification, index) => {
+          const isSelected = selectedNotifications.has(notification.id);
+          return (
+            <motion.div
+              key={notification.id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+              transition={{ duration: 0.2, delay: index * 0.05 }}
+              className={`relative group ${isSelected ? 'bg-blue-50/50 dark:bg-blue-950/20' : ''}`}
+            >
+              <div 
+                className={`p-4 border-b flex items-center space-x-3 transition-colors ${notification.is_read ? 'bg-transparent hover:bg-muted/10' : 'bg-primary/5 hover:bg-primary/10'}`}
+              >
+                <div onClick={(e) => { e.stopPropagation(); handleToggleSelectNotification(notification.id); }} className="cursor-pointer p-2 -ml-2">
+                  {isSelected ? (
+                    <CheckSquare className="h-5 w-5 text-primary" />
+                  ) : (
+                    <Square className="h-5 w-5 text-muted-foreground" />
+                  )}
+                </div>
+
+                <div 
+                  className="flex items-center space-x-3 cursor-pointer flex-1"
+                  onClick={() => {
+                    !notification.is_read && markAsRead(notification.id);
+                    if (notification.reference_post_id) {
+                      router.push(`/timeline?highlightPostId=${notification.reference_post_id}`);
+                    }
+                  }}
+                >
+                  {getIconForType(notification.type)}
+                  <div className="flex-1">
+                    <p className={`text-sm ${notification.is_read ? 'text-muted-foreground' : 'text-foreground font-medium'}`}>{notification.message}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{formatTimeAgo(notification.created_at)}</p>
+                  </div>
+                </div>
+                {!notification.is_read && (
+                  <div className="w-2 h-2 bg-primary rounded-full flex-shrink-0 mt-2" title="未読"></div>
+                )}
               </div>
-              
-              <div className="flex-1">
-                <p className={`${!notification.is_read ? 'font-semibold' : 'font-normal'}`}>
-                  {notification.message}
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {formatTimeAgo(notification.created_at)}
-                </p>
-              </div>
-              
-              {!notification.is_read && (
-                <div className="h-2 w-2 rounded-full bg-accent absolute top-4 right-4" />
-              )}
-            </div>
-          </motion.div>
-        ))}
+            </motion.div>
+          );
+        })}
       </AnimatePresence>
     );
   };
+
+  const isAnyNotificationSelected = selectedNotifications.size > 0;
 
   if (sessionStatus === 'loading') {
     return (
@@ -263,41 +369,59 @@ export default function NotificationsPage() {
 
   return (
     <AppLayout>
-      <div className="pb-4">
-        <div className="px-4 pt-2 pb-4 flex items-center justify-between sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-10 border-b mb-2">
-          <h2 className="font-medium text-lg">
-            {unreadCount > 0 ? `${unreadCount}件の未読通知` : 'すべて既読'}
-          </h2>
-          
-          {unreadCount > 0 && (
-            <Button variant="link" size="sm" onClick={markAllAsRead} disabled={loading && notifications.length > 0}>
-              すべて既読にする
-            </Button>
-          )}
-        </div>
-        
-        <Tabs defaultValue="all">
-          <TabsList className="grid grid-cols-3 mx-4 mb-2">
-            <TabsTrigger value="all">すべて</TabsTrigger>
-            <TabsTrigger value="unread">未読 ({unreadCount})</TabsTrigger>
-            <TabsTrigger value="discounts">店舗投稿</TabsTrigger>
-          </TabsList>
-          
-          <div className="overflow-y-auto" style={{maxHeight: 'calc(100vh - var(--header-height) - var(--footer-height) - 120px)'}}>
-            <TabsContent value="all" className="mt-0">
-              {renderNotificationList(notifications)}
-            </TabsContent>
-            
-            <TabsContent value="unread" className="mt-0">
-              {renderNotificationList(notifications.filter(n => !n.is_read))}
-            </TabsContent>
-            
-            <TabsContent value="discounts" className="mt-0">
-              {renderNotificationList(notifications.filter(n => n.type === 'favorite_store_post'))}
-            </TabsContent>
-          </div>
-        </Tabs>
+      <div className="flex items-center justify-between p-4 border-b">
+        {notifications.length > 0 && (
+          <Button 
+            variant="outline"
+            onClick={handleSelectAllNotifications}
+          >
+            {selectedNotifications.size === notifications.length && notifications.length > 0 ? 'すべて選択解除' : 'すべて選択'}
+          </Button>
+        )}
       </div>
+
+      {isAnyNotificationSelected && (
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -20 }}
+          className="sticky top-[64px] z-20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b p-3 flex justify-center space-x-4 shadow-sm"
+        >
+          <Button 
+            onClick={handleMarkSelectedAsRead} 
+            disabled={selectedNotifications.size === 0}
+            className="flex items-center space-x-2"
+          >
+            <MailCheck size={18} />
+            <span>既読にする ({selectedNotifications.size})</span>
+          </Button>
+          <Button 
+            variant="destructive" 
+            onClick={handleDeleteSelectedNotifications} 
+            disabled={selectedNotifications.size === 0}
+            className="flex items-center space-x-2"
+          >
+            <Trash2 size={18} />
+            <span>削除 ({selectedNotifications.size})</span>
+          </Button>
+        </motion.div>
+      )}
+
+      <div className="flex-1 overflow-y-auto custom-scrollbar" style={{ height: isAnyNotificationSelected ? 'calc(100vh - 180px)' : 'calc(100vh - 120px)' }}>
+        {renderNotificationList(notifications)}
+      </div>
+
+      <CustomModal
+        isOpen={showDeleteConfirmModal}
+        onClose={() => setShowDeleteConfirmModal(false)}
+        title="通知の削除"
+        description="この通知を削除してもよろしいですか？この操作は元に戻せません。"
+      >
+        <div className="flex justify-end space-x-3 mt-4">
+          <Button variant="ghost" onClick={() => setShowDeleteConfirmModal(false)}>キャンセル</Button>
+          <Button variant="destructive" onClick={handleConfirmDelete}>削除</Button>
+        </div>
+      </CustomModal>
     </AppLayout>
   );
 }

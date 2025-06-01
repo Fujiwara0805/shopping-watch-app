@@ -80,8 +80,8 @@ serve(async (req: Request) => {
     const notificationsToInsert = profiles.map(profile => ({
       user_id: profile.id, // notifications.user_id は app_profiles.id を参照
       type: 'favorite_store_post',
-      message: `${storeName}が新しい情報を投稿しました！`, // 通知メッセージ
-      reference_post_id: postId,
+      message: `${storeName}の新しい情報が投稿されました！`, // 通知メッセージの変更
+      reference_post_id: postId, // `reference_post_id` に変更
       reference_store_id: storeId,
       reference_store_name: storeName,
       // is_read はテーブルのデフォルトで false に設定

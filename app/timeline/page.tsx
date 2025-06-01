@@ -14,6 +14,7 @@ import { useSession } from 'next-auth/react';
 import { LayoutGrid } from 'lucide-react';
 import { CustomModal } from '@/components/ui/custom-modal';
 import AppLayout from '@/components/layout/app-layout';
+import { useSearchParams } from 'next/navigation';
 
 function formatTimeAgo(timestamp: number): string {
   const now = Date.now();
@@ -213,6 +214,15 @@ export default function Timeline() {
   const [hasMore, setHasMore] = useState(true);
   const { data: session } = useSession();
   const currentUserId = session?.user?.id;
+  const searchParams = useSearchParams();
+  const [highlightPostId, setHighlightPostId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const id = searchParams.get('highlightPostId');
+    if (id) {
+      setHighlightPostId(id);
+    }
+  }, [searchParams]);
 
   const fetchPosts = useCallback(async (offset = 0, isInitial = false) => {
     if (isInitial) {
@@ -283,6 +293,20 @@ export default function Timeline() {
   useEffect(() => {
     fetchPosts(0, true);
   }, [fetchPosts]);
+
+  // ハイライトとスクロールのためのeffect
+  useEffect(() => {
+    if (highlightPostId && posts.length > 0) {
+      const element = document.getElementById(`post-${highlightPostId}`);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // ハイライトアニメーションを適用するために、少し遅延させる
+        setTimeout(() => {
+          setHighlightPostId(null); // 一度ハイライトしたらリセット
+        }, 3000); // 3秒後にハイライトを解除
+      }
+    }
+  }, [highlightPostId, posts]);
 
   const loadMorePosts = useCallback(() => {
     if (!loadingMore && hasMore) {
@@ -400,11 +424,13 @@ export default function Timeline() {
                 {posts.map((post, index) => (
                   <motion.div
                     key={post.id}
+                    id={`post-${post.id}`}
                     layout
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -20 }}
                     transition={{ duration: 0.3, delay: index * 0.05 }}
+                    className={post.id === highlightPostId ? 'ring-4 ring-primary ring-offset-2 rounded-xl' : ''}
                   >
                     <NewPostCard 
                       post={post} 

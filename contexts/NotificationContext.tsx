@@ -12,6 +12,7 @@ interface NotificationContextType {
   fetchUnreadCount: () => Promise<void>;
   markNotificationAsRead: (notificationId: string) => Promise<void>; // 個別既読
   markAllNotificationsAsRead: () => Promise<void>; // 全件既読
+  deleteNotification: (notificationId: string) => Promise<void>; // 追加
   isLoading: boolean;
 }
 
@@ -175,6 +176,25 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const deleteNotification = async (notificationId: string) => {
+    if (!currentUserAppProfileId) return;
+    // Optimistic update
+    setNotifications(prev => prev.filter(n => n.id !== notificationId));
+    // 未読だった場合は未読件数も減らす
+    if (notifications.find(n => n.id === notificationId && !n.is_read)) {
+        setUnreadCount(prev => Math.max(0, prev - 1));
+    }
+
+    const { error } = await supabase
+      .from('notifications')
+      .delete()
+      .eq('id', notificationId)
+      .eq('user_id', currentUserAppProfileId); // ユーザーIDも条件に含めることでセキュリティを強化
+    if (error) {
+      console.error('Error deleting notification in context', error);
+      fetchUnreadCount(); // Rollback or re-fetch
+    }
+  };
 
   return (
     <NotificationContext.Provider value={{ 
@@ -183,6 +203,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
         fetchUnreadCount,
         markNotificationAsRead,
         markAllNotificationsAsRead,
+        deleteNotification,
         isLoading 
     }}>
       {children}
