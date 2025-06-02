@@ -4,30 +4,48 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
 import { ja } from 'date-fns/locale';
-import { MapPin, ThumbsUp, MessageCircle, Share2 } from 'lucide-react';
+import { MapPin, Heart, MessageCircle, Share2, Clock } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import { PostWithAuthor as Post } from '@/types/post';
+import { PostWithAuthor } from '@/types/post';
 import { supabase } from '@/lib/supabaseClient';
 
-interface PostCardProps {
-  post: Post;
+function formatRemainingTime(expiresAt: number): string {
+  const now = Date.now();
+  const remainingMillis = expiresAt - now;
+
+  if (remainingMillis <= 0) return "掲載終了";
+
+  const hours = Math.floor(remainingMillis / (1000 * 60 * 60));
+  const minutes = Math.floor((remainingMillis % (1000 * 60 * 60)) / (1000 * 60));
+  
+  if (hours > 0) {
+    return `残り約${hours}時間${minutes > 0 ? `${minutes}分` : ''}`;
+  }
+  return `残り約${minutes}分`;
 }
 
-export function PostCard({ post }: PostCardProps) {
-  const [liked, setLiked] = useState(false);
-  const [likeCount, setLikeCount] = useState(post.likes_count || 0);
-  
-  const handleLike = () => {
-    if (liked) {
-      setLikeCount(prev => prev - 1);
-    } else {
-      setLikeCount(prev => prev + 1);
+interface ExtendedPostWithAuthor extends PostWithAuthor {
+  isLikedByCurrentUser?: boolean;
+  likes_count: number;
+}
+
+interface PostCardProps {
+  post: ExtendedPostWithAuthor;
+  onLike?: (postId: string, isLiked: boolean) => Promise<void>;
+  currentUserId?: string | null;
+}
+
+export function PostCard({ post, onLike, currentUserId }: PostCardProps) {
+  const handleLikeClick = async () => {
+    if (onLike && currentUserId) {
+      await onLike(post.id, !(post.isLikedByCurrentUser ?? false));
+    } else if (!currentUserId) {
+      alert("いいねをするにはログインが必要です。");
     }
-    setLiked(!liked);
   };
   
   const getCategoryColor = (category: string) => {
@@ -72,7 +90,7 @@ export function PostCard({ post }: PostCardProps) {
       <CardHeader className="p-4 pb-2 space-y-0">
         <div className="flex justify-between items-start">
           <div className="flex items-center space-x-2">
-            <Avatar>
+            <Avatar className="h-8 w-8">
               <AvatarImage src={authorAvatarUrl || undefined} alt={post.author?.display_name || '投稿者'} />
               <AvatarFallback>{post.author?.display_name?.charAt(0) || '?'}</AvatarFallback>
             </Avatar>
@@ -93,60 +111,67 @@ export function PostCard({ post }: PostCardProps) {
         </div>
       </CardHeader>
       
-      <CardContent className="p-4 pt-2">
-        <p className="mb-3">{post.content || '内容がありません'}</p>
+      <CardContent className="p-4 pt-2 flex flex-col">
+        <div className="mb-3 flex-grow" style={{ flexBasis: '33.33%' }}>
+          <p className="text-base text-muted-foreground whitespace-pre-line line-clamp-3">{post.content || '内容がありません'}</p>
+        </div>
         
         {postImageUrl && (
-          <div className="relative rounded-md overflow-hidden mb-3">
+          <div className="relative rounded-md overflow-hidden flex-grow" style={{ flexBasis: '66.66%' }}>
             <img 
               src={postImageUrl} 
               alt="投稿画像" 
-              className="w-full h-48 object-cover"
+              className="w-full h-full object-cover"
             />
             
-            {post.discount_rate !== undefined && post.discount_rate !== null && (
-              <motion.div
-                className="absolute top-2 right-2"
-                variants={discountBadgeVariants}
-                initial="initial"
-                animate="animate"
-              >
-                <Badge className="bg-accent text-white font-bold text-lg px-2 py-1">
-                  {post.discount_rate}% OFF
-                </Badge>
-              </motion.div>
+            <div className="absolute bottom-2 left-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
+              <MapPin className="h-3 w-3 inline-block mr-1" />
+              <span>{post.store_name || '店舗不明'}</span>
+            </div>
+
+            {post.expires_at && (
+              <div className="absolute bottom-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
+                <Clock className="h-3 w-3 inline-block mr-1" />
+                <span>{formatRemainingTime(new Date(post.expires_at).getTime())}</span>
+              </div>
             )}
+
+            <div className="absolute top-2 right-2 flex flex-col items-end space-y-1">
+              {post.discount_rate != null && (
+                <motion.div
+                  variants={discountBadgeVariants}
+                  initial="initial"
+                  animate="animate"
+                >
+                  <Badge className="bg-primary text-primary-foreground font-bold text-lg px-2 py-1 shadow-sm">
+                    {post.discount_rate}% OFF
+                  </Badge>
+                </motion.div>
+              )}
+              {post.price != null && (
+                <Badge className="bg-white text-foreground font-bold text-lg px-2 py-1 shadow-sm">
+                  ¥{post.price.toLocaleString()}
+                </Badge>
+              )}
+            </div>
           </div>
         )}
-        
-        <div className="flex items-center space-x-2 text-sm">
-          {post.expires_at && (
-            <Badge variant="outline" className="bg-accent/10 text-accent">
-              {formatDistanceToNow(new Date(post.expires_at), { locale: ja, addSuffix: true })}まで
-            </Badge>
-          )}
-        </div>
       </CardContent>
       
-      <CardFooter className="p-2 border-t flex justify-between">
+      <CardFooter className="p-2 border-t flex justify-around bg-muted/20">
         <Button 
           variant="ghost" 
           size="sm" 
-          className={cn(liked ? "text-accent" : "text-muted-foreground")}
-          onClick={handleLike}
+          className="flex-1 flex items-center justify-center space-x-1.5 text-muted-foreground hover:text-primary transition-colors py-2.5"
+          onClick={handleLikeClick}
         >
-          <ThumbsUp className="h-4 w-4 mr-1" />
-          <span>{likeCount}</span>
+          <Heart size={18} className={post.isLikedByCurrentUser ? "text-red-500 fill-red-500" : ""} />
+          <span className="font-medium text-sm">{post.likes_count || 0}</span>
         </Button>
         
-        <Button variant="ghost" size="sm" className="text-muted-foreground">
-          <MessageCircle className="h-4 w-4 mr-1" />
-          <span>0</span>
-        </Button>
-        
-        <Button variant="ghost" size="sm" className="text-muted-foreground">
+        <Button variant="ghost" size="sm" className="flex-1 flex items-center justify-center space-x-1.5 text-muted-foreground hover:text-primary transition-colors py-2.5">
           <Share2 className="h-4 w-4 mr-1" />
-          <span>共有</span>
+          <span className="font-medium text-sm">共有</span>
         </Button>
       </CardFooter>
     </Card>
