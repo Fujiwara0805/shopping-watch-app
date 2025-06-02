@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
 import { ja } from 'date-fns/locale';
-import { MapPin, Heart, MessageCircle, Share2, Clock } from 'lucide-react';
+import { Heart, Share2, Clock, Link as LinkIcon, ExternalLink, Instagram, Copy } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,6 +12,8 @@ import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { cn } from '@/lib/utils';
 import { PostWithAuthor } from '@/types/post';
 import { supabase } from '@/lib/supabaseClient';
+import { CustomModal } from '@/components/ui/custom-modal';
+import { useToast } from '@/hooks/use-toast';
 
 function formatRemainingTime(expiresAt: number): string {
   const now = Date.now();
@@ -40,6 +42,9 @@ interface PostCardProps {
 }
 
 export function PostCard({ post, onLike, currentUserId }: PostCardProps) {
+  const [showShareDialog, setShowShareDialog] = useState(false);
+  const { toast } = useToast();
+
   const handleLikeClick = async () => {
     if (onLike && currentUserId) {
       await onLike(post.id, !(post.isLikedByCurrentUser ?? false));
@@ -85,56 +90,113 @@ export function PostCard({ post, onLike, currentUserId }: PostCardProps) {
     ? supabase.storage.from('images').getPublicUrl(post.image_url).data.publicUrl
     : null;
 
+  const copyToClipboard = (text: string, message: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      toast({
+        title: `✅ ${message}`,
+        duration: 2000,
+      });
+      setShowShareDialog(false);
+    }).catch(err => console.error("コピー失敗:", err));
+  };
+
+  const handleCopyStoreName = () => {
+    if (post.store_name) {
+      copyToClipboard(post.store_name, `「${post.store_name}」をコピーしました！`);
+    }
+  };
+
+  const handleInstagramShare = () => {
+    const postUrl = `${window.location.origin}/post/${post.id}`;
+    copyToClipboard(postUrl, "投稿のリンクをコピーしました。Instagramアプリを開いて共有してください。");
+    setShowShareDialog(false);
+  };
+
+  const handleNativeShare = async () => {
+    const shareData = {
+      title: `${post.store_name}の${post.category}がお得！`,
+      text: post.content,
+      url: `${window.location.origin}/post/${post.id}`,
+    };
+    if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+      try {
+        await navigator.share(shareData);
+        setShowShareDialog(false);
+      } catch (error) {
+        console.error('ネイティブ共有失敗:', error);
+      }
+    } else {
+      console.warn('ネイティブ共有APIが利用できません、またはこのデータを共有できません。');
+      copyToClipboard(shareData.url, "リンクをコピーしました！");
+    }
+  };
+
   return (
     <Card className="overflow-hidden">
-      <CardHeader className="p-4 pb-2 space-y-0">
+      <CardHeader className="p-3 pb-1 space-y-0">
         <div className="flex justify-between items-start">
           <div className="flex items-center space-x-2">
-            <Avatar className="h-8 w-8">
+            <Avatar className="h-7 w-7">
               <AvatarImage src={authorAvatarUrl || undefined} alt={post.author?.display_name || '投稿者'} />
-              <AvatarFallback>{post.author?.display_name?.charAt(0) || '?'}</AvatarFallback>
+              <AvatarFallback className="text-xs">{post.author?.display_name?.charAt(0) || '?'}</AvatarFallback>
             </Avatar>
-            <div>
-              <p className="font-medium text-sm">{post.author?.display_name || '不明な投稿者'}</p>
-              <div className="flex items-center text-xs text-muted-foreground">
-                <MapPin className="h-3 w-3 mr-1" />
-                <span>{post.store_name || '店舗不明'}</span>
-                <span className="mx-1">•</span>
-                <span>{formattedDate}</span>
-              </div>
-            </div>
+            <p className="font-semibold text-base text-foreground">{post.author?.display_name || '不明な投稿者'}</p>
           </div>
           
-          <Badge className={cn("ml-auto", getCategoryColor(post.category || ''))}>
+          <Badge className={cn("ml-auto text-sm", getCategoryColor(post.category || ''))}>
             {post.category || '不明'}
           </Badge>
         </div>
       </CardHeader>
       
-      <CardContent className="p-4 pt-2 flex flex-col">
-        <div className="mb-3 flex-grow" style={{ flexBasis: '33.33%' }}>
-          <p className="text-base text-muted-foreground whitespace-pre-line line-clamp-3">{post.content || '内容がありません'}</p>
+      <CardContent className="p-3 pt-1 flex flex-col h-full">
+        <div className="flex-grow overflow-hidden" style={{ flexBasis: '50%', marginBottom: '0.75rem' }}>
+          <p className="text-lg text-muted-foreground whitespace-pre-line line-clamp-3">{post.content || '内容がありません'}</p>
         </div>
         
         {postImageUrl && (
-          <div className="relative rounded-md overflow-hidden flex-grow" style={{ flexBasis: '66.66%' }}>
+          <div className="relative rounded-md overflow-hidden flex-grow" style={{ flexBasis: '50%' }}>
             <img 
               src={postImageUrl} 
               alt="投稿画像" 
               className="w-full h-full object-cover"
             />
             
-            <div className="absolute bottom-2 left-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
-              <MapPin className="h-3 w-3 inline-block mr-1" />
-              <span>{post.store_name || '店舗不明'}</span>
-            </div>
+            <div className="absolute top-2 left-2 flex items-center space-x-2">
+              <Button 
+                variant="ghost" 
+                size="icon"
+                className="bg-black/60 text-white rounded-full hover:bg-black/80 transition-colors"
+                onClick={handleLikeClick}
+              >
+                <Heart size={18} className={post.isLikedByCurrentUser ? "text-red-500 fill-red-500" : ""} />
+              </Button>
+              
+              <Button 
+                variant="ghost" 
+                size="icon"
+                className="bg-black/60 text-white rounded-full hover:bg-black/80 transition-colors"
+                onClick={() => setShowShareDialog(true)}
+              >
+                <Share2 size={18} />
+              </Button>
 
-            {post.expires_at && (
-              <div className="absolute bottom-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
-                <Clock className="h-3 w-3 inline-block mr-1" />
-                <span>{formatRemainingTime(new Date(post.expires_at).getTime())}</span>
-              </div>
-            )}
+              {post.expires_at && (
+                <div className="bg-black/60 text-white text-xs px-2 py-1 rounded-full flex items-center space-x-1">
+                  <Clock size={14} className="" />
+                  <span>{formatRemainingTime(new Date(post.expires_at).getTime())}</span>
+                </div>
+              )}
+            </div>
+            
+            <Button 
+              variant="ghost"
+              className="absolute bottom-1 left-1 bg-black/60 text-white text-lg font-bold px-3 py-1 rounded-md h-auto hover:bg-black/80 transition-colors flex items-center space-x-1"
+              onClick={handleCopyStoreName}
+            >
+              <Copy size={16} />
+              <span>{post.store_name || '店舗不明'}</span>
+            </Button>
 
             <div className="absolute top-2 right-2 flex flex-col items-end space-y-1">
               {post.discount_rate != null && (
@@ -158,22 +220,46 @@ export function PostCard({ post, onLike, currentUserId }: PostCardProps) {
         )}
       </CardContent>
       
-      <CardFooter className="p-2 border-t flex justify-around bg-muted/20">
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          className="flex-1 flex items-center justify-center space-x-1.5 text-muted-foreground hover:text-primary transition-colors py-2.5"
-          onClick={handleLikeClick}
-        >
-          <Heart size={18} className={post.isLikedByCurrentUser ? "text-red-500 fill-red-500" : ""} />
-          <span className="font-medium text-sm">{post.likes_count || 0}</span>
-        </Button>
-        
-        <Button variant="ghost" size="sm" className="flex-1 flex items-center justify-center space-x-1.5 text-muted-foreground hover:text-primary transition-colors py-2.5">
-          <Share2 className="h-4 w-4 mr-1" />
-          <span className="font-medium text-sm">共有</span>
-        </Button>
-      </CardFooter>
+      <CustomModal
+        isOpen={showShareDialog}
+        onClose={() => setShowShareDialog(false)}
+        title="投稿を共有"
+        description="このお得情報を友達に知らせよう！"
+      >
+        <div className="space-y-3">
+          <Button
+            variant="outline"
+            className="w-full justify-start text-left py-3 h-auto text-base"
+            onClick={() => {
+                copyToClipboard(`${window.location.origin}/post/${post.id}`, "リンクをコピーしました！");
+            }}
+          >
+            <LinkIcon className="mr-2.5 h-5 w-5" />
+            リンクをコピー
+          </Button>
+          <Button
+            className="w-full justify-start text-left py-3 h-auto text-base bg-[#1DA1F2] hover:bg-[#1a91da] text-white"
+            onClick={() => {
+                window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(`${post.store_name}の${post.category}がお得！ ${post.content}`)}&url=${encodeURIComponent(`${window.location.origin}/post/${post.id}`)}`, '_blank');
+                setShowShareDialog(false);
+            }}
+          >
+            <svg className="mr-2.5 h-5 w-5 fill-current" viewBox="0 0 24 24" aria-hidden="true"><g><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"></path></g></svg>
+            X (Twitter) で共有
+          </Button>
+          <Button
+            variant="outline"
+            className="w-full justify-start text-left py-3 h-auto text-base bg-[#E1306C] hover:bg-[#c92a5f] text-white"
+            onClick={handleInstagramShare}
+          >
+            <Instagram className="mr-2.5 h-5 w-5" />
+            Instagramで共有
+          </Button>
+        </div>
+        <div className="mt-6 flex justify-end">
+            <Button variant="ghost" onClick={() => setShowShareDialog(false)} className="text-base px-5 py-2.5 h-auto">閉じる</Button>
+        </div>
+      </CustomModal>
     </Card>
   );
 }
