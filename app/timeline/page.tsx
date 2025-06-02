@@ -1,23 +1,31 @@
 "use client";
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PostFilter } from '@/components/posts/post-filter';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Post } from '@/types/post';
 import { Button } from '@/components/ui/button';
-import { LayoutGrid } from 'lucide-react';
+import { LayoutGrid, Search, Star, MapPin, Loader2, SlidersHorizontal } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { PostWithAuthor, AuthorProfile } from '@/types/post';
 import { useSession } from 'next-auth/react';
 import AppLayout from '@/components/layout/app-layout';
 import { useSearchParams } from 'next/navigation';
 import { PostCard } from '@/components/posts/post-card';
+import { Input } from '@/components/ui/input';
+import { CustomModal } from '@/components/ui/custom-modal';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { cn } from '@/lib/utils';
 
 interface ExtendedPostWithAuthor extends PostWithAuthor {
   isLikedByCurrentUser?: boolean;
   likes_count: number;
 }
+
+type SortOption = 'created_at_desc' | 'created_at_asc' | 'expires_at_asc';
+
+const categories = ['すべて', '惣菜', '弁当', '肉', '魚', '野菜', '果物', 'その他'];
 
 export default function Timeline() {
   const [posts, setPosts] = useState<ExtendedPostWithAuthor[]>([]);
@@ -31,6 +39,28 @@ export default function Timeline() {
   const searchParams = useSearchParams();
   const [highlightPostId, setHighlightPostId] = useState<string | null>(null);
 
+  const [generalSearchTerm, setGeneralSearchTerm] = useState<string>('');
+  const [searchMode, setSearchMode] = useState<'all' | 'category' | 'favorite' | 'nearby'>('all');
+  const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [isGettingLocation, setIsGettingLocation] = useState(false);
+  const [favoriteStoreIds, setFavoriteStoreIds] = useState<string[]>([]);
+  const [showFilterModal, setShowFilterModal] = useState(false);
+  const [sortBy, setSortBy] = useState<SortOption>('created_at_desc');
+
+  const activeFilterRef = useRef(activeFilter);
+  const generalSearchTermRef = useRef(generalSearchTerm);
+  const searchModeRef = useRef(searchMode);
+  const userLocationRef = useRef(userLocation);
+  const favoriteStoreIdsRef = useRef(favoriteStoreIds);
+  const sortByRef = useRef(sortBy);
+
+  useEffect(() => { activeFilterRef.current = activeFilter; }, [activeFilter]);
+  useEffect(() => { generalSearchTermRef.current = generalSearchTerm; }, [generalSearchTerm]);
+  useEffect(() => { searchModeRef.current = searchMode; }, [searchMode]);
+  useEffect(() => { userLocationRef.current = userLocation; }, [userLocation]);
+  useEffect(() => { favoriteStoreIdsRef.current = favoriteStoreIds; }, [favoriteStoreIds]);
+  useEffect(() => { sortByRef.current = sortBy; }, [sortBy]);
+
   useEffect(() => {
     const id = searchParams.get('highlightPostId');
     if (id) {
@@ -38,9 +68,45 @@ export default function Timeline() {
     }
   }, [searchParams]);
 
+  useEffect(() => {
+    const fetchFavoriteStoreIds = async () => {
+      if (!currentUserId) {
+        setFavoriteStoreIds([]);
+        return;
+      }
+      try {
+        const { data, error } = await supabase
+          .from('favorite_stores')
+          .select('store_id')
+          .eq('user_id', currentUserId);
+        
+        if (error) {
+          console.error('お気に入り店舗の取得に失敗しました:', error);
+          setFavoriteStoreIds([]);
+        } else {
+          setFavoriteStoreIds(data.map(item => item.store_id));
+        }
+      } catch (e) {
+        console.error('お気に入り店舗の取得中に予期せぬエラー:', e);
+        setFavoriteStoreIds([]);
+      }
+    };
+    if (session?.user?.id) {
+      fetchFavoriteStoreIds();
+    }
+  }, [currentUserId, session?.user?.id]);
+
   const fetchPosts = useCallback(async (offset = 0, isInitial = false) => {
+    const currentActiveFilter = activeFilterRef.current;
+    const currentGeneralSearchTerm = generalSearchTermRef.current;
+    const currentSearchMode = searchModeRef.current;
+    const currentUserLocation = userLocationRef.current;
+    const currentFavoriteStoreIds = favoriteStoreIdsRef.current;
+    const currentSortBy = sortByRef.current;
+
     if (isInitial) {
       setLoading(true);
+      setPosts([]);
     } else {
       setLoadingMore(true);
     }
@@ -66,13 +132,32 @@ export default function Timeline() {
           ),
           post_likes ( user_id )
         `)
-        .gt('expires_at', now)
-        .order('created_at', { ascending: false })
-        .range(offset, offset + 19); // 20件ずつ取得
+        .gt('expires_at', now);
 
-      if (activeFilter !== 'all') {
-        query = query.eq('category', activeFilter);
+      if (currentSearchMode === 'category' && currentActiveFilter !== 'all') {
+        query = query.eq('category', currentActiveFilter);
+      } else if (currentSearchMode === 'favorite' && currentFavoriteStoreIds.length > 0) {
+        query = query.in('store_id', currentFavoriteStoreIds);
+      } else if (currentSearchMode === 'all' && currentGeneralSearchTerm) {
+        query = query.or(`store_name.ilike.%${currentGeneralSearchTerm}%,category.ilike.%${currentGeneralSearchTerm}%,content.ilike.%${currentGeneralSearchTerm}%`);
+      } else if (currentSearchMode === 'nearby' && currentUserLocation) {
+        console.log('周辺検索が有効化されました。ユーザー位置:', currentUserLocation);
+        setError("周辺検索機能は現在開発中です。今後実装予定です。");
+        setLoading(false);
+        setLoadingMore(false);
+        setHasMore(false);
+        return;
       }
+
+      if (currentSortBy === 'created_at_desc') {
+        query = query.order('created_at', { ascending: false });
+      } else if (currentSortBy === 'created_at_asc') {
+        query = query.order('created_at', { ascending: true });
+      } else if (currentSortBy === 'expires_at_asc') {
+        query = query.order('expires_at', { ascending: true });
+      }
+
+      query = query.range(offset, offset + 19);
 
       const { data, error: dbError } = await query;
 
@@ -93,7 +178,6 @@ export default function Timeline() {
         setPosts(prevPosts => [...prevPosts, ...processedPosts as ExtendedPostWithAuthor[]]);
       }
 
-      // 20件未満の場合、これ以上データがないと判断
       setHasMore(data.length === 20);
     } catch (e: any) {
       console.error("投稿の取得に失敗しました:", e);
@@ -102,33 +186,30 @@ export default function Timeline() {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [activeFilter, currentUserId]);
+  }, [currentUserId]);
 
   useEffect(() => {
     fetchPosts(0, true);
   }, [fetchPosts]);
 
-  // ハイライトとスクロールのためのeffect
   useEffect(() => {
     if (highlightPostId && posts.length > 0) {
       const element = document.getElementById(`post-${highlightPostId}`);
       if (element) {
         element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        // ハイライトアニメーションを適用するために、少し遅延させる
         setTimeout(() => {
-          setHighlightPostId(null); // 一度ハイライトしたらリセット
-        }, 3000); // 3秒後にハイライトを解除
+          setHighlightPostId(null);
+        }, 3000);
       }
     }
   }, [highlightPostId, posts]);
 
   const loadMorePosts = useCallback(() => {
-    if (!loadingMore && hasMore) {
+    if (!loadingMore && hasMore && searchModeRef.current !== 'nearby') {
       fetchPosts(posts.length, false);
     }
   }, [fetchPosts, posts.length, loadingMore, hasMore]);
 
-  // スクロール監視のためのeffect
   useEffect(() => {
     const handleScroll = (event: Event) => {
       const target = event.target as HTMLElement;
@@ -169,17 +250,65 @@ export default function Timeline() {
     }
   };
 
-  if (loading && posts.length === 0) {
+  const handleNearbySearch = () => {
+    setIsGettingLocation(true);
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+          });
+          setSearchMode('nearby');
+          setIsGettingLocation(false);
+          setShowFilterModal(false);
+          fetchPosts(0, true);
+        },
+        (error) => {
+          console.error('位置情報の取得に失敗しました:', error);
+          setError('位置情報の取得に失敗しました。ブラウザの設定をご確認ください。');
+          setIsGettingLocation(false);
+          setUserLocation(null);
+          setSearchMode('all');
+          setShowFilterModal(false);
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    } else {
+      setError('お使いのブラウザは位置情報に対応していません。');
+      setIsGettingLocation(false);
+      setSearchMode('all');
+      setShowFilterModal(false);
+    }
+  };
+
+  const handleApplyFilters = () => {
+    setShowFilterModal(false);
+    fetchPosts(0, true);
+  };
+
+  if (loading && posts.length === 0 && searchModeRef.current !== 'nearby') {
     return (
       <AppLayout>
-        {/* フィルター部分 - 固定 */}
-        <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
-          <div className="p-4">
-            <PostFilter activeFilter={activeFilter} setActiveFilter={setActiveFilter} />
-          </div>
+        <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b p-4 flex items-center space-x-2">
+          <Input
+            type="text"
+            placeholder="店舗名やキーワードで検索"
+            value={generalSearchTerm}
+            onChange={(e) => setGeneralSearchTerm(e.target.value)}
+            className="flex-1"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                setSearchMode('all');
+                fetchPosts(0, true);
+              }
+            }}
+          />
+          <Button onClick={() => setShowFilterModal(true)} variant="outline">
+            <SlidersHorizontal className="h-4 w-4" />
+          </Button>
         </div>
         
-        {/* ローディング表示 */}
         <div className="p-4">
           <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {[...Array(8)].map((_, i) => (
@@ -194,6 +323,24 @@ export default function Timeline() {
   if (error) {
     return (
       <AppLayout>
+        <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b p-4 flex items-center space-x-2">
+          <Input
+            type="text"
+            placeholder="店舗名やキーワードで検索"
+            value={generalSearchTerm}
+            onChange={(e) => setGeneralSearchTerm(e.target.value)}
+            className="flex-1"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                setSearchMode('all');
+                fetchPosts(0, true);
+              }
+            }}
+          />
+          <Button onClick={() => setShowFilterModal(true)} variant="outline">
+            <SlidersHorizontal className="h-4 w-4" />
+          </Button>
+        </div>
         <div className="p-4">
           <div className="text-center">
             <p className="text-destructive text-lg">{error}</p>
@@ -206,18 +353,29 @@ export default function Timeline() {
 
   return (
     <AppLayout>
-      {/* フィルター部分 - 固定 */}
-      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
-        <div className="p-4">
-          <PostFilter activeFilter={activeFilter} setActiveFilter={setActiveFilter} />
-        </div>
+      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b p-4 flex items-center space-x-2">
+        <Input
+          type="text"
+          placeholder="店舗名やキーワードで検索"
+          value={generalSearchTerm}
+          onChange={(e) => setGeneralSearchTerm(e.target.value)}
+          className="flex-1"
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              setSearchMode('all');
+              fetchPosts(0, true);
+            }
+          }}
+        />
+        <Button onClick={() => setShowFilterModal(true)} variant="outline">
+          <SlidersHorizontal className="h-4 w-4" />
+        </Button>
       </div>
       
-      {/* 投稿一覧部分 - スクロール可能 */}
       <div 
         className="timeline-scroll-container custom-scrollbar overscroll-none"
         style={{ 
-          height: 'calc(100vh - 120px)', // フィルター部分の高さを引く
+          height: 'calc(100vh - 120px)',
           maxHeight: 'calc(100vh - 120px)',
           overflowY: 'auto',
           overflowX: 'hidden'
@@ -227,7 +385,7 @@ export default function Timeline() {
           {posts.length === 0 && !loading ? (
             <div className="text-center py-10">
               <LayoutGrid size={48} className="mx-auto text-muted-foreground mb-4" />
-              <p className="text-xl text-muted-foreground">このカテゴリの投稿はまだありません。</p>
+              <p className="text-xl text-muted-foreground">この検索条件に合う投稿はまだありません。</p>
             </div>
           ) : (
             <motion.div
@@ -257,7 +415,6 @@ export default function Timeline() {
             </motion.div>
           )}
           
-          {/* 追加読み込み中の表示 */}
           {loadingMore && (
             <div className="mt-6">
               <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -268,17 +425,95 @@ export default function Timeline() {
             </div>
           )}
           
-          {/* すべて読み込み完了の表示 */}
           {!hasMore && posts.length > 0 && (
             <div className="text-center py-8">
               <p className="text-muted-foreground">すべての投稿を読み込みました</p>
             </div>
           )}
           
-          {/* 最後の余白 */}
           <div className="h-4"></div>
         </div>
       </div>
+
+      <CustomModal
+        isOpen={showFilterModal}
+        onClose={() => setShowFilterModal(false)}
+        title="検索フィルター"
+        description="検索条件と表示順を設定できます。"
+      >
+        <div className="space-y-6">
+          <div>
+            <h3 className="font-semibold text-lg mb-2">カテゴリーで絞り込み</h3>
+            <div className="grid grid-cols-3 gap-2">
+              {categories.map((category) => (
+                <Button
+                  key={category}
+                  variant={activeFilter === category || (activeFilter === 'all' && category === 'すべて') ? 'default' : 'outline'}
+                  onClick={() => {
+                    setActiveFilter(category === 'すべて' ? 'all' : category);
+                    setSearchMode('category');
+                  }}
+                  className={cn(
+                    "w-full",
+                    (activeFilter === category || (activeFilter === 'all' && category === 'すべて')) && "bg-primary text-primary-foreground"
+                  )}
+                >
+                  {category}
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <h3 className="font-semibold text-lg mb-2">表示順</h3>
+            <Select onValueChange={(value: SortOption) => setSortBy(value)} defaultValue={sortBy}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="並び替え" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="created_at_desc">新着順</SelectItem>
+                <SelectItem value="created_at_asc">古い順</SelectItem>
+                <SelectItem value="expires_at_asc">期限が近い順</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex flex-col space-y-3">
+            <h3 className="font-semibold text-lg mb-1">特別な検索</h3>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setSearchMode('favorite');
+                setGeneralSearchTerm('');
+                setActiveFilter('all');
+                handleApplyFilters();
+              }}
+              disabled={!currentUserId}
+              className="justify-start"
+            >
+              <Star className="h-4 w-4 mr-2" />
+              お気に入り店を検索
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={handleNearbySearch}
+              disabled={isGettingLocation}
+              className="justify-start"
+            >
+              {isGettingLocation ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <MapPin className="h-4 w-4 mr-2" />
+              )}
+              周辺から検索
+            </Button>
+          </div>
+        </div>
+
+        <div className="mt-6 flex justify-end">
+          <Button onClick={handleApplyFilters}>フィルターを適用</Button>
+        </div>
+      </CustomModal>
     </AppLayout>
   );
 }
