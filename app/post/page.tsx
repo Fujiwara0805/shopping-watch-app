@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { Camera, Upload, X, Store as StoreIcon, LayoutGrid, ClipboardList, Image as ImageIcon, Percent, CalendarClock, PackageIcon, Calculator, ClockIcon, JapaneseYen } from 'lucide-react';
+import { Camera, Upload, X, Store as StoreIcon, LayoutGrid, ClipboardList, Image as ImageIcon, Percent, CalendarClock, PackageIcon, Calculator, ClockIcon, Tag } from 'lucide-react';
 import AppLayout from '@/components/layout/app-layout';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -26,6 +26,11 @@ import { calculateExpiresAt } from '@/lib/expires-at-date';
 import { v4 as uuidv4 } from 'uuid';
 import FavoriteStoreInput from '@/components/profile/FavoriteStoreInput';
 import { CustomModal } from '@/components/ui/custom-modal';
+import { format } from "date-fns";
+import { ja } from "date-fns/locale";
+import { useToast } from "@/hooks/use-toast";
+import { useLoadScript, Autocomplete, GoogleMap } from "@react-google-maps/api";
+
 
 declare global {
   interface Window {
@@ -65,15 +70,29 @@ const postSchema = z.object({
   expiryTime: z.string().optional(),
   remainingItems: z.string().optional(),
   expiryOption: z.enum(['1h', '3h', '24h'], { required_error: '掲載期間を選択してください' }),
+  location_lat: z.number().optional().nullable(),
+  location_lng: z.number().optional().nullable(),
 });
 
 type PostFormValues = z.infer<typeof postSchema>;
 
 type DisplayStore = Pick<Store, 'name'> & { id: string };
 
+const libraries: ("places")[] = ["places"];
+
+const categories = ['惣菜', '弁当', '肉', '魚', '野菜', '果物', '米・パン類', 'デザート類', 'その他'];
+
+const expiryOptions = [
+  { value: 1, label: '1時間後' },
+  { value: 3, label: '3時間後' },
+  { value: 6, label: '6時間後' },
+  { value: 12, label: '12時間後' },
+];
+
 export default function PostPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const { toast } = useToast();
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -88,6 +107,17 @@ export default function PostPage() {
     permissionState,
     requestLocation
   } = useGeolocation();
+
+  const [loading, setLoading] = useState(false);
+  const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
+  const storeInputRef = useRef<HTMLInputElement>(null);
+  const [placeId, setPlaceId] = useState<string | null>(null);
+  const [storeAddress, setStoreAddress] = useState<string>('');
+
+  const { isLoaded, loadError } = useLoadScript({
+    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
+    libraries,
+  });
 
   const form = useForm<PostFormValues>({
     resolver: zodResolver(postSchema),
@@ -295,6 +325,64 @@ export default function PostPage() {
     currentPlaceholder: getSelectPlaceholder(),
   });
 
+  useEffect(() => {
+    if (isLoaded && storeInputRef.current) {
+      const newAutocomplete = new google.maps.places.Autocomplete(storeInputRef.current, {
+        types: ['establishment'],
+        componentRestrictions: { 'country': ['jp'] },
+      });
+      newAutocomplete.addListener('place_changed', () => {
+        const place = newAutocomplete.getPlace();
+        if (place.geometry && place.geometry.location) {
+          form.setValue("storeName", place.name || "");
+          form.setValue("location_lat", place.geometry.location.lat());
+          form.setValue("location_lng", place.geometry.location.lng());
+          setPlaceId(place.place_id || null);
+          setStoreAddress(place.formatted_address || '');
+        }
+      });
+      setAutocomplete(newAutocomplete);
+    }
+  }, [isLoaded, form]);
+
+  const handleGetCurrentLocationForSearch = () => {
+    if (navigator.geolocation && autocomplete) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const circle = new google.maps.Circle({
+            center: {
+              lat: position.coords.latitude,
+              lng: position.coords.longitude,
+            },
+            radius: 50000, // 50km
+          });
+          autocomplete.setBounds(circle.getBounds() as google.maps.LatLngBounds);
+          toast({
+            title: "現在地を検索に適用しました。",
+            description: "周辺の店舗が検索されやすくなります。",
+            duration: 3000,
+          });
+        },
+        (error) => {
+          console.error("位置情報の取得に失敗しました:", error);
+          toast({
+            title: "位置情報の取得に失敗しました。",
+            description: "ブラウザの設定をご確認ください。",
+            variant: "destructive",
+            duration: 3000,
+          });
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    } else {
+      toast({
+        title: "お使いのブラウザは位置情報に対応していません。",
+        variant: "destructive",
+        duration: 3000,
+      });
+    }
+  };
+
   if (status === "loading") {
     return (
       <AppLayout>
@@ -354,7 +442,7 @@ export default function PostPage() {
                     )}
                   </div>
                 </FormControl>
-                <p className="text-xs text-red-500 mt-1">※陳列している商品の画像はアップしないでください。購入後の商品の画像をアップしてください。</p>
+                <p className="text-sm text-red-500 mt-1">※陳列している商品の画像をアップしないでください。購入後の商品の画像をアップしてください。</p>
               </FormItem>
 
               <FormField
@@ -401,7 +489,7 @@ export default function PostPage() {
                         defaultValue={field.value}
                         className="grid grid-cols-3 gap-2"
                       >
-                        {['惣菜', '弁当', '肉', '魚', '野菜', '果物', 'その他'].map((category) => (
+                        {categories.map((category) => (
                           <div key={category}>
                             <RadioGroupItem
                               value={category}
@@ -437,7 +525,7 @@ export default function PostPage() {
                     </FormLabel>
                     <FormControl>
                       <Textarea
-                        placeholder="値引き内容や商品の状態を入力してください"
+                        placeholder="値引き内容や商品の状態を入力してください（240文字以内）"
                         className="resize-none text-lg"
                         rows={5}
                         {...field}
@@ -476,7 +564,7 @@ export default function PostPage() {
                 name="price"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-xl flex items-center"><JapaneseYen className="mr-2 h-6 w-6" />価格 (税込・任意)</FormLabel>
+                    <FormLabel className="text-xl flex font-semibold items-center"><Tag className="mr-2 h-6 w-6" />価格 (税込)</FormLabel>
                     <FormControl>
                       <Input
                         type="number"
@@ -561,14 +649,10 @@ export default function PostPage() {
                         defaultValue={field.value}
                         className="grid grid-cols-3 gap-2"
                       >
-                        {[
-                          { value: '1h', label: '1時間' },
-                          { value: '3h', label: '3時間' },
-                          { value: '24h', label: '24時間' },
-                        ].map((option) => (
+                        {expiryOptions.map((option) => (
                           <div key={option.value}>
                             <RadioGroupItem
-                              value={option.value}
+                              value={option.value.toString()}
                               id={`expiryOption-${option.value}`}
                               className="peer sr-only"
                             />
