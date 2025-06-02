@@ -462,7 +462,7 @@ export default function Timeline() {
           {posts.length === 0 && !loading ? (
             <div className="text-center py-10">
               <LayoutGrid size={48} className="mx-auto text-muted-foreground mb-4" />
-              <p className="text-xl text-muted-foreground">この検索条件に合う投稿はまだありません。</p>
+              <p className="text-xl text-muted-foreground">検索条件に合う投稿はまだありません。</p>
             </div>
           ) : (
             <motion.div

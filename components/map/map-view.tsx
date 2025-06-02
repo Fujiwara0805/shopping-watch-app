@@ -24,7 +24,6 @@ import {
 } from "@/components/ui/tooltip";
 import { X as CloseIcon } from 'lucide-react';
 import { useGoogleMapsApi } from '@/components/providers/GoogleMapsApiProvider';
-import { LocationPermissionDialog } from '@/components/common/LocationPermissionDialog';
 import { MapSearchControl } from './MapSearchControl';
 import { motion } from 'framer-motion';
 
@@ -50,7 +49,6 @@ export function MapView() {
     requestLocation 
   } = useGeolocation();
 
-  const [showCustomPermissionDialog, setShowCustomPermissionDialog] = useState(false);
   const [mapInitialized, setMapInitialized] = useState(false);
   const [initializationError, setInitializationError] = useState<string | null>(null);
 
@@ -59,33 +57,7 @@ export function MapView() {
   const [distanceToSelectedPlace, setDistanceToSelectedPlace] = useState<string | null>(null);
   const [userLocationMarker, setUserLocationMarker] = useState<google.maps.Marker | null>(null);
 
-  useEffect(() => {
-    if (permissionState === 'prompt' || 
-        (permissionState === 'denied' && 
-         !locationError?.includes("ブロックされて") && 
-         !locationError?.includes("利用できません") &&
-         !locationError?.includes("User denied Geolocation")
-        )) {
-      console.log("MapView: setShowCustomPermissionDialog to true due to permissionState:", permissionState, "locationError:", locationError);
-      setShowCustomPermissionDialog(true);
-    } else {
-      setShowCustomPermissionDialog(false);
-    }
-  }, [permissionState, locationError]);
-
-  const handleAllowLocation = (option: 'once' | 'while-using') => {
-    setShowCustomPermissionDialog(false);
-    if (permissionState !== 'granted') {
-        console.log("MapView: requestLocation called from handleAllowLocation");
-        requestLocation();
-    }
-  };
-
-  const handleDenyLocation = () => {
-    setShowCustomPermissionDialog(false);
-    console.log("MapView: Location denied via custom dialog.");
-  };
-
+  // MessageCard コンポーネントの定義をここに追加 (または再配置) してください
   const MessageCard = ({ icon: Icon, title, message, children, variant = 'default' }: {
     icon?: React.ElementType;
     title: string;
@@ -265,7 +237,7 @@ export function MapView() {
     );
   }
 
-  if (locationLoading && !showCustomPermissionDialog && !mapInitialized && !initializationError) {
+  if (locationLoading && !mapInitialized && !initializationError) {
     return (
       <div className="relative h-full w-full">
         <div ref={mapContainerRef} id="map-canvas-placeholder" className="h-full w-full bg-muted opacity-0 pointer-events-none" />
@@ -309,14 +281,7 @@ export function MapView() {
         </div>
       )}
       
-      <LocationPermissionDialog
-        isOpen={showCustomPermissionDialog}
-        onAllow={handleAllowLocation}
-        onDeny={handleDenyLocation}
-        appName="お惣菜ウォッチャー" 
-      />
-      
-      {permissionState === 'denied' && !showCustomPermissionDialog && locationError && (
+      {permissionState === 'denied' && !locationError && (
          <MessageCard 
             title="位置情報を取得できません" 
             message={locationError}
