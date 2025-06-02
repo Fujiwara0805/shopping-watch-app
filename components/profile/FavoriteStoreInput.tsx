@@ -64,16 +64,24 @@ const FavoriteStoreInput = React.forwardRef<HTMLInputElement, FavoriteStoreInput
     };
 
     useEffect(() => {
+      // isMapsApiLoadedがfalse、localInputRef.currentがnull、またはmapsApiLoadErrorがある場合、
+      // 既存のAutocompleteリスナーをクリアして早期リターン
       if (!isMapsApiLoaded || !localInputRef.current || mapsApiLoadError) {
-        if (autocompleteRef.current && google?.maps?.event) {
-          google.maps.event.clearInstanceListeners(autocompleteRef.current);
-          autocompleteRef.current = null;
+        // google.maps.event と clearInstanceListeners メソッドが利用可能か確認
+        if (autocompleteRef.current && window.google?.maps?.event?.clearInstanceListeners) {
+          window.google.maps.event.clearInstanceListeners(autocompleteRef.current);
+          autocompleteRef.current = null; // 参照もクリア
         }
         return;
       }
 
-      if (autocompleteRef.current) { // すでに初期化済みならリスナーだけ再設定の可能性も考慮
-        google.maps.event.clearInstanceListeners(autocompleteRef.current);
+      // Autocompleteがすでに初期化されている場合、既存のリスナーをクリア
+      // （再初期化前に古いリスナーを確実に解除するため）
+      if (autocompleteRef.current) {
+        // google.maps.event と clearInstanceListeners メソッドが利用可能か確認
+        if (window.google?.maps?.event?.clearInstanceListeners) {
+          window.google.maps.event.clearInstanceListeners(autocompleteRef.current);
+        }
       }
 
       const options: google.maps.places.AutocompleteOptions = {
@@ -83,9 +91,9 @@ const FavoriteStoreInput = React.forwardRef<HTMLInputElement, FavoriteStoreInput
       };
 
       if (userLocation) {
-        const circle = new google.maps.Circle({
+        const circle = new window.google.maps.Circle({
           center: userLocation,
-          radius: 500, 
+          radius: 500,
         });
         const bounds = circle.getBounds();
         if (bounds) {
@@ -93,11 +101,11 @@ const FavoriteStoreInput = React.forwardRef<HTMLInputElement, FavoriteStoreInput
         }
       }
 
-      autocompleteRef.current = new google.maps.places.Autocomplete(localInputRef.current, options);
+      autocompleteRef.current = new window.google.maps.places.Autocomplete(localInputRef.current, options);
       console.log('FavoriteStoreInput: Autocomplete initialized with input element:', localInputRef.current);
 
 
-      const listener = autocompleteRef.current.addListener('place_changed', () => {
+      const listener = autocompleteRef.current!.addListener('place_changed', () => {
         const place = autocompleteRef.current?.getPlace();
         console.log('FavoriteStoreInput place_changed - place:', place);
 
@@ -123,11 +131,13 @@ const FavoriteStoreInput = React.forwardRef<HTMLInputElement, FavoriteStoreInput
       });
 
       return () => {
-        if (autocompleteRef.current && google?.maps?.event) {
-          google.maps.event.clearInstanceListeners(autocompleteRef.current);
+        // コンポーネントのアンマウント時、または依存配列が変更されエフェクトが再実行される際のクリーンアップ
+        // google.maps.event と clearInstanceListeners メソッドが利用可能か確認
+        if (autocompleteRef.current && window.google?.maps?.event?.clearInstanceListeners) {
+          window.google.maps.event.clearInstanceListeners(autocompleteRef.current);
         }
       };
-    }, [isMapsApiLoaded, mapsApiLoadError, userLocation, onChange]); // onChange を依存配列に追加
+    }, [isMapsApiLoaded, mapsApiLoadError, userLocation, onChange, value]); // valueも依存配列に追加
 
     useEffect(() => {
       // 外部からvalueプロパティが変更された場合（例:フォームリセット時など）にinputValueを更新

@@ -95,9 +95,7 @@ export function PostCard({ post, onLike, currentUserId }: PostCardProps) {
     ? supabase.storage.from('avatars').getPublicUrl(post.author.avatar_url).data.publicUrl
     : null;
 
-  const postImageUrl = post.image_url
-    ? supabase.storage.from('images').getPublicUrl(post.image_url).data.publicUrl
-    : null;
+  const postImageUrl = post.image_url;
 
   const copyToClipboard = (text: string, message: string) => {
     navigator.clipboard.writeText(text).then(() => {

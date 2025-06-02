@@ -303,7 +303,7 @@ export default function ProfilePage() {
               <p className="text-muted-foreground">まだ投稿がありません</p>
               <Button 
                 variant="link" 
-                onClick={() => router.push('/post/new')}
+                onClick={() => router.push('/post')}
                 className="mt-2"
               >
                 最初の投稿を作成する

@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { Camera, Upload, X, Store as StoreIcon, LayoutGrid, ClipboardList, Image as ImageIcon, Percent, CalendarClock, PackageIcon, Calculator, ClockIcon, Tag, Laugh, Smile, Meh, Frown, Angry } from 'lucide-react';
+import { Camera, Upload, X, Store as StoreIcon, LayoutGrid, ClipboardList, Image as ImageIcon, Percent, CalendarClock, PackageIcon, Calculator, ClockIcon, Tag, Laugh, Smile, Meh, Frown, Angry, HelpCircle } from 'lucide-react';
 import AppLayout from '@/components/layout/app-layout';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -89,7 +89,7 @@ const expiryOptions = [
 ];
 
 const discountIcons = [
-  { value: 0, Icon: Angry, label: "0%" },
+  { value: 1, Icon: Angry, label: "0%" },
   { value: 20, Icon: Frown, label: "20~40%" },
   { value: 40, Icon: Meh, label: "40~60%" },
   { value: 60, Icon: Smile, label: "60~80%" },
@@ -97,15 +97,15 @@ const discountIcons = [
 ];
 
 const defaultCategoryImages: Record<string, string> = {
-  '惣菜': '/images/default/souzai.webp',
-  '弁当': '/images/default/bento.webp',
-  '肉': '/images/default/meat.webp',
-  '魚': '/images/default/fish.webp',
-  '野菜': '/images/default/vegetable.webp',
-  '果物': '/images/default/fruit.webp',
-  '米・パン類': '/images/default/bread_rice.webp',
-  'デザート類': '/images/default/dessert.webp',
-  'その他': '/images/default/other.webp',
+  '惣菜': 'https://fuanykkpsjiynzzkkhtv.supabase.co/storage/v1/object/public/images//default_souzai.png',
+  '弁当': 'https://fuanykkpsjiynzzkkhtv.supabase.co/storage/v1/object/public/images//default_bento.png',
+  '肉': 'https://fuanykkpsjiynzzkkhtv.supabase.co/storage/v1/object/public/images//default_meat.png',
+  '魚': 'https://fuanykkpsjiynzzkkhtv.supabase.co/storage/v1/object/public/images//default_fish.png',
+  '野菜': 'https://fuanykkpsjiynzzkkhtv.supabase.co/storage/v1/object/public/images//default_vegetable.png',
+  '果物': 'https://fuanykkpsjiynzzkkhtv.supabase.co/storage/v1/object/public/images//default_fruit.png',
+  '米・パン類': 'https://fuanykkpsjiynzzkkhtv.supabase.co/storage/v1/object/public/images//default_bread_rice.png',
+  'デザート類': 'https://fuanykkpsjiynzzkkhtv.supabase.co/storage/v1/object/public/images//default_dessert.png',
+  'その他': 'https://fuanykkpsjiynzzkkhtv.supabase.co/storage/v1/object/public/images//default_other.png',
 };
 
 export default function PostPage() {
@@ -132,6 +132,8 @@ export default function PostPage() {
   const storeInputRef = useRef<HTMLInputElement>(null);
   const [placeId, setPlaceId] = useState<string | null>(null);
   const [storeAddress, setStoreAddress] = useState<string>('');
+  const [showStoreSearchInfoModal, setShowStoreSearchInfoModal] = useState(false);
+  const [hasUserRemovedDefaultImage, setHasUserRemovedDefaultImage] = useState(false);
 
   const { isLoaded, loadError } = useLoadScript({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
@@ -171,14 +173,15 @@ export default function PostPage() {
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreviewUrl(reader.result as string);
+        setHasUserRemovedDefaultImage(false);
       };
       reader.readAsDataURL(imageFile);
-    } else if (selectedCategory && defaultCategoryImages[selectedCategory]) {
+    } else if (selectedCategory && defaultCategoryImages[selectedCategory] && !hasUserRemovedDefaultImage) {
       setImagePreviewUrl(defaultCategoryImages[selectedCategory]);
     } else {
       setImagePreviewUrl(null);
     }
-  }, [imageFile, selectedCategory]);
+  }, [imageFile, selectedCategory, hasUserRemovedDefaultImage]);
   
   const handleActualSubmit = async (values: PostFormValues) => {
     if (!session?.user?.id) {
@@ -222,14 +225,21 @@ export default function PostPage() {
           });
 
         if (uploadError) {
-          console.error("PostPage: Error uploading image:", uploadError);
+          console.error("PostPage: Error uploading image to Supabase Storage:", uploadError);
           throw new Error(`画像のアップロードに失敗しました: ${uploadError.message}`);
         }
-        imageUrlToSave = objectPath;
+        
+        const { data: publicUrlData } = supabase.storage
+          .from('images')
+          .getPublicUrl(objectPath);
+        
+        imageUrlToSave = publicUrlData?.publicUrl || null;
+        console.log("PostPage: User image uploaded to Supabase Storage. Public URL:", imageUrlToSave);
       } else {
         const category = values.category;
         if (category && defaultCategoryImages[category]) {
           imageUrlToSave = defaultCategoryImages[category];
+          console.log("PostPage: Using default category image from Supabase Storage. Public URL:", imageUrlToSave);
         } else {
           imageUrlToSave = null;
           console.warn("PostPage: No user image and no default image found for category:", category);
@@ -332,6 +342,8 @@ export default function PostPage() {
   
   const removeImage = () => {
     setImageFile(null);
+    setImagePreviewUrl(null);
+    setHasUserRemovedDefaultImage(true);
     const fileInput = document.getElementById('image-upload') as HTMLInputElement;
     if (fileInput) {
       fileInput.value = '';
@@ -389,44 +401,6 @@ export default function PostPage() {
     }
   }, [isLoaded, form]);
 
-  const handleGetCurrentLocationForSearch = () => {
-    if (navigator.geolocation && autocomplete) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const circle = new google.maps.Circle({
-            center: {
-              lat: position.coords.latitude,
-              lng: position.coords.longitude,
-            },
-            radius: 50000, // 50km
-          });
-          autocomplete.setBounds(circle.getBounds() as google.maps.LatLngBounds);
-          toast({
-            title: "現在地を検索に適用しました。",
-            description: "周辺の店舗が検索されやすくなります。",
-            duration: 3000,
-          });
-        },
-        (error) => {
-          console.error("位置情報の取得に失敗しました:", error);
-          toast({
-            title: "位置情報の取得に失敗しました。",
-            description: "ブラウザの設定をご確認ください。",
-            variant: "destructive",
-            duration: 3000,
-          });
-        },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-      );
-    } else {
-      toast({
-        title: "お使いのブラウザは位置情報に対応していません。",
-        variant: "destructive",
-        duration: 3000,
-      });
-    }
-  };
-
   if (status === "loading") {
     return (
       <AppLayout>
@@ -462,6 +436,7 @@ export default function PostPage() {
                       onChange={handleImageUpload}
                       className="hidden"
                       disabled={isUploading}
+                      onClick={() => setHasUserRemovedDefaultImage(false)}
                     />
                     {imagePreviewUrl ? (
                       <div className="relative group">
@@ -487,6 +462,11 @@ export default function PostPage() {
                   </div>
                 </FormControl>
                 <p className="text-sm text-red-500 mt-1">※陳列している商品の画像をアップしないでください。購入後の商品の画像をアップしてください。</p>
+                {!imageFile && (
+                  <p className="text-sm text-muted-foreground mt-1 ">
+                    画像が未アップロードの場合、自動的に画像が設定されます。
+                  </p>
+                )}
               </FormItem>
 
               <FormField
@@ -496,6 +476,13 @@ export default function PostPage() {
                   <FormItem>
                     <FormLabel className="text-xl font-semibold flex items-center">
                       <StoreIcon className="mr-2 h-6 w-6" />お店<span className="text-destructive ml-1">※</span>
+                      <span
+                        className="ml-2 flex items-center text-sm text-blue-600 cursor-pointer hover:underline"
+                        onClick={() => setShowStoreSearchInfoModal(true)}
+                      >
+                        <HelpCircle className="h-4 w-4 mr-1" />
+                        検索候補が表示されない時は...
+                      </span>
                     </FormLabel>
                     <FormControl>
                       <FavoriteStoreInput
@@ -516,7 +503,6 @@ export default function PostPage() {
                   </FormItem>
                 )}
               />
-              
               <input type="hidden" {...form.register("storeName")} />
 
               <FormField
@@ -779,9 +765,8 @@ export default function PostPage() {
             title="投稿内容の確認"
           >
             <div className="pt-2">
-              <p className="text-sm text-destructive text-center mb-4">
+              <p className="text-sm text-destructive  mb-4">
                 投稿した記事は後から削除や編集を行うことはできません。
-                <br/>
                 内容をよくご確認の上、本当に投稿しますか？
               </p>
               {imagePreviewUrl && (
@@ -798,6 +783,28 @@ export default function PostPage() {
                 </Button>
                 <Button onClick={handleConfirmSubmit} disabled={isUploading}>
                   {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "OK"}
+                </Button>
+              </div>
+            </div>
+          </CustomModal>
+
+          <CustomModal
+            isOpen={showStoreSearchInfoModal}
+            onClose={() => setShowStoreSearchInfoModal(false)}
+            title="お店の検索候補について"
+          >
+            <div className="pt-2">
+              <p className="mb-4 text-center">
+                検索候補が表示されない場合は、正確な店舗情報を見つけるために、一度お店を探す画面へ移動してください。
+              </p>
+              <div className="mt-6 flex justify-center">
+                <Button
+                  onClick={() => {
+                    setShowStoreSearchInfoModal(false);
+                    router.push('/map'); // 仮の店舗検索画面パス
+                  }}
+                >
+                  お店を探す画面へ移動
                 </Button>
               </div>
             </div>
