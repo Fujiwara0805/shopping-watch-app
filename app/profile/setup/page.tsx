@@ -16,6 +16,7 @@ import { Loader2, User as UserIcon, Info, Image as ImageIcon, X, Upload, Store }
 import { supabase } from '@/lib/supabaseClient';
 import { v4 as uuidv4 } from 'uuid';
 import FavoriteStoreInput from '@/components/profile/FavoriteStoreInput';
+import { useLoading } from '@/contexts/loading-context';
 
 // app_profiles テーブルの型定義 (仮。必要に応じて調整)
 interface AppProfile {
@@ -47,7 +48,7 @@ type ProfileFormValues = z.infer<typeof profileSchema>;
 export default function ProfileSetupPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
+  const { showLoading, hideLoading } = useLoading();
   const [isSaving, setIsSaving] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
@@ -68,31 +69,32 @@ export default function ProfileSetupPage() {
   const { isValid } = form.formState;
 
   useEffect(() => {
-    if (status === "loading") return;
+    if (status === "loading") {
+      showLoading();
+      return;
+    }
 
     if (!session) {
       console.log("ProfileSetupPage: User not logged in, redirecting to login page.");
       router.replace(`/login?callbackUrl=${encodeURIComponent(window.location.pathname)}`);
+      hideLoading();
     } else if (!session.user?.id) {
       console.warn("ProfileSetupPage: Session found, but session.user.id (for app_users) is MISSING. Redirecting or showing error.");
       setSubmitError("ユーザー認証情報が不完全です。再度ログインしてください。");
-      setLoading(false);
+      hideLoading();
     }
     else {
-      setLoading(false);
+      hideLoading();
       console.log("ProfileSetupPage: User session found with app_users.id, ready for setup:", session.user.id);
     }
 
-    // NextAuthのセッションにSupabaseのアクセストークンが含まれていると仮定
-    // (例: session.supabaseAccessToken)
-    // この supabaseAccessToken をNextAuthのコールバックで設定しておく必要があります。
     if (session?.supabaseAccessToken) {
       supabase.auth.setSession({
         access_token: session.supabaseAccessToken as string,
-        refresh_token: (session.supabaseRefreshToken as string) || '', // もしあれば
+        refresh_token: (session.supabaseRefreshToken as string) || '',
       });
     }
-  }, [session, status, router]);
+  }, [session, status, router, showLoading, hideLoading]);
 
   const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -133,31 +135,31 @@ export default function ProfileSetupPage() {
 
     setIsSaving(true);
     setSubmitError(null);
+    showLoading();
 
     let uploadedAvatarPath: string | null = null;
 
     try {
       if (avatarFile) {
         const fileExt = avatarFile.name.split('.').pop();
-        const userFolder = session.user.id; // app_users.id (これが auth.uid() である想定)
+        const userFolder = session.user.id;
         const uniqueFileName = `${uuidv4()}.${fileExt}`;
-        // オブジェクトパスはバケット名を含めない
-        const objectPath = `${userFolder}/${uniqueFileName}`; // 例: '6aa9958c-ce7e-46bb-b614-3201d2e4ce36/9b9cb96d-113c-4610-b13b-79f62ef63d0a.png'
+        const objectPath = `${userFolder}/${uniqueFileName}`;
 
-        console.log("ProfileSetupPage: Attempting to upload to objectPath:", objectPath); // ★ログ追加
+        console.log("ProfileSetupPage: Attempting to upload to objectPath:", objectPath);
 
         const { error: uploadError } = await supabase.storage
-          .from('avatars') // バケット名を指定
-          .upload(objectPath, avatarFile, { // ここで指定するパスはバケットからの相対パス
+          .from('avatars')
+          .upload(objectPath, avatarFile, {
             cacheControl: '3600',
-            upsert: true, // trueにすると同名ファイルは上書き
+            upsert: true,
           });
 
         if (uploadError) {
           console.error("ProfileSetupPage: Error uploading avatar:", uploadError);
           throw new Error(`アバター画像のアップロードに失敗しました: ${uploadError.message}`);
         }
-        uploadedAvatarPath = objectPath; // 保存するのはこのオブジェクトパス
+        uploadedAvatarPath = objectPath;
       }
 
       const newAppProfileId = uuidv4();
@@ -194,20 +196,19 @@ export default function ProfileSetupPage() {
       setSubmitError(error.message || "プロフィールの保存処理中にエラーが発生しました。");
     } finally {
       setIsSaving(false);
+      hideLoading();
     }
   };
 
-  if (status === "loading" || loading) {
+  if (status === "loading") {
     return (
       <AppLayout>
-        <div className="flex items-center justify-center min-h-screen">
-          <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        </div>
+        <div className="min-h-screen"></div>
       </AppLayout>
     );
   }
 
-  if (session && session.user?.id && !submitError && !loading) {
+  if (session && session.user?.id && !submitError) {
     return (
       <AppLayout>
         <motion.div
@@ -216,7 +217,7 @@ export default function ProfileSetupPage() {
           transition={{ duration: 0.5 }}
           className="container mx-auto max-w-lg p-4 md:p-8"
         >
-           {!session.user.id && !loading && (
+           {!session.user.id && (
              <div className="text-center p-4 my-4 text-red-700 bg-red-100 rounded-md">
                <p>ユーザー情報の読み込みに問題が発生しました。お手数ですが、再度ログインし直してください。</p>
                <Button onClick={() => router.push('/login')} className="mt-2">ログインページへ</Button>
@@ -383,7 +384,7 @@ export default function ProfileSetupPage() {
     );
   }
 
-  if (submitError && !loading) {
+  if (submitError) {
     return (
       <AppLayout>
         <div className="container mx-auto max-w-lg p-4 md:p-8 text-center">

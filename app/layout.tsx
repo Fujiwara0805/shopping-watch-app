@@ -7,6 +7,7 @@ import NextAuthProvider from '@/components/providers/NextAuthProvider';
 import { GoogleMapsApiProvider } from '@/components/providers/GoogleMapsApiProvider';
 import { NotificationProvider } from '@/contexts/NotificationContext';
 import { LocationPermissionProvider } from '@/components/providers/LocationPermissionProvider';
+import { LoadingProvider } from '@/contexts/loading-context';
 
 const notoSansJP = Noto_Sans_JP({ 
   subsets: ['latin'],
@@ -33,32 +34,34 @@ export default function RootLayout({
     <html lang="ja" suppressHydrationWarning>
       <head />
       <body className={`${notoSansJP.variable} font-sans bg-background text-foreground overflow-x-hidden touch-manipulation`}>
-        <ThemeProvider 
-          attribute="class" 
-          defaultTheme="system" 
-          enableSystem
-          disableTransitionOnChange
-        >
-          <NextAuthProvider>
-            <NotificationProvider>
-              <LocationPermissionProvider>
-                {googleMapsApiKey ? (
-                  <GoogleMapsApiProvider apiKey={googleMapsApiKey}>
-                    {children}
-                  </GoogleMapsApiProvider>
-                ) : (
-                  <>
-                    <div style={{ padding: '20px', backgroundColor: 'red', color: 'white', textAlign: 'center' }}>
-                      Google Maps APIキーが設定されていません。地図機能は利用できません。
-                    </div>
-                    {children}
-                  </>
-                )}
-                <Toaster />
-              </LocationPermissionProvider>
-            </NotificationProvider>
-          </NextAuthProvider>
-        </ThemeProvider>
+        <LoadingProvider>
+          <ThemeProvider 
+            attribute="class" 
+            defaultTheme="system" 
+            enableSystem
+            disableTransitionOnChange
+          >
+            <NextAuthProvider>
+              <NotificationProvider>
+                <LocationPermissionProvider>
+                  {googleMapsApiKey ? (
+                    <GoogleMapsApiProvider apiKey={googleMapsApiKey}>
+                      {children}
+                    </GoogleMapsApiProvider>
+                  ) : (
+                    <>
+                      <div style={{ padding: '20px', backgroundColor: 'red', color: 'white', textAlign: 'center' }}>
+                        Google Maps APIキーが設定されていません。地図機能は利用できません。
+                      </div>
+                      {children}
+                    </>
+                  )}
+                  <Toaster />
+                </LocationPermissionProvider>
+              </NotificationProvider>
+            </NextAuthProvider>
+          </ThemeProvider>
+        </LoadingProvider>
       </body>
     </html>
   );

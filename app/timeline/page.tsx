@@ -375,7 +375,10 @@ export default function Timeline() {
             />
             <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           </div>
-          <Button onClick={() => setShowFilterModal(true)} variant="outline">
+          <Button onClick={() => {
+            setShowFilterModal(true);
+            setGeneralSearchTerm('');
+          }} variant="outline">
             <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
           </Button>
         </div>
@@ -411,7 +414,10 @@ export default function Timeline() {
             />
             <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           </div>
-          <Button onClick={() => setShowFilterModal(true)} variant="outline">
+          <Button onClick={() => {
+            setShowFilterModal(true);
+            setGeneralSearchTerm('');
+          }} variant="outline">
             <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
           </Button>
         </div>
@@ -444,7 +450,10 @@ export default function Timeline() {
           />
           <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         </div>
-        <Button onClick={() => setShowFilterModal(true)} variant="outline">
+        <Button onClick={() => {
+          setShowFilterModal(true);
+          setGeneralSearchTerm('');
+        }} variant="outline">
           <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
         </Button>
       </div>

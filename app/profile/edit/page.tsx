@@ -16,6 +16,7 @@ import { Loader2, User as UserIcon, Info, Image as ImageIcon, X, Upload, Store }
 import { supabase } from '@/lib/supabaseClient';
 import { v4 as uuidv4 } from 'uuid';
 import FavoriteStoreInput from '@/components/profile/FavoriteStoreInput';
+import { useLoading } from '@/contexts/loading-context';
 
 interface AppProfile {
   id: string;
@@ -45,13 +46,13 @@ type ProfileFormValues = z.infer<typeof profileSchema>;
 export default function ProfileEditPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
   const [profileLoading, setProfileLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
   const [currentProfileId, setCurrentProfileId] = useState<string | null>(null);
+  const { showLoading, hideLoading } = useLoading();
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
@@ -68,14 +69,17 @@ export default function ProfileEditPage() {
   const { isValid } = form.formState;
 
   useEffect(() => {
-    if (status === "loading") return;
+    if (status === "loading") {
+      showLoading();
+      return;
+    }
 
     if (!session || !session.user?.id) {
       console.log("ProfileEditPage: User not logged in, redirecting to login page.");
       router.replace(`/login?callbackUrl=${encodeURIComponent(window.location.pathname)}`);
+      hideLoading();
     } else {
       fetchProfileByAppUserId(session.user.id);
-      setLoading(false);
       if (session?.supabaseAccessToken) {
         supabase.auth.setSession({
           access_token: session.supabaseAccessToken as string,
@@ -83,11 +87,12 @@ export default function ProfileEditPage() {
         });
       }
     }
-  }, [session, status, router]);
+  }, [session, status, router, showLoading, hideLoading]);
 
   const fetchProfileByAppUserId = async (appUserId: string) => {
     setProfileLoading(true);
     setSubmitError(null);
+    showLoading();
     try {
       const { data, error } = await supabase
         .from('app_profiles')
@@ -131,6 +136,7 @@ export default function ProfileEditPage() {
       setSubmitError("プロフィールの読み込みに失敗しました: " + error.message);
     } finally {
       setProfileLoading(false);
+      hideLoading();
     }
   };
 
@@ -177,6 +183,7 @@ export default function ProfileEditPage() {
 
     setIsSaving(true);
     setSubmitError(null);
+    showLoading();
 
     let objectPathToSave: string | null = null;
 
@@ -236,16 +243,14 @@ export default function ProfileEditPage() {
       setSubmitError(error.message || "プロフィールの更新処理中にエラーが発生しました。");
     } finally {
       setIsSaving(false);
+      hideLoading();
     }
   };
 
-  if (status === "loading" || loading || profileLoading) {
+  if (status === "loading" || profileLoading) {
     return (
       <AppLayout>
-        <div className="flex items-center justify-center min-h-screen">
-          <Loader2 className="h-12 w-12 animate-spin text-primary" />
-          {profileLoading && <p className="ml-2">プロフィール読み込み中...</p>}
-        </div>
+        <div className="min-h-screen"></div>
       </AppLayout>
     );
   }

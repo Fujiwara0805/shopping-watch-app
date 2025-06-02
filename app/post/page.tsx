@@ -29,7 +29,7 @@ import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 import { useLoadScript, Autocomplete, GoogleMap } from "@react-google-maps/api";
-
+import { useLoading } from '@/contexts/loading-context';
 
 declare global {
   interface Window {
@@ -41,7 +41,7 @@ const postSchema = z.object({
   storeId: z.string({ required_error: 'お店を選択してください' }),
   storeName: z.string({ required_error: "お店の名前が取得できませんでした。"}),
   category: z.string({ required_error: 'カテゴリを選択してください' }),
-  content: z.string().min(5, { message: '5文字以上入力してください' }).max(200, { message: '200文字以内で入力してください' }),
+  content: z.string().min(5, { message: '5文字以上入力してください' }).max(120, { message: '120文字以内で入力してください' }),
   discountRate: z.preprocess(
     (val) => {
       if (typeof val === 'string' && val === '') return undefined;
@@ -134,6 +134,7 @@ export default function PostPage() {
   const [storeAddress, setStoreAddress] = useState<string>('');
   const [showStoreSearchInfoModal, setShowStoreSearchInfoModal] = useState(false);
   const [hasUserRemovedDefaultImage, setHasUserRemovedDefaultImage] = useState(false);
+  const { showLoading, hideLoading } = useLoading();
 
   const { isLoaded, loadError } = useLoadScript({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
@@ -191,6 +192,7 @@ export default function PostPage() {
     }
 
     form.clearErrors("root.serverError");
+    showLoading();
     setIsUploading(true);
     setSubmitError(null);
     setShowConfirmModal(false);
@@ -318,6 +320,7 @@ export default function PostPage() {
       setSubmitError(error.message || "投稿処理中にエラーが発生しました。");
     } finally {
       setIsUploading(false);
+      hideLoading();
     }
   };
 
@@ -400,6 +403,12 @@ export default function PostPage() {
       setAutocomplete(newAutocomplete);
     }
   }, [isLoaded, form]);
+
+  const handleMoveToMap = () => {
+    setShowStoreSearchInfoModal(false);
+    showLoading();
+    router.push('/map');
+  };
 
   if (status === "loading") {
     return (
@@ -572,7 +581,7 @@ export default function PostPage() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-xl flex items-center font-semibold">
-                      <Calculator className="mr-2 h-6 w-6 " /> 値引き率 :
+                      <Calculator className="mr-2 h-6 w-6 " /> 値引き率 <span className="text-destructive ml-1">※</span> :
                       <span className="ml-2 text-primary font-bold flex items-center">
                         {(() => {
                           const selectedOption = discountIcons.find(option => option.value === field.value);
@@ -799,10 +808,7 @@ export default function PostPage() {
               </p>
               <div className="mt-6 flex justify-center">
                 <Button
-                  onClick={() => {
-                    setShowStoreSearchInfoModal(false);
-                    router.push('/map'); // 仮の店舗検索画面パス
-                  }}
+                  onClick={handleMoveToMap}
                 >
                   お店を探す画面へ移動
                 </Button>

@@ -157,12 +157,12 @@ export function PostCard({ post, onLike, currentUserId }: PostCardProps) {
       </CardHeader>
       
       <CardContent className="p-3 pt-1 flex flex-col h-full">
-        <div className="flex-grow overflow-hidden" style={{ flexBasis: '50%', marginBottom: '0.75rem' }}>
-          <p className="text-lg text-muted-foreground whitespace-pre-line line-clamp-3">{post.content || '内容がありません'}</p>
+        <div className="flex-grow overflow-hidden" style={{ flexBasis: 'auto', marginBottom: '0.75rem' }}>
+          <p className="text-lg text-muted-foreground whitespace-pre-line line-clamp-6">{post.content || '内容がありません'}</p>
         </div>
         
         {postImageUrl && (
-          <div className="relative rounded-md overflow-hidden flex-grow" style={{ flexBasis: '50%' }}>
+          <div className="relative rounded-md overflow-hidden flex-grow" style={{ flexBasis: '30%' }}>
             <img 
               src={postImageUrl} 
               alt="投稿画像" 
@@ -205,14 +205,14 @@ export function PostCard({ post, onLike, currentUserId }: PostCardProps) {
               <span>{post.store_name || '店舗不明'}</span>
             </Button>
 
-            <div className="absolute top-2 right-2 flex flex-col items-end space-y-1">
+            <div className="absolute top-[30px] right-2 flex flex-col items-end space-y-1">
               {post.discount_rate != null && (
                 <motion.div
                   variants={discountBadgeVariants}
                   initial="initial"
                   animate="animate"
                 >
-                  <Badge className="bg-primary text-primary-foreground font-bold text-lg px-2 py-1 shadow-sm flex items-center">
+                  <Badge className="bg-primary text-primary-foreground font-bold text-xl px-2 py-1 shadow-sm flex items-center">
                     {(() => {
                       const selectedOption = discountIcons.find(option => option.value === post.discount_rate);
                       const displayIcon = selectedOption ? selectedOption.Icon : Angry;
@@ -229,7 +229,7 @@ export function PostCard({ post, onLike, currentUserId }: PostCardProps) {
                 </motion.div>
               )}
               {post.price != null && (
-                <Badge className="bg-white text-foreground font-bold text-lg px-2 py-1 shadow-sm">
+                <Badge className="bg-white text-foreground font-bold text-xl px-2 py-1 shadow-sm">
                   ¥{post.price.toLocaleString()}
                 </Badge>
               )}
