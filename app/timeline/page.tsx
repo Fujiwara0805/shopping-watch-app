@@ -6,7 +6,7 @@ import { PostFilter } from '@/components/posts/post-filter';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Post } from '@/types/post';
 import { Button } from '@/components/ui/button';
-import { LayoutGrid, Search, Star, MapPin, Loader2, SlidersHorizontal } from 'lucide-react';
+import { LayoutGrid, Search, Star, MapPin, Loader2, SlidersHorizontal, Heart, Plus } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { PostWithAuthor, AuthorProfile } from '@/types/post';
 import { useSession } from 'next-auth/react';
@@ -21,6 +21,8 @@ import { cn } from '@/lib/utils';
 interface ExtendedPostWithAuthor extends PostWithAuthor {
   isLikedByCurrentUser?: boolean;
   likes_count: number;
+  store_latitude?: number;
+  store_longitude?: number;
 }
 
 type SortOption = 'created_at_desc' | 'created_at_asc' | 'expires_at_asc';
@@ -40,10 +42,11 @@ export default function Timeline() {
   const [highlightPostId, setHighlightPostId] = useState<string | null>(null);
 
   const [generalSearchTerm, setGeneralSearchTerm] = useState<string>('');
-  const [searchMode, setSearchMode] = useState<'all' | 'category' | 'favorite' | 'nearby'>('all');
+  const [searchMode, setSearchMode] = useState<'all' | 'category' | 'favorite_store' | 'liked_posts' | 'nearby'>('all');
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [favoriteStoreIds, setFavoriteStoreIds] = useState<string[]>([]);
+  const [likedPostIds, setLikedPostIds] = useState<string[]>([]);
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [sortBy, setSortBy] = useState<SortOption>('created_at_desc');
 
@@ -52,6 +55,7 @@ export default function Timeline() {
   const searchModeRef = useRef(searchMode);
   const userLocationRef = useRef(userLocation);
   const favoriteStoreIdsRef = useRef(favoriteStoreIds);
+  const likedPostIdsRef = useRef(likedPostIds);
   const sortByRef = useRef(sortBy);
 
   useEffect(() => { activeFilterRef.current = activeFilter; }, [activeFilter]);
@@ -59,6 +63,7 @@ export default function Timeline() {
   useEffect(() => { searchModeRef.current = searchMode; }, [searchMode]);
   useEffect(() => { userLocationRef.current = userLocation; }, [userLocation]);
   useEffect(() => { favoriteStoreIdsRef.current = favoriteStoreIds; }, [favoriteStoreIds]);
+  useEffect(() => { likedPostIdsRef.current = likedPostIds; }, [likedPostIds]);
   useEffect(() => { sortByRef.current = sortBy; }, [sortBy]);
 
   useEffect(() => {
@@ -69,30 +74,63 @@ export default function Timeline() {
   }, [searchParams]);
 
   useEffect(() => {
-    const fetchFavoriteStoreIds = async () => {
+    const fetchProfileFavoriteStoreIds = async () => {
       if (!currentUserId) {
         setFavoriteStoreIds([]);
         return;
       }
       try {
         const { data, error } = await supabase
-          .from('favorite_stores')
-          .select('store_id')
-          .eq('user_id', currentUserId);
-        
+          .from('app_profiles')
+          .select('favorite_store_1_id, favorite_store_2_id, favorite_store_3_id')
+          .eq('user_id', currentUserId)
+          .single();
+
         if (error) {
-          console.error('お気に入り店舗の取得に失敗しました:', error);
+          console.error('プロフィールのお気に入り店舗IDの取得に失敗しました:', error);
           setFavoriteStoreIds([]);
         } else {
-          setFavoriteStoreIds(data.map(item => item.store_id));
+          const ids = [];
+          if (data.favorite_store_1_id) ids.push(data.favorite_store_1_id);
+          if (data.favorite_store_2_id) ids.push(data.favorite_store_2_id);
+          if (data.favorite_store_3_id) ids.push(data.favorite_store_3_id);
+          setFavoriteStoreIds(ids);
         }
       } catch (e) {
-        console.error('お気に入り店舗の取得中に予期せぬエラー:', e);
+        console.error('プロフィールのお気に入り店舗IDの取得中に予期せぬエラー:', e);
         setFavoriteStoreIds([]);
       }
     };
     if (session?.user?.id) {
-      fetchFavoriteStoreIds();
+      fetchProfileFavoriteStoreIds();
+    }
+  }, [currentUserId, session?.user?.id]);
+
+  useEffect(() => {
+    const fetchLikedPostIds = async () => {
+      if (!currentUserId) {
+        setLikedPostIds([]);
+        return;
+      }
+      try {
+        const { data, error } = await supabase
+          .from('post_likes')
+          .select('post_id')
+          .eq('user_id', currentUserId);
+
+        if (error) {
+          console.error('いいねした投稿の取得に失敗しました:', error);
+          setLikedPostIds([]);
+        } else {
+          setLikedPostIds(data.map(item => item.post_id));
+        }
+      } catch (e) {
+        console.error('いいねした投稿の取得中に予期せぬエラー:', e);
+        setLikedPostIds([]);
+      }
+    };
+    if (session?.user?.id) {
+      fetchLikedPostIds();
     }
   }, [currentUserId, session?.user?.id]);
 
@@ -102,6 +140,7 @@ export default function Timeline() {
     const currentSearchMode = searchModeRef.current;
     const currentUserLocation = userLocationRef.current;
     const currentFavoriteStoreIds = favoriteStoreIdsRef.current;
+    const currentLikedPostIds = likedPostIdsRef.current;
     const currentSortBy = sortByRef.current;
 
     if (isInitial) {
@@ -114,7 +153,39 @@ export default function Timeline() {
     
     try {
       const now = new Date().toISOString();
-      let query = supabase
+      let query;
+
+      if (currentSearchMode === 'nearby' && currentUserLocation) {
+        const radiusInMeters = 50000;
+        const { data, error: rpcError } = await supabase.rpc('get_nearby_posts', {
+          lat: currentUserLocation.latitude,
+          lon: currentUserLocation.longitude,
+          distance_meters: radiusInMeters,
+        });
+
+        if (rpcError) {
+          throw rpcError;
+        }
+
+        const processedPosts = data.map((post: any) => ({
+          ...post,
+          author: Array.isArray(post.author) ? post.author[0] : post.author,
+          isLikedByCurrentUser: post.post_likes?.some((like: any) => like.user_id === currentUserId),
+          likes_count: post.post_likes?.length || 0,
+        }));
+
+        if (isInitial) {
+          setPosts(processedPosts as ExtendedPostWithAuthor[]);
+        } else {
+          setPosts(prevPosts => [...prevPosts, ...processedPosts as ExtendedPostWithAuthor[]]);
+        }
+        setHasMore(data.length === 20);
+        setLoading(false);
+        setLoadingMore(false);
+        return;
+      }
+      
+      query = supabase
         .from('posts')
         .select(`
           id,
@@ -126,6 +197,8 @@ export default function Timeline() {
           discount_rate,
           price,
           expires_at,
+          store_latitude,
+          store_longitude,
           author:app_profiles (
             display_name,
             avatar_url
@@ -136,17 +209,12 @@ export default function Timeline() {
 
       if (currentSearchMode === 'category' && currentActiveFilter !== 'all') {
         query = query.eq('category', currentActiveFilter);
-      } else if (currentSearchMode === 'favorite' && currentFavoriteStoreIds.length > 0) {
+      } else if (currentSearchMode === 'favorite_store' && currentFavoriteStoreIds.length > 0) {
         query = query.in('store_id', currentFavoriteStoreIds);
+      } else if (currentSearchMode === 'liked_posts' && currentLikedPostIds.length > 0) {
+        query = query.in('id', currentLikedPostIds);
       } else if (currentSearchMode === 'all' && currentGeneralSearchTerm) {
         query = query.or(`store_name.ilike.%${currentGeneralSearchTerm}%,category.ilike.%${currentGeneralSearchTerm}%,content.ilike.%${currentGeneralSearchTerm}%`);
-      } else if (currentSearchMode === 'nearby' && currentUserLocation) {
-        console.log('周辺検索が有効化されました。ユーザー位置:', currentUserLocation);
-        setError("周辺検索機能は現在開発中です。今後実装予定です。");
-        setLoading(false);
-        setLoadingMore(false);
-        setHasMore(false);
-        return;
       }
 
       if (currentSortBy === 'created_at_desc') {
@@ -290,22 +358,25 @@ export default function Timeline() {
   if (loading && posts.length === 0 && searchModeRef.current !== 'nearby') {
     return (
       <AppLayout>
-        <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b p-4 flex items-center space-x-2">
-          <Input
-            type="text"
-            placeholder="店舗名やキーワードで検索"
-            value={generalSearchTerm}
-            onChange={(e) => setGeneralSearchTerm(e.target.value)}
-            className="flex-1"
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                setSearchMode('all');
-                fetchPosts(0, true);
-              }
-            }}
-          />
+        <div className="sticky top-0 z-10 border-b p-4 flex items-center space-x-2 bg-[#73370c]">
+          <div className="relative flex-1">
+            <Input
+              type="text"
+              placeholder="店舗名やキーワードで検索"
+              value={generalSearchTerm}
+              onChange={(e) => setGeneralSearchTerm(e.target.value)}
+              className="pr-10 w-full"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  setSearchMode('all');
+                  fetchPosts(0, true);
+                }
+              }}
+            />
+            <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          </div>
           <Button onClick={() => setShowFilterModal(true)} variant="outline">
-            <SlidersHorizontal className="h-4 w-4" />
+            <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
           </Button>
         </div>
         
@@ -323,22 +394,25 @@ export default function Timeline() {
   if (error) {
     return (
       <AppLayout>
-        <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b p-4 flex items-center space-x-2">
-          <Input
-            type="text"
-            placeholder="店舗名やキーワードで検索"
-            value={generalSearchTerm}
-            onChange={(e) => setGeneralSearchTerm(e.target.value)}
-            className="flex-1"
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                setSearchMode('all');
-                fetchPosts(0, true);
-              }
-            }}
-          />
+        <div className="sticky top-0 z-10 border-b p-4 flex items-center space-x-2 bg-[#73370c]">
+          <div className="relative flex-1">
+            <Input
+              type="text"
+              placeholder="店舗名やキーワードで検索"
+              value={generalSearchTerm}
+              onChange={(e) => setGeneralSearchTerm(e.target.value)}
+              className="pr-10 w-full"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  setSearchMode('all');
+                  fetchPosts(0, true);
+                }
+              }}
+            />
+            <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          </div>
           <Button onClick={() => setShowFilterModal(true)} variant="outline">
-            <SlidersHorizontal className="h-4 w-4" />
+            <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
           </Button>
         </div>
         <div className="p-4">
@@ -353,22 +427,25 @@ export default function Timeline() {
 
   return (
     <AppLayout>
-      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b p-4 flex items-center space-x-2">
-        <Input
-          type="text"
-          placeholder="店舗名やキーワードで検索"
-          value={generalSearchTerm}
-          onChange={(e) => setGeneralSearchTerm(e.target.value)}
-          className="flex-1"
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              setSearchMode('all');
-              fetchPosts(0, true);
-            }
-          }}
-        />
+      <div className="sticky top-0 z-10 border-b p-4 flex items-center space-x-2 bg-[#73370c]">
+        <div className="relative flex-1">
+          <Input
+            type="text"
+            placeholder="店舗名やキーワードで検索"
+            value={generalSearchTerm}
+            onChange={(e) => setGeneralSearchTerm(e.target.value)}
+            className="pr-10 w-full"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                setSearchMode('all');
+                fetchPosts(0, true);
+              }
+            }}
+          />
+          <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        </div>
         <Button onClick={() => setShowFilterModal(true)} variant="outline">
-          <SlidersHorizontal className="h-4 w-4" />
+          <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
         </Button>
       </div>
       
@@ -478,27 +555,47 @@ export default function Timeline() {
             </Select>
           </div>
 
+          <div className="flex justify-center my-4">
+            <Button
+              className="w-12 h-12 flex items-center justify-center bg-transparent hover:bg-transparent p-0 text-[#73370c]"
+              onClick={() => { /* ここに何らかのロジックを必要に応じて追加 */ }}
+            >
+              <Plus className="h-8 w-8" />
+            </Button>
+          </div>
+
           <div className="flex flex-col space-y-3">
             <h3 className="font-semibold text-lg mb-1">特別な検索</h3>
             <Button 
-              variant="outline" 
               onClick={() => {
-                setSearchMode('favorite');
+                setSearchMode('favorite_store');
                 setGeneralSearchTerm('');
                 setActiveFilter('all');
                 handleApplyFilters();
               }}
               disabled={!currentUserId}
-              className="justify-start"
+              className="justify-start bg-yellow-600 text-white hover:bg-yellow-100 hover:text-yellow-800"
             >
               <Star className="h-4 w-4 mr-2" />
               お気に入り店を検索
             </Button>
             <Button
-              variant="secondary"
+              onClick={() => {
+                setSearchMode('liked_posts');
+                setGeneralSearchTerm('');
+                setActiveFilter('all');
+                handleApplyFilters();
+              }}
+              disabled={!currentUserId}
+              className="justify-start bg-pink-600 text-white hover:bg-pink-100 hover:text-pink-800"
+            >
+              <Heart className="h-4 w-4 mr-2" />
+              いいねした投稿を検索
+            </Button>
+            <Button
               onClick={handleNearbySearch}
               disabled={isGettingLocation}
-              className="justify-start"
+              className="justify-start bg-green-600 text-white hover:bg-green-100 hover:text-green-800"
             >
               {isGettingLocation ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
