@@ -1,4 +1,4 @@
-export const calculateExpiresAt = (expiryOption: '1h' | '3h' | '24h'): Date => {
+export const calculateExpiresAt = (expiryOption: '1h' | '3h' | '6h' | '12h'): Date => {
   const now = new Date();
   let hoursToAdd = 0;
 
@@ -9,8 +9,11 @@ export const calculateExpiresAt = (expiryOption: '1h' | '3h' | '24h'): Date => {
     case '3h':
       hoursToAdd = 3;
       break;
-    case '24h':
-      hoursToAdd = 24;
+    case '6h':
+      hoursToAdd = 6;
+      break;
+    case '12h':
+      hoursToAdd = 12;
       break;
     default:
       // Zodスキーマにより通常ここには到達しませんが、フォールバックとして設定

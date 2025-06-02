@@ -8,7 +8,7 @@ export interface Post {
   image_url?: string | null;
   discount_rate: number;
   price?: number | null;
-  expiry_option: '1h' | '3h' | '24h';
+  expiry_option: '1h' | '3h' | '6h' | '12h';
   created_at: string;
   expires_at: string;
   likes_count: number;

@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { Camera, Upload, X, Store as StoreIcon, LayoutGrid, ClipboardList, Image as ImageIcon, Percent, CalendarClock, PackageIcon, Calculator, ClockIcon, Tag } from 'lucide-react';
+import { Camera, Upload, X, Store as StoreIcon, LayoutGrid, ClipboardList, Image as ImageIcon, Percent, CalendarClock, PackageIcon, Calculator, ClockIcon, Tag, Laugh, Smile, Meh, Frown, Angry } from 'lucide-react';
 import AppLayout from '@/components/layout/app-layout';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -14,7 +14,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Slider } from '@/components/ui/slider';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { cn } from '@/lib/utils';
 import { useGeolocation } from '@/lib/hooks/use-geolocation';
@@ -65,11 +64,11 @@ const postSchema = z.object({
     },
     z.number({ invalid_type_error: '有効な数値を入力してください' })
      .positive({ message: '価格は0より大きい値を入力してください' })
-     .optional()
+     .min(1, { message: '価格は1以上で入力してください' })
   ),
   expiryTime: z.string().optional(),
   remainingItems: z.string().optional(),
-  expiryOption: z.enum(['1h', '3h', '24h'], { required_error: '掲載期間を選択してください' }),
+  expiryOption: z.enum(['1h', '3h', '6h', '12h'], { required_error: '掲載期間を選択してください' }),
   location_lat: z.number().optional().nullable(),
   location_lng: z.number().optional().nullable(),
 });
@@ -83,11 +82,31 @@ const libraries: ("places")[] = ["places"];
 const categories = ['惣菜', '弁当', '肉', '魚', '野菜', '果物', '米・パン類', 'デザート類', 'その他'];
 
 const expiryOptions = [
-  { value: 1, label: '1時間後' },
-  { value: 3, label: '3時間後' },
-  { value: 6, label: '6時間後' },
-  { value: 12, label: '12時間後' },
+  { value: '1h', label: '1時間後' },
+  { value: '3h', label: '3時間後' },
+  { value: '6h', label: '6時間後' },
+  { value: '12h', label: '12時間後' },
 ];
+
+const discountIcons = [
+  { value: 0, Icon: Angry, label: "0%" },
+  { value: 20, Icon: Frown, label: "20~40%" },
+  { value: 40, Icon: Meh, label: "40~60%" },
+  { value: 60, Icon: Smile, label: "60~80%" },
+  { value: 80, Icon: Laugh, label: "80~100%" },
+];
+
+const defaultCategoryImages: Record<string, string> = {
+  '惣菜': '/images/default/souzai.webp',
+  '弁当': '/images/default/bento.webp',
+  '肉': '/images/default/meat.webp',
+  '魚': '/images/default/fish.webp',
+  '野菜': '/images/default/vegetable.webp',
+  '果物': '/images/default/fruit.webp',
+  '米・パン類': '/images/default/bread_rice.webp',
+  'デザート類': '/images/default/dessert.webp',
+  'その他': '/images/default/other.webp',
+};
 
 export default function PostPage() {
   const { data: session, status } = useSession();
@@ -137,6 +156,30 @@ export default function PostPage() {
   
   const { formState: { isValid, isSubmitting } } = form;
   
+  const selectedCategory = form.watch('category');
+
+  useEffect(() => {
+    return () => {
+      if (imagePreviewUrl && imagePreviewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(imagePreviewUrl);
+      }
+    };
+  }, [imagePreviewUrl]);
+
+  useEffect(() => {
+    if (imageFile) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreviewUrl(reader.result as string);
+      };
+      reader.readAsDataURL(imageFile);
+    } else if (selectedCategory && defaultCategoryImages[selectedCategory]) {
+      setImagePreviewUrl(defaultCategoryImages[selectedCategory]);
+    } else {
+      setImagePreviewUrl(null);
+    }
+  }, [imageFile, selectedCategory]);
+  
   const handleActualSubmit = async (values: PostFormValues) => {
     if (!session?.user?.id) {
       console.log("PostPage: User not logged in, redirecting to login page.");
@@ -183,6 +226,14 @@ export default function PostPage() {
           throw new Error(`画像のアップロードに失敗しました: ${uploadError.message}`);
         }
         imageUrlToSave = objectPath;
+      } else {
+        const category = values.category;
+        if (category && defaultCategoryImages[category]) {
+          imageUrlToSave = defaultCategoryImages[category];
+        } else {
+          imageUrlToSave = null;
+          console.warn("PostPage: No user image and no default image found for category:", category);
+        }
       }
 
       const postData = {
@@ -250,7 +301,6 @@ export default function PostPage() {
 
       form.reset();
       setImageFile(null);
-      setImagePreviewUrl(null);
       router.push('/post/complete');
 
     } catch (error: any) {
@@ -276,18 +326,12 @@ export default function PostPage() {
     const file = e.target.files?.[0];
     if (file) {
       setImageFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreviewUrl(reader.result as string);
-      };
-      reader.readAsDataURL(file);
       setSubmitError(null);
     }
   };
   
   const removeImage = () => {
     setImageFile(null);
-    setImagePreviewUrl(null);
     const fileInput = document.getElementById('image-upload') as HTMLInputElement;
     if (fileInput) {
       fileInput.value = '';
@@ -451,7 +495,7 @@ export default function PostPage() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-xl font-semibold flex items-center">
-                      <StoreIcon className="mr-2 h-6 w-6" />お店
+                      <StoreIcon className="mr-2 h-6 w-6" />お店<span className="text-destructive ml-1">※</span>
                     </FormLabel>
                     <FormControl>
                       <FavoriteStoreInput
@@ -481,7 +525,7 @@ export default function PostPage() {
                 render={({ field }) => (
                   <FormItem className="space-y-3">
                     <FormLabel className="text-xl flex font-semibold items-center">
-                      <LayoutGrid className="mr-2 h-6 w-6" /> カテゴリ
+                      <LayoutGrid className="mr-2 h-6 w-6" /> カテゴリ<span className="text-destructive ml-1">※</span>
                     </FormLabel>
                     <FormControl>
                       <RadioGroup
@@ -521,7 +565,7 @@ export default function PostPage() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-xl flex font-semibold items-center">
-                      <ClipboardList className="mr-2 h-6 w-6" /> 内容
+                      <ClipboardList className="mr-2 h-6 w-6" /> 内容<span className="text-destructive ml-1">※</span>
                     </FormLabel>
                     <FormControl>
                       <Textarea
@@ -541,18 +585,50 @@ export default function PostPage() {
                 name="discountRate"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-xl flex items-center">
-                      <Calculator className="mr-2 h-6 w-6" /> 値引き率 (任意): {field.value === undefined ? `0%` : `${field.value}%`}
+                    <FormLabel className="text-xl flex items-center font-semibold">
+                      <Calculator className="mr-2 h-6 w-6 " /> 値引き率 :
+                      <span className="ml-2 text-primary font-bold flex items-center">
+                        {(() => {
+                          const selectedOption = discountIcons.find(option => option.value === field.value);
+                          const displayIcon = selectedOption ? selectedOption.Icon : Angry; // デフォルトはAngry (0%)
+                          const displayText = selectedOption ? selectedOption.label : "なし"; // デフォルトは「なし」
+
+                          return (
+                            <>
+                              {React.createElement(displayIcon, { className: "h-7 w-7 mr-2" })}
+                              {displayText}
+                            </>
+                          );
+                        })()}
+                      </span>
                     </FormLabel>
                     <FormControl>
-                      <Slider
-                        min={0}
-                        max={100}
-                        step={1}
-                        value={[field.value === undefined ? 0 : field.value]}
-                        onValueChange={(vals) => field.onChange(vals[0])}
-                        className="py-4"
-                      />
+                      <RadioGroup
+                        onValueChange={(val) => field.onChange(parseInt(val, 10))}
+                        defaultValue={field.value !== undefined ? String(field.value) : String(0)}
+                        className="grid grid-cols-5 gap-2"
+                      >
+                        {discountIcons.map((option) => (
+                          <div key={option.value}>
+                            <RadioGroupItem
+                              value={String(option.value)}
+                              id={`discount-icon-${option.value}`}
+                              className="peer sr-only"
+                            />
+                            <Label
+                              htmlFor={`discount-icon-${option.value}`}
+                              className={cn(
+                                "flex flex-col items-center justify-center rounded-md border-2 border-muted p-3 text-center text-lg h-full cursor-pointer",
+                                "hover:border-primary peer-data-[state=checked]:border-primary",
+                                "peer-data-[state=checked]:bg-primary/10"
+                              )}
+                            >
+                              {React.createElement(option.Icon, { className: "h-8 w-8 mb-1" })}
+                              <span className="text-sm">{option.label}</span>
+                            </Label>
+                          </div>
+                        ))}
+                      </RadioGroup>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -564,7 +640,7 @@ export default function PostPage() {
                 name="price"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-xl flex font-semibold items-center"><Tag className="mr-2 h-6 w-6" />価格 (税込)</FormLabel>
+                    <FormLabel className="text-xl flex font-semibold items-center"><Tag className="mr-2 h-6 w-6" />価格 (税込)<span className="text-destructive ml-1">※</span></FormLabel>
                     <FormControl>
                       <Input
                         type="number"
@@ -641,7 +717,7 @@ export default function PostPage() {
                 render={({ field }) => (
                   <FormItem className="space-y-3">
                     <FormLabel className="text-xl flex font-semibold items-center">
-                      <ClockIcon className="mr-2 h-6 w-6" /> 掲載期間
+                      <ClockIcon className="mr-2 h-6 w-6" /> 掲載期間<span className="text-destructive ml-1">※</span>
                     </FormLabel>
                     <FormControl>
                       <RadioGroup
@@ -690,6 +766,7 @@ export default function PostPage() {
                 >
                   {(isSubmitting || isUploading) ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : "投稿する"}
                 </Button>
+                <p className="text-sm text-destructive text-center mt-2">※は 必須入力です</p>
               </motion.div>
             </form>
           </Form>
@@ -700,14 +777,18 @@ export default function PostPage() {
               setFormDataToSubmit(null);
             }}
             title="投稿内容の確認"
-            description="投稿した記事は後から削除や編集を行うことはできません。本当に投稿しますか？"
           >
             <div className="pt-2">
-              <p className="text-sm text-destructive">
+              <p className="text-sm text-destructive text-center mb-4">
                 投稿した記事は後から削除や編集を行うことはできません。
                 <br/>
-                本当に投稿しますか？
+                内容をよくご確認の上、本当に投稿しますか？
               </p>
+              {imagePreviewUrl && (
+                <div className="flex justify-center mb-4">
+                  <img src={imagePreviewUrl} alt="投稿プレビュー" className="max-h-48 rounded-md object-contain border" />
+                </div>
+              )}
               <div className="mt-6 flex justify-end space-x-3">
                 <Button variant="outline" onClick={() => {
                   setShowConfirmModal(false);

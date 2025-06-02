@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
 import { ja } from 'date-fns/locale';
-import { Heart, Share2, Clock, Link as LinkIcon, ExternalLink, Instagram, Copy } from 'lucide-react';
+import { Heart, Share2, Clock, Link as LinkIcon, ExternalLink, Instagram, Copy, Laugh, Smile, Meh, Frown, Angry } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -14,6 +14,15 @@ import { PostWithAuthor } from '@/types/post';
 import { supabase } from '@/lib/supabaseClient';
 import { CustomModal } from '@/components/ui/custom-modal';
 import { useToast } from '@/hooks/use-toast';
+import React from 'react';
+
+const discountIcons = [
+  { value: 0, Icon: Angry, label: "0%" },
+  { value: 20, Icon: Frown, label: "20~40%" },
+  { value: 40, Icon: Meh, label: "40~60%" },
+  { value: 60, Icon: Smile, label: "60~80%" },
+  { value: 80, Icon: Laugh, label: "80~100%" },
+];
 
 function formatRemainingTime(expiresAt: number): string {
   const now = Date.now();
@@ -205,8 +214,19 @@ export function PostCard({ post, onLike, currentUserId }: PostCardProps) {
                   initial="initial"
                   animate="animate"
                 >
-                  <Badge className="bg-primary text-primary-foreground font-bold text-lg px-2 py-1 shadow-sm">
-                    {post.discount_rate}% OFF
+                  <Badge className="bg-primary text-primary-foreground font-bold text-lg px-2 py-1 shadow-sm flex items-center">
+                    {(() => {
+                      const selectedOption = discountIcons.find(option => option.value === post.discount_rate);
+                      const displayIcon = selectedOption ? selectedOption.Icon : Angry;
+                      const displayText = selectedOption ? selectedOption.label : "なし";
+
+                      return (
+                        <>
+                          {React.createElement(displayIcon, { className: "h-6 w-6 mr-1" })}
+                          {displayText}
+                        </>
+                      );
+                    })()}
                   </Badge>
                 </motion.div>
               )}
