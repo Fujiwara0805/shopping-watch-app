@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { LayoutGrid, Search, Star, MapPin, Loader2, SlidersHorizontal, Heart, Plus, X } from 'lucide-react';
+import { LayoutGrid, Search, Star, MapPin, Loader2, SlidersHorizontal, Heart, Plus, X, AlertCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { PostWithAuthor } from '@/types/post';
 import { useSession } from 'next-auth/react';
@@ -16,6 +16,7 @@ import { CustomModal } from '@/components/ui/custom-modal';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 // 型定義の追加
 interface AuthorData {
@@ -43,41 +44,11 @@ interface PostFromDB {
   price: number | null;
   created_at: string;
   expires_at: string;
+  store_latitude?: number;
+  store_longitude?: number;
   author: AuthorData | AuthorData[] | null;
   post_likes: PostLike[];
 }
-
-// 型定義の追加
-interface AuthorData {
-  id: string;
-  user_id: string;
-  display_name: string;
-  avatar_url: string | null;
-}
-
-interface PostLike {
-  user_id: string;
-}
-
-interface PostFromDB {
-  id: string;
-  app_profile_id: string;
-  store_id: string;
-  store_name: string;
-  category: string;
-  content: string;
-  image_url: string | null;
-  discount_rate: number | null;
-  expiry_option: string;
-  likes_count: number;
-  price: number | null;
-  created_at: string;
-  expires_at: string;
-  author: AuthorData | AuthorData[] | null;
-  post_likes: PostLike[];
-}
-
-type SortOption = 'created_at_desc' | 'created_at_asc' | 'expires_at_asc' | 'distance_asc' | 'likes_desc';
 
 interface ExtendedPostWithAuthor extends PostWithAuthor {
   isLikedByCurrentUser?: boolean;
@@ -86,13 +57,15 @@ interface ExtendedPostWithAuthor extends PostWithAuthor {
   store_longitude?: number;
   distance?: number;
   expiry_option: "1h" | "3h" | "6h" | "12h";
-  app_profile_id: string; // 実際のカラム名
-  author_user_id?: string; // authorから取得するuser_id
+  app_profile_id: string;
+  author_user_id?: string;
 }
+
+type SortOption = 'created_at_desc' | 'created_at_asc' | 'expires_at_asc' | 'distance_asc' | 'likes_desc';
 
 const categories = ['すべて', '惣菜', '弁当', '肉', '魚', '野菜', '果物', '米・パン類', 'デザート類', 'その他'];
 
-const currentSearchRadius = 5000; // 5kmをメートルで指定
+const SEARCH_RADIUS_METERS = 5000; // 5km
 
 // 検索履歴管理
 const useSearchHistory = () => {
@@ -144,6 +117,7 @@ export default function Timeline() {
   const [likedPostIds, setLikedPostIds] = useState<string[]>([]);
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [sortBy, setSortBy] = useState<SortOption>('created_at_desc');
+  const [showLocationPermissionAlert, setShowLocationPermissionAlert] = useState(false);
   
   // 検索機能
   const [showSpecialSearch, setShowSpecialSearch] = useState(false);
@@ -254,7 +228,7 @@ export default function Timeline() {
     }
   }, [currentUserId, session?.user?.id]);
 
-  // 距離計算関数
+  // 距離計算関数（ハバーサイン公式）
   const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
     const R = 6371; // 地球の半径（km）
     const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -287,7 +261,7 @@ export default function Timeline() {
     try {
       const now = new Date().toISOString();
       
-      // 通常のクエリ（周辺検索以外）
+      // 基本クエリ
       let query = supabase
         .from('posts')
         .select(`
@@ -304,6 +278,8 @@ export default function Timeline() {
           price,
           created_at,
           expires_at,
+          store_latitude,
+          store_longitude,
           author:app_profiles!posts_app_profile_id_fkey (
             id,
             user_id,
@@ -331,7 +307,6 @@ export default function Timeline() {
         if (currentFavoriteStoreIds.length > 0) {
           query = query.in('store_id', currentFavoriteStoreIds);
         } else {
-          // お気に入り店舗が設定されていない場合は空の結果
           query = query.eq('id', 'impossible-id');
         }
       } else if (currentSearchMode === 'liked_posts' && currentLikedPostIds.length > 0) {
@@ -346,7 +321,7 @@ export default function Timeline() {
         }
       }
 
-      // ソート
+      // ソート（距離ソート以外）
       if (currentSortBy === 'created_at_desc') {
         query = query.order('created_at', { ascending: false });
       } else if (currentSortBy === 'created_at_asc') {
@@ -365,18 +340,19 @@ export default function Timeline() {
         throw dbError;
       }
       
-      // 型安全なデータ処理
+      // 型安全なデータ処理と距離計算
       let processedPosts = (data as PostFromDB[]).map(post => {
         let distance;
-        // 位置情報がある場合の距離計算（実際のpostsテーブルに座標カラムがあるかチェック）
-        // if (currentUserLocation && post.store_latitude && post.store_longitude) {
-        //   distance = calculateDistance(
-        //     currentUserLocation.latitude,
-        //     currentUserLocation.longitude,
-        //     post.store_latitude,
-        //     post.store_longitude
-        //   );
-        // }
+        
+        // 距離計算（位置情報がある場合）
+        if (currentUserLocation && post.store_latitude && post.store_longitude) {
+          distance = calculateDistance(
+            currentUserLocation.latitude,
+            currentUserLocation.longitude,
+            post.store_latitude,
+            post.store_longitude
+          );
+        }
 
         // 型安全なauthor処理
         const authorData = Array.isArray(post.author) ? post.author[0] : post.author;
@@ -396,6 +372,14 @@ export default function Timeline() {
         };
       });
 
+      // 周辺検索の場合は5km圏内のみフィルタリング
+      if (currentSearchMode === 'nearby' && currentUserLocation) {
+        processedPosts = processedPosts.filter(post => {
+          return post.distance !== undefined && post.distance <= SEARCH_RADIUS_METERS;
+        });
+        console.log(`周辺検索: ${processedPosts.length}件の投稿が5km圏内にあります`);
+      }
+
       // 距離によるソート（位置情報がある場合）
       if (currentSortBy === 'distance_asc' && currentUserLocation) {
         processedPosts = processedPosts
@@ -409,7 +393,7 @@ export default function Timeline() {
         setPosts(prevPosts => [...prevPosts, ...processedPosts as ExtendedPostWithAuthor[]]);
       }
 
-      setHasMore(data.length === 20);
+      setHasMore(data.length === 20 && !(currentSearchMode === 'nearby'));
     } catch (e: any) {
       console.error("投稿の取得に失敗しました:", e);
       setError("投稿の読み込みに失敗しました。しばらくしてから再度お試しください。");
@@ -459,7 +443,6 @@ export default function Timeline() {
   const handleLike = async (postId: string, isLiked: boolean) => {
     if (!currentUserId) return;
 
-    // 自分の投稿にはいいねできない
     const post = posts.find(p => p.id === postId);
     if (post && post.author_user_id === currentUserId) {
       return;
@@ -488,8 +471,10 @@ export default function Timeline() {
   };
 
   const handleNearbySearch = () => {
+    setShowLocationPermissionAlert(true);
     setIsGettingLocation(true);
     setSearchMode('nearby');
+    
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -498,11 +483,14 @@ export default function Timeline() {
             longitude: position.coords.longitude,
           });
           setIsGettingLocation(false);
+          setShowLocationPermissionAlert(false);
+          console.log('位置情報取得成功:', position.coords.latitude, position.coords.longitude);
         },
         (error) => {
           console.error('位置情報の取得に失敗しました:', error);
-          setError('位置情報の取得に失敗しました。ブラウザの設定をご確認ください。');
+          setError('位置情報の取得に失敗しました。ブラウザの設定で位置情報を許可してください。');
           setIsGettingLocation(false);
+          setShowLocationPermissionAlert(false);
           setUserLocation(null);
           setSearchMode('all');
         },
@@ -511,6 +499,7 @@ export default function Timeline() {
     } else {
       setError('お使いのブラウザは位置情報に対応していません。');
       setIsGettingLocation(false);
+      setShowLocationPermissionAlert(false);
       setSearchMode('all');
     }
   };
@@ -671,6 +660,18 @@ export default function Timeline() {
         </Button>
       </div>
 
+      {/* 位置情報許可のアラート */}
+      {showLocationPermissionAlert && (
+        <div className="px-4 py-2">
+          <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              周辺検索を行うため、ブラウザの位置情報へのアクセスを許可してください。現在地から5km圏内の投稿のみ表示されます。
+            </AlertDescription>
+          </Alert>
+        </div>
+      )}
+
       {/* アクティブなフィルタの表示 */}
       {activeFiltersCount > 0 && (
         <div className="px-4 py-2 bg-gray-50 border-b">
@@ -688,7 +689,7 @@ export default function Timeline() {
               <Badge variant="secondary" className="flex items-center gap-1">
                 {searchMode === 'favorite_store' && 'お気に入り店舗'}
                 {searchMode === 'liked_posts' && 'いいねした投稿'}
-                {searchMode === 'nearby' && '周辺検索'}
+                {searchMode === 'nearby' && `周辺検索 (5km圏内)`}
                 {searchMode === 'hybrid' && '複合検索'}
                 <button onClick={() => setSearchMode('all')} className="ml-1">
                   <X className="h-3 w-3" />
@@ -699,6 +700,15 @@ export default function Timeline() {
               すべてクリア
             </Button>
           </div>
+        </div>
+      )}
+
+      {/* 周辺検索時の結果表示 */}
+      {searchMode === 'nearby' && userLocation && !loading && (
+        <div className="px-4 py-2 bg-blue-50 border-b">
+          <p className="text-sm text-blue-700">
+            📍 現在地から5km圏内の投稿を表示中 ({posts.length}件)
+          </p>
         </div>
       )}
       
@@ -715,7 +725,18 @@ export default function Timeline() {
           {posts.length === 0 && !loading ? (
             <div className="text-center py-10">
               <LayoutGrid size={48} className="mx-auto text-muted-foreground mb-4" />
-              <p className="text-xl text-muted-foreground">検索条件に合う投稿はまだありません。</p>
+              {searchMode === 'nearby' ? (
+                <div>
+                  <p className="text-xl text-muted-foreground mb-2">
+                    現在地から5km圏内に投稿がありません
+                  </p>
+                  <p className="text-sm text-gray-500 mb-4">
+                    範囲を広げるか、別の検索条件をお試しください
+                  </p>
+                </div>
+              ) : (
+                <p className="text-xl text-muted-foreground">検索条件に合う投稿はまだありません。</p>
+              )}
               {searchMode !== 'all' && (
                 <Button onClick={() => setSearchMode('all')} className="mt-4">
                   すべての投稿を表示
@@ -764,7 +785,9 @@ export default function Timeline() {
           
           {!hasMore && posts.length > 0 && (
             <div className="text-center py-8">
-              <p className="text-muted-foreground">すべての投稿を読み込みました</p>
+              <p className="text-muted-foreground">
+                {searchMode === 'nearby' ? '5km圏内の投稿をすべて表示しました' : 'すべての投稿を読み込みました'}
+              </p>
             </div>
           )}
           
