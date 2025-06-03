@@ -27,7 +27,7 @@ interface ExtendedPostWithAuthor extends PostWithAuthor {
 
 type SortOption = 'created_at_desc' | 'created_at_asc' | 'expires_at_asc';
 
-const categories = ['すべて', '惣菜', '弁当', '肉', '魚', '野菜', '果物', 'その他'];
+const categories = ['すべて', '惣菜', '弁当', '肉', '魚', '野菜', '果物', '米・パン類', 'デザート類', 'その他'];
 
 export default function Timeline() {
   const [posts, setPosts] = useState<ExtendedPostWithAuthor[]>([]);
@@ -207,14 +207,18 @@ export default function Timeline() {
         `)
         .gt('expires_at', now);
 
-      if (currentSearchMode === 'category' && currentActiveFilter !== 'all') {
+      if (currentActiveFilter !== 'all') {
         query = query.eq('category', currentActiveFilter);
-      } else if (currentSearchMode === 'favorite_store' && currentFavoriteStoreIds.length > 0) {
+      }
+
+      if (currentGeneralSearchTerm) {
+        query = query.or(`store_name.ilike.%${currentGeneralSearchTerm}%,category.ilike.%${currentGeneralSearchTerm}%,content.ilike.%${currentGeneralSearchTerm}%`);
+      }
+
+      if (currentSearchMode === 'favorite_store' && currentFavoriteStoreIds.length > 0) {
         query = query.in('store_id', currentFavoriteStoreIds);
       } else if (currentSearchMode === 'liked_posts' && currentLikedPostIds.length > 0) {
         query = query.in('id', currentLikedPostIds);
-      } else if (currentSearchMode === 'all' && currentGeneralSearchTerm) {
-        query = query.or(`store_name.ilike.%${currentGeneralSearchTerm}%,category.ilike.%${currentGeneralSearchTerm}%,content.ilike.%${currentGeneralSearchTerm}%`);
       }
 
       if (currentSortBy === 'created_at_desc') {
@@ -320,6 +324,7 @@ export default function Timeline() {
 
   const handleNearbySearch = () => {
     setIsGettingLocation(true);
+    setSearchMode('nearby');
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -327,10 +332,7 @@ export default function Timeline() {
             latitude: position.coords.latitude,
             longitude: position.coords.longitude,
           });
-          setSearchMode('nearby');
           setIsGettingLocation(false);
-          setShowFilterModal(false);
-          fetchPosts(0, true);
         },
         (error) => {
           console.error('位置情報の取得に失敗しました:', error);
@@ -338,7 +340,6 @@ export default function Timeline() {
           setIsGettingLocation(false);
           setUserLocation(null);
           setSearchMode('all');
-          setShowFilterModal(false);
         },
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
       );
@@ -346,7 +347,6 @@ export default function Timeline() {
       setError('お使いのブラウザは位置情報に対応していません。');
       setIsGettingLocation(false);
       setSearchMode('all');
-      setShowFilterModal(false);
     }
   };
 
@@ -537,7 +537,6 @@ export default function Timeline() {
                   variant={activeFilter === category || (activeFilter === 'all' && category === 'すべて') ? 'default' : 'outline'}
                   onClick={() => {
                     setActiveFilter(category === 'すべて' ? 'all' : category);
-                    setSearchMode('category');
                   }}
                   className={cn(
                     "w-full",
@@ -564,26 +563,18 @@ export default function Timeline() {
             </Select>
           </div>
 
-          <div className="flex justify-center my-4">
-            <Button
-              className="w-12 h-12 flex items-center justify-center bg-transparent hover:bg-transparent p-0 text-[#73370c]"
-              onClick={() => { /* ここに何らかのロジックを必要に応じて追加 */ }}
-            >
-              <Plus className="h-8 w-8" />
-            </Button>
-          </div>
 
           <div className="flex flex-col space-y-3">
             <h3 className="font-semibold text-lg mb-1">特別な検索</h3>
             <Button 
               onClick={() => {
                 setSearchMode('favorite_store');
-                setGeneralSearchTerm('');
-                setActiveFilter('all');
-                handleApplyFilters();
               }}
               disabled={!currentUserId}
-              className="justify-start bg-yellow-600 text-white hover:bg-yellow-100 hover:text-yellow-800"
+              className={cn(
+                "justify-start",
+                searchMode === 'favorite_store' ? "bg-yellow-600 text-white hover:bg-yellow-700" : "bg-gray-200 text-gray-800 hover:bg-gray-300"
+              )}
             >
               <Star className="h-4 w-4 mr-2" />
               お気に入り店を検索
@@ -591,12 +582,12 @@ export default function Timeline() {
             <Button
               onClick={() => {
                 setSearchMode('liked_posts');
-                setGeneralSearchTerm('');
-                setActiveFilter('all');
-                handleApplyFilters();
               }}
               disabled={!currentUserId}
-              className="justify-start bg-pink-600 text-white hover:bg-pink-100 hover:text-pink-800"
+              className={cn(
+                "justify-start",
+                searchMode === 'liked_posts' ? "bg-pink-600 text-white hover:bg-pink-700" : "bg-gray-200 text-gray-800 hover:bg-gray-300"
+              )}
             >
               <Heart className="h-4 w-4 mr-2" />
               いいねした投稿を検索
@@ -604,7 +595,10 @@ export default function Timeline() {
             <Button
               onClick={handleNearbySearch}
               disabled={isGettingLocation}
-              className="justify-start bg-green-600 text-white hover:bg-green-100 hover:text-green-800"
+              className={cn(
+                "justify-start",
+                searchMode === 'nearby' ? "bg-green-600 text-white hover:bg-green-700" : "bg-gray-200 text-gray-800 hover:bg-gray-300"
+              )}
             >
               {isGettingLocation ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
