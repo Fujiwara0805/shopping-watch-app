@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { PostFilter } from '@/components/posts/post-filter';
+// import { PostFilter } from '@/components/posts/post-filter';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Post } from '@/types/post';
+// import { Post } from '@/types/post';
 import { Button } from '@/components/ui/button';
 import { LayoutGrid, Search, Star, MapPin, Loader2, SlidersHorizontal, Heart, Plus } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';

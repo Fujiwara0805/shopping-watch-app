@@ -42,6 +42,8 @@ function formatRemainingTime(expiresAt: number): string {
 interface ExtendedPostWithAuthor extends PostWithAuthor {
   isLikedByCurrentUser?: boolean;
   likes_count: number;
+  remaining_items?: number;
+  consumption_deadline?: string; // 消費期限用の新しいフィールド
 }
 
 interface PostCardProps {
@@ -231,6 +233,17 @@ export function PostCard({ post, onLike, currentUserId }: PostCardProps) {
               {post.price != null && (
                 <Badge className="bg-white text-foreground font-bold text-xl px-2 py-1 shadow-sm">
                   ¥{post.price.toLocaleString()}
+                </Badge>
+              )}
+              {/* 価格の下に消費期限と残り数量を表示 */}
+              {post.consumption_deadline && (
+                <Badge className="bg-orange-500 text-white font-bold text-xs px-2 py-1 shadow-sm">
+                  消費期限: {formatDistanceToNow(new Date(post.consumption_deadline), { addSuffix: true, locale: ja })}
+                </Badge>
+              )}
+              {post.remaining_items != null && post.remaining_items > 0 && (
+                <Badge className="bg-sky-600 text-white font-bold text-xs px-2 py-1 shadow-sm">
+                  残り: {post.remaining_items}個
                 </Badge>
               )}
             </div>

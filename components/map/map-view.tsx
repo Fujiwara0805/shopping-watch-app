@@ -100,6 +100,13 @@ export function MapView() {
       const initialCenter = { lat: latitude, lng: longitude };
 
       try {
+        // window.google が存在することを確認
+        if (!window.google || !window.google.maps) {
+          console.error("MapView: window.google.maps is not available yet.");
+          setInitializationError("地図APIがまだ利用できません。再試行しています...");
+          return; // マップの初期化をスキップ
+        }
+
         const mapOptions: google.maps.MapOptions = {
           center: initialCenter,
           zoom: 15,
@@ -134,6 +141,11 @@ export function MapView() {
 
   useEffect(() => {
     if (map && latitude && longitude) {
+      // window.google が存在することを確認
+      if (!window.google || !window.google.maps) {
+        console.warn("MapView: Skipping user location marker update, window.google.maps is not available.");
+        return;
+      }
       const userPosition = new window.google.maps.LatLng(latitude, longitude);
       if (userLocationMarker) {
         userLocationMarker.setPosition(userPosition);
@@ -218,7 +230,7 @@ export function MapView() {
   console.log("MapView: Component rendering or re-rendering END - Before return statement. Current state:", {permissionState, latitude, longitude, mapInitialized, initializationError, mapContainerRefExists: !!mapContainerRef.current, googleMapsLoaded, locationLoading});
 
   if (googleMapsLoadError) {
-    return <MessageCard title="エラー" message={`地図の読み込みに失敗しました: ${googleMapsLoadError.message}`} variant="destructive" icon={AlertTriangle} />;
+    return <MessageCard title="エラー" message={`地図の読み込みに失敗しました！再度リロードしてください。: ${googleMapsLoadError.message}`} variant="destructive" icon={AlertTriangle} />;
   }
 
   if (initializationError && !mapInitialized) {

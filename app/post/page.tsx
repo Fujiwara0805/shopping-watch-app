@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { Camera, Upload, X, Store as StoreIcon, LayoutGrid, ClipboardList, Image as ImageIcon, Percent, CalendarClock, PackageIcon, Calculator, ClockIcon, Tag, Laugh, Smile, Meh, Frown, Angry, HelpCircle } from 'lucide-react';
+import { Camera, Upload, X, Store as StoreIcon, LayoutGrid, ClipboardList, Image as ImageIcon, Percent, CalendarClock, PackageIcon, Calculator, ClockIcon, Tag, Laugh, Smile, Meh, Frown, Angry, HelpCircle, MapPin, CheckCircle } from 'lucide-react';
 import AppLayout from '@/components/layout/app-layout';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -30,6 +30,7 @@ import { ja } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 import { useLoadScript, Autocomplete, GoogleMap } from "@react-google-maps/api";
 import { useLoading } from '@/contexts/loading-context';
+import { setTimeout } from 'timers/promises';
 
 declare global {
   interface Window {
@@ -37,21 +38,21 @@ declare global {
   }
 }
 
+// 🔥 厳密なバリデーションスキーマ
 const postSchema = z.object({
-  storeId: z.string({ required_error: 'お店を選択してください' }),
-  storeName: z.string({ required_error: "お店の名前が取得できませんでした。"}),
-  category: z.string({ required_error: 'カテゴリを選択してください' }),
+  storeId: z.string().min(1, { message: 'お店を選択してください' }),
+  storeName: z.string().min(1, { message: "お店の名前が取得できませんでした。"}),
+  category: z.string().min(1, { message: 'カテゴリを選択してください' }),
   content: z.string().min(5, { message: '5文字以上入力してください' }).max(120, { message: '120文字以内で入力してください' }),
   discountRate: z.preprocess(
     (val) => {
-      if (typeof val === 'string' && val === '') return undefined;
+      if (typeof val === 'string' && val === '') return 1;
       const num = parseInt(String(val), 10);
-      return isNaN(num) ? undefined : num;
+      return isNaN(num) ? 1 : num;
     },
     z.number({ invalid_type_error: '有効な数値を入力してください' })
-     .min(0, { message: '0%以上で入力してください' })
+     .min(1, { message: '値引き率を選択してください' })
      .max(100, { message: '100%以下で入力してください' })
-     .optional()
   ),
   price: z.preprocess(
     (val) => {
@@ -66,11 +67,12 @@ const postSchema = z.object({
      .positive({ message: '価格は0より大きい値を入力してください' })
      .min(1, { message: '価格は1以上で入力してください' })
   ),
-  expiryTime: z.string().optional(),
-  remainingItems: z.string().optional(),
   expiryOption: z.enum(['1h', '3h', '6h', '12h'], { required_error: '掲載期間を選択してください' }),
-  location_lat: z.number().optional().nullable(),
-  location_lng: z.number().optional().nullable(),
+  // 位置情報フィールド（任意）
+  location_lat: z.number().optional(),
+  location_lng: z.number().optional(),
+  store_latitude: z.number().optional(),
+  store_longitude: z.number().optional(),
 });
 
 type PostFormValues = z.infer<typeof postSchema>;
@@ -135,12 +137,17 @@ export default function PostPage() {
   const [showStoreSearchInfoModal, setShowStoreSearchInfoModal] = useState(false);
   const [hasUserRemovedDefaultImage, setHasUserRemovedDefaultImage] = useState(false);
   const { showLoading, hideLoading } = useLoading();
+  const [selectedPlace, setSelectedPlace] = useState<google.maps.places.PlaceResult | null>(null);
+  
+  // 位置情報取得状況の表示用
+  const [locationStatus, setLocationStatus] = useState<'none' | 'getting' | 'success' | 'error'>('none');
 
   const { isLoaded, loadError } = useLoadScript({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
     libraries,
   });
 
+  // 🔥 厳密なフォーム設定
   const form = useForm<PostFormValues>({
     resolver: zodResolver(postSchema),
     defaultValues: {
@@ -148,11 +155,13 @@ export default function PostPage() {
       storeName: '',
       category: '',
       content: '',
-      discountRate: undefined,
+      discountRate: 1, // デフォルトを1に設定（0%に対応）
       price: undefined,
-      expiryTime: '',
-      remainingItems: '',
       expiryOption: '3h',
+      location_lat: undefined,
+      location_lng: undefined,
+      store_latitude: undefined,
+      store_longitude: undefined,
     },
     mode: 'onChange',
   });
@@ -184,12 +193,46 @@ export default function PostPage() {
     }
   }, [imageFile, selectedCategory, hasUserRemovedDefaultImage]);
   
+  // 🔥 厳密な投稿処理
   const handleActualSubmit = async (values: PostFormValues) => {
     if (!session?.user?.id) {
       console.log("PostPage: User not logged in, redirecting to login page.");
       router.push(`/login?callbackUrl=${encodeURIComponent(window.location.pathname)}`);
       return;
     }
+
+    // 🔥 必須フィールドの厳密な検証
+    if (!values.storeId || !values.storeName) {
+      setSubmitError("店舗が選択されていません。お店を選択してください。");
+      return;
+    }
+
+    if (!values.category) {
+      setSubmitError("カテゴリが選択されていません。");
+      return;
+    }
+
+    if (!values.content || values.content.length < 5) {
+      setSubmitError("投稿内容を5文字以上入力してください。");
+      return;
+    }
+
+    if (values.discountRate === undefined || values.discountRate === null) {
+      setSubmitError("値引き率を選択してください。");
+      return;
+    }
+
+    if (!values.price || values.price <= 0) {
+      setSubmitError("価格を正しく入力してください。");
+      return;
+    }
+
+    console.log("PostPage: Form validation passed, values:", {
+      storeId: values.storeId,
+      storeName: values.storeName,
+      store_latitude: values.store_latitude,
+      store_longitude: values.store_longitude,
+    });
 
     form.clearErrors("root.serverError");
     showLoading();
@@ -248,7 +291,8 @@ export default function PostPage() {
         }
       }
 
-      const postData = {
+      // 🔥 投稿データを確実に準備
+      const postData: any = {
         app_profile_id: appProfileId,
         store_id: values.storeId,
         store_name: values.storeName,
@@ -261,10 +305,25 @@ export default function PostPage() {
         expires_at: calculateExpiresAt(values.expiryOption).toISOString(),
       };
 
+      // 🔥 位置情報を確実に設定
+      if (values.store_latitude && values.store_longitude) {
+        postData.store_latitude = Number(values.store_latitude);
+        postData.store_longitude = Number(values.store_longitude);
+        postData.location_geom = `POINT(${values.store_longitude} ${values.store_latitude})`;
+        
+        console.log("PostPage: Saving post with location data:", {
+          store_latitude: postData.store_latitude,
+          store_longitude: postData.store_longitude,
+          location_geom: postData.location_geom
+        });
+      } else {
+        console.log("PostPage: Saving post without location data");
+      }
+
       const { data: insertedPost, error: insertError } = await supabase
         .from('posts')
         .insert(postData)
-        .select('id, store_id, store_name, app_profile_id')
+        .select('id, store_id, store_name, app_profile_id, store_latitude, store_longitude')
         .single();
 
       if (insertError || !insertedPost) {
@@ -273,7 +332,22 @@ export default function PostPage() {
       }
       
       createdPostId = insertedPost.id;
-      console.log("PostPage: Post inserted successfully with ID:", createdPostId, "Image path:", imageUrlToSave);
+      console.log("PostPage: Post inserted successfully with ID:", createdPostId, "Location:", {
+        latitude: insertedPost.store_latitude,
+        longitude: insertedPost.store_longitude
+      });
+
+      // 位置情報が保存されたかチェック（位置情報を送信した場合のみ）
+      if (values.store_latitude && values.store_longitude && (!insertedPost.store_latitude || !insertedPost.store_longitude)) {
+        console.warn("PostPage: Location data was not saved properly:", insertedPost);
+        toast({
+          title: "⚠️ 位置情報の保存に問題がありました",
+          description: "投稿は保存されましたが、位置情報が正しく保存されませんでした。",
+          duration: 5000,
+        });
+      } else if (values.store_latitude && values.store_longitude) {
+        console.log("PostPage: Location data saved successfully!");
+      }
 
       if (createdPostId && insertedPost.store_id && insertedPost.store_name && insertedPost.app_profile_id) {
         try {
@@ -311,8 +385,22 @@ export default function PostPage() {
         });
       }
 
-      form.reset();
+      form.reset({
+        storeId: '',
+        storeName: '',
+        category: '',
+        content: '',
+        discountRate: 1,
+        price: undefined,
+        expiryOption: '3h',
+        location_lat: undefined,
+        location_lng: undefined,
+        store_latitude: undefined,
+        store_longitude: undefined,
+      });
       setImageFile(null);
+      setSelectedPlace(null);
+      setLocationStatus('none');
       router.push('/post/complete');
 
     } catch (error: any) {
@@ -384,30 +472,103 @@ export default function PostPage() {
     currentPlaceholder: getSelectPlaceholder(),
   });
 
+  // 🔥 Google Places API連携の確実な設定
   useEffect(() => {
     if (isLoaded && storeInputRef.current) {
       const newAutocomplete = new google.maps.places.Autocomplete(storeInputRef.current, {
         types: ['establishment'],
         componentRestrictions: { 'country': ['jp'] },
       });
+      
       newAutocomplete.addListener('place_changed', () => {
+        setLocationStatus('getting');
         const place = newAutocomplete.getPlace();
-        if (place.geometry && place.geometry.location) {
-          form.setValue("storeName", place.name || "");
-          form.setValue("location_lat", place.geometry.location.lat());
-          form.setValue("location_lng", place.geometry.location.lng());
+        
+        console.log("PostPage: Place selected from Google Places:", place);
+        
+        if (place.geometry && place.geometry.location && place.name) {
+          const lat = place.geometry.location.lat();
+          const lng = place.geometry.location.lng();
+          const storeName = place.name;
+          
+          console.log("PostPage: Setting location data from Google Places:", { lat, lng, storeName });
+          
+          // storeIdはplace_idまたは生成されたIDを使用
+          const storeId = place.place_id || `google_${Date.now()}`;
+          
+          // フォームに店舗情報と位置情報を確実に設定
+          form.setValue("storeId", storeId, { shouldValidate: true });
+          form.setValue("storeName", storeName, { shouldValidate: true });
+          form.setValue("location_lat", lat, { shouldValidate: true });
+          form.setValue("location_lng", lng, { shouldValidate: true });
+          form.setValue("store_latitude", lat, { shouldValidate: true });
+          form.setValue("store_longitude", lng, { shouldValidate: true });
+          
           setPlaceId(place.place_id || null);
           setStoreAddress(place.formatted_address || '');
+          setSelectedPlace(place);
+          setLocationStatus('success');
+          
+          toast({
+            title: "✅ 店舗の位置情報を取得しました",
+            description: `${storeName} (緯度: ${lat.toFixed(6)}, 経度: ${lng.toFixed(6)})`,
+            duration: 3000,
+          });
+        } else {
+          console.warn("PostPage: Place has no geometry, location, or name:", place);
+          setLocationStatus('error');
+          toast({
+            title: "⚠️ 位置情報を取得できませんでした",
+            description: "別の店舗を選択してください",
+            duration: 3000,
+          });
         }
       });
       setAutocomplete(newAutocomplete);
     }
-  }, [isLoaded, form]);
+  }, [isLoaded, form, toast]);
 
   const handleMoveToMap = () => {
     setShowStoreSearchInfoModal(false);
-    showLoading();
     router.push('/map');
+  };
+
+  // 位置情報状況表示コンポーネント
+  const LocationStatusIndicator = () => {
+    const lat = form.watch('store_latitude');
+    const lng = form.watch('store_longitude');
+    
+    if (lat && lng) {
+      return (
+        <div className="flex items-center space-x-2 p-2 bg-green-50 border border-green-200 rounded-md">
+          <CheckCircle className="h-5 w-5 text-green-600" />
+          <span className="text-sm text-green-800">
+            位置情報取得完了 (緯度: {lat.toFixed(6)}, 経度: {lng.toFixed(6)})
+          </span>
+        </div>
+      );
+    } else if (locationStatus === 'getting') {
+      return (
+        <div className="flex items-center space-x-2 p-2 bg-blue-50 border border-blue-200 rounded-md">
+          <Loader2 className="h-5 w-5 text-blue-600 animate-spin" />
+          <span className="text-sm text-blue-800">位置情報を取得中...</span>
+        </div>
+      );
+    } else if (locationStatus === 'error') {
+      return (
+        <div className="flex items-center space-x-2 p-2 bg-red-50 border border-red-200 rounded-md">
+          <X className="h-5 w-5 text-red-600" />
+          <span className="text-sm text-red-800">位置情報の取得に失敗しました</span>
+        </div>
+      );
+    }
+    
+    return (
+      <div className="flex items-center space-x-2 p-2 bg-blue-50 border border-blue-200 rounded-md">
+        <MapPin className="h-5 w-5 text-blue-600" />
+        <span className="text-sm text-blue-800">店舗を選択すると位置情報が自動取得されます（任意）</span>
+      </div>
+    );
   };
 
   if (status === "loading") {
@@ -494,25 +655,214 @@ export default function PostPage() {
                       </span>
                     </FormLabel>
                     <FormControl>
-                      <FavoriteStoreInput
-                        value={{ id: field.value, name: form.getValues("storeName") }}
-                        onChange={(store) => {
-                          if (store) {
-                            form.setValue("storeId", store.id, { shouldValidate: true });
-                            form.setValue("storeName", store.name, { shouldValidate: true });
-                          } else {
-                            form.setValue("storeId", "", { shouldValidate: true });
-                            form.setValue("storeName", "", { shouldValidate: true });
-                          }
-                        }}
-                        placeholder="お店を検索または選択してください"
-                      />
+                      <div className="space-y-2">
+                        <div className="relative">
+                          <FavoriteStoreInput
+                            value={{ id: field.value, name: form.getValues("storeName") }}
+                            onChange={async (store) => {
+                              console.log("PostPage: Store selected from FavoriteStoreInput:", store);
+                              if (store) {
+                                form.setValue("storeId", store.id, { shouldValidate: true });
+                                form.setValue("storeName", store.name, { shouldValidate: true });
+                                
+                                // 🔥 位置情報を確実に設定（store情報に含まれている場合）
+                                if ((store as any).latitude && (store as any).longitude) {
+                                  const lat = Number((store as any).latitude);
+                                  const lng = Number((store as any).longitude);
+                                  
+                                  console.log("PostPage: Setting location from store:", { lat, lng });
+                                  
+                                  form.setValue("store_latitude", lat, { shouldValidate: true });
+                                  form.setValue("store_longitude", lng, { shouldValidate: true });
+                                  form.setValue("location_lat", lat, { shouldValidate: true });
+                                  form.setValue("location_lng", lng, { shouldValidate: true });
+                                  setLocationStatus('success');
+                                  
+                                  toast({
+                                    title: "✅ 店舗情報と位置情報を取得しました",
+                                    description: `${store.name} (緯度: ${lat.toFixed(6)}, 経度: ${lng.toFixed(6)})`,
+                                    duration: 3000,
+                                  });
+                                } else {
+                                  console.warn("PostPage: Store has no location data, trying to fetch from Google Places:", store);
+                                  
+                                  // 🔥 位置情報がない場合はGoogle Places APIで検索
+                                  if (window.google && window.google.maps && window.google.maps.places) {
+                                    setLocationStatus('getting');
+                                    
+                                    const service = new google.maps.places.PlacesService(document.createElement('div'));
+                                    const request = {
+                                      query: store.name,
+                                      fields: ['place_id', 'name', 'geometry', 'formatted_address'],
+                                    };
+                                    
+                                    service.textSearch(request, (results, status) => {
+                                      if (status === google.maps.places.PlacesServiceStatus.OK && results && results[0]) {
+                                        const place = results[0];
+                                        console.log("PostPage: Found place via text search:", place);
+                                        
+                                        if (place.geometry && place.geometry.location) {
+                                          const lat = place.geometry.location.lat();
+                                          const lng = place.geometry.location.lng();
+                                          
+                                          console.log("PostPage: Setting location from Google Places text search:", { lat, lng });
+                                          
+                                          form.setValue("store_latitude", lat, { shouldValidate: true });
+                                          form.setValue("store_longitude", lng, { shouldValidate: true });
+                                          form.setValue("location_lat", lat, { shouldValidate: true });
+                                          form.setValue("location_lng", lng, { shouldValidate: true });
+                                          setLocationStatus('success');
+                                          
+                                          // 🔥 取得した位置情報をデータベースに保存
+                                          try {
+                                            supabase
+                                              .from('stores')
+                                              .update({
+                                                latitude: lat,
+                                                longitude: lng,
+                                                location_geom: `POINT(${lng} ${lat})`
+                                              })
+                                              .eq('id', store.id)
+                                              .then(({ error }) => {
+                                                if (error) {
+                                                  console.error("PostPage: Error updating store location:", error);
+                                                } else {
+                                                  console.log("PostPage: Store location updated successfully");
+                                                }
+                                              });
+                                          } catch (error) {
+                                            console.error("PostPage: Error saving store location:", error);
+                                          }
+                                          
+                                          toast({
+                                            title: "✅ 店舗情報と位置情報を取得しました",
+                                            description: `${store.name} (緯度: ${lat.toFixed(6)}, 経度: ${lng.toFixed(6)})`,
+                                            duration: 3000,
+                                          });
+                                        } else {
+                                          console.warn("PostPage: No geometry found in place result");
+                                          setLocationStatus('error');
+                                          toast({
+                                            title: "⚠️ 位置情報を取得できませんでした",
+                                            description: "手動で位置情報を設定するか、別の店舗を選択してください",
+                                            duration: 5000,
+                                          });
+                                        }
+                                      } else {
+                                        console.warn("PostPage: Places text search failed:", status);
+                                        setLocationStatus('error');
+                                        toast({
+                                          title: "⚠️ 位置情報を取得できませんでした", 
+                                          description: "手動で位置情報を設定するか、別の店舗を選択してください",
+                                          duration: 5000,
+                                        });
+                                      }
+                                    });
+                                  } else {
+                                    console.warn("PostPage: Google Places API not available");
+                                    // 位置情報がない場合はundefinedに設定
+                                    form.setValue("store_latitude", undefined, { shouldValidate: true });
+                                    form.setValue("store_longitude", undefined, { shouldValidate: true });
+                                    form.setValue("location_lat", undefined, { shouldValidate: true });
+                                    form.setValue("location_lng", undefined, { shouldValidate: true });
+                                    setLocationStatus('error');
+                                    
+                                    toast({
+                                      title: "⚠️ 位置情報を取得できませんでした",
+                                      description: "手動で位置情報を設定するか、別の店舗を選択してください",
+                                      duration: 5000,
+                                    });
+                                  }
+                                }
+                              } else {
+                                console.log("PostPage: Clearing store selection");
+                                form.setValue("storeId", "", { shouldValidate: true });
+                                form.setValue("storeName", "", { shouldValidate: true });
+                                form.setValue("store_latitude", undefined, { shouldValidate: true });
+                                form.setValue("store_longitude", undefined, { shouldValidate: true });
+                                form.setValue("location_lat", undefined, { shouldValidate: true });
+                                form.setValue("location_lng", undefined, { shouldValidate: true });
+                                setLocationStatus('none');
+                              }
+                            }}
+                            placeholder="お店を検索または選択してください"
+                          />
+                          
+                          {/* 🔥 Google Places 直接検索の入力フィールド */}
+                          {/* {isLoaded && (
+                            <Input
+                              ref={storeInputRef}
+                              placeholder="または Google で店舗を検索"
+                              className="mt-2 text-lg"
+                              disabled={isUploading}
+                              onFocus={() => setLocationStatus('getting')}
+                            />
+                          )} */}
+                        </div>
+                        <LocationStatusIndicator />
+                      </div>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              <input type="hidden" {...form.register("storeName")} />
+
+              {/* 🔥 隠しフィールドをFormFieldとして正しく設定 */}
+              <FormField
+                control={form.control}
+                name="storeName"
+                render={({ field }) => (
+                  <FormItem style={{ display: 'none' }}>
+                    <FormControl>
+                      <input type="hidden" {...field} />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="store_latitude"
+                render={({ field }) => (
+                  <FormItem style={{ display: 'none' }}>
+                    <FormControl>
+                      <input type="hidden" {...field} value={field.value || ''} />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="store_longitude"
+                render={({ field }) => (
+                  <FormItem style={{ display: 'none' }}>
+                    <FormControl>
+                      <input type="hidden" {...field} value={field.value || ''} />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="location_lat"
+                render={({ field }) => (
+                  <FormItem style={{ display: 'none' }}>
+                    <FormControl>
+                      <input type="hidden" {...field} value={field.value || ''} />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="location_lng"
+                render={({ field }) => (
+                  <FormItem style={{ display: 'none' }}>
+                    <FormControl>
+                      <input type="hidden" {...field} value={field.value || ''} />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
 
               <FormField
                 control={form.control}
@@ -564,7 +914,7 @@ export default function PostPage() {
                     </FormLabel>
                     <FormControl>
                       <Textarea
-                        placeholder="値引き内容や商品の状態を入力してください（240文字以内）"
+                        placeholder="商品の状態や残り数量、みんなに知らせたいお得情報を記入してください（120文字以内）"
                         className="resize-none text-lg"
                         rows={5}
                         {...field}
@@ -586,7 +936,7 @@ export default function PostPage() {
                         {(() => {
                           const selectedOption = discountIcons.find(option => option.value === field.value);
                           const displayIcon = selectedOption ? selectedOption.Icon : Angry; // デフォルトはAngry (0%)
-                          const displayText = selectedOption ? selectedOption.label : "なし"; // デフォルトは「なし」
+                          const displayText = selectedOption ? selectedOption.label : "0%"; // デフォルトは「0%」
 
                           return (
                             <>
@@ -600,7 +950,7 @@ export default function PostPage() {
                     <FormControl>
                       <RadioGroup
                         onValueChange={(val) => field.onChange(parseInt(val, 10))}
-                        defaultValue={field.value !== undefined ? String(field.value) : String(0)}
+                        value={field.value !== undefined ? String(field.value) : String(1)}
                         className="grid grid-cols-5 gap-2"
                       >
                         {discountIcons.map((option) => (
@@ -657,55 +1007,6 @@ export default function PostPage() {
                 )}
               />
               
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="expiryTime"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-lg flex items-center">
-                        <CalendarClock className="mr-2 h-5 w-5" /> 消費期限 (任意)
-                      </FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="date"
-                          className="text-lg"
-                          {...field}
-                          value={field.value || ''}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="remainingItems"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-lg flex items-center">
-                        <PackageIcon className="mr-2 h-5 w-5" /> 残り数量 (任意)
-                      </FormLabel>
-                      <FormControl>
-                        <div className="flex">
-                          <Input
-                            type="number"
-                            min="1"
-                            placeholder="10"
-                            className="text-lg"
-                            {...field}
-                            value={field.value || ''}
-                          />
-                          <span className="ml-2 flex items-center text-muted-foreground text-lg">点</span>
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
               <FormField
                 control={form.control}
                 name="expiryOption"
@@ -765,6 +1066,7 @@ export default function PostPage() {
               </motion.div>
             </form>
           </Form>
+
           <CustomModal
             isOpen={showConfirmModal}
             onClose={() => {
@@ -783,6 +1085,17 @@ export default function PostPage() {
                   <img src={imagePreviewUrl} alt="投稿プレビュー" className="max-h-48 rounded-md object-contain border" />
                 </div>
               )}
+              {/* 位置情報確認表示 - 位置情報がある場合のみ
+              {formDataToSubmit && formDataToSubmit.store_latitude && formDataToSubmit.store_longitude && (
+                <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-md">
+                  <div className="flex items-center space-x-2">
+                    <MapPin className="h-5 w-5 text-green-600" />
+                    <span className="text-sm text-green-800">
+                      位置情報: 緯度 {formDataToSubmit.store_latitude.toFixed(6)}, 経度 {formDataToSubmit.store_longitude.toFixed(6)}
+                    </span>
+                  </div>
+                </div>
+              )} */}
               <div className="mt-6 flex justify-end space-x-3">
                 <Button variant="outline" onClick={() => {
                   setShowConfirmModal(false);
@@ -804,7 +1117,7 @@ export default function PostPage() {
           >
             <div className="pt-2">
               <p className="mb-4 text-center">
-                検索候補が表示されない場合は、正確な店舗情報を見つけるために、一度お店を探す画面へ移動してください。
+                検索候補が表示されない場合は、正確な店舗情報を見つけるために、一度「お店を探す画面」へ移動してください。
               </p>
               <div className="mt-6 flex justify-center">
                 <Button
