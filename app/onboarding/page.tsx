@@ -10,13 +10,13 @@ import { Logo } from '@/components/common/logo';
 const onboardingSlides = [
   {
     title: "お気に入りの店舗を登録",
-    description: "地図から簡単に近所のスーパーを登録できます。お気に入りに追加すると、値引き情報をいち早くお知らせします。",
+    description: "よく行くスーパーや近所のお店を登録できます。お気に入りに追加すると、お得な情報をいち早くゲットできます。",
     icon: <MapPin className="w-16 h-16 sm:w-20 sm:h-20 text-primary" />,
     color: "bg-primary/10"
   },
   {
     title: "値引き情報をシェア",
-    description: "あなたが見つけた値引き商品をみんなと共有しましょう。写真、価格、お店の情報を簡単に投稿できます。",
+    description: "あなたが見つけたお得な商品をみんなと共有しましょう。写真、価格、お店の情報を簡単に投稿できます。",
     icon: <Tag className="w-16 h-16 sm:w-20 sm:h-20 text-[#FFEB3B]" />,
     color: "bg-[#FFEB3B]/10"
   },
@@ -28,7 +28,7 @@ const onboardingSlides = [
   },
   {
     title: "通知でお知らせ",
-    description: "お気に入り店舗の値引き情報が投稿されると、すぐに通知でお知らせします。お得を逃しません。",
+    description: "お気に入り店舗のお得な情報が投稿されると、すぐに通知でお知らせします。",
     icon: <Bell className="w-16 h-16 sm:w-20 sm:h-20 text-[#009688]" />,
     color: "bg-[#009688]/10"
   }
