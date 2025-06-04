@@ -134,7 +134,7 @@ export const FullScreenPostViewer: React.FC<FullScreenPostViewerProps> = ({
       {isOpen && (
         <motion.div
           ref={containerRef}
-          className="fixed inset-0 z-50 bg-black bg-opacity-95 flex items-center justify-center"
+          className="fixed inset-0 z-50 bg-black bg-opacity-85 flex items-center justify-center"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -237,6 +237,7 @@ export const FullScreenPostViewer: React.FC<FullScreenPostViewerProps> = ({
                     currentUserId={currentUserId}
                     showDistance={showDistance}
                     isOwnPost={currentPost.author_user_id === currentUserId}
+                    isFullScreen={true}
                   />
                   
                   {/* オーバーレイコントロール */}
@@ -282,22 +283,24 @@ export const FullScreenPostViewer: React.FC<FullScreenPostViewerProps> = ({
           <div className="hidden">
             {currentIndex > 0 && posts[currentIndex - 1] && (
               <PostCard
-                post={posts[currentIndex - 1] as any}
+                post={posts[currentIndex - 1]}
                 onLike={onLike}
                 currentUserId={currentUserId}
                 showDistance={showDistance}
                 isOwnPost={posts[currentIndex - 1].author_user_id === currentUserId}
                 disableClick={true}
+                isFullScreen={true}
               />
             )}
             {currentIndex < posts.length - 1 && posts[currentIndex + 1] && (
               <PostCard
-                post={posts[currentIndex + 1] as any}
+                post={posts[currentIndex + 1]}
                 onLike={onLike}
                 currentUserId={currentUserId}
                 showDistance={showDistance}
                 isOwnPost={posts[currentIndex + 1].author_user_id === currentUserId}
                 disableClick={true}
+                isFullScreen={true}
               />
             )}
           </div>

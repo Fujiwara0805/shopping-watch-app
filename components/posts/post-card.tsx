@@ -63,8 +63,9 @@ interface PostCardProps {
   currentUserId?: string | null;
   showDistance?: boolean;
   isOwnPost?: boolean;
-  onClick?: (postId: string) => void; // 新しいプロパティ
-  disableClick?: boolean; // フルスクリーンモードでのクリック無効化
+  onClick?: (postId: string) => void;
+  disableClick?: boolean;
+  isFullScreen?: boolean; // フルスクリーンモード時のスタイル適用
 }
 
 // 最適化された画像コンポーネント
@@ -213,7 +214,8 @@ export const PostCard = memo(({
   showDistance = false, 
   isOwnPost, 
   onClick,
-  disableClick = false 
+  disableClick = false,
+  isFullScreen = false 
 }: PostCardProps) => {
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
@@ -345,7 +347,8 @@ export const PostCard = memo(({
         className={cn(
           "overflow-hidden transition-all duration-200",
           !disableClick && "hover:shadow-lg cursor-pointer",
-          isMyPost && "ring-2 ring-blue-200 bg-blue-50/30"
+          isMyPost && "ring-2 ring-blue-200 bg-blue-50/30",
+          isFullScreen && "bg-black/20 border-white/20"
         )}
         onClick={handleCardClick}
       >
@@ -355,10 +358,20 @@ export const PostCard = memo(({
               <UserAvatar author={post.author} />
               <div className="flex flex-col">
                 <div className="flex items-center space-x-2">
-                  <p className="font-semibold text-base text-foreground">{post.author?.display_name || '不明な投稿者'}</p>
+                  <p className={cn(
+                    "font-semibold text-base",
+                    isFullScreen ? "text-white" : "text-foreground"
+                  )}>
+                    {post.author?.display_name || '不明な投稿者'}
+                  </p>
                   {isMyPost && <Badge variant="secondary" className="text-xs">自分の投稿</Badge>}
                 </div>
-                <p className="text-xs text-muted-foreground">{formattedDate}</p>
+                <p className={cn(
+                  "text-xs",
+                  isFullScreen ? "text-white/80" : "text-muted-foreground"
+                )}>
+                  {formattedDate}
+                </p>
               </div>
             </div>
             
@@ -378,7 +391,12 @@ export const PostCard = memo(({
         
         <CardContent className="p-3 pt-1 flex flex-col h-full">
           <div className="flex-grow overflow-hidden" style={{ flexBasis: 'auto', marginBottom: '0.75rem' }}>
-            <p className="text-lg text-muted-foreground whitespace-pre-line line-clamp-6">{post.content || '内容がありません'}</p>
+            <p className={cn(
+              "text-lg whitespace-pre-line line-clamp-6",
+              isFullScreen ? "text-white" : "text-muted-foreground"
+            )}>
+              {post.content || '内容がありません'}
+            </p>
           </div>
           
           {postImageUrl && (
@@ -450,14 +468,6 @@ export const PostCard = memo(({
               </div>
             </div>
           )}
-
-          {/* いいね数の表示（非表示） */}
-          {/* {post.likes_count > 0 && (
-            <div className="mt-2 flex items-center space-x-1 text-sm text-muted-foreground">
-              <Heart size={14} className="text-red-500" />
-              <span>{post.likes_count}</span>
-            </div>
-          )} */}
         </CardContent>
       </Card>
 
