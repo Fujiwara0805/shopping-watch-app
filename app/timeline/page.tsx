@@ -4,10 +4,11 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { LayoutGrid, Search, Star, MapPin, Loader2, SlidersHorizontal, Heart, Plus, X, AlertCircle } from 'lucide-react';
+import { LayoutGrid, Search, Star, MapPin, Loader2, SlidersHorizontal, Heart, Plus, X, AlertCircle, Menu, User, Edit, Store, HelpCircle, FileText, LogOut, Settings } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { PostWithAuthor } from '@/types/post';
-import { useSession } from 'next-auth/react';
+import { useSession, signOut } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import AppLayout from '@/components/layout/app-layout';
 import { useSearchParams } from 'next/navigation';
 import { PostCard } from '@/components/posts/post-card';
@@ -18,6 +19,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Separator } from '@/components/ui/separator';
 
 // 型定義の追加
 interface AuthorData {
@@ -100,6 +103,147 @@ const useSearchHistory = () => {
   return { searchHistory, addToHistory, clearHistory };
 };
 
+// ハンバーガーメニューコンポーネント
+const HamburgerMenu = ({ currentUser }: { currentUser: any }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const router = useRouter();
+
+  const handleSignOut = async () => {
+    await signOut({ redirect: false });
+    router.push('/auth/signin');
+  };
+
+  const menuItems = [
+    {
+      icon: User,
+      label: 'マイページ',
+      onClick: () => {
+        router.push('/mypage');
+        setIsOpen(false);
+      }
+    },
+    {
+      icon: Edit,
+      label: '投稿する',
+      onClick: () => {
+        router.push('/post/create');
+        setIsOpen(false);
+      }
+    },
+    {
+      icon: Store,
+      label: 'お店を探す',
+      onClick: () => {
+        router.push('/stores');
+        setIsOpen(false);
+      }
+    },
+    {
+      icon: HelpCircle,
+      label: 'ヘルプ・ご意見',
+      onClick: () => {
+        router.push('/help');
+        setIsOpen(false);
+      }
+    },
+    {
+      icon: FileText,
+      label: '規約・ポリシー',
+      onClick: () => {
+        router.push('/terms');
+        setIsOpen(false);
+      }
+    },
+    {
+      icon: Settings,
+      label: '設定',
+      onClick: () => {
+        router.push('/settings');
+        setIsOpen(false);
+      }
+    }
+  ];
+
+  return (
+    <>
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={() => setIsOpen(true)}
+        className="text-white hover:bg-white/10"
+      >
+        <Menu className="h-5 w-5" />
+      </Button>
+
+      <CustomModal
+        isOpen={isOpen}
+        onClose={() => setIsOpen(false)}
+        title=""
+        description=""
+        className="sm:max-w-md"
+      >
+        <div className="space-y-4">
+          {/* ユーザー情報セクション */}
+          {currentUser && (
+            <>
+              <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                <Avatar className="h-12 w-12">
+                  <AvatarImage 
+                    src={currentUser.avatar_url ? 
+                      supabase.storage.from('avatars').getPublicUrl(currentUser.avatar_url).data.publicUrl : 
+                      undefined
+                    } 
+                    alt={currentUser.display_name || 'ユーザー'} 
+                  />
+                  <AvatarFallback>
+                    {currentUser.display_name?.charAt(0) || 'U'}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1">
+                  <p className="font-semibold text-lg">
+                    {currentUser.display_name || 'ユーザー'}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    {currentUser.email}
+                  </p>
+                </div>
+              </div>
+              <Separator />
+            </>
+          )}
+
+          {/* メニュー項目 */}
+          <div className="space-y-1">
+            {menuItems.map((item, index) => (
+              <Button
+                key={index}
+                variant="ghost"
+                className="w-full justify-start text-left py-3 h-auto text-base hover:bg-gray-100"
+                onClick={item.onClick}
+              >
+                <item.icon className="mr-3 h-5 w-5" />
+                {item.label}
+              </Button>
+            ))}
+          </div>
+
+          <Separator />
+
+          {/* ログアウトボタン */}
+          <Button
+            variant="ghost"
+            className="w-full justify-start text-left py-3 h-auto text-base text-red-600 hover:bg-red-50 hover:text-red-700"
+            onClick={handleSignOut}
+          >
+            <LogOut className="mr-3 h-5 w-5" />
+            ログアウト
+          </Button>
+        </div>
+      </CustomModal>
+    </>
+  );
+};
+
 export default function Timeline() {
   const [posts, setPosts] = useState<ExtendedPostWithAuthor[]>([]);
   const [loading, setLoading] = useState(true);
@@ -133,6 +277,9 @@ export default function Timeline() {
   const [showSpecialSearch, setShowSpecialSearch] = useState(false);
   const { searchHistory, addToHistory, clearHistory } = useSearchHistory();
 
+  // ユーザープロフィール情報
+  const [currentUserProfile, setCurrentUserProfile] = useState<any>(null);
+
   // Refs for stable references
   const activeFilterRef = useRef(activeFilter);
   const generalSearchTermRef = useRef(generalSearchTerm);
@@ -159,6 +306,40 @@ export default function Timeline() {
       setHighlightPostId(id);
     }
   }, [searchParams]);
+
+  // 現在のユーザープロフィール取得
+  useEffect(() => {
+    const fetchCurrentUserProfile = async () => {
+      if (!currentUserId) {
+        setCurrentUserProfile(null);
+        return;
+      }
+      
+      try {
+        const { data, error } = await supabase
+          .from('app_profiles')
+          .select('*')
+          .eq('user_id', currentUserId)
+          .single();
+
+        if (error) {
+          console.error('ユーザープロフィールの取得に失敗しました:', error);
+          return;
+        }
+
+        setCurrentUserProfile({
+          ...data,
+          email: session?.user?.email
+        });
+      } catch (e) {
+        console.error('ユーザープロフィールの取得中に予期せぬエラー:', e);
+      }
+    };
+
+    if (session?.user?.id) {
+      fetchCurrentUserProfile();
+    }
+  }, [currentUserId, session?.user?.email]);
 
   // お気に入り店舗情報の取得
   useEffect(() => {
@@ -566,13 +747,20 @@ export default function Timeline() {
     fetchPosts(0, true);
   };
 
-  const handleClearAllFilters = () => {
+  // 修正されたすべてクリア機能
+  const handleClearAllFilters = useCallback(() => {
+    // すべてのフィルターをリセット
     setActiveFilter('all');
     setSearchMode('all');
     setSortBy('created_at_desc');
     setGeneralSearchTerm('');
-    fetchPosts(0, true);
-  };
+    setUserLocation(null);
+    
+    // フィルターをクリアした後、強制的に全投稿を再取得
+    setTimeout(() => {
+      fetchPosts(0, true);
+    }, 100);
+  }, [fetchPosts]);
 
   // アクティブなフィルタ数を計算
   const activeFiltersCount = useMemo(() => {
@@ -587,6 +775,7 @@ export default function Timeline() {
     return (
       <AppLayout>
         <div className="sticky top-0 z-10 border-b p-4 flex items-center space-x-2 bg-[#73370c]">
+          <HamburgerMenu currentUser={currentUserProfile} />
           <div className="relative flex-1">
             <Input
               type="text"
@@ -628,6 +817,7 @@ export default function Timeline() {
     return (
       <AppLayout>
         <div className="sticky top-0 z-10 border-b p-4 flex items-center space-x-2 bg-[#73370c]">
+          <HamburgerMenu currentUser={currentUserProfile} />
           <div className="relative flex-1">
             <Input
               type="text"
@@ -666,6 +856,7 @@ export default function Timeline() {
   return (
     <AppLayout>
       <div className="sticky top-0 z-10 border-b p-4 flex items-center space-x-2 bg-[#73370c]">
+        <HamburgerMenu currentUser={currentUserProfile} />
         <div className="relative flex-1">
           <Input
             type="text"
