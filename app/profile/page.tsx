@@ -180,113 +180,107 @@ export default function ProfilePage() {
   const [hiddenPosts, setHiddenPosts] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    if (status === 'loading') {
-      return;
-    }
+    // セッションの読み込みが完了し、かつ認証されている場合にのみデータをフェッチ
+    if (status === 'authenticated' && session.user?.id) {
+      const fetchProfileAndPosts = async () => {
+        setLoading(true);
+        setLoadingPosts(true);
+        try {
+          const { data: appProfileData, error: profileError } = await supabase
+            .from('app_profiles')
+            .select(
+              '*, favorite_store_1_id, favorite_store_1_name, favorite_store_2_id, favorite_store_2_name, favorite_store_3_id, favorite_store_3_name'
+            )
+            .eq('user_id', session.user!.id!)
+            .single();
 
-    if (!session || !session.user?.id) {
-      router.push('/login?callbackUrl=/profile');
-      return;
-    }
+          if (profileError && profileError.code !== 'PGRST116') { // PGRST116 は「Record Not Found」
+            console.error('Error fetching profile from app_profiles:', profileError);
+            return;
+          }
 
-    const fetchProfileAndPosts = async () => {
-      setLoading(true);
-      setLoadingPosts(true);
-      try {
-        const { data: appProfileData, error: profileError } = await supabase
-          .from('app_profiles')
-          .select(
-            '*, favorite_store_1_id, favorite_store_1_name, favorite_store_2_id, favorite_store_2_name, favorite_store_3_id, favorite_store_3_name'
-          )
-          .eq('user_id', session.user!.id!)
-          .single();
+          if (appProfileData) {
+            setProfile(appProfileData);
 
-        if (profileError && profileError.code !== 'PGRST116') {
-          console.error('Error fetching profile from app_profiles:', profileError);
+            const { data: postsData, error: postsError } = await supabase
+              .from('posts')
+              .select(`
+                id,
+                app_profile_id,
+                store_id,
+                store_name,
+                category,
+                content,
+                image_url,
+                discount_rate,
+                price,
+                expiry_option,
+                created_at,
+                likes_count,
+                app_profiles (
+                  display_name,
+                  avatar_url
+                )
+              `)
+              .eq('app_profile_id', appProfileData.id)
+              .order('created_at', { ascending: false });
+
+            if (postsError) {
+              console.error('Error fetching posts:', postsError);
+            } else if (postsData) {
+              const fetchedPosts: PostWithAuthor[] = postsData.map((p: any) => {
+                let expires_at_string = new Date().toISOString();
+                if (p.expiry_option && p.created_at) {
+                    const createdAtDate = new Date(p.created_at);
+                    if (p.expiry_option === '1h') createdAtDate.setHours(createdAtDate.getHours() + 1);
+                    else if (p.expiry_option === '3h') createdAtDate.setHours(createdAtDate.getHours() + 3);
+                    else if (p.expiry_option === '24h') createdAtDate.setHours(createdAtDate.getHours() + 24);
+                    expires_at_string = createdAtDate.toISOString();
+                }
+
+                return {
+                  id: p.id,
+                  store_id: p.store_id,
+                  store_name: p.store_name,
+                  category: p.category,
+                  content: p.content,
+                  image_url: p.image_url,
+                  discount_rate: p.discount_rate,
+                  price: p.price,
+                  expiry_option: p.expiry_option,
+                  created_at: p.created_at,
+                  expires_at: expires_at_string,
+                  likes_count: p.likes_count || 0,
+                  likes: p.likes_count || 0,
+                  comments: 0,
+
+                  author: p.app_profiles ? {
+                    display_name: p.app_profiles.display_name,
+                    avatar_url: p.app_profiles.avatar_url,
+                  } : null,
+                };
+              });
+              setUserPosts(fetchedPosts);
+            }
+          } else {
+            console.log('No profile found in app_profiles, redirecting to setup.');
+            router.push('/profile/setup');
+          }
+        } catch (e) {
+          console.error('An unexpected error occurred while fetching data:', e);
+        } finally {
           setLoading(false);
           setLoadingPosts(false);
-          return;
         }
+      };
 
-        if (appProfileData) {
-          setProfile(appProfileData);
-
-          const { data: postsData, error: postsError } = await supabase
-            .from('posts')
-            .select(`
-              id,
-              app_profile_id,
-              store_id,
-              store_name,
-              category,
-              content,
-              image_url,
-              discount_rate,
-              price,
-              expiry_option,
-              created_at,
-              likes_count,
-              app_profiles (
-                display_name,
-                avatar_url
-              )
-            `)
-            .eq('app_profile_id', appProfileData.id)
-            .order('created_at', { ascending: false });
-
-          if (postsError) {
-            console.error('Error fetching posts:', postsError);
-          } else if (postsData) {
-            const fetchedPosts: PostWithAuthor[] = postsData.map((p: any) => {
-              let expires_at_string = new Date().toISOString();
-              if (p.expiry_option && p.created_at) {
-                  const createdAtDate = new Date(p.created_at);
-                  if (p.expiry_option === '1h') createdAtDate.setHours(createdAtDate.getHours() + 1);
-                  else if (p.expiry_option === '3h') createdAtDate.setHours(createdAtDate.getHours() + 3);
-                  else if (p.expiry_option === '24h') createdAtDate.setHours(createdAtDate.getHours() + 24);
-                  expires_at_string = createdAtDate.toISOString();
-              }
-
-              return {
-                id: p.id,
-                store_id: p.store_id,
-                store_name: p.store_name,
-                category: p.category,
-                content: p.content,
-                image_url: p.image_url,
-                discount_rate: p.discount_rate,
-                price: p.price,
-                expiry_option: p.expiry_option,
-                created_at: p.created_at,
-                expires_at: expires_at_string,
-                likes_count: p.likes_count || 0,
-                likes: p.likes_count || 0,
-                comments: 0,
-
-                author: p.app_profiles ? {
-                  display_name: p.app_profiles.display_name,
-                  avatar_url: p.app_profiles.avatar_url,
-                } : null,
-              };
-            });
-            setUserPosts(fetchedPosts);
-          }
-        } else {
-          console.log('No profile found in app_profiles, redirecting to setup.');
-          router.push('/profile/setup');
-          return;
-        }
-      } catch (e) {
-        console.error('An unexpected error occurred while fetching data:', e);
-      } finally {
-        setLoading(false);
-        setLoadingPosts(false);
-      }
-    };
-
-    fetchProfileAndPosts();
-
-  }, [session, status, router]);
+      fetchProfileAndPosts();
+    } else if (status === 'unauthenticated') {
+      // 認証されていない場合はログインページへリダイレクト
+      router.push('/login?callbackUrl=/profile');
+    }
+    // status === 'loading' の場合は何もしない (最初のレンダーでローディング表示される)
+  }, [session?.user?.id, status, router]); // 依存配列は変更なし。この依存配列で適切なタイミングで発火させます。
   
   const handleLogout = async () => {
     await signOut({ redirect: false, callbackUrl: '/login' });

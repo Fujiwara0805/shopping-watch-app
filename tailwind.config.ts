@@ -60,6 +60,8 @@ const config: Config = {
           '4': 'hsl(var(--chart-4))',
           '5': 'hsl(var(--chart-5))',
         },
+        'line-green': '#00C300',
+        'line-dark-green': '#00B000',
       },
       keyframes: {
         'accordion-down': {
