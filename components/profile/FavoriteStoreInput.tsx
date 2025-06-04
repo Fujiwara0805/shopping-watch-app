@@ -16,10 +16,11 @@ interface PlaceSuggestion {
 }
 
 interface FavoriteStoreInputProps {
-  value?: { id?: string | null; name?: string | null };
-  onChange: (value: { id: string; name: string } | null) => void;
   placeholder?: string;
+  value?: { id?: string; name?: string };
+  onChange: (value: { id: string; name: string } | null) => void;
   disabled?: boolean;
+  className?: string;
   // name?: string; // react-hook-formのControllerから渡されるnameプロパティ (オプション)
 }
 

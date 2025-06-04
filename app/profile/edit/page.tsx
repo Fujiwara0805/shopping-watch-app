@@ -35,7 +35,7 @@ interface AppProfile {
 
 const profileSchema = z.object({
   username: z.string().min(2, { message: 'ニックネームは2文字以上で入力してください。' }).max(30, { message: 'ニックネームは30文字以内で入力してください。' }),
-  bio: z.string().max(160, { message: '自己紹介は160文字以内で入力してください。' }).optional(),
+  bio: z.string().max(120, { message: '自己紹介は120文字以内で入力してください。' }).optional(),
   favoriteStore1: z.object({ id: z.string().optional(), name: z.string().optional() }).nullable().optional(),
   favoriteStore2: z.object({ id: z.string().optional(), name: z.string().optional() }).nullable().optional(),
   favoriteStore3: z.object({ id: z.string().optional(), name: z.string().optional() }).nullable().optional(),
@@ -277,8 +277,8 @@ export default function ProfileEditPage() {
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pb-20">
             <FormItem>
-              <FormLabel className="text-xl flex items-center">
-                <ImageIcon className="mr-2 h-6 w-6" /> プロフィール画像 (任意)
+              <FormLabel className="text-2xl flex items-center font-semibold">
+                <ImageIcon className="mr-2 h-6 w-6" /> プロフィール画像
               </FormLabel>
               <FormControl>
                  <div className="flex flex-col items-center space-y-3 p-6 border-2 border-dashed rounded-lg hover:border-primary transition-colors cursor-pointer bg-card">
@@ -321,7 +321,7 @@ export default function ProfileEditPage() {
               name="username"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-xl flex items-center"><UserIcon className="mr-2 h-6 w-6" /> ニックネーム</FormLabel>
+                  <FormLabel className="text-2xl flex items-center font-semibold"><UserIcon className="mr-2 h-6 w-6" /> ニックネーム</FormLabel>
                   <FormControl>
                     <Input placeholder="ニックネームを入力" className="text-lg" {...field} disabled={isSaving} />
                   </FormControl>
@@ -334,7 +334,7 @@ export default function ProfileEditPage() {
               name="bio"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-xl flex items-center"><Info className="mr-2 h-6 w-6" /> 自己紹介 (任意)</FormLabel>
+                  <FormLabel className="text-2xl flex items-center "><Info className="mr-2 h-6 w-6" /> 自己紹介 (任意)</FormLabel>
                   <FormControl>
                     <Textarea placeholder="自己紹介を入力してください" className="resize-none text-lg" rows={4} {...field} disabled={isSaving}/>
                   </FormControl>
@@ -348,8 +348,8 @@ export default function ProfileEditPage() {
               name="favoriteStore1"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-lg flex items-center">
-                    <Store className="mr-2 h-5 w-5 text-primary" /> お気に入り店舗1 (任意)
+                  <FormLabel className="text-2xl flex items-center font-semibold">
+                    <Store className="mr-2 h-5 w-5 text-primary" /> お気に入り店舗1 
                   </FormLabel>
                   <FormControl>
                     <FavoriteStoreInput
@@ -373,7 +373,7 @@ export default function ProfileEditPage() {
               name="favoriteStore2"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-lg flex items-center">
+                  <FormLabel className="text-2xl flex items-center">
                     <Store className="mr-2 h-5 w-5 text-primary" /> お気に入り店舗2 (任意)
                   </FormLabel>
                   <FormControl>
@@ -398,7 +398,7 @@ export default function ProfileEditPage() {
               name="favoriteStore3"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-lg flex items-center">
+                  <FormLabel className="text-2xl flex items-center">
                     <Store className="mr-2 h-5 w-5 text-primary" /> お気に入り店舗3 (任意)
                   </FormLabel>
                   <FormControl>

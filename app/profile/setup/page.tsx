@@ -227,8 +227,8 @@ export default function ProfileSetupPage() {
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 pb-20">
               <FormItem>
-                <FormLabel className="text-xl flex items-center">
-                  <ImageIcon className="mr-2 h-6 w-6" /> プロフィール画像 (任意)
+                <FormLabel className="text-2xl flex items-center font-semibold">
+                  <ImageIcon className="mr-2 h-7 w-7" /> プロフィール画像
                 </FormLabel>
                 <FormControl>
                    <div className="flex flex-col items-center space-y-3 p-6 border-2 border-dashed rounded-lg hover:border-primary transition-colors cursor-pointer bg-card">
@@ -256,9 +256,9 @@ export default function ProfileSetupPage() {
                          </div>
                        ) : (
                          <label htmlFor="avatar-upload" className="flex flex-col items-center space-y-2 cursor-pointer text-muted-foreground">
-                           <Upload className="h-10 w-10" />
-                           <p className="text-base">画像をアップロード</p>
-                           <p className="text-xs">PNG, JPG, WEBP (最大5MB)</p>
+                           <Upload className="h-12 w-12" />
+                           <p className="text-lg">画像をアップロード</p>
+                           <p className="text-sm">PNG, JPG, WEBP (最大5MB)</p>
                          </label>
                        )}
                     </div>
@@ -271,9 +271,16 @@ export default function ProfileSetupPage() {
                 name="username"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-lg flex items-center"><UserIcon className="mr-2 h-5 w-5" />ニックネーム</FormLabel>
+                    <FormLabel className="text-2xl flex items-center font-semibold">
+                      <UserIcon className="mr-2 h-6 w-6" />ニックネーム
+                    </FormLabel>
                     <FormControl>
-                      <Input placeholder="例: ショッピング好き" {...field} disabled={isSaving} />
+                      <Input 
+                        placeholder="例: ショッピング好き" 
+                        {...field} 
+                        disabled={isSaving}
+                        className="text-lg py-6" 
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -285,9 +292,17 @@ export default function ProfileSetupPage() {
                 name="bio"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-lg flex items-center"><Info className="mr-2 h-5 w-5" />自己紹介 (任意)</FormLabel>
+                    <FormLabel className="text-2xl flex items-center">
+                      <Info className="mr-2 h-6 w-6" />自己紹介 (任意)
+                    </FormLabel>
                     <FormControl>
-                      <Textarea placeholder="例: 都内でお得な情報を見つけるのが好きです！よろしくお願いします。" {...field} disabled={isSaving} rows={4} />
+                      <Textarea 
+                        placeholder="例: お得な情報を見つけるのが好きです！よろしくお願いします。" 
+                        {...field} 
+                        disabled={isSaving} 
+                        rows={4}
+                        className="text-lg py-4" 
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -299,8 +314,8 @@ export default function ProfileSetupPage() {
                 name="favoriteStore1"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-lg flex items-center">
-                      <Store className="mr-2 h-5 w-5 text-primary" /> お気に入り店舗1 (任意)
+                    <FormLabel className="text-2xl flex items-center font-semibold">
+                      <Store className="mr-2 h-6 w-6 text-primary" /> お気に入り店舗1
                     </FormLabel>
                     <FormControl>
                       <FavoriteStoreInput
@@ -312,6 +327,7 @@ export default function ProfileSetupPage() {
                         }}
                         disabled={isSaving}
                         ref={field.ref}
+                        className="text-lg py-6"
                       />
                     </FormControl>
                     <FormMessage />
@@ -324,8 +340,8 @@ export default function ProfileSetupPage() {
                 name="favoriteStore2"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-lg flex items-center">
-                      <Store className="mr-2 h-5 w-5 text-primary" /> お気に入り店舗2 (任意)
+                    <FormLabel className="text-2xl flex items-center">
+                      <Store className="mr-2 h-6 w-6 text-primary" /> お気に入り店舗2 (任意)
                     </FormLabel>
                     <FormControl>
                       <FavoriteStoreInput
@@ -337,6 +353,7 @@ export default function ProfileSetupPage() {
                         }}
                         disabled={isSaving}
                         ref={field.ref}
+                        className="text-lg py-6"
                       />
                     </FormControl>
                     <FormMessage />
@@ -349,8 +366,8 @@ export default function ProfileSetupPage() {
                 name="favoriteStore3"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-lg flex items-center">
-                      <Store className="mr-2 h-5 w-5 text-primary" /> お気に入り店舗3 (任意)
+                    <FormLabel className="text-2xl flex items-center">
+                      <Store className="mr-2 h-6 w-6 text-primary" /> お気に入り店舗3 (任意)
                     </FormLabel>
                     <FormControl>
                       <FavoriteStoreInput
@@ -362,6 +379,7 @@ export default function ProfileSetupPage() {
                         }}
                         disabled={isSaving}
                         ref={field.ref}
+                        className="text-lg py-6"
                       />
                     </FormControl>
                     <FormMessage />
@@ -370,11 +388,11 @@ export default function ProfileSetupPage() {
               />
               
               {submitError && (
-                <p className="text-sm font-medium text-destructive bg-destructive/10 p-3 rounded-md">{submitError}</p>
+                <p className="text-base font-medium text-destructive bg-destructive/10 p-3 rounded-md">{submitError}</p>
               )}
 
-              <Button type="submit" className="w-full" disabled={isSaving || !isValid}>
-                {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              <Button type="submit" className="w-full text-lg py-6" disabled={isSaving || !isValid}>
+                {isSaving ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
                 プロフィールを保存する
               </Button>
             </form>
