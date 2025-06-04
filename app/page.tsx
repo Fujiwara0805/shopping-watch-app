@@ -157,14 +157,14 @@ export default function Home() {
               className="text-center"
             >
               <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold mb-4 md:mb-6">
-                近所のスーパーの
-                <span className="text-primary block sm:inline">美味しいお惣菜</span>
+                お気に入りのお店の
+                <span className="text-primary block sm:inline">お得な情報</span>
                 <br className="hidden sm:block md:hidden" />
                 をリアルタイムで
               </h1>
               <p className="text-lg sm:text-xl text-muted-foreground mb-6 md:mb-8 max-w-2xl mx-auto px-2">
-                今日のお惣菜は何かな？値引き情報もすぐにお知らせ。
-                みんなで共有して、楽しくお買い物しましょう♪
+                今日のお店のお得な情報は何かな？<br />
+                みんなで共有して、楽しくお買い物しましょう！
               </p>
               <Button 
                 size="lg" 
@@ -186,28 +186,28 @@ export default function Home() {
                 {
                   icon: MapPin,
                   title: "お気に入りのお店",
-                  description: "近所のスーパーを簡単に登録。新作お惣菜や値引き情報をいち早くお知らせ♪",
+                  description: "近所のお店を簡単に登録。お店のお得な情報をいち早くお知らせ♪",
                   color: "bg-primary/10",
                   textColor: "text-primary"
                 },
                 {
                   icon: Users,
                   title: "みんなで共有",
-                  description: "見つけた美味しいお惣菜を投稿。写真、感想、お店の情報を楽しくシェア♪",
+                  description: "見つけたお得な情報を投稿。写真、感想、お店の情報を楽しくシェア♪",
                   color: "bg-secondary/10",
                   textColor: "text-secondary"
                 },
                 {
                   icon: Bell,
                   title: "通知機能",
-                  description: "お気に入り店舗の新商品や値引き情報が投稿されると、すぐにお知らせ♪",
+                  description: "お気に入り店舗の新商品やお得な情報が投稿されると、すぐにお知らせ♪",
                   color: "bg-accent/10",
                   textColor: "text-accent"
                 },
                 {
                   icon: ShoppingCart,
                   title: "タイムライン",
-                  description: "みんなのお惣菜情報をタイムラインでチェック。カテゴリやお店で簡単検索♪",
+                  description: "みんなのお得な情報をタイムラインでチェック。カテゴリやお店で簡単検索♪",
                   color: "bg-destructive/10",
                   textColor: "text-destructive"
                 }
@@ -240,10 +240,11 @@ export default function Home() {
               viewport={{ once: true }}
             >
               <h2 className="text-2xl sm:text-3xl font-bold mb-4 md:mb-6">
-                さぁ、美味しいお惣菜を探しに行きましょう！
+                さぁ、お得な情報を探しに行きましょう！
               </h2>
               <p className="text-lg sm:text-xl text-muted-foreground mb-6 md:mb-8 max-w-2xl mx-auto px-2">
-                無料で簡単に登録できます。毎日のお買い物がもっと楽しくなりますよ♪
+                無料で簡単に登録できます。<br />
+                毎日のお買い物がもっと楽しくなりますよ！
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Button 
