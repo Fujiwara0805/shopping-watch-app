@@ -5,8 +5,8 @@ export interface Post {
   store_name: string;
   category: string;
   content: string;
-  image_url?: string | null;
-  discount_rate: number;
+  image_url: string | null;
+  discount_rate: number | null;
   price: number | null;
   expiry_option: '1h' | '3h' | '6h' | '12h';
   created_at: string;

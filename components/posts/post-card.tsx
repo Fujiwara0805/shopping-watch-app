@@ -48,7 +48,7 @@ function formatDistance(distance?: number): string {
   return `${(distance / 1000).toFixed(1)}km`;
 }
 
-interface ExtendedPostWithAuthor extends PostWithAuthor {
+export interface ExtendedPostWithAuthor extends PostWithAuthor {
   isLikedByCurrentUser?: boolean;
   likes_count: number;
   remaining_items?: number;
@@ -63,6 +63,8 @@ interface PostCardProps {
   currentUserId?: string | null;
   showDistance?: boolean;
   isOwnPost?: boolean;
+  onClick?: (postId: string) => void; // 新しいプロパティ
+  disableClick?: boolean; // フルスクリーンモードでのクリック無効化
 }
 
 // 最適化された画像コンポーネント
@@ -164,7 +166,7 @@ const OptimizedImage = memo(({
 OptimizedImage.displayName = 'OptimizedImage';
 
 // メモ化されたバッジコンポーネント
-const DiscountBadge = memo(({ discountRate }: { discountRate?: number }) => {
+const DiscountBadge = memo(({ discountRate }: { discountRate: number | null | undefined }) => {
   if (discountRate == null) return null;
 
   const selectedOption = discountIcons.find(option => option.value === discountRate);
@@ -203,7 +205,16 @@ const UserAvatar = memo(({ author }: { author: AuthorProfile | null }) => {
 
 UserAvatar.displayName = 'UserAvatar';
 
-export const PostCard = memo(({ post, onLike, currentUserId, showDistance = false, isOwnPost }: PostCardProps) => {
+// メモ化された投稿カードコンポーネント
+export const PostCard = memo(({ 
+  post, 
+  onLike, 
+  currentUserId, 
+  showDistance = false, 
+  isOwnPost, 
+  onClick,
+  disableClick = false 
+}: PostCardProps) => {
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [isLiking, setIsLiking] = useState(false);
@@ -212,7 +223,9 @@ export const PostCard = memo(({ post, onLike, currentUserId, showDistance = fals
   // 自分の投稿かどうかの判定を改善
   const isMyPost = isOwnPost || (post.author_user_id === currentUserId);
 
-  const handleLikeClick = useCallback(async () => {
+  const handleLikeClick = useCallback(async (e: React.MouseEvent) => {
+    e.stopPropagation(); // 親のclickイベントを防ぐ
+    
     if (isLiking) return; // 重複クリック防止
     
     // 自分の投稿にはいいねできない
@@ -246,6 +259,17 @@ export const PostCard = memo(({ post, onLike, currentUserId, showDistance = fals
       });
     }
   }, [onLike, currentUserId, post.id, post.isLikedByCurrentUser, isLiking, toast, isMyPost]);
+
+  const handleShareClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation(); // 親のclickイベントを防ぐ
+    setShowShareDialog(true);
+  }, []);
+
+  const handleCardClick = useCallback(() => {
+    if (!disableClick && onClick) {
+      onClick(post.id);
+    }
+  }, [disableClick, onClick, post.id]);
   
   const getCategoryColor = useCallback((category: string) => {
     switch(category) {
@@ -283,7 +307,8 @@ export const PostCard = memo(({ post, onLike, currentUserId, showDistance = fals
     }).catch(err => console.error("コピー失敗:", err));
   }, [toast]);
 
-  const handleCopyStoreName = useCallback(() => {
+  const handleCopyStoreName = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation(); // 親のclickイベントを防ぐ
     if (post.store_name) {
       copyToClipboard(post.store_name, `「${post.store_name}」をコピーしました！`);
     }
@@ -315,121 +340,127 @@ export const PostCard = memo(({ post, onLike, currentUserId, showDistance = fals
   }, [post.store_name, post.category, post.content, post.id, copyToClipboard]);
 
   return (
-    <Card className={cn(
-      "overflow-hidden hover:shadow-lg transition-shadow duration-200",
-      isMyPost && "ring-2 ring-blue-200 bg-blue-50/30"
-    )}>
-      <CardHeader className="p-3 pb-1 space-y-0">
-        <div className="flex justify-between items-start">
-          <div className="flex items-center space-x-2">
-            <UserAvatar author={post.author} />
-            <div className="flex flex-col">
-              <div className="flex items-center space-x-2">
-                <p className="font-semibold text-base text-foreground">{post.author?.display_name || '不明な投稿者'}</p>
-                {isMyPost && <Badge variant="secondary" className="text-xs">自分の投稿</Badge>}
-              </div>
-              <p className="text-xs text-muted-foreground">{formattedDate}</p>
-            </div>
-          </div>
-          
-          <div className="flex flex-col items-end space-y-1">
-            <Badge className={cn("text-sm", getCategoryColor(post.category || ''))}>
-              {post.category || '不明'}
-            </Badge>
-            {showDistance && post.distance && (
-              <Badge variant="outline" className="text-xs flex items-center">
-                <MapPin className="h-3 w-3 mr-1" />
-                {formatDistance(post.distance)}
-              </Badge>
-            )}
-          </div>
-        </div>
-      </CardHeader>
-      
-      <CardContent className="p-3 pt-1 flex flex-col h-full">
-        <div className="flex-grow overflow-hidden" style={{ flexBasis: 'auto', marginBottom: '0.75rem' }}>
-          <p className="text-lg text-muted-foreground whitespace-pre-line line-clamp-6">{post.content || '内容がありません'}</p>
-        </div>
-        
-        {postImageUrl && (
-          <div className="relative rounded-md overflow-hidden flex-grow" style={{ flexBasis: '30%', minHeight: '200px' }}>
-            <OptimizedImage
-              src={postImageUrl}
-              alt="投稿画像"
-              className="w-full h-full"
-              onLoad={() => setImageLoaded(true)}
-            />
-            
-            <div className="absolute top-2 left-2 flex items-center space-x-2">
-              <Button 
-                variant="ghost" 
-                size="icon"
-                className={cn(
-                  "bg-black/60 text-white rounded-full hover:bg-black/80 transition-colors backdrop-blur-sm",
-                  isMyPost && "opacity-50 cursor-not-allowed"
-                )}
-                onClick={handleLikeClick}
-                disabled={isLiking || isMyPost}
-                title={isMyPost ? "自分の投稿にはいいねできません" : "いいね"}
-              >
-                <Heart 
-                  size={18} 
-                  className={cn(
-                    "transition-all duration-200",
-                    post.isLikedByCurrentUser ? "text-red-500 fill-red-500 scale-110" : "",
-                    isLiking && "animate-pulse"
-                  )} 
-                />
-              </Button>
-              
-              <Button 
-                variant="ghost" 
-                size="icon"
-                className="bg-black/60 text-white rounded-full hover:bg-black/80 transition-colors backdrop-blur-sm"
-                onClick={() => setShowShareDialog(true)}
-              >
-                <Share2 size={18} />
-              </Button>
-
-              {post.expires_at && (
-                <div className="bg-black/60 text-white text-xs px-2 py-1 rounded-full flex items-center space-x-1 backdrop-blur-sm">
-                  <Clock size={14} />
-                  <span>{formatRemainingTime(new Date(post.expires_at).getTime())}</span>
+    <>
+      <Card 
+        className={cn(
+          "overflow-hidden transition-all duration-200",
+          !disableClick && "hover:shadow-lg cursor-pointer",
+          isMyPost && "ring-2 ring-blue-200 bg-blue-50/30"
+        )}
+        onClick={handleCardClick}
+      >
+        <CardHeader className="p-3 pb-1 space-y-0">
+          <div className="flex justify-between items-start">
+            <div className="flex items-center space-x-2">
+              <UserAvatar author={post.author} />
+              <div className="flex flex-col">
+                <div className="flex items-center space-x-2">
+                  <p className="font-semibold text-base text-foreground">{post.author?.display_name || '不明な投稿者'}</p>
+                  {isMyPost && <Badge variant="secondary" className="text-xs">自分の投稿</Badge>}
                 </div>
-              )}
+                <p className="text-xs text-muted-foreground">{formattedDate}</p>
+              </div>
             </div>
             
-            <Button 
-              variant="ghost"
-              className="absolute bottom-1 left-1 bg-black/60 text-white text-lg font-bold px-3 py-1 rounded-md h-auto hover:bg-black/80 transition-colors flex items-center space-x-1 backdrop-blur-sm"
-              onClick={handleCopyStoreName}
-            >
-              <Copy size={16} />
-              <span className="max-w-[150px] truncate">{post.store_name || '店舗不明'}</span>
-            </Button>
-
-            <div className="absolute top-[30px] right-2 flex flex-col items-end space-y-1">
-              <DiscountBadge discountRate={post.discount_rate} />
-              
-              {post.price != null && (
-                <Badge className="bg-white text-foreground font-bold text-xl px-2 py-1 shadow-sm">
-                  ¥{post.price.toLocaleString()}
+            <div className="flex flex-col items-end space-y-1">
+              <Badge className={cn("text-sm", getCategoryColor(post.category || ''))}>
+                {post.category || '不明'}
+              </Badge>
+              {showDistance && post.distance && (
+                <Badge variant="outline" className="text-xs flex items-center">
+                  <MapPin className="h-3 w-3 mr-1" />
+                  {formatDistance(post.distance)}
                 </Badge>
               )}
-              
             </div>
           </div>
-        )}
-
-        {/* いいね数の表示（非表示） */}
-        {/* {post.likes_count > 0 && (
-          <div className="mt-2 flex items-center space-x-1 text-sm text-muted-foreground">
-            <Heart size={14} className="text-red-500" />
-            <span>{post.likes_count}</span>
+        </CardHeader>
+        
+        <CardContent className="p-3 pt-1 flex flex-col h-full">
+          <div className="flex-grow overflow-hidden" style={{ flexBasis: 'auto', marginBottom: '0.75rem' }}>
+            <p className="text-lg text-muted-foreground whitespace-pre-line line-clamp-6">{post.content || '内容がありません'}</p>
           </div>
-        )} */}
-      </CardContent>
-      
+          
+          {postImageUrl && (
+            <div className="relative rounded-md overflow-hidden flex-grow" style={{ flexBasis: '30%', minHeight: '200px' }}>
+              <OptimizedImage
+                src={postImageUrl}
+                alt="投稿画像"
+                className="w-full h-full"
+                onLoad={() => setImageLoaded(true)}
+              />
+              
+              <div className="absolute top-2 left-2 flex items-center space-x-2">
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  className={cn(
+                    "bg-black/60 text-white rounded-full hover:bg-black/80 transition-colors backdrop-blur-sm",
+                    isMyPost && "opacity-50 cursor-not-allowed"
+                  )}
+                  onClick={handleLikeClick}
+                  disabled={isLiking || isMyPost}
+                  title={isMyPost ? "自分の投稿にはいいねできません" : "いいね"}
+                >
+                  <Heart 
+                    size={18} 
+                    className={cn(
+                      "transition-all duration-200",
+                      post.isLikedByCurrentUser ? "text-red-500 fill-red-500 scale-110" : "",
+                      isLiking && "animate-pulse"
+                    )} 
+                  />
+                </Button>
+                
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  className="bg-black/60 text-white rounded-full hover:bg-black/80 transition-colors backdrop-blur-sm"
+                  onClick={handleShareClick}
+                >
+                  <Share2 size={18} />
+                </Button>
+
+                {post.expires_at && (
+                  <div className="bg-black/60 text-white text-xs px-2 py-1 rounded-full flex items-center space-x-1 backdrop-blur-sm">
+                    <Clock size={14} />
+                    <span>{formatRemainingTime(new Date(post.expires_at).getTime())}</span>
+                  </div>
+                )}
+              </div>
+              
+              <Button 
+                variant="ghost"
+                className="absolute bottom-1 left-1 bg-black/60 text-white text-lg font-bold px-3 py-1 rounded-md h-auto hover:bg-black/80 transition-colors flex items-center space-x-1 backdrop-blur-sm"
+                onClick={handleCopyStoreName}
+              >
+                <Copy size={16} />
+                <span className="max-w-[150px] truncate">{post.store_name || '店舗不明'}</span>
+              </Button>
+
+              <div className="absolute top-[30px] right-2 flex flex-col items-end space-y-1">
+                <DiscountBadge discountRate={post.discount_rate} />
+                
+                {post.price != null && (
+                  <Badge className="bg-white text-foreground font-bold text-xl px-2 py-1 shadow-sm">
+                    ¥{post.price.toLocaleString()}
+                  </Badge>
+                )}
+                
+              </div>
+            </div>
+          )}
+
+          {/* いいね数の表示（非表示） */}
+          {/* {post.likes_count > 0 && (
+            <div className="mt-2 flex items-center space-x-1 text-sm text-muted-foreground">
+              <Heart size={14} className="text-red-500" />
+              <span>{post.likes_count}</span>
+            </div>
+          )} */}
+        </CardContent>
+      </Card>
+
       <CustomModal
         isOpen={showShareDialog}
         onClose={() => setShowShareDialog(false)}
@@ -480,7 +511,7 @@ export const PostCard = memo(({ post, onLike, currentUserId, showDistance = fals
             <Button variant="ghost" onClick={() => setShowShareDialog(false)} className="text-base px-5 py-2.5 h-auto">閉じる</Button>
         </div>
       </CustomModal>
-    </Card>
+    </>
   );
 });
 

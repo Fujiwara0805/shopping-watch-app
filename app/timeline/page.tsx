@@ -11,6 +11,7 @@ import { useSession } from 'next-auth/react';
 import AppLayout from '@/components/layout/app-layout';
 import { useSearchParams } from 'next/navigation';
 import { PostCard } from '@/components/posts/post-card';
+import { FullScreenPostViewer } from '@/components/posts/fullscreen-post-viewer';
 import { Input } from '@/components/ui/input';
 import { CustomModal } from '@/components/ui/custom-modal';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -24,10 +25,13 @@ interface AuthorData {
   user_id: string;
   display_name: string;
   avatar_url: string | null;
+  bio?: string;
 }
 
 interface PostLike {
+  post_id: string;
   user_id: string;
+  created_at: string;
 }
 
 interface PostFromDB {
@@ -62,9 +66,9 @@ interface ExtendedPostWithAuthor extends PostWithAuthor {
 }
 
 type SortOption = 'created_at_desc' | 'created_at_asc' | 'expires_at_asc' | 'distance_asc' | 'likes_desc';
+type SearchMode = 'all' | 'category' | 'favorite_store' | 'liked_posts' | 'nearby' | 'hybrid';
 
 const categories = ['すべて', '惣菜', '弁当', '肉', '魚', '野菜', '果物', '米・パン類', 'デザート類', 'その他'];
-
 const SEARCH_RADIUS_METERS = 5000; // 5km
 
 // 検索履歴管理
@@ -108,8 +112,14 @@ export default function Timeline() {
   const searchParams = useSearchParams();
   const [highlightPostId, setHighlightPostId] = useState<string | null>(null);
 
+  // フルスクリーンビューアー関連のstate
+  const [fullScreenViewer, setFullScreenViewer] = useState({
+    isOpen: false,
+    initialIndex: 0,
+  });
+
   const [generalSearchTerm, setGeneralSearchTerm] = useState<string>('');
-  const [searchMode, setSearchMode] = useState<'all' | 'category' | 'favorite_store' | 'liked_posts' | 'nearby' | 'hybrid'>('all');
+  const [searchMode, setSearchMode] = useState<SearchMode>('all');
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [favoriteStoreIds, setFavoriteStoreIds] = useState<string[]>([]);
@@ -172,17 +182,18 @@ export default function Timeline() {
           return;
         }
 
-        const ids = [];
-        const names = [];
-        if (profileData.favorite_store_1_id) {
+        const ids: string[] = [];
+        const names: string[] = [];
+        
+        if (profileData?.favorite_store_1_id) {
           ids.push(profileData.favorite_store_1_id);
           if (profileData.favorite_store_1_name) names.push(profileData.favorite_store_1_name);
         }
-        if (profileData.favorite_store_2_id) {
+        if (profileData?.favorite_store_2_id) {
           ids.push(profileData.favorite_store_2_id);
           if (profileData.favorite_store_2_name) names.push(profileData.favorite_store_2_name);
         }
-        if (profileData.favorite_store_3_id) {
+        if (profileData?.favorite_store_3_id) {
           ids.push(profileData.favorite_store_3_id);
           if (profileData.favorite_store_3_name) names.push(profileData.favorite_store_3_name);
         }
@@ -195,11 +206,13 @@ export default function Timeline() {
         setFavoriteStoreNames([]);
       }
     };
+
     if (session?.user?.id) {
       fetchFavoriteStores();
     }
   }, [currentUserId, session?.user?.id]);
 
+  // いいねした投稿IDの取得
   useEffect(() => {
     const fetchLikedPostIds = async () => {
       if (!currentUserId) {
@@ -216,39 +229,40 @@ export default function Timeline() {
           console.error('いいねした投稿の取得に失敗しました:', error);
           setLikedPostIds([]);
         } else {
-          setLikedPostIds(data.map(item => item.post_id));
+          setLikedPostIds(data?.map(item => item.post_id) || []);
         }
       } catch (e) {
         console.error('いいねした投稿の取得中に予期せぬエラー:', e);
         setLikedPostIds([]);
       }
     };
+
     if (session?.user?.id) {
       fetchLikedPostIds();
     }
   }, [currentUserId, session?.user?.id]);
 
-  // 距離計算関数（ハバーサイン公式）
-  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
-    const R = 6371; // 地球の半径（km）
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-              Math.sin(dLon/2) * Math.sin(dLon/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    return R * c * 1000; // メートルで返す
-  };
-
+  // 投稿データの取得
   const fetchPosts = useCallback(async (offset = 0, isInitial = false) => {
     const currentActiveFilter = activeFilterRef.current;
     const currentGeneralSearchTerm = generalSearchTermRef.current;
     const currentSearchMode = searchModeRef.current;
     const currentUserLocation = userLocationRef.current;
     const currentFavoriteStoreIds = favoriteStoreIdsRef.current;
-    const currentFavoriteStoreNames = favoriteStoreNamesRef.current;
     const currentLikedPostIds = likedPostIdsRef.current;
     const currentSortBy = sortByRef.current;
+
+    // 距離計算関数（ハバーサイン公式）- 関数内で定義
+    const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+      const R = 6371; // 地球の半径（km）
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLon/2) * Math.sin(dLon/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      return R * c * 1000; // メートルで返す
+    };
 
     if (isInitial) {
       setLoading(true);
@@ -284,9 +298,14 @@ export default function Timeline() {
             id,
             user_id,
             display_name,
-            avatar_url
+            avatar_url,
+            bio
           ),
-          post_likes ( user_id )
+          post_likes (
+            post_id,
+            user_id,
+            created_at
+          )
         `)
         .gt('expires_at', now);
 
@@ -365,7 +384,7 @@ export default function Timeline() {
           author: authorData,
           author_user_id: authorUserId,
           isLikedByCurrentUser: Array.isArray(post.post_likes) 
-            ? post.post_likes.some((like: any) => like.user_id === currentUserId)
+            ? post.post_likes.some((like: PostLike) => like.user_id === currentUserId)
             : false,
           likes_count: post.likes_count || (Array.isArray(post.post_likes) ? post.post_likes.length : 0),
           distance,
@@ -403,9 +422,18 @@ export default function Timeline() {
     }
   }, [currentUserId, addToHistory]);
 
+  // 初回データ取得
   useEffect(() => {
     fetchPosts(0, true);
-  }, [fetchPosts]);
+  }, [currentUserId, addToHistory]); // fetchPostsと同じ依存配列
+
+  // フィルタや検索条件が変更された時のデータ再取得
+  useEffect(() => {
+    const shouldRefetch = posts.length > 0; // 初回ロード後のみ
+    if (shouldRefetch) {
+      fetchPosts(0, true);
+    }
+  }, [activeFilter, generalSearchTerm, searchMode, sortBy, userLocation, favoriteStoreIds, likedPostIds]); // fetchPostsは含めない
 
   useEffect(() => {
     if (highlightPostId && posts.length > 0) {
@@ -440,6 +468,7 @@ export default function Timeline() {
     }
   }, [loadMorePosts]);
 
+  // いいね処理
   const handleLike = async (postId: string, isLiked: boolean) => {
     if (!currentUserId) return;
 
@@ -450,10 +479,19 @@ export default function Timeline() {
 
     try {
       if (isLiked) {
-        const { error } = await supabase.from('post_likes').insert({ post_id: postId, user_id: currentUserId });
+        const { error } = await supabase
+          .from('post_likes')
+          .insert({ 
+            post_id: postId, 
+            user_id: currentUserId,
+            created_at: new Date().toISOString()
+          });
         if (error) throw error;
       } else {
-        const { error } = await supabase.from('post_likes').delete().match({ post_id: postId, user_id: currentUserId });
+        const { error } = await supabase
+          .from('post_likes')
+          .delete()
+          .match({ post_id: postId, user_id: currentUserId });
         if (error) throw error;
       }
       setPosts(prevPosts => prevPosts.map(p => 
@@ -469,6 +507,25 @@ export default function Timeline() {
       console.error("いいね処理エラー:", error);
     }
   };
+
+  // 投稿カードクリック時のハンドラー
+  const handlePostClick = useCallback((postId: string) => {
+    const postIndex = posts.findIndex(post => post.id === postId);
+    if (postIndex !== -1) {
+      setFullScreenViewer({
+        isOpen: true,
+        initialIndex: postIndex,
+      });
+    }
+  }, [posts]);
+
+  // フルスクリーンビューアーを閉じる
+  const closeFullScreenViewer = useCallback(() => {
+    setFullScreenViewer({
+      isOpen: false,
+      initialIndex: 0,
+    });
+  }, []);
 
   const handleNearbySearch = () => {
     setShowLocationPermissionAlert(true);
@@ -758,7 +815,11 @@ export default function Timeline() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -20 }}
                     transition={{ duration: 0.3, delay: index * 0.05 }}
-                    className={post.id === highlightPostId ? 'ring-4 ring-primary ring-offset-2 rounded-xl' : ''}
+                    className={cn(
+                      "cursor-pointer transform transition-transform hover:scale-105",
+                      post.id === highlightPostId && 'ring-4 ring-primary ring-offset-2 rounded-xl'
+                    )}
+                    onClick={() => handlePostClick(post.id)}
                   >
                     <PostCard 
                       post={post} 
@@ -794,6 +855,17 @@ export default function Timeline() {
           <div className="h-4"></div>
         </div>
       </div>
+
+      {/* フルスクリーン投稿ビューアー */}
+      <FullScreenPostViewer
+        posts={posts}
+        initialIndex={fullScreenViewer.initialIndex}
+        isOpen={fullScreenViewer.isOpen}
+        onClose={closeFullScreenViewer}
+        onLike={handleLike}
+        currentUserId={currentUserId}
+        showDistance={searchMode === 'nearby'}
+      />
 
       <CustomModal
         isOpen={showFilterModal}
