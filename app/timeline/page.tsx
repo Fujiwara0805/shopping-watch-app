@@ -249,7 +249,17 @@ export default function Timeline() {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // 適用済みフィルター状態（実際の検索に使用）
   const [activeFilter, setActiveFilter] = useState<string>('all');
+  const [searchMode, setSearchMode] = useState<SearchMode>('all');
+  const [sortBy, setSortBy] = useState<SortOption>('created_at_desc');
+  
+  // 一時的なフィルター状態（モーダル内での変更）
+  const [tempActiveFilter, setTempActiveFilter] = useState<string>('all');
+  const [tempSearchMode, setTempSearchMode] = useState<SearchMode>('all');
+  const [tempSortBy, setTempSortBy] = useState<SortOption>('created_at_desc');
+  
   const [hasMore, setHasMore] = useState(true);
   const { data: session } = useSession();
   const currentUserId = session?.user?.id;
@@ -263,14 +273,12 @@ export default function Timeline() {
   });
 
   const [generalSearchTerm, setGeneralSearchTerm] = useState<string>('');
-  const [searchMode, setSearchMode] = useState<SearchMode>('all');
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [favoriteStoreIds, setFavoriteStoreIds] = useState<string[]>([]);
   const [favoriteStoreNames, setFavoriteStoreNames] = useState<string[]>([]);
   const [likedPostIds, setLikedPostIds] = useState<string[]>([]);
   const [showFilterModal, setShowFilterModal] = useState(false);
-  const [sortBy, setSortBy] = useState<SortOption>('created_at_desc');
   const [showLocationPermissionAlert, setShowLocationPermissionAlert] = useState(false);
   
   // 検索機能
@@ -299,6 +307,13 @@ export default function Timeline() {
   useEffect(() => { favoriteStoreNamesRef.current = favoriteStoreNames; }, [favoriteStoreNames]);
   useEffect(() => { likedPostIdsRef.current = likedPostIds; }, [likedPostIds]);
   useEffect(() => { sortByRef.current = sortBy; }, [sortBy]);
+
+  // 一時的なフィルター状態を適用済み状態で初期化
+  useEffect(() => {
+    setTempActiveFilter(activeFilter);
+    setTempSearchMode(searchMode);
+    setTempSortBy(sortBy);
+  }, [activeFilter, searchMode, sortBy]);
 
   useEffect(() => {
     const id = searchParams.get('highlightPostId');
@@ -606,15 +621,18 @@ export default function Timeline() {
   // 初回データ取得
   useEffect(() => {
     fetchPosts(0, true);
-  }, [currentUserId, addToHistory]); // fetchPostsと同じ依存配列
+  }, [currentUserId, addToHistory]);
 
-  // フィルタや検索条件が変更された時のデータ再取得
+  // *** フィルタや検索条件変更時の自動再取得を削除 ***
+  // 以下のuseEffectを削除またはコメントアウト
+  /*
   useEffect(() => {
-    const shouldRefetch = posts.length > 0; // 初回ロード後のみ
+    const shouldRefetch = posts.length > 0;
     if (shouldRefetch) {
       fetchPosts(0, true);
     }
-  }, [activeFilter, generalSearchTerm, searchMode, sortBy, userLocation, favoriteStoreIds, likedPostIds]); // fetchPostsは含めない
+  }, [activeFilter, generalSearchTerm, searchMode, sortBy, userLocation, favoriteStoreIds, likedPostIds]);
+  */
 
   useEffect(() => {
     if (highlightPostId && posts.length > 0) {
@@ -711,7 +729,7 @@ export default function Timeline() {
   const handleNearbySearch = () => {
     setShowLocationPermissionAlert(true);
     setIsGettingLocation(true);
-    setSearchMode('nearby');
+    setTempSearchMode('nearby');
     
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -730,7 +748,7 @@ export default function Timeline() {
           setIsGettingLocation(false);
           setShowLocationPermissionAlert(false);
           setUserLocation(null);
-          setSearchMode('all');
+          setTempSearchMode('all');
         },
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
       );
@@ -738,13 +756,32 @@ export default function Timeline() {
       setError('お使いのブラウザは位置情報に対応していません。');
       setIsGettingLocation(false);
       setShowLocationPermissionAlert(false);
-      setSearchMode('all');
+      setTempSearchMode('all');
     }
   };
 
+  // フィルターを適用する処理
   const handleApplyFilters = () => {
+    // 一時的な状態を実際の状態に適用
+    setActiveFilter(tempActiveFilter);
+    setSearchMode(tempSearchMode);
+    setSortBy(tempSortBy);
+    
     setShowFilterModal(false);
-    fetchPosts(0, true);
+    
+    // フィルター適用後にデータを再取得
+    setTimeout(() => {
+      fetchPosts(0, true);
+    }, 100);
+  };
+
+  // モーダルを閉じる処理（変更を破棄）
+  const handleCloseModal = () => {
+    // 一時的な状態を現在の適用済み状態にリセット
+    setTempActiveFilter(activeFilter);
+    setTempSearchMode(searchMode);
+    setTempSortBy(sortBy);
+    setShowFilterModal(false);
   };
 
   // 修正されたすべてクリア機能
@@ -755,6 +792,11 @@ export default function Timeline() {
     setSortBy('created_at_desc');
     setGeneralSearchTerm('');
     setUserLocation(null);
+    
+    // 一時的な状態もリセット
+    setTempActiveFilter('all');
+    setTempSearchMode('all');
+    setTempSortBy('created_at_desc');
     
     // フィルターをクリアした後、強制的に全投稿を再取得
     setTimeout(() => {
@@ -1060,24 +1102,44 @@ export default function Timeline() {
 
       <CustomModal
         isOpen={showFilterModal}
-        onClose={() => setShowFilterModal(false)}
+        onClose={handleCloseModal}
         title="検索フィルター"
         description="検索条件と表示順を設定できます。"
       >
         <div className="space-y-6 max-h-[70vh] overflow-y-auto">
+          {/* おすすめの検索 */}
+          <div>
+            <h3 className="font-semibold text-lg mb-2">おすすめの検索</h3>
+            <Button
+              onClick={handleNearbySearch}
+              disabled={isGettingLocation}
+              className={cn(
+                "w-full justify-start",
+                tempSearchMode === 'nearby' ? "bg-green-600 text-white hover:bg-green-700" : "bg-gray-200 text-gray-800 hover:bg-gray-300"
+              )}
+            >
+              {isGettingLocation ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <MapPin className="h-4 w-4 mr-2" />
+              )}
+              周辺から検索 (5km圏内)
+            </Button>
+          </div>
+
           <div>
             <h3 className="font-semibold text-lg mb-2">カテゴリーで絞り込み</h3>
             <div className="grid grid-cols-3 gap-2">
               {categories.map((category) => (
                 <Button
                   key={category}
-                  variant={activeFilter === category || (activeFilter === 'all' && category === 'すべて') ? 'default' : 'outline'}
+                  variant={tempActiveFilter === category || (tempActiveFilter === 'all' && category === 'すべて') ? 'default' : 'outline'}
                   onClick={() => {
-                    setActiveFilter(category === 'すべて' ? 'all' : category);
+                    setTempActiveFilter(category === 'すべて' ? 'all' : category);
                   }}
                   className={cn(
                     "w-full",
-                    (activeFilter === category || (activeFilter === 'all' && category === 'すべて')) && "bg-primary text-primary-foreground"
+                    (tempActiveFilter === category || (tempActiveFilter === 'all' && category === 'すべて')) && "bg-primary text-primary-foreground"
                   )}
                 >
                   {category}
@@ -1088,7 +1150,7 @@ export default function Timeline() {
 
           <div>
             <h3 className="font-semibold text-lg mb-2">表示順</h3>
-            <Select onValueChange={(value: SortOption) => setSortBy(value)} defaultValue={sortBy}>
+            <Select onValueChange={(value: SortOption) => setTempSortBy(value)} value={tempSortBy}>
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="並び替え" />
               </SelectTrigger>
@@ -1132,12 +1194,12 @@ export default function Timeline() {
                   <div className="flex flex-col space-y-3 mt-4">
                     <Button 
                       onClick={() => {
-                        setSearchMode('favorite_store');
+                        setTempSearchMode('favorite_store');
                       }}
                       disabled={!currentUserId || favoriteStoreIds.length === 0}
                       className={cn(
                         "justify-start",
-                        searchMode === 'favorite_store' ? "bg-yellow-600 text-white hover:bg-yellow-700" : "bg-gray-200 text-gray-800 hover:bg-gray-300"
+                        tempSearchMode === 'favorite_store' ? "bg-yellow-600 text-white hover:bg-yellow-700" : "bg-gray-200 text-gray-800 hover:bg-gray-300"
                       )}
                     >
                       <Star className="h-4 w-4 mr-2" />
@@ -1145,40 +1207,25 @@ export default function Timeline() {
                     </Button>
                     <Button
                       onClick={() => {
-                        setSearchMode('liked_posts');
+                        setTempSearchMode('liked_posts');
                       }}
                       disabled={!currentUserId || likedPostIds.length === 0}
                       className={cn(
                         "justify-start",
-                        searchMode === 'liked_posts' ? "bg-pink-600 text-white hover:bg-pink-700" : "bg-gray-200 text-gray-800 hover:bg-gray-300"
+                        tempSearchMode === 'liked_posts' ? "bg-pink-600 text-white hover:bg-pink-700" : "bg-gray-200 text-gray-800 hover:bg-gray-300"
                       )}
                     >
                       <Heart className="h-4 w-4 mr-2" />
                       いいねした投稿を検索 {likedPostIds.length > 0 && `(${likedPostIds.length}件)`}
                     </Button>
                     <Button
-                      onClick={handleNearbySearch}
-                      disabled={isGettingLocation}
-                      className={cn(
-                        "justify-start",
-                        searchMode === 'nearby' ? "bg-green-600 text-white hover:bg-green-700" : "bg-gray-200 text-gray-800 hover:bg-gray-300"
-                      )}
-                    >
-                      {isGettingLocation ? (
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      ) : (
-                        <MapPin className="h-4 w-4 mr-2" />
-                      )}
-                      周辺から検索 (5km圏内)
-                    </Button>
-                    <Button
                       onClick={() => {
-                        setSearchMode('hybrid');
+                        setTempSearchMode('hybrid');
                       }}
                       disabled={!currentUserId || (favoriteStoreIds.length === 0 && likedPostIds.length === 0)}
                       className={cn(
                         "justify-start",
-                        searchMode === 'hybrid' ? "bg-purple-600 text-white hover:bg-purple-700" : "bg-gray-200 text-gray-800 hover:bg-gray-300"
+                        tempSearchMode === 'hybrid' ? "bg-purple-600 text-white hover:bg-purple-700" : "bg-gray-200 text-gray-800 hover:bg-gray-300"
                       )}
                     >
                       <Plus className="h-4 w-4 mr-2" />
