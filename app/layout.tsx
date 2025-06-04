@@ -16,11 +16,15 @@ const notoSansJP = Noto_Sans_JP({
 });
 
 export const metadata: Metadata = {
-  title: 'お惣菜ウォッチャー',
-  description: '近くのお得なお惣菜情報を見つけよう！シェアしよう！',
+  title: 'トクドク β版',
+  description: 'みんなでお得な情報を共有しよう！',
   viewport: 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no',
   themeColor: '#FF6B35',
   manifest: '/manifest.json',
+  icons: {
+    icon: 'https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png',
+    apple: 'https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png',
+  },
 };
 
 export default function RootLayout({

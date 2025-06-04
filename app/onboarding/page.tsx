@@ -15,14 +15,14 @@ const onboardingSlides = [
     color: "bg-primary/10"
   },
   {
-    title: "値引き情報をシェア",
+    title: "お得な情報をシェア",
     description: "あなたが見つけたお得な商品をみんなと共有しましょう。写真、価格、お店の情報を簡単に投稿できます。",
     icon: <Tag className="w-16 h-16 sm:w-20 sm:h-20 text-[#FFEB3B]" />,
     color: "bg-[#FFEB3B]/10"
   },
   {
     title: "タイムラインで確認",
-    description: "他のユーザーが投稿した近所のお得情報をタイムラインでチェック。カテゴリやお店で絞り込みも可能です。",
+    description: "他のユーザーが投稿した近所のお得な情報をタイムラインでチェック。カテゴリやお店で絞り込みも可能です。",
     icon: <Users className="w-16 h-16 sm:w-20 sm:h-20 text-[#E53935]" />,
     color: "bg-[#E53935]/10"
   },
@@ -101,11 +101,16 @@ export default function Onboarding() {
       onTouchEnd={handleTouchEnd}
     >
       <header className="p-4 pt-[calc(var(--sat)+0.5rem)] flex justify-between items-center">
-        <Logo withText size="small" />
+        <div className="flex items-center space-x-2">
+          <div className="rounded-full  p-2 ">
+            <img src="https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png" alt="App Icon" className="h-12 w-12 object-contain" />
+          </div>
+          {/* <span className="font-bold text-xl tracking-wider">トクドク</span> */}
+        </div>
         <Button 
           variant="ghost" 
           onClick={skipOnboarding}
-          className="text-muted-foreground text-base"
+          className="text-muted-foreground text-lg"
         >
           スキップ
         </Button>

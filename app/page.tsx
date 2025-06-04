@@ -77,10 +77,10 @@ export default function Home() {
         >
           <div className="container mx-auto px-4 h-16 flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              <div className="rounded-full bg-primary/10 p-2 animate-bounce">
-                <ShoppingCart className="h-6 w-6 text-primary transform rotate-12" />
+              <div className="rounded-full  p-2 ">
+                <img src="https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png" alt="App Icon" className="h-12 w-12 object-contain" />
               </div>
-              <span className="font-bold text-xl tracking-wider">お惣菜ウォッチャー</span>
+              {/* <span className="font-bold text-xl tracking-wider">トクドク</span> */}
             </div>
             
             {/* デスクトップ用ナビゲーション */}
@@ -264,7 +264,7 @@ export default function Home() {
 
         <footer className="py-8 px-4 border-t pb-[calc(var(--sab)+2rem)]">
           <div className="container mx-auto max-w-6xl text-center text-sm text-muted-foreground">
-            <p>© 2025 お惣菜ウォッチャー All rights reserved.</p>
+            <p>© 2025 トクドク All rights reserved.</p>
           </div>
         </footer>
       </div>

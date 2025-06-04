@@ -639,7 +639,7 @@ export default function ProfilePage() {
             
             <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
               <p className="text-xs text-blue-600 text-center">
-                ※ ポイントシステムは現在開発中です。近日公開予定！
+                ※ ポイントシステムは現在開発中です。<br />近日公開予定！
               </p>
             </div>
           </div>

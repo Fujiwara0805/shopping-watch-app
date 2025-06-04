@@ -47,6 +47,9 @@ export function AppHeader() {
         transition={{ duration: 0.3 }}
       >
         <div className="absolute left-4 flex items-center">
+          <Link href="/timeline">
+            <img src="https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png" alt="App Icon" className="h-12 w-12 object-contain" />
+          </Link>
           {showLogo && <Logo withText size="small" />}
         </div>
         
@@ -58,7 +61,7 @@ export function AppHeader() {
           
           <Button variant="ghost" size="icon" className="relative" asChild>
             <Link href="/notifications">
-              <Bell className="h-5 w-5" />
+              <Bell className="h-8 w-8" />
               {!isLoading && unreadCount > 0 && (
                 <motion.div
                   initial={{ scale: 0 }}
