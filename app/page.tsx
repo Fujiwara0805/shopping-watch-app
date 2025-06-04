@@ -3,14 +3,12 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useTheme } from 'next-themes';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, ShoppingCart, MapPin, Bell, Users, Sun, Moon, Menu, X } from 'lucide-react';
+import { ArrowRight, ShoppingCart, MapPin, Bell, Users, Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export default function Home() {
   const router = useRouter();
-  const { theme, setTheme } = useTheme();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrollPosition, setScrollPosition] = useState(0);
   
@@ -68,10 +66,7 @@ export default function Home() {
       <div 
         className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-10 pointer-events-none"
         style={{
-          backgroundImage: `url(${theme === 'dark' 
-            ? 'https://images.pexels.com/photos/264636/pexels-photo-264636.jpeg'
-            : 'https://images.pexels.com/photos/3962294/pexels-photo-3962294.jpeg'
-          })`
+          backgroundImage: `url('https://images.pexels.com/photos/3962294/pexels-photo-3962294.jpeg')`
         }}
       />
       <div className="relative">
@@ -90,18 +85,6 @@ export default function Home() {
             
             {/* デスクトップ用ナビゲーション */}
             <div className="hidden md:flex items-center space-x-4">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                className="rounded-full"
-              >
-                {theme === 'dark' ? (
-                  <Sun className="h-5 w-5" />
-                ) : (
-                  <Moon className="h-5 w-5" />
-                )}
-              </Button>
               <Button variant="ghost" asChild className="h-10 px-4 rounded-full">
                 <Link href="/login">ログイン</Link>
               </Button>
@@ -112,18 +95,6 @@ export default function Home() {
             
             {/* モバイル用メニューボタン */}
             <div className="flex md:hidden items-center space-x-2">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                className="rounded-full"
-              >
-                {theme === 'dark' ? (
-                  <Sun className="h-5 w-5" />
-                ) : (
-                  <Moon className="h-5 w-5" />
-                )}
-              </Button>
               <Button 
                 variant="ghost" 
                 size="icon" 

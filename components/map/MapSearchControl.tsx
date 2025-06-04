@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, X, MapPin as PinIcon, Navigation } from 'lucide-react'; // MapPin だと競合するので PinIcon
+import { Search, X, MapPin as PinIcon, Navigation } from 'lucide-react';
 import { useGoogleMapsApi } from '@/components/providers/GoogleMapsApiProvider';
 
 interface MapSearchControlProps {
@@ -29,6 +29,7 @@ export function MapSearchControl({
   const inputRef = useRef<HTMLInputElement>(null);
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
   const [inputValue, setInputValue] = useState('');
+  const [isFocused, setIsFocused] = useState(false);
 
   useEffect(() => {
     if (!isMapsApiLoaded || !inputRef.current || !map || loadError) {
@@ -104,26 +105,39 @@ export function MapSearchControl({
       inputRef.current.value = '';
       inputRef.current.focus();
     }
-    if (autocompleteRef.current) {
-    }
   };
   
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setInputValue(event.target.value);
   };
 
+  const handleFocus = () => setIsFocused(true);
+  const handleBlur = () => setIsFocused(false);
+
   if (loadError) {
     return (
-        <div className={`p-2 text-center text-xs text-destructive ${className}`}>
-            検索機能の読み込みに失敗しました。
+        <div className={`p-4 text-center text-sm text-red-400 ${className}`}>
+            <div className="flex items-center justify-center gap-2">
+                <div className="w-2 h-2 bg-red-400 rounded-full animate-pulse"></div>
+                検索機能の読み込みに失敗しました
+            </div>
         </div>
     );
   }
 
   if (!isMapsApiLoaded) {
      return (
-        <div className={`p-2 text-center text-xs text-muted-foreground ${className}`}>
-            検索機能を読み込み中...
+        <div className={`p-4 text-center text-sm ${className}`}>
+            <div 
+                className="flex items-center justify-center gap-2"
+                style={{ color: '#73370c' }}
+            >
+                <div 
+                    className="w-2 h-2 rounded-full animate-pulse"
+                    style={{ backgroundColor: '#73370c' }}
+                ></div>
+                検索機能を読み込み中...
+            </div>
         </div>
     );
   }
@@ -131,33 +145,110 @@ export function MapSearchControl({
   return (
     <motion.div
       className={`relative w-full ${className || ''}`}
-      initial={{ y: 0, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      transition={{ duration: 0.3 }}
+      initial={{ y: -20, opacity: 0, scale: 0.95 }}
+      animate={{ y: 0, opacity: 1, scale: 1 }}
+      transition={{ duration: 0.4, ease: "easeOut" }}
     >
-      <div className="relative flex items-center bg-background rounded-full shadow-lg p-1.5">
-        <Search className="h-5 w-5 text-muted-foreground ml-2.5 flex-shrink-0" />
-        <Input
-          ref={inputRef}
-          type="text"
-          placeholder="お店やキーワードを検索"
-          value={inputValue}
-          onChange={handleInputChange}
-          className="flex-grow bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 text-base pl-2 pr-8 py-2 h-auto"
-          disabled={!isMapsApiLoaded || !map}
+      <motion.div 
+        className="relative overflow-hidden rounded-2xl shadow-2xl"
+        style={{
+          background: `linear-gradient(135deg, #73370c 0%, #8b4513 50%, #73370c 100%)`,
+          boxShadow: isFocused 
+            ? '0 20px 40px rgba(115, 55, 12, 0.3), 0 0 0 2px rgba(115, 55, 12, 0.2)' 
+            : '0 10px 30px rgba(115, 55, 12, 0.2)'
+        }}
+        animate={{
+          scale: isFocused ? 1.02 : 1,
+        }}
+        transition={{ duration: 0.2, ease: "easeInOut" }}
+      >
+        {/* グラデーションオーバーレイ */}
+        <div 
+          className="absolute inset-0 opacity-20"
+          style={{
+            background: 'linear-gradient(45deg, rgba(255,255,255,0.1) 0%, transparent 50%, rgba(255,255,255,0.1) 100%)'
+          }}
         />
-        {inputValue && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="absolute right-1.5 top-1/2 -translate-y-1/2 h-7 w-7 p-0 rounded-full"
-            onClick={handleClearInput}
+        
+        <div className="relative flex items-center p-3">
+          {/* 検索アイコン */}
+          <motion.div
+            animate={{
+              rotate: isFocused ? 360 : 0,
+              scale: isFocused ? 1.1 : 1
+            }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+            className="flex-shrink-0 ml-2"
           >
-            <X className="h-4 w-4" />
-          </Button>
-        )}
-      </div>
+            <Search 
+              className="h-6 w-6" 
+              style={{ color: 'rgba(255, 255, 255, 0.9)' }}
+            />
+          </motion.div>
+
+          {/* 入力フィールド */}
+          <Input
+            ref={inputRef}
+            type="text"
+            placeholder="お店やキーワードを検索"
+            value={inputValue}
+            onChange={handleInputChange}
+            onFocus={handleFocus}
+            onBlur={handleBlur}
+            className="flex-grow bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 text-white placeholder:text-white/70 text-lg font-medium pl-4 pr-12 py-3 h-auto"
+            style={{
+              caretColor: 'white',
+              textShadow: '0 1px 2px rgba(0,0,0,0.2)'
+            }}
+            disabled={!isMapsApiLoaded || !map}
+          />
+
+          {/* クリアボタン */}
+          {inputValue && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0, x: 10 }}
+              animate={{ opacity: 1, scale: 1, x: 0 }}
+              exit={{ opacity: 0, scale: 0, x: 10 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+            >
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="absolute right-3 top-1/2 -translate-y-1/2 h-8 w-8 p-0 rounded-full bg-white/20 hover:bg-white/30 transition-all duration-200 backdrop-blur-sm"
+                onClick={handleClearInput}
+              >
+                <X className="h-4 w-4 text-white" />
+              </Button>
+            </motion.div>
+          )}
+        </div>
+
+        {/* 下部のアクセントライン */}
+        <motion.div
+          className="absolute bottom-0 left-0 h-1 bg-gradient-to-r from-transparent via-white/40 to-transparent"
+          animate={{
+            width: isFocused ? '100%' : '0%',
+            opacity: isFocused ? 1 : 0
+          }}
+          transition={{ duration: 0.3, ease: "easeInOut" }}
+        />
+      </motion.div>
+
+      {/* フォーカス時のリング効果 */}
+      {isFocused && (
+        <motion.div
+          className="absolute inset-0 rounded-2xl pointer-events-none"
+          style={{
+            background: `linear-gradient(135deg, transparent 0%, rgba(115, 55, 12, 0.1) 50%, transparent 100%)`,
+            boxShadow: '0 0 0 3px rgba(115, 55, 12, 0.15)'
+          }}
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.95 }}
+          transition={{ duration: 0.2 }}
+        />
+      )}
     </motion.div>
   );
 }

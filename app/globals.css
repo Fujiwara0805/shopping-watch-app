@@ -8,14 +8,6 @@
   --background-end-rgb: 255, 255, 255;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --foreground-rgb: 255, 255, 255;
-    --background-start-rgb: 0, 0, 0;
-    --background-end-rgb: 0, 0, 0;
-  }
-}
-
 @layer base {
   :root {
     --background: 0 0% 98%;
@@ -50,27 +42,6 @@
     --color-yellow: 45 100% 60%;
     --color-gray: 0 0% 96%;
     --color-brown: 25 80% 25%;
-  }
-  .dark {
-    --background: 0 0% 15%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 20%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 20%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 174 100% 29%;
-    --primary-foreground: 0 0% 9%;
-    --secondary: 60 100% 60%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 25%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 0 84% 56%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 25%;
-    --input: 0 0% 25%;
-    --ring: 174 100% 29%;
   }
 }
 

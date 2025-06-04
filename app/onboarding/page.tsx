@@ -11,25 +11,25 @@ const onboardingSlides = [
   {
     title: "お気に入りの店舗を登録",
     description: "地図から簡単に近所のスーパーを登録できます。お気に入りに追加すると、値引き情報をいち早くお知らせします。",
-    icon: <MapPin className="w-10 h-10 sm:w-12 sm:h-12 text-primary" />,
+    icon: <MapPin className="w-16 h-16 sm:w-20 sm:h-20 text-primary" />,
     color: "bg-primary/10"
   },
   {
     title: "値引き情報をシェア",
     description: "あなたが見つけた値引き商品をみんなと共有しましょう。写真、価格、お店の情報を簡単に投稿できます。",
-    icon: <Tag className="w-10 h-10 sm:w-12 sm:h-12 text-[#FFEB3B]" />,
+    icon: <Tag className="w-16 h-16 sm:w-20 sm:h-20 text-[#FFEB3B]" />,
     color: "bg-[#FFEB3B]/10"
   },
   {
     title: "タイムラインで確認",
     description: "他のユーザーが投稿した近所のお得情報をタイムラインでチェック。カテゴリやお店で絞り込みも可能です。",
-    icon: <Users className="w-10 h-10 sm:w-12 sm:h-12 text-[#E53935]" />,
+    icon: <Users className="w-16 h-16 sm:w-20 sm:h-20 text-[#E53935]" />,
     color: "bg-[#E53935]/10"
   },
   {
     title: "通知でお知らせ",
     description: "お気に入り店舗の値引き情報が投稿されると、すぐに通知でお知らせします。お得を逃しません。",
-    icon: <Bell className="w-10 h-10 sm:w-12 sm:h-12 text-[#009688]" />,
+    icon: <Bell className="w-16 h-16 sm:w-20 sm:h-20 text-[#009688]" />,
     color: "bg-[#009688]/10"
   }
 ];
@@ -105,7 +105,7 @@ export default function Onboarding() {
         <Button 
           variant="ghost" 
           onClick={skipOnboarding}
-          className="text-muted-foreground text-sm"
+          className="text-muted-foreground text-base"
         >
           スキップ
         </Button>
@@ -123,10 +123,10 @@ export default function Onboarding() {
           <div className={`${onboardingSlides[currentSlide].color} p-5 sm:p-6 rounded-full mb-6 sm:mb-8`}>
             {onboardingSlides[currentSlide].icon}
           </div>
-          <h2 className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4 text-center">
+          <h2 className="text-2xl sm:text-3xl font-bold mb-3 sm:mb-4 text-center">
             {onboardingSlides[currentSlide].title}
           </h2>
-          <p className="text-sm sm:text-base text-center text-muted-foreground mb-6 sm:mb-8 max-w-xs sm:max-w-sm">
+          <p className="text-base sm:text-lg text-center text-muted-foreground mb-6 sm:mb-8 max-w-xs sm:max-w-sm">
             {onboardingSlides[currentSlide].description}
           </p>
         </motion.div>
@@ -155,7 +155,7 @@ export default function Onboarding() {
             disabled={currentSlide === 0}
             className="flex-1 h-12 rounded-xl"
           >
-            <ChevronLeft className="mr-1 h-4 w-4" />
+            <ChevronLeft className="mr-1 h-5 w-5" />
             戻る
           </Button>
           <Button 
@@ -163,7 +163,7 @@ export default function Onboarding() {
             className="flex-1 h-12 rounded-xl bg-primary"
           >
             {currentSlide === onboardingSlides.length - 1 ? '地図を表示' : '次へ'}
-            <ChevronRight className="ml-1 h-4 w-4" />
+            <ChevronRight className="ml-1 h-5 w-5" />
           </Button>
         </div>
       </div>

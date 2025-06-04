@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
-import { Bell, LogOut, Settings, Edit, MapPin, Heart, Store as StoreIcon } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Bell, LogOut, Settings, Edit, MapPin, Heart, Store as StoreIcon, Calendar, TrendingUp, Award, Star, User, Sparkles, ShoppingBag, Info, X, Trash2, NotebookText } from 'lucide-react';
 import AppLayout from '@/components/layout/app-layout';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -13,9 +13,13 @@ import { PostCard } from '@/components/posts/post-card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { useSession, signOut } from 'next-auth/react';
 import { supabase } from '@/lib/supabaseClient';
 import { PostWithAuthor, AuthorProfile } from '@/types/post';
+import { cn } from '@/lib/utils';
+import { CustomModal } from '@/components/ui/custom-modal';
 
 interface AppProfile {
   id: string;
@@ -32,6 +36,137 @@ interface AppProfile {
   favorite_store_3_name?: string | null;
 }
 
+// 統計カードのコンポーネント
+const StatCard = ({ icon: Icon, title, value, subtitle, gradient, delay = 0, showInfo = false, onInfoClick }: {
+  icon: any;
+  title: string;
+  value: number | string;
+  subtitle?: string;
+  gradient: string;
+  delay?: number;
+  showInfo?: boolean;
+  onInfoClick?: () => void;
+}) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.6, delay }}
+    whileHover={{ 
+      scale: 1.02, 
+      boxShadow: "0 10px 20px -5px rgb(0 0 0 / 0.15)" 
+    }}
+    className={cn(
+      "relative overflow-hidden rounded-xl p-4",
+      "backdrop-blur-sm border border-white/30",
+      "shadow-md hover:shadow-lg transition-all duration-300",
+      gradient
+    )}
+  >
+    <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent" />
+    <div className="relative z-10 text-center">
+      <div className="flex items-center justify-center mb-3">
+        <Icon className="h-6 w-6 text-gray-700" />
+        {showInfo && (
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            onClick={onInfoClick}
+            className="p-1 rounded-full bg-blue-500 text-white hover:bg-blue-600 transition-colors ml-1"
+          >
+            <Info className="h-3 w-3" />
+          </motion.button>
+        )}
+      </div>
+      <p className="text-3xl font-bold mb-1 text-gray-800">{value}</p>
+      <p className="text-gray-600 text-xs font-medium">{title}</p>
+      {subtitle && <p className="text-gray-500 text-xs mt-1">{subtitle}</p>}
+    </div>
+  </motion.div>
+);
+
+// お気に入り店舗カード
+const FavoriteStoreCard = ({ store, index }: { store: { id: string; name: string }; index: number }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.5, delay: index * 0.1 }}
+    whileHover={{ 
+      y: -3,
+      boxShadow: "0 10px 20px -5px rgb(0 0 0 / 0.1)" 
+    }}
+    className="group relative overflow-hidden rounded-xl bg-white border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300"
+  >
+    <div className="absolute inset-0 bg-gradient-to-br from-orange-50/50 to-red-50/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+    <div className="relative z-10 p-4">
+      <div className="flex items-center space-x-3">
+        <div className="relative">
+          <div className="w-10 h-10 rounded-lg flex items-center justify-center shadow-sm" style={{ backgroundColor: '#c96342' }}>
+            <StoreIcon className="h-5 w-5 text-white" />
+          </div>
+          <motion.div
+            className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white"
+            animate={{ scale: [1, 1.2, 1] }}
+            transition={{ duration: 2, repeat: Infinity }}
+          />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h3 className="font-semibold text-gray-900 text-sm group-hover:text-orange-600 transition-colors duration-200 truncate">
+            {store.name}
+          </h3>
+          <p className="text-gray-500 text-xs">お気に入り店舗</p>
+        </div>
+        <Star className="h-4 w-4 text-yellow-400 group-hover:text-yellow-500 transition-colors duration-200 flex-shrink-0" />
+      </div>
+    </div>
+  </motion.div>
+);
+
+// 設定アイテム
+const SettingItem = ({ icon: Icon, title, description, action, variant = "default" }: {
+  icon: any;
+  title: string;
+  description: string;
+  action: () => void;
+  variant?: "default" | "danger";
+}) => (
+  <motion.div
+    whileHover={{ x: 3 }}
+    whileTap={{ scale: 0.98 }}
+    className="group"
+  >
+    <Button
+      variant="ghost"
+      className={cn(
+        "w-full justify-start p-3 h-auto rounded-lg border border-gray-100",
+        "hover:shadow-sm transition-all duration-300",
+        "bg-white",
+        variant === "danger" && "hover:bg-red-50 hover:border-red-200"
+      )}
+      onClick={action}
+    >
+      <div className="flex items-center space-x-3 w-full">
+        <div className={cn(
+          "w-8 h-8 rounded-md flex items-center justify-center",
+          variant === "default" 
+            ? "text-white" 
+            : "bg-gradient-to-br from-red-500 to-pink-600 text-white"
+        )} style={variant === "default" ? { backgroundColor: '#c96342' } : {}}>
+          <Icon className="h-4 w-4" />
+        </div>
+        <div className="flex-1 text-left min-w-0">
+          <p className={cn(
+            "font-medium text-sm group-hover:translate-x-1 transition-transform duration-200",
+            variant === "danger" && "text-red-600"
+          )}>
+            {title}
+          </p>
+          <p className="text-xs text-gray-500 truncate">{description}</p>
+        </div>
+      </div>
+    </Button>
+  </motion.div>
+);
+
 export default function ProfilePage() {
   const { data: session, status } = useSession();
   const [profile, setProfile] = useState<AppProfile | null>(null);
@@ -40,9 +175,9 @@ export default function ProfilePage() {
   const [loadingPosts, setLoadingPosts] = useState(true);
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("posts");
-  
-  // ポイント表示用の仮のstate (将来的にはprofileオブジェクトから取得)
-  const [userPoints, setUserPoints] = useState(0); // 仮に0ポイントで初期化
+  const [userPoints, setUserPoints] = useState(0);
+  const [showPointsModal, setShowPointsModal] = useState(false);
+  const [hiddenPosts, setHiddenPosts] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (status === 'loading') {
@@ -75,8 +210,6 @@ export default function ProfilePage() {
 
         if (appProfileData) {
           setProfile(appProfileData);
-          // TODO: 将来的には appProfileData からポイントを取得する
-          // setUserPoints(appProfileData.points || 0); 
 
           const { data: postsData, error: postsError } = await supabase
             .from('posts')
@@ -159,15 +292,31 @@ export default function ProfilePage() {
     await signOut({ redirect: false, callbackUrl: '/login' });
     router.push('/login');
   };
-  
+
+  // お気に入り店舗のフィルタリング
+  const favoriteStores = profile ? [
+    { id: profile.favorite_store_1_id, name: profile.favorite_store_1_name },
+    { id: profile.favorite_store_2_id, name: profile.favorite_store_2_name },
+    { id: profile.favorite_store_3_id, name: profile.favorite_store_3_name },
+  ].filter(store => store.id && store.name) as { id: string; name: string }[] : [];
+
+  // 投稿を非表示にする関数
+  const handleHidePost = (postId: string) => {
+    setHiddenPosts(prev => new Set([...Array.from(prev), postId]));
+  };
+
+  // 表示する投稿をフィルタリング
+  const visiblePosts = userPosts.filter(post => !hiddenPosts.has(post.id));
+
   if (status === 'loading' || loading) {
     return (
       <AppLayout>
-        <div className="flex flex-col items-center justify-center min-h-screen">
-          <Skeleton className="h-16 w-16 rounded-full mb-2" />
-          <Skeleton className="h-5 w-40 mb-1" />
-          <Skeleton className="h-4 w-32 mb-6" />
-          <Skeleton className="h-32 w-full max-w-md" />
+        <div className="h-screen flex items-center justify-center" style={{ backgroundColor: '#73370c' }}>
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+            className="w-12 h-12 border-4 border-white/30 border-t-white rounded-full"
+          />
         </div>
       </AppLayout>
     );
@@ -176,8 +325,15 @@ export default function ProfilePage() {
   if (!profile) {
     return (
         <AppLayout>
-            <div className="flex items-center justify-center min-h-screen">
-                <p>プロフィール情報を読み込めませんでした。</p>
+            <div className="h-screen flex items-center justify-center" style={{ backgroundColor: '#73370c' }}>
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="text-center"
+              >
+                <User className="h-16 w-16 mx-auto text-white/60 mb-4" />
+                <p className="text-lg text-white">プロフィール情報を読み込めませんでした。</p>
+              </motion.div>
             </div>
         </AppLayout>
     );
@@ -185,258 +341,316 @@ export default function ProfilePage() {
   
   return (
     <AppLayout>
-      {/* プロフィールヘッダー部分 - 完全固定 */}
-      <div className="sticky top-0 z-20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
-        <div className="p-4">
-          <div className="flex justify-between items-start mb-6">
-            <div className="flex items-center space-x-4">
-              <Avatar className="h-16 w-16">
-                {profile.avatar_url ? (
-                  <AvatarImage
-                    src={supabase.storage.from('avatars').getPublicUrl(profile.avatar_url).data.publicUrl}
-                    alt={profile.display_name ?? 'User Avatar'}
-                  />
-                ) : (
-                  <AvatarFallback>{profile.display_name?.charAt(0).toUpperCase() ?? 'U'}</AvatarFallback>
-                )}
-              </Avatar>
-              
-              <div>
-                <h1 className="text-xl font-bold">{profile.display_name}</h1>
-                <p className="text-sm text-muted-foreground">{session?.user?.email}</p>
-              </div>
+      <div className="h-screen flex flex-col" style={{ backgroundColor: '#73370c' }}>
+        {/* プロフィールヘッダー - 上部固定 */}
+        <div className="flex-shrink-0 relative overflow-hidden">
+          <div className="absolute inset-0" style={{ backgroundColor: '#73370c' }} />
+          <div className="relative z-10 p-4 text-white">
+            {/* ヘッダーアクション - 編集ボタンをプロフィール情報と同じ行に */}
+            <div className="flex items-start justify-between mb-4">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+                whileHover={{ scale: 1.05 }}
+                className="relative flex items-center space-x-4"
+              >
+                <Avatar className="h-16 w-16 relative z-10 border-3 border-white/30">
+                  {profile.avatar_url ? (
+                    <AvatarImage
+                      src={supabase.storage.from('avatars').getPublicUrl(profile.avatar_url).data.publicUrl}
+                      alt={profile.display_name ?? 'User Avatar'}
+                    />
+                  ) : (
+                    <AvatarFallback className="text-lg font-bold bg-gradient-to-br from-purple-500 to-pink-500 text-white">
+                      {profile.display_name?.charAt(0).toUpperCase() ?? 'U'}
+                    </AvatarFallback>
+                  )}
+                </Avatar>
+                
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: 0.3 }}
+                  className="flex-1 min-w-0"
+                >
+                  <h1 className="text-xl font-bold mb-1 truncate">{profile.display_name}</h1>
+                  <p className="text-white/80 text-xs mb-1 truncate">{session?.user?.email}</p>
+                  <div className="flex items-center space-x-1">
+                    <Calendar className="h-3 w-3 text-white/60" />
+                    <span className="text-white/60 text-xs">
+                      登録: {new Date(profile.updated_at || '').toLocaleDateString('ja-JP')}
+                    </span>
+                  </div>
+                </motion.div>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.6 }}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="flex-shrink-0"
+              >
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => router.push('/profile/edit')}
+                  className="bg-white/20 hover:bg-white/30 border border-white/30 text-white text-xs px-3 py-1.5"
+                >
+                  <Edit className="h-3 w-3 mr-1" />
+                  編集
+                </Button>
+              </motion.div>
             </div>
             
-            <Button
-              variant="ghost"
-              size="icon"
-              asChild
-            >
-              <motion.div
-                whileTap={{ scale: 0.95 }}
-                onClick={() => router.push('/profile/edit')}
-              >
-                <Edit className="h-5 w-5" />
-              </motion.div>
-            </Button>
-          </div>
-          
-          {/* 投稿数とポイント表示 */}
-          <div className="grid grid-cols-2 gap-4 text-center mb-4">
-            <motion.div 
-              className="p-4 bg-card rounded-lg shadow-sm"
-              whileHover={{ scale: 1.05 }}
-              transition={{ type: "spring", stiffness: 300 }}
-            >
-              <p className="text-2xl font-bold">{userPosts.length}</p>
-              <p className="text-sm text-muted-foreground">投稿数</p>
-            </motion.div>
-            <motion.div 
-              className="p-4 bg-card rounded-lg shadow-sm"
-              whileHover={{ scale: 1.05 }}
-              transition={{ type: "spring", stiffness: 300 }}
-            >
-              <p className="text-2xl font-bold">{userPoints}</p> 
-              <p className="text-sm text-muted-foreground">ポイント</p>
-            </motion.div>
-          </div>
-        </div>
-      </div>
-      
-      {/* 単一の Tabs コンポーネントでラップ */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        {/* タブヘッダー部分 */}
-        <div className="sticky top-[calc(var(--header-height,0px)+1px)] z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b px-4 pb-3">
-          {/* 上のヘッダーの高さを考慮して top 位置を調整する必要があるかもしれません。
-              ここでは仮に var(--header-height) としていますが、実際のヘッダーの高さに合わせて調整してください。
-              現状のコードではプロフィールヘッダーが固定されているため、その高さを考慮します。
-              プロフィールヘッダーの正確な高さが不明なため、一旦 `180px` のような固定値で試すか、
-              JavaScriptで動的に計算するなどの対応が必要になります。
-              簡単のため、ここでは `top-0` のままにして、スクロール追従ヘッダーは一旦なくし、
-              タブヘッダーがコンテンツと一緒にスクロールするようにします。
-              より良いUIのためには、ヘッダーの高さを正確に把握し、stickyのtop値を調整することが推奨されます。
-          */}
-           <div className="px-4 pb-3 sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
-            <TabsList className="grid w-full grid-cols-3 bg-muted/50">
-              <TabsTrigger value="posts">投稿履歴</TabsTrigger>
-              <TabsTrigger value="favorites" className="text-base">お気に入り</TabsTrigger>
-              <TabsTrigger value="settings" className="text-base">設定</TabsTrigger>
-            </TabsList>
+            {/* 統計カード */}
+            <div className="grid grid-cols-2 gap-3">
+              <StatCard
+                icon={ShoppingBag}
+                title="投稿数"
+                value={visiblePosts.length}
+                subtitle="これまでの投稿"
+                gradient="bg-green-100"
+                delay={0.4}
+              />
+              <StatCard
+                icon={Award}
+                title="ポイント"
+                value="未実装"
+                subtitle="獲得ポイント（未実装）"
+                gradient="bg-yellow-100"
+                delay={0.5}
+                showInfo={true}
+                onInfoClick={() => setShowPointsModal(true)}
+              />
+            </div>
           </div>
         </div>
 
-        {/* タブコンテンツ部分 - スクロール可能領域 */}
-        {/* 投稿履歴タブ */}
-        <TabsContent value="posts" className="mt-0">
-          {loadingPosts ? (
-            <div className="p-4 space-y-4">
-              <Skeleton className="h-48 w-full rounded-lg" />
-              <Skeleton className="h-48 w-full rounded-lg" />
+        {/* タブナビゲーション - 中央固定 */}
+        <div className="flex-shrink-0 bg-white/95 backdrop-blur-md border-b border-gray-200/50">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <div className="px-4 py-2">
+              <TabsList className="grid w-full grid-cols-3 bg-gray-50 h-10">
+                <TabsTrigger 
+                  value="memo"
+                  className="data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all duration-300 text-base"
+                >
+                  <NotebookText className="h-3 w-3 mr-1" />
+                  メモ機能
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="favorites"
+                  className="data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all duration-300 text-base"
+                >
+                  <Heart className="h-3 w-3 mr-1" />
+                  お気に入り
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="settings"
+                  className="data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all duration-300 text-base"
+                >
+                  <Settings className="h-3 w-3 mr-1" />
+                  設定
+                </TabsTrigger>
+              </TabsList>
             </div>
-          ) : userPosts.length > 0 ? (
-            <div 
-              className="custom-scrollbar overscroll-none"
-              style={{ 
-                height: 'calc(100vh - 380px)',
-                maxHeight: 'calc(100vh - 380px)',
-                overflowY: 'auto',
-                overflowX: 'hidden'
-              }}
-            >
-              <div className="p-4 space-y-4 pb-safe">
-                {userPosts.map((post, index) => (
+
+            {/* メインコンテンツエリア - スクロール可能 */}
+            <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
+              {/* メモ機能タブ */}
+              <TabsContent value="memo" className="m-0 h-full">
+                <div className="h-full flex items-center justify-center p-8">
                   <motion.div
-                    key={post.id}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.5 }}
+                    className="text-center"
+                  >
+                    <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center">
+                      <NotebookText className="h-8 w-8 text-gray-400" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-700 mb-2">メモ機能は現在開発中です</h3>
+                    <p className="text-gray-500 mb-4 text-sm">近日公開予定です。お楽しみに！</p>
+                    <Button 
+                      disabled
+                      className="text-white shadow-md hover:shadow-lg transition-all duration-300"
+                      style={{ backgroundColor: '#73370c' }}
+                      size="sm"
+                    >
+                      <Sparkles className="h-4 w-4 mr-2" />
+                      新しいメモを作成する
+                    </Button>
+                  </motion.div>
+                </div>
+              </TabsContent>
+              
+              {/* お気に入りタブ */}
+              <TabsContent value="favorites" className="m-0 h-full">
+                <div className="h-full overflow-y-auto p-4 space-y-4 custom-scrollbar">
+                  <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3, delay: index * 0.1 }}
+                    className="flex items-center justify-between"
                   >
-                    <PostCard post={post} />
+                    <h2 className="text-lg font-bold text-gray-900">お気に入り店舗</h2>
+                    <Badge variant="secondary" className="bg-orange-100 text-orange-700 text-xs">
+                      {favoriteStores.length}/3 店舗
+                    </Badge>
                   </motion.div>
-                ))}
-                {/* 最後の投稿の下に余白を追加 */}
-                <div className="h-4"></div>
-              </div>
-            </div>
-          ) : (
-            <div className="p-8 text-center">
-              <p className="text-muted-foreground">まだ投稿がありません</p>
-              <Button 
-                variant="link" 
-                onClick={() => router.push('/post')}
-                className="mt-2"
-              >
-                最初の投稿を作成する
-              </Button>
-            </div>
-          )}
-        </TabsContent>
-        
-        {/* お気に入りタブ */}
-        <TabsContent value="favorites" className="mt-0">
-          <div 
-            className="custom-scrollbar overscroll-none"
-            style={{ 
-              height: 'calc(100vh - 380px)',
-              maxHeight: 'calc(100vh - 380px)',
-              overflowY: 'auto',
-              overflowX: 'hidden'
-            }}
-          >
-            <div className="p-4 space-y-4 pb-safe">
-              <h2 className="text-xl font-semibold">お気に入り店舗</h2>
-              {profile && (profile.favorite_store_1_id || profile.favorite_store_2_id || profile.favorite_store_3_id) ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {[
-                    { id: profile.favorite_store_1_id, name: profile.favorite_store_1_name },
-                    { id: profile.favorite_store_2_id, name: profile.favorite_store_2_name },
-                    { id: profile.favorite_store_3_id, name: profile.favorite_store_3_name },
-                  ]
-                    .filter(store => store.id && store.name)
-                    .map((store, index) => (
-                      <motion.div
-                        key={store.id || index}
-                        className="p-4 border rounded-lg shadow-sm bg-card"
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.3, delay: index * 0.1 }}
+
+                  {favoriteStores.length > 0 ? (
+                    <div className="grid grid-cols-1 gap-3">
+                      {favoriteStores.map((store, index) => (
+                        <FavoriteStoreCard key={store.id} store={store} index={index} />
+                      ))}
+                    </div>
+                  ) : (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ duration: 0.5 }}
+                      className="text-center py-8"
+                    >
+                      <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-pink-100 to-red-100 rounded-full flex items-center justify-center">
+                        <Heart className="h-8 w-8 text-pink-400" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-gray-700 mb-2">お気に入り店舗がありません</h3>
+                      <p className="text-gray-500 mb-4 text-sm">よく利用する店舗を追加しましょう</p>
+                      <Button 
+                        variant="outline" 
+                        onClick={() => router.push('/profile/edit')}
+                        className="border-orange-200 hover:bg-orange-50 text-orange-600 text-sm"
+                        size="sm"
                       >
-                        <div className="flex items-center space-x-3">
-                          <StoreIcon className="h-8 w-8 text-primary" />
-                          <div>
-                            <p className="font-semibold text-lg">{store.name}</p>
-                          </div>
+                        <Heart className="h-3 w-3 mr-1" />
+                        プロフィール編集
+                      </Button>
+                    </motion.div>
+                  )}
+                </div>
+              </TabsContent>
+              
+              {/* 設定タブ */}
+              <TabsContent value="settings" className="m-0 h-full">
+                <div className="h-full overflow-y-auto p-4 space-y-6 custom-scrollbar">
+                  {/* 通知設定セクション */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 }}
+                    className="space-y-3"
+                  >
+                    <h3 className="text-lg font-bold text-gray-900 flex items-center">
+                      <Bell className="h-4 w-4 mr-2 text-orange-600" />
+                      通知設定
+                    </h3>
+                    
+                    <div className="space-y-3">
+                      <motion.div
+                        whileHover={{ scale: 1.01 }}
+                        className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-100 shadow-sm"
+                      >
+                        <div className="space-y-0.5 flex-1 min-w-0">
+                          <Label htmlFor="push-notifications" className="text-sm font-medium">プッシュ通知</Label>
+                          <p className="text-xs text-gray-500">お気に入り店舗の値引き情報をお知らせ</p>
                         </div>
+                        <Switch id="push-notifications" defaultChecked />
                       </motion.div>
-                    ))}
+                    </div>
+                  </motion.div>
+                  
+                  <Separator className="my-4" />
+                  
+                  {/* アカウント設定セクション */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                    className="space-y-3"
+                  >
+                    <h3 className="text-lg font-bold text-gray-900 flex items-center">
+                      <User className="h-4 w-4 mr-2 text-amber-600" />
+                      アカウント
+                    </h3>
+                    
+                    <div className="space-y-2">
+                      <SettingItem
+                        icon={Settings}
+                        title="アカウント設定"
+                        description="プロフィール情報とお気に入り店舗の管理"
+                        action={() => router.push('/profile/edit')}
+                      />
+                      
+                      <SettingItem
+                        icon={Bell}
+                        title="通知設定"
+                        description="アプリ内通知とメール通知の詳細設定"
+                        action={() => { /* TODO: 通知設定ページへ */ }}
+                      />
+                      
+                      <SettingItem
+                        icon={LogOut}
+                        title="ログアウト"
+                        description="アカウントからログアウトします"
+                        action={handleLogout}
+                        variant="danger"
+                      />
+                      <div className="h-4 mb-2" />
+                    </div>
+                  </motion.div>
                 </div>
-              ) : (
-                <div className="text-center text-muted-foreground py-8">
-                  <Heart className="mx-auto h-12 w-12 mb-2" />
-                  <p>お気に入り店舗はまだ登録されていません。</p>
-                  <Button variant="link" onClick={() => router.push('/profile/edit')} className="mt-2">
-                    プロフィール編集画面から追加する
-                  </Button>
-                </div>
-              )}
-              {/* 余白を追加 */}
-              <div className="h-4"></div>
+              </TabsContent>
+            </div>
+          </Tabs>
+        </div>
+
+        {/* ポイント説明モーダル */}
+        <CustomModal
+          isOpen={showPointsModal}
+          onClose={() => setShowPointsModal(false)}
+          title="ポイントシステム"
+          description="投稿でポイントを貯めて、お得な特典と交換しよう！"
+          showCloseButton={true}
+          dialogContentClassName="max-w-sm"
+        >
+          <div className="flex items-center text-lg font-bold text-gray-900 mb-4">
+            <Award className="h-5 w-5 mr-2 text-yellow-500" />
+            ポイントシステム
+          </div>
+          <div className="space-y-3 py-3">
+            <div className="bg-gradient-to-r from-yellow-50 to-amber-50 rounded-lg p-3 border border-yellow-200">
+              <h4 className="font-semibold text-gray-900 mb-1 flex items-center text-sm">
+                <Sparkles className="h-4 w-4 mr-1 text-yellow-500" />
+                ポイントの貯め方
+              </h4>
+              <p className="text-xs text-gray-700">
+                投稿をするたびに、<span className="font-bold text-yellow-700">最大5ポイント</span>をもらえます。
+                質の高い投稿ほど、より多くのポイントがもらえます！
+              </p>
+            </div>
+            
+            <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-3 border border-green-200">
+              <h4 className="font-semibold text-gray-900 mb-1 flex items-center text-sm">
+                <ShoppingBag className="h-4 w-4 mr-1 text-green-500" />
+                ポイントの使い方
+              </h4>
+              <p className="text-xs text-gray-700">
+                貯まったポイントは、<span className="font-bold text-green-700">Amazonギフト券</span>と交換できます。
+                さまざまな額面のギフト券をご用意しています。
+              </p>
+            </div>
+            
+            <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
+              <p className="text-xs text-blue-600 text-center">
+                ※ ポイントシステムは現在開発中です。近日公開予定！
+              </p>
             </div>
           </div>
-        </TabsContent>
-        
-        {/* 設定タブ */}
-        <TabsContent value="settings" className="mt-0">
-          <div 
-            className="custom-scrollbar overscroll-none"
-            style={{ 
-              height: 'calc(100vh - 380px)',
-              maxHeight: 'calc(100vh - 380px)',
-              overflowY: 'auto',
-              overflowX: 'hidden'
-            }}
-          >
-            <div className="p-4 space-y-6 pb-safe">
-              <div>
-                <h3 className="font-medium mb-2">通知設定</h3>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label htmlFor="push-notifications">プッシュ通知</Label>
-                      <p className="text-xs text-muted-foreground">お気に入り店舗の値引き情報をお知らせします</p>
-                    </div>
-                    <Switch id="push-notifications" defaultChecked />
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label htmlFor="email-notifications">メール通知</Label>
-                      <p className="text-xs text-muted-foreground">メールでお得情報をお知らせします</p>
-                    </div>
-                    <Switch id="email-notifications" />
-                  </div>
-                </div>
-              </div>
-              
-              <Separator />
-              
-              <div>
-                <h3 className="font-medium mb-2">アカウント</h3>
-                <div className="space-y-2">
-                  <Button 
-                    variant="outline" 
-                    className="w-full justify-start" 
-                    onClick={() => router.push('/profile/edit')}
-                  >
-                    <Settings className="mr-2 h-4 w-4" />
-                    アカウント設定
-                  </Button>
-                  
-                  <Button 
-                    variant="outline" 
-                    className="w-full justify-start" 
-                    onClick={() => { /* TODO: 通知設定ページへ */ }}
-                  >
-                    <Bell className="mr-2 h-4 w-4" />
-                    通知設定
-                  </Button>
-                  
-                  <Button 
-                    variant="outline" 
-                    className="w-full justify-start text-destructive" 
-                    onClick={handleLogout}
-                  >
-                    <LogOut className="mr-2 h-4 w-4" />
-                    ログアウト
-                  </Button>
-                </div>
-              </div>
-              {/* 余白を追加 */}
-              <div className="h-4"></div>
-            </div>
-          </div>
-        </TabsContent>
-      </Tabs>
+        </CustomModal>
+      </div>
     </AppLayout>
   );
 }

@@ -31,6 +31,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLoadScript, Autocomplete, GoogleMap } from "@react-google-maps/api";
 import { useLoading } from '@/contexts/loading-context';
 import { setTimeout } from 'timers/promises';
+import { PostCard } from '@/components/posts/post-card';
 
 declare global {
   interface Window {
@@ -169,6 +170,7 @@ export default function PostPage() {
   const { formState: { isValid, isSubmitting } } = form;
   
   const selectedCategory = form.watch('category');
+  const watchedFormValues = form.watch(); // フォームの全フィールドを監視
 
   useEffect(() => {
     return () => {
@@ -1080,22 +1082,6 @@ export default function PostPage() {
                 投稿した記事は後から削除や編集を行うことはできません。
                 内容をよくご確認の上、本当に投稿しますか？
               </p>
-              {imagePreviewUrl && (
-                <div className="flex justify-center mb-4">
-                  <img src={imagePreviewUrl} alt="投稿プレビュー" className="max-h-48 rounded-md object-contain border" />
-                </div>
-              )}
-              {/* 位置情報確認表示 - 位置情報がある場合のみ
-              {formDataToSubmit && formDataToSubmit.store_latitude && formDataToSubmit.store_longitude && (
-                <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-md">
-                  <div className="flex items-center space-x-2">
-                    <MapPin className="h-5 w-5 text-green-600" />
-                    <span className="text-sm text-green-800">
-                      位置情報: 緯度 {formDataToSubmit.store_latitude.toFixed(6)}, 経度 {formDataToSubmit.store_longitude.toFixed(6)}
-                    </span>
-                  </div>
-                </div>
-              )} */}
               <div className="mt-6 flex justify-end space-x-3">
                 <Button variant="outline" onClick={() => {
                   setShowConfirmModal(false);
