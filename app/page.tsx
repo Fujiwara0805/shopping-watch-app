@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, ShoppingCart, MapPin, Bell, Users, Menu, X } from 'lucide-react';
+import { ArrowRight, ShoppingCart, MapPin, Bell, Users, Menu, X, Leaf } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export default function Home() {
@@ -141,7 +141,7 @@ export default function Home() {
                     goToOnboarding();
                   }}
                 >
-                  無料で始める
+                  さっそく始める！
                 </Button>
               </div>
             </motion.div>
@@ -157,21 +157,24 @@ export default function Home() {
               className="text-center"
             >
               <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold mb-4 md:mb-6">
-                お気に入りのお店の
-                <span className="text-primary block sm:inline">お得な情報</span>
-                <br className="hidden sm:block md:hidden" />
-                をリアルタイムで
+                毎日をもっと賢く、<br className="sm:hidden" />もっと楽しく。
+                <br className="sm:hidden" />
+                <br className="sm:hidden" />
+                <span className="text-primary block sm:inline">
+                  あなたの街のお得情報を、<br className="sm:hidden" />みんなでシェアして、<br className="sm:hidden" />おトクな毎日を送ろう！！！
+                </span>
               </h1>
-              <p className="text-lg sm:text-xl text-muted-foreground mb-6 md:mb-8 max-w-2xl mx-auto px-2">
-                今日のお店のお得な情報は何かな？<br />
-                みんなで共有して、楽しくお買い物しましょう！
+              <p className="text-xl sm:text-2xl text-muted-foreground mb-6 md:mb-8 max-w-2xl mx-auto px-2">
+              今日は、どこのお店でお得があるかな？
+                <br className="sm:hidden" />
+                トクドクは、お<span className="text-primary">トク</span>な情報が<br className="sm:hidden" />あなたにと<span className="text-primary">ドク</span>サービスです。
               </p>
               <Button 
                 size="lg" 
                 onClick={goToOnboarding}
                 className="animate-pulse h-12 md:h-14 rounded-full text-base"
               >
-                無料で始める
+                さっそく始める！
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </motion.div>
@@ -180,36 +183,45 @@ export default function Home() {
 
         <section className="py-12 md:py-16 px-4 bg-muted/50">
           <div className="container mx-auto max-w-6xl">
-            <h2 className="text-2xl sm:text-3xl font-bold text-center mb-8 md:mb-12">主な機能</h2>
+            <h2 className="text-2xl sm:text-3xl font-bold text-center mb-8 md:mb-12">
+              毎日がちょっと特別になる、<br className="sm:hidden" />トクドクの便利な機能
+            </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8">
               {[
                 {
                   icon: MapPin,
-                  title: "お気に入りのお店",
-                  description: "近所のお店を簡単に登録。お店のお得な情報をいち早くお知らせ♪",
+                  title: "近所の「おトク」を発見",
+                  description: "お気に入りのお店を登録。\nお店のお得な情報をいち早くキャッチ！",
                   color: "bg-primary/10",
                   textColor: "text-primary"
                 },
                 {
                   icon: Users,
-                  title: "みんなで共有",
-                  description: "見つけたお得な情報を投稿。写真、感想、お店の情報を楽しくシェア♪",
+                  title: "みんなで「お得」をシェア",
+                  description: "見つけたお得な情報を簡単に投稿。\n感動を分かち合おう！",
                   color: "bg-secondary/10",
                   textColor: "text-secondary"
                 },
                 {
                   icon: Bell,
-                  title: "通知機能",
-                  description: "お気に入り店舗の新商品やお得な情報が投稿されると、すぐにお知らせ♪",
+                  title: "「見逃さない」お得情報",
+                  description: "お気に入り店舗の新商品やお得な情報が\n投稿されると、すぐに通知がとドク！",
                   color: "bg-accent/10",
                   textColor: "text-accent"
                 },
                 {
                   icon: ShoppingCart,
-                  title: "タイムライン",
-                  description: "みんなのお得な情報をタイムラインでチェック。カテゴリやお店で簡単検索♪",
+                  title: "「欲しい」がすぐに見つかる",
+                  description: "タイムラインのみんなの投稿から、\nあなただけのおトクを見つけよう！",
                   color: "bg-destructive/10",
                   textColor: "text-destructive"
+                },
+                {
+                  icon: Leaf,
+                  title: "フードロス削減に貢献",
+                  description: "お得な情報共有が、お店の廃棄削減や、\nあなたのお財布にも優しい選択に。",
+                  color: "bg-green-500/10",
+                  textColor: "text-green-500"
                 }
               ].map((feature, index) => (
                 <motion.div
@@ -221,10 +233,17 @@ export default function Home() {
                   className="flex flex-col items-center text-center p-5 md:p-6 rounded-2xl bg-background border shadow-sm hover:shadow-md transition-shadow"
                 >
                   <div className={`${feature.color} p-3 rounded-full mb-3 md:mb-4`}>
-                    <feature.icon className={`h-6 w-6 ${feature.textColor}`} />
+                    <feature.icon className={`h-8 w-8 ${feature.textColor}`} />
                   </div>
-                  <h3 className="text-lg font-semibold mb-2">{feature.title}</h3>
-                  <p className="text-sm md:text-base text-muted-foreground">{feature.description}</p>
+                  <h3 className="text-2xl font-semibold mb-2">{feature.title}</h3>
+                  <p className="text-lg md:text-xl text-muted-foreground">
+                    {feature.description.split('\n').map((line, i) => (
+                      <span key={i}>
+                        {line}
+                        {i < feature.description.split('\n').length - 1 && <br />}
+                      </span>
+                    ))}
+                  </p>
                 </motion.div>
               ))}
             </div>
@@ -240,22 +259,27 @@ export default function Home() {
               viewport={{ once: true }}
             >
               <h2 className="text-2xl sm:text-3xl font-bold mb-4 md:mb-6">
-                さぁ、お得な情報を探しに行きましょう！
+                あなたも「トクドク」で<br className="sm:hidden" />お得な情報を入手しよう！
               </h2>
-              <p className="text-lg sm:text-xl text-muted-foreground mb-6 md:mb-8 max-w-2xl mx-auto px-2">
-                無料で簡単に登録できます。<br />
-                毎日のお買い物がもっと楽しくなりますよ！
+              <p className="text-xl sm:text-2xl text-muted-foreground mb-6 md:mb-8 max-w-2xl mx-auto px-2">
+                毎日のお買い物を、<br className="sm:hidden" />もっと賢く、もっと楽しく。<br />
+                登録・サービス利用料金無料！！！
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button 
-                  size="lg" 
+                <Button
+                  size="lg"
                   onClick={goToOnboarding}
                   className="h-12 md:h-14 rounded-full"
                 >
-                  無料で始める
+                  さっそく始める！
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
-                <Button size="lg" variant="outline" asChild className="h-12 md:h-14 rounded-full">
+                <Button
+                  size="lg"
+                  variant="outline"
+                  asChild
+                  className="h-12 md:h-14 rounded-full"
+                >
                   <Link href="/login">ログイン</Link>
                 </Button>
               </div>
@@ -265,7 +289,12 @@ export default function Home() {
 
         <footer className="py-8 px-4 border-t pb-[calc(var(--sab)+2rem)]">
           <div className="container mx-auto max-w-6xl text-center text-sm text-muted-foreground">
-            <p>© 2025 トクドク All rights reserved.</p>
+            <p className="mb-2">© 2025 トクドク All rights reserved.</p>
+            <div className="flex justify-center space-x-4 text-xs md:text-sm">
+              <Link href="/security-policy" className="hover:underline">セキュリティポリシー</Link>
+              <Link href="/terms-of-service" className="hover:underline">利用規約</Link>
+              <Link href="/release-notes" className="hover:underline">リリースノート</Link>
+            </div>
           </div>
         </footer>
       </div>
