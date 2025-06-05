@@ -4,7 +4,7 @@ import LineProvider from 'next-auth/providers/line';
 import { supabase } from '@/lib/supabaseClient';
 import { v4 as uuidv4 } from 'uuid';
 
-export const authOptions: AuthOptions = {
+const authOptions: AuthOptions = {
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
