@@ -21,8 +21,9 @@ export function useStoreSearch({
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!currentLocation.latitude || !currentLocation.longitude) {
+    if (currentLocation.latitude === null || currentLocation.longitude === null) {
       setLoading(false);
+      setNearbyStores([]);
       return;
     }
 
@@ -40,8 +41,8 @@ export function useStoreSearch({
 
     const filtered = stores.filter(store => {
       const distance = calculateDistance(
-        currentLocation.latitude,
-        currentLocation.longitude,
+        currentLocation.latitude!,
+        currentLocation.longitude!,
         store.latitude,
         store.longitude
       );
