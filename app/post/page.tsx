@@ -52,7 +52,7 @@ const postSchema = z.object({
       return isNaN(num) ? 1 : num;
     },
     z.number({ invalid_type_error: '有効な数値を入力してください' })
-     .min(1, { message: '値引き率を選択してください' })
+     .min(1, { message: 'おトク率を選択してください' })
      .max(100, { message: '100%以下で入力してください' })
   ),
   price: z.preprocess(
@@ -220,7 +220,7 @@ export default function PostPage() {
     }
 
     if (values.discountRate === undefined || values.discountRate === null) {
-      setSubmitError("値引き率を選択してください。");
+      setSubmitError("おトク率を選択してください。");
       return;
     }
 
@@ -933,7 +933,7 @@ export default function PostPage() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-xl flex items-center font-semibold">
-                      <Calculator className="mr-2 h-6 w-6 " /> 値引き率 <span className="text-destructive ml-1">※</span> :
+                      <Calculator className="mr-2 h-6 w-6 " /> おトク率 <span className="text-destructive ml-1">※</span> :
                       <span className="ml-2 text-primary font-bold flex items-center">
                         {(() => {
                           const selectedOption = discountIcons.find(option => option.value === field.value);

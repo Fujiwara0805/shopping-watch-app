@@ -159,15 +159,11 @@ export function MapView() {
           map: map,
           title: "あなたの現在地",
           icon: {
-            path: starPath,
-            fillColor: '#FFD700', // 金色に近い黄色
-            fillOpacity: 1,
-            strokeColor: '#B8860B', // 暗めの金色 (枠線)
-            strokeWeight: 1,
-            scale: 1.5, // アイコンのサイズ調整
-            anchor: new window.google.maps.Point(12, 12), // SVGの中心点をアンカーに (viewBoxの中心)
+            url: "https://res.cloudinary.com/dz9trbwma/image/upload/v1749098791/%E9%B3%A9_azif4f.png", // Cloudinaryの画像URLに変更
+            scaledSize: new window.google.maps.Size(50, 50), // アイコンのサイズを調整
+            anchor: new window.google.maps.Point(25, 25), // アイコンの中心をアンカーに調整
           },
-          // animation: window.google.maps.Animation.DROP, // 星アイコンの場合はDROPアニメーションは合わないかも
+          animation: window.google.maps.Animation.DROP, 
         });
         setUserLocationMarker(newUserLocationMarker);
       }
