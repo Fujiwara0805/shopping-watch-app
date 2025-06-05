@@ -34,10 +34,12 @@ declare global {
 }
 
 export function MapView() {
-  console.log("MapView: Component rendering or re-rendering START");
+  console.log("MapView: Component rendering START");
   const { isLoaded: googleMapsLoaded, loadError: googleMapsLoadError } = useGoogleMapsApi();
 
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
+  const resizeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastHeightRef = useRef<number>(0);
 
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const { 
@@ -51,13 +53,103 @@ export function MapView() {
 
   const [mapInitialized, setMapInitialized] = useState(false);
   const [initializationError, setInitializationError] = useState<string | null>(null);
+  const [containerHeight, setContainerHeight] = useState<number>(400); // デフォルト値を設定
 
   const [selectedPlace, setSelectedPlace] = useState<google.maps.places.PlaceResult | null>(null);
   const [selectedPlaceMarker, setSelectedPlaceMarker] = useState<google.maps.Marker | null>(null);
   const [distanceToSelectedPlace, setDistanceToSelectedPlace] = useState<string | null>(null);
   const [userLocationMarker, setUserLocationMarker] = useState<google.maps.Marker | null>(null);
 
-  // MessageCard コンポーネントの定義をここに追加 (または再配置) してください
+  // スマートフォン専用の高さ計算関数（デバウンス付き）
+  const updateContainerHeight = useCallback(() => {
+    const isMobile = window.innerWidth <= 768;
+    const currentWindowHeight = window.innerHeight;
+    
+    // 高さが大きく変わっていない場合は処理をスキップ（無限ループ防止）
+    if (Math.abs(currentWindowHeight - lastHeightRef.current) < 10) {
+      return;
+    }
+    
+    lastHeightRef.current = currentWindowHeight;
+    
+    if (isMobile) {
+      // スマートフォンの場合：動的に計算
+      const windowHeight = window.innerHeight;
+      const visualViewportHeight = window.visualViewport?.height || windowHeight;
+      
+      // ヘッダー高さ（56px）+ ナビゲーション高さ（64px）
+      const headerHeight = 56;
+      const navHeight = 64;
+      
+      const calculatedHeight = Math.max(300, visualViewportHeight - headerHeight - navHeight);
+      
+      if (process.env.NODE_ENV === 'development') {
+        console.log('MapView: Mobile height calculation:', {
+          windowHeight,
+          visualViewportHeight,
+          calculatedHeight
+        });
+      }
+      
+      setContainerHeight(calculatedHeight);
+    } else {
+      // デスクトップの場合：フルハイト
+      const calculatedHeight = Math.max(400, currentWindowHeight - 120);
+      setContainerHeight(calculatedHeight);
+    }
+  }, []);
+
+  // 初期化とリサイズ監視（デバウンス付き）
+  useEffect(() => {
+    // 初期設定（遅延実行）
+    const initialTimeout = setTimeout(updateContainerHeight, 100);
+    
+    const handleResize = () => {
+      if (resizeTimeoutRef.current) {
+        clearTimeout(resizeTimeoutRef.current);
+      }
+      
+      resizeTimeoutRef.current = setTimeout(updateContainerHeight, 200);
+    };
+    
+    const handleOrientationChange = () => {
+      if (resizeTimeoutRef.current) {
+        clearTimeout(resizeTimeoutRef.current);
+      }
+      
+      // オリエンテーション変更時は少し遅延させる
+      resizeTimeoutRef.current = setTimeout(() => {
+        updateContainerHeight();
+        // マップがある場合はリサイズイベントを発火
+        if (map && window.google?.maps) {
+          window.google.maps.event.trigger(map, 'resize');
+        }
+      }, 300);
+    };
+
+    window.addEventListener('resize', handleResize, { passive: true });
+    window.addEventListener('orientationchange', handleOrientationChange, { passive: true });
+    
+    // Visual Viewport API がサポートされている場合
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', handleResize, { passive: true });
+    }
+    
+    return () => {
+      clearTimeout(initialTimeout);
+      if (resizeTimeoutRef.current) {
+        clearTimeout(resizeTimeoutRef.current);
+      }
+      
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('orientationchange', handleOrientationChange);
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', handleResize);
+      }
+    };
+  }, []); // 依存配列を空にして1回だけ実行
+
+  // MessageCard コンポーネントの定義
   const MessageCard = ({ icon: Icon, title, message, children, variant = 'default' }: {
     icon?: React.ElementType;
     title: string;
@@ -85,16 +177,33 @@ export function MapView() {
     );
   };
 
+  // 位置情報要求のuseEffect（条件を厳格化）
   useEffect(() => {
-    if (permissionState === 'granted' && !latitude && !longitude && !locationLoading && !map && !initializationError) {
-      console.log("MapView: Requesting location as permission is granted but no coordinates yet (useEffect 1).");
+    if (
+      permissionState === 'granted' && 
+      !latitude && 
+      !longitude && 
+      !locationLoading && 
+      !mapInitialized && 
+      !initializationError
+    ) {
+      console.log("MapView: Requesting location (conditions met)");
       requestLocation();
     }
-  }, [permissionState, latitude, longitude, locationLoading, map, initializationError, requestLocation]);
+  }, [permissionState, requestLocation]); // 依存配列を最小限に
 
+  // マップ初期化のuseEffect
   useEffect(() => {
-    if (googleMapsLoaded && mapContainerRef.current && !map && !googleMapsLoadError && latitude && longitude) {
-      console.log("MapView: Initializing map (all conditions met: googleMapsLoaded, mapContainerRef, no map, no loadError, location available).");
+    if (
+      googleMapsLoaded && 
+      mapContainerRef.current && 
+      !map && 
+      !googleMapsLoadError && 
+      latitude && 
+      longitude && 
+      containerHeight > 0
+    ) {
+      console.log("MapView: Initializing map with height:", containerHeight);
       setInitializationError(null);
 
       const initialCenter = { lat: latitude, lng: longitude };
@@ -104,7 +213,13 @@ export function MapView() {
         if (!window.google || !window.google.maps) {
           console.error("MapView: window.google.maps is not available yet.");
           setInitializationError("地図APIがまだ利用できません。再試行しています...");
-          return; // マップの初期化をスキップ
+          return;
+        }
+
+        // コンテナのサイズを明示的に設定
+        if (mapContainerRef.current) {
+          mapContainerRef.current.style.height = `${containerHeight}px`;
+          mapContainerRef.current.style.width = '100%';
         }
 
         const mapOptions: google.maps.MapOptions = {
@@ -114,71 +229,57 @@ export function MapView() {
           disableDefaultUI: true,
           zoomControl: true,
           gestureHandling: 'greedy',
+          fullscreenControl: false,
+          streetViewControl: false,
+          mapTypeControl: false,
         };
 
         const newMapInstance = new window.google.maps.Map(mapContainerRef.current, mapOptions);
-        setMap(newMapInstance);
-        setMapInitialized(true);
-        console.log("MapView: Map initialized successfully.");
+        
+        // マップが完全に読み込まれてから状態を更新
+        window.google.maps.event.addListenerOnce(newMapInstance, 'idle', () => {
+          setMap(newMapInstance);
+          setMapInitialized(true);
+          console.log("MapView: Map initialized successfully");
+        });
 
       } catch (error) {
         console.error("MapView: Error initializing map:", error);
         setInitializationError(`地図の初期化に失敗しました。${error instanceof Error ? error.message : String(error)}`);
         setMapInitialized(false);
       }
-    } else if (googleMapsLoadError) {
-      console.error("MapView: Google Maps API load error:", googleMapsLoadError.message);
-      setInitializationError(`地図APIの読み込みに失敗しました: ${googleMapsLoadError.message}`);
-    } else if (googleMapsLoaded && !mapContainerRef.current && !map && !mapInitialized) {
-      console.warn("MapView: Google Maps loaded, but mapContainerRef.current is STILL not available (and map not initialized).");
-    } else if (googleMapsLoaded && mapContainerRef.current && !map && !googleMapsLoadError && !(latitude && longitude) && (permissionState === 'denied' || (locationError && permissionState !== 'prompt'))) {
-      console.warn("MapView: Cannot initialize map. Location permission denied or error, and not in prompt state. Location:", latitude, longitude, "Error:", locationError, "Permission:", permissionState);
-       if (!initializationError) {
-           setInitializationError("位置情報が利用できないため地図を表示できません。設定を確認し、再度お試しください。");
-       }
     }
-  }, [googleMapsLoaded, map, latitude, longitude, permissionState, locationLoading, googleMapsLoadError, mapInitialized]);
+  }, [googleMapsLoaded, latitude, longitude, containerHeight]); // 依存配列を最小限に
 
+  // ユーザー位置マーカーのuseEffect
   useEffect(() => {
-    if (map && latitude && longitude) {
-      // window.google が存在することを確認
-      if (!window.google || !window.google.maps) {
-        console.warn("MapView: Skipping user location marker update, window.google.maps is not available.");
-        return;
-      }
+    if (map && latitude && longitude && window.google?.maps) {
       const userPosition = new window.google.maps.LatLng(latitude, longitude);
+      
       if (userLocationMarker) {
         userLocationMarker.setPosition(userPosition);
       } else {
-        // 星形のSVGパス (簡易的なもの)
-        // viewBox="0 0 24 24" を想定したパス
-        const starPath = "M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z";
-
         const newUserLocationMarker = new window.google.maps.Marker({
           position: userPosition,
           map: map,
           title: "あなたの現在地",
           icon: {
-            url: "https://res.cloudinary.com/dz9trbwma/image/upload/v1749098791/%E9%B3%A9_azif4f.png", // Cloudinaryの画像URLに変更
-            scaledSize: new window.google.maps.Size(50, 50), // アイコンのサイズを調整
-            anchor: new window.google.maps.Point(25, 25), // アイコンの中心をアンカーに調整
+            url: "https://res.cloudinary.com/dz9trbwma/image/upload/v1749098791/%E9%B3%A9_azif4f.png",
+            scaledSize: new window.google.maps.Size(50, 50),
+            anchor: new window.google.maps.Point(25, 25),
           },
           animation: window.google.maps.Animation.DROP, 
         });
         setUserLocationMarker(newUserLocationMarker);
       }
 
-      console.log("MapView: User location updated, recentering map and setting/updating user marker.");
       map.panTo(userPosition);
       const currentZoom = map.getZoom();
       if (currentZoom !== undefined && currentZoom < 15) {
         map.setZoom(15);
       }
-    } else if (userLocationMarker) {
-      userLocationMarker.setMap(null);
-      setUserLocationMarker(null);
     }
-  }, [map, latitude, longitude, userLocationMarker]);
+  }, [map, latitude, longitude]); // userLocationMarkerを依存配列から除外
 
   const handlePlaceSelected = (
     place: google.maps.places.PlaceResult,
@@ -195,9 +296,9 @@ export function MapView() {
       map.panTo(place.geometry.location);
       map.setZoom(16);
 
-          const marker = new window.google.maps.Marker({
-            position: place.geometry.location,
-            map: map,
+      const marker = new window.google.maps.Marker({
+        position: place.geometry.location,
+        map: map,
         title: place.name,
         animation: window.google.maps.Animation.DROP,
       });
@@ -223,8 +324,6 @@ export function MapView() {
     window.open(googleMapsUrl, '_blank');
   };
 
-  console.log("MapView: Component rendering or re-rendering END - Before return statement. Current state:", {permissionState, latitude, longitude, mapInitialized, initializationError, mapContainerRefExists: !!mapContainerRef.current, googleMapsLoaded, locationLoading});
-
   if (googleMapsLoadError) {
     return <MessageCard title="エラー" message={`地図の読み込みに失敗しました！再度リロードしてください。: ${googleMapsLoadError.message}`} variant="destructive" icon={AlertTriangle} />;
   }
@@ -233,9 +332,9 @@ export function MapView() {
      return <MessageCard title="エラー" message={initializationError} variant="destructive" icon={AlertTriangle} />;
   }
 
-  if (!googleMapsLoaded) {
+  if (!googleMapsLoaded || containerHeight === 0) {
     return (
-      <div className="relative h-full w-full">
+      <div className="relative w-full" style={{ height: containerHeight || '400px' }}>
         <div ref={mapContainerRef} id="map-canvas-placeholder" className="h-full w-full bg-muted opacity-0 pointer-events-none" />
         <div className="absolute inset-0 flex items-center justify-center bg-background/50 z-20">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
@@ -247,7 +346,7 @@ export function MapView() {
 
   if (locationLoading && !mapInitialized && !initializationError) {
     return (
-      <div className="relative h-full w-full">
+      <div className="relative w-full" style={{ height: containerHeight }}>
         <div ref={mapContainerRef} id="map-canvas-placeholder" className="h-full w-full bg-muted opacity-0 pointer-events-none" />
         <div className="absolute inset-0 flex items-center justify-center bg-background/50 z-20">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
@@ -259,7 +358,7 @@ export function MapView() {
   
   if (!mapInitialized && !initializationError) {
      return (
-        <div className="relative h-full w-full">
+        <div className="relative w-full" style={{ height: containerHeight }}>
             <div ref={mapContainerRef} id="map-canvas" className="h-full w-full bg-muted" />
             <div className="absolute inset-0 flex items-center justify-center bg-background/50 z-20">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
@@ -270,7 +369,7 @@ export function MapView() {
   }
   
   return (
-    <div className="relative h-full w-full overflow-hidden">
+    <div className="relative w-full overflow-hidden" style={{ height: containerHeight }}>
       <div ref={mapContainerRef} id="map-canvas" className="h-full w-full bg-muted" />
 
       {map && googleMapsLoaded && mapInitialized && (
@@ -289,7 +388,7 @@ export function MapView() {
         </div>
       )}
       
-      {permissionState === 'denied' && !locationError && (
+      {permissionState === 'denied' && locationError && (
          <MessageCard 
             title="位置情報を取得できません" 
             message={locationError}
@@ -298,10 +397,6 @@ export function MapView() {
           >
             <Button onClick={() => { console.log("MapView: Retry permission clicked."); requestLocation(); }}>再度許可を求める</Button>
          </MessageCard>
-      )}
-
-      {initializationError && mapInitialized && (
-          <MessageCard title="エラー" message={initializationError} variant="destructive" icon={AlertTriangle} />
       )}
 
       {selectedPlace && selectedPlace.geometry && map && mapInitialized && (

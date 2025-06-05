@@ -15,21 +15,36 @@ export default function MapPage() {
   const [showPointsModal, setShowPointsModal] = useState(false);
   
   useEffect(() => {
+    // ローディング時間を短縮してスマートフォンでの表示を早める
     const timer = setTimeout(() => {
       setLoading(false);
-    }, 1000);
+    }, 500); // 1000ms → 500ms に短縮
     
     return () => clearTimeout(timer);
   }, []);
 
+  // スマートフォン向けのローディングスケルトン
+  const LoadingSkeleton = () => (
+    <div 
+      className="w-full bg-muted animate-pulse flex items-center justify-center"
+      style={{ 
+        height: 'calc(100vh - 56px - 64px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))',
+        minHeight: '300px'
+      }}
+    >
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+        <p className="text-muted-foreground text-sm">地図を読み込み中...</p>
+      </div>
+    </div>
+  );
+
   return (
     <AppLayout>
-      <div className="h-full flex flex-col">
+      <div className="h-full flex flex-col overflow-hidden">
         <div className="flex-1 relative">
           {loading ? (
-            <div className="p-4 h-full">
-              <Skeleton className="h-full w-full rounded-lg" />
-            </div>
+            <LoadingSkeleton />
           ) : (
             <motion.div 
               key={'map'}
@@ -37,7 +52,7 @@ export default function MapPage() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.3 }}
-              className="h-full"
+              className="h-full w-full"
             >
               <MapView />
             </motion.div>

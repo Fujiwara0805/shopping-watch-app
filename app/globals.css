@@ -45,6 +45,9 @@
     
     /* 動的な viewport height のための CSS 変数 */
     --actual-vh: 100vh;
+    --vh: 1vh;
+    --sat: 0px;
+    --sab: 0px;
   }
 }
 
@@ -131,6 +134,84 @@
     -webkit-transform: translate3d(0, 0, 0);
     transform: translate3d(0, 0, 0);
   }
+  
+  /* Google Mapsコンテナ専用の高さ管理 */
+  .map-container {
+    width: 100%;
+    position: relative;
+  }
+  
+  /* スマートフォン専用のマップコンテナ */
+  @media screen and (max-width: 768px) {
+    .map-container {
+      /* 動的な高さ計算 */
+      height: calc(100vh - 56px - 64px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+      min-height: 300px;
+      max-height: calc(100vh - 120px);
+    }
+    
+    /* マップ初期化時の最小高さ保証 */
+    #map-canvas,
+    #map-canvas-placeholder {
+      min-height: 300px !important;
+    }
+  }
+  
+  /* タブレット・デスクトップ */
+  @media screen and (min-width: 769px) {
+    .map-container {
+      height: calc(100vh - 120px);
+      min-height: 400px;
+    }
+  }
+  
+  /* iOS Safari専用の高さ修正 */
+  @supports (-webkit-touch-callout: none) {
+    @media screen and (max-width: 768px) {
+      .map-container {
+        height: calc(100vh - 56px - 64px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+        height: calc(var(--vh, 1vh) * 100 - 120px);
+      }
+    }
+  }
+  
+  /* Android Chrome専用の高さ修正 */
+  @media screen and (max-width: 768px) and (orientation: portrait) {
+    .map-container {
+      height: calc(100vh - 56px - 64px);
+      height: calc(var(--vh, 1vh) * 100 - 120px);
+    }
+  }
+  
+  @media screen and (max-width: 768px) and (orientation: landscape) {
+    .map-container {
+      height: calc(100vh - 56px - 64px);
+      height: calc(var(--vh, 1vh) * 100 - 120px);
+    }
+  }
+  
+  /* Google Maps APIの強制リサイズ対応 */
+  .gmnoprint img {
+    max-width: none !important;
+  }
+  
+  /* マップ検索コントロールのモバイル対応 */
+  @media screen and (max-width: 768px) {
+    .map-search-control {
+      width: calc(100% - 2rem) !important;
+      max-width: none !important;
+    }
+  }
+  
+  /* 選択された場所の情報カードのモバイル対応 */
+  @media screen and (max-width: 768px) {
+    .selected-place-card {
+      width: calc(100% - 1.5rem) !important;
+      max-width: none !important;
+      left: 50% !important;
+      transform: translateX(-50%) !important;
+    }
+  }
 }
 
 @layer utilities {
@@ -193,5 +274,27 @@
   
   .max-h-dynamic {
     max-height: var(--actual-vh);
+  }
+  
+  /* スマートフォン向けのマップ専用ユーティリティ */
+  .map-mobile-height {
+    height: calc(100vh - 56px - 64px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+    min-height: 300px;
+  }
+  
+  .map-desktop-height {
+    height: calc(100vh - 120px);
+    min-height: 400px;
+  }
+  
+  /* 強制的な高さ設定（デバッグ用） */
+  .force-map-height {
+    height: 400px !important;
+    min-height: 400px !important;
+  }
+  
+  /* Visual Viewport対応 */
+  .visual-viewport-height {
+    height: calc(var(--vh, 1vh) * 100);
   }
 }
