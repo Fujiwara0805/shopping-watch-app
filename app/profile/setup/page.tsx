@@ -17,16 +17,16 @@ import { supabase } from '@/lib/supabaseClient';
 import { v4 as uuidv4 } from 'uuid';
 import FavoriteStoreInput from '@/components/profile/FavoriteStoreInput';
 import { useLoading } from '@/contexts/loading-context';
+import OnboardingModal from '@/components/onboarding/onboardingModal'; // 上記で作成したコンポーネント
 
-// app_profiles テーブルの型定義 (仮。必要に応じて調整)
+// app_profiles テーブルの型定義
 interface AppProfile {
-  id: string; // app_profiles テーブルの主キー (UUID)
-  user_id: string; // app_users テーブルのidへの外部キー
+  id: string;
+  user_id: string;
   display_name: string;
   bio?: string | null;
   avatar_url?: string | null;
-  updated_at?: string; // Supabaseが自動更新するなら不要な場合も
-  // created_at?: string;
+  updated_at?: string;
   favorite_store_1_id?: string | null;
   favorite_store_1_name?: string | null;
   favorite_store_2_id?: string | null;
@@ -53,6 +53,10 @@ export default function ProfileSetupPage() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
+  
+  // オンボーディングモーダルの状態管理
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [profileExists, setProfileExists] = useState<boolean | null>(null);
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
@@ -68,6 +72,7 @@ export default function ProfileSetupPage() {
 
   const { isValid } = form.formState;
 
+  // セッション管理とリダイレクト
   useEffect(() => {
     if (status === "loading") {
       showLoading();
@@ -82,8 +87,7 @@ export default function ProfileSetupPage() {
       console.warn("ProfileSetupPage: Session found, but session.user.id (for app_users) is MISSING. Redirecting or showing error.");
       setSubmitError("ユーザー認証情報が不完全です。再度ログインしてください。");
       hideLoading();
-    }
-    else {
+    } else {
       hideLoading();
       console.log("ProfileSetupPage: User session found with app_users.id, ready for setup:", session.user.id);
     }
@@ -95,6 +99,56 @@ export default function ProfileSetupPage() {
       });
     }
   }, [session, status, router, showLoading, hideLoading]);
+
+  // プロフィール存在チェック関数
+  const checkProfileExists = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('app_profiles')
+        .select('id')
+        .eq('user_id', userId)
+        .single();
+
+      if (error && error.code !== 'PGRST116') { // PGRST116 = "The result contains 0 rows"
+        console.error("Error checking profile existence:", error);
+        return false;
+      }
+
+      return !!data;
+    } catch (error) {
+      console.error("Error in checkProfileExists:", error);
+      return false;
+    }
+  };
+
+  // オンボーディングモーダルの表示制御
+  useEffect(() => {
+    const initializeOnboarding = async () => {
+      if (status === "authenticated" && session?.user?.id) {
+        // プロフィールの存在をチェック
+        const exists = await checkProfileExists(session.user.id);
+        setProfileExists(exists);
+        
+        // プロフィールが存在しない場合のみオンボーディングを表示
+        if (!exists) {
+          // 少し遅延してからモーダルを表示（ページロードの完了を待つ）
+          const timer = setTimeout(() => {
+            setShowOnboarding(true);
+          }, 1000);
+          
+          return () => clearTimeout(timer);
+        }
+      }
+    };
+
+    initializeOnboarding();
+  }, [status, session?.user?.id]);
+
+  // オンボーディングモーダルを閉じる処理
+  const handleOnboardingClose = () => {
+    setShowOnboarding(false);
+    setProfileExists(true);
+  };
 
   const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -189,6 +243,13 @@ export default function ProfileSetupPage() {
       }
 
       console.log("ProfileSetupPage: Profile saved successfully to app_profiles.");
+      
+      // プロフィール保存成功時にオンボーディングモーダルを閉じる
+      if (showOnboarding) {
+        setShowOnboarding(false);
+        setProfileExists(true);
+      }
+      
       router.push('/profile/setup/complete');
 
     } catch (error: any) {
@@ -211,18 +272,24 @@ export default function ProfileSetupPage() {
   if (session && session.user?.id && !submitError) {
     return (
       <AppLayout>
+        {/* オンボーディングモーダル */}
+        <OnboardingModal 
+          isOpen={showOnboarding} 
+          onClose={handleOnboardingClose}
+        />
+
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
           className="container mx-auto max-w-lg p-4 md:p-8"
         >
-           {!session.user.id && (
-             <div className="text-center p-4 my-4 text-red-700 bg-red-100 rounded-md">
-               <p>ユーザー情報の読み込みに問題が発生しました。お手数ですが、再度ログインし直してください。</p>
-               <Button onClick={() => router.push('/login')} className="mt-2">ログインページへ</Button>
-             </div>
-           )}
+          {!session.user.id && (
+            <div className="text-center p-4 my-4 text-red-700 bg-red-100 rounded-md">
+              <p>ユーザー情報の読み込みに問題が発生しました。お手数ですが、再度ログインし直してください。</p>
+              <Button onClick={() => router.push('/login')} className="mt-2">ログインページへ</Button>
+            </div>
+          )}
 
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 pb-20">
@@ -231,39 +298,39 @@ export default function ProfileSetupPage() {
                   <ImageIcon className="mr-2 h-7 w-7" /> プロフィール画像
                 </FormLabel>
                 <FormControl>
-                   <div className="flex flex-col items-center space-y-3 p-6 border-2 border-dashed rounded-lg hover:border-primary transition-colors cursor-pointer bg-card">
-                      <Input
-                         id="avatar-upload"
-                         type="file"
-                         accept="image/png, image/jpeg, image/webp"
-                         onChange={handleAvatarUpload}
-                         className="hidden"
-                         disabled={isSaving}
-                       />
-                       {avatarPreviewUrl ? (
-                         <div className="relative group">
-                           <img src={avatarPreviewUrl} alt="アバタープレビュー" className="w-24 h-24 rounded-full object-cover" />
-                           <Button
-                             type="button"
-                             variant="destructive"
-                             size="icon"
-                             className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity rounded-full"
-                             onClick={removeAvatar}
-                             disabled={isSaving}
-                           >
-                             <X className="h-4 w-4" />
-                           </Button>
-                         </div>
-                       ) : (
-                         <label htmlFor="avatar-upload" className="flex flex-col items-center space-y-2 cursor-pointer text-muted-foreground">
-                           <Upload className="h-12 w-12" />
-                           <p className="text-lg">画像をアップロード</p>
-                           <p className="text-sm">PNG, JPG, WEBP (最大5MB)</p>
-                         </label>
-                       )}
-                    </div>
+                  <div className="flex flex-col items-center space-y-3 p-6 border-2 border-dashed rounded-lg hover:border-primary transition-colors cursor-pointer bg-card">
+                    <Input
+                      id="avatar-upload"
+                      type="file"
+                      accept="image/png, image/jpeg, image/webp"
+                      onChange={handleAvatarUpload}
+                      className="hidden"
+                      disabled={isSaving}
+                    />
+                    {avatarPreviewUrl ? (
+                      <div className="relative group">
+                        <img src={avatarPreviewUrl} alt="アバタープレビュー" className="w-24 h-24 rounded-full object-cover" />
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="icon"
+                          className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity rounded-full"
+                          onClick={removeAvatar}
+                          disabled={isSaving}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <label htmlFor="avatar-upload" className="flex flex-col items-center space-y-2 cursor-pointer text-muted-foreground">
+                        <Upload className="h-12 w-12" />
+                        <p className="text-lg">画像をアップロード</p>
+                        <p className="text-sm">PNG, JPG, WEBP (最大5MB)</p>
+                      </label>
+                    )}
+                  </div>
                 </FormControl>
-                 <FormMessage />
+                <FormMessage />
               </FormItem>
 
               <FormField
