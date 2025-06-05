@@ -18,99 +18,91 @@ export default function AppLayout({
   showNav = true 
 }: AppLayoutProps) {
   const pathname = usePathname();
-  const resizeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const lastHeightRef = useRef<number>(0);
   
+  // スマートフォン環境の検出
+  const getIsMobile = (): boolean => {
+    if (typeof window === 'undefined') return false;
+    
+    const userAgent = navigator.userAgent.toLowerCase();
+    const isMobileUserAgent = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
+    const isMobileWidth = window.innerWidth <= 768;
+    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    
+    return isMobileUserAgent || (isMobileWidth && isTouchDevice);
+  };
+
   // スマートフォン向けの viewport height 設定
   useEffect(() => {
     const updateViewportHeight = () => {
+      const isMobile = getIsMobile();
       const currentHeight = window.innerHeight;
       
-      // 高さが変わっていない場合は処理をスキップ（無限ループ防止）
-      if (Math.abs(currentHeight - lastHeightRef.current) < 5) {
-        return;
-      }
-      
-      lastHeightRef.current = currentHeight;
-      
-      // 実際の viewport height を取得
+      // CSS変数を設定
       const vh = currentHeight * 0.01;
       document.documentElement.style.setProperty('--vh', `${vh}px`);
       
-      // Safe area inset の設定（値の重複を避ける）
-      const satValue = getComputedStyle(document.documentElement).getPropertyValue('--sat');
-      const sabValue = getComputedStyle(document.documentElement).getPropertyValue('--sab');
-      
-      if (!satValue || satValue === '') {
-        document.documentElement.style.setProperty('--sat', '0px');
-      }
-      if (!sabValue || sabValue === '') {
-        document.documentElement.style.setProperty('--sab', '0px');
-      }
-      
-      // 動的な高さ計算（スマートフォン専用）
-      const isMobile = window.innerWidth <= 768;
       if (isMobile) {
-        const windowHeight = window.innerHeight;
-        const visualViewportHeight = window.visualViewport?.height || windowHeight;
-        const actualHeight = Math.min(windowHeight, visualViewportHeight);
+        // スマートフォンの場合、より保守的なアプローチ
+        const visualViewportHeight = window.visualViewport?.height || currentHeight;
+        const actualHeight = Math.min(currentHeight, visualViewportHeight);
         
+        // スマートフォン用の実際の高さを設定
         document.documentElement.style.setProperty('--actual-vh', `${actualHeight}px`);
+        document.documentElement.style.setProperty('--mobile-vh', `${actualHeight}px`);
         
-        // デバッグログを制限（開発環境のみ）
         if (process.env.NODE_ENV === 'development') {
-          console.log('AppLayout: Mobile viewport update:', {
-            windowHeight,
+          console.log('AppLayout: Mobile viewport:', {
+            currentHeight,
             visualViewportHeight,
             actualHeight,
-            innerWidth: window.innerWidth
+            userAgent: navigator.userAgent.substring(0, 50)
           });
         }
+      } else {
+        // デスクトップの場合
+        document.documentElement.style.setProperty('--actual-vh', `${currentHeight}px`);
+        document.documentElement.style.setProperty('--mobile-vh', `${currentHeight}px`);
       }
     };
 
-    // 初期設定（遅延実行で安定化）
-    const initialTimeout = setTimeout(updateViewportHeight, 100);
+    // 初期設定
+    updateViewportHeight();
 
-    // デバウンス処理を追加したリサイズハンドラー
+    // 複数のタイミングで実行（スマートフォンの安定性向上）
+    const timeouts = [
+      setTimeout(updateViewportHeight, 100),
+      setTimeout(updateViewportHeight, 500),
+    ];
+
+    // イベントリスナー
     const handleResize = () => {
-      if (resizeTimeoutRef.current) {
-        clearTimeout(resizeTimeoutRef.current);
-      }
-      
-      resizeTimeoutRef.current = setTimeout(updateViewportHeight, 150);
+      setTimeout(updateViewportHeight, 50);
     };
     
     const handleOrientationChange = () => {
-      if (resizeTimeoutRef.current) {
-        clearTimeout(resizeTimeoutRef.current);
-      }
-      
-      // オリエンテーション変更は少し長めの遅延
-      resizeTimeoutRef.current = setTimeout(updateViewportHeight, 300);
+      setTimeout(updateViewportHeight, 200);
+    };
+
+    const handleVisualViewportChange = () => {
+      setTimeout(updateViewportHeight, 50);
     };
 
     window.addEventListener('resize', handleResize, { passive: true });
     window.addEventListener('orientationchange', handleOrientationChange, { passive: true });
     
-    // Visual Viewport API のサポート確認（デバウンス付き）
     if (window.visualViewport) {
-      window.visualViewport.addEventListener('resize', handleResize, { passive: true });
+      window.visualViewport.addEventListener('resize', handleVisualViewportChange, { passive: true });
     }
 
     return () => {
-      clearTimeout(initialTimeout);
-      if (resizeTimeoutRef.current) {
-        clearTimeout(resizeTimeoutRef.current);
-      }
-      
+      timeouts.forEach(clearTimeout);
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('orientationchange', handleOrientationChange);
       if (window.visualViewport) {
-        window.visualViewport.removeEventListener('resize', handleResize);
+        window.visualViewport.removeEventListener('resize', handleVisualViewportChange);
       }
     };
-  }, []); // 依存配列を空にして1回だけ実行
+  }, []);
   
   // For page transitions
   const variants = {
@@ -123,14 +115,25 @@ export default function AppLayout({
     <div 
       className="flex flex-col bg-background"
       style={{ 
-        // シンプルなフォールバック値を使用
-        minHeight: '100vh',
-        height: '100vh'
+        // スマートフォンに最適化された高さ設定
+        minHeight: 'calc(var(--mobile-vh, 100vh))',
+        height: 'calc(var(--mobile-vh, 100vh))',
+        maxHeight: 'calc(var(--mobile-vh, 100vh))',
+        overflow: 'hidden' // スクロール防止
       }}
     >
       {showHeader && <AppHeader />}
       
-      <main className="flex-1 relative overflow-hidden">
+      <main 
+        className="flex-1 relative"
+        style={{
+          overflow: 'hidden',
+          // メインコンテンツエリアの高さを明示的に計算
+          height: showHeader 
+            ? 'calc(var(--mobile-vh, 100vh) - 56px)' // ヘッダー分を差し引く
+            : 'calc(var(--mobile-vh, 100vh))'
+        }}
+      >
         <motion.div
           key={pathname}
           initial="hidden"
@@ -138,13 +141,19 @@ export default function AppLayout({
           exit="exit"
           variants={variants}
           transition={{ duration: 0.3, type: 'tween' }}
-          className={`absolute inset-0 flex flex-col ${
-            showNav 
-              ? 'pb-16 md:pb-0' // ナビゲーション分のパディング
-              : 'pb-0'
-          }`}
+          className="absolute inset-0 flex flex-col overflow-hidden"
+          style={{
+            // ナビゲーション分のパディングを明示的に設定
+            paddingBottom: showNav ? '64px' : '0px'
+          }}
         >
-          <div className="flex-1 overflow-hidden">
+          <div 
+            className="flex-1"
+            style={{
+              overflow: 'hidden',
+              height: '100%'
+            }}
+          >
             {children}
           </div>
         </motion.div>

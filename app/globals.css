@@ -48,16 +48,25 @@
     --vh: 1vh;
     --sat: 0px;
     --sab: 0px;
+    --mobile-vh: 100vh;
   }
-}
 
-@layer base {
   * {
     @apply border-border;
   }
   
-  body {
+  /* 本体要素のスクロール防止とベース設定 */
+  html, body {
     @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    -webkit-tap-highlight-color: transparent;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+    position: relative;
+    width: 100%;
+  }
+  
+  body {
     font-feature-settings: "rlig" 1, "calt" 1;
     -webkit-tap-highlight-color: transparent;
     text-rendering: optimizeLegibility;
@@ -141,8 +150,26 @@
     position: relative;
   }
   
-  /* スマートフォン専用のマップコンテナ */
+  /* スマートフォン専用の高さ修正（強化版） */
   @media screen and (max-width: 768px) {
+    html, body {
+      height: 100vh;
+      height: calc(var(--mobile-vh, 100vh));
+      max-height: 100vh;
+      max-height: calc(var(--mobile-vh, 100vh));
+      overflow: hidden;
+    }
+
+    /* メインアプリコンテナ */
+    #__next {
+      height: 100vh;
+      height: calc(var(--mobile-vh, 100vh));
+      max-height: 100vh;
+      max-height: calc(var(--mobile-vh, 100vh));
+      overflow: hidden;
+    }
+
+    /* スマートフォン専用のマップコンテナ */
     .map-container {
       /* 動的な高さ計算 */
       height: calc(100vh - 56px - 64px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
@@ -154,6 +181,23 @@
     #map-canvas,
     #map-canvas-placeholder {
       min-height: 300px !important;
+    }
+
+    /* Google Maps コンテナの強制設定 */
+    .map-container,
+    #map-canvas,
+    #map-canvas-placeholder {
+      position: relative !important;
+      overflow: hidden !important;
+    }
+
+    /* スマートフォンでのマップ高さ強制設定 */
+    .smartphone-map-container {
+      height: calc(var(--mobile-vh, 100vh) - 56px - 64px) !important;
+      min-height: 300px !important;
+      max-height: calc(var(--mobile-vh, 100vh) - 100px) !important;
+      overflow: hidden !important;
+      position: relative !important;
     }
   }
   
@@ -168,9 +212,24 @@
   /* iOS Safari専用の高さ修正 */
   @supports (-webkit-touch-callout: none) {
     @media screen and (max-width: 768px) {
+      html, body {
+        height: -webkit-fill-available;
+        height: calc(var(--mobile-vh, 100vh));
+      }
+
+      #__next {
+        height: -webkit-fill-available;
+        height: calc(var(--mobile-vh, 100vh));
+      }
+
       .map-container {
         height: calc(100vh - 56px - 64px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
         height: calc(var(--vh, 1vh) * 100 - 120px);
+      }
+
+      .smartphone-map-container {
+        height: calc(-webkit-fill-available - 120px) !important;
+        height: calc(var(--mobile-vh, 100vh) - 120px) !important;
       }
     }
   }
@@ -187,6 +246,18 @@
     .map-container {
       height: calc(100vh - 56px - 64px);
       height: calc(var(--vh, 1vh) * 100 - 120px);
+    }
+
+    .smartphone-map-container {
+      height: calc(var(--mobile-vh, 100vh) - 80px) !important;
+      min-height: 250px !important;
+    }
+  }
+
+  /* PWA環境での追加修正 */
+  @media screen and (max-width: 768px) and (display-mode: standalone) {
+    .smartphone-map-container {
+      height: calc(var(--mobile-vh, 100vh) - 100px) !important;
     }
   }
   
@@ -296,5 +367,36 @@
   /* Visual Viewport対応 */
   .visual-viewport-height {
     height: calc(var(--vh, 1vh) * 100);
+  }
+
+  /* スマートフォン専用ユーティリティクラス */
+  .mobile-full-height {
+    height: calc(var(--mobile-vh, 100vh));
+    max-height: calc(var(--mobile-vh, 100vh));
+  }
+
+  .mobile-content-height {
+    height: calc(var(--mobile-vh, 100vh) - 120px);
+    min-height: 300px;
+  }
+
+  .mobile-no-scroll {
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* Google Maps 専用クラス */
+  .force-map-dimensions {
+    width: 100% !important;
+    position: relative !important;
+    overflow: hidden !important;
+  }
+
+  @media screen and (max-width: 768px) {
+    .force-map-dimensions {
+      height: calc(var(--mobile-vh, 100vh) - 120px) !important;
+      min-height: 300px !important;
+      max-height: calc(var(--mobile-vh, 100vh) - 100px) !important;
+    }
   }
 }
