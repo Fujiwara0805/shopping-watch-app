@@ -42,6 +42,9 @@
     --color-yellow: 45 100% 60%;
     --color-gray: 0 0% 96%;
     --color-brown: 25 80% 25%;
+    
+    /* 動的な viewport height のための CSS 変数 */
+    --actual-vh: 100vh;
   }
 }
 
@@ -86,6 +89,47 @@
   .no-select {
     -webkit-user-select: none;
     user-select: none;
+  }
+  
+  /* スマートフォン向けの高さ修正 */
+  .dynamic-height {
+    height: var(--actual-vh);
+    min-height: var(--actual-vh);
+  }
+  
+  /* iOS Safari のアドレスバー対応 */
+  @supports (-webkit-touch-callout: none) {
+    .ios-height-fix {
+      height: -webkit-fill-available;
+      min-height: -webkit-fill-available;
+    }
+  }
+  
+  /* スワイプコンテナの最適化 */
+  .swipe-container {
+    height: var(--actual-vh);
+    overflow: hidden;
+    position: relative;
+    /* GPU加速を有効にする */
+    transform: translateZ(0);
+    will-change: transform;
+  }
+  
+  /* セクション共通スタイル */
+  .swipe-section {
+    height: var(--actual-vh);
+    min-height: var(--actual-vh);
+    max-height: var(--actual-vh);
+    overflow: hidden;
+    position: relative;
+  }
+  
+  /* タッチスクロールの最適化 */
+  .touch-optimized {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: none;
+    -webkit-transform: translate3d(0, 0, 0);
+    transform: translate3d(0, 0, 0);
   }
 }
 
@@ -136,5 +180,18 @@
   /* Touch optimization */
   .touch-manipulation {
     touch-action: manipulation;
+  }
+  
+  /* Dynamic viewport height utilities */
+  .h-dynamic {
+    height: var(--actual-vh);
+  }
+  
+  .min-h-dynamic {
+    min-height: var(--actual-vh);
+  }
+  
+  .max-h-dynamic {
+    max-height: var(--actual-vh);
   }
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence, PanInfo } from 'framer-motion';
@@ -35,7 +35,7 @@ const LPTabs = ({ activeTab, setActiveTab }: { activeTab: string; setActiveTab: 
   </div>
 );
 
-// スワイプインジケーターコンポーネント
+// スワイプインジケーターコンポーネント（修正版）
 const SwipeIndicator = ({ currentSection, totalSections, onSectionClick }: { currentSection: number; totalSections: number; onSectionClick: (index: number) => void }) => (
   <div className="fixed right-4 top-1/2 transform -translate-y-1/2 z-50 flex flex-col space-y-3">
     {Array.from({ length: totalSections }).map((_, index) => (
@@ -111,7 +111,7 @@ const NormalLP = ({ goToOnboarding, mobileMenuOpen, setMobileMenuOpen, scrollPos
             transition={{ duration: 0.6 }}
             className="text-center"
           >
-            <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold mb-4 md:mb-6">
+            <h1 className="text-2xl sm:text-4xl md:text-6xl font-bold mb-4 md:mb-6">
               毎日をもっと賢く、<br className="sm:hidden" />もっと楽しく。
               <br className="sm:hidden" />
               <br className="sm:hidden" />
@@ -120,7 +120,7 @@ const NormalLP = ({ goToOnboarding, mobileMenuOpen, setMobileMenuOpen, scrollPos
               </span>
             </h1>
             <p className="text-xl sm:text-2xl text-muted-foreground mb-6 md:mb-8 max-w-2xl mx-auto px-2">
-            今日は、どこのお店でお得があるかな？
+            今日はどこのお店がお得かな？
               <br className="sm:hidden" />
               トクドクは、お<span className="text-primary">トク</span>な情報が<br className="sm:hidden" />あなたにと<span className="text-primary">ドク</span>サービスです。
             </p>
@@ -160,7 +160,7 @@ const NormalLP = ({ goToOnboarding, mobileMenuOpen, setMobileMenuOpen, scrollPos
               {
                 icon: Bell,
                 title: "「見逃さない」お得情報",
-                description: "お気に入り店舗の新商品やお得な情報が\n投稿されると、すぐに通知がとドク！",
+                description: "お気に入り店舗のお得な情報が\n投稿されると、すぐに通知がとドク！",
                 color: "bg-accent/10",
                 textColor: "text-accent"
               },
@@ -174,7 +174,7 @@ const NormalLP = ({ goToOnboarding, mobileMenuOpen, setMobileMenuOpen, scrollPos
               {
                 icon: Leaf,
                 title: "フードロス削減に貢献",
-                description: "お得な情報共有が、お店の廃棄削減や、\nあなたのお財布にも優しい選択に。",
+                description: "お得な情報共有がお店の廃棄削減や、\nあなたのお財布にも優しい選択に。",
                 color: "bg-green-500/10",
                 textColor: "text-green-500"
               }
@@ -256,10 +256,12 @@ const NormalLP = ({ goToOnboarding, mobileMenuOpen, setMobileMenuOpen, scrollPos
   </div>
 );
 
-// スワイプ版LP
+// スワイプ版LP（修正版）
 const SwipeLP = ({ goToOnboarding, mobileMenuOpen, setMobileMenuOpen }: { goToOnboarding: () => void; mobileMenuOpen: boolean; setMobileMenuOpen: (open: boolean) => void }) => {
   const [currentSection, setCurrentSection] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+  const [sectionHeight, setSectionHeight] = useState(0);
+  const containerRef = useRef<HTMLDivElement>(null);
   
   const features = [
     {
@@ -306,14 +308,64 @@ const SwipeLP = ({ goToOnboarding, mobileMenuOpen, setMobileMenuOpen }: { goToOn
 
   const totalSections = 1 + features.length + 1; // ヒーロー(1) + 機能(5) + CTA(1) = 7
 
+  // 実際の画面高さを取得・更新する関数
+  const updateSectionHeight = useCallback(() => {
+    // 複数の方法で正確な高さを取得
+    const vh = window.innerHeight;
+    const dvh = document.documentElement.clientHeight;
+    const visualViewport = window.visualViewport?.height || vh;
+    
+    // 最も適切な高さを選択（通常は visualViewport が最も正確）
+    const actualHeight = Math.min(vh, dvh, visualViewport);
+    
+    setSectionHeight(actualHeight);
+    
+    // CSS変数も更新
+    document.documentElement.style.setProperty('--actual-vh', `${actualHeight}px`);
+  }, []);
+
+  // 初期化とリサイズ監視
+  useEffect(() => {
+    updateSectionHeight();
+    
+    const handleResize = () => {
+      updateSectionHeight();
+    };
+    
+    const handleOrientationChange = () => {
+      // オリエンテーション変更時は少し遅延させる
+      setTimeout(updateSectionHeight, 100);
+    };
+    
+    const handleVisualViewportChange = () => {
+      updateSectionHeight();
+    };
+
+    window.addEventListener('resize', handleResize);
+    window.addEventListener('orientationchange', handleOrientationChange);
+    
+    // Visual Viewport API がサポートされている場合
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', handleVisualViewportChange);
+    }
+    
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('orientationchange', handleOrientationChange);
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', handleVisualViewportChange);
+      }
+    };
+  }, [updateSectionHeight]);
+
   const handleDragEnd = (event: any, info: PanInfo) => {
     setIsDragging(false);
     const threshold = 50;
     
     if (info.offset.y < -threshold) { // 下方向へのスワイプ
-      setCurrentSection(prev => (prev + 1) % totalSections); // 最後のセクションの次は最初のセクションへ
+      setCurrentSection(prev => Math.min(prev + 1, totalSections - 1));
     } else if (info.offset.y > threshold) { // 上方向へのスワイプ
-      setCurrentSection(prev => (prev - 1 + totalSections) % totalSections); // 最初のセクションの次は最後のセクションへ
+      setCurrentSection(prev => Math.max(prev - 1, 0));
     }
   };
 
@@ -324,7 +376,8 @@ const SwipeLP = ({ goToOnboarding, mobileMenuOpen, setMobileMenuOpen }: { goToOn
   // セクション1: ヒーロー
   const HeroSection = () => (
     <motion.section
-      className="h-screen flex items-center justify-center px-4 bg-gradient-to-br from-background via-primary/5 to-secondary/10 relative overflow-hidden"
+      className="flex items-center justify-center px-4 bg-gradient-to-br from-background via-primary/5 to-secondary/10 relative overflow-hidden"
+      style={{ height: sectionHeight || '100vh' }}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.8 }}
@@ -403,7 +456,8 @@ const SwipeLP = ({ goToOnboarding, mobileMenuOpen, setMobileMenuOpen }: { goToOn
   // セクション2: 機能紹介
   const FeatureSection = ({ feature, index }: { feature: any; index: number }) => (
     <motion.section
-      className={`h-screen flex items-center justify-center px-4 bg-gradient-to-br ${feature.bgGradient} relative overflow-hidden`}
+      className={`flex items-center justify-center px-4 bg-gradient-to-br ${feature.bgGradient} relative overflow-hidden`}
+      style={{ height: sectionHeight || '100vh' }}
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 1.1 }}
@@ -457,7 +511,8 @@ const SwipeLP = ({ goToOnboarding, mobileMenuOpen, setMobileMenuOpen }: { goToOn
   // セクション3: CTA
   const CTASection = () => (
     <motion.section
-      className="h-screen flex items-center justify-center px-4 bg-gradient-to-br from-primary/10 via-secondary/10 to-accent/10 relative overflow-hidden"
+      className="flex items-center justify-center px-4 bg-gradient-to-br from-primary/10 via-secondary/10 to-accent/10 relative overflow-hidden"
+      style={{ height: sectionHeight || '100vh' }}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.8 }}
@@ -512,7 +567,11 @@ const SwipeLP = ({ goToOnboarding, mobileMenuOpen, setMobileMenuOpen }: { goToOn
   );
 
   return (
-    <div className="h-screen overflow-hidden">
+    <div 
+      ref={containerRef}
+      className="overflow-hidden relative"
+      style={{ height: sectionHeight || '100vh' }}
+    >
       {/* モバイルメニュー */}
       <AnimatePresence>
         {mobileMenuOpen && (
@@ -559,7 +618,7 @@ const SwipeLP = ({ goToOnboarding, mobileMenuOpen, setMobileMenuOpen }: { goToOn
         dragConstraints={{ top: 0, bottom: 0 }}
         onDragStart={() => setIsDragging(true)}
         onDragEnd={handleDragEnd}
-        animate={{ y: -currentSection * window.innerHeight }}
+        animate={{ y: sectionHeight ? -currentSection * sectionHeight : 0 }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
         className="will-change-transform"
       >
