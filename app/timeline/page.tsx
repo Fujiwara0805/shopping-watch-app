@@ -322,12 +322,11 @@ export default function Timeline() {
   // ユーザープロフィール情報
   const [currentUserProfile, setCurrentUserProfile] = useState<any>(null);
 
-  // デバウンス付きの検索語
-  const debouncedSearchTerm = useDebounce(generalSearchTerm, 300);
+  // デバウンス付きの検索語（短い間隔で即座に反応）
+  const debouncedSearchTerm = useDebounce(generalSearchTerm, 150);
 
   // Refs for stable references
   const activeFilterRef = useRef(activeFilter);
-  const generalSearchTermRef = useRef(generalSearchTerm);
   const searchModeRef = useRef(searchMode);
   const userLocationRef = useRef(userLocation);
   const favoriteStoreIdsRef = useRef(favoriteStoreIds);
@@ -337,7 +336,6 @@ export default function Timeline() {
 
   // Update refs
   useEffect(() => { activeFilterRef.current = activeFilter; }, [activeFilter]);
-  useEffect(() => { generalSearchTermRef.current = generalSearchTerm; }, [generalSearchTerm]);
   useEffect(() => { searchModeRef.current = searchMode; }, [searchMode]);
   useEffect(() => { userLocationRef.current = userLocation; }, [userLocation]);
   useEffect(() => { favoriteStoreIdsRef.current = favoriteStoreIds; }, [favoriteStoreIds]);
@@ -547,14 +545,10 @@ export default function Timeline() {
       }
 
       // 検索語による絞り込み（リアルタイム検索用）
-      const effectiveSearchTerm = searchTerm || generalSearchTermRef.current;
-      if (effectiveSearchTerm) {
+      const effectiveSearchTerm = searchTerm;
+      if (effectiveSearchTerm && effectiveSearchTerm.trim()) {
         const searchTermLower = effectiveSearchTerm.toLowerCase();
         query = query.or(`store_name.ilike.%${searchTermLower}%,category.ilike.%${searchTermLower}%,content.ilike.%${searchTermLower}%`);
-        // 検索履歴に追加（デバウンス後かつ2文字以上の場合）
-        if (searchTerm && searchTerm.length >= 2) {
-          addToHistory(searchTerm);
-        }
       }
 
       // 特別な検索モード
@@ -620,7 +614,7 @@ export default function Timeline() {
           author: authorData,
           author_user_id: authorUserId,
           isLikedByCurrentUser: Array.isArray(post.post_likes) 
-            ? post.post_likes.some((like: PostLike) => like.user_id === currentUserId)
+            ? post.post_likes.some((like: PostLike) => like.user_id === session?.user?.id)
             : false,
           likes_count: post.likes_count || (Array.isArray(post.post_likes) ? post.post_likes.length : 0),
           distance,
@@ -657,25 +651,39 @@ export default function Timeline() {
       setLoadingMore(false);
       setIsSearching(false);
     }
-  }, [currentUserId, addToHistory]);
+  }, []);
 
   // 初回データ取得
   useEffect(() => {
-    fetchPosts(0, true);
-  }, [currentUserId, addToHistory]);
-
-  // リアルタイム検索の実装
-  useEffect(() => {
-    // 初回ロード時は実行しない
-    if (loading && posts.length === 0) return;
-    
-    // 検索語が変更された場合のリアルタイム検索
-    if (debouncedSearchTerm !== generalSearchTermRef.current) {
-      generalSearchTermRef.current = debouncedSearchTerm;
-      setIsSearching(true);
-      fetchPosts(0, true, debouncedSearchTerm);
+    if (fetchPostsRef.current) {
+      fetchPostsRef.current(0, true);
     }
-  }, [debouncedSearchTerm, fetchPosts, loading, posts.length]);
+  }, []);
+
+  // 検索履歴への追加（別useEffect）
+  useEffect(() => {
+    if (debouncedSearchTerm && debouncedSearchTerm.length >= 2) {
+      addToHistory(debouncedSearchTerm);
+    }
+  }, [debouncedSearchTerm, addToHistory]);
+
+  // リアルタイム検索の実装 - 依存関係を最小化
+  const fetchPostsRef = useRef<typeof fetchPosts>();
+  fetchPostsRef.current = fetchPosts;
+
+  useEffect(() => {
+    
+    // 初期ロード完了後のみ実行
+    if (loading && posts.length === 0) {
+      console.log('初期ロード中のためスキップ');
+      return;
+    }
+
+    setIsSearching(true);
+    if (fetchPostsRef.current) {
+      fetchPostsRef.current(0, true, debouncedSearchTerm);
+    }
+  }, [debouncedSearchTerm]);
 
   useEffect(() => {
     if (highlightPostId && posts.length > 0) {
@@ -690,10 +698,10 @@ export default function Timeline() {
   }, [highlightPostId, posts]);
 
   const loadMorePosts = useCallback(() => {
-    if (!loadingMore && hasMore && searchModeRef.current !== 'nearby') {
-      fetchPosts(posts.length, false);
+    if (!loadingMore && hasMore && searchModeRef.current !== 'nearby' && fetchPostsRef.current) {
+      fetchPostsRef.current(posts.length, false, debouncedSearchTerm);
     }
-  }, [fetchPosts, posts.length, loadingMore, hasMore]);
+  }, [posts.length, loadingMore, hasMore, debouncedSearchTerm]);
 
   useEffect(() => {
     const handleScroll = (event: Event) => {
@@ -814,7 +822,9 @@ export default function Timeline() {
     
     // フィルター適用後にデータを再取得
     setTimeout(() => {
-      fetchPosts(0, true);
+      if (fetchPostsRef.current) {
+        fetchPostsRef.current(0, true);
+      }
     }, 100);
   };
 
@@ -843,9 +853,11 @@ export default function Timeline() {
     
     // フィルターをクリアした後、強制的に全投稿を再取得
     setTimeout(() => {
-      fetchPosts(0, true);
+      if (fetchPostsRef.current) {
+        fetchPostsRef.current(0, true);
+      }
     }, 100);
-  }, [fetchPosts]);
+  }, []);
 
   // アクティブなフィルタ数を計算
   const activeFiltersCount = useMemo(() => {
@@ -941,7 +953,7 @@ export default function Timeline() {
         <div className="p-4">
           <div className="text-center">
             <p className="text-destructive text-lg">{error}</p>
-            <Button onClick={() => fetchPosts(0, true)} className="mt-4">再試行</Button>
+            <Button onClick={() => fetchPostsRef.current && fetchPostsRef.current(0, true)} className="mt-4">再試行</Button>
           </div>
         </div>
       </AppLayout>
@@ -989,6 +1001,12 @@ export default function Timeline() {
                   onClick={() => {
                     setGeneralSearchTerm(term);
                     setSearchMode('all');
+                    // 検索履歴クリック時も即座に検索実行
+                    setTimeout(() => {
+                      if (fetchPostsRef.current) {
+                        fetchPostsRef.current(0, true, term);
+                      }
+                    }, 50);
                   }}
                 >
                   {term}
@@ -1107,7 +1125,14 @@ export default function Timeline() {
                 <p className="text-xl text-muted-foreground">検索条件に合う投稿はまだありません。</p>
               )}
               {searchMode !== 'all' && (
-                <Button onClick={() => setSearchMode('all')} className="mt-4">
+                <Button onClick={() => {
+                  setSearchMode('all');
+                  setTimeout(() => {
+                    if (fetchPostsRef.current) {
+                      fetchPostsRef.current(0, true);
+                    }
+                  }, 50);
+                }} className="mt-4">
                   すべての投稿を表示
                 </Button>
               )}
