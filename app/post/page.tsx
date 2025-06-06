@@ -568,7 +568,7 @@ export default function PostPage() {
     return (
       <div className="flex items-center space-x-2 p-2 bg-blue-50 border border-blue-200 rounded-md">
         <MapPin className="h-5 w-5 text-blue-600" />
-        <span className="text-sm text-blue-800">店舗を選択すると位置情報が自動取得されます（任意）</span>
+        <span className="text-sm text-blue-800">店舗を選択すると位置情報が自動取得されます</span>
       </div>
     );
   };
@@ -636,7 +636,7 @@ export default function PostPage() {
                 <p className="text-sm text-red-500 mt-1">※陳列している商品の画像をアップしないでください。購入後の商品の画像をアップしてください。</p>
                 {!imageFile && (
                   <p className="text-sm text-muted-foreground mt-1 ">
-                    画像が未アップロードの場合、自動的に画像が設定されます。
+                    未アップロードの場合、自動的に画像が設定されます。
                   </p>
                 )}
               </FormItem>
