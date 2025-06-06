@@ -79,6 +79,7 @@ export default function AppLayout({
       const timeouts = [
         setTimeout(updateViewportHeight, 100),
         setTimeout(updateViewportHeight, 500),
+        setTimeout(updateViewportHeight, 1000),
       ];
 
       const handleResize = () => {
@@ -121,68 +122,33 @@ export default function AppLayout({
     exit: { opacity: 0, x: 0, y: 20 },
   };
 
-  // 地図ページ専用のスタイル
-  if (isMapPage) {
-    return (
-      <div 
-        className="flex flex-col bg-background"
-        style={{ 
-          minHeight: 'calc(var(--mobile-vh, 100vh))',
-          height: 'calc(var(--mobile-vh, 100vh))',
-          maxHeight: 'calc(var(--mobile-vh, 100vh))',
-          overflow: 'hidden'
-        }}
-      >
-        {showHeader && <AppHeader />}
-        
-        <main 
-          className="flex-1 relative"
-          style={{
-            overflow: 'hidden',
-            height: showHeader 
-              ? 'calc(var(--mobile-vh, 100vh) - 56px)'
-              : 'calc(var(--mobile-vh, 100vh))'
-          }}
-        >
-          <motion.div
-            key={pathname}
-            initial="hidden"
-            animate="enter"
-            exit="exit"
-            variants={variants}
-            transition={{ duration: 0.3, type: 'tween' }}
-            className="absolute inset-0 flex flex-col overflow-hidden"
-            style={{
-              paddingBottom: showNav ? '64px' : '0px'
-            }}
-          >
-            <div 
-              className="flex-1"
-              style={{
-                overflow: 'hidden',
-                height: '100%'
-              }}
-            >
-              {children}
-            </div>
-          </motion.div>
-        </main>
-        
-        {showNav && <MainNav />}
-      </div>
-    );
-  }
-
-  // 通常のページのスタイル（スクロール可能）
+  // 共通の固定レイアウト構造（ヘッダー・フッター固定、コンテンツスクロール可能）
   return (
-    <div className="flex flex-col min-h-screen bg-background">
+    <div 
+      className="flex flex-col bg-background"
+      style={{ 
+        height: isMapPage ? 'calc(var(--mobile-vh, 100vh))' : '100vh',
+        maxHeight: isMapPage ? 'calc(var(--mobile-vh, 100vh))' : '100vh',
+        overflow: 'hidden' // 全体のスクロールを無効
+      }}
+    >
+      {/* 固定ヘッダー */}
       {showHeader && (
-        <div className="sticky top-0 z-50">
+        <div className="flex-shrink-0 z-50">
           <AppHeader />
         </div>
       )}
       
-      <main className="flex-1">
+      {/* メインコンテンツエリア */}
+      <main 
+        className="flex-1 relative"
+        style={{
+          height: showHeader 
+            ? 'calc(100% - 56px)' // ヘッダーの高さを引く
+            : '100%',
+          overflow: isMapPage ? 'hidden' : 'auto' // 地図ページ以外はスクロール可能
+        }}
+      >
         <motion.div
           key={pathname}
           initial="hidden"
@@ -190,17 +156,34 @@ export default function AppLayout({
           exit="exit"
           variants={variants}
           transition={{ duration: 0.3, type: 'tween' }}
-          className="min-h-full"
+          className={isMapPage ? "h-full flex flex-col" : "min-h-full"}
           style={{
-            paddingBottom: showNav ? '80px' : '16px' // ナビゲーション分のパディング
+            paddingBottom: showNav ? (isMapPage ? '64px' : '80px') : '16px'
           }}
         >
-          {children}
+          {isMapPage ? (
+            // 地図ページ：固定高さレイアウト
+            <div 
+              className="flex-1"
+              style={{
+                height: '100%',
+                overflow: 'hidden'
+              }}
+            >
+              {children}
+            </div>
+          ) : (
+            // 通常ページ：スクロール可能レイアウト
+            <div className="w-full">
+              {children}
+            </div>
+          )}
         </motion.div>
       </main>
       
+      {/* 固定フッター */}
       {showNav && (
-        <div className="fixed bottom-0 left-0 right-0 z-50">
+        <div className="flex-shrink-0 z-50">
           <MainNav />
         </div>
       )}

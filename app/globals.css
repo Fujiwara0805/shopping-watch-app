@@ -55,16 +55,29 @@
     @apply border-border;
   }
   
-  /* 基本のベース設定（スクロール可能） */
+  /* 基本のベース設定 */
   html, body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
     -webkit-tap-highlight-color: transparent;
     text-rendering: optimizeLegibility;
-    overflow-x: hidden; /* 横スクロールのみ無効 */
+    overflow-x: hidden;
     position: relative;
     width: 100%;
-    /* 縦スクロールは有効のまま */
+    height: 100%;
+    margin: 0;
+    padding: 0;
+  }
+  
+  /* Next.js ルートコンテナ */
+  #__next {
+    height: 100%;
+    overflow: hidden;
+  }
+  
+  /* 固定ヘッダー・フッターレイアウト用の基本設定 */
+  body {
+    overflow: hidden; /* 全体のスクロールを無効化 */
   }
   
   /* Use vh units properly on mobile */
@@ -98,7 +111,7 @@
     user-select: none;
   }
   
-  /* スマートフォン向けの高さ修正（スワイプLP用） */
+  /* スマートフォン向けの高さ修正 */
   .dynamic-height {
     height: var(--actual-vh);
     min-height: var(--actual-vh);
@@ -112,38 +125,9 @@
     }
   }
   
-  /* スワイプコンテナの最適化 */
-  .swipe-container {
-    height: var(--actual-vh);
-    overflow: hidden;
-    position: relative;
-    /* GPU加速を有効にする */
-    transform: translateZ(0);
-    will-change: transform;
-  }
-  
-  /* セクション共通スタイル */
-  .swipe-section {
-    height: var(--actual-vh);
-    min-height: var(--actual-vh);
-    max-height: var(--actual-vh);
-    overflow: hidden;
-    position: relative;
-  }
-  
-  /* タッチスクロールの最適化 */
-  .touch-optimized {
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior: none;
-    -webkit-transform: translate3d(0, 0, 0);
-    transform: translate3d(0, 0, 0);
-  }
-  
-  /* 地図ページ専用のスタイル（body.map-page が付与された時のみ適用） */
+  /* 地図ページ専用のスタイル */
   body.map-page {
     @media screen and (max-width: 768px) {
-      /* 地図ページでのみスクロールを無効化 */
-      overflow: hidden;
       height: 100vh;
       height: calc(var(--mobile-vh, 100vh));
       max-height: 100vh;
@@ -153,13 +137,19 @@
 
   body.map-page #__next {
     @media screen and (max-width: 768px) {
-      /* 地図ページでのNext.jsルートコンテナ */
       height: 100vh;
       height: calc(var(--mobile-vh, 100vh));
       max-height: 100vh;
       max-height: calc(var(--mobile-vh, 100vh));
-      overflow: hidden;
     }
+  }
+  
+  /* タッチスクロールの最適化 */
+  .touch-optimized {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: none;
+    -webkit-transform: translate3d(0, 0, 0);
+    transform: translate3d(0, 0, 0);
   }
   
   /* Google Mapsコンテナ専用の高さ管理 */
@@ -175,29 +165,6 @@
       min-height: 300px;
       max-height: calc(100vh - 120px);
     }
-    
-    /* マップ初期化時の最小高さ保証 */
-    #map-canvas,
-    #map-canvas-placeholder {
-      min-height: 300px !important;
-    }
-
-    /* 地図ページでのみ適用される強制設定 */
-    body.map-page .map-container,
-    body.map-page #map-canvas,
-    body.map-page #map-canvas-placeholder {
-      position: relative !important;
-      overflow: hidden !important;
-    }
-
-    /* スマートフォンでのマップ高さ強制設定（地図ページのみ） */
-    body.map-page .smartphone-map-container {
-      height: calc(var(--mobile-vh, 100vh) - 56px - 64px) !important;
-      min-height: 300px !important;
-      max-height: calc(var(--mobile-vh, 100vh) - 100px) !important;
-      overflow: hidden !important;
-      position: relative !important;
-    }
   }
   
   /* タブレット・デスクトップ */
@@ -208,7 +175,7 @@
     }
   }
   
-  /* iOS Safari専用の高さ修正（地図ページのみ） */
+  /* iOS Safari専用の高さ修正 */
   @supports (-webkit-touch-callout: none) {
     @media screen and (max-width: 768px) {
       body.map-page {
@@ -220,26 +187,6 @@
         height: -webkit-fill-available;
         height: calc(var(--mobile-vh, 100vh));
       }
-
-      body.map-page .smartphone-map-container {
-        height: calc(-webkit-fill-available - 120px) !important;
-        height: calc(var(--mobile-vh, 100vh) - 120px) !important;
-      }
-    }
-  }
-  
-  /* Android Chrome専用の高さ修正 */
-  @media screen and (max-width: 768px) and (orientation: landscape) {
-    body.map-page .smartphone-map-container {
-      height: calc(var(--mobile-vh, 100vh) - 80px) !important;
-      min-height: 250px !important;
-    }
-  }
-
-  /* PWA環境での追加修正（地図ページのみ） */
-  @media screen and (max-width: 768px) and (display-mode: standalone) {
-    body.map-page .smartphone-map-container {
-      height: calc(var(--mobile-vh, 100vh) - 100px) !important;
     }
   }
   
@@ -340,12 +287,6 @@
     min-height: 400px;
   }
   
-  /* 強制的な高さ設定（デバッグ用） */
-  .force-map-height {
-    height: 400px !important;
-    min-height: 400px !important;
-  }
-  
   /* Visual Viewport対応 */
   .visual-viewport-height {
     height: calc(var(--vh, 1vh) * 100);
@@ -362,9 +303,19 @@
     min-height: 300px;
   }
 
-  .mobile-no-scroll {
-    overflow: hidden;
-    position: relative;
+  /* スクロール可能コンテンツ用ユーティリティ */
+  .scrollable-content {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+
+  /* 固定ヘッダー・フッター対応 */
+  .fixed-layout-main {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    height: 100%;
   }
 
   /* Google Maps 専用クラス */

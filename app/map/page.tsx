@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import AppLayout from '@/components/layout/app-layout';
 import { MapView } from '@/components/map/map-view';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { CustomModal } from '@/components/ui/custom-modal';
 import { Award, Sparkles, ShoppingBag, X } from 'lucide-react';
@@ -18,46 +17,39 @@ export default function MapPage() {
     // ローディング時間を短縮してスマートフォンでの表示を早める
     const timer = setTimeout(() => {
       setLoading(false);
-    }, 500); // 1000ms → 500ms に短縮
+    }, 300); // さらに短縮
     
     return () => clearTimeout(timer);
   }, []);
 
   // スマートフォン向けのローディングスケルトン
   const LoadingSkeleton = () => (
-    <div 
-      className="w-full bg-muted animate-pulse flex items-center justify-center"
-      style={{ 
-        height: 'calc(100vh - 56px - 64px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))',
-        minHeight: '300px'
-      }}
-    >
+    <div className="w-full h-full bg-muted animate-pulse flex items-center justify-center">
       <div className="text-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-        <p className="text-muted-foreground text-sm">地図を読み込み中...</p>
+        <p className="text-muted-foreground text-sm">地図を準備中...</p>
       </div>
     </div>
   );
 
   return (
     <AppLayout>
-      <div className="h-full flex flex-col overflow-hidden">
-        <div className="flex-1 relative">
-          {loading ? (
-            <LoadingSkeleton />
-          ) : (
-            <motion.div 
-              key={'map'}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.3 }}
-              className="h-full w-full"
-            >
-              <MapView />
-            </motion.div>
-          )}
-        </div>
+      {/* 地図ページは固定高さレイアウト */}
+      <div className="h-full w-full overflow-hidden">
+        {loading ? (
+          <LoadingSkeleton />
+        ) : (
+          <motion.div 
+            key={'map'}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.4 }}
+            className="h-full w-full"
+          >
+            <MapView />
+          </motion.div>
+        )}
 
         {/* ポイント説明モーダル */}
         <CustomModal
