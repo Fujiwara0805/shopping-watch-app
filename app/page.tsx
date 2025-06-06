@@ -317,7 +317,7 @@ const SwipeLP = ({ goToOnboarding, mobileMenuOpen, setMobileMenuOpen }: { goToOn
     },
     {
       icon: ShoppingCart,
-      title: "「欲しい」がすぐに見つかる",
+      title: "「欲しい」が見つかる",
       description: "タイムラインのみんなの投稿から、\nあなただけのおトクを見つけよう！",
       color: "bg-destructive/10",
       textColor: "text-destructive",
