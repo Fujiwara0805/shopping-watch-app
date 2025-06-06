@@ -407,9 +407,14 @@ export default function ProfileEditPage() {
                     <FormControl>
                       <Input 
                         placeholder="ニックネームを入力" 
-                        className="text-lg" 
+                        className="text-base"
+                        style={{ fontSize: '16px' }}
                         {...field} 
-                        disabled={isSaving} 
+                        disabled={isSaving}
+                        autoComplete="off"
+                        autoCorrect="off"
+                        autoCapitalize="off"
+                        spellCheck="false"
                       />
                     </FormControl>
                     <FormMessage />
@@ -429,10 +434,15 @@ export default function ProfileEditPage() {
                     <FormControl>
                       <Textarea 
                         placeholder="自己紹介を入力してください" 
-                        className="resize-none text-lg" 
+                        className="resize-none text-base"
+                        style={{ fontSize: '16px' }}
                         rows={4} 
                         {...field} 
                         disabled={isSaving}
+                        autoComplete="off"
+                        autoCorrect="off"
+                        autoCapitalize="off"
+                        spellCheck="false"
                       />
                     </FormControl>
                     <FormMessage />

@@ -225,12 +225,17 @@ export function MapSearchControl({
             onChange={handleInputChange}
             onFocus={handleFocus}
             onBlur={handleBlur}
-            className="flex-grow bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 text-white placeholder:text-white/70 text-lg font-medium pl-4 pr-12 py-3 h-auto"
+            className="flex-grow bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 text-white placeholder:text-white/70 text-base font-medium pl-4 pr-12 py-3 h-auto"
             style={{
               caretColor: 'white',
-              textShadow: '0 1px 2px rgba(0,0,0,0.2)'
+              textShadow: '0 1px 2px rgba(0,0,0,0.2)',
+              fontSize: '16px' // モバイルでのズーム無効化
             }}
             disabled={!isMapsApiLoaded || !map}
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="off"
+            spellCheck="false"
           />
 
           {/* クリアボタン */}

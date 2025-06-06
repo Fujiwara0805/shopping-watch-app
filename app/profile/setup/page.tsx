@@ -346,7 +346,12 @@ export default function ProfileSetupPage() {
                         placeholder="例: ショッピング好き" 
                         {...field} 
                         disabled={isSaving}
-                        className="text-lg py-6" 
+                        className="text-base py-6"
+                        style={{ fontSize: '16px' }}
+                        autoComplete="off"
+                        autoCorrect="off"
+                        autoCapitalize="off"
+                        spellCheck="false"
                       />
                     </FormControl>
                     <FormMessage />
@@ -368,7 +373,12 @@ export default function ProfileSetupPage() {
                         {...field} 
                         disabled={isSaving} 
                         rows={4}
-                        className="text-lg py-4" 
+                        className="text-base py-4"
+                        style={{ fontSize: '16px' }}
+                        autoComplete="off"
+                        autoCorrect="off"
+                        autoCapitalize="off"
+                        spellCheck="false"
                       />
                     </FormControl>
                     <FormMessage />
@@ -394,7 +404,7 @@ export default function ProfileSetupPage() {
                         }}
                         disabled={isSaving}
                         ref={field.ref}
-                        className="text-lg py-6"
+                        className="text-base py-6"
                       />
                     </FormControl>
                     <FormMessage />
@@ -420,7 +430,7 @@ export default function ProfileSetupPage() {
                         }}
                         disabled={isSaving}
                         ref={field.ref}
-                        className="text-lg py-6"
+                        className="text-base py-6"
                       />
                     </FormControl>
                     <FormMessage />
@@ -446,7 +456,7 @@ export default function ProfileSetupPage() {
                         }}
                         disabled={isSaving}
                         ref={field.ref}
-                        className="text-lg py-6"
+                        className="text-base py-6"
                       />
                     </FormControl>
                     <FormMessage />
