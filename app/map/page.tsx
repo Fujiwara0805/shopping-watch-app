@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { MapView } from '@/components/map/map-view';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { CustomModal } from '@/components/ui/custom-modal';
 import { Award, Sparkles, ShoppingBag, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -13,10 +12,10 @@ export default function MapPage() {
   const [showPointsModal, setShowPointsModal] = useState(false);
   
   useEffect(() => {
-    // ローディング時間を短縮してスマートフォンでの表示を早める
+    // 簡素なローディング時間
     const timer = setTimeout(() => {
       setLoading(false);
-    }, 300); // さらに短縮
+    }, 300);
     
     return () => clearTimeout(timer);
   }, []);
