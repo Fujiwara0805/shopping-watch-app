@@ -404,7 +404,8 @@ export default function ProfileSetupPage() {
                         }}
                         disabled={isSaving}
                         ref={field.ref}
-                        className="text-base py-6"
+                        className="py-6"
+                        style={{ fontSize: '16px' }}
                       />
                     </FormControl>
                     <FormMessage />
@@ -430,7 +431,8 @@ export default function ProfileSetupPage() {
                         }}
                         disabled={isSaving}
                         ref={field.ref}
-                        className="text-base py-6"
+                        className="py-6"
+                        style={{ fontSize: '16px' }}
                       />
                     </FormControl>
                     <FormMessage />
@@ -456,7 +458,8 @@ export default function ProfileSetupPage() {
                         }}
                         disabled={isSaving}
                         ref={field.ref}
-                        className="text-base py-6"
+                        className="py-6"
+                        style={{ fontSize: '16px' }}
                       />
                     </FormControl>
                     <FormMessage />

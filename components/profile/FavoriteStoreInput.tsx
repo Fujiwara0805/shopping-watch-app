@@ -21,11 +21,12 @@ interface FavoriteStoreInputProps {
   onChange: (value: { id: string; name: string } | null) => void;
   disabled?: boolean;
   className?: string;
+  style?: React.CSSProperties;
   // name?: string; // react-hook-formのControllerから渡されるnameプロパティ (オプション)
 }
 
 const FavoriteStoreInput = React.forwardRef<HTMLInputElement, FavoriteStoreInputProps>(
-  ({ value, onChange, placeholder = "店舗名で検索", disabled }, ref) => {
+  ({ value, onChange, placeholder = "店舗名で検索", disabled, className, style }, ref) => {
     const { isLoaded: isMapsApiLoaded, loadError: mapsApiLoadError } = useGoogleMapsApi();
     const localInputRef = useRef<HTMLInputElement>(null); // ローカルのref
     const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
@@ -180,8 +181,13 @@ const FavoriteStoreInput = React.forwardRef<HTMLInputElement, FavoriteStoreInput
             value={inputValue}
             onChange={handleInputChange}
             placeholder={placeholder}
-            className="pr-10"
+            className={`pr-10 ${className || ''}`}
+            style={{ fontSize: '16px', ...style }}
             disabled={disabled || !isMapsApiLoaded}
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="off"
+            spellCheck="false"
           />
           {inputValue && !disabled && (
             <Button

@@ -788,6 +788,7 @@ export default function PostPage() {
                               }
                             }}
                             placeholder="お店を検索または選択してください"
+                            style={{ fontSize: '16px' }}
                           />
                           
                           {/* 🔥 Google Places 直接検索の入力フィールド */}
@@ -917,7 +918,7 @@ export default function PostPage() {
                     <FormControl>
                       <Textarea
                         placeholder="商品の状態や残り数量、みんなに知らせたいお得情報を記入してください（120文字以内）"
-                        className="resize-none text-base"
+                        className="resize-none"
                         style={{ fontSize: '16px' }}
                         rows={5}
                         autoComplete="off"
@@ -1005,7 +1006,6 @@ export default function PostPage() {
                              field.onChange(value === '' ? undefined : parseInt(value, 10));
                           }
                         }}
-                        className="text-base"
                         style={{ fontSize: '16px' }}
                         disabled={isUploading}
                         autoComplete="off"
