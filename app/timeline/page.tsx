@@ -103,6 +103,23 @@ const useSearchHistory = () => {
   return { searchHistory, addToHistory, clearHistory };
 };
 
+// デバウンス機能付きフック
+const useDebounce = (value: string, delay: number) => {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+};
+
 // ハンバーガーメニューコンポーネント
 const HamburgerMenu = ({ currentUser }: { currentUser: any }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -265,6 +282,7 @@ export default function Timeline() {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isSearching, setIsSearching] = useState(false); // リアルタイム検索中の状態
   
   // 適用済みフィルター状態（実際の検索に使用）
   const [activeFilter, setActiveFilter] = useState<string>('all');
@@ -303,6 +321,9 @@ export default function Timeline() {
 
   // ユーザープロフィール情報
   const [currentUserProfile, setCurrentUserProfile] = useState<any>(null);
+
+  // デバウンス付きの検索語
+  const debouncedSearchTerm = useDebounce(generalSearchTerm, 300);
 
   // Refs for stable references
   const activeFilterRef = useRef(activeFilter);
@@ -455,9 +476,8 @@ export default function Timeline() {
   }, [currentUserId, session?.user?.id]);
 
   // 投稿データの取得
-  const fetchPosts = useCallback(async (offset = 0, isInitial = false) => {
+  const fetchPosts = useCallback(async (offset = 0, isInitial = false, searchTerm = '') => {
     const currentActiveFilter = activeFilterRef.current;
-    const currentGeneralSearchTerm = generalSearchTermRef.current;
     const currentSearchMode = searchModeRef.current;
     const currentUserLocation = userLocationRef.current;
     const currentFavoriteStoreIds = favoriteStoreIdsRef.current;
@@ -526,11 +546,15 @@ export default function Timeline() {
         query = query.eq('category', currentActiveFilter);
       }
 
-      // 一般検索
-      if (currentGeneralSearchTerm) {
-        const searchTerm = currentGeneralSearchTerm.toLowerCase();
-        query = query.or(`store_name.ilike.%${searchTerm}%,category.ilike.%${searchTerm}%,content.ilike.%${searchTerm}%`);
-        addToHistory(currentGeneralSearchTerm);
+      // 検索語による絞り込み（リアルタイム検索用）
+      const effectiveSearchTerm = searchTerm || generalSearchTermRef.current;
+      if (effectiveSearchTerm) {
+        const searchTermLower = effectiveSearchTerm.toLowerCase();
+        query = query.or(`store_name.ilike.%${searchTermLower}%,category.ilike.%${searchTermLower}%,content.ilike.%${searchTermLower}%`);
+        // 検索履歴に追加（デバウンス後かつ2文字以上の場合）
+        if (searchTerm && searchTerm.length >= 2) {
+          addToHistory(searchTerm);
+        }
       }
 
       // 特別な検索モード
@@ -631,6 +655,7 @@ export default function Timeline() {
     } finally {
       setLoading(false);
       setLoadingMore(false);
+      setIsSearching(false);
     }
   }, [currentUserId, addToHistory]);
 
@@ -639,16 +664,18 @@ export default function Timeline() {
     fetchPosts(0, true);
   }, [currentUserId, addToHistory]);
 
-  // *** フィルタや検索条件変更時の自動再取得を削除 ***
-  // 以下のuseEffectを削除またはコメントアウト
-  /*
+  // リアルタイム検索の実装
   useEffect(() => {
-    const shouldRefetch = posts.length > 0;
-    if (shouldRefetch) {
-      fetchPosts(0, true);
+    // 初回ロード時は実行しない
+    if (loading && posts.length === 0) return;
+    
+    // 検索語が変更された場合のリアルタイム検索
+    if (debouncedSearchTerm !== generalSearchTermRef.current) {
+      generalSearchTermRef.current = debouncedSearchTerm;
+      setIsSearching(true);
+      fetchPosts(0, true, debouncedSearchTerm);
     }
-  }, [activeFilter, generalSearchTerm, searchMode, sortBy, userLocation, favoriteStoreIds, likedPostIds]);
-  */
+  }, [debouncedSearchTerm, fetchPosts, loading, posts.length]);
 
   useEffect(() => {
     if (highlightPostId && posts.length > 0) {
@@ -840,15 +867,20 @@ export default function Timeline() {
               placeholder="店舗名やキーワードで検索"
               value={generalSearchTerm}
               onChange={(e) => setGeneralSearchTerm(e.target.value)}
-              className="pr-10 w-full"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  setSearchMode('all');
-                  fetchPosts(0, true);
-                }
-              }}
+              className="pr-10 w-full text-base" // text-baseを追加してモバイルでのズームを防ぐ
+              style={{ fontSize: '16px' }} // 明示的に16pxを指定
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck="false"
             />
-            <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center">
+              {isSearching && generalSearchTerm ? (
+                <Loader2 className="h-4 w-4 text-muted-foreground animate-spin" />
+              ) : (
+                <Search className="h-4 w-4 text-muted-foreground" />
+              )}
+            </div>
           </div>
           <Button onClick={() => setShowFilterModal(true)} variant="outline" className="relative">
             <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
@@ -882,15 +914,20 @@ export default function Timeline() {
               placeholder="店舗名やキーワードで検索"
               value={generalSearchTerm}
               onChange={(e) => setGeneralSearchTerm(e.target.value)}
-              className="pr-10 w-full"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  setSearchMode('all');
-                  fetchPosts(0, true);
-                }
-              }}
+              className="pr-10 w-full text-base"
+              style={{ fontSize: '16px' }}
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck="false"
             />
-            <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center">
+              {isSearching && generalSearchTerm ? (
+                <Loader2 className="h-4 w-4 text-muted-foreground animate-spin" />
+              ) : (
+                <Search className="h-4 w-4 text-muted-foreground" />
+              )}
+            </div>
           </div>
           <Button onClick={() => setShowFilterModal(true)} variant="outline" className="relative">
             <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
@@ -921,15 +958,20 @@ export default function Timeline() {
             placeholder="店舗名やキーワードで検索"
             value={generalSearchTerm}
             onChange={(e) => setGeneralSearchTerm(e.target.value)}
-            className="pr-10 w-full"
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                setSearchMode('all');
-                fetchPosts(0, true);
-              }
-            }}
+            className="pr-10 w-full text-base" // text-baseを追加
+            style={{ fontSize: '16px' }} // 明示的に16pxを指定してモバイルでのズームを防ぐ
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="off"
+            spellCheck="false"
           />
-          <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center">
+            {isSearching && generalSearchTerm ? (
+              <Loader2 className="h-4 w-4 text-muted-foreground animate-spin" />
+            ) : (
+              <Search className="h-4 w-4 text-muted-foreground" />
+            )}
+          </div>
           
           {/* 検索履歴のドロップダウン */}
           {searchHistory.length > 0 && generalSearchTerm === '' && (
@@ -947,7 +989,6 @@ export default function Timeline() {
                   onClick={() => {
                     setGeneralSearchTerm(term);
                     setSearchMode('all');
-                    fetchPosts(0, true);
                   }}
                 >
                   {term}
@@ -965,6 +1006,16 @@ export default function Timeline() {
           )}
         </Button>
       </div>
+
+      {/* リアルタイム検索中の表示 */}
+      {isSearching && generalSearchTerm && (
+        <div className="px-4 py-2 bg-blue-50 border-b">
+          <div className="flex items-center space-x-2">
+            <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+            <span className="text-sm text-blue-700">「{generalSearchTerm}」を検索中...</span>
+          </div>
+        </div>
+      )}
 
       {/* 位置情報許可のアラート */}
       {showLocationPermissionAlert && (
@@ -1028,10 +1079,22 @@ export default function Timeline() {
         }}
       >
         <div className="p-4 pb-safe">
-          {posts.length === 0 && !loading ? (
+          {posts.length === 0 && !loading && !isSearching ? (
             <div className="text-center py-10">
               <LayoutGrid size={48} className="mx-auto text-muted-foreground mb-4" />
-              {searchMode === 'nearby' ? (
+              {generalSearchTerm ? (
+                <div>
+                  <p className="text-xl text-muted-foreground mb-2">
+                    「{generalSearchTerm}」の検索結果がありません
+                  </p>
+                  <p className="text-sm text-gray-500 mb-4">
+                    別のキーワードで検索してみてください
+                  </p>
+                  <Button onClick={() => setGeneralSearchTerm('')} className="mt-4">
+                    検索をクリア
+                  </Button>
+                </div>
+              ) : searchMode === 'nearby' ? (
                 <div>
                   <p className="text-xl text-muted-foreground mb-2">
                     現在地から5km圏内に投稿がありません
