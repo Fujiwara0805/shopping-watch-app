@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import AppLayout from '@/components/layout/app-layout';
 import { MapView } from '@/components/map/map-view';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { CustomModal } from '@/components/ui/custom-modal';
@@ -33,8 +32,8 @@ export default function MapPage() {
   );
 
   return (
-    <AppLayout>
-      {/* 地図ページは固定高さレイアウト */}
+    <>
+      {/* マップページは独自のレイアウトシステムを使用 */}
       <div className="h-full w-full overflow-hidden">
         {loading ? (
           <LoadingSkeleton />
@@ -107,6 +106,6 @@ export default function MapPage() {
           </div>
         </CustomModal>
       </div>
-    </AppLayout>
+    </>
   );
 }

@@ -2,30 +2,12 @@
 
 import { useRef, useEffect, useState, useCallback } from 'react';
 import { useGeolocation } from '@/lib/hooks/use-geolocation';
+import { useGoogleMapsApi } from '@/components/providers/GoogleMapsApiProvider';
 import { Store } from '@/types/store';
 import { Button } from '@/components/ui/button';
-import { MapPin, AlertTriangle, List, X, Heart, Navigation, RefreshCw } from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { X as CloseIcon } from 'lucide-react';
-import { useGoogleMapsApi } from '@/components/providers/GoogleMapsApiProvider';
-import { MapSearchControl } from './MapSearchControl';
+import { MapPin, AlertTriangle, Navigation, RefreshCw } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { MapSearchControl } from './MapSearchControl';
 
 declare global {
   interface Window {
@@ -35,8 +17,10 @@ declare global {
 
 export function MapView() {
   console.log("MapView: Component rendering START");
+  
+  // GoogleMapsApiProviderを使用
   const { isLoaded: googleMapsLoaded, loadError: googleMapsLoadError } = useGoogleMapsApi();
-
+  
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
   const initAttemptedRef = useRef<boolean>(false);
@@ -54,18 +38,47 @@ export function MapView() {
 
   const [mapInitialized, setMapInitialized] = useState(false);
   const [initializationError, setInitializationError] = useState<string | null>(null);
-  const [containerHeight, setContainerHeight] = useState<number>(0);
   const [googleApiReady, setGoogleApiReady] = useState(false);
-  const [debugInfo, setDebugInfo] = useState<string>('');
+  const [containerDimensions, setContainerDimensions] = useState({
+    width: 0,
+    height: 0
+  });
 
   const [selectedPlace, setSelectedPlace] = useState<google.maps.places.PlaceResult | null>(null);
   const [selectedPlaceMarker, setSelectedPlaceMarker] = useState<google.maps.Marker | null>(null);
   const [distanceToSelectedPlace, setDistanceToSelectedPlace] = useState<string | null>(null);
   const [userLocationMarker, setUserLocationMarker] = useState<google.maps.Marker | null>(null);
 
+  // コンテナ寸法の取得
+  const updateContainerDimensions = useCallback(() => {
+    if (!mapContainerRef.current) return false;
+    
+    const container = mapContainerRef.current;
+    const parent = container.parentElement;
+    
+    if (!parent) return false;
+    
+    const parentRect = parent.getBoundingClientRect();
+    const width = parentRect.width;
+    const height = parentRect.height;
+    
+    console.log('MapView: Container dimensions:', { width, height });
+    
+    setContainerDimensions({ width, height });
+    
+    // コンテナのスタイルを明示的に設定
+    container.style.width = `${width}px`;
+    container.style.height = `${height}px`;
+    container.style.position = 'relative';
+    container.style.backgroundColor = '#f5f5f5';
+    
+    return width > 0 && height > 200;
+  }, []);
+
   // Google Maps API の可用性をチェック
   const checkGoogleMapsApi = useCallback(() => {
     const isApiReady = !!(
+      googleMapsLoaded &&
       typeof window !== 'undefined' &&
       window.google &&
       window.google.maps &&
@@ -76,6 +89,7 @@ export function MapView() {
     );
     
     console.log("MapView: Google Maps API check:", {
+      googleMapsLoaded,
       windowGoogle: !!window.google,
       googleMaps: !!window.google?.maps,
       googleMapsMap: !!window.google?.maps?.Map,
@@ -83,98 +97,58 @@ export function MapView() {
     });
     
     setGoogleApiReady(isApiReady);
-    setDebugInfo(`API Ready: ${isApiReady}, Provider Loaded: ${googleMapsLoaded}`);
-    
     return isApiReady;
   }, [googleMapsLoaded]);
 
   // Google Maps API 読み込み監視
   useEffect(() => {
-    if (checkGoogleMapsApi()) {
+    if (googleMapsLoaded) {
+      console.log("MapView: GoogleMapsApiProvider indicates API is loaded");
+      checkGoogleMapsApi();
       return;
     }
 
-    // カスタムイベントリスナー
-    const handleApiLoaded = () => {
-      console.log("MapView: Received API loaded event");
-      setTimeout(checkGoogleMapsApi, 200);
-    };
+    if (googleMapsLoadError) {
+      console.error("MapView: GoogleMapsApiProvider indicates load error:", googleMapsLoadError);
+      setInitializationError(googleMapsLoadError.message);
+      return;
+    }
 
-    // 定期的なチェック
+    // API読み込み待ち
     const interval = setInterval(() => {
-      if (checkGoogleMapsApi()) {
+      if (googleMapsLoaded && checkGoogleMapsApi()) {
         clearInterval(interval);
       }
-    }, 500);
-
-    // イベントリスナー
-    window.addEventListener('google-maps-api-loaded', handleApiLoaded);
+    }, 100);
 
     return () => {
       clearInterval(interval);
-      window.removeEventListener('google-maps-api-loaded', handleApiLoaded);
     };
-  }, [checkGoogleMapsApi]);
+  }, [googleMapsLoaded, googleMapsLoadError, checkGoogleMapsApi]);
 
-  // 高さ計算（スマートフォン対応）
-  const calculateOptimalHeight = useCallback((): number => {
-    if (typeof window === 'undefined') return 400;
-    
-    const isMobile = window.innerWidth <= 768;
-    const windowHeight = window.innerHeight;
-    
-    if (isMobile) {
-      const visualViewportHeight = window.visualViewport?.height || windowHeight;
-      const usableHeight = Math.min(windowHeight, visualViewportHeight);
-      const calculatedHeight = Math.max(300, usableHeight - 140); // ヘッダー56px + ナビ64px + マージン20px
-      
-      console.log('MapView: Height calculation:', {
-        windowHeight,
-        visualViewportHeight,
-        usableHeight,
-        calculatedHeight,
-        isMobile: true
-      });
-      
-      return calculatedHeight;
-    } else {
-      return Math.max(400, windowHeight - 120);
-    }
-  }, []);
-
-  // 高さ設定
+  // コンテナ寸法の監視
   useEffect(() => {
-    const updateHeight = () => {
-      const newHeight = calculateOptimalHeight();
-      setContainerHeight(newHeight);
-    };
-
-    updateHeight();
-
+    updateContainerDimensions();
+    
     const timeouts = [
-      setTimeout(updateHeight, 100),
-      setTimeout(updateHeight, 300),
-      setTimeout(updateHeight, 1000),
+      setTimeout(updateContainerDimensions, 100),
+      setTimeout(updateContainerDimensions, 300),
+      setTimeout(updateContainerDimensions, 500)
     ];
 
-    const handleResize = () => setTimeout(updateHeight, 100);
+    const handleResize = () => {
+      setTimeout(updateContainerDimensions, 50);
+    };
 
     window.addEventListener('resize', handleResize, { passive: true });
     window.addEventListener('orientationchange', handleResize, { passive: true });
-    
-    if (window.visualViewport) {
-      window.visualViewport.addEventListener('resize', handleResize, { passive: true });
-    }
 
     return () => {
       timeouts.forEach(clearTimeout);
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('orientationchange', handleResize);
-      if (window.visualViewport) {
-        window.visualViewport.removeEventListener('resize', handleResize);
-      }
     };
-  }, [calculateOptimalHeight]);
+  }, [updateContainerDimensions]);
 
   // 位置情報要求
   useEffect(() => {
@@ -186,19 +160,19 @@ export function MapView() {
 
   // 地図初期化のメイン処理
   const initializeMap = useCallback(() => {
-    if (!mapContainerRef.current || mapInstanceRef.current || !googleApiReady || !latitude || !longitude || containerHeight < 300) {
+    if (!mapContainerRef.current || mapInstanceRef.current || !googleApiReady || !latitude || !longitude || containerDimensions.height < 200) {
       console.log("MapView: Initialization conditions not met", {
         container: !!mapContainerRef.current,
         instance: !!mapInstanceRef.current,
         apiReady: googleApiReady,
         location: !!(latitude && longitude),
-        height: containerHeight
+        dimensions: containerDimensions
       });
       return false;
     }
 
     console.log("MapView: Starting map initialization", {
-      containerHeight,
+      dimensions: containerDimensions,
       location: [latitude, longitude],
       apiReady: googleApiReady
     });
@@ -207,10 +181,6 @@ export function MapView() {
       const container = mapContainerRef.current;
       
       // コンテナの準備
-      container.style.width = '100%';
-      container.style.height = `${containerHeight}px`;
-      container.style.position = 'relative';
-      container.style.backgroundColor = '#f5f5f5';
       container.innerHTML = ''; // 既存の内容をクリア
 
       const center = { lat: latitude, lng: longitude };
@@ -226,7 +196,14 @@ export function MapView() {
         streetViewControl: false,
         mapTypeControl: false,
         backgroundColor: '#f5f5f5',
-        mapId: undefined, // カスタムマップIDは使用しない
+        restriction: {
+          latLngBounds: {
+            north: 45.557,
+            south: 24.217,
+            east: 145.817,
+            west: 122.933
+          }
+        }
       };
 
       console.log("MapView: Creating Google Map instance");
@@ -242,7 +219,7 @@ export function MapView() {
         console.error("MapView: Map initialization timeout");
         setInitializationError("地図の初期化がタイムアウトしました。ページを再読み込みしてください。");
         initAttemptedRef.current = false;
-      }, 15000);
+      }, 10000);
 
       // 地図読み込み完了イベント
       const idleListener = window.google.maps.event.addListenerOnce(newMap, 'idle', () => {
@@ -260,7 +237,7 @@ export function MapView() {
             window.google.maps.event.trigger(newMap, 'resize');
             newMap.setCenter(center);
           }
-        }, 500);
+        }, 200);
       });
 
       // エラーハンドリング
@@ -284,17 +261,15 @@ export function MapView() {
       initAttemptedRef.current = false;
       return false;
     }
-  }, [googleApiReady, latitude, longitude, containerHeight]);
+  }, [googleApiReady, latitude, longitude, containerDimensions]);
 
   // 地図初期化の実行
   useEffect(() => {
     if (
-      googleMapsLoaded && 
       googleApiReady &&
-      !googleMapsLoadError && 
       latitude && 
       longitude && 
-      containerHeight >= 300 && 
+      containerDimensions.height >= 200 && 
       !initAttemptedRef.current &&
       !mapInitialized
     ) {
@@ -307,11 +282,11 @@ export function MapView() {
         if (!initializeMap()) {
           initAttemptedRef.current = false;
         }
-      }, 100);
+      }, 200);
 
       return () => clearTimeout(timeoutId);
     }
-  }, [googleMapsLoaded, googleApiReady, latitude, longitude, containerHeight, googleMapsLoadError, mapInitialized, initializeMap]);
+  }, [googleApiReady, latitude, longitude, containerDimensions, mapInitialized, initializeMap]);
 
   // ユーザー位置マーカーの設置
   useEffect(() => {
@@ -362,6 +337,7 @@ export function MapView() {
     // 強制的にAPIチェックを再実行
     setTimeout(() => {
       checkGoogleMapsApi();
+      updateContainerDimensions();
     }, 500);
   };
 
@@ -377,12 +353,9 @@ export function MapView() {
     if (variant === 'destructive') iconColorClass = "text-destructive";
     if (variant === 'warning') iconColorClass = "text-amber-500";
 
-    const cardHeight = containerHeight > 0 ? containerHeight : 400;
-
     return (
       <div 
-        className="relative w-full flex items-center justify-center p-4 bg-background"
-        style={{ height: cardHeight }}
+        className="w-full h-full flex items-center justify-center p-4 bg-background"
       >
         <div className="bg-card p-6 sm:p-8 rounded-xl shadow-2xl w-full max-w-md text-center border">
           {Icon && <Icon className={`h-16 w-16 ${iconColorClass} mb-6 mx-auto`} />}
@@ -395,9 +368,10 @@ export function MapView() {
           {children}
           {process.env.NODE_ENV === 'development' && (
             <div className="mt-4 p-2 bg-gray-100 rounded text-xs text-gray-600">
-              <div>Debug: {debugInfo}</div>
-              <div>Height: {containerHeight}px</div>
+              <div>Size: {containerDimensions.width} x {containerDimensions.height}px</div>
+              <div>API: {googleApiReady ? '✓' : '✗'} | Loaded: {googleMapsLoaded ? '✓' : '✗'}</div>
               <div>Location: {latitude && longitude ? `${latitude.toFixed(3)}, ${longitude.toFixed(3)}` : 'None'}</div>
+              {googleMapsLoadError && <div>Error: {googleMapsLoadError.message}</div>}
             </div>
           )}
         </div>
@@ -445,7 +419,7 @@ export function MapView() {
   if (googleMapsLoadError) {
     return (
       <MessageCard 
-        title="地図読み込みエラー" 
+        title="Google Maps APIエラー" 
         message={`Google Maps APIの読み込みに失敗しました: ${googleMapsLoadError.message}`} 
         variant="destructive" 
         icon={AlertTriangle}
@@ -491,24 +465,19 @@ export function MapView() {
   }
 
   // ローディング状態
-  if (!googleMapsLoaded || !googleApiReady || containerHeight === 0 || locationLoading || !mapInitialized) {
-    const loadingHeight = containerHeight > 0 ? containerHeight : 400;
-    
+  if (!googleMapsLoaded || !googleApiReady || containerDimensions.height === 0 || locationLoading || !mapInitialized) {
     let loadingMessage = "地図を準備中...";
     if (!googleMapsLoaded) loadingMessage = "Google Maps APIを読み込み中...";
-    else if (!googleApiReady) loadingMessage = "地図システムを初期化中...";
+    else if (!googleApiReady) loadingMessage = "Google Maps初期化中...";
+    else if (containerDimensions.height === 0) loadingMessage = "画面サイズを調整中...";
     else if (locationLoading) loadingMessage = "現在位置を取得中...";
     else if (!mapInitialized && latitude && longitude) loadingMessage = "地図を作成中...";
     
     return (
-      <div 
-        className="relative w-full bg-gray-50"
-        style={{ height: loadingHeight }}
-      >
+      <div className="w-full h-full bg-gray-50 relative">
         <div 
           ref={mapContainerRef} 
-          className="h-full w-full bg-gray-50"
-          style={{ height: loadingHeight }}
+          className="w-full h-full bg-gray-50"
         />
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
@@ -517,8 +486,8 @@ export function MapView() {
           </p>
           {process.env.NODE_ENV === 'development' && (
             <div className="mt-2 text-xs text-gray-500 text-center px-4">
-              <div>{debugInfo}</div>
-              <div>Provider: {googleMapsLoaded ? '✓' : '✗'} | API: {googleApiReady ? '✓' : '✗'} | Location: {latitude && longitude ? '✓' : '✗'}</div>
+              <div>Size: {containerDimensions.width} x {containerDimensions.height}px</div>
+              <div>Loaded: {googleMapsLoaded ? '✓' : '✗'} | API: {googleApiReady ? '✓' : '✗'} | Location: {latitude && longitude ? '✓' : '✗'}</div>
             </div>
           )}
         </div>
@@ -528,22 +497,15 @@ export function MapView() {
   
   // メインのマップ表示
   return (
-    <div 
-      className="relative w-full bg-gray-50"
-      style={{ height: containerHeight }}
-    >
+    <div className="w-full h-full bg-gray-50 relative">
       <div 
         ref={mapContainerRef} 
-        className="h-full w-full"
-        style={{ height: containerHeight }}
+        className="w-full h-full"
       />
 
-      {map && googleMapsLoaded && mapInitialized && (
+      {map && mapInitialized && (
         <div 
-          className="absolute top-0 left-1/2 -translate-x-1/2 z-20 w-[calc(100%-2rem)] max-w-md sm:max-w-lg"
-          style={{ 
-            paddingTop: `calc(env(safe-area-inset-top, 0px) + 0.5rem)`
-          }}
+          className="absolute top-2 left-1/2 -translate-x-1/2 z-20 w-[calc(100%-1rem)] max-w-md sm:max-w-lg"
         >
           <MapSearchControl
             map={map}

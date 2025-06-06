@@ -32,13 +32,26 @@ export function MapSearchControl({
   const [isFocused, setIsFocused] = useState(false);
 
   useEffect(() => {
+    // API読み込みエラーまたは地図が未初期化の場合はスキップ
     if (!isMapsApiLoaded || !inputRef.current || !map || loadError) {
+      console.log("MapSearchControl: Skipping autocomplete setup", {
+        isMapsApiLoaded,
+        hasInput: !!inputRef.current,
+        hasMap: !!map,
+        loadError: !!loadError
+      });
+      
+      // 既存のオートコンプリートをクリーンアップ
       if (autocompleteRef.current && typeof google !== 'undefined' && google.maps && google.maps.event) {
          google.maps.event.clearInstanceListeners(autocompleteRef.current);
+         autocompleteRef.current = null;
       }
       return;
     }
     
+    console.log("MapSearchControl: Setting up autocomplete");
+    
+    // 既存のイベントリスナーをクリーンアップ
     if (autocompleteRef.current && typeof google !== 'undefined' && google.maps && google.maps.event) {
         google.maps.event.clearInstanceListeners(autocompleteRef.current);
     }
@@ -49,47 +62,63 @@ export function MapSearchControl({
       fields: ['place_id', 'name', 'formatted_address', 'geometry', 'types', 'photos'],
     };
 
+    // 地図の境界を設定
     if (map.getBounds()) {
       autocompleteOptions.bounds = map.getBounds() as google.maps.LatLngBounds;
       autocompleteOptions.strictBounds = false;
     }
     
+    // ユーザー位置を中心とした境界を設定
     if (userLocation) {
         const circle = new google.maps.Circle({
             center: userLocation,
-            radius: 50000, 
+            radius: 50000, // 50km
         });
         autocompleteOptions.bounds = circle.getBounds() as google.maps.LatLngBounds;
     }
 
-    if (inputRef.current) {
-        const newAutocomplete = new window.google.maps.places.Autocomplete(
-          inputRef.current,
-          autocompleteOptions
-        );
+    try {
+      if (inputRef.current) {
+          const newAutocomplete = new window.google.maps.places.Autocomplete(
+            inputRef.current,
+            autocompleteOptions
+          );
 
-        newAutocomplete.addListener('place_changed', () => {
-          const place = newAutocomplete.getPlace();
-          if (place && place.geometry && place.name) {
-            setInputValue(place.name);
-            let distanceText: string | null = null;
-            if (userLocation && place.geometry.location) {
-              const distance = google.maps.geometry.spherical.computeDistanceBetween(
-                userLocation,
-                place.geometry.location
-              );
-              distanceText = (distance / 1000).toFixed(1) + ' km';
+          newAutocomplete.addListener('place_changed', () => {
+            const place = newAutocomplete.getPlace();
+            console.log("MapSearchControl: Place selected:", place);
+            
+            if (place && place.geometry && place.name) {
+              setInputValue(place.name);
+              let distanceText: string | null = null;
+              
+              // 距離計算
+              if (userLocation && place.geometry.location) {
+                const distance = google.maps.geometry.spherical.computeDistanceBetween(
+                  userLocation,
+                  place.geometry.location
+                );
+                distanceText = (distance / 1000).toFixed(1) + ' km';
+              }
+              
+              onPlaceSelected(place, distanceText);
+              inputRef.current?.blur();
+            } else {
+              console.warn("MapSearchControl: Invalid place selected:", place);
+              if (onSearchError) {
+                onSearchError("有効な場所が選択されませんでした。");
+              }
             }
-            onPlaceSelected(place, distanceText);
-            inputRef.current?.blur();
-          } else {
-            if (onSearchError) {
-              onSearchError("有効な場所が選択されませんでした。");
-            }
-          }
-        });
-        
-        autocompleteRef.current = newAutocomplete;
+          });
+          
+          autocompleteRef.current = newAutocomplete;
+          console.log("MapSearchControl: Autocomplete setup completed");
+      }
+    } catch (error) {
+      console.error("MapSearchControl: Error setting up autocomplete:", error);
+      if (onSearchError) {
+        onSearchError("検索機能の初期化に失敗しました。");
+      }
     }
     
     return () => {
@@ -115,6 +144,7 @@ export function MapSearchControl({
   const handleBlur = () => setIsFocused(false);
 
   if (loadError) {
+    console.error("MapSearchControl: Google Maps API load error:", loadError);
     return (
         <div className={`p-4 text-center text-sm text-red-400 ${className}`}>
             <div className="flex items-center justify-center gap-2">
