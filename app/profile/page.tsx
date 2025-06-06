@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bell, LogOut, Settings, Edit, MapPin, Heart, Store as StoreIcon, Calendar, TrendingUp, Award, Star, User, Sparkles, ShoppingBag, Info, X, Trash2, NotebookText } from 'lucide-react';
-import AppLayout from '@/components/layout/app-layout';
+import ProfileLayout from './layout';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -167,120 +167,118 @@ const SettingItem = ({ icon: Icon, title, description, action, variant = "defaul
   </motion.div>
 );
 
-export default function ProfilePage() {
-  const { data: session, status } = useSession();
+function ProfilePageContent() {
+  const { data: session } = useSession();
   const [profile, setProfile] = useState<AppProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [userPosts, setUserPosts] = useState<PostWithAuthor[]>([]);
   const [loadingPosts, setLoadingPosts] = useState(true);
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState("posts");
+  const [activeTab, setActiveTab] = useState("memo");
   const [userPoints, setUserPoints] = useState(0);
   const [showPointsModal, setShowPointsModal] = useState(false);
   const [hiddenPosts, setHiddenPosts] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    // セッションの読み込みが完了し、かつ認証されている場合にのみデータをフェッチ
-    if (status === 'authenticated' && session.user?.id) {
-      const fetchProfileAndPosts = async () => {
+    // ProfileLayoutで認証確認済みなので、直接データフェッチ
+    const fetchProfileAndPosts = async () => {
+      if (!session?.user?.id) {
+        console.warn('ProfilePageContent: No session user ID available');
+        return;
+      }
+
+      try {
         setLoading(true);
         setLoadingPosts(true);
-        try {
-          const { data: appProfileData, error: profileError } = await supabase
-            .from('app_profiles')
-            .select(
-              '*, favorite_store_1_id, favorite_store_1_name, favorite_store_2_id, favorite_store_2_name, favorite_store_3_id, favorite_store_3_name'
-            )
-            .eq('user_id', session.user!.id!)
-            .single();
 
-          if (profileError && profileError.code !== 'PGRST116') { // PGRST116 は「Record Not Found」
-            console.error('Error fetching profile from app_profiles:', profileError);
-            return;
-          }
+        const { data: appProfileData, error: profileError } = await supabase
+          .from('app_profiles')
+          .select(
+            '*, favorite_store_1_id, favorite_store_1_name, favorite_store_2_id, favorite_store_2_name, favorite_store_3_id, favorite_store_3_name'
+          )
+          .eq('user_id', session.user.id)
+          .single();
 
-          if (appProfileData) {
-            setProfile(appProfileData);
-
-            const { data: postsData, error: postsError } = await supabase
-              .from('posts')
-              .select(`
-                id,
-                app_profile_id,
-                store_id,
-                store_name,
-                category,
-                content,
-                image_url,
-                discount_rate,
-                price,
-                expiry_option,
-                created_at,
-                likes_count,
-                app_profiles (
-                  display_name,
-                  avatar_url
-                )
-              `)
-              .eq('app_profile_id', appProfileData.id)
-              .order('created_at', { ascending: false });
-
-            if (postsError) {
-              console.error('Error fetching posts:', postsError);
-            } else if (postsData) {
-              const fetchedPosts: PostWithAuthor[] = postsData.map((p: any) => {
-                let expires_at_string = new Date().toISOString();
-                if (p.expiry_option && p.created_at) {
-                    const createdAtDate = new Date(p.created_at);
-                    if (p.expiry_option === '1h') createdAtDate.setHours(createdAtDate.getHours() + 1);
-                    else if (p.expiry_option === '3h') createdAtDate.setHours(createdAtDate.getHours() + 3);
-                    else if (p.expiry_option === '24h') createdAtDate.setHours(createdAtDate.getHours() + 24);
-                    expires_at_string = createdAtDate.toISOString();
-                }
-
-                return {
-                  id: p.id,
-                  store_id: p.store_id,
-                  store_name: p.store_name,
-                  category: p.category,
-                  content: p.content,
-                  image_url: p.image_url,
-                  discount_rate: p.discount_rate,
-                  price: p.price,
-                  expiry_option: p.expiry_option,
-                  created_at: p.created_at,
-                  expires_at: expires_at_string,
-                  likes_count: p.likes_count || 0,
-                  likes: p.likes_count || 0,
-                  comments: 0,
-
-                  author: p.app_profiles ? {
-                    display_name: p.app_profiles.display_name,
-                    avatar_url: p.app_profiles.avatar_url,
-                  } : null,
-                };
-              });
-              setUserPosts(fetchedPosts);
-            }
-          } else {
-            console.log('No profile found in app_profiles, redirecting to setup.');
-            router.push('/profile/setup');
-          }
-        } catch (e) {
-          console.error('An unexpected error occurred while fetching data:', e);
-        } finally {
-          setLoading(false);
-          setLoadingPosts(false);
+        if (profileError) {
+          console.error('ProfilePageContent: Error fetching profile:', profileError);
+          return;
         }
-      };
 
-      fetchProfileAndPosts();
-    } else if (status === 'unauthenticated') {
-      // 認証されていない場合はログインページへリダイレクト
-      router.push('/login?callbackUrl=/profile');
-    }
-    // status === 'loading' の場合は何もしない (最初のレンダーでローディング表示される)
-  }, [session?.user?.id, status, router]); // 依存配列は変更なし。この依存配列で適切なタイミングで発火させます。
+        if (appProfileData) {
+          setProfile(appProfileData);
+
+          // 投稿データを取得
+          const { data: postsData, error: postsError } = await supabase
+            .from('posts')
+            .select(`
+              id,
+              app_profile_id,
+              store_id,
+              store_name,
+              category,
+              content,
+              image_url,
+              discount_rate,
+              price,
+              expiry_option,
+              created_at,
+              likes_count,
+              app_profiles (
+                display_name,
+                avatar_url
+              )
+            `)
+            .eq('app_profile_id', appProfileData.id)
+            .order('created_at', { ascending: false });
+
+          if (postsError) {
+            console.error('ProfilePageContent: Error fetching posts:', postsError);
+          } else if (postsData) {
+            const fetchedPosts: PostWithAuthor[] = postsData.map((p: any) => {
+              let expires_at_string = new Date().toISOString();
+              if (p.expiry_option && p.created_at) {
+                  const createdAtDate = new Date(p.created_at);
+                  if (p.expiry_option === '1h') createdAtDate.setHours(createdAtDate.getHours() + 1);
+                  else if (p.expiry_option === '3h') createdAtDate.setHours(createdAtDate.getHours() + 3);
+                  else if (p.expiry_option === '24h') createdAtDate.setHours(createdAtDate.getHours() + 24);
+                  expires_at_string = createdAtDate.toISOString();
+              }
+
+              return {
+                id: p.id,
+                store_id: p.store_id,
+                store_name: p.store_name,
+                category: p.category,
+                content: p.content,
+                image_url: p.image_url,
+                discount_rate: p.discount_rate,
+                price: p.price,
+                expiry_option: p.expiry_option,
+                created_at: p.created_at,
+                expires_at: expires_at_string,
+                likes_count: p.likes_count || 0,
+                likes: p.likes_count || 0,
+                comments: 0,
+
+                author: p.app_profiles ? {
+                  display_name: p.app_profiles.display_name,
+                  avatar_url: p.app_profiles.avatar_url,
+                } : null,
+              };
+            });
+            setUserPosts(fetchedPosts);
+          }
+        }
+      } catch (e) {
+        console.error('ProfilePageContent: Unexpected error:', e);
+      } finally {
+        setLoading(false);
+        setLoadingPosts(false);
+      }
+    };
+
+    fetchProfileAndPosts();
+  }, [session?.user?.id]);
   
   const handleLogout = async () => {
     await signOut({ redirect: false, callbackUrl: '/login' });
@@ -302,342 +300,365 @@ export default function ProfilePage() {
   // 表示する投稿をフィルタリング
   const visiblePosts = userPosts.filter(post => !hiddenPosts.has(post.id));
 
-  if (status === 'loading' || loading) {
+  if (loading) {
     return (
-      <AppLayout>
-        <div className="h-screen flex items-center justify-center" style={{ backgroundColor: '#73370c' }}>
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-            className="w-12 h-12 border-4 border-white/30 border-t-white rounded-full"
-          />
-        </div>
-      </AppLayout>
+      <div 
+        className="h-screen flex items-center justify-center" 
+        style={{ 
+          backgroundColor: '#73370c',
+          height: 'calc(var(--mobile-vh, 100vh) - 120px)',
+          minHeight: '400px'
+        }}
+      >
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          className="w-12 h-12 border-4 border-white/30 border-t-white rounded-full"
+        />
+      </div>
     );
   }
   
   if (!profile) {
     return (
-        <AppLayout>
-            <div className="h-screen flex items-center justify-center" style={{ backgroundColor: '#73370c' }}>
-              <motion.div
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="text-center"
-              >
-                <User className="h-16 w-16 mx-auto text-white/60 mb-4" />
-                <p className="text-lg text-white">プロフィール情報を読み込めませんでした。</p>
-              </motion.div>
-            </div>
-        </AppLayout>
+      <div 
+        className="h-screen flex items-center justify-center" 
+        style={{ 
+          backgroundColor: '#73370c',
+          height: 'calc(var(--mobile-vh, 100vh) - 120px)',
+          minHeight: '400px'
+        }}
+      >
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="text-center"
+        >
+          <User className="h-16 w-16 mx-auto text-white/60 mb-4" />
+          <p className="text-lg text-white">プロフィール情報を読み込めませんでした。</p>
+        </motion.div>
+      </div>
     );
   }
   
   return (
-    <AppLayout>
-      <div className="h-screen flex flex-col" style={{ backgroundColor: '#73370c' }}>
-        {/* プロフィールヘッダー - 上部固定 */}
-        <div className="flex-shrink-0 relative overflow-hidden">
-          <div className="absolute inset-0" style={{ backgroundColor: '#73370c' }} />
-          <div className="relative z-10 p-4 text-white">
-            {/* ヘッダーアクション - 編集ボタンをプロフィール情報と同じ行に */}
-            <div className="flex items-start justify-between mb-4">
+    <div 
+      className="h-screen flex flex-col" 
+      style={{ 
+        backgroundColor: '#73370c',
+        height: 'calc(var(--mobile-vh, 100vh) - 120px)',
+        minHeight: '500px'
+      }}
+    >
+      {/* プロフィールヘッダー - 上部固定 */}
+      <div className="flex-shrink-0 relative overflow-hidden">
+        <div className="absolute inset-0" style={{ backgroundColor: '#73370c' }} />
+        <div className="relative z-10 p-4 text-white">
+          {/* ヘッダーアクション - 編集ボタンをプロフィール情報と同じ行に */}
+          <div className="flex items-start justify-between mb-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              whileHover={{ scale: 1.05 }}
+              className="relative flex items-center space-x-4"
+            >
+              <Avatar className="h-16 w-16 relative z-10 border-3 border-white/30">
+                {profile.avatar_url ? (
+                  <AvatarImage
+                    src={supabase.storage.from('avatars').getPublicUrl(profile.avatar_url).data.publicUrl}
+                    alt={profile.display_name ?? 'User Avatar'}
+                  />
+                ) : (
+                  <AvatarFallback className="text-lg font-bold bg-gradient-to-br from-purple-500 to-pink-500 text-white">
+                    {profile.display_name?.charAt(0).toUpperCase() ?? 'U'}
+                  </AvatarFallback>
+                )}
+              </Avatar>
+              
               <motion.div
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.6, delay: 0.2 }}
-                whileHover={{ scale: 1.05 }}
-                className="relative flex items-center space-x-4"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.3 }}
+                className="flex-1 min-w-0"
               >
-                <Avatar className="h-16 w-16 relative z-10 border-3 border-white/30">
-                  {profile.avatar_url ? (
-                    <AvatarImage
-                      src={supabase.storage.from('avatars').getPublicUrl(profile.avatar_url).data.publicUrl}
-                      alt={profile.display_name ?? 'User Avatar'}
-                    />
-                  ) : (
-                    <AvatarFallback className="text-lg font-bold bg-gradient-to-br from-purple-500 to-pink-500 text-white">
-                      {profile.display_name?.charAt(0).toUpperCase() ?? 'U'}
-                    </AvatarFallback>
-                  )}
-                </Avatar>
-                
+                <h1 className="text-xl font-bold mb-1 truncate">{profile.display_name}</h1>
+                <p className="text-white/80 text-xs mb-1 truncate">{session?.user?.email}</p>
+                <div className="flex items-center space-x-1">
+                  <Calendar className="h-3 w-3 text-white/60" />
+                  <span className="text-white/60 text-xs">
+                    登録: {new Date(profile.updated_at || '').toLocaleDateString('ja-JP')}
+                  </span>
+                </div>
+              </motion.div>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6 }}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="flex-shrink-0"
+            >
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => router.push('/profile/edit')}
+                className="bg-white/20 hover:bg-white/30 border border-white/30 text-white text-xs px-3 py-1.5"
+              >
+                <Edit className="h-3 w-3 mr-1" />
+                編集
+              </Button>
+            </motion.div>
+          </div>
+          
+          {/* 統計カード - よりコンパクトに */}
+          <div className="grid grid-cols-2 gap-3">
+            <StatCard
+              icon={ShoppingBag}
+              title="投稿数"
+              value={visiblePosts.length}
+              subtitle="これまでの投稿"
+              gradient="bg-green-100"
+              delay={0.4}
+            />
+            <StatCard
+              icon={Award}
+              title="ポイント"
+              value="未実装"
+              subtitle="獲得ポイント（未実装）"
+              gradient="bg-yellow-100"
+              delay={0.5}
+              showInfo={true}
+              onInfoClick={() => setShowPointsModal(true)}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* タブナビゲーション - 中央固定 */}
+      <div className="flex-shrink-0 bg-white/95 backdrop-blur-md border-b border-gray-200/50">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <div className="px-4 py-2">
+            <TabsList className="grid w-full grid-cols-3 bg-gray-50 h-10">
+              <TabsTrigger 
+                value="memo"
+                className="data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all duration-300 text-base"
+              >
+                <NotebookText className="h-3 w-3 mr-1" />
+                メモ機能
+              </TabsTrigger>
+              <TabsTrigger 
+                value="favorites"
+                className="data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all duration-300 text-base"
+              >
+                <Heart className="h-3 w-3 mr-1" />
+                お気に入り
+              </TabsTrigger>
+              <TabsTrigger 
+                value="settings"
+                className="data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all duration-300 text-base"
+              >
+                <Settings className="h-3 w-3 mr-1" />
+                設定
+              </TabsTrigger>
+            </TabsList>
+          </div>
+
+          {/* メインコンテンツエリア - スクロール可能 */}
+          <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
+            {/* メモ機能タブ */}
+            <TabsContent value="memo" className="m-0 h-full">
+              <div className="h-full flex items-center justify-center p-8">
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.5 }}
+                  className="text-center"
+                >
+                  <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center">
+                    <NotebookText className="h-8 w-8 text-gray-400" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-700 mb-2">メモ機能は現在開発中です</h3>
+                  <p className="text-gray-500 mb-4 text-sm">近日公開予定です。お楽しみに！</p>
+                  <Button 
+                    disabled
+                    className="text-white shadow-md hover:shadow-lg transition-all duration-300"
+                    style={{ backgroundColor: '#73370c' }}
+                    size="sm"
+                  >
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    新しいメモを作成する
+                  </Button>
+                </motion.div>
+              </div>
+            </TabsContent>
+            
+            {/* お気に入りタブ */}
+            <TabsContent value="favorites" className="m-0 h-full">
+              <div className="h-full overflow-y-auto p-4 space-y-4 custom-scrollbar">
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: 0.3 }}
-                  className="flex-1 min-w-0"
+                  className="flex items-center justify-between"
                 >
-                  <h1 className="text-xl font-bold mb-1 truncate">{profile.display_name}</h1>
-                  <p className="text-white/80 text-xs mb-1 truncate">{session?.user?.email}</p>
-                  <div className="flex items-center space-x-1">
-                    <Calendar className="h-3 w-3 text-white/60" />
-                    <span className="text-white/60 text-xs">
-                      登録: {new Date(profile.updated_at || '').toLocaleDateString('ja-JP')}
-                    </span>
-                  </div>
+                  <h2 className="text-lg font-bold text-gray-900">お気に入り店舗</h2>
+                  <Badge variant="secondary" className="bg-orange-100 text-orange-700 text-xs">
+                    {favoriteStores.length}/3 店舗
+                  </Badge>
                 </motion.div>
-              </motion.div>
 
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.6 }}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="flex-shrink-0"
-              >
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => router.push('/profile/edit')}
-                  className="bg-white/20 hover:bg-white/30 border border-white/30 text-white text-xs px-3 py-1.5"
-                >
-                  <Edit className="h-3 w-3 mr-1" />
-                  編集
-                </Button>
-              </motion.div>
-            </div>
-            
-            {/* 統計カード - よりコンパクトに */}
-            <div className="grid grid-cols-2 gap-3">
-              <StatCard
-                icon={ShoppingBag}
-                title="投稿数"
-                value={visiblePosts.length}
-                subtitle="これまでの投稿"
-                gradient="bg-green-100"
-                delay={0.4}
-              />
-              <StatCard
-                icon={Award}
-                title="ポイント"
-                value="未実装"
-                subtitle="獲得ポイント（未実装）"
-                gradient="bg-yellow-100"
-                delay={0.5}
-                showInfo={true}
-                onInfoClick={() => setShowPointsModal(true)}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* タブナビゲーション - 中央固定 */}
-        <div className="flex-shrink-0 bg-white/95 backdrop-blur-md border-b border-gray-200/50">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <div className="px-4 py-2">
-              <TabsList className="grid w-full grid-cols-3 bg-gray-50 h-10">
-                <TabsTrigger 
-                  value="memo"
-                  className="data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all duration-300 text-base"
-                >
-                  <NotebookText className="h-3 w-3 mr-1" />
-                  メモ機能
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="favorites"
-                  className="data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all duration-300 text-base"
-                >
-                  <Heart className="h-3 w-3 mr-1" />
-                  お気に入り
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="settings"
-                  className="data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all duration-300 text-base"
-                >
-                  <Settings className="h-3 w-3 mr-1" />
-                  設定
-                </TabsTrigger>
-              </TabsList>
-            </div>
-
-            {/* メインコンテンツエリア - スクロール可能 */}
-            <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
-              {/* メモ機能タブ */}
-              <TabsContent value="memo" className="m-0 h-full">
-                <div className="h-full flex items-center justify-center p-8">
+                {favoriteStores.length > 0 ? (
+                  <div className="grid grid-cols-1 gap-3">
+                    {favoriteStores.map((store, index) => (
+                      <FavoriteStoreCard key={store.id} store={store} index={index} />
+                    ))}
+                  </div>
+                ) : (
                   <motion.div
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 0.5 }}
-                    className="text-center"
+                    className="text-center py-8"
                   >
-                    <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center">
-                      <NotebookText className="h-8 w-8 text-gray-400" />
+                    <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-pink-100 to-red-100 rounded-full flex items-center justify-center">
+                      <Heart className="h-8 w-8 text-pink-400" />
                     </div>
-                    <h3 className="text-lg font-semibold text-gray-700 mb-2">メモ機能は現在開発中です</h3>
-                    <p className="text-gray-500 mb-4 text-sm">近日公開予定です。お楽しみに！</p>
+                    <h3 className="text-lg font-semibold text-gray-700 mb-2">お気に入り店舗がありません</h3>
+                    <p className="text-gray-500 mb-4 text-sm">よく利用する店舗を追加しましょう</p>
                     <Button 
-                      disabled
-                      className="text-white shadow-md hover:shadow-lg transition-all duration-300"
-                      style={{ backgroundColor: '#73370c' }}
+                      variant="outline" 
+                      onClick={() => router.push('/profile/edit')}
+                      className="border-orange-200 hover:bg-orange-50 text-orange-600 text-sm"
                       size="sm"
                     >
-                      <Sparkles className="h-4 w-4 mr-2" />
-                      新しいメモを作成する
+                      <Heart className="h-3 w-3 mr-1" />
+                      プロフィール編集
                     </Button>
                   </motion.div>
-                </div>
-              </TabsContent>
-              
-              {/* お気に入りタブ */}
-              <TabsContent value="favorites" className="m-0 h-full">
-                <div className="h-full overflow-y-auto p-4 space-y-4 custom-scrollbar">
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="flex items-center justify-between"
-                  >
-                    <h2 className="text-lg font-bold text-gray-900">お気に入り店舗</h2>
-                    <Badge variant="secondary" className="bg-orange-100 text-orange-700 text-xs">
-                      {favoriteStores.length}/3 店舗
-                    </Badge>
-                  </motion.div>
-
-                  {favoriteStores.length > 0 ? (
-                    <div className="grid grid-cols-1 gap-3">
-                      {favoriteStores.map((store, index) => (
-                        <FavoriteStoreCard key={store.id} store={store} index={index} />
-                      ))}
-                    </div>
-                  ) : (
+                )}
+              </div>
+            </TabsContent>
+            
+            {/* 設定タブ */}
+            <TabsContent value="settings" className="m-0 h-full">
+              <div className="h-full overflow-y-auto p-4 space-y-6 custom-scrollbar">
+                {/* 通知設定セクション */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 }}
+                  className="space-y-3"
+                >
+                  <h3 className="text-lg font-bold text-gray-900 flex items-center">
+                    <Bell className="h-4 w-4 mr-2 text-orange-600" />
+                    通知設定
+                  </h3>
+                  
+                  <div className="space-y-3">
                     <motion.div
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ duration: 0.5 }}
-                      className="text-center py-8"
+                      whileHover={{ scale: 1.01 }}
+                      className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-100 shadow-sm"
                     >
-                      <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-pink-100 to-red-100 rounded-full flex items-center justify-center">
-                        <Heart className="h-8 w-8 text-pink-400" />
+                      <div className="space-y-0.5 flex-1 min-w-0">
+                        <Label htmlFor="push-notifications" className="text-sm font-medium">プッシュ通知</Label>
+                        <p className="text-xs text-gray-500">お気に入り店舗の値引き情報をお知らせ</p>
                       </div>
-                      <h3 className="text-lg font-semibold text-gray-700 mb-2">お気に入り店舗がありません</h3>
-                      <p className="text-gray-500 mb-4 text-sm">よく利用する店舗を追加しましょう</p>
-                      <Button 
-                        variant="outline" 
-                        onClick={() => router.push('/profile/edit')}
-                        className="border-orange-200 hover:bg-orange-50 text-orange-600 text-sm"
-                        size="sm"
-                      >
-                        <Heart className="h-3 w-3 mr-1" />
-                        プロフィール編集
-                      </Button>
+                      <Switch id="push-notifications" defaultChecked />
                     </motion.div>
-                  )}
-                </div>
-              </TabsContent>
-              
-              {/* 設定タブ */}
-              <TabsContent value="settings" className="m-0 h-full">
-                <div className="h-full overflow-y-auto p-4 space-y-6 custom-scrollbar">
-                  {/* 通知設定セクション */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1 }}
-                    className="space-y-3"
-                  >
-                    <h3 className="text-lg font-bold text-gray-900 flex items-center">
-                      <Bell className="h-4 w-4 mr-2 text-orange-600" />
-                      通知設定
-                    </h3>
-                    
-                    <div className="space-y-3">
-                      <motion.div
-                        whileHover={{ scale: 1.01 }}
-                        className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-100 shadow-sm"
-                      >
-                        <div className="space-y-0.5 flex-1 min-w-0">
-                          <Label htmlFor="push-notifications" className="text-sm font-medium">プッシュ通知</Label>
-                          <p className="text-xs text-gray-500">お気に入り店舗の値引き情報をお知らせ</p>
-                        </div>
-                        <Switch id="push-notifications" defaultChecked />
-                      </motion.div>
-                    </div>
-                  </motion.div>
+                  </div>
+                </motion.div>
+                
+                <Separator className="my-4" />
+                
+                {/* アカウント設定セクション */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                  className="space-y-3"
+                >
+                  <h3 className="text-lg font-bold text-gray-900 flex items-center">
+                    <User className="h-4 w-4 mr-2 text-amber-600" />
+                    アカウント
+                  </h3>
                   
-                  <Separator className="my-4" />
-                  
-                  {/* アカウント設定セクション */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2 }}
-                    className="space-y-3"
-                  >
-                    <h3 className="text-lg font-bold text-gray-900 flex items-center">
-                      <User className="h-4 w-4 mr-2 text-amber-600" />
-                      アカウント
-                    </h3>
+                  <div className="space-y-2">
+                    <SettingItem
+                      icon={Settings}
+                      title="アカウント設定"
+                      description="プロフィール情報とお気に入り店舗の管理"
+                      action={() => router.push('/profile/edit')}
+                    />
                     
-                    <div className="space-y-2">
-                      <SettingItem
-                        icon={Settings}
-                        title="アカウント設定"
-                        description="プロフィール情報とお気に入り店舗の管理"
-                        action={() => router.push('/profile/edit')}
-                      />
-                      
-                      <SettingItem
-                        icon={LogOut}
-                        title="ログアウト"
-                        description="アカウントからログアウトします"
-                        action={handleLogout}
-                        variant="danger"
-                      />
-                      <div className="h-4 mb-2" />
-                    </div>
-                  </motion.div>
-                </div>
-              </TabsContent>
-            </div>
-          </Tabs>
-        </div>
-
-        {/* ポイント説明モーダル */}
-        <CustomModal
-          isOpen={showPointsModal}
-          onClose={() => setShowPointsModal(false)}
-          title="ポイントシステム"
-          description="投稿でポイントを貯めて、お得な特典と交換しよう！"
-          showCloseButton={true}
-          dialogContentClassName="max-w-sm"
-        >
-          <div className="flex items-center text-lg font-bold text-gray-900 mb-4">
-            <Award className="h-5 w-5 mr-2 text-yellow-500" />
-            ポイントシステム
+                    <SettingItem
+                      icon={LogOut}
+                      title="ログアウト"
+                      description="アカウントからログアウトします"
+                      action={handleLogout}
+                      variant="danger"
+                    />
+                    <div className="h-4 mb-2" />
+                  </div>
+                </motion.div>
+              </div>
+            </TabsContent>
           </div>
-          <div className="space-y-3 py-3">
-            <div className="bg-gradient-to-r from-yellow-50 to-amber-50 rounded-lg p-3 border border-yellow-200">
-              <h4 className="font-semibold text-gray-900 mb-1 flex items-center text-sm">
-                <Sparkles className="h-4 w-4 mr-1 text-yellow-500" />
-                ポイントの貯め方
-              </h4>
-              <p className="text-xs text-gray-700">
-                投稿をするたびに、<span className="font-bold text-yellow-700">最大5ポイント</span>をもらえます。
-                質の高い投稿ほど、より多くのポイントがもらえます！
-              </p>
-            </div>
-            
-            <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-3 border border-green-200">
-              <h4 className="font-semibold text-gray-900 mb-1 flex items-center text-sm">
-                <ShoppingBag className="h-4 w-4 mr-1 text-green-500" />
-                ポイントの使い方
-              </h4>
-              <p className="text-xs text-gray-700">
-                貯まったポイントは、<span className="font-bold text-green-700">Amazonギフト券</span>と交換できます。
-                さまざまな額面のギフト券をご用意しています。
-              </p>
-            </div>
-            
-            <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
-              <p className="text-xs text-blue-600 text-center">
-                ※ ポイントシステムは現在開発中です。<br />近日公開予定！
-              </p>
-            </div>
-          </div>
-        </CustomModal>
+        </Tabs>
       </div>
-    </AppLayout>
+
+      {/* ポイント説明モーダル */}
+      <CustomModal
+        isOpen={showPointsModal}
+        onClose={() => setShowPointsModal(false)}
+        title="ポイントシステム"
+        description="投稿でポイントを貯めて、お得な特典と交換しよう！"
+        showCloseButton={true}
+        dialogContentClassName="max-w-sm"
+      >
+        <div className="flex items-center text-lg font-bold text-gray-900 mb-4">
+          <Award className="h-5 w-5 mr-2 text-yellow-500" />
+          ポイントシステム
+        </div>
+        <div className="space-y-3 py-3">
+          <div className="bg-gradient-to-r from-yellow-50 to-amber-50 rounded-lg p-3 border border-yellow-200">
+            <h4 className="font-semibold text-gray-900 mb-1 flex items-center text-sm">
+              <Sparkles className="h-4 w-4 mr-1 text-yellow-500" />
+              ポイントの貯め方
+            </h4>
+            <p className="text-xs text-gray-700">
+              投稿をするたびに、<span className="font-bold text-yellow-700">最大5ポイント</span>をもらえます。
+              質の高い投稿ほど、より多くのポイントがもらえます！
+            </p>
+          </div>
+          
+          <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-3 border border-green-200">
+            <h4 className="font-semibold text-gray-900 mb-1 flex items-center text-sm">
+              <ShoppingBag className="h-4 w-4 mr-1 text-green-500" />
+              ポイントの使い方
+            </h4>
+            <p className="text-xs text-gray-700">
+              貯まったポイントは、<span className="font-bold text-green-700">Amazonギフト券</span>と交換できます。
+              さまざまな額面のギフト券をご用意しています。
+            </p>
+          </div>
+          
+          <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
+            <p className="text-xs text-blue-600 text-center">
+              ※ ポイントシステムは現在開発中です。<br />近日公開予定！
+            </p>
+          </div>
+        </div>
+      </CustomModal>
+    </div>
+  );
+}
+
+export default function ProfilePage() {
+  return (
+    <ProfileLayout>
+      <ProfilePageContent />
+    </ProfileLayout>
   );
 }
