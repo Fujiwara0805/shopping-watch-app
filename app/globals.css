@@ -55,21 +55,16 @@
     @apply border-border;
   }
   
-  /* 本体要素のスクロール防止とベース設定 */
+  /* 基本のベース設定（スクロール可能） */
   html, body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
     -webkit-tap-highlight-color: transparent;
     text-rendering: optimizeLegibility;
-    overflow-x: hidden;
+    overflow-x: hidden; /* 横スクロールのみ無効 */
     position: relative;
     width: 100%;
-  }
-  
-  body {
-    font-feature-settings: "rlig" 1, "calt" 1;
-    -webkit-tap-highlight-color: transparent;
-    text-rendering: optimizeLegibility;
+    /* 縦スクロールは有効のまま */
   }
   
   /* Use vh units properly on mobile */
@@ -103,7 +98,7 @@
     user-select: none;
   }
   
-  /* スマートフォン向けの高さ修正 */
+  /* スマートフォン向けの高さ修正（スワイプLP用） */
   .dynamic-height {
     height: var(--actual-vh);
     min-height: var(--actual-vh);
@@ -144,34 +139,38 @@
     transform: translate3d(0, 0, 0);
   }
   
+  /* 地図ページ専用のスタイル（body.map-page が付与された時のみ適用） */
+  body.map-page {
+    @media screen and (max-width: 768px) {
+      /* 地図ページでのみスクロールを無効化 */
+      overflow: hidden;
+      height: 100vh;
+      height: calc(var(--mobile-vh, 100vh));
+      max-height: 100vh;
+      max-height: calc(var(--mobile-vh, 100vh));
+    }
+  }
+
+  body.map-page #__next {
+    @media screen and (max-width: 768px) {
+      /* 地図ページでのNext.jsルートコンテナ */
+      height: 100vh;
+      height: calc(var(--mobile-vh, 100vh));
+      max-height: 100vh;
+      max-height: calc(var(--mobile-vh, 100vh));
+      overflow: hidden;
+    }
+  }
+  
   /* Google Mapsコンテナ専用の高さ管理 */
   .map-container {
     width: 100%;
     position: relative;
   }
   
-  /* スマートフォン専用の高さ修正（強化版） */
+  /* スマートフォンでのマップコンテナ */
   @media screen and (max-width: 768px) {
-    html, body {
-      height: 100vh;
-      height: calc(var(--mobile-vh, 100vh));
-      max-height: 100vh;
-      max-height: calc(var(--mobile-vh, 100vh));
-      overflow: hidden;
-    }
-
-    /* メインアプリコンテナ */
-    #__next {
-      height: 100vh;
-      height: calc(var(--mobile-vh, 100vh));
-      max-height: 100vh;
-      max-height: calc(var(--mobile-vh, 100vh));
-      overflow: hidden;
-    }
-
-    /* スマートフォン専用のマップコンテナ */
     .map-container {
-      /* 動的な高さ計算 */
       height: calc(100vh - 56px - 64px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
       min-height: 300px;
       max-height: calc(100vh - 120px);
@@ -183,16 +182,16 @@
       min-height: 300px !important;
     }
 
-    /* Google Maps コンテナの強制設定 */
-    .map-container,
-    #map-canvas,
-    #map-canvas-placeholder {
+    /* 地図ページでのみ適用される強制設定 */
+    body.map-page .map-container,
+    body.map-page #map-canvas,
+    body.map-page #map-canvas-placeholder {
       position: relative !important;
       overflow: hidden !important;
     }
 
-    /* スマートフォンでのマップ高さ強制設定 */
-    .smartphone-map-container {
+    /* スマートフォンでのマップ高さ強制設定（地図ページのみ） */
+    body.map-page .smartphone-map-container {
       height: calc(var(--mobile-vh, 100vh) - 56px - 64px) !important;
       min-height: 300px !important;
       max-height: calc(var(--mobile-vh, 100vh) - 100px) !important;
@@ -209,25 +208,20 @@
     }
   }
   
-  /* iOS Safari専用の高さ修正 */
+  /* iOS Safari専用の高さ修正（地図ページのみ） */
   @supports (-webkit-touch-callout: none) {
     @media screen and (max-width: 768px) {
-      html, body {
+      body.map-page {
         height: -webkit-fill-available;
         height: calc(var(--mobile-vh, 100vh));
       }
 
-      #__next {
+      body.map-page #__next {
         height: -webkit-fill-available;
         height: calc(var(--mobile-vh, 100vh));
       }
 
-      .map-container {
-        height: calc(100vh - 56px - 64px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
-        height: calc(var(--vh, 1vh) * 100 - 120px);
-      }
-
-      .smartphone-map-container {
+      body.map-page .smartphone-map-container {
         height: calc(-webkit-fill-available - 120px) !important;
         height: calc(var(--mobile-vh, 100vh) - 120px) !important;
       }
@@ -235,28 +229,16 @@
   }
   
   /* Android Chrome専用の高さ修正 */
-  @media screen and (max-width: 768px) and (orientation: portrait) {
-    .map-container {
-      height: calc(100vh - 56px - 64px);
-      height: calc(var(--vh, 1vh) * 100 - 120px);
-    }
-  }
-  
   @media screen and (max-width: 768px) and (orientation: landscape) {
-    .map-container {
-      height: calc(100vh - 56px - 64px);
-      height: calc(var(--vh, 1vh) * 100 - 120px);
-    }
-
-    .smartphone-map-container {
+    body.map-page .smartphone-map-container {
       height: calc(var(--mobile-vh, 100vh) - 80px) !important;
       min-height: 250px !important;
     }
   }
 
-  /* PWA環境での追加修正 */
+  /* PWA環境での追加修正（地図ページのみ） */
   @media screen and (max-width: 768px) and (display-mode: standalone) {
-    .smartphone-map-container {
+    body.map-page .smartphone-map-container {
       height: calc(var(--mobile-vh, 100vh) - 100px) !important;
     }
   }
@@ -369,7 +351,7 @@
     height: calc(var(--vh, 1vh) * 100);
   }
 
-  /* スマートフォン専用ユーティリティクラス */
+  /* 地図ページ専用ユーティリティクラス */
   .mobile-full-height {
     height: calc(var(--mobile-vh, 100vh));
     max-height: calc(var(--mobile-vh, 100vh));
