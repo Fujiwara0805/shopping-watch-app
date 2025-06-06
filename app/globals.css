@@ -61,23 +61,20 @@
     font-feature-settings: "rlig" 1, "calt" 1;
     -webkit-tap-highlight-color: transparent;
     text-rendering: optimizeLegibility;
-    overflow-x: hidden;
+    overflow-x: hidden; /* 横スクロールのみ無効 */
     position: relative;
     width: 100%;
     height: 100%;
     margin: 0;
     padding: 0;
+    /* 重要：デフォルトではautoに設定 */
+    overflow-y: auto;
   }
   
   /* Next.js ルートコンテナ */
   #__next {
-    height: 100%;
-    overflow: hidden;
-  }
-  
-  /* 固定ヘッダー・フッターレイアウト用の基本設定 */
-  body {
-    overflow: hidden; /* 全体のスクロールを無効化 */
+    min-height: 100%;
+    /* overflowの制御はAppLayoutに委譲 */
   }
   
   /* Use vh units properly on mobile */
@@ -125,13 +122,11 @@
     }
   }
   
-  /* 地図ページ専用のスタイル */
+  /* 地図ページ専用のスタイル（AppLayoutで動的に設定される） */
   body.map-page {
+    /* スタイルはAppLayoutで動的に設定されるため、ここでは基本設定のみ */
     @media screen and (max-width: 768px) {
-      height: 100vh;
-      height: calc(var(--mobile-vh, 100vh));
-      max-height: 100vh;
-      max-height: calc(var(--mobile-vh, 100vh));
+      position: relative;
     }
   }
 
@@ -179,8 +174,7 @@
   @supports (-webkit-touch-callout: none) {
     @media screen and (max-width: 768px) {
       body.map-page {
-        height: -webkit-fill-available;
-        height: calc(var(--mobile-vh, 100vh));
+        position: relative;
       }
 
       body.map-page #__next {

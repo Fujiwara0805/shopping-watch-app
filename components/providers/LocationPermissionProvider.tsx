@@ -64,7 +64,7 @@ export function LocationPermissionProvider({ children }: LocationPermissionProvi
         isOpen={showPermissionModal}
         onAllow={handleAllowLocation}
         onDeny={handleDenyLocation}
-        appName="お惣菜ウォッチャー"
+        appName="トクドク"
         permissionState={permissionState}
       />
     </LocationPermissionContext.Provider>

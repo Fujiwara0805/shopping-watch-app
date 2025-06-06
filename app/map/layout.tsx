@@ -15,20 +15,29 @@ export default function MapLayout({
     // 地図ページ専用のクラスを追加
     document.body.classList.add('map-page-layout');
     
+    // 地図ページでのスクロール制御
+    document.body.style.overflow = 'hidden';
+    
     return () => {
       document.body.classList.remove('map-page-layout');
+      // 離脱時にスクロールを復元
+      document.body.style.overflow = '';
     };
   }, []);
 
   const googleMapsApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+
+  if (!googleMapsApiKey) {
+    console.error("MapLayout: NEXT_PUBLIC_GOOGLE_MAPS_API_KEY is not defined");
+  }
 
   return (
     <>
       {/* Google Maps API Script - 確実に読み込む */}
       {googleMapsApiKey && (
         <Script
-          id="google-maps-api"
-          src={`https://maps.googleapis.com/maps/api/js?key=${googleMapsApiKey}&libraries=places&loading=async`}
+          id="google-maps-api-script"
+          src={`https://maps.googleapis.com/maps/api/js?key=${googleMapsApiKey}&libraries=places,geometry&loading=async`}
           strategy="beforeInteractive"
           onLoad={() => {
             console.log("MapLayout: Google Maps API loaded successfully");

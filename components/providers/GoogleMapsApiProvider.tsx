@@ -28,7 +28,7 @@ const CALLBACK_NAME = "initGoogleMapsApiGlobal";
 // グローバルな状態フラグ
 let scriptLoadInitiated = false;
 let googleMapsApiLoaded = false;
-let currentApiKey: string | null = null; // 読み込みに使用したAPIキーを記憶
+let currentApiKey: string | null = null;
 
 export const GoogleMapsApiProvider: React.FC<GoogleMapsApiProviderProps> = ({ children, apiKey }) => {
   const [isLoaded, setIsLoaded] = useState(googleMapsApiLoaded);
@@ -37,90 +37,110 @@ export const GoogleMapsApiProvider: React.FC<GoogleMapsApiProviderProps> = ({ ch
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    console.log("GoogleMapsApiProvider: useEffect triggered.");
-    console.log("Current flags - scriptLoadInitiated:", scriptLoadInitiated, "googleMapsApiLoaded:", googleMapsApiLoaded, "currentApiKey:", currentApiKey, "props.apiKey:", apiKey);
+    console.log("GoogleMapsApiProvider: useEffect triggered with apiKey:", apiKey);
+    console.log("Current flags - scriptLoadInitiated:", scriptLoadInitiated, "googleMapsApiLoaded:", googleMapsApiLoaded, "currentApiKey:", currentApiKey);
 
     // 既にAPIがロード済みで、使用したAPIキーも同じであれば何もしない
-    if (googleMapsApiLoaded && currentApiKey === apiKey) {
+    if (googleMapsApiLoaded && currentApiKey === apiKey && window.google?.maps) {
       console.log("GoogleMapsApiProvider: API already loaded with the same key.");
       setIsLoaded(true);
       return;
     }
 
-    // 既に別のAPIキーでロード試行/完了している場合はエラーまたは警告
+    // 既に別のAPIキーでロード試行/完了している場合はエラー
     if (scriptLoadInitiated && currentApiKey !== null && currentApiKey !== apiKey) {
-        console.error("GoogleMapsApiProvider: Attempting to load API with a new key after initial load. This is not supported by the current script loading logic.");
+        console.error("GoogleMapsApiProvider: Attempting to load API with a new key after initial load.");
         setLoadError(new Error("Google Maps API cannot be reloaded with a new API key."));
-        // setIsLoaded(false); // 既にロードされているかもしれないので、falseにするかは要検討
         return;
     }
     
-    // スクリプトロード処理を開始するのは scriptLoadInitiated が false の場合のみ
-    if (scriptLoadInitiated) {
-        console.log("GoogleMapsApiProvider: Script load already initiated. Waiting for it to complete if not already.");
-        // ロード完了を待つポーリング (既にAPIがロードされている可能性もあるため)
-        if (!googleMapsApiLoaded) {
-            const pollInterval = setInterval(() => {
-                if (window.google && window.google.maps) {
-                    console.log("GoogleMapsApiProvider: API loaded (polling).");
-                    setIsLoaded(true);
-                    googleMapsApiLoaded = true;
-                    // currentApiKey は最初のロード時に設定される
-                    clearInterval(pollInterval);
-                }
-            }, 100);
-            const timeoutId = setTimeout(() => {
-                clearInterval(pollInterval);
-                if (!googleMapsApiLoaded) console.warn("GoogleMapsApiProvider: Polling for API load timed out.");
-            }, 5000);
-            return () => { clearInterval(pollInterval); clearTimeout(timeoutId); };
-        } else {
-             setIsLoaded(true); // 既にロードされている
+    // 既にスクリプトロードが開始されている場合
+    if (scriptLoadInitiated && currentApiKey === apiKey) {
+        console.log("GoogleMapsApiProvider: Script load already initiated for this API key. Waiting...");
+        
+        // APIが既にロードされているかチェック
+        if (window.google?.maps) {
+            console.log("GoogleMapsApiProvider: API already available");
+            setIsLoaded(true);
+            googleMapsApiLoaded = true;
+            return;
         }
-        return;
+
+        // ロード完了を待つポーリング
+        const pollInterval = setInterval(() => {
+            if (window.google?.maps) {
+                console.log("GoogleMapsApiProvider: API loaded (polling).");
+                setIsLoaded(true);
+                googleMapsApiLoaded = true;
+                clearInterval(pollInterval);
+            }
+        }, 100);
+        
+        const timeoutId = setTimeout(() => {
+            clearInterval(pollInterval);
+            if (!googleMapsApiLoaded) {
+                console.warn("GoogleMapsApiProvider: Polling for API load timed out.");
+                setLoadError(new Error("Google Maps API load timeout"));
+            }
+        }, 10000); // 10秒タイムアウト
+        
+        return () => { 
+            clearInterval(pollInterval); 
+            clearTimeout(timeoutId); 
+        };
     }
 
-    console.log("GoogleMapsApiProvider: Initiating script load.");
+    console.log("GoogleMapsApiProvider: Initiating script load for apiKey:", apiKey);
     scriptLoadInitiated = true;
-    currentApiKey = apiKey; // このAPIキーでロードすることを記録
+    currentApiKey = apiKey;
 
+    // 既存のスクリプトがあれば削除
+    const existingScript = document.getElementById(SCRIPT_ID);
+    if (existingScript) {
+        existingScript.remove();
+    }
+
+    // グローバルコールバック関数を設定
     (window as any)[CALLBACK_NAME] = () => {
       console.log("GoogleMapsApiProvider: Global callback executed.");
       googleMapsApiLoaded = true;
       setIsLoaded(true);
       setLoadError(null);
+      
+      // カスタムイベントを発火（layout.tsxで監視）
+      window.dispatchEvent(new CustomEvent('google-maps-api-loaded'));
     };
 
+    // スクリプトを作成・追加
     const script = document.createElement('script');
     script.id = SCRIPT_ID;
-    // loading=async を追加してみる
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&loading=async&callback=${CALLBACK_NAME}`;
-    script.async = true; // defer より async の方が callback との組み合わせでは一般的
-    // script.defer = true; // async と defer の両方指定は意味がないので defer は削除
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places,geometry&loading=async&callback=${CALLBACK_NAME}`;
+    script.async = true;
+    
     script.onerror = (event: Event | string) => {
       console.error("GoogleMapsApiProvider: Failed to load Google Maps API script.", event);
       setLoadError(new Error('Google Maps API script could not be loaded.'));
       setIsLoaded(false);
       googleMapsApiLoaded = false;
-      scriptLoadInitiated = false; // 再試行の余地を残す
-      currentApiKey = null;       // 使用したAPIキーもリセット
+      scriptLoadInitiated = false;
+      currentApiKey = null;
 
+      // 失敗したスクリプトを削除
       const problematicScript = document.getElementById(SCRIPT_ID);
       if (problematicScript) problematicScript.remove();
+      
+      // グローバルコールバックを削除
       delete (window as any)[CALLBACK_NAME];
     };
 
     document.head.appendChild(script);
-    console.log("GoogleMapsApiProvider: Script appended to head.");
+    console.log("GoogleMapsApiProvider: Script appended to head with src:", script.src);
 
-    // useEffect の依存配列を空にすることで、このeffectは初回マウント時のみ実行される
-    // (またはアンマウント後の再マウント時)
-    // apiKeyが変更された場合の再ロードは現在のロジックでは対応していないことに注意
-  }, []); // 依存配列を空にする！ (apiKey を削除)
+  }, [apiKey]); // apiKeyを依存配列に含める
 
   return (
     <GoogleMapsApiContext.Provider value={{ isLoaded, loadError }}>
       {children}
     </GoogleMapsApiContext.Provider>
   );
-}; 
+};

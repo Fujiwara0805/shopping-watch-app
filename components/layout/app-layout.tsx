@@ -39,8 +39,12 @@ export default function AppLayout({
     // 地図ページの場合、bodyに map-page クラスを追加
     if (isMapPage) {
       document.body.classList.add('map-page');
+      // 地図ページでは全体のスクロールを無効化
+      document.body.style.overflow = 'hidden';
     } else {
       document.body.classList.remove('map-page');
+      // 通常ページでは全体のスクロールを有効化
+      document.body.style.overflow = 'auto';
     }
 
     const updateViewportHeight = () => {
@@ -112,6 +116,8 @@ export default function AppLayout({
       if (isMapPage) {
         document.body.classList.remove('map-page');
       }
+      // ページ離脱時にスクロールを復元
+      document.body.style.overflow = '';
     };
   }, [isMapPage]);
   
@@ -122,47 +128,44 @@ export default function AppLayout({
     exit: { opacity: 0, x: 0, y: 20 },
   };
 
-  // 共通の固定レイアウト構造（ヘッダー・フッター固定、コンテンツスクロール可能）
-  return (
-    <div 
-      className="flex flex-col bg-background"
-      style={{ 
-        height: isMapPage ? 'calc(var(--mobile-vh, 100vh))' : '100vh',
-        maxHeight: isMapPage ? 'calc(var(--mobile-vh, 100vh))' : '100vh',
-        overflow: 'hidden' // 全体のスクロールを無効
-      }}
-    >
-      {/* 固定ヘッダー */}
-      {showHeader && (
-        <div className="flex-shrink-0 z-50">
-          <AppHeader />
-        </div>
-      )}
-      
-      {/* メインコンテンツエリア */}
-      <main 
-        className="flex-1 relative"
-        style={{
-          height: showHeader 
-            ? 'calc(100% - 56px)' // ヘッダーの高さを引く
-            : '100%',
-          overflow: isMapPage ? 'hidden' : 'auto' // 地図ページ以外はスクロール可能
+  // 地図ページ専用レイアウト
+  if (isMapPage) {
+    return (
+      <div 
+        className="flex flex-col bg-background"
+        style={{ 
+          height: 'calc(var(--mobile-vh, 100vh))',
+          maxHeight: 'calc(var(--mobile-vh, 100vh))',
+          overflow: 'hidden'
         }}
       >
-        <motion.div
-          key={pathname}
-          initial="hidden"
-          animate="enter"
-          exit="exit"
-          variants={variants}
-          transition={{ duration: 0.3, type: 'tween' }}
-          className={isMapPage ? "h-full flex flex-col" : "min-h-full"}
+        {/* 固定ヘッダー */}
+        {showHeader && (
+          <div className="flex-shrink-0 z-50">
+            <AppHeader />
+          </div>
+        )}
+        
+        {/* メインコンテンツエリア（地図専用） */}
+        <main 
+          className="flex-1 relative"
           style={{
-            paddingBottom: showNav ? (isMapPage ? '64px' : '80px') : '16px'
+            height: showHeader ? 'calc(100% - 56px)' : '100%',
+            overflow: 'hidden'
           }}
         >
-          {isMapPage ? (
-            // 地図ページ：固定高さレイアウト
+          <motion.div
+            key={pathname}
+            initial="hidden"
+            animate="enter"
+            exit="exit"
+            variants={variants}
+            transition={{ duration: 0.3, type: 'tween' }}
+            className="h-full flex flex-col"
+            style={{
+              paddingBottom: showNav ? '64px' : '0px'
+            }}
+          >
             <div 
               className="flex-1"
               style={{
@@ -172,18 +175,50 @@ export default function AppLayout({
             >
               {children}
             </div>
-          ) : (
-            // 通常ページ：スクロール可能レイアウト
-            <div className="w-full">
-              {children}
-            </div>
-          )}
+          </motion.div>
+        </main>
+        
+        {/* 固定フッター */}
+        {showNav && (
+          <div className="flex-shrink-0 z-50">
+            <MainNav />
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // 通常ページ用レイアウト（スクロール可能）
+  return (
+    <div className="flex flex-col min-h-screen bg-background">
+      {/* 固定ヘッダー */}
+      {showHeader && (
+        <div className="sticky top-0 z-50">
+          <AppHeader />
+        </div>
+      )}
+      
+      {/* メインコンテンツエリア（スクロール可能） */}
+      <main className="flex-1 relative">
+        <motion.div
+          key={pathname}
+          initial="hidden"
+          animate="enter"
+          exit="exit"
+          variants={variants}
+          transition={{ duration: 0.3, type: 'tween' }}
+          className="min-h-full"
+          style={{
+            paddingBottom: showNav ? '80px' : '16px'
+          }}
+        >
+          {children}
         </motion.div>
       </main>
       
       {/* 固定フッター */}
       {showNav && (
-        <div className="flex-shrink-0 z-50">
+        <div className="fixed bottom-0 left-0 right-0 z-50">
           <MainNav />
         </div>
       )}
