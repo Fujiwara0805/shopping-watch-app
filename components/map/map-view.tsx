@@ -1,13 +1,14 @@
 "use client";
 
 import { useRef, useEffect, useState, useCallback } from 'react';
-import { useGeolocation } from '@/lib/hooks/use-geolocation';
+import { useGeolocation } from '@/lib/hooks/use-geolocation'; // Enhanced version
 import { useGoogleMapsApi } from '@/components/providers/GoogleMapsApiProvider';
 import { Button } from '@/components/ui/button';
-import { MapPin, AlertTriangle, Navigation, RefreshCw, Smartphone, Monitor, Globe } from 'lucide-react';
+import { MapPin, AlertTriangle, Navigation, RefreshCw, Smartphone, Monitor, Globe, Clock } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { MapSearchControl } from './MapSearchControl';
-import { CrossBrowserLocationGuide } from './CrossBrowserLocationGuide';
+import { CrossBrowserLocationGuide } from './CrossBrowserLocationGuide'; // Enhanced version
+import { LocationPermissionManager } from '@/lib/hooks/LocationPermissionManager';
 
 declare global {
   interface Window {
@@ -32,8 +33,11 @@ export function MapView() {
     error: locationError, 
     permissionState, 
     requestLocation,
-    browserInfo
-  } = useGeolocation();
+    browserInfo,
+    // 新しく追加されたプロパティ
+    isPermissionGranted,
+    permissionRemainingMinutes
+  } = useGeolocation(); // Enhanced hook
 
   const [mapInitialized, setMapInitialized] = useState(false);
   const [initializationError, setInitializationError] = useState<string | null>(null);
@@ -48,13 +52,20 @@ export function MapView() {
   const [distanceToSelectedPlace, setDistanceToSelectedPlace] = useState<string | null>(null);
   const [userLocationMarker, setUserLocationMarker] = useState<google.maps.Marker | null>(null);
 
-  // ブラウザ別のガイド表示制御
+  // 改良されたガイド表示制御（許可状態を考慮）
   useEffect(() => {
+    // 既に許可されている場合はガイドを表示しない
+    if (isPermissionGranted && permissionRemainingMinutes > 0) {
+      setShowLocationGuide(false);
+      return;
+    }
+
     const shouldShowGuide = (
       (permissionState === 'prompt' || permissionState === 'denied') && 
       !latitude && 
       !longitude &&
-      browserInfo.name !== 'unknown'
+      browserInfo.name !== 'unknown' &&
+      !isPermissionGranted
     );
 
     if (shouldShowGuide) {
@@ -68,10 +79,10 @@ export function MapView() {
     } else {
       setShowLocationGuide(false);
     }
-  }, [browserInfo.name, permissionState, latitude, longitude]);
+  }, [browserInfo.name, permissionState, latitude, longitude, isPermissionGranted, permissionRemainingMinutes]);
 
-  // デバッグ情報の出力（クロスブラウザ対応状況も含む）
-  console.log("MapView CrossBrowser: Current state:", {
+  // デバッグ情報の出力（許可状態情報も含む）
+  console.log("MapView Enhanced: Current state:", {
     googleMapsLoaded,
     googleMapsLoading,
     googleMapsLoadError: !!googleMapsLoadError,
@@ -82,10 +93,13 @@ export function MapView() {
     browserInfo,
     containerDimensions,
     mapInitialized,
-    showLocationGuide
+    showLocationGuide,
+    isPermissionGranted,
+    permissionRemainingMinutes,
+    storedPermissionInfo: LocationPermissionManager.getPermissionInfo()
   });
 
-  // コンテナ寸法の取得（ブラウザ別最適化）
+  // コンテナ寸法の取得（変更なし）
   const updateContainerDimensions = useCallback(() => {
     if (!mapContainerRef.current) return false;
     
@@ -116,7 +130,7 @@ export function MapView() {
     return width > 0 && height > 200;
   }, [browserInfo.name]);
 
-  // コンテナ寸法の監視（ブラウザ別イベント対応）
+  // コンテナ寸法の監視（変更なし）
   useEffect(() => {
     updateContainerDimensions();
     
@@ -157,14 +171,14 @@ export function MapView() {
     };
   }, [updateContainerDimensions, browserInfo.name]);
 
-  // ブラウザ別の位置情報要求
+  // 改良された位置情報要求ハンドラー
   const handleLocationRequest = () => {
     console.log(`MapView: ${browserInfo.name} location request triggered`);
     setShowLocationGuide(false);
-    requestLocation();
+    requestLocation(); // Enhanced hook will handle permission saving
   };
 
-  // 地図初期化のメイン処理（ブラウザ別最適化）
+  // 地図初期化のメイン処理（変更なし）
   const initializeMap = useCallback(() => {
     console.log(`MapView ${browserInfo.name}: initializeMap called with conditions:`, {
       container: !!mapContainerRef.current,
@@ -320,7 +334,7 @@ export function MapView() {
     }
   }, [googleMapsLoaded, latitude, longitude, containerDimensions, mapInitialized, browserInfo.name]);
 
-  // 地図初期化の実行タイミング制御（ブラウザ別）
+  // 地図初期化の実行タイミング制御（変更なし）
   useEffect(() => {
     if (googleMapsLoaded && 
         latitude && 
@@ -343,7 +357,7 @@ export function MapView() {
     }
   }, [googleMapsLoaded, latitude, longitude, containerDimensions, mapInitialized, initializeMap, browserInfo.name]);
 
-  // ユーザー位置マーカーの設置
+  // ユーザー位置マーカーの設置（変更なし）
   useEffect(() => {
     if (map && latitude && longitude && mapInitialized && window.google?.maps) {
       console.log(`MapView ${browserInfo.name}: Setting user location marker`);
@@ -379,7 +393,7 @@ export function MapView() {
     }
   }, [map, latitude, longitude, mapInitialized, userLocationMarker, browserInfo.name]);
 
-  // 再試行機能
+  // 改良された再試行機能
   const handleRetry = () => {
     console.log(`MapView ${browserInfo.name}: Retrying initialization`);
     setInitializationError(null);
@@ -393,15 +407,18 @@ export function MapView() {
       mapContainerRef.current.innerHTML = '';
     }
     
+    // 許可状態を確認してから再試行
+    const permissionInfo = LocationPermissionManager.checkPermission();
+    
     setTimeout(() => {
       updateContainerDimensions();
-      if (!latitude || !longitude) {
+      if (!latitude || !longitude || !permissionInfo.isGranted) {
         requestLocation();
       }
     }, 100);
   };
 
-  // ブラウザアイコンの取得
+  // ブラウザアイコンの取得（変更なし）
   const getBrowserIcon = (browserName: string) => {
     switch (browserName) {
       case 'safari': return Smartphone;
@@ -412,7 +429,7 @@ export function MapView() {
     }
   };
 
-  // メッセージカードコンポーネント
+  // メッセージカードコンポーネント（変更なし）
   const MessageCard = ({ icon: Icon, title, message, children, variant = 'default' }: {
     icon?: React.ElementType;
     title: string;
@@ -440,7 +457,7 @@ export function MapView() {
     );
   };
 
-  // 場所選択ハンドラー
+  // 場所選択ハンドラー（変更なし）
   const handlePlaceSelected = (place: google.maps.places.PlaceResult, distance: string | null) => {
     setSelectedPlace(place);
     setDistanceToSelectedPlace(distance);
@@ -476,8 +493,8 @@ export function MapView() {
     window.open(url, '_blank');
   };
 
-  // クロスブラウザ位置情報ガイドの表示
-  if (showLocationGuide) {
+  // 改良されたクロスブラウザ位置情報ガイドの表示判定
+  if (showLocationGuide && !isPermissionGranted) {
     const BrowserIcon = getBrowserIcon(browserInfo.name);
     
     return (
@@ -505,12 +522,14 @@ export function MapView() {
           permissionState={permissionState}
           onRequestLocation={handleLocationRequest}
           onClose={() => setShowLocationGuide(false)}
+          isPermissionGranted={isPermissionGranted}
+          permissionRemainingMinutes={permissionRemainingMinutes}
         />
       </>
     );
   }
 
-  // エラー状態の処理
+  // エラー状態の処理（変更なし）
   if (googleMapsLoadError) {
     return (
       <MessageCard 
@@ -543,8 +562,8 @@ export function MapView() {
     );
   }
 
-  // 位置情報エラー（ブラウザ別メッセージ改善）
-  if (permissionState === 'denied' || locationError) {
+  // 改良された位置情報エラー処理
+  if ((permissionState === 'denied' || locationError) && !isPermissionGranted) {
     const getBrowserLocationMessage = () => {
       if (locationError) return locationError;
       
@@ -587,7 +606,7 @@ export function MapView() {
     );
   }
 
-  // ローディング状態
+  // 改良されたローディング状態（許可状態を考慮）
   if (googleMapsLoading || 
       !googleMapsLoaded || 
       containerDimensions.height === 0 || 
@@ -599,7 +618,13 @@ export function MapView() {
     if (googleMapsLoading) loadingMessage = "Google Maps APIを読み込み中...";
     else if (!googleMapsLoaded) loadingMessage = "Google Maps APIを待機中...";
     else if (containerDimensions.height === 0) loadingMessage = "画面サイズを調整中...";
-    else if (locationLoading) loadingMessage = "現在位置を取得中...";
+    else if (locationLoading) {
+      if (isPermissionGranted) {
+        loadingMessage = "保存された設定で位置情報を取得中...";
+      } else {
+        loadingMessage = "現在位置を取得中...";
+      }
+    }
     else if (!latitude || !longitude) {
       loadingMessage = "位置情報を待機中...";
     }
@@ -619,8 +644,16 @@ export function MapView() {
             {loadingMessage}
           </p>
           
+          {/* 許可状態の表示 */}
+          {isPermissionGranted && permissionRemainingMinutes > 0 && (
+            <div className="flex items-center text-green-600 text-sm mb-4">
+              <Clock className="h-4 w-4 mr-2" />
+              位置情報許可中（残り約{permissionRemainingMinutes}分）
+            </div>
+          )}
+          
           {/* ブラウザ別の位置情報ヘルプボタン */}
-          {(permissionState === 'prompt' || !latitude) && (
+          {(permissionState === 'prompt' || (!latitude && !isPermissionGranted)) && (
             <Button 
               variant="outline" 
               size="sm"
@@ -643,6 +676,16 @@ export function MapView() {
         ref={mapContainerRef} 
         className="w-full h-full"
       />
+
+      {/* 許可状態インジケーター（左下に配置） */}
+      {isPermissionGranted && permissionRemainingMinutes > 0 && map && mapInitialized && (
+        <div className="absolute bottom-20 left-2 z-30 bg-green-100 border border-green-300 rounded-lg px-3 py-2 text-sm text-green-800 shadow-lg">
+          <div className="flex items-center">
+            <Clock className="h-4 w-4 mr-2" />
+            位置情報有効（残り{permissionRemainingMinutes}分）
+          </div>
+        </div>
+      )}
 
       {map && mapInitialized && (
         <div 
@@ -695,6 +738,8 @@ export function MapView() {
         permissionState={permissionState}
         onRequestLocation={handleLocationRequest}
         onClose={() => setShowLocationGuide(false)}
+        isPermissionGranted={isPermissionGranted}
+        permissionRemainingMinutes={permissionRemainingMinutes}
       />
     </div>
   );

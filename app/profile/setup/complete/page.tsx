@@ -28,7 +28,7 @@ export default function ProfileSetupCompletePage() {
         <h1 className="text-3xl font-bold text-center mb-4">
           登録完了！
         </h1>
-        <p className="text-lg text-muted-foreground text-center mb-8">
+        <p className="text-base text-muted-foreground text-center mb-8">
           プロフィールの登録が正常に完了しました。
         </p>
         <motion.div whileTap={{ scale: 0.98 }}>

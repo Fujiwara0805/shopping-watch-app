@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { LocationPermissionManager } from '@/lib/hooks/LocationPermissionManager';
 
 interface BrowserInfo {
   name: 'chrome' | 'firefox' | 'edge' | 'safari' | 'opera' | 'unknown';
@@ -15,6 +16,8 @@ interface GeolocationState {
   loading: boolean;
   permissionState: 'prompt' | 'granted' | 'denied' | 'unavailable' | 'pending';
   browserInfo: BrowserInfo;
+  isPermissionGranted: boolean;
+  permissionRemainingMinutes: number;
 }
 
 const detectBrowser = (): BrowserInfo => {
@@ -51,7 +54,7 @@ const detectBrowser = (): BrowserInfo => {
     try {
       localStorage.setItem('test_private', 'test');
       localStorage.removeItem('test_private');
-    } catch (e: any) { // e の型を any に変更
+    } catch (e: any) {
       if (e.name === 'QuotaExceededError' || e.name === 'SecurityError') {
           isPrivateMode = true;
       }
@@ -69,13 +72,29 @@ export function useGeolocation() {
     loading: false,
     permissionState: 'pending',
     browserInfo: detectBrowser(),
+    isPermissionGranted: false,
+    permissionRemainingMinutes: 0,
   }));
 
-  const requestLocation = useCallback(() => {
-    console.log(`useGeolocation: requestLocation called for ${state.browserInfo.name}`);
+  // 保存された許可状態をチェック
+  const checkStoredPermission = useCallback(() => {
+    const permissionInfo = LocationPermissionManager.checkPermission();
+    const remainingMinutes = LocationPermissionManager.getRemainingMinutes();
     
+    setState(prev => ({
+      ...prev,
+      isPermissionGranted: permissionInfo.isGranted,
+      permissionRemainingMinutes: remainingMinutes
+    }));
+    
+    console.log('useGeolocation: Stored permission check', permissionInfo);
+    
+    return permissionInfo;
+  }, []);
+
+  // 位置情報取得の実行
+  const getCurrentPosition = useCallback((isAutoRequest = false) => {
     if (!navigator.geolocation) {
-      console.error("useGeolocation: Geolocation API not available.");
       setState(prev => ({
         ...prev,
         error: 'お使いのブラウザでは位置情報を利用できません。',
@@ -96,6 +115,8 @@ export function useGeolocation() {
       return;
     }
 
+    console.log(`useGeolocation: Starting location request for ${state.browserInfo.name}`, { isAutoRequest });
+
     setState(prev => ({ 
       ...prev, 
       loading: true, 
@@ -103,8 +124,6 @@ export function useGeolocation() {
       latitude: null, 
       longitude: null,
     }));
-    
-    console.log(`useGeolocation: Starting location request for ${state.browserInfo.name}`);
 
     const options = {
       enableHighAccuracy: true,
@@ -125,12 +144,19 @@ export function useGeolocation() {
         error: null,
         loading: false,
         permissionState: 'granted',
+        isPermissionGranted: true,
+        permissionRemainingMinutes: 60
       }));
+
+      // 成功時に許可状態を保存（手動要求の場合のみ）
+      if (!isAutoRequest) {
+        LocationPermissionManager.savePermission();
+        console.log('useGeolocation: Permission saved after successful location request');
+      }
     };
 
     const errorCallback = (geoError: GeolocationPositionError) => {
       console.error(`useGeolocation: getCurrentPosition error for ${state.browserInfo.name}:`, geoError);
-      console.error(`${state.browserInfo.name} Error Code: ${geoError.code}, Message: ${geoError.message}`);
 
       let permissionErrorType: GeolocationState['permissionState'] = 'denied';
       let errorMessage = '';
@@ -152,6 +178,8 @@ export function useGeolocation() {
             errorMessage = '位置情報の利用がブロックされています。ブラウザの設定を確認してください。';
           }
           permissionErrorType = 'denied';
+          // 許可が拒否された場合は保存された状態をクリア
+          LocationPermissionManager.clearPermission();
           break;
           
         case geoError.POSITION_UNAVAILABLE:
@@ -195,6 +223,8 @@ export function useGeolocation() {
         permissionState: permissionErrorType,
         latitude: null,
         longitude: null,
+        isPermissionGranted: permissionErrorType === 'granted',
+        permissionRemainingMinutes: permissionErrorType === 'granted' ? prev.permissionRemainingMinutes : 0
       }));
     };
 
@@ -212,7 +242,7 @@ export function useGeolocation() {
     }
 
     try {
-      const watchId = navigator.geolocation.getCurrentPosition(
+      navigator.geolocation.getCurrentPosition(
         (position) => {
           if (timeoutId) clearTimeout(timeoutId);
           successCallback(position);
@@ -233,9 +263,25 @@ export function useGeolocation() {
         permissionState: 'unavailable',
       }));
     }
-
   }, [state.permissionState, state.browserInfo]);
 
+  const requestLocation = useCallback(() => {
+    console.log(`useGeolocation: requestLocation called for ${state.browserInfo.name}`);
+    getCurrentPosition(false); // 手動要求
+  }, [getCurrentPosition, state.browserInfo.name]);
+
+  // 初期化時の許可状態チェックと自動位置取得
+  useEffect(() => {
+    const permissionInfo = checkStoredPermission();
+    
+    // 既に許可されている場合は自動的に位置情報を取得
+    if (permissionInfo.isGranted && !permissionInfo.isExpired) {
+      console.log('useGeolocation: Auto-requesting location (permission already granted)');
+      getCurrentPosition(true); // 自動要求
+    }
+  }, [checkStoredPermission, getCurrentPosition]);
+
+  // Permissions API による許可状態の監視
   useEffect(() => {
     if (state.permissionState === 'pending') {
       console.log(`useGeolocation: Checking permissions for ${state.browserInfo.name}`);
@@ -250,11 +296,22 @@ export function useGeolocation() {
             }));
             
             permissionStatus.onchange = () => {
+              const newState = permissionStatus.state as GeolocationState['permissionState'];
               setState(prev => ({ 
                 ...prev, 
-                permissionState: permissionStatus.state as GeolocationState['permissionState'], 
+                permissionState: newState, 
                 loading: false 
               }));
+              
+              // 許可が拒否された場合は保存された状態をクリア
+              if (newState === 'denied') {
+                LocationPermissionManager.clearPermission();
+                setState(prev => ({
+                  ...prev,
+                  isPermissionGranted: false,
+                  permissionRemainingMinutes: 0
+                }));
+              }
             };
           })
           .catch(err => {
@@ -268,9 +325,31 @@ export function useGeolocation() {
     }
   }, [state.permissionState, state.browserInfo.name, state.browserInfo.supportsPermissionsAPI]);
 
+  // 定期的な許可状態の更新（5分ごと）
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const permissionInfo = checkStoredPermission();
+      
+      // 許可が期限切れの場合は位置情報をクリア
+      if (permissionInfo.isExpired && (state.latitude || state.longitude)) {
+        setState(prev => ({
+          ...prev,
+          latitude: null,
+          longitude: null,
+          isPermissionGranted: false,
+          permissionRemainingMinutes: 0
+        }));
+        console.log('useGeolocation: Permission expired, clearing location data');
+      }
+    }, 5 * 60 * 1000); // 5分ごと
+
+    return () => clearInterval(interval);
+  }, [checkStoredPermission, state.latitude, state.longitude]);
+
   console.log(`useGeolocation ${state.browserInfo.name}: Current state:`, {
     ...state,
-    userAgent: typeof window !== 'undefined' ? navigator.userAgent : 'server'
+    userAgent: typeof window !== 'undefined' ? navigator.userAgent : 'server',
+    storedPermissionInfo: LocationPermissionManager.getPermissionInfo()
   });
   
   return { ...state, requestLocation };
