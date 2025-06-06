@@ -10,6 +10,7 @@ import {
   AlertTriangle, 
   RefreshCw
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 interface CrossBrowserLocationGuideProps {
   isVisible: boolean;
@@ -30,6 +31,7 @@ export function CrossBrowserLocationGuide({
   onRequestLocation,
   onClose 
 }: CrossBrowserLocationGuideProps) {
+  const router = useRouter();
 
   if (!isVisible) return null;
 
@@ -134,10 +136,12 @@ export function CrossBrowserLocationGuide({
           {onClose && (
             <Button 
               variant="outline" 
-              onClick={onClose} 
+              onClick={()=>{
+                router.push('/');
+              }} 
               className="w-full"
             >
-              後で設定する
+              戻る
             </Button>
           )}
         </div>

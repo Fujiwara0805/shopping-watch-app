@@ -301,7 +301,7 @@ export function MapView() {
       const timeout = setTimeout(() => {
         if (!mapInitialized) {
           console.error(`MapView ${browserInfo.name}: Map initialization timeout`);
-          setInitializationError("地図の初期化がタイムアウトしました。再試行してください。");
+          setInitializationError("タイムアウトしました。再度ロードしてください。");
           initializationTriedRef.current = false;
         }
       }, 40000); // 40秒に統一
