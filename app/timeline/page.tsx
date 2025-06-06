@@ -1021,8 +1021,8 @@ export default function Timeline() {
       <div 
         className="timeline-scroll-container custom-scrollbar overscroll-none"
         style={{ 
-          height: 'calc(100vh - 136px)',
-          maxHeight: 'calc(100vh - 136px)',
+          height: 'calc(100vh - 180px)',
+          maxHeight: 'calc(100vh - 180px)',
           overflowY: 'auto',
           overflowX: 'hidden'
         }}
