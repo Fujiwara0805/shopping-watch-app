@@ -8,7 +8,7 @@ import AppLayout from "@/components/layout/app-layout";
 import { GoogleIcon } from "@/components/common/icons/GoogleIcon";
 import { LineIcon } from "@/components/common/icons/LineIcon";
 import { LineConsentModal } from "@/components/common/LineConsentModal";
-import { Loader2, AlertTriangle } from "lucide-react";
+import { Loader2, AlertTriangle, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function LoginPage() {
@@ -59,6 +59,10 @@ export default function LoginPage() {
     await signIn("line", { redirect: false });
   };
 
+  const handleContinueWithoutLogin = () => {
+    router.push("/timeline");
+  };
+
   if (status === "loading" && !isLoading) {
     return (
       <AppLayout showHeader={false} showNav={false}>
@@ -97,8 +101,11 @@ export default function LoginPage() {
             >
               ログインして素敵な体験を始めよう
             </motion.h1>
-            <p className="text-[#73370c]/70 mb-8 text-sm sm:text-base">
+            <p className="text-[#73370c]/70 mb-2 text-sm sm:text-base">
               お気に入りのショップ情報を簡単に見つけよう！
+            </p>
+            <p className="text-[#73370c]/60 mb-8 text-xs sm:text-sm">
+              ログインすると、お気に入り機能や投稿機能を使用できます
             </p>
 
             {error && (
@@ -118,6 +125,7 @@ export default function LoginPage() {
                 disabled={isLoading}
                 variant="outline"
                 className="w-full border-[#73370c]/20 hover:bg-[#73370c]/5 text-[#73370c] text-base sm:text-lg py-6 sm:py-7 shadow-md flex items-center justify-center space-x-3 rounded-lg transition-colors"
+                style={{ fontSize: '16px' }}
               >
                 {isLoading ? (
                   <Loader2 className="h-6 w-6 animate-spin" />
@@ -130,12 +138,13 @@ export default function LoginPage() {
               </Button>
             </motion.div>
 
-            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="mb-6">
               <Button
                 onClick={handleLineLogin}
                 disabled={isLoading}
                 variant="outline"
                 className="w-full border-[#73370c]/20 hover:bg-[#73370c]/5 text-[#73370c] text-base sm:text-lg py-6 sm:py-7 shadow-md flex items-center justify-center space-x-3 rounded-lg transition-colors"
+                style={{ fontSize: '16px' }}
               >
                 {isLoading ? (
                   <Loader2 className="h-6 w-6 animate-spin" />
@@ -148,7 +157,19 @@ export default function LoginPage() {
               </Button>
             </motion.div>
 
-            <p className="text-xs text-[#73370c]/60 mt-8">
+            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="mb-6">
+              <Button
+                onClick={handleContinueWithoutLogin}
+                variant="ghost"
+                className="w-full text-[#73370c]/70 hover:text-[#73370c] hover:bg-[#73370c]/5 text-sm sm:text-base py-4 flex items-center justify-center space-x-2 rounded-lg transition-colors border border-[#73370c]/10"
+                style={{ fontSize: '16px' }}
+              >
+                <span>ログインせず続ける</span>
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </motion.div>
+
+            <p className="text-xs text-[#73370c]/60 mt-4">
               ログインすることで、
               <a href="/terms" className="underline hover:text-[#73370c] transition-colors">利用規約</a>および
               <a href="/privacy" className="underline hover:text-[#73370c] transition-colors">プライバシーポリシー</a>
