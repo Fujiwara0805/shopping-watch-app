@@ -2,57 +2,77 @@
 
 import { useState, useEffect, useCallback } from 'react';
 
+interface BrowserInfo {
+  name: 'chrome' | 'firefox' | 'edge' | 'safari' | 'opera' | 'unknown';
+  isPrivateMode: boolean;
+  supportsPermissionsAPI: boolean;
+}
+
 interface GeolocationState {
   latitude: number | null;
   longitude: number | null;
   error: string | null;
   loading: boolean;
   permissionState: 'prompt' | 'granted' | 'denied' | 'unavailable' | 'pending';
-  isSafari: boolean;
-  isPrivateMode: boolean;
+  browserInfo: BrowserInfo;
 }
 
-// Safari・iPhone検出
-const detectBrowser = () => {
-  if (typeof window === 'undefined') return { isSafari: false, isPrivateMode: false };
-  
+const detectBrowser = (): BrowserInfo => {
+  if (typeof window === 'undefined') {
+    return { name: 'unknown', isPrivateMode: false, supportsPermissionsAPI: false };
+  }
+
   const userAgent = navigator.userAgent;
-  const isSafari = /Safari/.test(userAgent) && !/Chrome/.test(userAgent);
-  const isIOS = /iPad|iPhone|iPod/.test(userAgent);
-  
-  // プライベートモードの検出（Safari限定）
+  let name: BrowserInfo['name'] = 'unknown';
   let isPrivateMode = false;
-  if (isSafari || isIOS) {
+  const supportsPermissionsAPI = 'permissions' in navigator && typeof navigator.permissions.query === 'function';
+
+  if (/Chrome/.test(userAgent) && !/Edge/.test(userAgent) && !/CriOS/.test(userAgent)) {
+    name = 'chrome';
+  } else if (/Firefox/.test(userAgent)) {
+    name = 'firefox';
+  } else if (/Edge/.test(userAgent)) {
+    name = 'edge';
+  } else if ((/Safari/.test(userAgent) && !/Chrome/.test(userAgent)) || /iPad|iPhone|iPod/.test(userAgent)) {
+    name = 'safari';
+    // Safari/iOS private mode detection
     try {
       localStorage.setItem('test', 'test');
       localStorage.removeItem('test');
     } catch (e) {
       isPrivateMode = true;
     }
+  } else if (/Opera|OPR\//.test(userAgent)) {
+    name = 'opera';
   }
-  
-  return { isSafari: isSafari || isIOS, isPrivateMode };
+
+  // General private mode detection (less reliable for all browsers)
+  if (name !== 'safari') {
+    try {
+      localStorage.setItem('test_private', 'test');
+      localStorage.removeItem('test_private');
+    } catch (e: any) { // e の型を any に変更
+      if (e.name === 'QuotaExceededError' || e.name === 'SecurityError') {
+          isPrivateMode = true;
+      }
+    }
+  }
+
+  return { name, isPrivateMode, supportsPermissionsAPI };
 };
 
 export function useGeolocation() {
-  const [state, setState] = useState<GeolocationState>({
+  const [state, setState] = useState<GeolocationState>(() => ({
     latitude: null,
     longitude: null,
     error: null,
     loading: false,
     permissionState: 'pending',
-    isSafari: false,
-    isPrivateMode: false,
-  });
-
-  // ブラウザ検出の初期化
-  useEffect(() => {
-    const { isSafari, isPrivateMode } = detectBrowser();
-    setState(prev => ({ ...prev, isSafari, isPrivateMode }));
-  }, []);
+    browserInfo: detectBrowser(),
+  }));
 
   const requestLocation = useCallback(() => {
-    console.log("useGeolocation: requestLocation called for Safari");
+    console.log(`useGeolocation: requestLocation called for ${state.browserInfo.name}`);
     
     if (!navigator.geolocation) {
       console.error("useGeolocation: Geolocation API not available.");
@@ -65,8 +85,8 @@ export function useGeolocation() {
       return;
     }
 
-    // プライベートモードのチェック（Safari）
-    if (state.isPrivateMode) {
+    // プライベートモードのチェック
+    if (state.browserInfo.isPrivateMode) {
       setState(prev => ({
         ...prev,
         error: 'プライベートブラウジングモードでは位置情報を取得できません。通常モードでアクセスしてください。',
@@ -84,45 +104,40 @@ export function useGeolocation() {
       longitude: null,
     }));
     
-    console.log("useGeolocation: Starting location request for Safari");
+    console.log(`useGeolocation: Starting location request for ${state.browserInfo.name}`);
 
-    // Safari用の設定オプション
-    const safariOptions = {
+    const options = {
       enableHighAccuracy: true,
-      timeout: state.isSafari ? 30000 : 20000, // Safariは長めのタイムアウト
-      maximumAge: state.isSafari ? 60000 : 0, // Safariはキャッシュを許可
+      timeout: state.browserInfo.name === 'safari' ? 30000 : 20000,
+      maximumAge: state.browserInfo.name === 'safari' ? 60000 : 0,
     };
 
-    // Safari用の成功コールバック
     const successCallback = (position: GeolocationPosition) => {
-      console.log("useGeolocation: getCurrentPosition success for Safari:", position);
+      console.log(`useGeolocation: getCurrentPosition success for ${state.browserInfo.name}:`, position);
       
-      // Safari では座標の精度をチェック
       const accuracy = position.coords.accuracy;
-      console.log("Safari location accuracy:", accuracy);
+      console.log(`${state.browserInfo.name} location accuracy:`, accuracy);
       
-      setState({
+      setState(prev => ({
+        ...prev,
         latitude: position.coords.latitude,
         longitude: position.coords.longitude,
         error: null,
         loading: false,
         permissionState: 'granted',
-        isSafari: state.isSafari,
-        isPrivateMode: state.isPrivateMode,
-      });
+      }));
     };
 
-    // Safari用のエラーコールバック
     const errorCallback = (geoError: GeolocationPositionError) => {
-      console.error("useGeolocation: getCurrentPosition error for Safari:", geoError);
-      console.error(`Safari Error Code: ${geoError.code}, Message: ${geoError.message}`);
+      console.error(`useGeolocation: getCurrentPosition error for ${state.browserInfo.name}:`, geoError);
+      console.error(`${state.browserInfo.name} Error Code: ${geoError.code}, Message: ${geoError.message}`);
 
       let permissionErrorType: GeolocationState['permissionState'] = 'denied';
       let errorMessage = '';
       
       switch(geoError.code) {
         case geoError.PERMISSION_DENIED:
-          if (state.isSafari) {
+          if (state.browserInfo.name === 'safari') {
             errorMessage = `位置情報の利用がブロックされています。
 
 【Safari での設定方法】
@@ -140,7 +155,7 @@ export function useGeolocation() {
           break;
           
         case geoError.POSITION_UNAVAILABLE:
-          if (state.isSafari) {
+          if (state.browserInfo.name === 'safari') {
             errorMessage = `現在位置を特定できませんでした。
 
 【確認事項】
@@ -155,7 +170,7 @@ export function useGeolocation() {
           break;
           
         case geoError.TIMEOUT:
-          if (state.isSafari) {
+          if (state.browserInfo.name === 'safari') {
             errorMessage = `位置情報の取得がタイムアウトしました。
 
 【対処方法】
@@ -183,9 +198,8 @@ export function useGeolocation() {
       }));
     };
 
-    // Safari用のタイムアウト処理を追加
     let timeoutId: NodeJS.Timeout | null = null;
-    if (state.isSafari) {
+    if (state.browserInfo.name === 'safari') {
       timeoutId = setTimeout(() => {
         errorCallback({
           code: 3,
@@ -194,10 +208,9 @@ export function useGeolocation() {
           POSITION_UNAVAILABLE: 2,
           TIMEOUT: 3
         } as GeolocationPositionError);
-      }, safariOptions.timeout + 1000);
+      }, options.timeout + 1000);
     }
 
-    // 位置情報取得の実行
     try {
       const watchId = navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -208,11 +221,11 @@ export function useGeolocation() {
           if (timeoutId) clearTimeout(timeoutId);
           errorCallback(error);
         },
-        safariOptions
+        options
       );
     } catch (error) {
       if (timeoutId) clearTimeout(timeoutId);
-      console.error("Safari geolocation request failed:", error);
+      console.error(`${state.browserInfo.name} geolocation request failed:`, error);
       setState(prev => ({
         ...prev,
         error: '位置情報の取得でエラーが発生しました。ページを再読み込みして再度お試しください。',
@@ -221,18 +234,16 @@ export function useGeolocation() {
       }));
     }
 
-  }, [state.permissionState, state.isSafari, state.isPrivateMode]);
+  }, [state.permissionState, state.browserInfo]);
 
-  // Safari用の権限チェック
   useEffect(() => {
     if (state.permissionState === 'pending') {
-      console.log("useGeolocation: Checking permissions for Safari");
+      console.log(`useGeolocation: Checking permissions for ${state.browserInfo.name}`);
       
-      // Safari では navigator.permissions.query が制限されている場合がある
-      if (navigator.permissions && typeof navigator.permissions.query === 'function') {
+      if (state.browserInfo.supportsPermissionsAPI) {
         navigator.permissions.query({ name: 'geolocation' })
           .then((permissionStatus) => {
-            console.log("Safari Permission API status:", permissionStatus.state);
+            console.log(`${state.browserInfo.name} Permission API status:`, permissionStatus.state);
             setState(prev => ({ 
               ...prev, 
               permissionState: permissionStatus.state as GeolocationState['permissionState'] 
@@ -247,18 +258,17 @@ export function useGeolocation() {
             };
           })
           .catch(err => {
-            console.warn("Safari permissions query failed:", err);
-            // Safari では permissions API が利用できない場合があるため、プロンプト状態に設定
+            console.warn(`${state.browserInfo.name} permissions query failed:`, err);
             setState(prev => ({ ...prev, permissionState: 'prompt', loading: false }));
           });
       } else {
-        console.log("Safari: navigator.permissions not available, setting to prompt.");
+        console.log(`${state.browserInfo.name}: navigator.permissions not available, setting to prompt.`);
         setState(prev => ({ ...prev, permissionState: 'prompt', loading: false }));
       }
     }
-  }, [state.permissionState]);
+  }, [state.permissionState, state.browserInfo.name, state.browserInfo.supportsPermissionsAPI]);
 
-  console.log("useGeolocation Safari: Current state:", {
+  console.log(`useGeolocation ${state.browserInfo.name}: Current state:`, {
     ...state,
     userAgent: typeof window !== 'undefined' ? navigator.userAgent : 'server'
   });

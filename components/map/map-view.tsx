@@ -4,10 +4,10 @@ import { useRef, useEffect, useState, useCallback } from 'react';
 import { useGeolocation } from '@/lib/hooks/use-geolocation';
 import { useGoogleMapsApi } from '@/components/providers/GoogleMapsApiProvider';
 import { Button } from '@/components/ui/button';
-import { MapPin, AlertTriangle, Navigation, RefreshCw, Smartphone } from 'lucide-react';
+import { MapPin, AlertTriangle, Navigation, RefreshCw, Smartphone, Monitor, Globe } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { MapSearchControl } from './MapSearchControl';
-import { SafariLocationGuide } from './SafariLocationGuide';
+import { CrossBrowserLocationGuide } from './CrossBrowserLocationGuide';
 
 declare global {
   interface Window {
@@ -32,13 +32,12 @@ export function MapView() {
     error: locationError, 
     permissionState, 
     requestLocation,
-    isSafari,
-    isPrivateMode
+    browserInfo
   } = useGeolocation();
 
   const [mapInitialized, setMapInitialized] = useState(false);
   const [initializationError, setInitializationError] = useState<string | null>(null);
-  const [showSafariGuide, setShowSafariGuide] = useState(false);
+  const [showLocationGuide, setShowLocationGuide] = useState(false);
   const [containerDimensions, setContainerDimensions] = useState({
     width: 0,
     height: 0
@@ -49,22 +48,30 @@ export function MapView() {
   const [distanceToSelectedPlace, setDistanceToSelectedPlace] = useState<string | null>(null);
   const [userLocationMarker, setUserLocationMarker] = useState<google.maps.Marker | null>(null);
 
-  // Safari専用のガイド表示制御
+  // ブラウザ別のガイド表示制御
   useEffect(() => {
-    if (isSafari && (permissionState === 'prompt' || permissionState === 'denied') && !latitude && !longitude) {
-      // Safari で位置情報が取得できていない場合、少し遅延してガイドを表示
+    const shouldShowGuide = (
+      (permissionState === 'prompt' || permissionState === 'denied') && 
+      !latitude && 
+      !longitude &&
+      browserInfo.name !== 'unknown'
+    );
+
+    if (shouldShowGuide) {
+      // ブラウザ別の表示タイミング調整
+      const delay = browserInfo.name === 'safari' ? 2000 : 1500;
       const timer = setTimeout(() => {
-        setShowSafariGuide(true);
-      }, 2000);
+        setShowLocationGuide(true);
+      }, delay);
       
       return () => clearTimeout(timer);
     } else {
-      setShowSafariGuide(false);
+      setShowLocationGuide(false);
     }
-  }, [isSafari, permissionState, latitude, longitude]);
+  }, [browserInfo.name, permissionState, latitude, longitude]);
 
-  // デバッグ情報の出力（Safari対応状況も含む）
-  console.log("MapView Safari: Current state:", {
+  // デバッグ情報の出力（クロスブラウザ対応状況も含む）
+  console.log("MapView CrossBrowser: Current state:", {
     googleMapsLoaded,
     googleMapsLoading,
     googleMapsLoadError: !!googleMapsLoadError,
@@ -72,14 +79,13 @@ export function MapView() {
     longitude,
     locationLoading,
     permissionState,
-    isSafari,
-    isPrivateMode,
+    browserInfo,
     containerDimensions,
     mapInitialized,
-    showSafariGuide
+    showLocationGuide
   });
 
-  // コンテナ寸法の取得
+  // コンテナ寸法の取得（ブラウザ別最適化）
   const updateContainerDimensions = useCallback(() => {
     if (!mapContainerRef.current) return false;
     
@@ -92,20 +98,25 @@ export function MapView() {
     const width = parentRect.width;
     const height = parentRect.height;
     
-    console.log('MapView Safari: Container dimensions updated:', { width, height });
+    console.log(`MapView ${browserInfo.name}: Container dimensions updated:`, { width, height });
     
     setContainerDimensions({ width, height });
     
-    // コンテナスタイルの明示的設定
+    // コンテナスタイルの明示的設定（ブラウザ別調整）
     container.style.width = `${width}px`;
     container.style.height = `${height}px`;
     container.style.position = 'relative';
     container.style.backgroundColor = '#f5f5f5';
     
+    // Firefox 特有の調整
+    if (browserInfo.name === 'firefox') {
+      container.style.overflow = 'hidden';
+    }
+    
     return width > 0 && height > 200;
-  }, []);
+  }, [browserInfo.name]);
 
-  // コンテナ寸法の監視
+  // コンテナ寸法の監視（ブラウザ別イベント対応）
   useEffect(() => {
     updateContainerDimensions();
     
@@ -116,47 +127,53 @@ export function MapView() {
     ];
 
     const handleResize = () => {
-      setTimeout(updateContainerDimensions, 50);
+      setTimeout(updateContainerDimensions, browserInfo.name === 'safari' ? 50 : 30);
     };
 
-    // Safari 用のイベントリスナー
+    // 基本的なイベントリスナー
     window.addEventListener('resize', handleResize, { passive: true });
     window.addEventListener('orientationchange', handleResize, { passive: true });
     
-    // Safari 特有のイベント
-    if (isSafari) {
+    // ブラウザ別特有のイベント
+    if (browserInfo.name === 'safari') {
       window.addEventListener('pageshow', handleResize, { passive: true });
       window.addEventListener('focus', handleResize, { passive: true });
+    } else if (browserInfo.name === 'firefox') {
+      // Firefox用の追加イベント
+      window.addEventListener('load', handleResize, { passive: true });
     }
 
     return () => {
       timeouts.forEach(clearTimeout);
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('orientationchange', handleResize);
-      if (isSafari) {
+      
+      if (browserInfo.name === 'safari') {
         window.removeEventListener('pageshow', handleResize);
         window.removeEventListener('focus', handleResize);
+      } else if (browserInfo.name === 'firefox') {
+        window.removeEventListener('load', handleResize);
       }
     };
-  }, [updateContainerDimensions, isSafari]);
+  }, [updateContainerDimensions, browserInfo.name]);
 
-  // Safari用の位置情報要求
-  const handleSafariLocationRequest = () => {
-    console.log("MapView: Safari location request triggered");
-    setShowSafariGuide(false);
+  // ブラウザ別の位置情報要求
+  const handleLocationRequest = () => {
+    console.log(`MapView: ${browserInfo.name} location request triggered`);
+    setShowLocationGuide(false);
     requestLocation();
   };
 
-  // 地図初期化のメイン処理
+  // 地図初期化のメイン処理（ブラウザ別最適化）
   const initializeMap = useCallback(() => {
-    console.log("MapView Safari: initializeMap called with conditions:", {
+    console.log(`MapView ${browserInfo.name}: initializeMap called with conditions:`, {
       container: !!mapContainerRef.current,
       mapInstance: !!mapInstanceRef.current,
       googleMapsLoaded,
       location: !!(latitude && longitude),
       dimensions: containerDimensions,
       alreadyTried: initializationTriedRef.current,
-      isSafari
+      browserName: browserInfo.name
     });
 
     if (!mapContainerRef.current || 
@@ -166,17 +183,17 @@ export function MapView() {
         !longitude || 
         containerDimensions.height < 200 ||
         initializationTriedRef.current) {
-      console.log("MapView Safari: Initialization conditions not met");
+      console.log(`MapView ${browserInfo.name}: Initialization conditions not met`);
       return false;
     }
 
     if (!window.google?.maps?.Map) {
-      console.error("MapView Safari: Google Maps API not available despite isLoaded=true");
+      console.error(`MapView ${browserInfo.name}: Google Maps API not available despite isLoaded=true`);
       setInitializationError("Google Maps APIが利用できません。ページを再読み込みしてください。");
       return false;
     }
 
-    console.log("MapView Safari: Starting map initialization");
+    console.log(`MapView ${browserInfo.name}: Starting map initialization`);
     initializationTriedRef.current = true;
 
     try {
@@ -185,55 +202,94 @@ export function MapView() {
 
       const center = { lat: latitude, lng: longitude };
 
-      // Safari用の地図オプション
-      const mapOptions: google.maps.MapOptions = {
-        center,
-        zoom: isSafari ? 14 : 15, // Safari では少し広めのズーム
-        clickableIcons: true,
-        disableDefaultUI: true,
-        zoomControl: true,
-        gestureHandling: isSafari ? 'cooperative' : 'greedy', // Safari では cooperative が安定
-        fullscreenControl: false,
-        streetViewControl: false,
-        mapTypeControl: false,
-        backgroundColor: '#f5f5f5',
-        restriction: {
-          latLngBounds: {
-            north: 45.557,
-            south: 24.217,
-            east: 145.817,
-            west: 122.933
+      // ブラウザ別の地図オプション
+      const getMapOptions = (): google.maps.MapOptions => {
+        const baseOptions: google.maps.MapOptions = {
+          center,
+          clickableIcons: true,
+          disableDefaultUI: true,
+          zoomControl: true,
+          fullscreenControl: false,
+          streetViewControl: false,
+          mapTypeControl: false,
+          backgroundColor: '#f5f5f5',
+          restriction: {
+            latLngBounds: {
+              north: 45.557,
+              south: 24.217,
+              east: 145.817,
+              west: 122.933
+            }
           }
+        };
+
+        switch (browserInfo.name) {
+          case 'safari':
+            return {
+              ...baseOptions,
+              zoom: 14,
+              gestureHandling: 'cooperative'
+            };
+          
+          case 'firefox':
+            return {
+              ...baseOptions,
+              zoom: 15,
+              gestureHandling: 'greedy',
+              // Firefox では追加の最適化
+              draggableCursor: 'default'
+            };
+          
+          case 'chrome':
+          case 'edge':
+            return {
+              ...baseOptions,
+              zoom: 15,
+              gestureHandling: 'greedy'
+            };
+          
+          default:
+            return {
+              ...baseOptions,
+              zoom: 15,
+              gestureHandling: 'greedy'
+            };
         }
       };
 
-      console.log("MapView Safari: Creating Google Map instance");
-      const newMap = new window.google.maps.Map(container, mapOptions);
+      console.log(`MapView ${browserInfo.name}: Creating Google Map instance`);
+      const newMap = new window.google.maps.Map(container, getMapOptions());
       mapInstanceRef.current = newMap;
 
-      // Safari用の地図読み込み完了処理
+      // ブラウザ別の地図読み込み完了処理
       const idleListener = window.google.maps.event.addListenerOnce(newMap, 'idle', () => {
-        console.log("MapView Safari: Map idle event - initialization complete");
+        console.log(`MapView ${browserInfo.name}: Map idle event - initialization complete`);
         setMap(newMap);
         setMapInitialized(true);
         setInitializationError(null);
         
-        // Safari用の地図リサイズ処理
+        // ブラウザ別の地図リサイズ処理
+        const resizeDelay = browserInfo.name === 'safari' ? 300 : 
+                          browserInfo.name === 'firefox' ? 200 : 100;
+                          
         setTimeout(() => {
           if (newMap && window.google?.maps?.event) {
             window.google.maps.event.trigger(newMap, 'resize');
             newMap.setCenter(center);
-            // Safari では追加のズーム調整
-            if (isSafari) {
+            
+            // ブラウザ別のズーム調整
+            if (browserInfo.name === 'safari') {
+              newMap.setZoom(15);
+            } else if (browserInfo.name === 'firefox') {
               newMap.setZoom(15);
             }
           }
-        }, isSafari ? 300 : 100);
+        }, resizeDelay);
       });
 
       // エラーハンドリング
       const errorListener = window.google.maps.event.addListener(newMap, 'error', (error: any) => {
-        console.error("MapView Safari: Map error:", error);
+        console.error(`MapView ${browserInfo.name}: Map error:`, error);
         setInitializationError("地図の表示中にエラーが発生しました。");
         initializationTriedRef.current = false;
         
@@ -241,14 +297,14 @@ export function MapView() {
         window.google.maps.event.removeListener(errorListener);
       });
 
-      // Safari用の長めタイムアウト
+      // タイムアウト設定（40秒に統一）
       const timeout = setTimeout(() => {
         if (!mapInitialized) {
-          console.error("MapView Safari: Map initialization timeout");
+          console.error(`MapView ${browserInfo.name}: Map initialization timeout`);
           setInitializationError("地図の初期化がタイムアウトしました。再試行してください。");
           initializationTriedRef.current = false;
         }
-      }, isSafari ? 20000 : 15000);
+      }, 40000); // 40秒に統一
 
       return () => {
         clearTimeout(timeout);
@@ -257,14 +313,14 @@ export function MapView() {
       };
 
     } catch (error) {
-      console.error("MapView Safari: Map initialization failed:", error);
+      console.error(`MapView ${browserInfo.name}: Map initialization failed:`, error);
       setInitializationError(`地図の初期化に失敗しました: ${error instanceof Error ? error.message : '不明なエラー'}`);
       initializationTriedRef.current = false;
       return false;
     }
-  }, [googleMapsLoaded, latitude, longitude, containerDimensions, mapInitialized, isSafari]);
+  }, [googleMapsLoaded, latitude, longitude, containerDimensions, mapInitialized, browserInfo.name]);
 
-  // 地図初期化の実行タイミング制御
+  // 地図初期化の実行タイミング制御（ブラウザ別）
   useEffect(() => {
     if (googleMapsLoaded && 
         latitude && 
@@ -273,21 +329,24 @@ export function MapView() {
         !mapInitialized &&
         !initializationTriedRef.current) {
       
-      console.log("MapView Safari: Conditions met for initialization, starting...");
+      console.log(`MapView ${browserInfo.name}: Conditions met for initialization, starting...`);
       
-      // Safari では少し長めの遅延
+      // ブラウザ別の初期化遅延
+      const initDelay = browserInfo.name === 'safari' ? 200 : 
+                       browserInfo.name === 'firefox' ? 150 : 100;
+      
       const timer = setTimeout(() => {
         initializeMap();
-      }, isSafari ? 200 : 100);
+      }, initDelay);
 
       return () => clearTimeout(timer);
     }
-  }, [googleMapsLoaded, latitude, longitude, containerDimensions, mapInitialized, initializeMap, isSafari]);
+  }, [googleMapsLoaded, latitude, longitude, containerDimensions, mapInitialized, initializeMap, browserInfo.name]);
 
   // ユーザー位置マーカーの設置
   useEffect(() => {
     if (map && latitude && longitude && mapInitialized && window.google?.maps) {
-      console.log("MapView Safari: Setting user location marker");
+      console.log(`MapView ${browserInfo.name}: Setting user location marker`);
       const userPosition = new window.google.maps.LatLng(latitude, longitude);
       
       if (userLocationMarker) {
@@ -306,9 +365,9 @@ export function MapView() {
             animation: window.google.maps.Animation.DROP,
           });
           setUserLocationMarker(marker);
-          console.log("MapView Safari: User location marker created successfully");
+          console.log(`MapView ${browserInfo.name}: User location marker created successfully`);
         } catch (error) {
-          console.error("MapView Safari: Failed to create user location marker:", error);
+          console.error(`MapView ${browserInfo.name}: Failed to create user location marker:`, error);
         }
       }
 
@@ -318,17 +377,17 @@ export function MapView() {
         map.setZoom(15);
       }
     }
-  }, [map, latitude, longitude, mapInitialized, userLocationMarker]);
+  }, [map, latitude, longitude, mapInitialized, userLocationMarker, browserInfo.name]);
 
   // 再試行機能
   const handleRetry = () => {
-    console.log("MapView Safari: Retrying initialization");
+    console.log(`MapView ${browserInfo.name}: Retrying initialization`);
     setInitializationError(null);
     setMapInitialized(false);
     initializationTriedRef.current = false;
     mapInstanceRef.current = null;
     setMap(null);
-    setShowSafariGuide(false);
+    setShowLocationGuide(false);
     
     if (mapContainerRef.current) {
       mapContainerRef.current.innerHTML = '';
@@ -336,10 +395,21 @@ export function MapView() {
     
     setTimeout(() => {
       updateContainerDimensions();
-      if (isSafari && (!latitude || !longitude)) {
+      if (!latitude || !longitude) {
         requestLocation();
       }
     }, 100);
+  };
+
+  // ブラウザアイコンの取得
+  const getBrowserIcon = (browserName: string) => {
+    switch (browserName) {
+      case 'safari': return Smartphone;
+      case 'firefox': return Globe;
+      case 'chrome': return Monitor; // Chromeアイコンが存在しないためMonitorを使用
+      case 'edge': return Monitor;
+      default: return MapPin;
+    }
   };
 
   // メッセージカードコンポーネント
@@ -365,20 +435,6 @@ export function MapView() {
             {message}
           </div>
           {children}
-          
-          {/* Safari用の診断情報 */}
-          <div className="mt-4 p-3 bg-gray-50 rounded text-xs text-gray-600 border">
-            <div className="font-semibold mb-2">
-              {isSafari ? "Safari" : "ブラウザ"} 診断情報:
-            </div>
-            <div>Size: {containerDimensions.width} x {containerDimensions.height}px</div>
-            <div>
-              API: {googleMapsLoaded ? '✓ロード済み' : googleMapsLoading ? '⏳読み込み中' : '✗未ロード'} | 
-              Location: {latitude && longitude ? '✓取得済み' : '✗未取得'}
-            </div>
-            <div>Permission: {permissionState}</div>
-            {isSafari && <div>Safari: ✓ | Private: {isPrivateMode ? '✓' : '✗'}</div>}
-          </div>
         </div>
       </div>
     );
@@ -408,7 +464,7 @@ export function MapView() {
   };
 
   const handleSearchError = (error: string) => {
-    console.warn("MapView Safari: Search error:", error);
+    console.warn(`MapView ${browserInfo.name}: Search error:`, error);
   };
 
   const openGoogleMapsNavigation = (place: google.maps.places.PlaceResult | null) => {
@@ -420,20 +476,22 @@ export function MapView() {
     window.open(url, '_blank');
   };
 
-  // Safari位置情報ガイドの表示
-  if (showSafariGuide) {
+  // クロスブラウザ位置情報ガイドの表示
+  if (showLocationGuide) {
+    const BrowserIcon = getBrowserIcon(browserInfo.name);
+    
     return (
       <>
         <div className="w-full h-full bg-gray-50 relative">
           <div ref={mapContainerRef} className="w-full h-full bg-gray-50" />
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/90 backdrop-blur-sm">
             <div className="text-center">
-              <Smartphone className="h-16 w-16 text-blue-500 mx-auto mb-4" />
+              <BrowserIcon className="h-16 w-16 text-blue-500 mx-auto mb-4" />
               <h2 className="text-xl font-semibold mb-2">位置情報を待機中...</h2>
               <p className="text-gray-600 text-sm mb-6">
-                {isSafari ? "Safari で位置情報の許可が必要です" : "位置情報の許可をお待ちしています"}
+                位置情報の許可をお待ちしています
               </p>
-              <Button onClick={handleSafariLocationRequest} className="mb-4">
+              <Button onClick={handleLocationRequest} className="mb-4">
                 <MapPin className="h-4 w-4 mr-2" />
                 位置情報を許可する
               </Button>
@@ -441,13 +499,12 @@ export function MapView() {
           </div>
         </div>
         
-        <SafariLocationGuide
-          isVisible={showSafariGuide}
-          isSafari={isSafari}
-          isPrivateMode={isPrivateMode}
+        <CrossBrowserLocationGuide
+          isVisible={showLocationGuide}
+          browserInfo={browserInfo}
           permissionState={permissionState}
-          onRequestLocation={handleSafariLocationRequest}
-          onClose={() => setShowSafariGuide(false)}
+          onRequestLocation={handleLocationRequest}
+          onClose={() => setShowLocationGuide(false)}
         />
       </>
     );
@@ -486,32 +543,45 @@ export function MapView() {
     );
   }
 
-  // 位置情報エラー（Safari用のメッセージ改善）
+  // 位置情報エラー（ブラウザ別メッセージ改善）
   if (permissionState === 'denied' || locationError) {
-    const safariLocationMessage = isSafari ? 
-      "Safari で位置情報の許可が必要です。アドレスバーの🔒アイコンから設定を変更してください。" :
-      (locationError || "地図を表示するために位置情報の許可が必要です");
+    const getBrowserLocationMessage = () => {
+      if (locationError) return locationError;
+      
+      switch (browserInfo.name) {
+        case 'safari':
+          return "Safari で位置情報の許可が必要です。アドレスバーの🔒アイコンから設定を変更してください。";
+        case 'chrome':
+          return "Chrome で位置情報の許可が必要です。アドレスバー左の🔒アイコンから設定を変更してください。";
+        case 'firefox':
+          return "Firefox で位置情報の許可が必要です。アドレスバー左の🔒アイコンから設定を変更してください。";
+        case 'edge':
+          return "Edge で位置情報の許可が必要です。アドレスバー左の🔒アイコンから設定を変更してください。";
+        default:
+          return "地図を表示するために位置情報の許可が必要です。";
+      }
+    };
+
+    const BrowserIcon = getBrowserIcon(browserInfo.name);
 
     return (
       <MessageCard 
         title="位置情報が必要です" 
-        message={safariLocationMessage}
+        message={getBrowserLocationMessage()}
         variant="warning" 
-        icon={isSafari ? Smartphone : MapPin}
+        icon={BrowserIcon}
       >
         <div className="space-y-3">
-          <Button onClick={handleSafariLocationRequest} className="w-full">
+          <Button onClick={handleLocationRequest} className="w-full">
             位置情報を許可する
           </Button>
-          {isSafari && (
-            <Button 
-              variant="outline" 
-              onClick={() => setShowSafariGuide(true)}
-              className="w-full"
-            >
-              設定方法を見る
-            </Button>
-          )}
+          <Button 
+            variant="outline" 
+            onClick={() => setShowLocationGuide(true)}
+            className="w-full"
+          >
+            設定方法を見る
+          </Button>
         </div>
       </MessageCard>
     );
@@ -530,8 +600,12 @@ export function MapView() {
     else if (!googleMapsLoaded) loadingMessage = "Google Maps APIを待機中...";
     else if (containerDimensions.height === 0) loadingMessage = "画面サイズを調整中...";
     else if (locationLoading) loadingMessage = "現在位置を取得中...";
-    else if (!latitude || !longitude) loadingMessage = isSafari ? "Safari で位置情報を待機中..." : "位置情報を待機中...";
+    else if (!latitude || !longitude) {
+      loadingMessage = "位置情報を待機中...";
+    }
     else if (!mapInitialized) loadingMessage = "地図を作成中...";
+    
+    const BrowserIcon = getBrowserIcon(browserInfo.name);
     
     return (
       <div className="w-full h-full bg-gray-50 relative">
@@ -545,32 +619,18 @@ export function MapView() {
             {loadingMessage}
           </p>
           
-          {/* Safari用の位置情報ヘルプボタン */}
-          {isSafari && (permissionState === 'prompt' || !latitude) && (
+          {/* ブラウザ別の位置情報ヘルプボタン */}
+          {(permissionState === 'prompt' || !latitude) && (
             <Button 
               variant="outline" 
               size="sm"
-              onClick={() => setShowSafariGuide(true)}
+              onClick={() => setShowLocationGuide(true)}
               className="mb-4"
             >
-              <Smartphone className="h-4 w-4 mr-2" />
-              Safari で位置情報を許可
+              <BrowserIcon className="h-4 w-4 mr-2" />
+              ブラウザで位置情報を許可
             </Button>
           )}
-          
-          {/* ローディング中の診断情報 */}
-          <div className="bg-white p-3 rounded-lg shadow border max-w-sm mx-4">
-            <div className="text-xs text-gray-600 space-y-1">
-              <div>Size: {containerDimensions.width} x {containerDimensions.height}px</div>
-              <div>
-                Loaded: {googleMapsLoaded ? '✓' : '✗'} | 
-                Loading: {googleMapsLoading ? '✓' : '✗'} | 
-                Location: {latitude && longitude ? '✓' : '✗'}
-              </div>
-              <div>Permission: {permissionState}</div>
-              {isSafari && <div>Safari: ✓ | Private: {isPrivateMode ? '✓' : '✗'}</div>}
-            </div>
-          </div>
         </div>
       </div>
     );
@@ -628,14 +688,13 @@ export function MapView() {
         </motion.div>
       )}
 
-      {/* Safari位置情報ガイド */}
-      <SafariLocationGuide
-        isVisible={showSafariGuide}
-        isSafari={isSafari}
-        isPrivateMode={isPrivateMode}
+      {/* クロスブラウザ位置情報ガイド */}
+      <CrossBrowserLocationGuide
+        isVisible={showLocationGuide}
+        browserInfo={browserInfo}
         permissionState={permissionState}
-        onRequestLocation={handleSafariLocationRequest}
-        onClose={() => setShowSafariGuide(false)}
+        onRequestLocation={handleLocationRequest}
+        onClose={() => setShowLocationGuide(false)}
       />
     </div>
   );

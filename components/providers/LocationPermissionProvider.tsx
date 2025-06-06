@@ -11,6 +11,8 @@ interface LocationPermissionContextType {
   longitude: number | null;
   loading: boolean;
   error: string | null;
+  showPermissionModal: boolean;
+  setShowPermissionModal: (show: boolean) => void;
 }
 
 const LocationPermissionContext = createContext<LocationPermissionContextType | undefined>(undefined);
@@ -25,15 +27,25 @@ export const useLocationPermission = (): LocationPermissionContextType => {
 
 interface LocationPermissionProviderProps {
   children: ReactNode;
+  autoShowModal?: boolean; // 自動表示の制御オプション
 }
 
-export function LocationPermissionProvider({ children }: LocationPermissionProviderProps) {
+export function LocationPermissionProvider({ 
+  children, 
+  autoShowModal = false // デフォルトで自動表示を無効化
+}: LocationPermissionProviderProps) {
   const { latitude, longitude, loading, error, permissionState, requestLocation } = useGeolocation();
   const [showPermissionModal, setShowPermissionModal] = useState(false);
   const [modalDismissedThisSession, setModalDismissedThisSession] = useState(false);
 
   useEffect(() => {
-    console.log("LocationPermissionProvider useEffect: permissionState =", permissionState, "modalDismissedThisSession =", modalDismissedThisSession);
+    console.log("LocationPermissionProvider useEffect: permissionState =", permissionState, "autoShowModal =", autoShowModal);
+
+    // 自動表示が無効の場合は何もしない
+    if (!autoShowModal) {
+      setShowPermissionModal(false);
+      return;
+    }
 
     if (permissionState === 'granted' || permissionState === 'unavailable' || permissionState === 'pending' || modalDismissedThisSession) {
       setShowPermissionModal(false);
@@ -43,7 +55,7 @@ export function LocationPermissionProvider({ children }: LocationPermissionProvi
     if (permissionState === 'prompt' || permissionState === 'denied') {
       setShowPermissionModal(true);
     } 
-  }, [permissionState, modalDismissedThisSession]);
+  }, [permissionState, modalDismissedThisSession, autoShowModal]);
 
   const handleAllowLocation = () => {
     setShowPermissionModal(false);
@@ -58,15 +70,26 @@ export function LocationPermissionProvider({ children }: LocationPermissionProvi
   };
 
   return (
-    <LocationPermissionContext.Provider value={{ latitude, longitude, loading, error, permissionState, requestLocation }}>
+    <LocationPermissionContext.Provider value={{ 
+      latitude, 
+      longitude, 
+      loading, 
+      error, 
+      permissionState, 
+      requestLocation,
+      showPermissionModal,
+      setShowPermissionModal
+    }}>
       {children}
-      <LocationPermissionDialog
-        isOpen={showPermissionModal}
-        onAllow={handleAllowLocation}
-        onDeny={handleDenyLocation}
-        appName="トクドク"
-        permissionState={permissionState}
-      />
+      {autoShowModal && (
+        <LocationPermissionDialog
+          isOpen={showPermissionModal}
+          onAllow={handleAllowLocation}
+          onDeny={handleDenyLocation}
+          appName="トクドク"
+          permissionState={permissionState}
+        />
+      )}
     </LocationPermissionContext.Provider>
   );
 }
