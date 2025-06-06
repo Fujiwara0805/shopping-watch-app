@@ -17,7 +17,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { v4 as uuidv4 } from 'uuid';
 import FavoriteStoreInput from '@/components/profile/FavoriteStoreInput';
 import { useLoading } from '@/contexts/loading-context';
-import OnboardingModal from '@/components/onboarding/onboardingModal'; // 上記で作成したコンポーネント
+import OnboardingModal from '@/components/onboarding/onboardingModal';
 
 // app_profiles テーブルの型定義
 interface AppProfile {
@@ -45,7 +45,9 @@ const profileSchema = z.object({
 
 type ProfileFormValues = z.infer<typeof profileSchema>;
 
-export default function ProfileSetupPage() {
+// プロフィール設定ページのメインコンテンツコンポーネント
+// AppLayoutによってラップされるため、ここではAppLayoutは使用しない
+function ProfileSetupContent() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const { showLoading, hideLoading } = useLoading();
@@ -54,9 +56,8 @@ export default function ProfileSetupPage() {
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
   
-  // オンボーディングモーダルの状態管理
-  const [showOnboarding, setShowOnboarding] = useState(false);
-  const [profileExists, setProfileExists] = useState<boolean | null>(null);
+  // オンボーディングモーダルは、このページが表示されたら自動的に開く (layoutがパス制御するため)
+  const [showOnboarding, setShowOnboarding] = useState(true);
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
@@ -72,89 +73,26 @@ export default function ProfileSetupPage() {
 
   const { isValid } = form.formState;
 
-  // セッション管理とリダイレクト
+  // Supabaseセッションの設定のみ行う (認証チェックはProfileLayoutが担当)
   useEffect(() => {
-    if (status === "loading") {
-      showLoading();
-      return;
-    }
-
-    if (!session) {
-      console.log("ProfileSetupPage: User not logged in, redirecting to login page.");
-      router.replace(`/login?callbackUrl=${encodeURIComponent(window.location.pathname)}`);
-      hideLoading();
-    } else if (!session.user?.id) {
-      console.warn("ProfileSetupPage: Session found, but session.user.id (for app_users) is MISSING. Redirecting or showing error.");
-      setSubmitError("ユーザー認証情報が不完全です。再度ログインしてください。");
-      hideLoading();
-    } else {
-      hideLoading();
-      console.log("ProfileSetupPage: User session found with app_users.id, ready for setup:", session.user.id);
-    }
-
-    if (session?.supabaseAccessToken) {
+    if (status === "authenticated" && session?.supabaseAccessToken) {
       supabase.auth.setSession({
         access_token: session.supabaseAccessToken as string,
         refresh_token: (session.supabaseRefreshToken as string) || '',
       });
     }
-  }, [session, status, router, showLoading, hideLoading]);
-
-  // プロフィール存在チェック関数
-  const checkProfileExists = async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('app_profiles')
-        .select('id')
-        .eq('user_id', userId)
-        .single();
-
-      if (error && error.code !== 'PGRST116') { // PGRST116 = "The result contains 0 rows"
-        console.error("Error checking profile existence:", error);
-        return false;
-      }
-
-      return !!data;
-    } catch (error) {
-      console.error("Error in checkProfileExists:", error);
-      return false;
-    }
-  };
-
-  // オンボーディングモーダルの表示制御
-  useEffect(() => {
-    const initializeOnboarding = async () => {
-      if (status === "authenticated" && session?.user?.id) {
-        // プロフィールの存在をチェック
-        const exists = await checkProfileExists(session.user.id);
-        setProfileExists(exists);
-        
-        // プロフィールが存在しない場合のみオンボーディングを表示
-        if (!exists) {
-          // 少し遅延してからモーダルを表示（ページロードの完了を待つ）
-          const timer = setTimeout(() => {
-            setShowOnboarding(true);
-          }, 1000);
-          
-          return () => clearTimeout(timer);
-        }
-      }
-    };
-
-    initializeOnboarding();
-  }, [status, session?.user?.id]);
+  }, [session, status]);
 
   // オンボーディングモーダルを閉じる処理
   const handleOnboardingClose = () => {
     setShowOnboarding(false);
-    setProfileExists(true);
   };
 
   const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
-        form.setError("username", { type: "manual", message: "ファイルサイズは5MB以下にしてください。" });
+        setSubmitError("ファイルサイズは5MB以下にしてください。"); // 一般的なエラーとして表示
         setAvatarFile(null);
         setAvatarPreviewUrl(null);
         e.target.value = '';
@@ -166,8 +104,7 @@ export default function ProfileSetupPage() {
         setAvatarPreviewUrl(reader.result as string);
       };
       reader.readAsDataURL(file);
-      form.clearErrors("username");
-      setSubmitError(null);
+      setSubmitError(null); // エラーをクリア
     }
   };
 
@@ -245,11 +182,8 @@ export default function ProfileSetupPage() {
       console.log("ProfileSetupPage: Profile saved successfully to app_profiles.");
       
       // プロフィール保存成功時にオンボーディングモーダルを閉じる
-      if (showOnboarding) {
-        setShowOnboarding(false);
-        setProfileExists(true);
-      }
-      
+      setShowOnboarding(false); // 成功したらモーダルを閉じる
+
       router.push('/profile/setup/complete');
 
     } catch (error: any) {
@@ -261,238 +195,236 @@ export default function ProfileSetupPage() {
     }
   };
 
-  if (status === "loading") {
+  // 深刻なエラーが発生した場合、フォームの代わりにエラーメッセージを表示
+  if (submitError && (!session || !session.user?.id)) {
     return (
-      <AppLayout>
-        <div className="min-h-screen"></div>
-      </AppLayout>
+      <div className="container mx-auto max-w-lg p-4 md:p-8 text-center">
+        <h1 className="text-3xl font-bold text-center mb-6 text-destructive">エラー</h1>
+        <p className="text-destructive bg-destructive/10 p-4 rounded-md">{submitError}</p>
+        <Button onClick={() => router.push('/login')} className="mt-4">ログインページへ戻る</Button>
+      </div>
     );
   }
 
-  if (session && session.user?.id && !submitError) {
-    return (
-      <AppLayout>
-        {/* オンボーディングモーダル */}
-        <OnboardingModal 
-          isOpen={showOnboarding} 
-          onClose={handleOnboardingClose}
-        />
+  // 通常のプロフィール設定フォームのレンダリング
+  return (
+    <>
+      {/* オンボーディングモーダル */}
+      <OnboardingModal 
+        isOpen={showOnboarding} 
+        onClose={handleOnboardingClose}
+      />
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="container mx-auto max-w-lg p-4 md:p-8"
-        >
-          {!session.user.id && (
-            <div className="text-center p-4 my-4 text-red-700 bg-red-100 rounded-md">
-              <p>ユーザー情報の読み込みに問題が発生しました。お手数ですが、再度ログインし直してください。</p>
-              <Button onClick={() => router.push('/login')} className="mt-2">ログインページへ</Button>
-            </div>
-          )}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="container mx-auto max-w-lg p-4 md:p-8"
+      >
+        {/* セッションユーザーIDが何らかの理由で欠落している場合の警告 */}
+        {!session?.user?.id && (
+          <div className="text-center p-4 my-4 text-red-700 bg-red-100 rounded-md">
+            <p>ユーザー情報の読み込みに問題が発生しました。お手数ですが、再度ログインし直してください。</p>
+            <Button onClick={() => router.push('/login')} className="mt-2">ログインページへ</Button>
+          </div>
+        )}
 
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 pb-20">
-              <FormItem>
-                <FormLabel className="text-2xl flex items-center font-semibold">
-                  <ImageIcon className="mr-2 h-7 w-7" /> プロフィール画像
-                </FormLabel>
-                <FormControl>
-                  <div className="flex flex-col items-center space-y-3 p-6 border-2 border-dashed rounded-lg hover:border-primary transition-colors cursor-pointer bg-card">
-                    <Input
-                      id="avatar-upload"
-                      type="file"
-                      accept="image/png, image/jpeg, image/webp"
-                      onChange={handleAvatarUpload}
-                      className="hidden"
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 pb-20">
+            <FormItem>
+              <FormLabel className="text-2xl flex items-center font-semibold">
+                <ImageIcon className="mr-2 h-7 w-7" /> プロフィール画像
+              </FormLabel>
+              <FormControl>
+                <div className="flex flex-col items-center space-y-3 p-6 border-2 border-dashed rounded-lg hover:border-primary transition-colors cursor-pointer bg-card">
+                  <Input
+                    id="avatar-upload"
+                    type="file"
+                    accept="image/png, image/jpeg, image/webp"
+                    onChange={handleAvatarUpload}
+                    className="hidden"
+                    disabled={isSaving}
+                  />
+                  {avatarPreviewUrl ? (
+                    <div className="relative group">
+                      <img src={avatarPreviewUrl} alt="アバタープレビュー" className="w-24 h-24 rounded-full object-cover" />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="icon"
+                        className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity rounded-full"
+                        onClick={removeAvatar}
+                        disabled={isSaving}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <label htmlFor="avatar-upload" className="flex flex-col items-center space-y-2 cursor-pointer text-muted-foreground">
+                      <Upload className="h-12 w-12" />
+                      <p className="text-lg">画像をアップロード</p>
+                      <p className="text-sm">PNG, JPG, WEBP (最大5MB)</p>
+                    </label>
+                  )}
+                </div>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+
+            <FormField
+              control={form.control}
+              name="username"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-2xl flex items-center font-semibold">
+                    <UserIcon className="mr-2 h-6 w-6" />ニックネーム
+                  </FormLabel>
+                  <FormControl>
+                    <Input 
+                      placeholder="例: ショッピング好き" 
+                      {...field} 
                       disabled={isSaving}
+                      className="text-base py-6"
+                      style={{ fontSize: '16px' }}
+                      autoComplete="off"
+                      autoCorrect="off"
+                      autoCapitalize="off"
+                      spellCheck="false"
                     />
-                    {avatarPreviewUrl ? (
-                      <div className="relative group">
-                        <img src={avatarPreviewUrl} alt="アバタープレビュー" className="w-24 h-24 rounded-full object-cover" />
-                        <Button
-                          type="button"
-                          variant="destructive"
-                          size="icon"
-                          className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity rounded-full"
-                          onClick={removeAvatar}
-                          disabled={isSaving}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ) : (
-                      <label htmlFor="avatar-upload" className="flex flex-col items-center space-y-2 cursor-pointer text-muted-foreground">
-                        <Upload className="h-12 w-12" />
-                        <p className="text-lg">画像をアップロード</p>
-                        <p className="text-sm">PNG, JPG, WEBP (最大5MB)</p>
-                      </label>
-                    )}
-                  </div>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-
-              <FormField
-                control={form.control}
-                name="username"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-2xl flex items-center font-semibold">
-                      <UserIcon className="mr-2 h-6 w-6" />ニックネーム
-                    </FormLabel>
-                    <FormControl>
-                      <Input 
-                        placeholder="例: ショッピング好き" 
-                        {...field} 
-                        disabled={isSaving}
-                        className="text-base py-6"
-                        style={{ fontSize: '16px' }}
-                        autoComplete="off"
-                        autoCorrect="off"
-                        autoCapitalize="off"
-                        spellCheck="false"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="bio"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-2xl flex items-center">
-                      <Info className="mr-2 h-6 w-6" />自己紹介 (任意)
-                    </FormLabel>
-                    <FormControl>
-                      <Textarea 
-                        placeholder="例: お得な情報を見つけるのが好きです！よろしくお願いします。" 
-                        {...field} 
-                        disabled={isSaving} 
-                        rows={4}
-                        className="text-base py-4"
-                        style={{ fontSize: '16px' }}
-                        autoComplete="off"
-                        autoCorrect="off"
-                        autoCapitalize="off"
-                        spellCheck="false"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="favoriteStore1"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-2xl flex items-center font-semibold">
-                      <Store className="mr-2 h-6 w-6 text-primary" /> お気に入り店舗1
-                    </FormLabel>
-                    <FormControl>
-                      <FavoriteStoreInput
-                        placeholder="店舗を検索して選択"
-                        value={field.value === null ? undefined : field.value}
-                        onChange={(value) => {
-                          console.log(`FavoriteStore1 changed in Controller:`, value);
-                          field.onChange(value);
-                        }}
-                        disabled={isSaving}
-                        ref={field.ref}
-                        className="py-6"
-                        style={{ fontSize: '16px' }}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="favoriteStore2"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-2xl flex items-center">
-                      <Store className="mr-2 h-6 w-6 text-primary" /> お気に入り店舗2 (任意)
-                    </FormLabel>
-                    <FormControl>
-                      <FavoriteStoreInput
-                        placeholder="店舗を検索して選択"
-                        value={field.value === null ? undefined : field.value}
-                        onChange={(value) => {
-                          console.log(`FavoriteStore2 changed in Controller:`, value);
-                          field.onChange(value);
-                        }}
-                        disabled={isSaving}
-                        ref={field.ref}
-                        className="py-6"
-                        style={{ fontSize: '16px' }}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="favoriteStore3"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-2xl flex items-center">
-                      <Store className="mr-2 h-6 w-6 text-primary" /> お気に入り店舗3 (任意)
-                    </FormLabel>
-                    <FormControl>
-                      <FavoriteStoreInput
-                        placeholder="店舗を検索して選択"
-                        value={field.value === null ? undefined : field.value}
-                        onChange={(value) => {
-                          console.log(`FavoriteStore3 changed in Controller:`, value);
-                          field.onChange(value);
-                        }}
-                        disabled={isSaving}
-                        ref={field.ref}
-                        className="py-6"
-                        style={{ fontSize: '16px' }}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              {submitError && (
-                <p className="text-base font-medium text-destructive bg-destructive/10 p-3 rounded-md">{submitError}</p>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
               )}
+            />
 
-              <Button type="submit" className="w-full text-lg py-6" disabled={isSaving || !isValid}>
-                {isSaving ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
-                プロフィールを保存する
-              </Button>
-            </form>
-          </Form>
-        </motion.div>
-      </AppLayout>
-    );
-  }
+            <FormField
+              control={form.control}
+              name="bio"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-2xl flex items-center">
+                    <Info className="mr-2 h-6 w-6" />自己紹介 (任意)
+                  </FormLabel>
+                  <FormControl>
+                    <Textarea 
+                      placeholder="例: お得な情報を見つけるのが好きです！よろしくお願いします。" 
+                      {...field} 
+                      disabled={isSaving} 
+                      rows={4}
+                      className="text-base py-4"
+                      style={{ fontSize: '16px' }}
+                      autoComplete="off"
+                      autoCorrect="off"
+                      autoCapitalize="off"
+                      spellCheck="false"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-  if (submitError) {
-    return (
-      <AppLayout>
-        <div className="container mx-auto max-w-lg p-4 md:p-8 text-center">
-          <h1 className="text-3xl font-bold text-center mb-6 text-destructive">エラー</h1>
-          <p className="text-destructive bg-destructive/10 p-4 rounded-md">{submitError}</p>
-          <Button onClick={() => router.push('/login')} className="mt-4">ログインページへ戻る</Button>
-        </div>
-      </AppLayout>
-    );
-  }
+            <FormField
+              control={form.control}
+              name="favoriteStore1"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-2xl flex items-center font-semibold">
+                    <Store className="mr-2 h-6 w-6 text-primary" /> お気に入り店舗1
+                  </FormLabel>
+                  <FormControl>
+                    <FavoriteStoreInput
+                      placeholder="店舗を検索して選択"
+                      value={field.value === null ? undefined : field.value}
+                      onChange={(value) => {
+                        console.log(`FavoriteStore1 changed in Controller:`, value);
+                        field.onChange(value);
+                      }}
+                      disabled={isSaving}
+                      ref={field.ref}
+                      className="py-6"
+                      style={{ fontSize: '16px' }}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-  return null;
+            <FormField
+              control={form.control}
+              name="favoriteStore2"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-2xl flex items-center">
+                    <Store className="mr-2 h-6 w-6 text-primary" /> お気に入り店舗2 (任意)
+                  </FormLabel>
+                  <FormControl>
+                    <FavoriteStoreInput
+                      placeholder="店舗を検索して選択"
+                      value={field.value === null ? undefined : field.value}
+                      onChange={(value) => {
+                        console.log(`FavoriteStore2 changed in Controller:`, value);
+                        field.onChange(value);
+                      }}
+                      disabled={isSaving}
+                      ref={field.ref}
+                      className="py-6"
+                      style={{ fontSize: '16px' }}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="favoriteStore3"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="2xl flex items-center">
+                    <Store className="mr-2 h-6 w-6 text-primary" /> お気に入り店舗3 (任意)
+                  </FormLabel>
+                  <FormControl>
+                    <FavoriteStoreInput
+                      placeholder="店舗を検索して選択"
+                      value={field.value === null ? undefined : field.value}
+                      onChange={(value) => {
+                        console.log(`FavoriteStore3 changed in Controller:`, value);
+                        field.onChange(value);
+                      }}
+                      disabled={isSaving}
+                      ref={field.ref}
+                      className="py-6"
+                      style={{ fontSize: '16px' }}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            {submitError && (
+              <p className="text-base font-medium text-destructive bg-destructive/10 p-3 rounded-md">{submitError}</p>
+            )}
+
+            <Button type="submit" className="w-full text-lg py-6" disabled={isSaving || !isValid}>
+              {isSaving ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
+              プロフィールを保存する
+            </Button>
+          </form>
+        </Form>
+      </motion.div>
+    </>
+  );
+}
+
+// ページコンポーネントでAppLayoutを直接使用
+export default function ProfileSetupPage() {
+  return (
+    <AppLayout showHeader={false}>
+      <ProfileSetupContent />
+    </AppLayout>
+  );
 }

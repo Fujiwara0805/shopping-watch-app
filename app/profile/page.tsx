@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bell, LogOut, Settings, Edit, MapPin, Heart, Store as StoreIcon, Calendar, TrendingUp, Award, Star, User, Sparkles, ShoppingBag, Info, X, Trash2, NotebookText } from 'lucide-react';
-import ProfileLayout from './layout';
+import AppLayout from '@/components/layout/app-layout';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -657,8 +657,8 @@ function ProfilePageContent() {
 
 export default function ProfilePage() {
   return (
-    <ProfileLayout>
+    <AppLayout>
       <ProfilePageContent />
-    </ProfileLayout>
+    </AppLayout>
   );
 }

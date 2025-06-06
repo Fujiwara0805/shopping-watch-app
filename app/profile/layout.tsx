@@ -1,7 +1,7 @@
 "use client";
 
 import { ReactNode, useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { motion } from 'framer-motion';
 import { User, Loader2 } from 'lucide-react';
@@ -15,72 +15,92 @@ interface ProfileLayoutProps {
 export default function ProfileLayout({ children }: ProfileLayoutProps) {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [isChecking, setIsChecking] = useState(true);
+  const pathname = usePathname();
+  const [isLoadingProfileState, setIsLoadingProfileState] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const checkProfileStatus = async () => {
+      setIsLoadingProfileState(true);
+      setError(null);
+
       try {
-        // セッション状態がローディング中の場合は待機
         if (status === 'loading') {
           return;
         }
 
-        // 未認証の場合は新規プロフィール作成画面へ
         if (status === 'unauthenticated') {
-          console.log('ProfileLayout: User not authenticated, redirecting to profile setup');
-          router.replace('/profile/setup');
+          console.log('ProfileLayout: User not authenticated, redirecting to login');
+          router.replace('/login');
           return;
         }
 
-        // 認証済みの場合はプロフィール情報を確認
         if (status === 'authenticated' && session?.user?.id) {
-          console.log('ProfileLayout: Checking profile for user:', session.user.id);
+          console.log('ProfileLayout: User authenticated, checking profile and path:', pathname);
           
           const { data: profileData, error: profileError } = await supabase
             .from('app_profiles')
-            .select('id, user_id, display_name')
+            .select('id')
             .eq('user_id', session.user.id)
             .single();
 
-          if (profileError && profileError.code !== 'PGRST116') {
-            console.error('ProfileLayout: Error fetching profile:', profileError);
-            setError('プロフィール情報の取得に失敗しました');
-            setIsChecking(false);
-            return;
+          let profileExists = false;
+          if (profileData) {
+            profileExists = true;
+          } else if (profileError) {
+            if (profileError.code === 'PGRST116') {
+              profileExists = false;
+            } else {
+              console.error('ProfileLayout: Error fetching profile:', profileError);
+              setError('プロフィール情報の取得に失敗しました。');
+              setIsLoadingProfileState(false);
+              return;
+            }
           }
 
-          // プロフィール情報が存在しない場合は新規作成画面へ
-          if (!profileData) {
-            console.log('ProfileLayout: No profile found, redirecting to profile setup');
-            router.replace('/profile/setup');
-            return;
+          if (pathname === '/profile/setup' || pathname.startsWith('/profile/setup/')) {
+            if (profileExists) {
+              console.log('ProfileLayout: Profile already exists, redirecting from setup to profile');
+              router.replace('/profile');
+              return;
+            } else {
+              console.log('ProfileLayout: No profile found, staying on setup page');
+            }
+          } else {
+            if (!profileExists) {
+              console.log('ProfileLayout: No profile found, redirecting to profile setup');
+              router.replace('/profile/setup');
+              return;
+            } else {
+              console.log('ProfileLayout: Profile found, staying on profile page');
+            }
           }
+          setIsLoadingProfileState(false);
 
-          // プロフィール情報が存在する場合は子コンポーネントを表示
-          console.log('ProfileLayout: Profile found, showing profile page');
-          setIsChecking(false);
+        } else {
+          console.warn('ProfileLayout: Authenticated status but session.user.id is missing.');
+          router.replace('/login');
         }
-      } catch (error) {
-        console.error('ProfileLayout: Unexpected error:', error);
-        setError('予期しないエラーが発生しました');
-        setIsChecking(false);
+
+      } catch (err) {
+        console.error('ProfileLayout: Unexpected error during profile status check:', err);
+        setError('予期せぬエラーが発生しました。');
+        setIsLoadingProfileState(false);
       }
     };
 
     checkProfileStatus();
-  }, [status, session?.user?.id, router]);
+  }, [status, session?.user?.id, router, pathname]);
 
-  // ローディング中の表示
-  if (status === 'loading' || isChecking) {
-    return (
-      <AppLayout>
+  return (
+    <AppLayout showHeader={true} showNav={true}>
+      {isLoadingProfileState || status === 'loading' ? (
         <div 
           className="h-screen flex items-center justify-center"
           style={{ 
             backgroundColor: '#73370c',
-            height: 'calc(var(--mobile-vh, 100vh) - 120px)', // ヘッダーとナビゲーションの高さを考慮
-            minHeight: '400px' // 最小高さを設定
+            height: 'calc(var(--mobile-vh, 100vh) - 120px)',
+            minHeight: '400px'
           }}
         >
           <motion.div
@@ -98,14 +118,7 @@ export default function ProfileLayout({ children }: ProfileLayoutProps) {
             <p className="text-sm text-white/70">しばらくお待ちください</p>
           </motion.div>
         </div>
-      </AppLayout>
-    );
-  }
-
-  // エラー表示
-  if (error) {
-    return (
-      <AppLayout>
+      ) : error ? (
         <div 
           className="h-screen flex items-center justify-center"
           style={{ 
@@ -131,10 +144,9 @@ export default function ProfileLayout({ children }: ProfileLayoutProps) {
             </motion.button>
           </motion.div>
         </div>
-      </AppLayout>
-    );
-  }
-
-  // 正常な場合は子コンポーネントを表示
-  return <>{children}</>;
+      ) : (
+        children
+      )}
+    </AppLayout>
+  );
 }
