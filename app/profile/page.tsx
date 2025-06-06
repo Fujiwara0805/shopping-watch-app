@@ -36,7 +36,7 @@ interface AppProfile {
   favorite_store_3_name?: string | null;
 }
 
-// 統計カードのコンポーネント
+// 統計カードのコンポーネント - よりコンパクトに
 const StatCard = ({ icon: Icon, title, value, subtitle, gradient, delay = 0, showInfo = false, onInfoClick }: {
   icon: any;
   title: string;
@@ -56,7 +56,7 @@ const StatCard = ({ icon: Icon, title, value, subtitle, gradient, delay = 0, sho
       boxShadow: "0 10px 20px -5px rgb(0 0 0 / 0.15)" 
     }}
     className={cn(
-      "relative overflow-hidden rounded-xl p-4",
+      "relative overflow-hidden rounded-xl p-3",
       "backdrop-blur-sm border border-white/30",
       "shadow-md hover:shadow-lg transition-all duration-300",
       gradient
@@ -64,8 +64,8 @@ const StatCard = ({ icon: Icon, title, value, subtitle, gradient, delay = 0, sho
   >
     <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent" />
     <div className="relative z-10 text-center">
-      <div className="flex items-center justify-center mb-3">
-        <Icon className="h-6 w-6 text-gray-700" />
+      <div className="flex items-center justify-center mb-2">
+        <Icon className="h-4 w-4 text-gray-700" />
         {showInfo && (
           <motion.button
             whileHover={{ scale: 1.1 }}
@@ -73,11 +73,11 @@ const StatCard = ({ icon: Icon, title, value, subtitle, gradient, delay = 0, sho
             onClick={onInfoClick}
             className="p-1 rounded-full bg-blue-500 text-white hover:bg-blue-600 transition-colors ml-1"
           >
-            <Info className="h-3 w-3" />
+            <Info className="h-2 w-2" />
           </motion.button>
         )}
       </div>
-      <p className="text-3xl font-bold mb-1 text-gray-800">{value}</p>
+      <p className="text-xl font-bold mb-1 text-gray-800">{value}</p>
       <p className="text-gray-600 text-xs font-medium">{title}</p>
       {subtitle && <p className="text-gray-500 text-xs mt-1">{subtitle}</p>}
     </div>
@@ -399,7 +399,7 @@ export default function ProfilePage() {
               </motion.div>
             </div>
             
-            {/* 統計カード */}
+            {/* 統計カード - よりコンパクトに */}
             <div className="grid grid-cols-2 gap-3">
               <StatCard
                 icon={ShoppingBag}
@@ -576,13 +576,6 @@ export default function ProfilePage() {
                         title="アカウント設定"
                         description="プロフィール情報とお気に入り店舗の管理"
                         action={() => router.push('/profile/edit')}
-                      />
-                      
-                      <SettingItem
-                        icon={Bell}
-                        title="通知設定"
-                        description="アプリ内通知とメール通知の詳細設定"
-                        action={() => { /* TODO: 通知設定ページへ */ }}
                       />
                       
                       <SettingItem
