@@ -400,7 +400,7 @@ export const PostCard = memo(({
           </div>
           
           {postImageUrl && (
-            <div className="relative rounded-md overflow-hidden flex-grow" style={{ flexBasis: '30%', minHeight: '200px' }}>
+            <div className="relative rounded-md overflow-hidden mx-auto" style={{ width: '350px', height: '350px' }}>
               <OptimizedImage
                 src={postImageUrl}
                 alt="投稿画像"
