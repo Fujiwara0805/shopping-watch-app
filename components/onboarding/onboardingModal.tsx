@@ -18,9 +18,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onClose }) =>
       subtitle: (
         <span>
           プロフィール画面にてお気に入りの店舗を登録しよう。
-          <span className="inline-block mt-1">
             <span className="text-[#73370c] font-semibold">最大３つまで</span>登録できます ❤️
-          </span>
         </span>
       ),
       icon: Heart,
@@ -45,7 +43,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onClose }) =>
         <span>
           お得な情報を投稿してシェアしよう！💡
           <span className="block mt-2">
-            １投稿ごとに<span className="text-[#73370c] font-bold text-lg">最大５ポイント</span>付与します 🎉
+            １投稿ごとに<span className="text-[#73370c] font-bold ">最大５ポイント</span>付与します 🎉
           </span>
           <span className="block mt-1 text-sm">
             溜まったポイントは<span className="text-amber-600 font-semibold">Amazonギフト券</span>と交換<br /><br/>
@@ -141,7 +139,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onClose }) =>
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.90, y: 20 }}
             transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-            className="relative bg-card border border-border rounded-xl shadow-2xl w-full max-w-md overflow-hidden"
+            className="relative bg-card border border-border rounded-xl shadow-2xl w-full max-w-xs overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
