@@ -134,7 +134,7 @@ export const FullScreenPostViewer: React.FC<FullScreenPostViewerProps> = ({
       {isOpen && (
         <motion.div
           ref={containerRef}
-          className="fixed inset-0 z-50 bg-black bg-opacity-85 flex items-center justify-center"
+          className="fixed inset-0 z-50 bg-black bg-opacity-90 flex items-center justify-center"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -192,7 +192,7 @@ export const FullScreenPostViewer: React.FC<FullScreenPostViewerProps> = ({
 
           {/* メインコンテンツ */}
           <motion.div
-            className="w-full h-full max-w-md mx-auto flex items-center justify-center p-4"
+            className="w-full h-full max-w-lg mx-auto flex items-center justify-center p-4"
             drag
             dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
             dragElastic={0.2}
@@ -227,18 +227,21 @@ export const FullScreenPostViewer: React.FC<FullScreenPostViewerProps> = ({
                   damping: 30,
                   opacity: { duration: 0.2 },
                 }}
-                className="w-full h-fit max-h-[90vh] overflow-hidden"
+                className="w-full h-fit max-h-[85vh] overflow-hidden"
                 style={{ pointerEvents: 'auto' }}
               >
                 <div className="relative">
-                  <PostCard
-                    post={currentPost}
-                    onLike={onLike}
-                    currentUserId={currentUserId}
-                    showDistance={showDistance}
-                    isOwnPost={currentPost.author_user_id === currentUserId}
-                    isFullScreen={true}
-                  />
+                  {/* PostCardを統一サイズで表示 */}
+                  <div className="w-full" style={{ maxHeight: '85vh' }}>
+                    <PostCard
+                      post={currentPost}
+                      onLike={onLike}
+                      currentUserId={currentUserId}
+                      showDistance={showDistance}
+                      isOwnPost={currentPost.author_user_id === currentUserId}
+                      isFullScreen={true}
+                    />
+                  </div>
                   
                   {/* オーバーレイコントロール */}
                   <div className="absolute inset-0 pointer-events-none">
