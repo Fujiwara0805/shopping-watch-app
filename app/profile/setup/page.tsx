@@ -7,7 +7,6 @@ import { motion } from 'framer-motion';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import AppLayout from '@/components/layout/app-layout';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -423,8 +422,6 @@ function ProfileSetupContent() {
 // ページコンポーネントでAppLayoutを直接使用
 export default function ProfileSetupPage() {
   return (
-    <AppLayout showHeader={false}>
-      <ProfileSetupContent />
-    </AppLayout>
+    <ProfileSetupContent />
   );
 }
