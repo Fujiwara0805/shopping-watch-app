@@ -127,7 +127,7 @@ const HamburgerMenu = ({ currentUser }: { currentUser: any }) => {
 
   const handleSignOut = async () => {
     await signOut({ redirect: false });
-    router.push('/auth/signin');
+    router.push('/login');
   };
 
   const menuItems = [
@@ -183,7 +183,7 @@ const HamburgerMenu = ({ currentUser }: { currentUser: any }) => {
       icon: FileText,
       label: '規約・ポリシー',
       onClick: () => {
-        router.push('/terms');
+        router.push('/');
         setIsOpen(false);
       }
     },
@@ -191,7 +191,7 @@ const HamburgerMenu = ({ currentUser }: { currentUser: any }) => {
       icon: Settings,
       label: '設定',
       onClick: () => {
-        router.push('/settings');
+        router.push('/');
         setIsOpen(false);
       }
     }
