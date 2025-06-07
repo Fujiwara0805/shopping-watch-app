@@ -95,14 +95,15 @@ export default function Onboarding() {
 
   return (
     <div 
-      className="min-h-screen flex flex-col bg-background"
+      className="h-screen overflow-hidden flex flex-col bg-background"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
-      <header className="p-4 pt-[calc(var(--sat)+0.5rem)] flex justify-between items-center">
+      {/* ヘッダー - 固定高さ */}
+      <header className="flex-shrink-0 p-4 pt-[calc(var(--sat)+0.5rem)] flex justify-between items-center">
         <div className="flex items-center space-x-2">
-          <div className="rounded-full  p-2 ">
+          <div className="rounded-full p-2">
             <img src="https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png" alt="App Icon" className="h-12 w-12 object-contain" />
           </div>
           {/* <span className="font-bold text-xl tracking-wider">トクドク</span> */}
@@ -116,29 +117,31 @@ export default function Onboarding() {
         </Button>
       </header>
       
-      <AnimatePresence mode="wait">
-        <motion.div 
-          key={currentSlide}
-          initial={{ opacity: 0, x: 50 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -50 }}
-          transition={{ duration: 0.3 }}
-          className="flex-1 flex flex-col items-center justify-center px-4 sm:px-6 py-6 sm:py-8"
-        >
-          <div className={`${onboardingSlides[currentSlide].color} p-5 sm:p-6 rounded-full mb-6 sm:mb-8`}>
-            {onboardingSlides[currentSlide].icon}
-          </div>
-          <h2 className="text-2xl sm:text-3xl font-bold mb-3 sm:mb-4 text-center">
-            {onboardingSlides[currentSlide].title}
-          </h2>
-          <p className="text-base sm:text-lg text-center text-muted-foreground mb-6 sm:mb-8 max-w-xs sm:max-w-sm">
-            {onboardingSlides[currentSlide].description}
-          </p>
-        </motion.div>
-      </AnimatePresence>
-      
-      <div className="px-4 sm:px-6 py-6 sm:py-8 pb-[calc(var(--sab)+1.5rem)]">
-        <div className="flex justify-center space-x-2 mb-6 sm:mb-8">
+      {/* メインコンテンツ - 残りの領域を使用 */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <AnimatePresence mode="wait">
+          <motion.div 
+            key={currentSlide}
+            initial={{ opacity: 0, x: 50 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -50 }}
+            transition={{ duration: 0.3 }}
+            className="flex-1 flex flex-col items-center justify-center px-4 sm:px-6"
+          >
+            <div className={`${onboardingSlides[currentSlide].color} p-5 sm:p-6 rounded-full mb-4 sm:mb-6`}>
+              {onboardingSlides[currentSlide].icon}
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-bold mb-3 sm:mb-4 text-center">
+              {onboardingSlides[currentSlide].title}
+            </h2>
+            <p className="text-base sm:text-lg text-center text-muted-foreground mb-4 sm:mb-6 max-w-xs sm:max-w-sm">
+              {onboardingSlides[currentSlide].description}
+            </p>
+          </motion.div>
+        </AnimatePresence>
+        
+        {/* ページインジケーター */}
+        <div className="flex-shrink-0 flex justify-center space-x-2 mb-4 sm:mb-6">
           {onboardingSlides.map((_, index) => (
             <button
               key={index}
@@ -153,23 +156,26 @@ export default function Onboarding() {
           ))}
         </div>
         
-        <div className="flex space-x-3 sm:space-x-4">
-          <Button 
-            variant="outline"
-            onClick={prevSlide}
-            disabled={currentSlide === 0}
-            className="flex-1 h-12 rounded-xl"
-          >
-            <ChevronLeft className="mr-1 h-5 w-5" />
-            戻る
-          </Button>
-          <Button 
-            onClick={nextSlide}
-            className="flex-1 h-12 rounded-xl bg-primary"
-          >
-            {currentSlide === onboardingSlides.length - 1 ? '地図を表示' : '次へ'}
-            <ChevronRight className="ml-1 h-5 w-5" />
-          </Button>
+        {/* ボタン部分 - 固定高さでセーフエリア対応 */}
+        <div className="flex-shrink-0 px-4 sm:px-6 pb-[calc(var(--sab)+1rem)]">
+          <div className="flex space-x-3 sm:space-x-4">
+            <Button 
+              variant="outline"
+              onClick={prevSlide}
+              disabled={currentSlide === 0}
+              className="flex-1 h-12 rounded-xl"
+            >
+              <ChevronLeft className="mr-1 h-5 w-5" />
+              戻る
+            </Button>
+            <Button 
+              onClick={nextSlide}
+              className="flex-1 h-12 rounded-xl bg-primary"
+            >
+              {currentSlide === onboardingSlides.length - 1 ? '地図を表示' : '次へ'}
+              <ChevronRight className="ml-1 h-5 w-5" />
+            </Button>
+          </div>
         </div>
       </div>
     </div>
