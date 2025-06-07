@@ -24,13 +24,13 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onClose }) =>
       icon: Heart,
       color: "bg-[#73370c]",
       illustration: (
-        <div className="relative w-48 h-48 mx-auto mb-6">
+        <div className="relative w-36 h-36 mx-auto mb-6">
           <div className="absolute inset-0 bg-gradient-to-br from-[#73370c]/20 to-[#73370c]/30 rounded-full"></div>
           <div className="absolute inset-8 bg-white rounded-full shadow-lg flex items-center justify-center">
-            <Heart className="w-16 h-16 text-[#73370c]" />
+            <Heart className="w-12 h-12 text-[#73370c]" />
           </div>
-          <div className="absolute -top-2 -right-2 w-8 h-8 bg-amber-400 rounded-full flex items-center justify-center">
-            <Star className="w-4 h-4 text-white" />
+          <div className="absolute -top-2 -right-2 w-3 h-3 bg-amber-400 rounded-full flex items-center justify-center">
+            <Star className="w-3 h-3 text-white" />
           </div>
           <div className="absolute -bottom-2 -left-2 w-6 h-6 bg-emerald-400 rounded-full"></div>
         </div>
@@ -54,15 +54,15 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onClose }) =>
       icon: Share2,
       color: "bg-[#73370c]",
       illustration: (
-        <div className="relative w-48 h-48 mx-auto mb-6">
+        <div className="relative w-36 h-36 mx-auto mb-6">
           <div className="absolute inset-0 bg-gradient-to-br from-emerald-100 to-emerald-200 rounded-full"></div>
           <div className="absolute inset-8 bg-white rounded-full shadow-lg flex items-center justify-center">
-            <Share2 className="w-16 h-16 text-emerald-600" />
+            <Share2 className="w-12 h-12 text-emerald-600" />
           </div>
-          <div className="absolute -top-1 -right-1 w-10 h-10 bg-orange-400 rounded-full flex items-center justify-center">
-            <Gift className="w-5 h-5 text-white" />
+          <div className="absolute -top-1 -right-1 w-8 h-8 bg-orange-400 rounded-full flex items-center justify-center">
+            <Gift className="w-4 h-4 text-white" />
           </div>
-          <div className="absolute -bottom-3 -left-1 w-8 h-8 bg-[#73370c] rounded-full flex items-center justify-center">
+          <div className="absolute -bottom-3 -left-1 w-6 h-6 bg-[#73370c] rounded-full flex items-center justify-center">
             <span className="text-white text-xs font-bold">5P</span>
           </div>
         </div>
@@ -81,14 +81,14 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onClose }) =>
       icon: Zap,
       color: "bg-[#73370c]",
       illustration: (
-        <div className="relative w-48 h-48 mx-auto mb-6">
+        <div className="relative w-36 h-36 mx-auto mb-6">
           <div className="absolute inset-0 bg-gradient-to-br from-purple-100 to-purple-200 rounded-full"></div>
           <div className="absolute inset-8 bg-white rounded-full shadow-lg flex items-center justify-center">
-            <Zap className="w-16 h-16 text-purple-600" />
+            <Zap className="w-12 h-12 text-purple-600" />
           </div>
-          <div className="absolute -top-1 -right-3 w-6 h-6 bg-amber-400 rounded-full animate-bounce"></div>
-          <div className="absolute top-8 -left-2 w-4 h-4 bg-pink-400 rounded-full animate-pulse"></div>
-          <div className="absolute -bottom-1 right-8 w-5 h-5 bg-[#73370c] rounded-full animate-bounce" style={{ animationDelay: '0.5s' }}></div>
+          <div className="absolute -top-1 -right-3 w-4 h-4 bg-amber-400 rounded-full animate-bounce"></div>
+          <div className="absolute top-8 -left-2 w-3 h-3 bg-pink-400 rounded-full animate-pulse"></div>
+          <div className="absolute -bottom-1 right-8 w-4 h-4 bg-[#73370c] rounded-full animate-bounce" style={{ animationDelay: '0.5s' }}></div>
         </div>
       )
     }
@@ -162,7 +162,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onClose }) =>
             </div>
 
             {/* Content */}
-            <div className="px-6 py-8 text-center min-h-[420px] flex flex-col justify-center">
+            <div className="px-6 py-8 text-center min-h-[360px] flex flex-col justify-center">
               <AnimatePresence mode="wait">
                 <motion.div
                   key={currentStep}
