@@ -15,26 +15,44 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+
+const contactSchema = z.object({
+  name: z.string().min(1, { message: 'お名前を入力してください。' }).max(50, { message: 'お名前は50文字以内で入力してください。' }),
+  email: z.string().min(1, { message: 'メールアドレスを入力してください。' }).email({ message: '有効なメールアドレスを入力してください。' }),
+  subject: z.string().min(1, { message: '件名を選択してください。' }),
+  message: z.string().min(10, { message: 'お問い合わせ内容は10文字以上入力してください。' }).max(500, { message: 'お問い合わせ内容は500文字以内で入力してください。' }),
+});
+
+type ContactFormValues = z.infer<typeof contactSchema>;
 
 export default function ContactPage() {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [subject, setSubject] = useState('');
-  const [message, setMessage] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
+  const form = useForm<ContactFormValues>({
+    resolver: zodResolver(contactSchema),
+    defaultValues: {
+      name: '',
+      email: '',
+      subject: '',
+      message: '',
+    },
+    mode: 'onChange',
+  });
 
+  const { formState: { isSubmitting, isValid } } = form;
+
+  const handleSubmit = async (values: ContactFormValues) => {
     try {
       const response = await fetch('/api/contact', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ name, email, subject, message }),
+        body: JSON.stringify(values),
       });
 
       if (response.ok) {
@@ -42,10 +60,7 @@ export default function ContactPage() {
           title: "お問い合わせありがとうございます！",
           description: "内容を確認後、担当者よりご連絡いたします。",
         });
-        setName('');
-        setEmail('');
-        setSubject('');
-        setMessage('');
+        form.reset();
       } else {
         const errorData = await response.json();
         toast({
@@ -61,8 +76,6 @@ export default function ContactPage() {
         description: "ネットワークエラーまたはサーバーエラーが発生しました。",
         variant: "destructive",
       });
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -138,100 +151,137 @@ export default function ContactPage() {
             <CardDescription className="text-base sm:text-lg">ご不明な点やご要望がございましたら、<br className="sm:hidden"/>お気軽にお問い合わせください。</CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.1, duration: 0.3 }}
-              >
-                <label htmlFor="name" className="block text-base sm:text-lg font-medium text-foreground mb-1">
-                  お名前 <span className="text-destructive ml-1">＊</span>
-                </label>
-                <Input
-                  id="name"
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
-                  placeholder="例: 山田 太郎"
-                  className="w-full text-base sm:text-lg"
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <motion.div
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.1, duration: 0.3 }}
+                    >
+                      <FormItem>
+                        <FormLabel className="block text-base sm:text-lg font-medium text-foreground mb-1">
+                          お名前 <span className="text-destructive ml-1">＊</span>
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            type="text"
+                            placeholder="例: 山田 太郎"
+                            className="w-full text-base sm:text-lg"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    </motion.div>
+                  )}
                 />
-              </motion.div>
 
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.2, duration: 0.3 }}
-              >
-                <label htmlFor="email" className="block text-base sm:text-lg font-medium text-foreground mb-1">
-                  メールアドレス <span className="text-destructive ml-1">＊</span>
-                </label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  placeholder="例: example@email.com"
-                  className="w-full text-base sm:text-lg"
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <motion.div
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.2, duration: 0.3 }}
+                    >
+                      <FormItem>
+                        <FormLabel className="block text-base sm:text-lg font-medium text-foreground mb-1">
+                          メールアドレス <span className="text-destructive ml-1">＊</span>
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            type="email"
+                            placeholder="例: example@email.com"
+                            className="w-full text-base sm:text-lg"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    </motion.div>
+                  )}
                 />
-              </motion.div>
 
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.3, duration: 0.3 }}
-              >
-                <label htmlFor="subject" className="block text-base sm:text-lg font-medium text-foreground mb-1">
-                  件名 <span className="text-destructive ml-1">＊</span>
-                </label>
-                <Select onValueChange={setSubject} value={subject} required>
-                  <SelectTrigger className="w-full text-base sm:text-lg">
-                    <SelectValue placeholder="選択してください" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {subjectOptions.map((option) => (
-                      <SelectItem key={option.value} value={option.value} className="text-base sm:text-lg">
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.4, duration: 0.3 }}
-              >
-                <label htmlFor="message" className="block text-base sm:text-lg font-medium text-foreground mb-1">
-                  お問い合わせ内容 <span className="text-destructive ml-1">＊</span>
-                </label>
-                <Textarea
-                  id="message"
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  required
-                  rows={6}
-                  placeholder="お問い合わせ内容を具体的にご記入ください。"
-                  className="w-full text-base sm:text-lg"
+                <FormField
+                  control={form.control}
+                  name="subject"
+                  render={({ field }) => (
+                    <motion.div
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.3, duration: 0.3 }}
+                    >
+                      <FormItem>
+                        <FormLabel className="block text-base sm:text-lg font-medium text-foreground mb-1">
+                          件名 <span className="text-destructive ml-1">＊</span>
+                        </FormLabel>
+                        <FormControl>
+                          <Select onValueChange={field.onChange} value={field.value} required>
+                            <SelectTrigger className="w-full text-base sm:text-lg">
+                              <SelectValue placeholder="選択してください" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {subjectOptions.map((option) => (
+                                <SelectItem key={option.value} value={option.value} className="text-base sm:text-lg">
+                                  {option.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    </motion.div>
+                  )}
                 />
-              </motion.div>
 
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.5, duration: 0.3 }}
-              >
-                <Button 
-                  type="submit" 
-                  className="w-full py-3 text-lg sm:text-xl"
-                  disabled={isSubmitting}
+                <FormField
+                  control={form.control}
+                  name="message"
+                  render={({ field }) => (
+                    <motion.div
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.4, duration: 0.3 }}
+                    >
+                      <FormItem>
+                        <FormLabel className="block text-base sm:text-lg font-medium text-foreground mb-1">
+                          お問い合わせ内容 <span className="text-destructive ml-1">＊</span>
+                        </FormLabel>
+                        <FormControl>
+                          <Textarea
+                            rows={6}
+                            placeholder="お問い合わせ内容を具体的にご記入ください。（10文字以上500文字以内）"
+                            className="w-full text-base sm:text-lg"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    </motion.div>
+                  )}
+                />
+
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5, duration: 0.3 }}
                 >
-                  {isSubmitting ? '送信中...' : '送信'}
-                </Button>
-              </motion.div>
-            </form>
+                  <Button 
+                    type="submit" 
+                    className="w-full py-3 text-lg sm:text-xl"
+                    disabled={isSubmitting || !isValid}
+                  >
+                    {isSubmitting ? '送信中...' : '送信'}
+                  </Button>
+                </motion.div>
+              </form>
+            </Form>
 
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -242,8 +292,8 @@ export default function ContactPage() {
               <h3 className="font-semibold text-foreground mb-2 text-xl sm:text-2xl">運営情報</h3>
               <p className="text-base sm:text-lg">トクドク開発チーム</p>
               <p className="mt-4 text-sm sm:text-base">
-                お問い合わせへの返信は、通常3~5営業日以内に行います。
-                個人開発のため時間を要してしまいます。大変申し訳ございません。
+                お問い合わせへの返信は、通常3~5営業日以内に行います。<br/>
+                (個人開発のため時間を要してしまいます。大変申し訳ございません)<br/>
                 土日祝日は対応が遅れる場合がございますので、あらかじめご了承ください。
               </p>
             </motion.div>
