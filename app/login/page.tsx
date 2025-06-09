@@ -8,8 +8,26 @@ import AppLayout from "@/components/layout/app-layout";
 import { GoogleIcon } from "@/components/common/icons/GoogleIcon";
 import { LineIcon } from "@/components/common/icons/LineIcon";
 import { LineConsentModal } from "@/components/common/LineConsentModal";
-import { Loader2, AlertTriangle, ArrowRight } from "lucide-react";
+import { Loader2, AlertTriangle, ArrowRight, Eye, EyeOff } from "lucide-react";
 import { motion } from "framer-motion";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import Link from "next/link";
+
+const loginFormSchema = z.object({
+  email: z.string().email({ message: "有効なメールアドレスを入力してください。" }),
+  password: z.string().min(6, { message: "パスワードは6文字以上で入力してください。" }),
+});
 
 export default function LoginPage() {
   const { data: session, status } = useSession();
@@ -18,6 +36,15 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showLineConsentModal, setShowLineConsentModal] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
+  const form = useForm<z.infer<typeof loginFormSchema>>({
+    resolver: zodResolver(loginFormSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  });
 
   useEffect(() => {
     const nextAuthError = searchParams.get("error");
@@ -28,6 +55,9 @@ export default function LoginPage() {
           break;
         case "Callback":
           setError("Googleアカウントでのログインに失敗しました。時間をおいて再度お試しください。(コールバックエラー)");
+          break;
+        case "CredentialsSignin":
+          setError("メールアドレスまたはパスワードが正しくありません。");
           break;
         default:
           setError(`ログインエラーが発生しました: ${nextAuthError}`);
@@ -57,6 +87,25 @@ export default function LoginPage() {
     setIsLoading(true);
     setError(null);
     await signIn("line", { redirect: false });
+  };
+
+  const handleCredentialsLogin = async (values: z.infer<typeof loginFormSchema>) => {
+    setIsLoading(true);
+    setError(null);
+    const result = await signIn("credentials", {
+      redirect: false,
+      email: values.email,
+      password: values.password,
+    });
+
+    if (result?.error) {
+      setError("メールアドレスまたはパスワードが正しくありません。");
+      console.error("Credentials login error:", result.error);
+    } else {
+      const callbackUrl = searchParams.get("callbackUrl") || "/timeline";
+      router.replace(callbackUrl);
+    }
+    setIsLoading(false);
   };
 
   const handleContinueWithoutLogin = () => {
@@ -99,13 +148,10 @@ export default function LoginPage() {
               animate={{ letterSpacing: "0em" }}
               transition={{ delay: 0.3, duration: 0.5 }}
             >
-              ログインして素敵な体験を始めよう
+              ログインして<br />素敵な体験を始めよう
             </motion.h1>
-            <p className="text-[#73370c]/70 mb-2 text-sm sm:text-base">
-              お気に入りのショップ情報を簡単に見つけよう！
-            </p>
-            <p className="text-[#73370c]/60 mb-8 text-xs sm:text-sm">
-              ログインすると、お気に入り機能や投稿機能を使用できます
+            <p className="text-[#73370c]/60 mb-8 text-base sm:text-base">
+              ログインすると、お気に入り機能や<br />投稿機能を使用できます
             </p>
 
             {error && (
@@ -118,6 +164,79 @@ export default function LoginPage() {
                 <p className="text-sm text-left">{error}</p>
               </motion.div>
             )}
+            
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(handleCredentialsLogin)} className="space-y-4 mb-6">
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-[#73370c]">メールアドレス</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="メールアドレス"
+                          {...field}
+                          className="text-[#73370c] border-[#73370c]/20 focus-visible:ring-[#73370c]"
+                        />
+                      </FormControl>
+                      <FormMessage className="text-red-500 text-xs" />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-[#73370c]">パスワード</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Input
+                            type={showPassword ? "text" : "password"}
+                            placeholder="パスワード"
+                            {...field}
+                            className="pr-10 text-[#73370c] border-[#73370c]/20 focus-visible:ring-[#73370c]"
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="absolute right-0 top-0 h-full px-3 py-1 hover:bg-transparent"
+                            onClick={() => setShowPassword((prev) => !prev)}
+                          >
+                            {showPassword ? (
+                              <EyeOff className="h-4 w-4 text-[#73370c]/60" />
+                            ) : (
+                              <Eye className="h-4 w-4 text-[#73370c]/60" />
+                            )}
+                          </Button>
+                        </div>
+                      </FormControl>
+                      <FormMessage className="text-red-500 text-xs" />
+                    </FormItem>
+                  )}
+                />
+                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                  <Button
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full bg-[#73370c] hover:bg-[#73370c]/90 text-white text-base sm:text-lg py-6 sm:py-7 shadow-md rounded-lg transition-colors"
+                    style={{ fontSize: '16px' }}
+                  >
+                    {isLoading ? (
+                      <Loader2 className="h-6 w-6 animate-spin" />
+                    ) : (
+                      <span className="font-medium">メールアドレスでログイン</span>
+                    )}
+                  </Button>
+                </motion.div>
+              </form>
+            </Form>
+
+            <div className="relative flex justify-center text-xs uppercase mb-6">
+              <span className="bg-white px-2 text-[#73370c]/60">または</span>
+            </div>
             
             <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="mb-4">
               <Button 
@@ -138,7 +257,8 @@ export default function LoginPage() {
               </Button>
             </motion.div>
 
-            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="mb-6">
+            {/* LINEログインは現在非対応 */}
+            {/* <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="mb-6">
               <Button
                 onClick={handleLineLogin}
                 disabled={isLoading}
@@ -155,6 +275,19 @@ export default function LoginPage() {
                   </>
                 )}
               </Button>
+            </motion.div> */}
+
+            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="mb-6">
+              <Link href="/register" className="w-full">
+                <Button
+                  variant="ghost"
+                  className="w-full text-[#73370c]/70 hover:text-[#73370c] hover:bg-[#73370c]/5 text-sm sm:text-base py-4 flex items-center justify-center space-x-2 rounded-lg transition-colors border border-[#73370c]/10"
+                  style={{ fontSize: '16px' }}
+                >
+                  <span>新規登録</span>
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </Link>
             </motion.div>
 
             <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="mb-6">

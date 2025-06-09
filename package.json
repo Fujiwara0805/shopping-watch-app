@@ -40,6 +40,7 @@
     "@react-google-maps/api": "^2.20.6",
     "@supabase/supabase-js": "^2.49.7",
     "autoprefixer": "^10.4.16",
+    "bcryptjs": "^3.0.2",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "cmdk": "^1.0.0",
