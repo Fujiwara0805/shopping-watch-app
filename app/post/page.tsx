@@ -939,21 +939,20 @@ export default function PostPage() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-xl flex items-center font-semibold">
-                      <Calculator className="mr-2 h-6 w-6 " /> おトク率 <span className="text-destructive ml-1">※</span> :
+                      <Calculator className="mr-2 h-6 w-6 " /> お得感 <span className="text-destructive ml-1">※</span> :
                       <span className="ml-2 text-primary font-bold flex items-center">
                         {(() => {
                           const selectedOption = discountIcons.find(option => option.value === field.value);
                           const displayIcon = selectedOption ? selectedOption.Icon : Angry; // デフォルトはAngry (0%)
-                          const displayText = selectedOption ? selectedOption.label : "0%"; // デフォルトは「0%」
 
                           return (
                             <>
                               {React.createElement(displayIcon, { className: "h-7 w-7 mr-2" })}
-                              {displayText}
                             </>
                           );
                         })()}
                       </span>
+                      <span className="text-base font-normal text-muted-foreground ml-3">お得度を顔文字であらわそう</span>
                     </FormLabel>
                     <FormControl>
                       <RadioGroup
@@ -971,13 +970,12 @@ export default function PostPage() {
                             <Label
                               htmlFor={`discount-icon-${option.value}`}
                               className={cn(
-                                "flex flex-col items-center justify-center rounded-md border-2 border-muted p-3 text-center text-lg h-full cursor-pointer",
+                                "flex flex-col items-center justify-center rounded-md border-2 border-muted p-3 text-lg h-full cursor-pointer",
                                 "hover:border-primary peer-data-[state=checked]:border-primary",
                                 "peer-data-[state=checked]:bg-primary/10"
                               )}
                             >
                               {React.createElement(option.Icon, { className: "h-8 w-8 mb-1" })}
-                              <span className="text-sm">{option.label}</span>
                             </Label>
                           </div>
                         ))}

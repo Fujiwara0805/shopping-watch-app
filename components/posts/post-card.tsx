@@ -172,7 +172,6 @@ const DiscountBadge = memo(({ discountRate }: { discountRate: number | null | un
 
   const selectedOption = discountIcons.find(option => option.value === discountRate);
   const displayIcon = selectedOption ? selectedOption.Icon : Angry;
-  const displayText = selectedOption ? selectedOption.label : "なし";
 
   return (
     <motion.div
@@ -181,8 +180,7 @@ const DiscountBadge = memo(({ discountRate }: { discountRate: number | null | un
       transition={{ delay: 0.2, duration: 0.3 }}
     >
       <Badge className="bg-primary text-primary-foreground font-bold text-xl px-2 py-1 shadow-sm flex items-center">
-        {React.createElement(displayIcon, { className: "h-6 w-6 mr-1" })}
-        {displayText}
+        {React.createElement(displayIcon, { className: "h-6 w-6" })}
       </Badge>
     </motion.div>
   );
