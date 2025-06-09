@@ -311,14 +311,14 @@ export function MapView() {
         window.google.maps.event.removeListener(errorListener);
       });
 
-      // タイムアウト設定（40秒に統一）
+      // タイムアウト設定（120秒に統一）
       const timeout = setTimeout(() => {
         if (!mapInitialized) {
           console.error(`MapView ${browserInfo.name}: Map initialization timeout`);
           setInitializationError("タイムアウトしました。再度ロードしてください。");
           initializationTriedRef.current = false;
         }
-      }, 40000); // 40秒に統一
+      }, 120000); // 120秒に統一
 
       return () => {
         clearTimeout(timeout);

@@ -30,6 +30,8 @@ export function AppHeader() {
         return 'プロフィール作成';
       case '/notifications':
         return '通知';
+      case '/contact':
+        return 'お問い合わせ';
       default:
         return '';
     }
