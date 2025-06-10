@@ -531,7 +531,7 @@ export default function Timeline() {
             avatar_url,
             bio
           ),
-          post_likes (
+          post_likes!fk_post_likes_post_id (
             post_id,
             user_id,
             created_at
