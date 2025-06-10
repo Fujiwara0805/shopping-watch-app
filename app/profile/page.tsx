@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bell, LogOut, Settings, Edit, MapPin, Heart, Store as StoreIcon, Calendar, TrendingUp, Award, Star, User, Sparkles, ShoppingBag, Info, X, Trash2, NotebookText } from 'lucide-react';
+import { Bell, LogOut, Settings, Edit, MapPin, Heart, Store as StoreIcon, Calendar, TrendingUp, Award, Star, User, Sparkles, ShoppingBag, Info, X, Trash2, NotebookText, CheckCircle, ExternalLink, ArrowRight } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -16,6 +16,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { PostWithAuthor, AuthorProfile } from '@/types/post';
 import { cn } from '@/lib/utils';
 import { CustomModal } from '@/components/ui/custom-modal';
+import { useToast } from '@/hooks/use-toast';
 
 interface AppProfile {
   id: string;
@@ -163,6 +164,88 @@ const SettingItem = ({ icon: Icon, title, description, action, variant = "defaul
   </motion.div>
 );
 
+// LINE通知設定コンポーネント
+const LineNotificationSettings = ({ 
+  isConnected, 
+  loading, 
+  onNavigateToLineConnect,
+  onRefreshConnection 
+}: {
+  isConnected: boolean;
+  loading: boolean;
+  onNavigateToLineConnect: () => void;
+  onRefreshConnection: () => void;
+}) => (
+  <motion.div
+    whileHover={{ scale: 1.01 }}
+    className="p-3 bg-white rounded-lg border border-gray-100 shadow-sm"
+  >
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <div className="space-y-0.5 flex-1 min-w-0">
+          <div className="flex items-center space-x-2">
+            <Label className="text-sm font-medium">LINE通知</Label>
+            {isConnected ? (
+              <Badge variant="secondary" className="bg-green-100 text-green-800 text-xs">
+                <CheckCircle className="h-3 w-3 mr-1" />
+                接続済み
+              </Badge>
+            ) : (
+              <Badge variant="secondary" className="bg-gray-100 text-gray-600 text-xs">
+                未接続
+              </Badge>
+            )}
+          </div>
+          <p className="text-xs text-gray-500">
+            {isConnected 
+              ? "LINEでお得情報を受信中です" 
+              : "LINEでお得情報を受け取る"
+            }
+          </p>
+        </div>
+      </div>
+      
+      <div className="flex space-x-2">
+        {isConnected ? (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onRefreshConnection}
+            disabled={loading}
+            className="text-green-600 border-green-200 hover:bg-green-50 text-xs px-3 py-1 flex-1"
+          >
+            {loading ? (
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                className="h-3 w-3 mr-1"
+              >
+                ⟳
+              </motion.div>
+            ) : (
+              <CheckCircle className="h-3 w-3 mr-1" />
+            )}
+            {loading ? '確認中...' : '接続状況を確認'}
+          </Button>
+        ) : (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onNavigateToLineConnect}
+            className="text-green-600 border-green-200 hover:bg-green-50 text-xs px-3 py-1 flex-1"
+          >
+            <svg className="h-3 w-3 mr-1" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63h2.386c.346 0 .627.285.627.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63.346 0 .628.285.628.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.282.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/>
+            </svg>
+            LINE設定へ
+            <ArrowRight className="h-3 w-3 ml-1" />
+          </Button>
+        )}
+      </div>
+    </div>
+  </motion.div>
+);
+
 function ProfilePageContent() {
   const { data: session } = useSession();
   const [profile, setProfile] = useState<AppProfile | null>(null);
@@ -170,10 +253,15 @@ function ProfilePageContent() {
   const [userPosts, setUserPosts] = useState<PostWithAuthor[]>([]);
   const [loadingPosts, setLoadingPosts] = useState(true);
   const router = useRouter();
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("memo");
   const [userPoints, setUserPoints] = useState(0);
   const [showPointsModal, setShowPointsModal] = useState(false);
   const [hiddenPosts, setHiddenPosts] = useState<Set<string>>(new Set());
+  
+  // LINE接続状況の管理
+  const [isLineConnected, setIsLineConnected] = useState(false);
+  const [checkingLineConnection, setCheckingLineConnection] = useState(false);
 
   useEffect(() => {
     // ProfileLayoutで認証確認済みなので、直接データフェッチ
@@ -275,10 +363,48 @@ function ProfilePageContent() {
 
     fetchProfileAndPosts();
   }, [session?.user?.id]);
+
+  // LINE接続状況の確認
+  const checkLineConnection = async () => {
+    try {
+      setCheckingLineConnection(true);
+      const response = await fetch('/api/line/check-connection');
+      const data = await response.json();
+      setIsLineConnected(data.isConnected);
+      
+      if (data.isConnected) {
+        toast({
+          title: "LINE接続確認完了",
+          description: "LINEアカウントが正常に接続されています。",
+        });
+      }
+    } catch (error) {
+      console.error('Error checking LINE connection:', error);
+      toast({
+        title: "接続確認エラー",
+        description: "LINE接続状況の確認に失敗しました。",
+        variant: "destructive"
+      });
+    } finally {
+      setCheckingLineConnection(false);
+    }
+  };
+
+  // 初回LINE接続状況確認
+  useEffect(() => {
+    if (session?.user?.id) {
+      checkLineConnection();
+    }
+  }, [session?.user?.id]);
   
   const handleLogout = async () => {
     await signOut({ redirect: false, callbackUrl: '/login' });
     router.push('/login');
+  };
+
+  // LINE設定ページへのナビゲーション
+  const handleNavigateToLineConnect = () => {
+    router.push('/line-connect');
   };
 
   // お気に入り店舗のフィルタリング
@@ -564,28 +690,12 @@ function ProfilePageContent() {
                       <Switch id="push-notifications" defaultChecked />
                     </motion.div>
                     
-                    <motion.div
-                      whileHover={{ scale: 1.01 }}
-                      className="p-3 bg-white rounded-lg border border-gray-100 shadow-sm"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="space-y-0.5 flex-1 min-w-0">
-                          <Label className="text-sm font-medium">LINE通知</Label>
-                          <p className="text-xs text-gray-500">LINEでお得情報を受け取る</p>
-                        </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => window.open('https://line.me/R/ti/p/@your-line-bot-id', '_blank')}
-                          className="text-green-600 border-green-200 hover:bg-green-50 text-xs px-3 py-1"
-                        >
-                          <svg className="h-3 w-3 mr-1" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63h2.386c.346 0 .627.285.627.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63.346 0 .628.285.628.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.282.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/>
-                          </svg>
-                          友だち追加
-                        </Button>
-                      </div>
-                    </motion.div>
+                    <LineNotificationSettings
+                      isConnected={isLineConnected}
+                      loading={checkingLineConnection}
+                      onNavigateToLineConnect={handleNavigateToLineConnect}
+                      onRefreshConnection={checkLineConnection}
+                    />
                   </div>
                 </motion.div>
                 

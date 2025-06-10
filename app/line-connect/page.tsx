@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { MessageCircle, Bell, CheckCircle, ExternalLink, Copy, RefreshCw, Link, User, Clock, AlertTriangle, Info } from 'lucide-react';
+import { MessageCircle, Bell, CheckCircle, ExternalLink, Copy, RefreshCw, Link, User, Clock, AlertTriangle, Info, ArrowLeft, QrCode, Smartphone } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface RecentFollow {
@@ -32,6 +32,8 @@ export default function LineConnectPage() {
   const [showManualLink, setShowManualLink] = useState(false);
   const [recentFollows, setRecentFollows] = useState<RecentFollow[]>([]);
   const [loadingRecent, setLoadingRecent] = useState(false);
+  const [showQRCode, setShowQRCode] = useState(false);
+  const [isAddFriendClicked, setIsAddFriendClicked] = useState(false);
 
   // LINE Bot Basic ID
   const LINE_BOT_ID = '@208subra';
@@ -181,14 +183,66 @@ export default function LineConnectPage() {
     }
   };
 
+  // 改善されたLINE友達追加機能
   const handleAddFriend = () => {
-    const lineAddFriendUrl = `https://line.me/R/ti/p/${LINE_BOT_ID}`;
-    window.open(lineAddFriendUrl, '_blank');
+    setIsAddFriendClicked(true);
     
-    toast({
-      title: "LINE友達追加",
-      description: "LINEアプリで友達追加を完了してから、「接続確認」ボタンをタップしてください。",
-    });
+    const userAgent = navigator.userAgent.toLowerCase();
+    const isIOS = /iphone|ipad|ipod/.test(userAgent);
+    const isAndroid = /android/.test(userAgent);
+    const isMobile = isIOS || isAndroid;
+    
+    try {
+      if (isMobile) {
+        if (isIOS) {
+          // iOS版LINEアプリ直接起動
+          const iosLineUrl = `line://ti/p/${LINE_BOT_ID}`;
+          const fallbackUrl = `https://line.me/R/ti/p/${LINE_BOT_ID}`;
+          
+          // LINEアプリを開く試行
+          window.location.href = iosLineUrl;
+          
+          // フォールバック処理（2秒後）
+          setTimeout(() => {
+            if (!document.hidden) {
+              window.open(fallbackUrl, '_blank');
+            }
+          }, 2000);
+          
+        } else if (isAndroid) {
+          // Android版Intent URL
+          const androidUrl = `intent://ti/p/${LINE_BOT_ID}#Intent;scheme=line;package=jp.naver.line.android;S.browser_fallback_url=https%3A%2F%2Fline.me%2FR%2Fti%2Fp%2F${encodeURIComponent(LINE_BOT_ID)};end`;
+          window.location.href = androidUrl;
+        }
+      } else {
+        // デスクトップの場合
+        window.open(`https://line.me/R/ti/p/${LINE_BOT_ID}`, '_blank');
+      }
+      
+      toast({
+        title: "LINE友達追加",
+        description: isMobile 
+          ? "LINEアプリで友達追加を完了してから、「接続確認」ボタンをタップしてください。"
+          : "LINE Web版またはQRコードで友達追加を完了してください。",
+        duration: 6000,
+      });
+      
+    } catch (error) {
+      console.error('LINE友達追加でエラーが発生:', error);
+      // エラー時のフォールバック
+      window.open(`https://line.me/R/ti/p/${LINE_BOT_ID}`, '_blank');
+      
+      toast({
+        title: "LINE友達追加",
+        description: "LINEで友達追加を完了してください。",
+        variant: "default"
+      });
+    }
+    
+    // 状態をリセット
+    setTimeout(() => {
+      setIsAddFriendClicked(false);
+    }, 3000);
   };
 
   const handleCopyId = () => {
@@ -208,11 +262,19 @@ export default function LineConnectPage() {
     });
   };
 
+  const handleBackToProfile = () => {
+    router.push('/profile');
+  };
+
   if (status === 'loading' || loading) {
     return (
       <AppLayout>
         <div className="flex items-center justify-center min-h-[50vh]">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+            className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full"
+          />
         </div>
       </AppLayout>
     );
@@ -220,13 +282,26 @@ export default function LineConnectPage() {
 
   return (
     <AppLayout>
-      <div className="container mx-auto px-4 py-8 max-w-2xl">
+      <div className="container mx-auto px-4 py-6 max-w-2xl">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
           className="space-y-6"
         >
+          {/* ヘッダー部分 */}
+          <div className="flex items-center space-x-4 mb-6">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleBackToProfile}
+              className="flex items-center space-x-2"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>プロフィールに戻る</span>
+            </Button>
+          </div>
+
           <Card>
             <CardHeader className="text-center">
               <div className="mx-auto mb-4 w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
@@ -253,19 +328,29 @@ export default function LineConnectPage() {
                   <p className="text-muted-foreground">
                     LINE通知が有効になっています。お気に入り店舗に新しい投稿があると、LINEでお知らせします。
                   </p>
-                  <Button 
-                    variant="outline" 
-                    onClick={checkLineConnection}
-                    disabled={loading}
-                    className="mt-4"
-                  >
-                    {loading ? (
-                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                    ) : (
-                      <RefreshCw className="w-4 h-4 mr-2" />
-                    )}
-                    接続状況を更新
-                  </Button>
+                  <div className="space-y-2">
+                    <Button 
+                      variant="outline" 
+                      onClick={checkLineConnection}
+                      disabled={loading}
+                      className="w-full"
+                    >
+                      {loading ? (
+                        <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <RefreshCw className="w-4 h-4 mr-2" />
+                      )}
+                      接続状況を更新
+                    </Button>
+                    
+                    <Button 
+                      onClick={handleBackToProfile}
+                      className="w-full"
+                      style={{ backgroundColor: '#73370c' }}
+                    >
+                      プロフィールに戻る
+                    </Button>
+                  </div>
                 </motion.div>
               ) : (
                 <div className="space-y-6">
@@ -307,7 +392,10 @@ export default function LineConnectPage() {
                     </p>
                     
                     <div className="bg-yellow-50 p-4 rounded-lg text-left">
-                      <h4 className="font-medium text-yellow-900 mb-2">📱 設定手順</h4>
+                      <h4 className="font-medium text-yellow-900 mb-2 flex items-center">
+                        <Smartphone className="w-5 h-5 mr-2" />
+                        📱 設定手順
+                      </h4>
                       <ol className="text-sm text-yellow-800 space-y-1">
                         <li>1. 下の「LINE友達追加」ボタンをタップ</li>
                         <li>2. LINEアプリで友達追加を完了</li>
@@ -320,15 +408,56 @@ export default function LineConnectPage() {
                     </div>
                     
                     <div className="space-y-3">
+                      {/* 友達追加ボタン */}
                       <Button 
                         onClick={handleAddFriend}
-                        className="w-full bg-green-500 hover:bg-green-600 text-white"
+                        disabled={isAddFriendClicked}
+                        className="w-full bg-green-500 hover:bg-green-600 text-white relative overflow-hidden"
                         size="lg"
                       >
-                        <MessageCircle className="w-5 h-5 mr-2" />
-                        LINE友達追加
-                        <ExternalLink className="w-4 h-4 ml-2" />
+                        {isAddFriendClicked ? (
+                          <>
+                            <CheckCircle className="w-5 h-5 mr-2" />
+                            LINEアプリを開いています...
+                          </>
+                        ) : (
+                          <>
+                            <MessageCircle className="w-5 h-5 mr-2" />
+                            LINE友達追加
+                            <ExternalLink className="w-4 h-4 ml-2" />
+                          </>
+                        )}
                       </Button>
+
+                      {/* QRコード表示ボタン */}
+                      <Button 
+                        onClick={() => setShowQRCode(!showQRCode)}
+                        variant="outline"
+                        className="w-full text-sm"
+                        size="sm"
+                      >
+                        <QrCode className="w-4 h-4 mr-2" />
+                        QRコードで追加
+                      </Button>
+                      
+                      {/* QRコード表示エリア */}
+                      {showQRCode && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          className="text-center p-4 bg-gray-50 rounded-lg border"
+                        >
+                          <img 
+                            src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(`https://line.me/R/ti/p/${LINE_BOT_ID}`)}`}
+                            alt="LINE友達追加QRコード"
+                            className="mx-auto mb-2 rounded-lg shadow-sm"
+                          />
+                          <p className="text-xs text-gray-600">
+                            LINEアプリでQRコードを読み取って友達追加
+                          </p>
+                        </motion.div>
+                      )}
 
                       <Button 
                         onClick={handleLinkConnection}
