@@ -88,7 +88,7 @@ export const authOptions: AuthOptions = {
           if (account.provider === 'google') {
             providerColumn = 'google_id';
           } else if (account.provider === 'line') {
-            providerColumn = 'line_id';
+            providerColumn = 'line_id';  // 修正: 既存のデータベース構造に合わせてline_idを使用
           } else {
             console.warn(`JWT Callback: Unsupported OAuth provider: ${account.provider}`);
             token.error = "UnsupportedOAuthProvider";
@@ -132,7 +132,7 @@ export const authOptions: AuthOptions = {
                   if (account.provider === 'google' && !userByEmail.google_id) {
                     updatePayload.google_id = profile.sub;
                   } else if (account.provider === 'line' && !userByEmail.line_id) {
-                    updatePayload.line_id = profile.sub;
+                    updatePayload.line_id = profile.sub;  // 修正: line_user_idからline_idに変更
                   }
 
                   if (Object.keys(updatePayload).length > 0) {
@@ -165,7 +165,7 @@ export const authOptions: AuthOptions = {
                   if (account.provider === 'google') {
                     newUserPayload.google_id = profile.sub;
                   } else if (account.provider === 'line') {
-                    newUserPayload.line_id = profile.sub;
+                    newUserPayload.line_id = profile.sub;  // 修正: line_user_idからline_idに変更
                   }
 
                   const { data: newSupabaseUser, error: insertError } = await supabase

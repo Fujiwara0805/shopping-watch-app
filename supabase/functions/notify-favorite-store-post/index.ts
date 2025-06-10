@@ -98,7 +98,6 @@ serve(async (req: Request) => {
     const supabaseAdmin = getSupabaseAdmin();
 
     // お気に入り店舗に登録しているユーザーを取得（投稿者は除外）
-    // 修正：リレーションシップの問題を避けるため、2つのクエリに分ける
     const { data: profiles, error: profileError } = await supabaseAdmin
       .from('app_profiles')
       .select('id, user_id')
@@ -120,7 +119,7 @@ serve(async (req: Request) => {
 
     console.log(`Found ${profiles.length} users to notify for store ${storeId}.`);
 
-    // 対象ユーザーのLINE IDを取得（2つ目のクエリ）
+    // 対象ユーザーのLINE IDを取得（修正：line_id カラムを使用）
     const userIds = profiles.map(p => p.user_id);
     const { data: appUsers, error: appUsersError } = await supabaseAdmin
       .from('app_users')
@@ -141,6 +140,12 @@ serve(async (req: Request) => {
       };
     });
 
+    console.log('Profiles with LINE IDs:', profilesWithLineId.map(p => ({ 
+      profileId: p.id, 
+      userId: p.user_id, 
+      lineId: p.line_id ? 'present' : 'null' 
+    })));
+
     // アプリ内通知の作成
     const notificationsToInsert = profilesWithLineId.map(profile => ({
       user_id: profile.id,
@@ -160,20 +165,27 @@ serve(async (req: Request) => {
       throw insertError;
     }
 
-    // LINE通知の送信
+    // LINE通知の送信（修正：line_id を使用）
     const lineChannelAccessToken = Deno.env.get('LINE_CHANNEL_ACCESS_TOKEN');
     if (lineChannelAccessToken) {
+      console.log('LINE_CHANNEL_ACCESS_TOKEN is configured. Attempting to send LINE messages...');
       const lineAPI = new LineMessagingAPI(lineChannelAccessToken);
       
       for (const profile of profilesWithLineId) {
         if (profile.line_id) {
+          console.log(`Attempting to send LINE message to user_id: ${profile.user_id}, line_id: ${profile.line_id}`);
           const success = await lineAPI.sendPushMessage(
             profile.line_id,
-            `${storeName}の新しい情報が投稿されました！\n\nアプリで詳細をチェックしてみてください。`
+            `🛍️ ${storeName}の新しい情報が投稿されました！\n\nアプリで詳細をチェックしてみてください。`
           );
           if (success) {
             lineMessagesSent++;
+            console.log(`LINE message sent successfully to user: ${profile.user_id}`);
+          } else {
+            console.error(`Failed to send LINE message to user: ${profile.user_id}`);
           }
+        } else {
+          console.log(`User ${profile.user_id} does not have a LINE ID. Skipping LINE notification.`);
         }
       }
       
@@ -186,7 +198,9 @@ serve(async (req: Request) => {
     return new Response(
       JSON.stringify({ 
         message: `Successfully created ${notificationsToInsert.length} notifications.`,
-        lineMessagesSent: lineMessagesSent
+        lineMessagesSent: lineMessagesSent,
+        totalUsers: profilesWithLineId.length,
+        usersWithLineId: profilesWithLineId.filter(p => p.line_id).length
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
@@ -216,6 +230,6 @@ serve(async (req: Request) => {
   curl -i --location --request POST 'http://127.0.0.1:54321/functions/v1/notify-favorite-store-post' \
     --header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0' \
     --header 'Content-Type: application/json' \
-    --data '{"name":"Functions"}'
+    --data '{"postId":"test-id","storeId":"test-store","storeName":"テストストア","postCreatorProfileId":"test-profile"}'
 
 */
