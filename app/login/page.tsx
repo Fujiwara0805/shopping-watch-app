@@ -217,6 +217,11 @@ export default function LoginPage() {
                     </FormItem>
                   )}
                 />
+                <Link href="/forgot-password">
+                  <p className="text-sm text-[#73370c]/70 hover:underline text-right mt-2 cursor-pointer">
+                    パスワードをお忘れですか？
+                  </p>
+                </Link>
                 <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                   <Button
                     type="submit"
@@ -281,7 +286,7 @@ export default function LoginPage() {
               <Link href="/register" className="w-full">
                 <Button
                   variant="ghost"
-                  className="w-full text-[#73370c]/70 hover:text-[#73370c] hover:bg-[#73370c]/5 text-sm sm:text-base py-4 flex items-center justify-center space-x-2 rounded-lg transition-colors border border-[#73370c]/10"
+                  className="w-full bg-[#73370c] hover:bg-[#73370c]/90 text-white text-base sm:text-lg py-6 sm:py-7 shadow-md rounded-lg transition-colors"
                   style={{ fontSize: '16px' }}
                 >
                   <span>新規登録</span>
