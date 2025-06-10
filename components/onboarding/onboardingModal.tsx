@@ -41,7 +41,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onClose }) =>
       title: "投稿してシェア",
       subtitle: (
         <span>
-          お得な情報を投稿してシェアしよう！
+          お得な情報をシェアしよう！
           １投稿ごとに<span className="text-[#73370c] font-semibold ">最大５ポイント</span>付与します 🎉
           <span className="block mt-1 text-xs">
             溜まったポイントは<span className="text-amber-600 font-semibold">Amazonギフト券</span>と交換<br />
@@ -68,7 +68,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onClose }) =>
     },
     {
       id: 3,
-      title: "アプリを使ってみよう！",
+      title: "早速使ってみよう！",
       subtitle: (
         <span className="text-lg">
           お気に入りの店舗の

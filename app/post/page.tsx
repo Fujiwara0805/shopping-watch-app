@@ -952,7 +952,7 @@ export default function PostPage() {
                           );
                         })()}
                       </span>
-                      <span className="text-base font-normal text-muted-foreground ml-3">お得度を顔文字であらわそう</span>
+                      <span className="text-sm font-normal text-muted-foreground ml-3">お得度を顔文字であらわそう</span>
                     </FormLabel>
                     <FormControl>
                       <RadioGroup
