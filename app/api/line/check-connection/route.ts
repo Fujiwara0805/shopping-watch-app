@@ -108,14 +108,75 @@ async function linkLatestLineUser(userId: string) {
       };
     }
 
-    // 3. 最近友達追加されたが、まだ紐付けられていないLINEユーザーがいるかチェック
-    // この場合、具体的な実装は難しいため、代替案として以下のアプローチを取る：
-    // - ユーザーに特定のメッセージをLINE Botに送信してもらう
-    // - そのメッセージにユニークなコードを含めて、その時点で紐付けを行う
+    // 3. デバッグログから最近の友達追加イベントをチェック
+    try {
+      const { data: recentFollows, error: debugError } = await supabase
+        .from('debug_logs')
+        .select('data, created_at')
+        .eq('type', 'new_line_user_follow')
+        .order('created_at', { ascending: false })
+        .limit(5);
 
+      if (!debugError && recentFollows && recentFollows.length > 0) {
+        console.log(`Found ${recentFollows.length} recent follow events`);
+        
+        // 最新の友達追加イベントの中で、まだ紐付けられていないユーザーがいるかチェック
+        for (const follow of recentFollows) {
+          const lineUserId = follow.data.lineUserId;
+          
+          if (lineUserId) {
+            // このLINE IDが既に他のユーザーに紐付けられていないかチェック
+            const { data: existingUser, error: checkError } = await supabase
+              .from('app_users')
+              .select('id')
+              .eq('line_id', lineUserId)
+              .single();
+
+            if (checkError && checkError.code === 'PGRST116') {
+              // まだ紐付けられていないLINE IDを発見
+              console.log(`Found unlinked LINE user: ${lineUserId}`);
+              
+              // 紐付けを実行
+              const { error: linkError } = await supabase
+                .from('app_users')
+                .update({ line_id: lineUserId })
+                .eq('id', userId);
+
+              if (!linkError) {
+                console.log(`Successfully auto-linked user ${userId} to LINE ${lineUserId}`);
+                
+                // 成功ログを保存
+                await supabase
+                  .from('debug_logs')
+                  .insert({
+                    type: 'auto_line_link_success',
+                    data: {
+                      userId: userId,
+                      userEmail: currentUser.email,
+                      lineUserId: lineUserId,
+                      followTimestamp: follow.created_at
+                    }
+                  });
+                
+                return {
+                  success: true,
+                  newConnection: true,
+                  message: 'Successfully auto-linked to recent follow event',
+                  lineId: lineUserId
+                };
+              }
+            }
+          }
+        }
+      }
+    } catch (debugError) {
+      console.warn('Error checking debug logs for recent follows:', debugError);
+    }
+
+    // 4. 自動紐付けできない場合
     return { 
       success: false, 
-      error: 'LINE connection not found. Please make sure you have added the bot as a friend and try sending "link" message to the bot.' 
+      error: 'LINE connection not found. Please make sure you have added the bot as a friend and try the manual connection option.' 
     };
 
   } catch (error) {
