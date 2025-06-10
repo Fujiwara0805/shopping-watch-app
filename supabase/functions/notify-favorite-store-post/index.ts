@@ -98,12 +98,13 @@ serve(async (req: Request) => {
     const supabaseAdmin = getSupabaseAdmin();
 
     // お気に入り店舗に登録しているユーザーを取得（投稿者は除外）
+    // 修正：明示的にuser_idカラムを指定してリレーションシップを明確化
     const { data: profiles, error: profileError } = await supabaseAdmin
       .from('app_profiles')
       .select(`
         id, 
         user_id,
-        app_users(line_user_id)
+        app_users!user_id(line_id)
       `)
       .or(`favorite_store_1_id.eq.${storeId},favorite_store_2_id.eq.${storeId},favorite_store_3_id.eq.${storeId}`)
       .neq('id', postCreatorProfileId);
@@ -148,7 +149,7 @@ serve(async (req: Request) => {
       const lineAPI = new LineMessagingAPI(lineChannelAccessToken);
       
       for (const profile of profiles) {
-        const lineUserId = profile.app_users?.[0]?.line_user_id;
+        const lineUserId = profile.app_users?.[0]?.line_id;
         if (lineUserId) {
           const success = await lineAPI.sendPushMessage(
             lineUserId,
