@@ -89,10 +89,78 @@
     border-radius: 0;
   }
   
-  /* Prevent iOS zoom on input focus */
+  /* モバイルでのズーム防止 - より強力な指定 */
+  input, 
+  textarea, 
+  select,
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="search"],
+  input[type="tel"],
+  input[type="number"] {
+    font-size: 16px !important;
+    min-font-size: 16px !important;
+    -webkit-text-size-adjust: 100% !important;
+    text-size-adjust: 100% !important;
+  }
+  
+  /* より具体的なセレクタでフォーム要素のズーム防止 */
+  .form-control input,
+  .form-field input,
+  form input,
+  [data-form] input,
+  .input,
+  input.input {
+    font-size: 16px !important;
+    min-font-size: 16px !important;
+  }
+  
+  /* Tailwind UIコンポーネントにも適用 */
+  .relative input,
+  .space-y-4 input,
+  .w-full input {
+    font-size: 16px !important;
+    min-font-size: 16px !important;
+  }
+  
+  /* 特定のフォームクラスに対する強制適用 */
   @media screen and (max-width: 768px) {
-    input, textarea, select {
-      font-size: 16px;
+    input, 
+    textarea, 
+    select,
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="search"],
+    input[type="tel"],
+    input[type="number"] {
+      font-size: 16px !important;
+      min-font-size: 16px !important;
+      -webkit-text-size-adjust: 100% !important;
+      text-size-adjust: 100% !important;
+      transform: translateZ(0); /* ハードウェアアクセラレーションを有効化 */
+      -webkit-transform: translateZ(0);
+    }
+    
+    /* より具体的な適用 */
+    *[class*="input"],
+    *[type="text"],
+    *[type="email"],
+    *[type="password"] {
+      font-size: 16px !important;
+      min-font-size: 16px !important;
+    }
+  }
+  
+  /* iOS Safari専用の追加対策 */
+  @supports (-webkit-touch-callout: none) {
+    input, 
+    textarea, 
+    select {
+      font-size: 16px !important;
+      min-font-size: 16px !important;
+      -webkit-text-size-adjust: 100% !important;
     }
   }
   
@@ -230,6 +298,14 @@
     touch-action: manipulation;
   }
   
+  /* モバイル入力要素の追加ユーティリティ */
+  .mobile-input-safe {
+    font-size: 16px !important;
+    min-font-size: 16px !important;
+    -webkit-text-size-adjust: 100% !important;
+    text-size-adjust: 100% !important;
+  }
+  
   /* 通常ページ用のビューポート高さユーティリティ */
   .h-screen {
     height: 100vh;
@@ -293,6 +369,11 @@
     .map-search-control {
       width: calc(100% - 1rem) !important;
       max-width: none !important;
+    }
+    
+    .map-search-control input {
+      font-size: 16px !important;
+      min-font-size: 16px !important;
     }
   }
   
