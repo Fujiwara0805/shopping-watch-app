@@ -172,10 +172,10 @@ export default function LoginPage() {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-[#73370c]">メールアドレス</FormLabel>
+                      <FormLabel className="text-[#73370c] text-left block">メールアドレス</FormLabel>
                       <FormControl>
                         <Input
-                          placeholder="メールアドレス"
+                          placeholder="例: user@example.com"
                           {...field}
                           className="text-[#73370c] border-[#73370c]/20 focus-visible:ring-[#73370c]"
                         />
@@ -189,12 +189,12 @@ export default function LoginPage() {
                   name="password"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-[#73370c]">パスワード</FormLabel>
+                      <FormLabel className="text-[#73370c] text-left block">パスワード</FormLabel>
                       <FormControl>
                         <div className="relative">
                           <Input
                             type={showPassword ? "text" : "password"}
-                            placeholder="パスワード"
+                            placeholder="6文字以上のパスワード"
                             {...field}
                             className="pr-10 text-[#73370c] border-[#73370c]/20 focus-visible:ring-[#73370c]"
                           />

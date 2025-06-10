@@ -1268,77 +1268,35 @@ export default function Timeline() {
             </Select>
           </div>
 
-          {/* 特別な検索（トグル式） */}
+          {/* 特別な検索（ドロップダウン形式） */}
           <div>
-            <Button
-              variant="ghost"
-              onClick={() => setShowSpecialSearch(!showSpecialSearch)}
-              className="w-full justify-between p-0 h-auto"
-            >
-              <h3 className="font-semibold text-lg">特別な検索</h3>
-              <motion.div
-                animate={{ rotate: showSpecialSearch ? 180 : 0 }}
-                transition={{ duration: 0.2 }}
-              >
-                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </motion.div>
-            </Button>
-            
-            <AnimatePresence>
-              {showSpecialSearch && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.3 }}
-                  className="overflow-hidden"
+            <h3 className="font-semibold text-lg mb-2">特別な検索</h3>
+            <Select onValueChange={(value: SearchMode) => setTempSearchMode(value)} value={tempSearchMode}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="検索方法を選択" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">すべての投稿</SelectItem>
+                <SelectItem 
+                  value="favorite_store" 
+                  disabled={!currentUserId || favoriteStoreIds.length === 0}
                 >
-                  <div className="flex flex-col space-y-3 mt-4">
-                    <Button 
-                      onClick={() => {
-                        setTempSearchMode('favorite_store');
-                      }}
-                      disabled={!currentUserId || favoriteStoreIds.length === 0}
-                      className={cn(
-                        "justify-start",
-                        tempSearchMode === 'favorite_store' ? "bg-yellow-600 text-white hover:bg-yellow-700" : "bg-gray-200 text-gray-800 hover:bg-gray-300"
-                      )}
-                    >
-                      <Star className="h-4 w-4 mr-2" />
-                      お気に入り店を検索 {favoriteStoreIds.length > 0 && `(${favoriteStoreIds.length}店舗)`}
-                    </Button>
-                    <Button
-                      onClick={() => {
-                        setTempSearchMode('liked_posts');
-                      }}
-                      disabled={!currentUserId || likedPostIds.length === 0}
-                      className={cn(
-                        "justify-start",
-                        tempSearchMode === 'liked_posts' ? "bg-pink-600 text-white hover:bg-pink-700" : "bg-gray-200 text-gray-800 hover:bg-gray-300"
-                      )}
-                    >
-                      <Heart className="h-4 w-4 mr-2" />
-                      いいねした投稿を検索 {likedPostIds.length > 0 && `(${likedPostIds.length}件)`}
-                    </Button>
-                    <Button
-                      onClick={() => {
-                        setTempSearchMode('hybrid');
-                      }}
-                      disabled={!currentUserId || (favoriteStoreIds.length === 0 && likedPostIds.length === 0)}
-                      className={cn(
-                        "justify-start",
-                        tempSearchMode === 'hybrid' ? "bg-purple-600 text-white hover:bg-purple-700" : "bg-gray-200 text-gray-800 hover:bg-gray-300"
-                      )}
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      複合検索 (お気に入り + いいね)
-                    </Button>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+                  お気に入り店舗の投稿 {favoriteStoreIds.length > 0 && `(${favoriteStoreIds.length}店舗)`}
+                </SelectItem>
+                <SelectItem 
+                  value="liked_posts" 
+                  disabled={!currentUserId || likedPostIds.length === 0}
+                >
+                  いいねした投稿 {likedPostIds.length > 0 && `(${likedPostIds.length}件)`}
+                </SelectItem>
+                <SelectItem 
+                  value="hybrid" 
+                  disabled={!currentUserId || (favoriteStoreIds.length === 0 && likedPostIds.length === 0)}
+                >
+                  複合検索 (お気に入り + いいね)
+                </SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
