@@ -98,14 +98,10 @@ serve(async (req: Request) => {
     const supabaseAdmin = getSupabaseAdmin();
 
     // お気に入り店舗に登録しているユーザーを取得（投稿者は除外）
-    // 修正：明示的にuser_idカラムを指定してリレーションシップを明確化
+    // 修正：リレーションシップの問題を避けるため、2つのクエリに分ける
     const { data: profiles, error: profileError } = await supabaseAdmin
       .from('app_profiles')
-      .select(`
-        id, 
-        user_id,
-        app_users!user_id(line_id)
-      `)
+      .select('id, user_id')
       .or(`favorite_store_1_id.eq.${storeId},favorite_store_2_id.eq.${storeId},favorite_store_3_id.eq.${storeId}`)
       .neq('id', postCreatorProfileId);
 
@@ -124,8 +120,29 @@ serve(async (req: Request) => {
 
     console.log(`Found ${profiles.length} users to notify for store ${storeId}.`);
 
+    // 対象ユーザーのLINE IDを取得（2つ目のクエリ）
+    const userIds = profiles.map(p => p.user_id);
+    const { data: appUsers, error: appUsersError } = await supabaseAdmin
+      .from('app_users')
+      .select('id, line_id')
+      .in('id', userIds);
+
+    if (appUsersError) {
+      console.error('Error fetching app_users:', appUsersError.message);
+      throw appUsersError;
+    }
+
+    // プロファイルとLINE IDをマッピング
+    const profilesWithLineId = profiles.map(profile => {
+      const appUser = appUsers?.find(u => u.id === profile.user_id);
+      return {
+        ...profile,
+        line_id: appUser?.line_id || null
+      };
+    });
+
     // アプリ内通知の作成
-    const notificationsToInsert = profiles.map(profile => ({
+    const notificationsToInsert = profilesWithLineId.map(profile => ({
       user_id: profile.id,
       type: 'favorite_store_post',
       message: `${storeName}の新しい情報が投稿されました！`,
@@ -148,11 +165,10 @@ serve(async (req: Request) => {
     if (lineChannelAccessToken) {
       const lineAPI = new LineMessagingAPI(lineChannelAccessToken);
       
-      for (const profile of profiles) {
-        const lineUserId = profile.app_users?.[0]?.line_id;
-        if (lineUserId) {
+      for (const profile of profilesWithLineId) {
+        if (profile.line_id) {
           const success = await lineAPI.sendPushMessage(
-            lineUserId,
+            profile.line_id,
             `${storeName}の新しい情報が投稿されました！\n\nアプリで詳細をチェックしてみてください。`
           );
           if (success) {
@@ -161,7 +177,7 @@ serve(async (req: Request) => {
         }
       }
       
-      console.log(`Successfully sent ${lineMessagesSent} LINE messages out of ${profiles.length} users.`);
+      console.log(`Successfully sent ${lineMessagesSent} LINE messages out of ${profilesWithLineId.length} users.`);
     } else {
       console.log('LINE_CHANNEL_ACCESS_TOKEN not configured. Skipping LINE notifications.');
     }
