@@ -7,7 +7,7 @@ import AppLayout from "@/components/layout/app-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, ArrowLeft } from "lucide-react";
+import { Loader2, ArrowLeft, Mail } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -20,7 +20,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import Link from "next/link";
-import { supabase } from "@/lib/supabaseClient"; // Supabaseクライアントをインポート
 
 const forgotPasswordSchema = z.object({
   email: z.string().email({ message: "有効なメールアドレスを入力してください。" }),
@@ -41,28 +40,32 @@ export default function ForgotPasswordPage() {
   const onSubmit = async (values: z.infer<typeof forgotPasswordSchema>) => {
     setIsLoading(true);
     try {
-      // Supabaseのパスワードリセットメール送信機能を使用
-      // redirect_to には、パスワードリセット後にユーザーが遷移するページのURLを指定
-      // このURLには、Supabaseから発行されるアクセスT`app/reset-password`
-      const { error } = await supabase.auth.resetPasswordForEmail(values.email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+      const response = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: values.email,
+        }),
       });
 
-      if (error) {
-        console.error("Password reset email error:", error.message);
-        toast({
-          title: "エラー",
-          description: error.message || "パスワードリセットメールの送信に失敗しました。",
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "メールを送信しました",
-          description: "パスワードリセットのリンクをメールで送信しました。ご確認ください。",
-        });
-        // メール送信後、ユーザーをログインページにリダイレクトするか、別の案内ページに遷移させる
-        router.push("/login?message=reset_email_sent");
+      const data = await response.json();
+
+      if (!response.ok) {
+        if (response.status === 429) {
+          throw new Error(`${data.error}${data.retryAfter ? ` ${data.retryAfter}秒後に再試行してください。` : ''}`);
+        }
+        throw new Error(data.error || 'パスワードリセットメールの送信に失敗しました。');
       }
+
+      toast({
+        title: "メールを送信しました",
+        description: "パスワードリセットのリンクをメールで送信しました。ご確認ください。",
+      });
+
+      router.push("/login?message=reset_email_sent");
+
     } catch (error: any) {
       console.error("Forgot password submit error:", error);
       toast({
@@ -89,6 +92,15 @@ export default function ForgotPasswordPage() {
           transition={{ delay: 0.2, duration: 0.4 }}
           className="bg-white p-8 sm:p-10 rounded-xl shadow-xl w-full max-w-md text-center border border-[#73370c]/10"
         >
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.3, duration: 0.5, type: "spring" }}
+            className="mb-6"
+          >
+            <Mail className="h-16 w-16 text-[#73370c] mx-auto mb-4" />
+          </motion.div>
+
           <motion.h1
             className="text-3xl sm:text-4xl font-bold text-[#73370c] mb-4"
             initial={{ letterSpacing: "-0.05em" }}
@@ -150,6 +162,12 @@ export default function ForgotPasswordPage() {
               </Button>
             </Link>
           </motion.div>
+
+          <div className="text-xs text-[#73370c]/60 space-y-2">
+            <p>メールが届かない場合は、迷惑メールフォルダもご確認ください。</p>
+            <p>⏰ リセットリンクの有効期限は1時間です。</p>
+            <p>🔄 1時間に5回まで送信可能です。</p>
+          </div>
         </motion.div>
       </motion.div>
     </AppLayout>
