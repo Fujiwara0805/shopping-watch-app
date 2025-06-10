@@ -103,10 +103,10 @@ serve(async (req: Request) => {
       .select(`
         id, 
         user_id,
-        app_users!inner(line_user_id)
+        app_users(line_user_id)
       `)
       .or(`favorite_store_1_id.eq.${storeId},favorite_store_2_id.eq.${storeId},favorite_store_3_id.eq.${storeId}`)
-      .not('id', 'eq', postCreatorProfileId);
+      .neq('id', postCreatorProfileId);
 
     if (profileError) {
       console.error('Error fetching profiles:', profileError.message);
