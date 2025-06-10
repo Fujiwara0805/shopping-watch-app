@@ -9,6 +9,48 @@ import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-
 
 console.log("Hello from Functions!")
 
+// LINE Messaging APIクライアント
+class LineMessagingAPI {
+  private channelAccessToken: string;
+
+  constructor(channelAccessToken: string) {
+    this.channelAccessToken = channelAccessToken;
+  }
+
+  async sendPushMessage(to: string, message: string): Promise<boolean> {
+    try {
+      const response = await fetch('https://api.line.me/v2/bot/message/push', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.channelAccessToken}`,
+        },
+        body: JSON.stringify({
+          to: to,
+          messages: [
+            {
+              type: 'text',
+              text: message
+            }
+          ]
+        })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('LINE API Error:', response.status, errorText);
+        return false;
+      }
+
+      console.log('LINE message sent successfully to:', to);
+      return true;
+    } catch (error) {
+      console.error('Error sending LINE message:', error);
+      return false;
+    }
+  }
+}
+
 // Supabaseクライアントを初期化するためのヘルパー関数
 const getSupabaseAdmin = (): SupabaseClient => {
   const supabaseUrl = Deno.env.get('NEXT_PUBLIC_SUPABASE_URL');
@@ -33,6 +75,7 @@ serve(async (req: Request) => {
   }
 
   try {
+    let lineMessagesSent = 0; 
     console.log('Function called with method:', req.method);
     const body = await req.json();
     console.log('Request body:', body);
@@ -54,13 +97,16 @@ serve(async (req: Request) => {
 
     const supabaseAdmin = getSupabaseAdmin();
 
-    // 該当のstoreIdをお気に入り登録しており、かつ投稿者自身ではないユーザープロファイルを取得
-    // app_profiles の id はプロファイル自体のID、user_id は auth.users.id を指すと想定
+    // お気に入り店舗に登録しているユーザーを取得（投稿者は除外）
     const { data: profiles, error: profileError } = await supabaseAdmin
       .from('app_profiles')
-      .select('id, user_id') // user_id は auth.users.id を参照
+      .select(`
+        id, 
+        user_id,
+        app_users!inner(line_user_id)
+      `)
       .or(`favorite_store_1_id.eq.${storeId},favorite_store_2_id.eq.${storeId},favorite_store_3_id.eq.${storeId}`)
-      .not('id', 'eq', postCreatorProfileId); // 投稿者自身のプロファイルIDは除外
+      .not('id', 'eq', postCreatorProfileId);
 
     if (profileError) {
       console.error('Error fetching profiles:', profileError.message);
@@ -77,14 +123,14 @@ serve(async (req: Request) => {
 
     console.log(`Found ${profiles.length} users to notify for store ${storeId}.`);
 
+    // アプリ内通知の作成
     const notificationsToInsert = profiles.map(profile => ({
-      user_id: profile.id, // notifications.user_id は app_profiles.id を参照
+      user_id: profile.id,
       type: 'favorite_store_post',
-      message: `${storeName}の新しい情報が投稿されました！`, // 通知メッセージの変更
-      reference_post_id: postId, // `reference_post_id` に変更
+      message: `${storeName}の新しい情報が投稿されました！`,
+      reference_post_id: postId,
       reference_store_id: storeId,
       reference_store_name: storeName,
-      // is_read はテーブルのデフォルトで false に設定
     }));
 
     const { error: insertError } = await supabaseAdmin
@@ -96,9 +142,35 @@ serve(async (req: Request) => {
       throw insertError;
     }
 
+    // LINE通知の送信
+    const lineChannelAccessToken = Deno.env.get('LINE_CHANNEL_ACCESS_TOKEN');
+    if (lineChannelAccessToken) {
+      const lineAPI = new LineMessagingAPI(lineChannelAccessToken);
+      
+      for (const profile of profiles) {
+        const lineUserId = profile.app_users?.[0]?.line_user_id;
+        if (lineUserId) {
+          const success = await lineAPI.sendPushMessage(
+            lineUserId,
+            `${storeName}の新しい情報が投稿されました！\n\nアプリで詳細をチェックしてみてください。`
+          );
+          if (success) {
+            lineMessagesSent++;
+          }
+        }
+      }
+      
+      console.log(`Successfully sent ${lineMessagesSent} LINE messages out of ${profiles.length} users.`);
+    } else {
+      console.log('LINE_CHANNEL_ACCESS_TOKEN not configured. Skipping LINE notifications.');
+    }
+
     console.log(`Successfully created ${notificationsToInsert.length} notifications for store ${storeId}, post ${postId}.`);
     return new Response(
-      JSON.stringify({ message: `Successfully created ${notificationsToInsert.length} notifications.` }),
+      JSON.stringify({ 
+        message: `Successfully created ${notificationsToInsert.length} notifications.`,
+        lineMessagesSent: lineMessagesSent
+      }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
