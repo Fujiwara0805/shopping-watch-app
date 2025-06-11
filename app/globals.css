@@ -101,6 +101,138 @@
     -webkit-user-select: none;
     user-select: none;
   }
+
+  /* ==================================================
+   * Google Places Autocomplete ドロップダウン対応
+   * ================================================== */
+  
+  /* Google Places Autocomplete コンテナのベーススタイル */
+  .pac-container {
+    background-color: white !important;
+    border: 1px solid #e5e7eb !important;
+    border-radius: 0.375rem !important;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+    font-family: inherit !important;
+    overflow: hidden !important;
+  }
+
+  /* モバイル専用の Google Places ドロップダウンスタイル */
+  @media screen and (max-width: 768px) {
+    .pac-container {
+      position: fixed !important;
+      z-index: 99999 !important;
+      max-height: 250px !important;
+      overflow-y: auto !important;
+      -webkit-overflow-scrolling: touch !important;
+      border-radius: 0.5rem !important;
+      margin-top: 2px !important;
+    }
+
+    /* モバイルでのドロップダウンアイテム */
+    .pac-container .pac-item {
+      padding: 12px 16px !important;
+      font-size: 16px !important;
+      line-height: 1.4 !important;
+      border-bottom: 1px solid #f3f4f6 !important;
+      cursor: pointer !important;
+      transition: background-color 0.15s ease !important;
+    }
+
+    .pac-container .pac-item:hover,
+    .pac-container .pac-item.pac-item-selected {
+      background-color: #f3f4f6 !important;
+    }
+
+    .pac-container .pac-item:last-child {
+      border-bottom: none !important;
+    }
+
+    /* モバイルでのテキストスタイル */
+    .pac-container .pac-item .pac-item-query {
+      font-weight: 600 !important;
+      color: #1f2937 !important;
+    }
+
+    .pac-container .pac-item .pac-matched {
+      font-weight: 700 !important;
+      color: #059669 !important;
+    }
+
+    /* アイコン調整 */
+    .pac-container .pac-icon {
+      width: 20px !important;
+      height: 20px !important;
+      margin-right: 12px !important;
+      background-size: 16px 16px !important;
+    }
+  }
+
+  /* デスクトップ用の Google Places ドロップダウンスタイル */
+  @media screen and (min-width: 769px) {
+    .pac-container {
+      z-index: 1000 !important;
+    }
+
+    .pac-container .pac-item {
+      padding: 8px 12px !important;
+      font-size: 14px !important;
+      line-height: 1.4 !important;
+      border-bottom: 1px solid #f3f4f6 !important;
+      cursor: pointer !important;
+      transition: background-color 0.15s ease !important;
+    }
+
+    .pac-container .pac-item:hover,
+    .pac-container .pac-item.pac-item-selected {
+      background-color: #f9fafb !important;
+    }
+
+    .pac-container .pac-item .pac-item-query {
+      font-weight: 500 !important;
+      color: #1f2937 !important;
+    }
+
+    .pac-container .pac-item .pac-matched {
+      font-weight: 600 !important;
+      color: #059669 !important;
+    }
+  }
+
+  /* Google Places ドロップダウンの共通スタイル */
+  .pac-container .pac-item {
+    border-top: none !important;
+  }
+
+  .pac-container .pac-item:first-child {
+    border-radius: 0.375rem 0.375rem 0 0 !important;
+  }
+
+  .pac-container .pac-item:last-child {
+    border-radius: 0 0 0.375rem 0.375rem !important;
+  }
+
+  /* Google Maps のロゴや著作権表示を隠す（Places Autocomplete使用時） */
+  .pac-container .pac-logo:after {
+    content: none !important;
+  }
+
+  /* スクロールバーのスタイリング（Webkit系ブラウザ） */
+  .pac-container::-webkit-scrollbar {
+    width: 4px !important;
+  }
+
+  .pac-container::-webkit-scrollbar-track {
+    background: transparent !important;
+  }
+
+  .pac-container::-webkit-scrollbar-thumb {
+    background-color: #d1d5db !important;
+    border-radius: 20px !important;
+  }
+
+  .pac-container::-webkit-scrollbar-thumb:hover {
+    background-color: #9ca3af !important;
+  }
   
   /* ==================================================
    * マップページ専用スタイル
@@ -303,6 +435,27 @@
       max-width: none !important;
       left: 50% !important;
       transform: translateX(-50%) !important;
+    }
+  }
+
+  /* ==================================================
+   * プロフィールフォーム用のモバイル対応ユーティリティ
+   * ================================================== */
+  
+  /* モバイル用のフォーム余白 */
+  @media screen and (max-width: 768px) {
+    .profile-form-mobile {
+      padding-bottom: 40vh !important;
+      min-height: 150vh !important;
+    }
+
+    /* お気に入り店舗入力フィールド用の追加余白 */
+    .favorite-store-field {
+      margin-bottom: 8rem !important;
+    }
+
+    .favorite-store-field:last-of-type {
+      margin-bottom: 12rem !important;
     }
   }
   

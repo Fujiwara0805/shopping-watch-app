@@ -218,7 +218,7 @@ function ProfileSetupContent() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="container mx-auto max-w-lg p-4 md:p-8"
+        className="container mx-auto max-w-lg p-4 md:p-8 profile-form-mobile"
       >
         {/* セッションユーザーIDが何らかの理由で欠落している場合の警告 */}
         {!session?.user?.id && (
@@ -229,7 +229,7 @@ function ProfileSetupContent() {
         )}
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 pb-20">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
             <FormItem>
               <FormLabel className="text-2xl flex items-center font-semibold">
                 <ImageIcon className="mr-2 h-7 w-7" /> プロフィール画像
@@ -327,7 +327,7 @@ function ProfileSetupContent() {
               control={form.control}
               name="favoriteStore1"
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="favorite-store-field">
                   <FormLabel className="text-2xl flex items-center font-semibold">
                     <Store className="mr-2 h-6 w-6 text-primary" /> お気に入り店舗1
                   </FormLabel>
@@ -354,7 +354,7 @@ function ProfileSetupContent() {
               control={form.control}
               name="favoriteStore2"
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="favorite-store-field">
                   <FormLabel className="text-2xl flex items-center font-semibold">
                     <Store className="mr-2 h-6 w-6 text-primary font-semibold" /> お気に入り店舗2
                   </FormLabel>
@@ -381,7 +381,7 @@ function ProfileSetupContent() {
               control={form.control}
               name="favoriteStore3"
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="favorite-store-field">
                   <FormLabel className="text-2xl flex items-center font-semibold">
                     <Store className="mr-2 h-6 w-6 text-primary font-semibold" /> お気に入り店舗3
                   </FormLabel>

@@ -717,7 +717,7 @@ function ProfilePageContent() {
                       action={handleLogout}
                       variant="danger"
                     />
-                    <div className="h-4 mb-2" />
+                    <div className="h-5 mb-1" />
                   </div>
                 </motion.div>
               </div>

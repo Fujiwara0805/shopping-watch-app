@@ -337,14 +337,14 @@ export default function ProfileEditPage() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
-      className="container mx-auto max-w-lg p-4 md:p-8"
+      className="container mx-auto max-w-lg p-4 md:p-8 profile-form-mobile"
     >
       {errorDisplay}
       {noProfileDisplay}
 
       {currentProfile && (
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pb-20">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             {/* アバター画像 */}
             <FormItem>
               <FormLabel className="text-2xl flex items-center font-semibold">
@@ -451,7 +451,7 @@ export default function ProfileEditPage() {
               control={form.control}
               name="favoriteStore1"
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="favorite-store-field">
                   <FormLabel className="text-2xl flex items-center font-semibold">
                     <Store className="mr-2 h-5 w-5 text-primary" /> お気に入り店舗1 
                   </FormLabel>
@@ -475,7 +475,7 @@ export default function ProfileEditPage() {
               control={form.control}
               name="favoriteStore2"
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="favorite-store-field">
                   <FormLabel className="text-2xl flex items-center">
                     <Store className="mr-2 h-5 w-5 text-primary font-semibold" /> お気に入り店舗2
                   </FormLabel>
@@ -499,7 +499,7 @@ export default function ProfileEditPage() {
               control={form.control}
               name="favoriteStore3"
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="favorite-store-field">
                   <FormLabel className="text-2xl flex items-center">
                     <Store className="mr-2 h-5 w-5 text-primary font-semibold" /> お気に入り店舗3
                   </FormLabel>
