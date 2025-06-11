@@ -445,17 +445,26 @@
   /* モバイル用のフォーム余白 */
   @media screen and (max-width: 768px) {
     .profile-form-mobile {
-      padding-bottom: 40vh !important;
-      min-height: 150vh !important;
+      padding-bottom: 15vh !important;
+      min-height: 110vh !important;
     }
 
-    /* お気に入り店舗入力フィールド用の追加余白 */
+    /* お気に入り店舗入力フィールド用の最小限余白 */
     .favorite-store-field {
-      margin-bottom: 8rem !important;
+      margin-bottom: 1rem !important; /* 約128px - 検索候補表示ぎりぎりの最小限 */
     }
 
     .favorite-store-field:last-of-type {
-      margin-bottom: 12rem !important;
+      margin-bottom: 2rem !important; /* 最後のフィールドは最小限の余白 */
+    }
+
+    /* お気に入り店舗フィールド以外の通常の間隔は元のまま維持 */
+    .profile-form-mobile .space-y-6 > *:not(.favorite-store-field) + *:not(.favorite-store-field) {
+      margin-top: 1.5rem !important;
+    }
+
+    .profile-form-mobile .space-y-8 > *:not(.favorite-store-field) + *:not(.favorite-store-field) {
+      margin-top: 2rem !important;
     }
   }
   
