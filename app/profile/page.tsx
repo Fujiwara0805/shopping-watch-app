@@ -695,7 +695,7 @@ function ProfilePageContent() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 }}
-                  className="space-y-4"
+                  className="space-y-2"
                 >
                   <h3 className="text-lg font-bold text-gray-900 flex items-center">
                     <User className="h-4 w-4 mr-2 text-amber-600" />

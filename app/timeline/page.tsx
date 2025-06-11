@@ -443,7 +443,7 @@ export default function Timeline() {
     }
   }, [currentUserId, session?.user?.id]);
 
-  // いいねした投稿IDの取得
+  // いいねした投稿IDの取得を改善
   useEffect(() => {
     const fetchLikedPostIds = async () => {
       if (!currentUserId) {
@@ -451,16 +451,20 @@ export default function Timeline() {
         return;
       }
       try {
+        // より詳細な情報を取得してキャッシュ効率を向上
         const { data, error } = await supabase
           .from('post_likes')
-          .select('post_id')
-          .eq('user_id', currentUserId);
+          .select('post_id, created_at')
+          .eq('user_id', currentUserId)
+          .order('created_at', { ascending: false }); // 最新のいいね順
 
         if (error) {
           console.error('いいねした投稿の取得に失敗しました:', error);
           setLikedPostIds([]);
         } else {
-          setLikedPostIds(data?.map(item => item.post_id) || []);
+          const postIds = data?.map(item => item.post_id) || [];
+          setLikedPostIds(postIds);
+          console.log(`いいねした投稿: ${postIds.length}件`);
         }
       } catch (e) {
         console.error('いいねした投稿の取得中に予期せぬエラー:', e);
@@ -482,16 +486,16 @@ export default function Timeline() {
     const currentLikedPostIds = likedPostIdsRef.current;
     const currentSortBy = sortByRef.current;
 
-    // 距離計算関数（ハバーサイン公式）- 関数内で定義
+    // 距離計算関数（ハバーサイン公式）
     const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
-      const R = 6371; // 地球の半径（km）
+      const R = 6371;
       const dLat = (lat2 - lat1) * Math.PI / 180;
       const dLon = (lon2 - lon1) * Math.PI / 180;
       const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
                 Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
                 Math.sin(dLon/2) * Math.sin(dLon/2);
       const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-      return R * c * 1000; // メートルで返す
+      return R * c * 1000;
     };
 
     if (isInitial) {
@@ -544,33 +548,50 @@ export default function Timeline() {
         query = query.eq('category', currentActiveFilter);
       }
 
-      // 検索語による絞り込み（リアルタイム検索用）
+      // 検索語による絞り込み
       const effectiveSearchTerm = searchTerm;
       if (effectiveSearchTerm && effectiveSearchTerm.trim()) {
         const searchTermLower = effectiveSearchTerm.toLowerCase();
         query = query.or(`store_name.ilike.%${searchTermLower}%,category.ilike.%${searchTermLower}%,content.ilike.%${searchTermLower}%`);
       }
 
-      // 特別な検索モード
+      // 特別な検索モード - いいね検索の改善
       if (currentSearchMode === 'favorite_store') {
         if (currentFavoriteStoreIds.length > 0) {
           query = query.in('store_id', currentFavoriteStoreIds);
         } else {
           query = query.eq('id', 'impossible-id');
         }
-      } else if (currentSearchMode === 'liked_posts' && currentLikedPostIds.length > 0) {
-        query = query.in('id', currentLikedPostIds);
-      } else if (currentSearchMode === 'hybrid') {
-        if (currentFavoriteStoreIds.length > 0 && currentLikedPostIds.length > 0) {
-          query = query.or(`store_id.in.(${currentFavoriteStoreIds.join(',')}),id.in.(${currentLikedPostIds.join(',')})`);
-        } else if (currentFavoriteStoreIds.length > 0) {
-          query = query.in('store_id', currentFavoriteStoreIds);
-        } else if (currentLikedPostIds.length > 0) {
+      } else if (currentSearchMode === 'liked_posts') {
+        if (currentLikedPostIds.length > 0) {
+          // いいねした投稿のみを表示
           query = query.in('id', currentLikedPostIds);
+          console.log(`いいね検索: ${currentLikedPostIds.length}件の投稿をフィルタリング`);
+        } else {
+          // いいねした投稿がない場合は空の結果を返す
+          query = query.eq('id', 'impossible-id');
+          console.log('いいね検索: いいねした投稿がありません');
+        }
+      } else if (currentSearchMode === 'hybrid') {
+        // 複合検索の改善
+        const conditions = [];
+        if (currentFavoriteStoreIds.length > 0) {
+          conditions.push(`store_id.in.(${currentFavoriteStoreIds.join(',')})`);
+        }
+        if (currentLikedPostIds.length > 0) {
+          conditions.push(`id.in.(${currentLikedPostIds.join(',')})`);
+        }
+        
+        if (conditions.length > 0) {
+          query = query.or(conditions.join(','));
+          console.log(`複合検索: ${conditions.length}つの条件で検索`);
+        } else {
+          query = query.eq('id', 'impossible-id');
+          console.log('複合検索: 検索条件がありません');
         }
       }
 
-      // ソート（距離ソート以外）
+      // ソート処理
       if (currentSortBy === 'created_at_desc') {
         query = query.order('created_at', { ascending: false });
       } else if (currentSortBy === 'created_at_asc') {
@@ -589,11 +610,10 @@ export default function Timeline() {
         throw dbError;
       }
       
-      // 型安全なデータ処理と距離計算
+      // データ処理の改善
       let processedPosts = (data as PostFromDB[]).map(post => {
         let distance;
         
-        // 距離計算（位置情報がある場合）
         if (currentUserLocation && post.store_latitude && post.store_longitude) {
           distance = calculateDistance(
             currentUserLocation.latitude,
@@ -603,25 +623,38 @@ export default function Timeline() {
           );
         }
 
-        // 型安全なauthor処理
         const authorData = Array.isArray(post.author) ? post.author[0] : post.author;
         const authorUserId = authorData && typeof authorData === 'object' && 'user_id' in authorData 
           ? (authorData as any).user_id 
           : null;
 
+        // いいね状態の正確な判定
+        const isLikedByCurrentUser = Array.isArray(post.post_likes) 
+          ? post.post_likes.some((like: PostLike) => like.user_id === currentUserId)
+          : currentLikedPostIds.includes(post.id); // フォールバック
+
         return {
           ...post,
           author: authorData,
           author_user_id: authorUserId,
-          isLikedByCurrentUser: Array.isArray(post.post_likes) 
-            ? post.post_likes.some((like: PostLike) => like.user_id === session?.user?.id)
-            : false,
+          isLikedByCurrentUser,
           likes_count: post.likes_count || (Array.isArray(post.post_likes) ? post.post_likes.length : 0),
           distance,
         };
       });
 
-      // 周辺検索の場合は5km圏内のみフィルタリング
+      // いいね検索時の特別なソート
+      if (currentSearchMode === 'liked_posts' && currentLikedPostIds.length > 0) {
+        // いいねした順序を保持してソート
+        processedPosts = processedPosts.sort((a, b) => {
+          const aIndex = currentLikedPostIds.indexOf(a.id);
+          const bIndex = currentLikedPostIds.indexOf(b.id);
+          return aIndex - bIndex; // いいねした順序でソート
+        });
+        console.log(`いいね検索結果: ${processedPosts.length}件の投稿を表示`);
+      }
+
+      // 周辺検索の処理
       if (currentSearchMode === 'nearby' && currentUserLocation) {
         processedPosts = processedPosts.filter(post => {
           return post.distance !== undefined && post.distance <= SEARCH_RADIUS_METERS;
@@ -629,7 +662,7 @@ export default function Timeline() {
         console.log(`周辺検索: ${processedPosts.length}件の投稿が5km圏内にあります`);
       }
 
-      // 距離によるソート（位置情報がある場合）
+      // 距離によるソート
       if (currentSortBy === 'distance_asc' && currentUserLocation) {
         processedPosts = processedPosts
           .filter(post => post.distance !== undefined)
@@ -642,7 +675,8 @@ export default function Timeline() {
         setPosts(prevPosts => [...prevPosts, ...processedPosts as ExtendedPostWithAuthor[]]);
       }
 
-      setHasMore(data.length === 20 && !(currentSearchMode === 'nearby'));
+      // いいね検索時はページネーションを無効化（全件表示）
+      setHasMore(data.length === 20 && currentSearchMode !== 'nearby' && currentSearchMode !== 'liked_posts');
     } catch (e: any) {
       console.error("投稿の取得に失敗しました:", e);
       setError("投稿の読み込みに失敗しました。しばらくしてから再度お試しください。");
@@ -718,7 +752,7 @@ export default function Timeline() {
     }
   }, [loadMorePosts]);
 
-  // いいね処理
+  // いいね処理の改善
   const handleLike = async (postId: string, isLiked: boolean) => {
     if (!currentUserId) return;
 
@@ -729,6 +763,7 @@ export default function Timeline() {
 
     try {
       if (isLiked) {
+        console.log('いいね追加:', { postId, currentUserId });
         const { error } = await supabase
           .from('post_likes')
           .insert({ 
@@ -737,13 +772,22 @@ export default function Timeline() {
             created_at: new Date().toISOString()
           });
         if (error) throw error;
+        
+        // いいねした投稿リストを即座に更新
+        setLikedPostIds(prev => [postId, ...prev.filter(id => id !== postId)]);
       } else {
+        console.log('いいね削除:', { postId, currentUserId });
         const { error } = await supabase
           .from('post_likes')
           .delete()
           .match({ post_id: postId, user_id: currentUserId });
         if (error) throw error;
+        
+        // いいねした投稿リストから削除
+        setLikedPostIds(prev => prev.filter(id => id !== postId));
       }
+      
+      // UIの更新
       setPosts(prevPosts => prevPosts.map(p => 
         p.id === postId 
           ? { 
@@ -1293,11 +1337,18 @@ export default function Timeline() {
                   value="hybrid" 
                   disabled={!currentUserId || (favoriteStoreIds.length === 0 && likedPostIds.length === 0)}
                 >
-                  複合検索 (お気に入り + いいね)
+                  複合検索 (お気に入り + いいね) {favoriteStoreIds.length + likedPostIds.length > 0 && `(${favoriteStoreIds.length + likedPostIds.length}件)`}
                 </SelectItem>
               </SelectContent>
             </Select>
           </div>
+
+          {/* いいね検索の説明を追加 */}
+          {tempSearchMode === 'liked_posts' && likedPostIds.length > 0 && (
+            <p className="text-xs text-gray-500 mt-1">
+              最新のいいね順で表示されます
+            </p>
+          )}
         </div>
 
         <div className="mt-6 flex justify-between">
