@@ -695,7 +695,7 @@ function ProfilePageContent() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 }}
-                  className="space-y-3"
+                  className="space-y-4"
                 >
                   <h3 className="text-lg font-bold text-gray-900 flex items-center">
                     <User className="h-4 w-4 mr-2 text-amber-600" />
@@ -717,7 +717,7 @@ function ProfilePageContent() {
                       action={handleLogout}
                       variant="danger"
                     />
-                    <div className="h-5 mb-2" />
+                    <div className="h-5 mb-1" />
                   </div>
                 </motion.div>
               </div>

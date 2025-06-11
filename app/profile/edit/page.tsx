@@ -453,7 +453,7 @@ export default function ProfileEditPage() {
               render={({ field }) => (
                 <FormItem className="favorite-store-field">
                   <FormLabel className="text-2xl flex items-center font-semibold">
-                    <Store className="mr-2 h-5 w-5 text-primary font-semibold" /> お気に入り店舗1 
+                    <Store className="mr-2 h-5 w-5 text-primary " /> お気に入り店舗1 
                   </FormLabel>
                   <FormControl>
                     <FavoriteStoreInput
@@ -476,8 +476,8 @@ export default function ProfileEditPage() {
               name="favoriteStore2"
               render={({ field }) => (
                 <FormItem className="favorite-store-field">
-                  <FormLabel className="text-2xl flex items-center">
-                    <Store className="mr-2 h-5 w-5 text-primary font-semibold" /> お気に入り店舗2
+                  <FormLabel className="text-2xl flex items-center font-semibold">
+                    <Store className="mr-2 h-5 w-5 text-primary " /> お気に入り店舗2
                   </FormLabel>
                   <FormControl>
                     <FavoriteStoreInput
@@ -500,8 +500,8 @@ export default function ProfileEditPage() {
               name="favoriteStore3"
               render={({ field }) => (
                 <FormItem className="favorite-store-field">
-                  <FormLabel className="text-2xl flex items-center">
-                    <Store className="mr-2 h-5 w-5 text-primary font-semibold" /> お気に入り店舗3
+                  <FormLabel className="text-2xl flex items-center font-semibold">
+                    <Store className="mr-2 h-5 w-5 text-primary " /> お気に入り店舗3
                   </FormLabel>
                   <FormControl>
                     <FavoriteStoreInput
