@@ -356,7 +356,7 @@ function ProfileSetupContent() {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel className="text-2xl flex items-center font-semibold">
-                    <Store className="mr-2 h-6 w-6 text-primary" /> お気に入り店舗2
+                    <Store className="mr-2 h-6 w-6 text-primary font-semibold" /> お気に入り店舗2
                   </FormLabel>
                   <FormControl>
                     <FavoriteStoreInput
@@ -383,7 +383,7 @@ function ProfileSetupContent() {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel className="text-2xl flex items-center font-semibold">
-                    <Store className="mr-2 h-6 w-6 text-primary" /> お気に入り店舗3
+                    <Store className="mr-2 h-6 w-6 text-primary font-semibold" /> お気に入り店舗3
                   </FormLabel>
                   <FormControl>
                     <FavoriteStoreInput

@@ -173,7 +173,7 @@ const HamburgerMenu = ({ currentUser }: { currentUser: any }) => {
     },
     {
       icon: HelpCircle,
-      label: 'ヘルプ・ご意見',
+      label: 'お問い合わせ',
       onClick: () => {
         router.push('/contact');
         setIsOpen(false);

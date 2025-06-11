@@ -679,17 +679,6 @@ function ProfilePageContent() {
                   </h3>
                   
                   <div className="space-y-3">
-                    <motion.div
-                      whileHover={{ scale: 1.01 }}
-                      className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-100 shadow-sm"
-                    >
-                      <div className="space-y-0.5 flex-1 min-w-0">
-                        <Label htmlFor="push-notifications" className="text-sm font-medium">プッシュ通知</Label>
-                        <p className="text-xs text-gray-500">お気に入り店舗の値引き情報をお知らせ</p>
-                      </div>
-                      <Switch id="push-notifications" defaultChecked />
-                    </motion.div>
-                    
                     <LineNotificationSettings
                       isConnected={isLineConnected}
                       loading={checkingLineConnection}
