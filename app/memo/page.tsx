@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, Plus, Trash2, Mic, History, WifiOff, Loader2, Edit, LogIn, X, CheckSquare, Sparkles, PackageCheck, ShoppingBag } from 'lucide-react';
+import { Check, Plus, Trash2, History, WifiOff, Loader2, Edit, LogIn, X, CheckSquare, Sparkles, PackageCheck, ShoppingBag } from 'lucide-react';
 import AppLayout from '@/components/layout/app-layout';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -12,29 +12,6 @@ import { supabase } from '@/lib/supabaseClient';
 import { useLocalStorage } from 'usehooks-ts';
 import { useRouter } from 'next/navigation';
 import { CustomModal } from '@/components/ui/custom-modal';
-
-// Web Speech APIの型定義を追加
-interface SpeechRecognition extends EventTarget {
-  continuous: boolean;
-  lang: string;
-  onresult: (event: any) => void;
-  onstart: () => void;
-  onend: () => void;
-  onerror: (event: any) => void;
-  start: () => void;
-  stop: () => void;
-}
-
-interface SpeechRecognitionStatic {
-  new(): SpeechRecognition;
-}
-
-declare global {
-  interface Window {
-    SpeechRecognition: SpeechRecognitionStatic;
-    webkitSpeechRecognition: SpeechRecognitionStatic;
-  }
-}
 
 // ローカルの買い物アイテム
 interface MemoItem {
@@ -68,39 +45,6 @@ export default function MemoPage() {
   const [showFrequentItemModal, setShowFrequentItemModal] = useState(false);
   const [newFrequentItemName, setNewFrequentItemName] = useState('');
   const [showUsageGuide, setShowUsageGuide] = useState(true);
-
-  // 音声入力関連
-  const [isListening, setIsListening] = useState(false);
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
-
-  // 音声認識の初期設定
-  useEffect(() => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (SpeechRecognition) {
-      recognitionRef.current = new SpeechRecognition();
-      recognitionRef.current.continuous = false;
-      recognitionRef.current.lang = 'ja-JP';
-
-      recognitionRef.current.onresult = (event) => {
-        const transcript = event.results[0][0].transcript;
-        // 認識された音声をインプットに設定する
-        setNewItemName(transcript);
-      };
-
-      recognitionRef.current.onstart = () => {
-        setIsListening(true);
-      };
-      
-      recognitionRef.current.onend = () => {
-        setIsListening(false);
-      };
-
-      recognitionRef.current.onerror = (event) => {
-        console.error('Speech recognition error:', event.error);
-        setIsListening(false);
-      };
-    }
-  }, []);
 
   // ログイン状態に応じてプロフィールと「よく買うもの」リストを管理
   useEffect(() => {
@@ -172,18 +116,6 @@ export default function MemoPage() {
       window.removeEventListener('offline', updateOnlineStatus);
     };
   }, []);
-
-  const handleMicClick = () => {
-    if (!recognitionRef.current) {
-      alert("お使いのブラウザは音声入力に対応していません。");
-      return;
-    }
-    if (isListening) {
-      recognitionRef.current.stop();
-    } else {
-      recognitionRef.current.start();
-    }
-  };
 
   const handleAddItemFromInput = () => {
     if (newItemName.trim() === '') return;
@@ -261,7 +193,6 @@ export default function MemoPage() {
 
         <div className="flex gap-2 mb-4">
           <Input type="text" value={newItemName} onChange={e => setNewItemName(e.target.value)} placeholder="アイテム名を入力 (例: 牛乳)" className="text-base" />
-          <Button variant="outline" size="icon" className={cn("shrink-0", isListening && "text-destructive border-destructive")} onClick={handleMicClick}><Mic size={20} /></Button>
           <Button onClick={handleAddItemFromInput} size="icon" className="shrink-0" disabled={newItemName.trim() === ''}><Plus size={20} /></Button>
         </div>
 
@@ -279,32 +210,32 @@ export default function MemoPage() {
             </div>
         
             <div className="space-y-3 text-sm">
-              <div className="p-3 rounded-lg border bg-yellow-50 border-yellow-200/80 dark:bg-yellow-900/20 dark:border-yellow-800/50">
+              <div className="p-3 rounded-lg border bg-yellow-50 border-yellow-200/80 ">
                 <div className="flex items-center gap-2.5 mb-1.5">
-                  <Sparkles className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
-                  <h3 className="font-semibold text-yellow-800 dark:text-yellow-300">かんたんアイテム追加</h3>
+                  <Sparkles className="h-5 w-5 text-yellow-600 " />
+                  <h3 className="font-semibold text-yellow-800 ">かんたんアイテム追加</h3>
                 </div>
-                <p className="text-xs text-yellow-700 dark:text-yellow-300/90 pl-1">
-                  テキストや音声<Mic size={12} className="inline-block mx-0.5 -mt-0.5" />でアイテムを入力し、<Plus size={12} className="inline-block mx-0.5 -mt-0.5" />ボタンでリストに追加します。
+                <p className="text-xs text-yellow-700  pl-1">
+                  テキストでアイテムを入力し、<Plus size={12} className="inline-block mx-0.5 -mt-0.5" />ボタンでリストに追加します。
                 </p>
               </div>
               
-              <div className="p-3 rounded-lg border bg-green-50 border-green-200/80 dark:bg-green-900/20 dark:border-green-800/50">
+              <div className="p-3 rounded-lg border bg-green-50 border-green-200/80 ">
                 <div className="flex items-center gap-2.5 mb-1.5">
-                  <PackageCheck className="h-5 w-5 text-green-600 dark:text-green-400" />
-                  <h3 className="font-semibold text-green-800 dark:text-green-300">リストの管理</h3>
+                  <PackageCheck className="h-5 w-5 text-green-600 " />
+                  <h3 className="font-semibold text-green-800 ">リストの管理</h3>
                 </div>
-                <p className="text-xs text-green-700 dark:text-green-300/90 pl-1">
+                <p className="text-xs text-green-700  pl-1">
                   購入済みのアイテムは左の<CheckSquare size={12} className="inline-block mx-0.5 -mt-0.5" />でチェック。不要なアイテムは<Trash2 size={12} className="inline-block mx-0.5 -mt-0.5" />で削除できます。
                 </p>
               </div>
 
-              <div className="p-3 rounded-lg border bg-blue-50 border-blue-200/80 dark:bg-blue-900/20 dark:border-blue-800/50">
+              <div className="p-3 rounded-lg border bg-blue-50 border-blue-200/80 ">
                 <div className="flex items-center gap-2.5 mb-1.5">
-                  <History className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                  <h3 className="font-semibold text-blue-800 dark:text-blue-300">便利な「よく買うもの」</h3>
+                  <History className="h-5 w-5 text-blue-600 " />
+                  <h3 className="font-semibold text-blue-800 ">便利な「よく買うもの」</h3>
                 </div>
-                <p className="text-xs text-blue-700 dark:text-blue-300/90 pl-1">
+                <p className="text-xs text-blue-700  pl-1">
                   タップで直接リストに追加。編集は<Edit size={12} className="inline-block mx-0.5 -mt-0.5" />ボタンから行えます。
                 </p>
               </div>
@@ -349,7 +280,7 @@ export default function MemoPage() {
               <ShoppingBag strokeWidth={1.5} className="mx-auto h-16 w-16 text-muted-foreground/40 mb-4" />
               <h3 className="text-lg font-semibold text-foreground/80 mb-2">買い物メモを作成しましょう！</h3>
               <p className="text-sm text-muted-foreground">
-                「+」ボタンやマイクボタンを使って<br />買うものをメモに追加できます。
+                「+」ボタンを使って<br />買うものをメモに追加できます。
               </p>
             </div>
           ) : (
