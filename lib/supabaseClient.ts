@@ -11,3 +11,10 @@ if (!supabaseAnonKey) {
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+export const setSupabaseAuth = (accessToken: string) => {
+  supabase.auth.setSession({
+    access_token: accessToken,
+    refresh_token: '', // リフレッシュトークンはここでは不要
+  });
+};

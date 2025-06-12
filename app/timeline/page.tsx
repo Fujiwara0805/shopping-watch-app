@@ -1331,13 +1331,13 @@ export default function Timeline() {
                   value="liked_posts" 
                   disabled={!currentUserId || likedPostIds.length === 0}
                 >
-                  いいねした投稿 {likedPostIds.length > 0 && `(${likedPostIds.length}件)`}
+                  いいねした投稿 
                 </SelectItem>
                 <SelectItem 
                   value="hybrid" 
                   disabled={!currentUserId || (favoriteStoreIds.length === 0 && likedPostIds.length === 0)}
                 >
-                  複合検索 (お気に入り + いいね) {favoriteStoreIds.length + likedPostIds.length > 0 && `(${favoriteStoreIds.length + likedPostIds.length}件)`}
+                  複合検索 (お気に入り + いいね) 
                 </SelectItem>
               </SelectContent>
             </Select>

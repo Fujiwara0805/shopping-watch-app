@@ -250,14 +250,11 @@ function ProfilePageContent() {
   const { data: session } = useSession();
   const [profile, setProfile] = useState<AppProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [userPosts, setUserPosts] = useState<PostWithAuthor[]>([]);
-  const [loadingPosts, setLoadingPosts] = useState(true);
+  const [userPostsCount, setUserPostsCount] = useState(0);
   const router = useRouter();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("memo");
-  const [userPoints, setUserPoints] = useState(0);
   const [showPointsModal, setShowPointsModal] = useState(false);
-  const [hiddenPosts, setHiddenPosts] = useState<Set<string>>(new Set());
   
   // LINE接続状況の管理
   const [isLineConnected, setIsLineConnected] = useState(false);
@@ -265,7 +262,7 @@ function ProfilePageContent() {
 
   useEffect(() => {
     // ProfileLayoutで認証確認済みなので、直接データフェッチ
-    const fetchProfileAndPosts = async () => {
+    const fetchProfileAndPostsCount = async () => {
       if (!session?.user?.id) {
         console.warn('ProfilePageContent: No session user ID available');
         return;
@@ -273,7 +270,6 @@ function ProfilePageContent() {
 
       try {
         setLoading(true);
-        setLoadingPosts(true);
 
         const { data: appProfileData, error: profileError } = await supabase
           .from('app_profiles')
@@ -291,77 +287,26 @@ function ProfilePageContent() {
         if (appProfileData) {
           setProfile(appProfileData);
 
-          // 投稿データを取得
-          const { data: postsData, error: postsError } = await supabase
+          // 投稿数のみを取得（リレーションシップの曖昧性を回避）
+          const { count: postsCount, error: postsCountError } = await supabase
             .from('posts')
-            .select(`
-              id,
-              app_profile_id,
-              store_id,
-              store_name,
-              category,
-              content,
-              image_url,
-              discount_rate,
-              price,
-              expiry_option,
-              created_at,
-              likes_count,
-              app_profiles (
-                display_name,
-                avatar_url
-              )
-            `)
-            .eq('app_profile_id', appProfileData.id)
-            .order('created_at', { ascending: false });
+            .select('id', { count: 'exact' })
+            .eq('app_profile_id', appProfileData.id);
 
-          if (postsError) {
-            console.error('ProfilePageContent: Error fetching posts:', postsError);
-          } else if (postsData) {
-            const fetchedPosts: PostWithAuthor[] = postsData.map((p: any) => {
-              let expires_at_string = new Date().toISOString();
-              if (p.expiry_option && p.created_at) {
-                  const createdAtDate = new Date(p.created_at);
-                  if (p.expiry_option === '1h') createdAtDate.setHours(createdAtDate.getHours() + 1);
-                  else if (p.expiry_option === '3h') createdAtDate.setHours(createdAtDate.getHours() + 3);
-                  else if (p.expiry_option === '24h') createdAtDate.setHours(createdAtDate.getHours() + 24);
-                  expires_at_string = createdAtDate.toISOString();
-              }
-
-              return {
-                id: p.id,
-                store_id: p.store_id,
-                store_name: p.store_name,
-                category: p.category,
-                content: p.content,
-                image_url: p.image_url,
-                discount_rate: p.discount_rate,
-                price: p.price,
-                expiry_option: p.expiry_option,
-                created_at: p.created_at,
-                expires_at: expires_at_string,
-                likes_count: p.likes_count || 0,
-                likes: p.likes_count || 0,
-                comments: 0,
-
-                author: p.app_profiles ? {
-                  display_name: p.app_profiles.display_name,
-                  avatar_url: p.app_profiles.avatar_url,
-                } : null,
-              };
-            });
-            setUserPosts(fetchedPosts);
+          if (postsCountError) {
+            console.error('ProfilePageContent: Error fetching posts count:', postsCountError);
+          } else {
+            setUserPostsCount(postsCount || 0);
           }
         }
       } catch (e) {
         console.error('ProfilePageContent: Unexpected error:', e);
       } finally {
         setLoading(false);
-        setLoadingPosts(false);
       }
     };
 
-    fetchProfileAndPosts();
+    fetchProfileAndPostsCount();
   }, [session?.user?.id]);
 
   // LINE接続状況の確認
@@ -413,14 +358,6 @@ function ProfilePageContent() {
     { id: profile.favorite_store_2_id, name: profile.favorite_store_2_name },
     { id: profile.favorite_store_3_id, name: profile.favorite_store_3_name },
   ].filter(store => store.id && store.name) as { id: string; name: string }[] : [];
-
-  // 投稿を非表示にする関数
-  const handleHidePost = (postId: string) => {
-    setHiddenPosts(prev => new Set([...Array.from(prev), postId]));
-  };
-
-  // 表示する投稿をフィルタリング
-  const visiblePosts = userPosts.filter(post => !hiddenPosts.has(post.id));
 
   if (loading) {
     return (
@@ -540,7 +477,7 @@ function ProfilePageContent() {
             <StatCard
               icon={ShoppingBag}
               title="投稿数"
-              value={visiblePosts.length}
+              value={userPostsCount}
               subtitle="これまでの投稿"
               gradient="bg-green-100"
               delay={0.4}
@@ -599,19 +536,21 @@ function ProfilePageContent() {
                   transition={{ duration: 0.5 }}
                   className="text-center"
                 >
-                  <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center">
-                    <NotebookText className="h-8 w-8 text-gray-400" />
+                  <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-green-100 to-blue-100 rounded-full flex items-center justify-center">
+                    <NotebookText className="h-8 w-8 text-green-500" />
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-700 mb-2">メモ機能は現在開発中です</h3>
-                  <p className="text-gray-500 mb-4 text-sm">近日公開予定です。お楽しみに！</p>
-                  <Button 
-                    disabled
+                  <h3 className="text-lg font-semibold text-gray-800 mb-2">新しい買い物メモが登場！</h3>
+                  <p className="text-gray-600 mb-4 text-sm max-w-xs mx-auto">
+                    買い忘れ防止に役立つ、シンプルで使いやすいメモ機能が利用できるようになりました。
+                  </p>
+                  <Button
+                    onClick={() => router.push('/memo')}
                     className="text-white shadow-md hover:shadow-lg transition-all duration-300"
-                    style={{ backgroundColor: '#73370c' }}
+                    style={{ backgroundColor: '#c96342' }}
                     size="sm"
                   >
-                    <Sparkles className="h-4 w-4 mr-2" />
-                    新しいメモを作成する
+                    <ArrowRight className="h-4 w-4 mr-2" />
+                    メモ機能を使ってみる
                   </Button>
                 </motion.div>
               </div>
