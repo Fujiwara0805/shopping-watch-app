@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { Camera, Upload, X, Store as StoreIcon, LayoutGrid, ClipboardList, Image as ImageIcon, Percent, CalendarClock, PackageIcon, Calculator, ClockIcon, Tag, Laugh, Smile, Meh, Frown, Angry, HelpCircle, MapPin, CheckCircle } from 'lucide-react';
+import { Camera, Upload, X, Store as StoreIcon, LayoutGrid, ClipboardList, Image as ImageIcon, Percent, CalendarClock, PackageIcon, Calculator, ClockIcon, Tag, Laugh, Smile, Meh, Frown, Angry, HelpCircle, MapPin, CheckCircle, Crop } from 'lucide-react';
 import AppLayout from '@/components/layout/app-layout';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -111,6 +111,80 @@ const defaultCategoryImages: Record<string, string> = {
   'その他': 'https://fuanykkpsjiynzzkkhtv.supabase.co/storage/v1/object/public/images//default_other.png',
 };
 
+// 🔥 画像リサイズ関数（350px × 350px より大きい場合のみリサイズ）
+const resizeImageToSquare = (file: File, targetSize: number = 350): Promise<{ file: File; resized: boolean; originalSize: { width: number; height: number } }> => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+
+    img.onload = () => {
+      const originalWidth = img.width;
+      const originalHeight = img.height;
+
+      // 🔥 元画像が350px × 350px以下の場合はそのまま使用
+      if (originalWidth <= targetSize && originalHeight <= targetSize) {
+        console.log("PostPage: Image is already small enough, using original size:", { originalWidth, originalHeight });
+        resolve({
+          file: file, // 元のファイルをそのまま返す
+          resized: false,
+          originalSize: { width: originalWidth, height: originalHeight }
+        });
+        return;
+      }
+
+      // 🔥 350px × 350pxより大きい場合のみリサイズ処理
+      console.log("PostPage: Image is larger than target size, resizing:", { originalWidth, originalHeight, targetSize });
+
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+
+      if (!ctx) {
+        reject(new Error('Canvas context not available'));
+        return;
+      }
+
+      // キャンバスサイズを目標サイズに設定
+      canvas.width = targetSize;
+      canvas.height = targetSize;
+
+      // 背景を白で塗りつぶし（透明な場合のため）
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, targetSize, targetSize);
+
+      // 画像全体を350px × 350pxにリサイズ（アスペクト比は変更されるが画像全体が表示される）
+      ctx.drawImage(
+        img,
+        0, 0, // 描画開始位置（左上）
+        targetSize, targetSize // 描画サイズ（350px × 350px）
+      );
+
+      // Canvas から Blob を作成
+      canvas.toBlob((blob) => {
+        if (blob) {
+          // File オブジェクトを作成
+          const resizedFile = new File([blob], file.name, {
+            type: file.type,
+            lastModified: Date.now(),
+          });
+          resolve({
+            file: resizedFile,
+            resized: true,
+            originalSize: { width: originalWidth, height: originalHeight }
+          });
+        } else {
+          reject(new Error('Failed to create blob from canvas'));
+        }
+      }, file.type, 0.9); // 90%の品質で保存
+    };
+
+    img.onerror = () => {
+      reject(new Error('Failed to load image'));
+    };
+
+    // 画像を読み込み
+    img.src = URL.createObjectURL(file);
+  });
+};
+
 export default function PostPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -118,6 +192,12 @@ export default function PostPage() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isResizing, setIsResizing] = useState(false); // 🔥 リサイズ中の状態
+  const [imageResizeInfo, setImageResizeInfo] = useState<{
+    resized: boolean;
+    originalSize: { width: number; height: number };
+    finalSize: { width: number; height: number };
+  } | null>(null); // 🔥 リサイズ情報を保持
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [formDataToSubmit, setFormDataToSubmit] = useState<PostFormValues | null>(null);
@@ -401,6 +481,7 @@ export default function PostPage() {
         store_longitude: undefined,
       });
       setImageFile(null);
+      setImageResizeInfo(null); // 🔥 リサイズ情報もクリア
       setSelectedPlace(null);
       setLocationStatus('none');
       router.push('/post/complete');
@@ -425,17 +506,87 @@ export default function PostPage() {
     }
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // 🔥 画像アップロード処理を更新（リサイズ機能付き）
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setImageFile(file);
-      setSubmitError(null);
+    if (!file) return;
+
+    // ファイルサイズチェック（5MB制限）
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      toast({
+        title: "⚠️ ファイルサイズが大きすぎます",
+        description: "5MB以下の画像を選択してください。",
+        duration: 3000,
+      });
+      return;
+    }
+
+    // ファイルタイプチェック
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      toast({
+        title: "⚠️ サポートされていないファイル形式です",
+        description: "JPG、PNG、またはWEBP形式の画像を選択してください。",
+        duration: 3000,
+      });
+      return;
+    }
+
+    setIsResizing(true);
+    setSubmitError(null);
+
+    try {
+      // 🔥 画像サイズをチェックしてリサイズ（必要な場合のみ）
+      const result = await resizeImageToSquare(file, 350);
+      
+      setImageFile(result.file);
+      setImageResizeInfo({
+        resized: result.resized,
+        originalSize: result.originalSize,
+        finalSize: result.resized 
+          ? { width: 350, height: 350 }
+          : result.originalSize
+      });
+      
+      // 🔥 適切なメッセージを表示
+      if (result.resized) {
+        toast({
+          title: "✅ 画像をリサイズしました",
+          description: `${result.originalSize.width}×${result.originalSize.height}px → 350×350px に最適化されました。`,
+          duration: 3000,
+        });
+      } else {
+        toast({
+          title: "✅ 画像をアップロードしました",
+          description: `${result.originalSize.width}×${result.originalSize.height}px (リサイズ不要)`,
+          duration: 3000,
+        });
+      }
+      
+      console.log("PostPage: Image processing completed:", {
+        originalSize: result.originalSize,
+        resized: result.resized,
+        originalFileSize: file.size,
+        finalFileSize: result.file.size
+      });
+      
+    } catch (error) {
+      console.error("PostPage: Error processing image:", error);
+      toast({
+        title: "⚠️ 画像の処理に失敗しました",
+        description: "別の画像を選択してください。",
+        duration: 3000,
+      });
+    } finally {
+      setIsResizing(false);
     }
   };
   
   const removeImage = () => {
     setImageFile(null);
     setImagePreviewUrl(null);
+    setImageResizeInfo(null); // 🔥 リサイズ情報もクリア
     setHasUserRemovedDefaultImage(true);
     const fileInput = document.getElementById('image-upload') as HTMLInputElement;
     if (fileInput) {
@@ -598,6 +749,11 @@ export default function PostPage() {
                 <FormLabel className="text-xl mb-2 flex items-center">
                   <ImageIcon className="mr-2 h-7 w-7" />
                   商品画像 (任意)
+                  {/* 🔥 リサイズ情報の表示 */}
+                  <div className="ml-3 flex items-center bg-blue-50 px-2 py-1 rounded-md">
+                    <Crop className="h-4 w-4 text-blue-600 mr-1" />
+                    <span className="text-xs text-blue-800">大きい画像は350×350px調整</span>
+                  </div>
                 </FormLabel>
                 <FormControl>
                   <div className="flex flex-col items-center space-y-3 p-6 border-2 border-dashed rounded-lg hover:border-primary transition-colors cursor-pointer bg-card">
@@ -607,28 +763,51 @@ export default function PostPage() {
                       accept="image/png, image/jpeg, image/webp"
                       onChange={handleImageUpload}
                       className="hidden"
-                      disabled={isUploading}
+                      disabled={isUploading || isResizing}
                       onClick={() => setHasUserRemovedDefaultImage(false)}
                     />
-                    {imagePreviewUrl ? (
+                    {isResizing ? (
+                      <div className="flex flex-col items-center space-y-3 text-muted-foreground">
+                        <Loader2 className="h-12 w-12 animate-spin" />
+                        <p className="text-lg">画像を350×350pxにリサイズ中...</p>
+                      </div>
+                    ) : imagePreviewUrl ? (
                       <div className="relative group">
-                        <img src={imagePreviewUrl} alt="プレビュー" className="max-h-60 rounded-md object-contain" />
+                        {/* 🔥 プレビュー画像を350px × 350pxで表示 */}
+                        <div className="w-[350px] h-[350px] rounded-md overflow-hidden border-2 border-gray-200">
+                          <img 
+                            src={imagePreviewUrl} 
+                            alt="プレビュー" 
+                            className="w-full h-full object-cover"
+                            style={{ objectFit: 'cover' }}
+                          />
+                        </div>
                         <Button
                           type="button"
                           variant="destructive"
                           size="icon"
                           className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
                           onClick={removeImage}
-                          disabled={isUploading}
+                          disabled={isUploading || isResizing}
                         >
                           <X className="h-5 w-5" />
                         </Button>
+                        {/* 🔥 リサイズ情報の表示 */}
+                        {imageFile && imageResizeInfo && (
+                          <div className="absolute bottom-2 left-2 bg-green-500 text-white px-2 py-1 rounded-md text-xs">
+                            {imageResizeInfo.resized 
+                              ? `${imageResizeInfo.originalSize.width}×${imageResizeInfo.originalSize.height} → 350×350`
+                              : `${imageResizeInfo.originalSize.width}×${imageResizeInfo.originalSize.height}`
+                            }
+                          </div>
+                        )}
                       </div>
                     ) : (
                       <label htmlFor="image-upload" className="flex flex-col items-center space-y-2 cursor-pointer text-muted-foreground">
                         <Upload className="h-12 w-12" />
                         <p className="text-lg">画像をアップロード</p>
                         <p className="text-xs">PNG, JPG, WEBP (最大5MB)</p>
+                        <p className="text-xs text-blue-600">350×350px以上の画像は自動調整されます</p>
                       </label>
                     )}
                   </div>
@@ -790,17 +969,6 @@ export default function PostPage() {
                             placeholder="お店を検索または選択してください"
                             style={{ fontSize: '16px' }}
                           />
-                          
-                          {/* 🔥 Google Places 直接検索の入力フィールド */}
-                          {/* {isLoaded && (
-                            <Input
-                              ref={storeInputRef}
-                              placeholder="または Google で店舗を検索"
-                              className="mt-2 text-lg"
-                              disabled={isUploading}
-                              onFocus={() => setLocationStatus('getting')}
-                            />
-                          )} */}
                         </div>
                         <LocationStatusIndicator />
                       </div>
@@ -871,36 +1039,23 @@ export default function PostPage() {
                 control={form.control}
                 name="category"
                 render={({ field }) => (
-                  <FormItem className="space-y-3">
+                  <FormItem>
                     <FormLabel className="text-xl flex font-semibold items-center">
                       <LayoutGrid className="mr-2 h-6 w-6" /> カテゴリ<span className="text-destructive ml-1">※</span>
                     </FormLabel>
                     <FormControl>
-                      <RadioGroup
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                        className="grid grid-cols-3 gap-2"
-                      >
-                        {categories.map((category) => (
-                          <div key={category}>
-                            <RadioGroupItem
-                              value={category}
-                              id={`category-${category}`}
-                              className="peer sr-only"
-                            />
-                            <Label
-                              htmlFor={`category-${category}`}
-                              className={cn(
-                                "flex flex-col items-center justify-between rounded-md border-2 border-muted p-3 text-lg",
-                                "hover:border-primary peer-data-[state=checked]:border-primary",
-                                "peer-data-[state=checked]:bg-primary/10"
-                              )}
-                            >
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <SelectTrigger className="w-full text-lg py-6">
+                          <SelectValue placeholder="カテゴリを選択してください" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {categories.map((category) => (
+                            <SelectItem key={category} value={category} className="text-lg py-3">
                               {category}
-                            </Label>
-                          </div>
-                        ))}
-                      </RadioGroup>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -1064,13 +1219,20 @@ export default function PostPage() {
               <motion.div whileTap={{ scale: 0.98 }}>
                 <Button
                   type="submit"
-                  disabled={!isValid || isSubmitting || isUploading}
+                  disabled={!isValid || isSubmitting || isUploading || isResizing}
                   className={cn(
                     "w-full text-xl py-3",
-                    (!isValid || isSubmitting || isUploading) && "bg-gray-400 cursor-not-allowed hover:bg-gray-400"
+                    (!isValid || isSubmitting || isUploading || isResizing) && "bg-gray-400 cursor-not-allowed hover:bg-gray-400"
                   )}
                 >
-                  {(isSubmitting || isUploading) ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : "投稿する"}
+                  {(isSubmitting || isUploading || isResizing) ? (
+                    <>
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                      {isResizing ? "画像処理中..." : "投稿する"}
+                    </>
+                  ) : (
+                    "投稿する"
+                  )}
                 </Button>
                 <p className="text-sm text-destructive text-center mt-2">※は 必須入力です</p>
               </motion.div>

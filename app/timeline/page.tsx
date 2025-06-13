@@ -1283,25 +1283,27 @@ export default function Timeline() {
             </Button>
           </div>
 
+          {/* 🔥 カテゴリ選択をドロップダウン形式に変更 */}
           <div>
             <h3 className="font-semibold text-lg mb-2">カテゴリーで絞り込み</h3>
-            <div className="grid grid-cols-3 gap-2">
-              {categories.map((category) => (
-                <Button
-                  key={category}
-                  variant={tempActiveFilter === category || (tempActiveFilter === 'all' && category === 'すべて') ? 'default' : 'outline'}
-                  onClick={() => {
-                    setTempActiveFilter(category === 'すべて' ? 'all' : category);
-                  }}
-                  className={cn(
-                    "w-full",
-                    (tempActiveFilter === category || (tempActiveFilter === 'all' && category === 'すべて')) && "bg-primary text-primary-foreground"
-                  )}
-                >
-                  {category}
-                </Button>
-              ))}
-            </div>
+            <Select 
+              onValueChange={(value: string) => setTempActiveFilter(value)} 
+              value={tempActiveFilter}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="カテゴリを選択" />
+              </SelectTrigger>
+              <SelectContent>
+                {categories.map((category) => (
+                  <SelectItem 
+                    key={category} 
+                    value={category === 'すべて' ? 'all' : category}
+                  >
+                    {category}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div>
