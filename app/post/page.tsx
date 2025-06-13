@@ -111,8 +111,13 @@ const defaultCategoryImages: Record<string, string> = {
   'その他': 'https://fuanykkpsjiynzzkkhtv.supabase.co/storage/v1/object/public/images//default_other.png',
 };
 
-// 🔥 画像リサイズ関数（350px × 350px より大きい場合のみリサイズ）
-const resizeImageToSquare = (file: File, targetSize: number = 350): Promise<{ file: File; resized: boolean; originalSize: { width: number; height: number } }> => {
+// 🔥 高品質画像リサイズ関数（アスペクト比保持 + 中央配置）
+const resizeImageToSquare = (file: File, targetSize: number = 350): Promise<{ 
+  file: File; 
+  resized: boolean; 
+  originalSize: { width: number; height: number };
+  method: 'none' | 'crop' | 'fit';
+}> => {
   return new Promise((resolve, reject) => {
     const img = new Image();
 
@@ -124,15 +129,15 @@ const resizeImageToSquare = (file: File, targetSize: number = 350): Promise<{ fi
       if (originalWidth <= targetSize && originalHeight <= targetSize) {
         console.log("PostPage: Image is already small enough, using original size:", { originalWidth, originalHeight });
         resolve({
-          file: file, // 元のファイルをそのまま返す
+          file: file,
           resized: false,
-          originalSize: { width: originalWidth, height: originalHeight }
+          originalSize: { width: originalWidth, height: originalHeight },
+          method: 'none'
         });
         return;
       }
 
-      // 🔥 350px × 350pxより大きい場合のみリサイズ処理
-      console.log("PostPage: Image is larger than target size, resizing:", { originalWidth, originalHeight, targetSize });
+      console.log("PostPage: Image is larger than target size, resizing with quality preservation:", { originalWidth, originalHeight, targetSize });
 
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
@@ -142,38 +147,60 @@ const resizeImageToSquare = (file: File, targetSize: number = 350): Promise<{ fi
         return;
       }
 
+      // 🔥 高品質レンダリング設定
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+
       // キャンバスサイズを目標サイズに設定
       canvas.width = targetSize;
       canvas.height = targetSize;
 
-      // 背景を白で塗りつぶし（透明な場合のため）
+      // 背景を白で塗りつぶし
       ctx.fillStyle = '#FFFFFF';
       ctx.fillRect(0, 0, targetSize, targetSize);
 
-      // 画像全体を350px × 350pxにリサイズ（アスペクト比は変更されるが画像全体が表示される）
+      // 🔥 アスペクト比を保持したリサイズ計算
+      const aspectRatio = originalWidth / originalHeight;
+      let drawWidth, drawHeight, offsetX, offsetY;
+
+      if (aspectRatio > 1) {
+        // 横長の画像：高さを基準にリサイズ
+        drawHeight = targetSize;
+        drawWidth = targetSize * aspectRatio;
+        offsetX = -(drawWidth - targetSize) / 2; // 中央でクロップ
+        offsetY = 0;
+      } else {
+        // 縦長または正方形の画像：幅を基準にリサイズ
+        drawWidth = targetSize;
+        drawHeight = targetSize / aspectRatio;
+        offsetX = 0;
+        offsetY = -(drawHeight - targetSize) / 2; // 中央でクロップ
+      }
+
+      // 🔥 高品質でアスペクト比を保持してリサイズ（中央クロップ）
       ctx.drawImage(
         img,
-        0, 0, // 描画開始位置（左上）
-        targetSize, targetSize // 描画サイズ（350px × 350px）
+        offsetX, offsetY,
+        drawWidth, drawHeight
       );
 
-      // Canvas から Blob を作成
+      // 🔥 高品質でCanvas から Blob を作成（品質95%）
       canvas.toBlob((blob) => {
         if (blob) {
-          // File オブジェクトを作成
           const resizedFile = new File([blob], file.name, {
-            type: file.type,
+            type: file.type === 'image/png' ? 'image/png' : 'image/jpeg',
             lastModified: Date.now(),
           });
           resolve({
             file: resizedFile,
             resized: true,
-            originalSize: { width: originalWidth, height: originalHeight }
+            originalSize: { width: originalWidth, height: originalHeight },
+            method: 'crop'
           });
         } else {
           reject(new Error('Failed to create blob from canvas'));
         }
-      }, file.type, 0.9); // 90%の品質で保存
+      }, file.type === 'image/png' ? 'image/png' : 'image/jpeg', 0.95); // 95%の高品質で保存
     };
 
     img.onerror = () => {
@@ -197,7 +224,8 @@ export default function PostPage() {
     resized: boolean;
     originalSize: { width: number; height: number };
     finalSize: { width: number; height: number };
-  } | null>(null); // 🔥 リサイズ情報を保持
+    method: 'none' | 'crop' | 'fit';
+  } | null>(null); // 🔥 リサイズ情報を保持（メソッド情報も追加）
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [formDataToSubmit, setFormDataToSubmit] = useState<PostFormValues | null>(null);
@@ -218,6 +246,7 @@ export default function PostPage() {
   const [showStoreSearchInfoModal, setShowStoreSearchInfoModal] = useState(false);
   const [hasUserRemovedDefaultImage, setHasUserRemovedDefaultImage] = useState(false);
   const { showLoading, hideLoading } = useLoading();
+  const [enableImageResize, setEnableImageResize] = useState(true); // 🔥 リサイズ機能のオン/オフ設定
   const [selectedPlace, setSelectedPlace] = useState<google.maps.places.PlaceResult | null>(null);
   
   // 位置情報取得状況の表示用
@@ -482,6 +511,8 @@ export default function PostPage() {
       });
       setImageFile(null);
       setImageResizeInfo(null); // 🔥 リサイズ情報もクリア
+      setEnableImageResize(true); // 🔥 リサイズ設定をデフォルトに戻す
+      setEnableImageResize(true); // 🔥 リサイズ設定をデフォルトに戻す
       setSelectedPlace(null);
       setLocationStatus('none');
       router.push('/post/complete');
@@ -537,39 +568,72 @@ export default function PostPage() {
     setSubmitError(null);
 
     try {
-      // 🔥 画像サイズをチェックしてリサイズ（必要な場合のみ）
-      const result = await resizeImageToSquare(file, 350);
-      
-      setImageFile(result.file);
-      setImageResizeInfo({
-        resized: result.resized,
-        originalSize: result.originalSize,
-        finalSize: result.resized 
-          ? { width: 350, height: 350 }
-          : result.originalSize
-      });
-      
-      // 🔥 適切なメッセージを表示
-      if (result.resized) {
-        toast({
-          title: "✅ 画像をリサイズしました",
-          description: `${result.originalSize.width}×${result.originalSize.height}px → 350×350px に最適化されました。`,
-          duration: 3000,
+      // 🔥 ユーザー設定に応じたリサイズ処理
+      if (enableImageResize) {
+        const result = await resizeImageToSquare(file, 350);
+        
+        setImageFile(result.file);
+        setImageResizeInfo({
+          resized: result.resized,
+          originalSize: result.originalSize,
+          finalSize: result.resized 
+            ? { width: 350, height: 350 }
+            : result.originalSize,
+          method: result.method
+        });
+        
+        // 🔥 リサイズ方法に応じた詳細メッセージ
+        if (result.resized) {
+          if (result.method === 'crop') {
+            toast({
+              title: "✅ 高品質リサイズ完了",
+              description: `${result.originalSize.width}×${result.originalSize.height}px → 350×350px (中央クロップ、品質95%)`,
+              duration: 4000,
+            });
+          } else {
+            toast({
+              title: "✅ 高品質リサイズ完了", 
+              description: `350×350px に最適化されました（品質95%）`,
+              duration: 4000,
+            });
+          }
+        } else {
+          toast({
+            title: "✅ 画像をアップロードしました",
+            description: `${result.originalSize.width}×${result.originalSize.height}px (リサイズ不要、元画像を使用)`,
+            duration: 3000,
+          });
+        }
+        
+        console.log("PostPage: High-quality image processing completed:", {
+          originalSize: result.originalSize,
+          resized: result.resized,
+          method: result.method,
+          originalFileSize: file.size,
+          finalFileSize: result.file.size,
+          compressionRatio: ((file.size - result.file.size) / file.size * 100).toFixed(1) + '%'
         });
       } else {
+        // 🔥 リサイズ無効時は元画像をそのまま使用
+        setImageFile(file);
+        setImageResizeInfo({
+          resized: false,
+          originalSize: { width: 0, height: 0 }, // 実際のサイズは取得しない
+          finalSize: { width: 0, height: 0 },
+          method: 'none'
+        });
+        
         toast({
           title: "✅ 画像をアップロードしました",
-          description: `${result.originalSize.width}×${result.originalSize.height}px (リサイズ不要)`,
+          description: "リサイズなしで元画像を使用します",
           duration: 3000,
         });
+        
+        console.log("PostPage: Image uploaded without resizing:", {
+          fileSize: file.size,
+          resizeEnabled: false
+        });
       }
-      
-      console.log("PostPage: Image processing completed:", {
-        originalSize: result.originalSize,
-        resized: result.resized,
-        originalFileSize: file.size,
-        finalFileSize: result.file.size
-      });
       
     } catch (error) {
       console.error("PostPage: Error processing image:", error);
@@ -587,6 +651,7 @@ export default function PostPage() {
     setImageFile(null);
     setImagePreviewUrl(null);
     setImageResizeInfo(null); // 🔥 リサイズ情報もクリア
+    setEnableImageResize(true); // 🔥 リサイズ設定をデフォルトに戻す
     setHasUserRemovedDefaultImage(true);
     const fileInput = document.getElementById('image-upload') as HTMLInputElement;
     if (fileInput) {
@@ -749,67 +814,112 @@ export default function PostPage() {
                 <FormLabel className="text-xl mb-2 flex items-center">
                   <ImageIcon className="mr-2 h-7 w-7" />
                   商品画像 (任意)
-                  {/* 🔥 リサイズ情報の表示 */}
-                  <div className="ml-3 flex items-center bg-blue-50 px-2 py-1 rounded-md">
-                    <Crop className="h-4 w-4 text-blue-600 mr-1" />
-                    <span className="text-xs text-blue-800">大きい画像は350×350px調整</span>
-                  </div>
                 </FormLabel>
                 <FormControl>
-                  <div className="flex flex-col items-center space-y-3 p-6 border-2 border-dashed rounded-lg hover:border-primary transition-colors cursor-pointer bg-card">
-                    <Input
-                      id="image-upload"
-                      type="file"
-                      accept="image/png, image/jpeg, image/webp"
-                      onChange={handleImageUpload}
-                      className="hidden"
-                      disabled={isUploading || isResizing}
-                      onClick={() => setHasUserRemovedDefaultImage(false)}
-                    />
-                    {isResizing ? (
-                      <div className="flex flex-col items-center space-y-3 text-muted-foreground">
-                        <Loader2 className="h-12 w-12 animate-spin" />
-                        <p className="text-lg">画像を350×350pxにリサイズ中...</p>
-                      </div>
-                    ) : imagePreviewUrl ? (
-                      <div className="relative group">
-                        {/* 🔥 プレビュー画像を350px × 350pxで表示 */}
-                        <div className="w-[350px] h-[350px] rounded-md overflow-hidden border-2 border-gray-200">
-                          <img 
-                            src={imagePreviewUrl} 
-                            alt="プレビュー" 
-                            className="w-full h-full object-cover"
-                            style={{ objectFit: 'cover' }}
-                          />
+                  <div className="space-y-4">
+                    {/* 🔥 リサイズ設定UI */}
+                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center">
+                        <Crop className="h-5 w-5 text-blue-600 mr-2" />
+                        <div>
+                          <span className="text-sm font-medium">高品質リサイズ</span>
+                          <p className="text-xs text-gray-600">大きい画像を350×350pxに最適化</p>
                         </div>
-                        <Button
-                          type="button"
-                          variant="destructive"
-                          size="icon"
-                          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                          onClick={removeImage}
-                          disabled={isUploading || isResizing}
-                        >
-                          <X className="h-5 w-5" />
-                        </Button>
-                        {/* 🔥 リサイズ情報の表示 */}
-                        {imageFile && imageResizeInfo && (
-                          <div className="absolute bottom-2 left-2 bg-green-500 text-white px-2 py-1 rounded-md text-xs">
-                            {imageResizeInfo.resized 
-                              ? `${imageResizeInfo.originalSize.width}×${imageResizeInfo.originalSize.height} → 350×350`
-                              : `${imageResizeInfo.originalSize.width}×${imageResizeInfo.originalSize.height}`
-                            }
-                          </div>
-                        )}
                       </div>
-                    ) : (
-                      <label htmlFor="image-upload" className="flex flex-col items-center space-y-2 cursor-pointer text-muted-foreground">
-                        <Upload className="h-12 w-12" />
-                        <p className="text-lg">画像をアップロード</p>
-                        <p className="text-xs">PNG, JPG, WEBP (最大5MB)</p>
-                        <p className="text-xs text-blue-600">350×350px以上の画像は自動調整されます</p>
+                      <label className="flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={enableImageResize}
+                          onChange={(e) => setEnableImageResize(e.target.checked)}
+                          className="sr-only"
+                        />
+                        <div className={`w-11 h-6 rounded-full transition-colors ${
+                          enableImageResize ? 'bg-blue-600' : 'bg-gray-300'
+                        }`}>
+                          <div className={`w-5 h-5 bg-white rounded-full shadow-md transform transition-transform ${
+                            enableImageResize ? 'translate-x-5' : 'translate-x-0.5'
+                          } mt-0.5`} />
+                        </div>
                       </label>
-                    )}
+                    </div>
+                    
+                    <div className="flex flex-col items-center space-y-3 p-6 border-2 border-dashed rounded-lg hover:border-primary transition-colors cursor-pointer bg-card">
+                      <Input
+                        id="image-upload"
+                        type="file"
+                        accept="image/png, image/jpeg, image/webp"
+                        onChange={handleImageUpload}
+                        className="hidden"
+                        disabled={isUploading || isResizing}
+                        onClick={() => setHasUserRemovedDefaultImage(false)}
+                      />
+                      {isResizing ? (
+                        <div className="flex flex-col items-center space-y-3 text-muted-foreground">
+                          <Loader2 className="h-12 w-12 animate-spin" />
+                          <p className="text-lg">
+                            {enableImageResize ? "高品質で350×350pxにリサイズ中..." : "画像を処理中..."}
+                          </p>
+                        </div>
+                      ) : imagePreviewUrl ? (
+                        <div className="relative group">
+                          {/* 🔥 プレビュー画像を350px × 350pxで表示 */}
+                          <div className="w-[350px] h-[350px] rounded-md overflow-hidden border-2 border-gray-200">
+                            <img 
+                              src={imagePreviewUrl} 
+                              alt="プレビュー" 
+                              className="w-full h-full object-cover"
+                              style={{ objectFit: 'cover' }}
+                            />
+                          </div>
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="icon"
+                            className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={removeImage}
+                            disabled={isUploading || isResizing}
+                          >
+                            <X className="h-5 w-5" />
+                          </Button>
+                          {/* 🔥 詳細なリサイズ情報の表示 */}
+                          {imageFile && imageResizeInfo && (
+                            <div className="absolute bottom-2 left-2 flex flex-col gap-1">
+                              {imageResizeInfo.method !== 'none' ? (
+                                <>
+                                  <div className="bg-green-500 text-white px-2 py-1 rounded-md text-xs">
+                                    {imageResizeInfo.resized 
+                                      ? `${imageResizeInfo.originalSize.width}×${imageResizeInfo.originalSize.height} → 350×350`
+                                      : `${imageResizeInfo.originalSize.width}×${imageResizeInfo.originalSize.height}`
+                                    }
+                                  </div>
+                                  {imageResizeInfo.resized && imageResizeInfo.method === 'crop' && (
+                                    <div className="bg-blue-500 text-white px-2 py-1 rounded-md text-xs">
+                                      高品質中央クロップ
+                                    </div>
+                                  )}
+                                </>
+                              ) : (
+                                <div className="bg-gray-500 text-white px-2 py-1 rounded-md text-xs">
+                                  元画像を使用
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <label htmlFor="image-upload" className="flex flex-col items-center space-y-2 cursor-pointer text-muted-foreground">
+                          <Upload className="h-12 w-12" />
+                          <p className="text-lg">画像をアップロード</p>
+                          <p className="text-xs">PNG, JPG, WEBP (最大5MB)</p>
+                          <p className="text-xs text-blue-600">
+                            {enableImageResize 
+                              ? "大きい画像は高品質で350×350pxに調整されます（中央クロップ、品質95%）"
+                              : "リサイズ機能がオフです。元画像をそのまま使用します"
+                            }
+                          </p>
+                        </label>
+                      )}
+                    </div>
                   </div>
                 </FormControl>
                 <p className="text-sm text-red-500 mt-1">※陳列している商品の画像をアップしないでください。購入後の商品の画像をアップしてください。</p>

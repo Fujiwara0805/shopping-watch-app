@@ -285,6 +285,134 @@ const HamburgerMenu = ({ currentUser }: { currentUser: any }) => {
   );
 };
 
+// デバイス情報を取得するカスタムフック
+const useDeviceInfo = () => {
+  const [deviceInfo, setDeviceInfo] = useState({
+    screenHeight: 0,
+    screenWidth: 0,
+    isSmallScreen: false,
+    isLargeScreen: false,
+    aspectRatio: 0,
+    isMobile: false,
+    isTablet: false,
+    isDesktop: false,
+    hasNotch: false,
+    safeAreaTop: 0,
+    safeAreaBottom: 0,
+  });
+
+  useEffect(() => {
+    const updateDeviceInfo = () => {
+      const screenHeight = window.innerHeight;
+      const screenWidth = window.innerWidth;
+      const aspectRatio = screenWidth / screenHeight;
+      
+      // デバイスタイプの判定
+      const isMobile = screenWidth <= 768;
+      const isTablet = screenWidth > 768 && screenWidth <= 1024;
+      const isDesktop = screenWidth > 1024;
+      
+      // 画面サイズの分類
+      const isSmallScreen = screenHeight <= 667; // iPhone SE, iPhone 8以下
+      const isLargeScreen = screenHeight >= 844; // iPhone 12以上、Android大画面
+      
+      // ノッチの検出（概算）
+      const hasNotch = isMobile && screenHeight >= 812 && aspectRatio < 0.5;
+      
+      // セーフエリアの取得
+      const safeAreaTop = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--sat') || '0');
+      const safeAreaBottom = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--sab') || '0');
+
+      setDeviceInfo({
+        screenHeight,
+        screenWidth,
+        isSmallScreen,
+        isLargeScreen,
+        aspectRatio,
+        isMobile,
+        isTablet,
+        isDesktop,
+        hasNotch,
+        safeAreaTop,
+        safeAreaBottom,
+      });
+    };
+
+    updateDeviceInfo();
+    window.addEventListener('resize', updateDeviceInfo);
+    window.addEventListener('orientationchange', () => {
+      setTimeout(updateDeviceInfo, 100);
+    });
+
+    return () => {
+      window.removeEventListener('resize', updateDeviceInfo);
+      window.removeEventListener('orientationchange', updateDeviceInfo);
+    };
+  }, []);
+
+  return deviceInfo;
+};
+
+// レイアウト設定を計算するフック
+const useLayoutConfig = (deviceInfo: ReturnType<typeof useDeviceInfo>) => {
+  return useMemo(() => {
+    const { screenHeight, screenWidth, isSmallScreen, isLargeScreen, isMobile, hasNotch } = deviceInfo;
+    
+    // デスクトップの場合は常に余裕のあるレイアウト
+    if (!isMobile) {
+      return {
+        containerHeight: 'calc(100vh - 140px)',
+        padding: 'p-4',
+        gap: 'gap-4 sm:gap-6',
+        emptyStatePadding: 'py-10',
+        loadingMargin: 'mt-6',
+        finalPadding: 'py-8',
+        bottomSpacing: 'h-4',
+        headerOffset: 140,
+      };
+    }
+
+    // モバイルの場合、画面サイズに応じて調整
+    if (isSmallScreen) {
+      // 小さい画面（iPhone SE、古いAndroid等）- コンパクトレイアウト
+      return {
+        containerHeight: 'calc(100vh - 100px)',
+        padding: 'p-1',
+        gap: 'gap-1 sm:gap-2',
+        emptyStatePadding: 'py-4',
+        loadingMargin: 'mt-2',
+        finalPadding: 'py-3',
+        bottomSpacing: 'h-1',
+        headerOffset: 100,
+      };
+    } else if (isLargeScreen) {
+      // 大きい画面（iPhone 12以上、大画面Android等）- 余裕のあるレイアウト
+      return {
+        containerHeight: hasNotch ? 'calc(100vh - 160px)' : 'calc(100vh - 140px)',
+        padding: 'p-3',
+        gap: 'gap-3 sm:gap-4',
+        emptyStatePadding: 'py-8',
+        loadingMargin: 'mt-4',
+        finalPadding: 'py-6',
+        bottomSpacing: 'h-3',
+        headerOffset: hasNotch ? 160 : 140,
+      };
+    } else {
+      // 中間サイズ（iPhone 8、標準的なAndroid等）- バランス型レイアウト
+      return {
+        containerHeight: 'calc(100vh - 120px)',
+        padding: 'p-2',
+        gap: 'gap-2 sm:gap-3',
+        emptyStatePadding: 'py-6',
+        loadingMargin: 'mt-3',
+        finalPadding: 'py-4',
+        bottomSpacing: 'h-2',
+        headerOffset: 120,
+      };
+    }
+  }, [deviceInfo]);
+};
+
 export default function Timeline() {
   const [posts, setPosts] = useState<ExtendedPostWithAuthor[]>([]);
   const [loading, setLoading] = useState(true);
@@ -920,6 +1048,13 @@ export default function Timeline() {
     return count;
   }, [activeFilter, searchMode, sortBy]);
 
+  // デバイス情報とレイアウト設定を取得
+  const deviceInfo = useDeviceInfo();
+  const layoutConfig = useLayoutConfig(deviceInfo);
+
+  // デバッグ情報を表示する関数（開発時のみ）
+  const showDebugInfo = process.env.NODE_ENV === 'development';
+
   if (loading && posts.length === 0) {
     return (
       <AppLayout>
@@ -931,8 +1066,8 @@ export default function Timeline() {
               placeholder="店舗名やキーワードで検索"
               value={generalSearchTerm}
               onChange={(e) => setGeneralSearchTerm(e.target.value)}
-              className="pr-10 w-full text-base" // text-baseを追加してモバイルでのズームを防ぐ
-              style={{ fontSize: '16px' }} // 明示的に16pxを指定
+              className="pr-10 w-full text-base"
+              style={{ fontSize: '16px' }}
               autoComplete="off"
               autoCorrect="off"
               autoCapitalize="off"
@@ -956,13 +1091,23 @@ export default function Timeline() {
           </Button>
         </div>
         
-        <div className="p-4">
-          <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className={layoutConfig.padding}>
+          <div className={`grid ${layoutConfig.gap} grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4`}>
             {[...Array(8)].map((_, i) => (
               <Skeleton key={i} className="h-[400px] w-full rounded-xl" />
             ))}
           </div>
         </div>
+
+        {/* デバッグ情報（開発時のみ表示） */}
+        {showDebugInfo && (
+          <div className="fixed bottom-4 right-4 bg-black/80 text-white p-2 rounded text-xs z-50">
+            <div>画面: {deviceInfo.screenWidth}×{deviceInfo.screenHeight}</div>
+            <div>タイプ: {deviceInfo.isMobile ? 'Mobile' : deviceInfo.isTablet ? 'Tablet' : 'Desktop'}</div>
+            <div>サイズ: {deviceInfo.isSmallScreen ? 'Small' : deviceInfo.isLargeScreen ? 'Large' : 'Medium'}</div>
+            <div>ノッチ: {deviceInfo.hasNotch ? 'Yes' : 'No'}</div>
+          </div>
+        )}
       </AppLayout>
     );
   }
@@ -1002,7 +1147,7 @@ export default function Timeline() {
             )}
           </Button>
         </div>
-        <div className="p-4">
+        <div className={layoutConfig.padding}>
           <div className="text-center">
             <p className="text-destructive text-lg">{error}</p>
             <Button onClick={() => fetchPostsRef.current && fetchPostsRef.current(0, true)} className="mt-4">再試行</Button>
@@ -1022,8 +1167,8 @@ export default function Timeline() {
             placeholder="店舗名やキーワードで検索"
             value={generalSearchTerm}
             onChange={(e) => setGeneralSearchTerm(e.target.value)}
-            className="pr-10 w-full text-base" // text-baseを追加
-            style={{ fontSize: '16px' }} // 明示的に16pxを指定してモバイルでのズームを防ぐ
+            className="pr-10 w-full text-base"
+            style={{ fontSize: '16px' }}
             autoComplete="off"
             autoCorrect="off"
             autoCapitalize="off"
@@ -1142,15 +1287,15 @@ export default function Timeline() {
       <div 
         className="timeline-scroll-container custom-scrollbar overscroll-none"
         style={{ 
-          height: 'calc(100vh - 280px)',
-          maxHeight: 'calc(100vh - 280px)',
+          height: layoutConfig.containerHeight,
+          maxHeight: layoutConfig.containerHeight,
           overflowY: 'auto',
           overflowX: 'hidden'
         }}
       >
-        <div className="p-4 pb-safe">
+        <div className={`${layoutConfig.padding} pb-safe`}>
           {posts.length === 0 && !loading && !isSearching ? (
-            <div className="text-center py-10">
+            <div className={`text-center ${layoutConfig.emptyStatePadding}`}>
               <LayoutGrid size={48} className="mx-auto text-muted-foreground mb-4" />
               {generalSearchTerm ? (
                 <div>
@@ -1192,7 +1337,7 @@ export default function Timeline() {
           ) : (
             <motion.div
               layout
-              className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+              className={`grid ${layoutConfig.gap} grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4`}
             >
               <AnimatePresence mode="popLayout">
                 {posts.map((post, index) => (
@@ -1224,8 +1369,8 @@ export default function Timeline() {
           )}
           
           {loadingMore && (
-            <div className="mt-6">
-              <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <div className={layoutConfig.loadingMargin}>
+              <div className={`grid ${layoutConfig.gap} grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4`}>
                 {[...Array(4)].map((_, i) => (
                   <Skeleton key={`loading-${i}`} className="h-[400px] w-full rounded-xl" />
                 ))}
@@ -1234,16 +1379,30 @@ export default function Timeline() {
           )}
           
           {!hasMore && posts.length > 0 && (
-            <div className="text-center py-8">
+            <div className={`text-center ${layoutConfig.finalPadding}`}>
               <p className="text-muted-foreground">
                 {searchMode === 'nearby' ? '5km圏内の投稿をすべて表示しました' : 'すべての投稿を読み込みました'}
               </p>
             </div>
           )}
           
-          <div className="h-4"></div>
+          <div className={layoutConfig.bottomSpacing}></div>
         </div>
       </div>
+
+      {/* デバッグ情報（開発時のみ表示） */}
+      {showDebugInfo && (
+        <div className="fixed bottom-4 right-4 bg-black/80 text-white p-2 rounded text-xs z-50 max-w-xs">
+          <div className="space-y-1">
+            <div>画面: {deviceInfo.screenWidth}×{deviceInfo.screenHeight}</div>
+            <div>タイプ: {deviceInfo.isMobile ? 'Mobile' : deviceInfo.isTablet ? 'Tablet' : 'Desktop'}</div>
+            <div>サイズ: {deviceInfo.isSmallScreen ? 'Small' : deviceInfo.isLargeScreen ? 'Large' : 'Medium'}</div>
+            <div>ノッチ: {deviceInfo.hasNotch ? 'Yes' : 'No'}</div>
+            <div>高さ: {layoutConfig.containerHeight}</div>
+            <div>パディング: {layoutConfig.padding}</div>
+          </div>
+        </div>
+      )}
 
       {/* フルスクリーン投稿ビューアー */}
       <FullScreenPostViewer

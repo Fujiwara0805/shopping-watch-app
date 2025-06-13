@@ -1,7 +1,7 @@
 {
-  "name": "お惣菜ウォッチャー",
-  "short_name": "お惣菜ウォッチャー",
-  "description": "近所のスーパーのお惣菜情報をリアルタイムでお届けします",
+  "name": "トクドク β版",
+  "short_name": "トクドク β版",
+  "description": "近所のスーパーのお得情報をリアルタイムでお届けします",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
