@@ -34,6 +34,8 @@ export function AppHeader() {
         return 'お問い合わせ';
       case '/memo':
         return '買い物メモ';
+      case '/flyers':
+        return 'チラシ・広告';
       default:
         return '';
     }
