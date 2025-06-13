@@ -450,8 +450,8 @@ export default function FlyersPage() {
 
   return (
     <AppLayout>
-      {/* 検索・フィルターバー（背景色を#73370cに設定） */}
-      <div className="sticky top-0 z-10 bg-[#73370c] p-4 space-y-4">
+      {/* 検索・フィルターバー（固定ヘッダー） */}
+      <div className="sticky top-0 z-10 bg-[#73370c] p-4 space-y-4 border-b border-[#73370c]/20">
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -512,33 +512,41 @@ export default function FlyersPage() {
         </motion.div>
       </div>
 
-      {/* チラシ一覧（コンテナから背景色設定を削除） */}
-      <div className="container mx-auto px-4 py-6">
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.2 }}
-        >
-          {filteredFlyers.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="text-muted-foreground">
-                条件に合うチラシが見つかりませんでした
+      {/* スクロール可能なチラシ一覧エリア */}
+      <div 
+        className="flex-1 overflow-y-auto"
+        style={{ 
+          height: 'calc(100vh - 200px)', // ヘッダーとナビゲーションを除いた高さ
+          maxHeight: 'calc(100vh - 200px)'
+        }}
+      >
+        <div className="container mx-auto px-4 py-6">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2 }}
+          >
+            {filteredFlyers.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="text-muted-foreground">
+                  条件に合うチラシが見つかりませんでした
+                </div>
               </div>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {filteredFlyers.map((flyer, index) => (
-                <FlyerListItem
-                  key={flyer.id}
-                  flyer={flyer}
-                  onClick={() => openFullScreen(index)}
-                  onCopyStoreName={copyStoreName}
-                  hasMemo={flyerAnnotations[flyer.id]?.memos?.length > 0}
-                />
-              ))}
-            </div>
-          )}
-        </motion.div>
+            ) : (
+              <div className="space-y-4 pb-safe">
+                {filteredFlyers.map((flyer, index) => (
+                  <FlyerListItem
+                    key={flyer.id}
+                    flyer={flyer}
+                    onClick={() => openFullScreen(index)}
+                    onCopyStoreName={copyStoreName}
+                    hasMemo={flyerAnnotations[flyer.id]?.memos?.length > 0}
+                  />
+                ))}
+              </div>
+            )}
+          </motion.div>
+        </div>
       </div>
 
       {/* フィルターモーダル */}
