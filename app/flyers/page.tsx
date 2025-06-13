@@ -177,7 +177,7 @@ export default function FlyersPage() {
     } catch (error) {
       console.error('チラシの取得に失敗しました:', error);
       toast({
-        title: "❌ エラー",
+        title: "エラー",
         description: "チラシの取得に失敗しました。",
         variant: "destructive",
       });
@@ -398,16 +398,14 @@ export default function FlyersPage() {
 
   const handleMouseUp = useCallback(() => {
     if (currentPath && currentFlyerId) {
-      setFlyerAnnotations(prev => {
-        const existing = prev[currentFlyerId] || { memos: [], drawings: [] };
-        return {
-          ...prev,
-          [currentFlyerId]: {
-            memos: existing.memos,
-            drawings: [...existing.drawings, currentPath]
-          }
-        };
-      });
+      setFlyerAnnotations(prev => ({
+        ...prev,
+        [currentFlyerId]: {
+          ...prev[currentFlyerId],
+          memos: prev[currentFlyerId]?.memos || [],
+          drawings: [...(prev[currentFlyerId]?.drawings || []), currentPath]
+        }
+      }));
       setCurrentPath(null);
     }
     setIsDrawing(false);
@@ -436,17 +434,14 @@ export default function FlyersPage() {
         completed: false
       };
       
-      setFlyerAnnotations(prev => {
-        const existing = prev[currentFlyerId];
-        if (!existing) return prev;
-        return {
-          ...prev,
-          [currentFlyerId]: {
-            drawings: existing.drawings,
-            memos: [...existing.memos, newFlyerMemo]
-          }
-        };
-      });
+      setFlyerAnnotations(prev => ({
+        ...prev,
+        [currentFlyerId]: {
+          ...prev[currentFlyerId],
+          memos: [...(prev[currentFlyerId]?.memos || []), newFlyerMemo],
+          drawings: prev[currentFlyerId]?.drawings || []
+        }
+      }));
 
       // メモ機能のローカルストレージにも追加
       const newMemoItem: MemoItem = {
@@ -461,7 +456,7 @@ export default function FlyersPage() {
       setShowMemoInput(false);
       
       toast({
-        title: "✅ メモを追加しました",
+        title: "メモを追加しました",
         description: `「${memoText.trim()}」を買い物メモに追加しました`,
       });
     }
@@ -479,7 +474,7 @@ export default function FlyersPage() {
       }));
       setCurrentPath(null);
       toast({
-        title: "🗑️ クリアしました",
+        title: "クリアしました",
         description: "メモと描画をクリアしました",
       });
     }
@@ -490,7 +485,7 @@ export default function FlyersPage() {
     e.stopPropagation();
     navigator.clipboard.writeText(storeName);
     toast({
-      title: "📋 コピーしました",
+      title: "コピーしました",
       description: `${storeName}をクリップボードにコピーしました`,
     });
   };
@@ -523,57 +518,70 @@ export default function FlyersPage() {
 
   return (
     <AppLayout>
-      {/* Sticky Header */}
-      <div className="sticky top-0 z-10 border-b p-2 flex items-center bg-[#73370c]">
-        <div className="container mx-auto px-2 py-1">
+      {/* 検索・フィルターバー（背景色を#73370cに設定） */}
+      <div className="sticky top-0 z-10 bg-[#73370c] p-4 space-y-4">
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-            className="space-y-3"
+          transition={{ delay: 0.1 }}
+          className="space-y-4"
         >
-            {/* Search */}
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="チラシを検索..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 w-full"
-            />
-          </div>
-            <Button
-                variant="outline"
-                onClick={() => setShowFilters(true)}
-              >
-                <SlidersHorizontal className="h-5 w-5" />
-              </Button>
+          {/* 検索バーと絞り込みボタン */}
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="チラシを検索..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 bg-white"
+              />
             </div>
-            {/* Tabs */}
-            <div className="grid grid-cols-2 gap-2">
-               <Button
+            <Button
+              variant="outline"
+              onClick={() => setShowFilters(true)}
+              className="bg-white hover:bg-gray-50"
+            >
+              <SlidersHorizontal className="h-4 w-4" />
+            </Button>
+          </div>
+
+          {/* 今日・明日タブ（横幅均等） */}
+          <div className="grid grid-cols-2 gap-2">
+            <Button
+              variant={dateFilter === 'today' ? 'default' : 'outline'}
+              size="sm"
               onClick={() => setDateFilter(dateFilter === 'today' ? 'all' : 'today')}
-                  variant={dateFilter === 'today' ? 'default' : 'outline'}
-                  className="w-full"
+              className={cn(
+                "w-full",
+                dateFilter === 'today' 
+                  ? "bg-[#f97415] text-white hover:bg-[#f97415]/90" 
+                  : "bg-white text-[#73370c] border-white hover:bg-gray-50"
+              )}
             >
               <Calendar className="h-4 w-4 mr-1" />
               今日
             </Button>
             <Button
+              variant={dateFilter === 'tomorrow' ? 'default' : 'outline'}
+              size="sm"
               onClick={() => setDateFilter(dateFilter === 'tomorrow' ? 'all' : 'tomorrow')}
-                  variant={dateFilter === 'tomorrow' ? 'default' : 'outline'}
-                  className="w-full"
+              className={cn(
+                "w-full",
+                dateFilter === 'tomorrow' 
+                  ? "bg-[#f97415] text-white hover:bg-[#f97415]/90" 
+                  : "bg-white text-[#73370c] border-white hover:bg-gray-50"
+              )}
             >
               <Calendar className="h-4 w-4 mr-1" />
               明日
             </Button>
           </div>
         </motion.div>
-        </div>
       </div>
 
+      {/* チラシ一覧（コンテナから背景色設定を削除） */}
       <div className="container mx-auto px-4 py-6">
-        {/* チラシ一覧（画像のみ表示） */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -694,15 +702,15 @@ export default function FlyersPage() {
             {/* ヘッダーコントロール */}
             <div className="absolute top-0 left-0 right-0 z-60 bg-gradient-to-b from-black/50 to-transparent p-4">
               <div className="flex items-center justify-between">
-              {/* 閉じるボタン */}
-              <Button
-                variant="ghost"
+                {/* 閉じるボタン */}
+                <Button
+                  variant="ghost"
                   size="icon"
                   className="text-white hover:bg-white/20 rounded-full"
                   onClick={closeFullScreen}
-              >
-                <X className="h-6 w-6" />
-              </Button>
+                >
+                  <X className="h-6 w-6" />
+                </Button>
 
                 {/* インジケーター */}
                 <div className="flex space-x-1">
@@ -779,12 +787,12 @@ export default function FlyersPage() {
 
                     {/* ツールバー（画像の真ん中上に配置） */}
                     <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-60 flex gap-2">
-                <Button
-                  variant="ghost"
+                      <Button
+                        variant="ghost"
                         size="icon"
                         className={cn(
-                          "text-white hover:bg-white/20 rounded-full bg-[#73370c]/80",
-                          showDrawingTools ? "bg-[#73370c]/80" : "bg-black/50"
+                          "text-white hover:bg-white/20 rounded-full",
+                          showDrawingTools ? "bg-[#73370c] hover:bg-[#73370c]/90" : "bg-black/50"
                         )}
                         onClick={(e) => {
                           e.stopPropagation();
@@ -799,15 +807,15 @@ export default function FlyersPage() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="text-white hover:bg-white/20 rounded-full bg-[#f97415]/80"
+                          className="text-white rounded-full bg-[#f97415] hover:bg-[#f97415]/90"
                           onClick={(e) => {
                             e.stopPropagation();
                             clearCurrentAnnotations();
                           }}
                         >
                           <RotateCcw className="h-5 w-5" />
-                </Button>
-              )}
+                        </Button>
+                      )}
                     </div>
                     
                     {/* 描画レイヤー */}
@@ -847,31 +855,28 @@ export default function FlyersPage() {
                       >
                         <div className="flex items-center justify-between">
                           <span className={memo.completed ? 'line-through' : ''}>{memo.text}</span>
-                <Button
-                  variant="ghost"
-                  size="sm"
+                          <Button
+                            variant="ghost"
+                            size="sm"
                             className="p-0 h-4 w-4 ml-1"
                             onClick={(e) => {
                               e.stopPropagation();
                               if (currentFlyerId) {
-                                setFlyerAnnotations(prev => {
-                                  const existing = prev[currentFlyerId];
-                                  if (!existing) return prev;
-                                  return {
-                                    ...prev,
-                                    [currentFlyerId]: {
-                                      ...existing,
-                                      memos: existing.memos.map(m => 
-                                        m.id === memo.id ? { ...m, completed: !m.completed } : m
-                                      )
-                                    }
-                                  };
-                                });
+                                setFlyerAnnotations(prev => ({
+                                  ...prev,
+                                  [currentFlyerId]: {
+                                    ...prev[currentFlyerId],
+                                    memos: prev[currentFlyerId]?.memos.map(m => 
+                                      m.id === memo.id ? { ...m, completed: !m.completed } : m
+                                    ) || [],
+                                    drawings: prev[currentFlyerId]?.drawings || []
+                                  }
+                                }));
                               }
                             }}
                           >
                             <Check className="h-3 w-3" />
-                </Button>
+                          </Button>
                         </div>
                       </div>
                     ))}
@@ -885,14 +890,14 @@ export default function FlyersPage() {
                           handlePrevious();
                         }}
                       >
-                <motion.div
+                        <motion.div
                           className="bg-black/40 text-white rounded-full p-2 opacity-0 hover:opacity-100 transition-opacity"
                           whileHover={{ scale: 1.1 }}
                           whileTap={{ scale: 0.9 }}
                         >
                           <ChevronLeft className="h-6 w-6" />
-                </motion.div>
-              </div>
+                        </motion.div>
+                      </div>
                     )}
 
                     {currentFlyerIndex < filteredFlyers.length - 1 && (
@@ -924,18 +929,18 @@ export default function FlyersPage() {
                   {['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff'].map(color => (
                     <button
                       key={color}
-                    className={cn(
+                      className={cn(
                         "w-6 h-6 rounded-full border-2",
                         penColor === color ? "border-white" : "border-gray-400"
-                    )}
+                      )}
                       style={{ backgroundColor: color }}
                       onClick={(e) => {
                         e.stopPropagation();
                         setPenColor(color);
                       }}
-                  />
-                ))}
-              </div>
+                    />
+                  ))}
+                </div>
                 <div className="flex items-center gap-2">
                   <Button
                     variant="ghost"
@@ -986,7 +991,7 @@ export default function FlyersPage() {
                     <div className="flex items-center space-x-1">
                       <ChevronLeft className="h-4 w-4" />
                       <span>前へ</span>
-              </div>
+                    </div>
                     <div className="flex items-center space-x-1">
                       <span>次へ</span>
                       <ChevronRight className="h-4 w-4" />
@@ -1051,8 +1056,8 @@ export default function FlyersPage() {
             >
               追加
             </Button>
+          </div>
         </div>
-      </div>
       </CustomModal>
     </AppLayout>
   );
@@ -1080,10 +1085,10 @@ const FlyerListItem = ({
       onClick={onClick}
     >
       <div className="relative w-full h-48">
-          <img
-            src={flyer.image_url}
+        <img
+          src={flyer.image_url}
           alt={`${flyer.store_name}のチラシ`}
-            className="w-full h-full object-cover"
+          className="w-full h-full object-cover"
           onError={(e) => {
             console.error('画像の読み込みに失敗しました:', flyer.image_url);
             e.currentTarget.src = 'https://via.placeholder.com/400x300/e5e7eb/6b7280?text=チラシ画像';
