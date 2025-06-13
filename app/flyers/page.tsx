@@ -27,10 +27,8 @@ import {
   X,
   SlidersHorizontal,
   Copy,
-  Edit3,
   Plus,
   Minus,
-  RotateCcw,
   Check
 } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
@@ -77,19 +75,10 @@ interface FlyerMemoItem {
   completed: boolean;
 }
 
-// ペン描画の型定義
-interface DrawingPath {
-  id: string;
-  points: { x: number; y: number }[];
-  color: string;
-  width: number;
-}
-
-// チラシごとのメモと描画データを管理する型
+// チラシごとのメモデータを管理する型
 interface FlyerAnnotations {
   [flyerId: string]: {
     memos: FlyerMemoItem[];
-    drawings: DrawingPath[];
   };
 }
 
@@ -119,26 +108,20 @@ export default function FlyersPage() {
   // フルスクリーンビューア用の新しい状態
   const [direction, setDirection] = useState<'horizontal' | 'vertical'>('horizontal');
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [showDrawingTools, setShowDrawingTools] = useState(false);
-  const [isDrawing, setIsDrawing] = useState(false);
-  const [currentPath, setCurrentPath] = useState<DrawingPath | null>(null);
-  const [penColor, setPenColor] = useState('#ff0000');
-  const [penWidth, setPenWidth] = useState(3);
   const [showMemoInput, setShowMemoInput] = useState(false);
   const [memoPosition, setMemoPosition] = useState({ x: 0, y: 0 });
   const [memoText, setMemoText] = useState('');
 
-  // チラシごとのメモと描画データを管理
+  // チラシごとのメモデータを管理
   const [flyerAnnotations, setFlyerAnnotations] = useState<FlyerAnnotations>({});
 
   // メモ機能と共有するローカルストレージ
   const [shoppingMemo, setShoppingMemo] = useLocalStorage<MemoItem[]>('shoppingMemo', []);
 
-  // 現在のチラシのメモと描画データを取得
+  // 現在のチラシのメモデータを取得
   const currentFlyerId = filteredFlyers[currentFlyerIndex]?.id;
   const currentAnnotations = currentFlyerId ? flyerAnnotations[currentFlyerId] : null;
   const currentMemos = currentAnnotations?.memos || [];
-  const currentDrawings = currentAnnotations?.drawings || [];
 
   // チラシデータの取得
   const fetchFlyers = useCallback(async () => {
@@ -177,9 +160,10 @@ export default function FlyersPage() {
     } catch (error) {
       console.error('チラシの取得に失敗しました:', error);
       toast({
-        title: "エラー",
+        title: "❌ エラー",
         description: "チラシの取得に失敗しました。",
         variant: "destructive",
+        className: "border-red-200 bg-red-50",
       });
     } finally {
       setLoading(false);
@@ -297,9 +281,6 @@ export default function FlyersPage() {
   // フルスクリーンビューアを閉じる関数を修正
   const closeFullScreen = useCallback(() => {
     setIsFullScreenOpen(false);
-    setShowDrawingTools(false);
-    setIsDrawing(false);
-    setCurrentPath(null);
     setShowMemoInput(false);
     setMemoText('');
   }, []);
@@ -364,64 +345,15 @@ export default function FlyersPage() {
     }
   }, [handleNext, handlePrevious]);
 
-  // ペン描画機能
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    if (!showDrawingTools || !currentFlyerId) return;
-    
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    
-    const newPath: DrawingPath = {
-      id: Date.now().toString(),
-      points: [{ x, y }],
-      color: penColor,
-      width: penWidth
-    };
-    
-    setCurrentPath(newPath);
-    setIsDrawing(true);
-  }, [showDrawingTools, penColor, penWidth, currentFlyerId]);
-
-  const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    if (!isDrawing || !currentPath) return;
-    
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    
-    setCurrentPath({
-      ...currentPath,
-      points: [...currentPath.points, { x, y }]
-    });
-  }, [isDrawing, currentPath]);
-
-  const handleMouseUp = useCallback(() => {
-    if (currentPath && currentFlyerId) {
-      setFlyerAnnotations(prev => ({
-        ...prev,
-        [currentFlyerId]: {
-          ...prev[currentFlyerId],
-          memos: prev[currentFlyerId]?.memos || [],
-          drawings: [...(prev[currentFlyerId]?.drawings || []), currentPath]
-        }
-      }));
-      setCurrentPath(null);
-    }
-    setIsDrawing(false);
-  }, [currentPath, currentFlyerId]);
-
-  // 買い物メモ追加（メモ機能に反映）
+  // 買い物メモ追加
   const handleAddMemo = useCallback((e: React.MouseEvent) => {
-    if (showDrawingTools) return;
-    
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
     
     setMemoPosition({ x, y });
     setShowMemoInput(true);
-  }, [showDrawingTools]);
+  }, []);
 
   const handleSaveMemo = useCallback(() => {
     if (memoText.trim() && currentFlyerId) {
@@ -437,9 +369,7 @@ export default function FlyersPage() {
       setFlyerAnnotations(prev => ({
         ...prev,
         [currentFlyerId]: {
-          ...prev[currentFlyerId],
           memos: [...(prev[currentFlyerId]?.memos || []), newFlyerMemo],
-          drawings: prev[currentFlyerId]?.drawings || []
         }
       }));
 
@@ -456,26 +386,27 @@ export default function FlyersPage() {
       setShowMemoInput(false);
       
       toast({
-        title: "メモを追加しました",
+        title: "✅ メモを追加しました",
         description: `「${memoText.trim()}」を買い物メモに追加しました`,
+        className: "border-green-200 bg-green-50",
       });
     }
   }, [memoText, memoPosition, setShoppingMemo, toast, currentFlyerId]);
 
-  // 現在のチラシのメモと描画をクリア
-  const clearCurrentAnnotations = useCallback(() => {
+  // メモ削除機能
+  const handleDeleteMemo = useCallback((memoId: string) => {
     if (currentFlyerId) {
       setFlyerAnnotations(prev => ({
         ...prev,
         [currentFlyerId]: {
-          memos: [],
-          drawings: []
+          memos: prev[currentFlyerId]?.memos.filter(m => m.id !== memoId) || [],
         }
       }));
-      setCurrentPath(null);
+      
       toast({
-        title: "クリアしました",
-        description: "メモと描画をクリアしました",
+        title: "🗑️ メモを削除しました",
+        description: "メモを削除しました",
+        className: "border-red-200 bg-red-50",
       });
     }
   }, [currentFlyerId, toast]);
@@ -485,8 +416,9 @@ export default function FlyersPage() {
     e.stopPropagation();
     navigator.clipboard.writeText(storeName);
     toast({
-      title: "コピーしました",
+      title: "📋 コピーしました",
       description: `${storeName}をクリップボードにコピーしました`,
+      className: "border-blue-200 bg-blue-50",
     });
   };
 
@@ -693,23 +625,21 @@ export default function FlyersPage() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
-            onClick={(e) => {
-              if (e.target === e.currentTarget) {
-                closeFullScreen();
-              }
-            }}
           >
             {/* ヘッダーコントロール */}
             <div className="absolute top-0 left-0 right-0 z-60 bg-gradient-to-b from-black/50 to-transparent p-4">
               <div className="flex items-center justify-between">
-                {/* 閉じるボタン */}
+                {/* 閉じるボタン（大きめでタップしやすく） */}
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="text-white hover:bg-white/20 rounded-full"
-                  onClick={closeFullScreen}
+                  className="text-white hover:bg-white/20 rounded-full w-12 h-12 flex items-center justify-center"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    closeFullScreen();
+                  }}
                 >
-                  <X className="h-6 w-6" />
+                  <X className="h-8 w-8" />
                 </Button>
 
                 {/* インジケーター */}
@@ -735,11 +665,17 @@ export default function FlyersPage() {
             {/* メインコンテンツ */}
             <motion.div
               className="w-full h-full max-w-4xl mx-auto flex items-center justify-center p-4"
-              drag={!showDrawingTools}
+              drag
               dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
               dragElastic={0.2}
               onPanEnd={handlePanEnd}
               whileDrag={{ scale: 0.95 }}
+              onClick={(e) => {
+                // 背景クリックでモーダルを閉じる
+                if (e.target === e.currentTarget) {
+                  closeFullScreen();
+                }
+              }}
             >
               <AnimatePresence mode="wait" custom={direction}>
                 <motion.div
@@ -770,112 +706,64 @@ export default function FlyersPage() {
                     opacity: { duration: 0.2 },
                   }}
                   className="relative w-full h-full flex items-center justify-center"
+                  onClick={(e) => {
+                    // 背景クリックでモーダルを閉じる
+                    if (e.target === e.currentTarget) {
+                      closeFullScreen();
+                    }
+                  }}
                 >
                   {/* チラシ画像 */}
                   <div 
-                    className="relative max-w-full max-h-full cursor-grab active:cursor-grabbing"
-                    onMouseDown={showDrawingTools ? handleMouseDown : handleAddMemo}
-                    onMouseMove={handleMouseMove}
-                    onMouseUp={handleMouseUp}
+                    className="relative max-w-full max-h-full cursor-grab active:cursor-grabbing bg-transparent"
+                    onClick={handleAddMemo}
                   >
+                    {/* 画像周りの余白エリア（閉じる用） */}
+                    <div 
+                      className="absolute inset-0 -m-8"
+                      onClick={(e) => {
+                        // 画像以外の部分をクリックした場合は閉じる
+                        if (e.target === e.currentTarget) {
+                          e.stopPropagation();
+                          closeFullScreen();
+                        }
+                      }}
+                    />
+                    
                     <img
                       src={filteredFlyers[currentFlyerIndex]?.image_url}
                       alt={`${filteredFlyers[currentFlyerIndex]?.store_name}のチラシ`}
-                      className="max-w-full max-h-full object-contain"
+                      className="max-w-full max-h-full object-contain relative z-10"
                       draggable={false}
+                      onClick={(e) => {
+                        // 画像クリック時はメモ追加
+                        e.stopPropagation();
+                        handleAddMemo(e);
+                      }}
                     />
-
-                    {/* ツールバー（画像の真ん中上に配置） */}
-                    <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-60 flex gap-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className={cn(
-                          "text-white hover:bg-white/20 rounded-full",
-                          showDrawingTools ? "bg-[#73370c] hover:bg-[#73370c]/90" : "bg-black/50"
-                        )}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setShowDrawingTools(!showDrawingTools);
-                        }}
-                      >
-                        <Edit3 className="h-5 w-5" />
-                      </Button>
-                      
-                      {/* メモ・描画データクリアボタン */}
-                      {(currentMemos.length > 0 || currentDrawings.length > 0) && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-white rounded-full bg-[#f97415] hover:bg-[#f97415]/90"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            clearCurrentAnnotations();
-                          }}
-                        >
-                          <RotateCcw className="h-5 w-5" />
-                        </Button>
-                      )}
-                    </div>
-                    
-                    {/* 描画レイヤー */}
-                    <svg 
-                      className="absolute inset-0 w-full h-full pointer-events-none"
-                      style={{ zIndex: 10 }}
-                    >
-                      {currentDrawings.map(path => (
-                        <polyline
-                          key={path.id}
-                          points={path.points.map(p => `${p.x},${p.y}`).join(' ')}
-                          fill="none"
-                          stroke={path.color}
-                          strokeWidth={path.width}
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      ))}
-                      {currentPath && (
-                        <polyline
-                          points={currentPath.points.map(p => `${p.x},${p.y}`).join(' ')}
-                          fill="none"
-                          stroke={currentPath.color}
-                          strokeWidth={currentPath.width}
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      )}
-                    </svg>
 
                     {/* 買い物メモ */}
                     {currentMemos.map(memo => (
                       <div
                         key={memo.id}
-                        className="absolute bg-yellow-400 text-black text-xs p-2 rounded shadow-lg max-w-32"
+                        className="absolute bg-yellow-400 text-black text-xs p-2 rounded shadow-lg max-w-32 cursor-pointer"
                         style={{ left: memo.x, top: memo.y, zIndex: 20 }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                        }}
                       >
                         <div className="flex items-center justify-between">
                           <span className={memo.completed ? 'line-through' : ''}>{memo.text}</span>
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="p-0 h-4 w-4 ml-1"
+                            className="p-0 h-4 w-4 ml-1 hover:bg-red-500 hover:text-white"
                             onClick={(e) => {
                               e.stopPropagation();
-                              if (currentFlyerId) {
-                                setFlyerAnnotations(prev => ({
-                                  ...prev,
-                                  [currentFlyerId]: {
-                                    ...prev[currentFlyerId],
-                                    memos: prev[currentFlyerId]?.memos.map(m => 
-                                      m.id === memo.id ? { ...m, completed: !m.completed } : m
-                                    ) || [],
-                                    drawings: prev[currentFlyerId]?.drawings || []
-                                  }
-                                }));
-                              }
+                              handleDeleteMemo(memo.id);
                             }}
                           >
-                            <Check className="h-3 w-3" />
+                            <X className="h-3 w-3" />
                           </Button>
                         </div>
                       </div>
@@ -922,53 +810,6 @@ export default function FlyersPage() {
               </AnimatePresence>
             </motion.div>
 
-            {/* 描画ツール */}
-            {showDrawingTools && (
-              <div className="absolute top-20 left-4 z-60 bg-black/70 rounded-lg p-3 space-y-2">
-                <div className="flex gap-2">
-                  {['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff'].map(color => (
-                    <button
-                      key={color}
-                      className={cn(
-                        "w-6 h-6 rounded-full border-2",
-                        penColor === color ? "border-white" : "border-gray-400"
-                      )}
-                      style={{ backgroundColor: color }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setPenColor(color);
-                      }}
-                    />
-                  ))}
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-white p-1"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setPenWidth(Math.max(1, penWidth - 1));
-                    }}
-                  >
-                    <Minus className="h-3 w-3" />
-                  </Button>
-                  <span className="text-white text-xs w-6 text-center">{penWidth}</span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-white p-1"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setPenWidth(Math.min(10, penWidth + 1));
-                    }}
-                  >
-                    <Plus className="h-3 w-3" />
-                  </Button>
-                </div>
-              </div>
-            )}
-
             {/* フッター情報 */}
             <div className="absolute bottom-0 left-0 right-0 z-60 bg-gradient-to-t from-black/50 to-transparent p-4">
               <div className="text-center">
@@ -1008,6 +849,21 @@ export default function FlyersPage() {
                   </div>
                 </div>
               </div>
+            </div>
+
+            {/* 右下の閉じるボタン（モバイル向け） */}
+            <div className="absolute bottom-4 right-4 z-60">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-white bg-black/60 hover:bg-black/80 rounded-full w-12 h-12 flex items-center justify-center backdrop-blur-sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  closeFullScreen();
+                }}
+              >
+                <X className="h-6 w-6" />
+              </Button>
             </div>
 
             {/* プリロード */}
