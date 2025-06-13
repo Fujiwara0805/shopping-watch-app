@@ -267,7 +267,7 @@ const HamburgerMenu = ({ currentUser }: { currentUser: any }) => {
               <Button
                 key={index}
                 variant="ghost"
-                className="w-full justify-start text-left py-3 h-auto text-base hover:bg-gray-100"
+                className="w-full justify-start text-left py-3 h-auto text-base hover:bg-[#73370c]/10 hover:text-[#73370c] transition-colors duration-200"
                 onClick={item.onClick}
               >
                 <item.icon className="mr-3 h-5 w-5" />
@@ -281,7 +281,7 @@ const HamburgerMenu = ({ currentUser }: { currentUser: any }) => {
           {/* ログアウトボタン */}
           <Button
             variant="ghost"
-            className="w-full justify-start text-left py-3 h-auto text-base text-red-600 hover:bg-red-50 hover:text-red-700"
+            className="w-full justify-start text-left py-3 h-auto text-base text-red-600 hover:bg-red-100 hover:text-red-700 transition-colors duration-200"
             onClick={handleSignOut}
           >
             <LogOut className="mr-3 h-5 w-5" />
