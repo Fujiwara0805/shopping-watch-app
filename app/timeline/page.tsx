@@ -199,7 +199,7 @@ const HamburgerMenu = ({ currentUser }: { currentUser: any }) => {
       icon: FileText,
       label: '規約・ポリシー',
       onClick: () => {
-        router.push('/');
+        router.push('/terms');
         setIsOpen(false);
       }
     },

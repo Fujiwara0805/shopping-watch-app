@@ -36,6 +36,14 @@ export function AppHeader() {
         return '買い物メモ';
       case '/flyers':
         return 'チラシ・広告';
+      case '/terms':
+        return '利用規約一覧';
+      case '/terms/terms-of-service':
+        return '利用規約';
+      case '/terms/privacy-policy':
+        return 'ポリシー関連';
+      case '/terms/service-policy':
+        return 'ポリシー関連';
       default:
         return '';
     }
