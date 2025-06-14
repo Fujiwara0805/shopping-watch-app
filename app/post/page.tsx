@@ -509,13 +509,38 @@ export default function PostPage() {
     currentPlaceholder: getSelectPlaceholder(),
   });
 
-  // 🔥 Google Places API連携の確実な設定
+  // 🔥 Google Places API連携の確実な設定（モバイル最適化版）
   useEffect(() => {
     if (isLoaded && storeInputRef.current) {
       const newAutocomplete = new google.maps.places.Autocomplete(storeInputRef.current, {
         types: ['establishment'],
         componentRestrictions: { 'country': ['jp'] },
+        // 🔥 モバイル向けの最適化オプション
+        fields: ['place_id', 'name', 'geometry', 'formatted_address', 'types'],
       });
+      
+      // 🔥 検索結果を制限するためのカスタムフィルタリング
+      const originalGetPredictions = (newAutocomplete as any).service?.getPlacePredictions;
+      if (originalGetPredictions) {
+        (newAutocomplete as any).service.getPlacePredictions = function(request: any, callback: any) {
+          // 最大4件に制限
+          const modifiedRequest = {
+            ...request,
+            // Google Places APIには公式の制限パラメータがないため、
+            // 結果をフィルタリングで制限
+          };
+          
+          originalGetPredictions.call(this, modifiedRequest, (predictions: any[], status: any) => {
+            if (predictions) {
+              // 結果を4件に制限
+              const limitedPredictions = predictions.slice(0, 4);
+              callback(limitedPredictions, status);
+            } else {
+              callback(predictions, status);
+            }
+          });
+        };
+      }
       
       newAutocomplete.addListener('place_changed', () => {
         setLocationStatus('getting');
@@ -701,7 +726,7 @@ export default function PostPage() {
                     </FormLabel>
                     <FormControl>
                       <div className="space-y-2">
-                        <div className="relative">
+                        <div className="relative mobile-store-search">
                           <FavoriteStoreInput
                             value={{ id: field.value, name: form.getValues("storeName") }}
                             onChange={async (store) => {
