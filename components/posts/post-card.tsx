@@ -398,84 +398,86 @@ export const PostCard = memo(({
           </div>
           
           {postImageUrl && (
-            <div className="relative rounded-md overflow-hidden mx-auto" style={{ width: '350px', height: '350px' }}>
-              <OptimizedImage
-                src={postImageUrl}
-                alt="投稿画像"
-                className="w-full h-full"
-                onLoad={() => setImageLoaded(true)}
-              />
-              
-              <div className="absolute top-2 left-2 flex items-center space-x-2">
-                <Button 
-                  variant="ghost" 
-                  size="icon"
-                  className={cn(
-                    "bg-black/60 text-white rounded-full hover:bg-black/80 transition-colors backdrop-blur-sm",
-                    isMyPost && "opacity-50 cursor-not-allowed"
-                  )}
-                  onClick={handleLikeClick}
-                  disabled={isLiking || isMyPost}
-                  title={isMyPost ? "自分の投稿にはいいねできません" : "いいね"}
-                >
-                  <Heart 
-                    size={18} 
+            <div className="flex justify-center w-full">
+              <div className="relative rounded-md overflow-hidden" style={{ width: '350px', height: '350px' }}>
+                <OptimizedImage
+                  src={postImageUrl}
+                  alt="投稿画像"
+                  className="w-full h-full"
+                  onLoad={() => setImageLoaded(true)}
+                />
+                
+                <div className="absolute top-2 left-2 flex items-center space-x-2">
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
                     className={cn(
-                      "transition-all duration-200",
-                      post.isLikedByCurrentUser ? "text-red-500 fill-red-500 scale-110" : "",
-                      isLiking && "animate-pulse"
-                    )} 
-                  />
-                </Button>
+                      "bg-black/60 text-white rounded-full hover:bg-black/80 transition-colors backdrop-blur-sm",
+                      isMyPost && "opacity-50 cursor-not-allowed"
+                    )}
+                    onClick={handleLikeClick}
+                    disabled={isLiking || isMyPost}
+                    title={isMyPost ? "自分の投稿にはいいねできません" : "いいね"}
+                  >
+                    <Heart 
+                      size={18} 
+                      className={cn(
+                        "transition-all duration-200",
+                        post.isLikedByCurrentUser ? "text-red-500 fill-red-500 scale-110" : "",
+                        isLiking && "animate-pulse"
+                      )} 
+                    />
+                  </Button>
+                  
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    className="bg-black/60 text-white rounded-full hover:bg-black/80 transition-colors backdrop-blur-sm"
+                    onClick={handleShareClick}
+                  >
+                    <Share2 size={18} />
+                  </Button>
+
+                  {post.expires_at && (
+                    <div className="bg-black/60 text-white text-xs px-2 py-1 rounded-full flex items-center space-x-1 backdrop-blur-sm">
+                      <Clock size={14} />
+                      <span>{formatRemainingTime(new Date(post.expires_at).getTime())}</span>
+                    </div>
+                  )}
+                </div>
                 
                 <Button 
-                  variant="ghost" 
-                  size="icon"
-                  className="bg-black/60 text-white rounded-full hover:bg-black/80 transition-colors backdrop-blur-sm"
-                  onClick={handleShareClick}
+                  variant="ghost"
+                  className="absolute bottom-1 left-1 bg-black/60 text-white text-lg font-bold px-3 py-1 rounded-md h-auto hover:bg-black/80 transition-colors flex items-center space-x-1 backdrop-blur-sm"
+                  onClick={handleCopyStoreName}
                 >
-                  <Share2 size={18} />
+                  <Copy size={16} />
+                  <span className="max-w-[150px] truncate">{post.store_name || '店舗不明'}</span>
                 </Button>
 
-                {post.expires_at && (
-                  <div className="bg-black/60 text-white text-xs px-2 py-1 rounded-full flex items-center space-x-1 backdrop-blur-sm">
-                    <Clock size={14} />
-                    <span>{formatRemainingTime(new Date(post.expires_at).getTime())}</span>
-                  </div>
-                )}
-              </div>
-              
-              <Button 
-                variant="ghost"
-                className="absolute bottom-1 left-1 bg-black/60 text-white text-lg font-bold px-3 py-1 rounded-md h-auto hover:bg-black/80 transition-colors flex items-center space-x-1 backdrop-blur-sm"
-                onClick={handleCopyStoreName}
-              >
-                <Copy size={16} />
-                <span className="max-w-[150px] truncate">{post.store_name || '店舗不明'}</span>
-              </Button>
-
-              <div className="absolute top-[30px] right-2 flex flex-col items-end space-y-2">
-                <DiscountBadge discountRate={post.discount_rate} />
-                
-                {post.price != null && (
-                  <div className="relative mt-2">
-                    <div className="relative bg-gradient-to-br from-yellow-400 via-yellow-300 to-yellow-500 text-red-600 font-black text-3xl px-4 py-3 overflow-hidden"
-                         style={{
-                           clipPath: 'polygon(5% 15%, 15% 5%, 25% 20%, 35% 0%, 45% 15%, 55% 5%, 65% 20%, 75% 0%, 85% 15%, 95% 5%, 100% 20%, 95% 30%, 100% 40%, 90% 50%, 100% 60%, 95% 70%, 100% 80%, 85% 85%, 75% 100%, 65% 80%, 55% 95%, 45% 85%, 35% 100%, 25% 80%, 15% 95%, 5% 85%, 0% 80%, 5% 70%, 0% 60%, 10% 50%, 0% 40%, 5% 30%, 0% 20%)'
-                         }}>
-                      {/* チラシ風の背景パターン */}
-                      <div className="absolute inset-0 opacity-20">
-                        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-white/50 to-transparent"></div>
-                        <div className="absolute bottom-0 right-0 w-4 h-4 bg-red-400 rounded-full transform translate-x-2 translate-y-2"></div>
-                      </div>
-                      <div className="relative z-10 flex items-center" style={{ textShadow: '2px 2px 0 white, -2px -2px 0 white, 2px -2px 0 white, -2px 2px 0 white, 1px 1px 0 white, -1px -1px 0 white, 1px -1px 0 white, -1px 1px 0 white' }}>
-                        <span className="text-2xl mr-1">¥</span>
-                        <span className="tracking-tight">{post.price.toLocaleString()}</span>
+                <div className="absolute top-[30px] right-2 flex flex-col items-end space-y-2">
+                  <DiscountBadge discountRate={post.discount_rate} />
+                  
+                  {post.price != null && (
+                    <div className="relative mt-2">
+                      <div className="relative bg-gradient-to-br from-yellow-400 via-yellow-300 to-yellow-500 text-red-600 font-black text-3xl px-4 py-3 overflow-hidden"
+                           style={{
+                             clipPath: 'polygon(5% 15%, 15% 5%, 25% 20%, 35% 0%, 45% 15%, 55% 5%, 65% 20%, 75% 0%, 85% 15%, 95% 5%, 100% 20%, 95% 30%, 100% 40%, 90% 50%, 100% 60%, 95% 70%, 100% 80%, 85% 85%, 75% 100%, 65% 80%, 55% 95%, 45% 85%, 35% 100%, 25% 80%, 15% 95%, 5% 85%, 0% 80%, 5% 70%, 0% 60%, 10% 50%, 0% 40%, 5% 30%, 0% 20%)'
+                           }}>
+                        {/* チラシ風の背景パターン */}
+                        <div className="absolute inset-0 opacity-20">
+                          <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-white/50 to-transparent"></div>
+                          <div className="absolute bottom-0 right-0 w-4 h-4 bg-red-400 rounded-full transform translate-x-2 translate-y-2"></div>
+                        </div>
+                        <div className="relative z-10 flex items-center" style={{ textShadow: '2px 2px 0 white, -2px -2px 0 white, 2px -2px 0 white, -2px 2px 0 white, 1px 1px 0 white, -1px -1px 0 white, 1px -1px 0 white, -1px 1px 0 white' }}>
+                          <span className="text-2xl mr-1">¥</span>
+                          <span className="tracking-tight">{post.price.toLocaleString()}</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )}
-                
+                  )}
+                  
+                </div>
               </div>
             </div>
           )}
