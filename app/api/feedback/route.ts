@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server';
 import { google } from 'googleapis';
 
-const GOOGLE_SHEETS_ID = process.env.GOOGLE_SHEETS_ID;
+// フィードバック専用の環境変数
+const FEEDBACK_GOOGLE_SHEETS_ID = process.env.FEEDBACK_GOOGLE_SHEETS_ID;
 const GOOGLE_SHEETS_SERVICE_ACCOUNT_KEY = process.env.GOOGLE_SHEETS_SERVICE_ACCOUNT_KEY;
 
-if (!GOOGLE_SHEETS_ID) {
-  console.error('環境変数 GOOGLE_SHEETS_ID が設定されていません。');
+if (!FEEDBACK_GOOGLE_SHEETS_ID) {
+  console.error('環境変数 FEEDBACK_GOOGLE_SHEETS_ID が設定されていません。');
 }
 if (!GOOGLE_SHEETS_SERVICE_ACCOUNT_KEY) {
   console.error('環境変数 GOOGLE_SHEETS_SERVICE_ACCOUNT_KEY が設定されていません。');
@@ -19,8 +20,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: '必須項目を入力してください。' }, { status: 400 });
     }
 
-    if (!GOOGLE_SHEETS_ID || !GOOGLE_SHEETS_SERVICE_ACCOUNT_KEY) {
-      throw new Error('Google Sheetsの環境変数が正しく設定されていません。');
+    if (!FEEDBACK_GOOGLE_SHEETS_ID || !GOOGLE_SHEETS_SERVICE_ACCOUNT_KEY) {
+      throw new Error('フィードバック用Google Sheetsの環境変数が正しく設定されていません。');
     }
 
     const credentials = JSON.parse(GOOGLE_SHEETS_SERVICE_ACCOUNT_KEY);
@@ -32,71 +33,118 @@ export async function POST(request: Request) {
 
     const sheets = google.sheets({ version: 'v4', auth });
 
+    // シート名を「フィードバック」に統一
     const sheetName = 'フィードバック';
-    const headerRange = `${sheetName}!A1:F1`;
+    const headerRange = `${sheetName}!A1:G1`;
 
-    // ヘッダーの確認・作成
+    // ヘッダーの確認・作成（エラーハンドリングを改善）
     try {
       const headerCheck = await sheets.spreadsheets.values.get({
-        spreadsheetId: GOOGLE_SHEETS_ID,
+        spreadsheetId: FEEDBACK_GOOGLE_SHEETS_ID,
         range: headerRange,
       });
 
       if (!headerCheck.data.values || headerCheck.data.values.length === 0 || headerCheck.data.values[0].length === 0) {
-        const headers = ['メールアドレス', '評価', 'コメント', 'ユーザーエージェント', '送信日時', '処理状況'];
+        const headers = ['送信日時', 'メールアドレス', '評価', '評価（星）', 'コメント', 'ユーザーエージェント', '処理状況'];
         await sheets.spreadsheets.values.append({
-          spreadsheetId: GOOGLE_SHEETS_ID,
+          spreadsheetId: FEEDBACK_GOOGLE_SHEETS_ID,
           range: `${sheetName}!A1`,
           valueInputOption: 'USER_ENTERED',
           requestBody: {
             values: [headers],
           },
         });
-        console.log('フィードバックシートにヘッダーを挿入しました。');
+        console.log('フィードバックシートにヘッダーを作成しました。');
       }
-    } catch (error) {
-      // シートが存在しない場合は新規作成
-      console.log('フィードバックシートを新規作成します。');
-      const headers = ['メールアドレス', '評価', 'コメント', 'ユーザーエージェント', '送信日時', '処理状況'];
-      await sheets.spreadsheets.values.append({
-        spreadsheetId: GOOGLE_SHEETS_ID,
-        range: `${sheetName}!A1`,
-        valueInputOption: 'USER_ENTERED',
-        requestBody: {
-          values: [headers],
-        },
-      });
+    } catch (sheetError: any) {
+      // シートが存在しない場合、まずシートを作成
+      if (sheetError.code === 400) {
+        console.log('フィードバックシートを新規作成します...');
+        
+        try {
+          // 新しいシートを作成
+          await sheets.spreadsheets.batchUpdate({
+            spreadsheetId: FEEDBACK_GOOGLE_SHEETS_ID,
+            requestBody: {
+              requests: [{
+                addSheet: {
+                  properties: {
+                    title: sheetName,
+                  }
+                }
+              }]
+            }
+          });
+          
+          // ヘッダーを追加
+          const headers = ['送信日時', 'メールアドレス', '評価', '評価（星）', 'コメント', 'ユーザーエージェント', '処理状況'];
+          await sheets.spreadsheets.values.append({
+            spreadsheetId: FEEDBACK_GOOGLE_SHEETS_ID,
+            range: `${sheetName}!A1`,
+            valueInputOption: 'USER_ENTERED',
+            requestBody: {
+              values: [headers],
+            },
+          });
+          console.log('フィードバックシートとヘッダーを作成しました。');
+        } catch (createError) {
+          console.error('シート作成エラー:', createError);
+          throw createError;
+        }
+      } else {
+        throw sheetError;
+      }
     }
 
-    const dataRange = `${sheetName}!A:F`;
+    const dataRange = `${sheetName}!A:G`;
 
     // 評価を星の数で表現
     const ratingStars = '★'.repeat(rating) + '☆'.repeat(5 - rating);
+    const formattedTimestamp = timestamp || new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' });
     
     await sheets.spreadsheets.values.append({
-      spreadsheetId: GOOGLE_SHEETS_ID,
+      spreadsheetId: FEEDBACK_GOOGLE_SHEETS_ID,
       range: dataRange,
       valueInputOption: 'USER_ENTERED',
       requestBody: {
         values: [[
+          formattedTimestamp,
           userEmail, 
-          `${rating}/5 (${ratingStars})`, 
+          `${rating}/5`, 
+          ratingStars,
           comment || '（コメントなし）', 
           userAgent || '不明', 
-          timestamp || new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' }),
           '未処理'
         ]],
       },
     });
 
-    console.log('フィードバックを受信し、スプレッドシートに書き込みました:', { userEmail, rating, comment });
+    console.log('フィードバックをスプレッドシートに保存しました:', { 
+      userEmail, 
+      rating, 
+      comment: comment || '（コメントなし）',
+      timestamp: formattedTimestamp 
+    });
 
-    return NextResponse.json({ message: 'フィードバックを受け付けました。' }, { status: 200 });
+    return NextResponse.json({ message: 'フィードバックを受け付けました。ありがとうございます！' }, { status: 200 });
 
   } catch (error: any) {
     console.error('フィードバックAPIエラー:', error);
+    
+    // より詳細なエラー情報を提供
+    let errorMessage = 'フィードバックの送信に失敗しました。';
+    if (error.code === 403) {
+      errorMessage = 'スプレッドシートへのアクセス権限がありません。';
+    } else if (error.code === 404) {
+      errorMessage = 'スプレッドシートが見つかりません。IDを確認してください。';
+    }
+    
     return NextResponse.json(
-      { message: 'フィードバックの送信に失敗しました。', error: error.message },
+      { 
+        message: errorMessage, 
+        error: error.message,
+        details: process.env.NODE_ENV === 'development' ? error : undefined
+      },
       { status: 500 }
     );
   }
