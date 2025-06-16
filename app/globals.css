@@ -103,7 +103,7 @@
   }
 
   /* ==================================================
-   * Google Places Autocomplete ドロップダウン対応（モバイル最適化版）
+   * Google Places Autocomplete ドロップダウン対応（モバイル最適化版 - 修正版）
    * ================================================== */
   
   /* Google Places Autocomplete コンテナのベーススタイル */
@@ -114,36 +114,44 @@
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
     font-family: inherit !important;
     overflow: hidden !important;
-    font-size: 14px !important; /* 基本フォントサイズを小さく */
+    font-size: 14px !important;
+    /* 🔥 検索候補の最大表示件数を制限 */
+    max-height: 120px !important; /* 約3件の検索候補に制限 */
   }
 
-  /* モバイル専用の Google Places ドロップダウンスタイル */
+  /* モバイル専用の Google Places ドロップダウンスタイル - 大幅最適化 */
   @media screen and (max-width: 768px) {
     .pac-container {
       position: fixed !important;
       z-index: 99999 !important;
-      max-height: 200px !important; /* 3~4件の検索結果に対応した高さ */
+      /* 🔥 さらに高さを制限して2-3件のみ表示 */
+      max-height: 90px !important;
       overflow-y: auto !important;
       -webkit-overflow-scrolling: touch !important;
       border-radius: 0.5rem !important;
-      margin-top: 4px !important;
-      width: calc(100vw - 2rem) !important; /* ビューポート幅を基準に */
+      margin-top: 2px !important; /* マージンを小さく */
+      width: calc(100vw - 2rem) !important;
       left: 1rem !important;
       right: 1rem !important;
       max-width: none !important;
+      /* 🔥 キーボード表示時の位置調整 */
+      bottom: auto !important;
+      top: auto !important;
     }
 
-    /* モバイルでのドロップダウンアイテム - よりコンパクトに */
+    /* モバイルでのドロップダウンアイテム - さらにコンパクト */
     .pac-container .pac-item {
-      padding: 8px 12px !important; /* パディングを小さく */
-      font-size: 14px !important; /* フォントサイズを小さく */
-      line-height: 1.3 !important; /* 行間を狭く */
+      padding: 6px 10px !important; /* パディングをさらに小さく */
+      font-size: 13px !important; /* フォントサイズをさらに小さく */
+      line-height: 1.2 !important; /* 行間をさらに狭く */
       border-bottom: 1px solid #f3f4f6 !important;
       cursor: pointer !important;
       transition: background-color 0.15s ease !important;
       display: flex !important;
       align-items: center !important;
-      min-height: 40px !important; /* 最小高さを設定 */
+      min-height: 30px !important; /* 最小高さを小さく */
+      max-height: 30px !important; /* 最大高さも制限 */
+      overflow: hidden !important;
     }
 
     .pac-container .pac-item:hover,
@@ -155,40 +163,66 @@
       border-bottom: none !important;
     }
 
-    /* モバイルでのテキストスタイル - コンパクト化 */
+    /* モバイルでのテキストスタイル - さらにコンパクト化 */
     .pac-container .pac-item .pac-item-query {
       font-weight: 600 !important;
       color: #1f2937 !important;
-      font-size: 14px !important;
+      font-size: 13px !important;
+      white-space: nowrap !important;
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+      max-width: calc(100vw - 8rem) !important;
     }
 
     .pac-container .pac-item .pac-matched {
       font-weight: 700 !important;
       color: #059669 !important;
-      font-size: 14px !important;
+      font-size: 13px !important;
     }
 
-    /* アイコン調整 - より小さく */
+    /* アイコン調整 - さらに小さく */
     .pac-container .pac-icon {
-      width: 16px !important;
-      height: 16px !important;
-      margin-right: 8px !important;
-      background-size: 14px 14px !important;
+      width: 14px !important;
+      height: 14px !important;
+      margin-right: 6px !important;
+      background-size: 12px 12px !important;
       flex-shrink: 0 !important;
     }
 
-    /* 検索候補テキストの省略表示 */
-    .pac-container .pac-item-query {
-      white-space: nowrap !important;
-      overflow: hidden !important;
-      text-overflow: ellipsis !important;
-      max-width: calc(100vw - 6rem) !important;
+    /* 🔥 住所部分をさらに小さく表示し、必要に応じて非表示 */
+    .pac-container .pac-item .pac-item-query .pac-item-query-result {
+      font-size: 11px !important;
+      color: #9ca3af !important;
+      display: none !important; /* 住所部分を非表示にしてスペース節約 */
     }
 
-    /* 住所部分をより小さく表示 */
-    .pac-container .pac-item .pac-item-query .pac-item-query-result {
-      font-size: 13px !important;
-      color: #6b7280 !important;
+    /* 🔥 検索候補が3件を超える場合の処理 */
+    .pac-container .pac-item:nth-child(n+3) {
+      display: none !important; /* 3件目以降は非表示 */
+    }
+
+    /* 🔥 モバイルキーボード表示時の位置調整 */
+    .pac-container {
+      /* iPhone等でキーボードが表示されたときの位置調整 */
+      transform: translateY(0) !important;
+      will-change: transform !important;
+    }
+
+    /* 🔥 検索入力フィールドがフォーカスされたときの調整 */
+    .mobile-store-search .pac-target-input:focus + .pac-container,
+    .mobile-store-search input:focus ~ .pac-container {
+      animation: slideDown 0.2s ease-out !important;
+    }
+
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-5px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
   }
 
@@ -242,9 +276,9 @@
     content: none !important;
   }
 
-  /* スクロールバーのスタイリング（Webkit系ブラウザ） */
+  /* 🔥 スクロールバーをさらに細く */
   .pac-container::-webkit-scrollbar {
-    width: 3px !important;
+    width: 2px !important;
   }
 
   .pac-container::-webkit-scrollbar-track {
@@ -260,13 +294,13 @@
     background-color: #9ca3af !important;
   }
 
-  /* モバイル検索入力フィールドの最適化 */
+  /* 🔥 モバイル検索入力フィールドの最適化 - さらなる改善 */
   @media screen and (max-width: 768px) {
     .mobile-store-search input {
       font-size: 16px !important; /* iOSズーム防止 */
-      padding: 12px 16px !important;
+      padding: 10px 14px !important; /* パディングを小さく */
       height: auto !important;
-      min-height: 44px !important; /* タッチターゲットサイズ確保 */
+      min-height: 40px !important; /* 高さを小さく */
     }
 
     .mobile-store-search {
@@ -274,18 +308,25 @@
       z-index: 1 !important;
     }
     
-    /* 検索フィールドの境界線とシャドウを調整 */
+    /* 🔥 検索フィールドの境界線とシャドウを軽量化 */
     .mobile-store-search .pac-target-input {
-      border: 2px solid #e5e7eb !important;
+      border: 1px solid #e5e7eb !important; /* ボーダーを細く */
       border-radius: 0.5rem !important;
-      box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1) !important;
+      box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important; /* シャドウを軽く */
       transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out !important;
     }
 
     .mobile-store-search .pac-target-input:focus {
-      border-color: #f97316 !important; /* プライマリカラー */
-      box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1) !important;
+      border-color: #f97316 !important;
+      box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.1) !important; /* フォーカス時のシャドウも軽く */
       outline: none !important;
+    }
+
+    /* 🔥 検索候補表示中のスクロール無効化 */
+    body:has(.pac-container) {
+      overflow: hidden !important;
+      position: fixed !important;
+      width: 100% !important;
     }
   }
   
