@@ -297,7 +297,7 @@ export default function ReleaseNotesPage() {
           className="flex items-center space-x-4 mb-6"
         >
           <div className="flex-1">
-            <p className="text-base text-gray-600 mt-1">
+            <p className="text-base text-gray-600 text-center mt-1">
               アプリの最新アップデート情報をお知らせします
             </p>
           </div>

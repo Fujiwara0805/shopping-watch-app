@@ -8,6 +8,8 @@ import { GoogleMapsApiProvider } from '@/components/providers/GoogleMapsApiProvi
 import { NotificationProvider } from '@/contexts/NotificationContext';
 import { LocationPermissionProvider } from '@/components/providers/LocationPermissionProvider';
 import { LoadingProvider } from '@/contexts/loading-context';
+import { FeedbackProvider } from '@/contexts/feedback-context';
+import { FeedbackIntegration } from '@/components/feedback/feedback-integration';
 
 const notoSansJP = Noto_Sans_JP({ 
   subsets: ['latin'],
@@ -46,23 +48,27 @@ export default function RootLayout({
             disableTransitionOnChange
           >
             <NextAuthProvider>
-              <NotificationProvider>
-                <LocationPermissionProvider>
-                  {googleMapsApiKey ? (
-                    <GoogleMapsApiProvider apiKey={googleMapsApiKey}>
-                      {children}
-                    </GoogleMapsApiProvider>
-                  ) : (
-                    <>
-                      <div style={{ padding: '20px', backgroundColor: 'red', color: 'white', textAlign: 'center' }}>
-                        Google Maps APIキーが設定されていません。地図機能は利用できません。
-                      </div>
-                      {children}
-                    </>
-                  )}
-                  <Toaster />
-                </LocationPermissionProvider>
-              </NotificationProvider>
+              <FeedbackProvider>
+                <NotificationProvider>
+                  <LocationPermissionProvider>
+                    {googleMapsApiKey ? (
+                      <GoogleMapsApiProvider apiKey={googleMapsApiKey}>
+                        {children}
+                        <FeedbackIntegration />
+                      </GoogleMapsApiProvider>
+                    ) : (
+                      <>
+                        <div style={{ padding: '20px', backgroundColor: 'red', color: 'white', textAlign: 'center' }}>
+                          Google Maps APIキーが設定されていません。地図機能は利用できません。
+                        </div>
+                        {children}
+                        <FeedbackIntegration />
+                      </>
+                    )}
+                    <Toaster />
+                  </LocationPermissionProvider>
+                </NotificationProvider>
+              </FeedbackProvider>
             </NextAuthProvider>
           </ThemeProvider>
         </LoadingProvider>

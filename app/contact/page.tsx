@@ -221,20 +221,18 @@ export default function ContactPage() {
                         <FormLabel className="block text-base sm:text-lg font-medium text-foreground mb-1">
                           件名 <span className="text-destructive ml-1">＊</span>
                         </FormLabel>
-                        <FormControl>
-                          <Select onValueChange={field.onChange} value={field.value} required>
-                            <SelectTrigger className="w-full text-base sm:text-lg">
-                              <SelectValue placeholder="選択してください" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {subjectOptions.map((option) => (
-                                <SelectItem key={option.value} value={option.value} className="text-base sm:text-lg">
-                                  {option.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </FormControl>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <SelectTrigger className="w-full text-base sm:text-lg">
+                            <SelectValue placeholder="選択してください" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {subjectOptions.map((option) => (
+                              <SelectItem key={option.value} value={option.value} className="text-base sm:text-lg">
+                                {option.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                         <FormMessage />
                       </FormItem>
                     </motion.div>
