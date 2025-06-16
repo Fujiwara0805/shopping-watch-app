@@ -309,8 +309,8 @@ export default function LoginPage() {
 
             <p className="text-xs text-[#73370c]/60 mt-4">
               ログインすることで、
-              <a href="/terms" className="underline hover:text-[#73370c] transition-colors">利用規約</a>および
-              <a href="/privacy" className="underline hover:text-[#73370c] transition-colors">プライバシーポリシー</a>
+              <a href="/terms/terms-of-service" className="underline hover:text-[#73370c] transition-colors">利用規約</a>および
+              <a href="/terms/privacy-policy" className="underline hover:text-[#73370c] transition-colors">プライバシーポリシー</a>
               に同意したものとみなされます。
             </p>
           </motion.div>
