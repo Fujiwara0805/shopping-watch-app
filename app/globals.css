@@ -122,7 +122,7 @@
     .pac-container {
       position: fixed !important;
       z-index: 99999 !important;
-      max-height: 200px !important; /* 3~4件の検索結果に対応した高さ */
+      max-height: 100px !important; /* 3~4件の検索結果に対応した高さ */
       overflow-y: auto !important;
       -webkit-overflow-scrolling: touch !important;
       border-radius: 0.5rem !important;

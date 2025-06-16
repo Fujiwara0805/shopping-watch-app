@@ -523,7 +523,7 @@ export default function PostPage() {
       const originalGetPredictions = (newAutocomplete as any).service?.getPlacePredictions;
       if (originalGetPredictions) {
         (newAutocomplete as any).service.getPlacePredictions = function(request: any, callback: any) {
-          // 最大4件に制限
+          // 最大3件に制限
           const modifiedRequest = {
             ...request,
             // Google Places APIには公式の制限パラメータがないため、
@@ -532,8 +532,8 @@ export default function PostPage() {
           
           originalGetPredictions.call(this, modifiedRequest, (predictions: any[], status: any) => {
             if (predictions) {
-              // 結果を4件に制限
-              const limitedPredictions = predictions.slice(0, 4);
+              // 結果を3件に制限
+              const limitedPredictions = predictions.slice(0, 3);
               callback(limitedPredictions, status);
             } else {
               callback(predictions, status);
