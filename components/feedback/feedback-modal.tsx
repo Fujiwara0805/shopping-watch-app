@@ -337,7 +337,7 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose })
                   <ThumbsUp className="h-10 w-10 text-white" />
                 </motion.div>
                 
-                <h2 className="text-3xl font-bold text-gray-900 mb-4">
+                <h2 className="text-2xl font-bold text-gray-900 mb-4">
                   ありがとうございました！
                 </h2>
                 <p className="text-xl text-gray-600 mb-6">
