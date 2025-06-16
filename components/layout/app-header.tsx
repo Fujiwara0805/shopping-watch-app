@@ -44,6 +44,10 @@ export function AppHeader() {
         return 'ポリシー関連';
       case '/terms/service-policy':
         return 'ポリシー関連';
+      case '/settings':
+        return '設定';
+      case '/settings/release-notes':
+        return 'リリースノート';
       default:
         return '';
     }
