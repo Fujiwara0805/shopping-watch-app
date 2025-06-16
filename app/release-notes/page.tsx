@@ -24,6 +24,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
+import { useFeedback } from '@/contexts/feedback-context';
 
 // リリースノートのタイプ
 type ReleaseType = 'major' | 'minor' | 'patch' | 'hotfix';
@@ -281,6 +282,11 @@ const ReleaseNoteCard = ({ release, index }: { release: ReleaseNote; index: numb
 
 export default function ReleaseNotesPage() {
   const router = useRouter();
+  const { showFeedbackModalForced } = useFeedback();
+
+  const handleFeedbackClick = () => {
+    showFeedbackModalForced();
+  };
 
   return (
     <AppLayout>
@@ -352,8 +358,8 @@ export default function ReleaseNotesPage() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => router.push('/contact')}
-              className="text-xs"
+              onClick={handleFeedbackClick}
+              className="text-base"
             >
               フィードバックを送る
             </Button>

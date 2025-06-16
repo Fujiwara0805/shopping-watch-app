@@ -8,6 +8,7 @@ interface FeedbackContextType {
   setShowFeedbackModal: (show: boolean) => void;
   hasShownFeedback: boolean;
   resetFeedbackTimer: () => void;
+  showFeedbackModalForced: () => void;
 }
 
 const FeedbackContext = createContext<FeedbackContextType | undefined>(undefined);
@@ -28,15 +29,15 @@ export const FeedbackProvider: React.FC<FeedbackProviderProps> = ({ children }) 
   const { data: session, status } = useSession();
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [hasShownFeedback, setHasShownFeedback] = useState(false);
-  const [startTime, setStartTime] = useState<number | null>(null);
   const [isActive, setIsActive] = useState(true);
+  const [lastShownTime, setLastShownTime] = useState<number | null>(null);
 
   // 5分 = 300,000ミリ秒
   const FEEDBACK_DELAY = 5 * 60 * 1000;
 
   // ローカルストレージのキー（ユーザー固有）
   const getFeedbackKey = (userEmail: string) => `tokudoku_feedback_submitted_${userEmail}`;
-  const FEEDBACK_SHOWN_KEY = 'tokudoku_feedback_shown';
+  const getLastShownKey = (userEmail: string) => `tokudoku_feedback_last_shown_${userEmail}`;
 
   // ページの可視性を監視
   useEffect(() => {
@@ -58,80 +59,77 @@ export const FeedbackProvider: React.FC<FeedbackProviderProps> = ({ children }) 
 
     const userEmail = session.user.email;
     const feedbackSubmittedKey = getFeedbackKey(userEmail);
+    const lastShownKey = getLastShownKey(userEmail);
     
-    // 🔥 このユーザーが既にフィードバックを送信済みかチェック
+    // このユーザーが既にフィードバックを送信済みかチェック
     const hasSubmittedFeedback = localStorage.getItem(feedbackSubmittedKey);
     if (hasSubmittedFeedback === 'true') {
-      console.log('FeedbackProvider: このユーザーは既にフィードバック送信済みのため表示しません');
+      console.log('FeedbackProvider: このユーザーは既にフィードバック送信済みのため自動表示しません');
       return;
     }
 
-    // セッション中に既に表示済みの場合はスキップ
-    const feedbackShown = localStorage.getItem(FEEDBACK_SHOWN_KEY);
-    if (feedbackShown === 'true') {
-      setHasShownFeedback(true);
-      return;
+    // 最後に表示した時間を取得
+    const lastShown = localStorage.getItem(lastShownKey);
+    const lastShownTimestamp = lastShown ? parseInt(lastShown) : 0;
+    const now = Date.now();
+
+    // 5分経過していない場合は待機
+    const timeSinceLastShown = now - lastShownTimestamp;
+    if (timeSinceLastShown < FEEDBACK_DELAY) {
+      const remainingTime = FEEDBACK_DELAY - timeSinceLastShown;
+      console.log(`FeedbackProvider: 次回表示まで残り${Math.ceil(remainingTime / 1000)}秒`);
+      
+      const timer = setTimeout(() => {
+        if (isActive && session?.user?.email) {
+          const currentFeedbackSubmitted = localStorage.getItem(feedbackSubmittedKey);
+          if (currentFeedbackSubmitted !== 'true') {
+            console.log('FeedbackProvider: 5分経過、フィードバックモーダル表示');
+            setShowFeedbackModal(true);
+            setLastShownTime(Date.now());
+            localStorage.setItem(lastShownKey, Date.now().toString());
+          }
+        }
+      }, remainingTime);
+
+      return () => clearTimeout(timer);
+    } else {
+      // 既に5分経過している場合は即座に表示
+      console.log('FeedbackProvider: 5分経過済み、フィードバックモーダル表示');
+      setShowFeedbackModal(true);
+      setLastShownTime(now);
+      localStorage.setItem(lastShownKey, now.toString());
     }
-
-    // タイマー開始
-    setStartTime(Date.now());
-    console.log('FeedbackProvider: フィードバックタイマー開始');
-
-    const timer = setTimeout(() => {
-      if (isActive && session?.user?.email) {
-        console.log('FeedbackProvider: 5分経過、フィードバックモーダル表示');
-        setShowFeedbackModal(true);
-        setHasShownFeedback(true);
-        localStorage.setItem(FEEDBACK_SHOWN_KEY, 'true');
-      }
-    }, FEEDBACK_DELAY);
-
-    return () => {
-      clearTimeout(timer);
-    };
   }, [session, status, isActive]);
 
-  // フィードバック送信完了時の処理
-  const handleFeedbackSubmitted = () => {
-    if (session?.user?.email) {
-      const userEmail = session.user.email;
-      const feedbackSubmittedKey = getFeedbackKey(userEmail);
-      
-      // 🔥 このユーザーのフィードバック送信完了フラグを永続的に保存
-      localStorage.setItem(feedbackSubmittedKey, 'true');
-      console.log('FeedbackProvider: フィードバック送信完了フラグを保存しました');
-    }
-    setShowFeedbackModal(false);
+  // 強制的にフィードバックモーダルを表示する関数
+  const showFeedbackModalForced = () => {
+    console.log('FeedbackProvider: フィードバックモーダルを強制表示');
+    setShowFeedbackModal(true);
   };
 
   // フィードバックタイマーのリセット（デバッグ用）
   const resetFeedbackTimer = () => {
-    localStorage.removeItem(FEEDBACK_SHOWN_KEY);
-    
-    // 🔥 現在のユーザーのフィードバック送信フラグもリセット
     if (session?.user?.email) {
       const userEmail = session.user.email;
       const feedbackSubmittedKey = getFeedbackKey(userEmail);
+      const lastShownKey = getLastShownKey(userEmail);
+      
       localStorage.removeItem(feedbackSubmittedKey);
+      localStorage.removeItem(lastShownKey);
     }
     
     setHasShownFeedback(false);
     setShowFeedbackModal(false);
-    setStartTime(Date.now());
+    setLastShownTime(null);
     console.log('FeedbackProvider: タイマーとフィードバック送信フラグをリセット');
   };
 
   const value: FeedbackContextType = {
     showFeedbackModal,
-    setShowFeedbackModal: (show: boolean) => {
-      setShowFeedbackModal(show);
-      if (!show) {
-        // 🔥 モーダルが閉じられた時にフィードバック送信完了として扱う
-        handleFeedbackSubmitted();
-      }
-    },
+    setShowFeedbackModal,
     hasShownFeedback,
     resetFeedbackTimer,
+    showFeedbackModalForced,
   };
 
   return (

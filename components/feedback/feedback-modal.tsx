@@ -139,7 +139,7 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose })
       if (response.ok) {
         setIsSubmitted(true);
         
-        // 🔥 フィードバック送信成功時に永続的なフラグを保存
+        // フィードバック送信成功時に永続的なフラグを保存
         const userEmail = session.user.email;
         const feedbackSubmittedKey = `tokudoku_feedback_submitted_${userEmail}`;
         localStorage.setItem(feedbackSubmittedKey, 'true');
@@ -174,14 +174,8 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose })
     }
   };
 
-  // 🔥 モーダルを閉じる時の処理を改善
+  // モーダルを閉じる時の処理
   const handleClose = () => {
-    // フィードバックが送信済みの場合のみ永続フラグを保存
-    if (isSubmitted && session?.user?.email) {
-      const userEmail = session.user.email;
-      const feedbackSubmittedKey = `tokudoku_feedback_submitted_${userEmail}`;
-      localStorage.setItem(feedbackSubmittedKey, 'true');
-    }
     onClose();
   };
 
@@ -199,7 +193,7 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose })
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-            onClick={handleClose} // 🔥 handleCloseを使用
+            onClick={handleClose}
           />
           
           {/* モーダルコンテンツ */}
@@ -218,7 +212,7 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose })
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={handleClose} // 🔥 handleCloseを使用
+                    onClick={handleClose}
                     className="absolute top-4 right-4 rounded-full"
                   >
                     <X className="h-5 w-5" />
