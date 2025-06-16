@@ -859,7 +859,8 @@ export default function PostPage() {
                             style={{ fontSize: '12px' }}
                           />
                         </div>
-                        <LocationStatusIndicator />
+                        {/* LocationStatusIndicatorを非表示にする */}
+                        {/* <LocationStatusIndicator /> */}
                       </div>
                     </FormControl>
                     <FormMessage />

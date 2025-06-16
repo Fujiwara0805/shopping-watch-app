@@ -260,9 +260,9 @@ const NormalLP = ({ goToOnboarding, mobileMenuOpen, setMobileMenuOpen, scrollPos
           <div className="container mx-auto max-w-6xl text-center text-sm text-muted-foreground">
             <p className="mb-2">© 2025 トクドク All rights reserved.</p>
             <div className="flex justify-center space-x-4 text-xs md:text-sm">
-              <Link href="/security-policy" className="hover:underline">セキュリティポリシー</Link>
-              <Link href="/terms-of-service" className="hover:underline">利用規約</Link>
-              <Link href="/release-notes" className="hover:underline">リリースノート</Link>
+              <Link href="/terms/privacy-policy" className="hover:underline">プライバシーポリシー</Link>
+              <Link href="/terms/service-policy" className="hover:underline">サービスポリシー</Link>
+              <Link href="/terms/terms-of-service" className="hover:underline">利用規約</Link>
             </div>
           </div>
         </footer>
