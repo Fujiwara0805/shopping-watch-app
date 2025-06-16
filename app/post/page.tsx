@@ -100,15 +100,15 @@ const discountIcons = [
 ];
 
 const defaultCategoryImages: Record<string, string> = {
-  '惣菜': 'https://fuanykkpsjiynzzkkhtv.supabase.co/storage/v1/object/public/images//default_souzai.png',
-  '弁当': 'https://fuanykkpsjiynzzkkhtv.supabase.co/storage/v1/object/public/images//default_bento.png',
-  '肉': 'https://fuanykkpsjiynzzkkhtv.supabase.co/storage/v1/object/public/images//default_meat.png',
-  '魚': 'https://fuanykkpsjiynzzkkhtv.supabase.co/storage/v1/object/public/images//default_fish.png',
-  '野菜': 'https://fuanykkpsjiynzzkkhtv.supabase.co/storage/v1/object/public/images//default_vegetable.png',
-  '果物': 'https://fuanykkpsjiynzzkkhtv.supabase.co/storage/v1/object/public/images//default_fruit.png',
-  '米・パン類': 'https://fuanykkpsjiynzzkkhtv.supabase.co/storage/v1/object/public/images//default_bread_rice.png',
-  'デザート類': 'https://fuanykkpsjiynzzkkhtv.supabase.co/storage/v1/object/public/images//default_dessert.png',
-  'その他': 'https://fuanykkpsjiynzzkkhtv.supabase.co/storage/v1/object/public/images//default_other.png',
+  '惣菜': 'https://fuanykkpsjiynzzkkhtv.supabase.co/storage/v1/object/public/images//souzai.png',
+  '弁当': 'https://fuanykkpsjiynzzkkhtv.supabase.co/storage/v1/object/public/images//bento.png',
+  '肉': 'https://fuanykkpsjiynzzkkhtv.supabase.co/storage/v1/object/public/images//meat.png',
+  '魚': 'https://fuanykkpsjiynzzkkhtv.supabase.co/storage/v1/object/public/images//fish.png',
+  '野菜': 'https://fuanykkpsjiynzzkkhtv.supabase.co/storage/v1/object/public/images//vegetable.png',
+  '果物': 'https://fuanykkpsjiynzzkkhtv.supabase.co/storage/v1/object/public/images//fruit.png',
+  '米・パン類': 'https://fuanykkpsjiynzzkkhtv.supabase.co/storage/v1/object/public/images//bread_rice.png',
+  'デザート類': 'https://fuanykkpsjiynzzkkhtv.supabase.co/storage/v1/object/public/images//dessert.png',
+  'その他': 'https://fuanykkpsjiynzzkkhtv.supabase.co/storage/v1/object/public/images//other.png',
 };
 
 export default function PostPage() {
@@ -856,7 +856,7 @@ export default function PostPage() {
                               }
                             }}
                             placeholder="お店を検索または選択してください"
-                            style={{ fontSize: '12px' }}
+                            style={{ fontSize: '16px' }}
                           />
                         </div>
                         {/* LocationStatusIndicatorを非表示にする */}
@@ -933,20 +933,20 @@ export default function PostPage() {
                     <FormLabel className="text-xl flex font-semibold items-center">
                       <LayoutGrid className="mr-2 h-6 w-6" /> カテゴリ<span className="text-destructive ml-1">※</span>
                     </FormLabel>
-                    <FormControl>
-                      <Select onValueChange={field.onChange} value={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value || ""}>
+                      <FormControl>
                         <SelectTrigger className="w-full text-lg py-6">
                           <SelectValue placeholder="カテゴリを選択してください" />
                         </SelectTrigger>
-                        <SelectContent>
-                          {categories.map((category) => (
-                            <SelectItem key={category} value={category} className="text-lg py-3">
-                              {category}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </FormControl>
+                      </FormControl>
+                      <SelectContent>
+                        {categories.map((category) => (
+                          <SelectItem key={category} value={category} className="text-lg py-3">
+                            {category}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
