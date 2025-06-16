@@ -373,8 +373,8 @@ export const PostCard = memo(({
               </div>
             </div>
             
-            <div className="flex flex-col items-end space-y-1">
-              <Badge className={cn("text-sm", getCategoryColor(post.category || ''))}>
+            <div className="flex flex-col items-end space-y-2">
+              <Badge className={cn("text-lg", getCategoryColor(post.category || ''))}>
                 {post.category || '不明'}
               </Badge>
               {showDistance && post.distance && (
