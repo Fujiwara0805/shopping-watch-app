@@ -41,6 +41,12 @@ export const FullScreenPostViewer: React.FC<FullScreenPostViewerProps> = ({
     }
   }, [initialIndex, posts.length]);
 
+  // 閉じる処理を確実に実行
+  const handleClose = useCallback(() => {
+    console.log('フルスクリーンビューアーを閉じます');
+    onClose();
+  }, [onClose]);
+
   // キーボードナビゲーション
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -48,7 +54,7 @@ export const FullScreenPostViewer: React.FC<FullScreenPostViewerProps> = ({
 
       switch (event.key) {
         case 'Escape':
-          onClose();
+          handleClose();
           break;
         case 'ArrowLeft':
           handlePrevious();
@@ -75,7 +81,7 @@ export const FullScreenPostViewer: React.FC<FullScreenPostViewerProps> = ({
       document.removeEventListener('keydown', handleKeyDown);
       document.body.style.overflow = 'auto';
     };
-  }, [isOpen, currentIndex]);
+  }, [isOpen, currentIndex, handleClose]);
 
   const handleNext = useCallback(() => {
     if (isTransitioning) return;
@@ -123,9 +129,9 @@ export const FullScreenPostViewer: React.FC<FullScreenPostViewerProps> = ({
   // バックグラウンドクリックで閉じる
   const handleBackgroundClick = useCallback((event: React.MouseEvent) => {
     if (event.target === event.currentTarget) {
-      onClose();
+      handleClose();
     }
-  }, [onClose]);
+  }, [handleClose]);
 
   if (!isOpen || !currentPost) return null;
 
@@ -141,6 +147,18 @@ export const FullScreenPostViewer: React.FC<FullScreenPostViewerProps> = ({
           transition={{ duration: 0.3 }}
           onClick={handleBackgroundClick}
         >
+          {/* 閉じるボタン - 画面右上に固定配置 */}
+          <div className="absolute top-4 right-4 z-70">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-white hover:bg-white/20 bg-black/50 rounded-full backdrop-blur-sm border border-white/20 shadow-lg"
+              onClick={handleClose}
+            >
+              <X className="h-6 w-6" />
+            </Button>
+          </div>
+
           {/* インジケーター */}
           <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-60 flex space-x-1">
             {posts.map((_, index) => (
@@ -235,18 +253,6 @@ export const FullScreenPostViewer: React.FC<FullScreenPostViewerProps> = ({
                   
                   {/* オーバーレイコントロール */}
                   <div className="absolute inset-0 pointer-events-none">
-                    {/* 閉じるボタン - 画像の上に配置 */}
-                    <div className="absolute top-2 right-2 z-70 pointer-events-auto">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-white hover:bg-black/40 bg-black/20 rounded-full backdrop-blur-sm"
-                        onClick={onClose}
-                      >
-                        <X className="h-5 w-5" />
-                      </Button>
-                    </div>
-
                     {/* 左半分 - 前の投稿 */}
                     {currentIndex > 0 && (
                       <div
