@@ -110,7 +110,7 @@ const FavoriteStoreInput = React.forwardRef<HTMLInputElement, FavoriteStoreInput
                     dropdown.style.top = `${top}px`;
                     dropdown.style.left = `${inputRect.left + window.scrollX}px`;
                     dropdown.style.width = `${inputRect.width}px`;
-                    dropdown.style.maxHeight = '250px';
+                    dropdown.style.maxHeight = '100px';
                     dropdown.style.overflowY = 'auto';
                     
                     // 自動スクロール処理
