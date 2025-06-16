@@ -454,13 +454,25 @@ export const PostCard = memo(({
                 <span className="max-w-[150px] truncate">{post.store_name || '店舗不明'}</span>
               </Button>
 
-              <div className="absolute top-[30px] right-2 flex flex-col items-end space-y-1">
+              <div className="absolute top-[30px] right-2 flex flex-col items-end space-y-[4px]">
                 <DiscountBadge discountRate={post.discount_rate} />
                 
                 {post.price != null && (
-                  <Badge className="bg-white text-foreground font-bold text-xl px-2 py-1 shadow-sm">
-                    ¥{post.price.toLocaleString()}
-                  </Badge>
+                  <div className="relative">
+                    <div className="bg-gradient-to-br from-yellow-400 via-yellow-300 to-yellow-500 text-red-600 font-black text-2xl px-3 py-2 shadow-lg border-2 border-red-500 transform rotate-[-2deg] relative overflow-hidden">
+                      {/* チラシ風の背景パターン */}
+                      <div className="absolute inset-0 opacity-20">
+                        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-white/50 to-transparent"></div>
+                        <div className="absolute bottom-0 right-0 w-4 h-4 bg-red-400 rounded-full transform translate-x-2 translate-y-2"></div>
+                      </div>
+                      <div className="relative z-10 flex items-center">
+                        <span className="text-lg mr-1">¥</span>
+                        <span className="tracking-tight">{post.price.toLocaleString()}</span>
+                      </div>
+                      {/* 影効果 */}
+                      <div className="absolute -bottom-1 -right-1 w-full h-full bg-red-800/30 -z-10 transform rotate-[1deg]"></div>
+                    </div>
+                  </div>
                 )}
                 
               </div>
