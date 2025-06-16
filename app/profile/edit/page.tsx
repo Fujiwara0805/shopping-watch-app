@@ -453,7 +453,7 @@ export default function ProfileEditPage() {
               render={({ field }) => (
                 <FormItem className="favorite-store-field">
                   <FormLabel className="text-2xl flex items-center font-semibold">
-                    <Store className="mr-2 h-5 w-5 text-primary " /> お気に入り店舗1 
+                    <Store className="mr-2 h-5 w-5 text-primary " /> お気に入り店舗
                   </FormLabel>
                   <FormControl>
                     <FavoriteStoreInput
@@ -462,7 +462,7 @@ export default function ProfileEditPage() {
                       onChange={(value) => field.onChange(value)}
                       disabled={isSaving}
                       ref={field.ref}
-                      style={{ fontSize: '16px' }}
+                      style={{ fontSize: '18px' }}
                     />
                   </FormControl>
                   <FormMessage />
@@ -477,7 +477,7 @@ export default function ProfileEditPage() {
               render={({ field }) => (
                 <FormItem className="favorite-store-field">
                   <FormLabel className="text-2xl flex items-center font-semibold">
-                    <Store className="mr-2 h-5 w-5 text-primary " /> お気に入り店舗2
+                    <Store className="mr-2 h-5 w-5 text-primary " /> お気に入り店舗
                   </FormLabel>
                   <FormControl>
                     <FavoriteStoreInput
@@ -501,7 +501,7 @@ export default function ProfileEditPage() {
               render={({ field }) => (
                 <FormItem className="favorite-store-field">
                   <FormLabel className="text-2xl flex items-center font-semibold">
-                    <Store className="mr-2 h-5 w-5 text-primary " /> お気に入り店舗3
+                    <Store className="mr-2 h-5 w-5 text-primary " /> お気に入り店舗
                   </FormLabel>
                   <FormControl>
                     <FavoriteStoreInput
