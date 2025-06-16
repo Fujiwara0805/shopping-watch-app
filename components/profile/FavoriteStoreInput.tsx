@@ -97,7 +97,7 @@ const FavoriteStoreInput = React.forwardRef<HTMLInputElement, FavoriteStoreInput
                   if (localInputRef.current) {
                     const inputRect = localInputRef.current.getBoundingClientRect();
                     const viewportHeight = window.innerHeight;
-                    const dropdownHeight = Math.min(dropdown.offsetHeight || 100, 100);
+                    const dropdownHeight = Math.min(dropdown.offsetHeight || 50, 50);
                     
                     // ドロップダウンを入力フィールドの下に配置
                     let top = inputRect.bottom + window.scrollY;
@@ -110,7 +110,7 @@ const FavoriteStoreInput = React.forwardRef<HTMLInputElement, FavoriteStoreInput
                     dropdown.style.top = `${top}px`;
                     dropdown.style.left = `${inputRect.left + window.scrollX}px`;
                     dropdown.style.width = `${inputRect.width}px`;
-                    dropdown.style.maxHeight = '100px';
+                    dropdown.style.maxHeight = '50px';
                     dropdown.style.overflowY = 'auto';
                     
                     // 自動スクロール処理
