@@ -462,7 +462,7 @@ export default function ProfileEditPage() {
                       onChange={(value) => field.onChange(value)}
                       disabled={isSaving}
                       ref={field.ref}
-                      style={{ fontSize: '18px' }}
+                      style={{ fontSize: '16px' }}
                     />
                   </FormControl>
                   <FormMessage />
@@ -486,7 +486,7 @@ export default function ProfileEditPage() {
                       onChange={(value) => field.onChange(value)}
                       disabled={isSaving}
                       ref={field.ref}
-                      style={{ fontSize: '18px' }}
+                      style={{ fontSize: '16px' }}
                     />
                   </FormControl>
                   <FormMessage />
@@ -510,7 +510,7 @@ export default function ProfileEditPage() {
                       onChange={(value) => field.onChange(value)}
                       disabled={isSaving}
                       ref={field.ref}
-                      style={{ fontSize: '18px' }}
+                      style={{ fontSize: '16px' }}
                     />
                   </FormControl>
                   <FormMessage />

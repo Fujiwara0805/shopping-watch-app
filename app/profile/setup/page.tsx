@@ -342,7 +342,7 @@ function ProfileSetupContent() {
                       disabled={isSaving}
                       ref={field.ref}
                       className="py-6"
-                      style={{ fontSize: '18px' }}
+                      style={{ fontSize: '16px' }}
                     />
                   </FormControl>
                   <FormMessage />
@@ -369,7 +369,7 @@ function ProfileSetupContent() {
                       disabled={isSaving}
                       ref={field.ref}
                       className="py-6"
-                      style={{ fontSize: '18px' }}
+                      style={{ fontSize: '16px' }}
                     />
                   </FormControl>
                   <FormMessage />
@@ -396,7 +396,7 @@ function ProfileSetupContent() {
                       disabled={isSaving}
                       ref={field.ref}
                       className="py-6"
-                      style={{ fontSize: '18px' }}
+                      style={{ fontSize: '16px' }}
                     />
                   </FormControl>
                   <FormMessage />
