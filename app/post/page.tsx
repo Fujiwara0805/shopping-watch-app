@@ -30,6 +30,7 @@ import { ja } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 import { useLoadScript, Autocomplete, GoogleMap } from "@react-google-maps/api";
 import { useLoading } from '@/contexts/loading-context';
+import { setTimeout } from 'timers/promises';
 import { PostCard } from '@/components/posts/post-card';
 
 declare global {
@@ -508,7 +509,7 @@ export default function PostPage() {
     currentPlaceholder: getSelectPlaceholder(),
   });
 
-  // 🔥 Google Places API連携の確実な設定（モバイル最適化版 - 修正版）
+  // 🔥 Google Places API連携の確実な設定（モバイル最適化版）
   useEffect(() => {
     if (isLoaded && storeInputRef.current) {
       const newAutocomplete = new google.maps.places.Autocomplete(storeInputRef.current, {
@@ -518,20 +519,21 @@ export default function PostPage() {
         fields: ['place_id', 'name', 'geometry', 'formatted_address', 'types'],
       });
       
-      // 🔥 検索結果を2件に制限するためのカスタムフィルタリング
+      // 🔥 検索結果を制限するためのカスタムフィルタリング
       const originalGetPredictions = (newAutocomplete as any).service?.getPlacePredictions;
       if (originalGetPredictions) {
         (newAutocomplete as any).service.getPlacePredictions = function(request: any, callback: any) {
-          // 最低2文字入力されるまで検索しない
-          if (request.input && request.input.length < 2) {
-            callback([], google.maps.places.PlacesServiceStatus.ZERO_RESULTS);
-            return;
-          }
-
-          originalGetPredictions.call(this, request, (predictions: any[], status: any) => {
-            if (predictions && status === google.maps.places.PlacesServiceStatus.OK) {
-              // 🔥 結果を2件に厳格制限
-              const limitedPredictions = predictions.slice(0, 2);
+          // 最大4件に制限
+          const modifiedRequest = {
+            ...request,
+            // Google Places APIには公式の制限パラメータがないため、
+            // 結果をフィルタリングで制限
+          };
+          
+          originalGetPredictions.call(this, modifiedRequest, (predictions: any[], status: any) => {
+            if (predictions) {
+              // 結果を4件に制限
+              const limitedPredictions = predictions.slice(0, 4);
               callback(limitedPredictions, status);
             } else {
               callback(predictions, status);
@@ -553,6 +555,7 @@ export default function PostPage() {
           
           console.log("PostPage: Setting location data from Google Places:", { lat, lng, storeName });
           
+          // storeIdはplace_idまたは生成されたIDを使用
           const storeId = place.place_id || `google_${Date.now()}`;
           
           // フォームに店舗情報と位置情報を確実に設定
@@ -567,20 +570,6 @@ export default function PostPage() {
           setStoreAddress(place.formatted_address || '');
           setSelectedPlace(place);
           setLocationStatus('success');
-          
-          // 🔥 モバイルでは選択後に検索候補を非表示にしてキーボードを閉じる
-          if (window.innerWidth <= 768) {
-            setTimeout(() => {
-              const pacContainers = document.querySelectorAll('.pac-container');
-              pacContainers.forEach(container => {
-                (container as HTMLElement).style.display = 'none';
-              });
-              
-              if (storeInputRef.current) {
-                storeInputRef.current.blur();
-              }
-            }, 100);
-          }
           
           toast({
             title: "✅ 店舗の位置情報を取得しました",
@@ -597,55 +586,9 @@ export default function PostPage() {
           });
         }
       });
-      
       setAutocomplete(newAutocomplete);
     }
   }, [isLoaded, form, toast]);
-
-  // 🔥 モバイル環境での検索候補表示制御
-  useEffect(() => {
-    if (window.innerWidth <= 768) {
-      // 🔥 document に対するクリックイベントで検索候補を制御
-      const handleDocumentClick = (event: Event) => {
-        const target = event.target as HTMLElement;
-        
-        // 検索候補以外をクリックした場合は候補を非表示
-        if (!target.closest('.pac-container') && !target.closest('.mobile-store-search')) {
-          const pacContainers = document.querySelectorAll('.pac-container');
-          pacContainers.forEach(container => {
-            (container as HTMLElement).style.display = 'none';
-          });
-        }
-      };
-      
-      document.addEventListener('click', handleDocumentClick);
-      
-      return () => {
-        document.removeEventListener('click', handleDocumentClick);
-      };
-    }
-  }, []);
-
-  // 🔥 Visual Viewport API を使用したキーボード表示時の調整
-  useEffect(() => {
-    if (window.visualViewport && window.innerWidth <= 768) {
-      const handleViewportResize = () => {
-        const pacContainers = document.querySelectorAll('.pac-container');
-        pacContainers.forEach(container => {
-          const containerElement = container as HTMLElement;
-          // キーボード表示時は検索候補の高さをさらに制限
-          containerElement.style.maxHeight = '60px';
-          containerElement.style.top = '50px'; // 入力フィールドの下に固定
-        });
-      };
-      
-      window.visualViewport.addEventListener('resize', handleViewportResize);
-      
-      return () => {
-        window.visualViewport?.removeEventListener('resize', handleViewportResize);
-      };
-    }
-  }, []);
 
   const handleMoveToMap = () => {
     setShowStoreSearchInfoModal(false);
@@ -913,7 +856,7 @@ export default function PostPage() {
                               }
                             }}
                             placeholder="お店を検索または選択してください"
-                            style={{ fontSize: '16px' }}
+                            style={{ fontSize: '12px' }}
                           />
                         </div>
                         <LocationStatusIndicator />

@@ -2,7 +2,6 @@
 
 import AppLayout from '@/components/layout/app-layout';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 export default function ServicePolicyPage() {
@@ -47,10 +46,6 @@ export default function ServicePolicyPage() {
                   <h3 className="font-bold text-gray-900 mb-2">LINE通知機能</h3>
                   <p className="text-sm text-gray-700">お気に入り店舗の新着情報をLINEで受信</p>
                 </div>
-                <div className="pl-4 border-l-4 border-purple-200 bg-purple-50 py-3 px-4 rounded-r">
-                  <h3 className="font-bold text-gray-900 mb-2">いいね・コメント機能</h3>
-                  <p className="text-sm text-gray-700">投稿への反応とコミュニケーション</p>
-                </div>
                 <div className="pl-4 border-l-4 border-red-200 bg-red-50 py-3 px-4 rounded-r">
                   <h3 className="font-bold text-gray-900 mb-2">検索・フィルター機能</h3>
                   <p className="text-sm text-gray-700">カテゴリ、店舗、期限等での絞り込み</p>
@@ -61,7 +56,7 @@ export default function ServicePolicyPage() {
                 </div>
                 <div className="pl-4 border-l-4 border-pink-200 bg-pink-50 py-3 px-4 rounded-r">
                   <h3 className="font-bold text-gray-900 mb-2">PWA対応</h3>
-                  <p className="text-sm text-gray-700">スマートフォンアプリとしてのインストール</p>
+                  <p className="text-sm text-gray-700">スマートフォンアプリとしてのサービスを利用できます</p>
                 </div>
               </div>
             </section>
@@ -133,7 +128,6 @@ export default function ServicePolicyPage() {
               onClick={() => router.push('/terms')}
               className="flex items-center space-x-2 mx-auto"
             >
-              <ArrowLeft className="h-4 w-4" />
               <span>戻る</span>
             </Button>
           </div>

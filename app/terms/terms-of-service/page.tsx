@@ -2,7 +2,6 @@
 
 import AppLayout from '@/components/layout/app-layout';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 export default function TermsOfServicePage() {
@@ -53,7 +52,7 @@ export default function TermsOfServicePage() {
                 <div className="flex items-start space-x-3">
                   <span className="flex-shrink-0 w-6 h-6 bg-green-100 text-green-800 rounded-full flex items-center justify-center text-xs font-bold">1</span>
                   <p className="text-base leading-7">
-                    本サービスの利用登録は、<span className="font-bold">メールアドレスとパスワード</span>、<span className="font-bold">Googleアカウント</span>、<span className="font-bold">LINEアカウント</span>による認証で行うことができます。
+                    本サービスの利用登録は、<span className="font-bold">メールアドレスとパスワード</span>、<span className="font-bold">Googleアカウント</span>による認証で行うことができます。
                   </p>
                 </div>
                 <div className="flex items-start space-x-3">
@@ -313,7 +312,6 @@ export default function TermsOfServicePage() {
               onClick={() => router.push('/terms')}
               className="flex items-center space-x-2 mx-auto"
             >
-              <ArrowLeft className="h-4 w-4" />
               <span>戻る</span>
             </Button>
           </div>

@@ -2,7 +2,6 @@
 
 import AppLayout from '@/components/layout/app-layout';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 export default function PrivacyPolicyPage() {
@@ -245,7 +244,6 @@ export default function PrivacyPolicyPage() {
               onClick={() => router.push('/terms')}
               className="flex items-center space-x-2 mx-auto"
             >
-              <ArrowLeft className="h-4 w-4" />
               <span>戻る</span>
             </Button>
           </div>
