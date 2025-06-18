@@ -289,18 +289,6 @@ export default function LineConnectPage() {
           transition={{ duration: 0.5 }}
           className="space-y-6"
         >
-          {/* ヘッダー部分 */}
-          <div className="flex items-center space-x-4 mb-6">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleBackToProfile}
-              className="flex items-center space-x-2"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              <span>プロフィールに戻る</span>
-            </Button>
-          </div>
 
           <Card>
             <CardHeader className="text-center">
@@ -443,6 +431,16 @@ export default function LineConnectPage() {
               </p>
             </CardContent>
           </Card>
+          <div className="flex items-center space-x-4 mb-6">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleBackToProfile}
+              className="flex items-center space-x-2"
+            >
+              <span>プロフィールに戻る</span>
+            </Button>
+          </div>
         </motion.div>
       </div>
     </AppLayout>
