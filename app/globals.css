@@ -130,7 +130,7 @@
   }
 
   /* ==================================================
-   * Google Places Autocomplete ドロップダウン対応（モバイル最適化版）
+   * Google Places Autocomplete ドロップダウン対応（完全修正版）
    * ================================================== */
   
   /* Google Places Autocomplete コンテナのベーススタイル */
@@ -138,39 +138,48 @@
     background-color: white !important;
     border: 1px solid #e5e7eb !important;
     border-radius: 0.5rem !important;
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
     font-family: inherit !important;
     overflow: hidden !important;
-    font-size: 14px !important; /* 基本フォントサイズを小さく */
+    font-size: 14px !important;
+    /* 🔥 ズームアップ防止 */
+    -webkit-text-size-adjust: 100% !important;
+    text-size-adjust: 100% !important;
   }
 
-  /* モバイル専用の Google Places ドロップダウンスタイル */
+  /* モバイル専用の Google Places ドロップダウンスタイル（完全修正版） */
   @media screen and (max-width: 768px) {
     .pac-container {
       position: fixed !important;
-      z-index: 99999 !important;
-      max-height: 100px !important; /* 3~4件の検索結果に対応した高さ */
+      z-index: 9998 !important; /* 固定ナビ（9999）より低く */
+      max-height: 160px !important; /* 最大4-5件の検索結果 */
       overflow-y: auto !important;
       -webkit-overflow-scrolling: touch !important;
       border-radius: 0.5rem !important;
-      margin-top: 4px !important;
-      width: calc(100vw - 2rem) !important; /* ビューポート幅を基準に */
-      left: 1rem !important;
-      right: 1rem !important;
-      max-width: none !important;
+      margin: 0 !important;
+      /* 🔥 画面ずれ防止 */
+      transform: translateZ(0) !important;
+      backface-visibility: hidden !important;
+      will-change: transform !important;
+      /* 🔥 スクロール防止 */
+      overscroll-behavior: contain !important;
     }
 
-    /* モバイルでのドロップダウンアイテム - よりコンパクトに */
+    /* モバイルでのドロップダウンアイテム（改善版） */
     .pac-container .pac-item {
-      padding: 8px 12px !important; /* パディングを小さく */
-      font-size: 14px !important; /* フォントサイズを小さく */
-      line-height: 1.3 !important; /* 行間を狭く */
+      padding: 10px 12px !important;
+      font-size: 15px !important; /* 読みやすさを考慮して少し大きく */
+      line-height: 1.4 !important;
       border-bottom: 1px solid #f3f4f6 !important;
       cursor: pointer !important;
       transition: background-color 0.15s ease !important;
       display: flex !important;
       align-items: center !important;
-      min-height: 40px !important; /* 最小高さを設定 */
+      min-height: 44px !important; /* タッチターゲットサイズ確保 */
+      /* 🔥 ズームアップ防止 */
+      -webkit-text-size-adjust: 100% !important;
+      text-size-adjust: 100% !important;
+      -webkit-tap-highlight-color: transparent !important;
     }
 
     .pac-container .pac-item:hover,
@@ -182,40 +191,31 @@
       border-bottom: none !important;
     }
 
-    /* モバイルでのテキストスタイル - コンパクト化 */
+    /* モバイルでのテキストスタイル（改善版） */
     .pac-container .pac-item .pac-item-query {
       font-weight: 600 !important;
       color: #1f2937 !important;
-      font-size: 14px !important;
+      font-size: 15px !important;
+      /* 🔥 テキスト省略対応 */
+      white-space: nowrap !important;
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+      max-width: calc(100% - 32px) !important;
     }
 
     .pac-container .pac-item .pac-matched {
       font-weight: 700 !important;
-      color: #059669 !important;
-      font-size: 14px !important;
+      color: #f97316 !important; /* プライマリカラー */
+      font-size: 15px !important;
     }
 
-    /* アイコン調整 - より小さく */
+    /* アイコン調整 */
     .pac-container .pac-icon {
-      width: 16px !important;
-      height: 16px !important;
-      margin-right: 8px !important;
-      background-size: 14px 14px !important;
+      width: 18px !important;
+      height: 18px !important;
+      margin-right: 10px !important;
+      background-size: 16px 16px !important;
       flex-shrink: 0 !important;
-    }
-
-    /* 検索候補テキストの省略表示 */
-    .pac-container .pac-item-query {
-      white-space: nowrap !important;
-      overflow: hidden !important;
-      text-overflow: ellipsis !important;
-      max-width: calc(100vw - 6rem) !important;
-    }
-
-    /* 住所部分をより小さく表示 */
-    .pac-container .pac-item .pac-item-query .pac-item-query-result {
-      font-size: 13px !important;
-      color: #6b7280 !important;
     }
   }
 
@@ -701,22 +701,35 @@
     }
   }
 
-  /* 🔥 ズームアップ防止のための追加設定 */
+  /* 🔥 ズームアップ防止の追加設定（強化版） */
   @media screen and (max-width: 768px) {
-    /* すべての入力フィールドでズームアップを防止 */
+    /* すべての入力フィールドでズームアップを完全防止 */
     input, textarea, select {
-      font-size: 16px !important;
-      -webkit-text-size-adjust: 100%;
-      text-size-adjust: 100%;
-    }
-    
-    /* Google Places Autocomplete の入力フィールド専用設定 */
-    .pac-target-input {
       font-size: 16px !important;
       -webkit-text-size-adjust: 100% !important;
       text-size-adjust: 100% !important;
-      -webkit-transform: translateZ(0);
-      transform: translateZ(0);
+      -webkit-tap-highlight-color: transparent !important;
+    }
+    
+    /* Google Places Autocomplete の入力フィールド専用設定（強化版） */
+    .pac-target-input {
+      font-size: 16px !important;
+      line-height: 1.5 !important;
+      -webkit-text-size-adjust: 100% !important;
+      text-size-adjust: 100% !important;
+      -webkit-transform: translateZ(0) !important;
+      transform: translateZ(0) !important;
+      -webkit-tap-highlight-color: transparent !important;
+      -webkit-user-select: text !important;
+      user-select: text !important;
+    }
+    
+    /* フォーカス時のズームアップ防止 */
+    input:focus, textarea:focus, select:focus {
+      -webkit-text-size-adjust: 100% !important;
+      text-size-adjust: 100% !important;
+      -webkit-transform: translateZ(0) !important;
+      transform: translateZ(0) !important;
     }
   }
 
