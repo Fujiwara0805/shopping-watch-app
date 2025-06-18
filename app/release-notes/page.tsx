@@ -107,12 +107,27 @@ const getReleaseTypeBadge = (type: ReleaseType) => {
 // サンプルリリースノートデータ
 const releaseNotes: ReleaseNote[] = [
   {
+    version: '1.0.1',
+    date: '2025-06-18',
+    type: 'minor',
+    title: 'アプリの品質向上のためのアップデート',
+    description: 'いつもトクドクをご利用いただきありがとうございます。皆様により快適なアプリ体験を提供するため、サービスの安定性向上に関するアップデートを行いました。',
+    isLatest: true,
+    changes: [
+      {
+        type: 'improvement',
+        title: 'パフォーマンス分析ツールの導入',
+        description: 'アプリの表示速度や動作を分析するための「Vercel Speed Insights」を導入しました。これは、今後のアップデートでアプリをさらに使いやすく、高速にするためのものです。皆様の個人情報などが収集されることは一切ありませんので、ご安心ください。'
+      }
+    ]
+  },
+  {
     version: '1.0.0',
     date: '2025-06-16',
     type: 'major',
     title: 'トクドク β版 正式リリース！',
     description: 'みんなでお得な情報を共有できるアプリ「トクドク」のβ版がついに正式リリースされました！',
-    isLatest: true,
+    isLatest: false,
     changes: [
       {
         type: 'new',

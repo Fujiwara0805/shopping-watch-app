@@ -78,17 +78,17 @@ export const FeedbackProvider: React.FC<FeedbackProviderProps> = ({ children }) 
     if (timeSinceLastShown < FEEDBACK_DELAY) {
       const remainingTime = FEEDBACK_DELAY - timeSinceLastShown;
       console.log(`FeedbackProvider: 次回表示まで残り${Math.ceil(remainingTime / 1000)}秒`);
-      
-      const timer = setTimeout(() => {
-        if (isActive && session?.user?.email) {
+
+    const timer = setTimeout(() => {
+      if (isActive && session?.user?.email) {
           const currentFeedbackSubmitted = localStorage.getItem(feedbackSubmittedKey);
           if (currentFeedbackSubmitted !== 'true') {
-            console.log('FeedbackProvider: 5分経過、フィードバックモーダル表示');
-            setShowFeedbackModal(true);
+        console.log('FeedbackProvider: 5分経過、フィードバックモーダル表示');
+        setShowFeedbackModal(true);
             setLastShownTime(Date.now());
             localStorage.setItem(lastShownKey, Date.now().toString());
           }
-        }
+      }
       }, remainingTime);
 
       return () => clearTimeout(timer);
