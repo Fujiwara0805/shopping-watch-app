@@ -30,6 +30,7 @@ export const FullScreenPostViewer: React.FC<FullScreenPostViewerProps> = ({
   const [direction, setDirection] = useState<'horizontal' | 'vertical'>('horizontal');
   const containerRef = useRef<HTMLDivElement>(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [viewportHeight, setViewportHeight] = useState(0);
 
   // 現在の投稿
   const currentPost = posts[currentIndex];
@@ -41,14 +42,40 @@ export const FullScreenPostViewer: React.FC<FullScreenPostViewerProps> = ({
     }
   }, [initialIndex, posts.length]);
 
-  // 🔥 ブラウザ横断対応のビューポート高さ設定
+  // 🔥 本番環境対応のビューポート高さ計算
+  const getActualViewportHeight = useCallback(() => {
+    // 複数の方法でビューポート高さを取得し、最も適切な値を使用
+    const windowHeight = window.innerHeight;
+    const documentHeight = document.documentElement.clientHeight;
+    const screenHeight = window.screen.height;
+    
+    // visualViewport API がサポートされている場合は使用
+    if (window.visualViewport) {
+      return window.visualViewport.height;
+    }
+    
+    // iOS Safari の場合は特別な処理
+    if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
+      return Math.min(windowHeight, documentHeight, screenHeight);
+    }
+    
+    // Chrome/Firefox などの場合
+    return Math.max(windowHeight, documentHeight);
+  }, []);
+
+  // 🔥 本番環境対応のビューポート高さ設定
   useEffect(() => {
     if (!isOpen) return;
 
     const updateViewportHeight = () => {
-      const currentHeight = window.innerHeight;
-      const vh = currentHeight * 0.01;
-      document.documentElement.style.setProperty('--fullscreen-vh', `${vh}px`);
+      const actualHeight = getActualViewportHeight();
+      setViewportHeight(actualHeight);
+      
+      // CSS変数を直接設定（本番環境でも確実に動作）
+      document.documentElement.style.setProperty('--fullscreen-vh', `${actualHeight / 100}px`);
+      document.documentElement.style.setProperty('--actual-viewport-height', `${actualHeight}px`);
+      
+      console.log('フルスクリーン高さ更新:', actualHeight);
     };
 
     updateViewportHeight();
@@ -57,14 +84,26 @@ export const FullScreenPostViewer: React.FC<FullScreenPostViewerProps> = ({
       setTimeout(updateViewportHeight, 100);
     };
 
+    const handleOrientationChange = () => {
+      setTimeout(updateViewportHeight, 500); // オリエンテーション変更後の遅延
+    };
+
     window.addEventListener('resize', handleResize, { passive: true });
-    window.addEventListener('orientationchange', handleResize, { passive: true });
+    window.addEventListener('orientationchange', handleOrientationChange, { passive: true });
+    
+    // visualViewport API 対応
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', handleResize, { passive: true });
+    }
 
     return () => {
       window.removeEventListener('resize', handleResize);
-      window.removeEventListener('orientationchange', handleResize);
+      window.removeEventListener('orientationchange', handleOrientationChange);
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', handleResize);
+      }
     };
-  }, [isOpen]);
+  }, [isOpen, getActualViewportHeight]);
 
   // 閉じる処理を確実に実行
   const handleClose = useCallback(() => {
@@ -98,20 +137,27 @@ export const FullScreenPostViewer: React.FC<FullScreenPostViewerProps> = ({
 
     if (isOpen) {
       document.addEventListener('keydown', handleKeyDown);
-      // 🔥 ブラウザ横断対応のスクロール無効化
+      
+      // 🔥 本番環境対応のスクロール無効化
       const originalOverflow = document.body.style.overflow;
       const originalPosition = document.body.style.position;
+      const originalWidth = document.body.style.width;
+      const originalHeight = document.body.style.height;
+      const originalTop = document.body.style.top;
+      
       document.body.style.overflow = 'hidden';
       document.body.style.position = 'fixed';
       document.body.style.width = '100%';
       document.body.style.height = '100%';
+      document.body.style.top = '0';
 
       return () => {
         document.removeEventListener('keydown', handleKeyDown);
         document.body.style.overflow = originalOverflow;
         document.body.style.position = originalPosition;
-        document.body.style.width = '';
-        document.body.style.height = '';
+        document.body.style.width = originalWidth;
+        document.body.style.height = originalHeight;
+        document.body.style.top = originalTop;
       };
     }
   }, [isOpen, currentIndex, handleClose]);
@@ -168,35 +214,55 @@ export const FullScreenPostViewer: React.FC<FullScreenPostViewerProps> = ({
 
   if (!isOpen || !currentPost) return null;
 
+  // 🔥 本番環境対応の動的スタイル計算
+  const actualHeight = viewportHeight || getActualViewportHeight();
+  const containerStyles: React.CSSProperties = {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: '100vw',
+    height: `${actualHeight}px`,
+    maxHeight: `${actualHeight}px`,
+    overflow: 'hidden',
+    zIndex: 50,
+  };
+
+  const contentStyles: React.CSSProperties = {
+    width: '100%',
+    height: `${actualHeight}px`,
+    maxHeight: `${actualHeight}px`,
+    paddingTop: Math.max(60, 16),
+    paddingBottom: Math.max(60, 16),
+    paddingLeft: 16,
+    paddingRight: 16,
+  };
+
+  const postContainerStyles: React.CSSProperties = {
+    maxHeight: `${actualHeight - 120}px`,
+    overflow: 'hidden',
+  };
+
   return (
     <AnimatePresence>
       {isOpen && (
         <motion.div
           ref={containerRef}
-          className="fixed inset-0 z-50 bg-black bg-opacity-90 flex items-center justify-center"
-          style={{
-            // 🔥 ブラウザ横断対応の高さ設定
-            height: 'calc(var(--fullscreen-vh, 1vh) * 100)',
-            maxHeight: 'calc(var(--fullscreen-vh, 1vh) * 100)',
-            overflow: 'hidden',
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-          }}
+          className="bg-black bg-opacity-90 flex items-center justify-center"
+          style={containerStyles}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.3 }}
           onClick={handleBackgroundClick}
         >
-          {/* 🔥 閉じるボタン - セーフエリア対応 */}
+          {/* 🔥 閉じるボタン - 本番環境対応 */}
           <div 
             className="absolute z-70"
             style={{
-              top: 'max(16px, env(safe-area-inset-top, 0px))',
-              right: 'max(16px, env(safe-area-inset-right, 0px))',
+              top: 16,
+              right: 16,
             }}
           >
             <Button
@@ -209,11 +275,11 @@ export const FullScreenPostViewer: React.FC<FullScreenPostViewerProps> = ({
             </Button>
           </div>
 
-          {/* 🔥 インジケーター - セーフエリア対応 */}
+          {/* 🔥 インジケーター - 本番環境対応 */}
           <div 
             className="absolute left-1/2 transform -translate-x-1/2 z-60 flex space-x-1"
             style={{
-              top: 'max(16px, env(safe-area-inset-top, 0px))',
+              top: 16,
             }}
           >
             {posts.map((_, index) => (
@@ -227,22 +293,22 @@ export const FullScreenPostViewer: React.FC<FullScreenPostViewerProps> = ({
             ))}
           </div>
 
-          {/* 🔥 カウンター - セーフエリア対応 */}
+          {/* 🔥 カウンター - 本番環境対応 */}
           <div 
             className="absolute z-60 text-white text-sm font-medium bg-black/50 px-3 py-1 rounded-full"
             style={{
-              top: 'max(16px, env(safe-area-inset-top, 0px))',
-              left: 'max(16px, env(safe-area-inset-left, 0px))',
+              top: 16,
+              left: 16,
             }}
           >
             {currentIndex + 1} / {posts.length}
           </div>
 
-          {/* 🔥 ナビゲーションヒント - セーフエリア対応 */}
+          {/* 🔥 ナビゲーションヒント - 本番環境対応 */}
           <div 
             className="absolute left-1/2 transform -translate-x-1/2 z-60 text-white/70 text-xs text-center"
             style={{
-              bottom: 'max(16px, env(safe-area-inset-bottom, 0px))',
+              bottom: 16,
             }}
           >
             <div className="flex items-center space-x-4">
@@ -264,18 +330,10 @@ export const FullScreenPostViewer: React.FC<FullScreenPostViewerProps> = ({
             </div>
           </div>
 
-          {/* 🔥 メインコンテンツ - ビューポート高さ対応 */}
+          {/* 🔥 メインコンテンツ - 本番環境対応 */}
           <motion.div
-            className="w-full h-full max-w-lg mx-auto flex items-center justify-center"
-            style={{
-              // 🔥 セーフエリアを考慮したパディング
-              paddingTop: 'max(60px, calc(env(safe-area-inset-top, 0px) + 60px))',
-              paddingBottom: 'max(60px, calc(env(safe-area-inset-bottom, 0px) + 60px))',
-              paddingLeft: 'max(16px, env(safe-area-inset-left, 0px))',
-              paddingRight: 'max(16px, env(safe-area-inset-right, 0px))',
-              height: 'calc(var(--fullscreen-vh, 1vh) * 100)',
-              maxHeight: 'calc(var(--fullscreen-vh, 1vh) * 100)',
-            }}
+            className="max-w-lg mx-auto flex items-center justify-center"
+            style={contentStyles}
             drag
             dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
             dragElastic={0.2}
@@ -313,18 +371,13 @@ export const FullScreenPostViewer: React.FC<FullScreenPostViewerProps> = ({
                 className="w-full h-fit overflow-hidden"
                 style={{ 
                   pointerEvents: 'auto',
-                  // 🔥 最大高さをセーフエリアを考慮して設定
-                  maxHeight: 'calc(var(--fullscreen-vh, 1vh) * 100 - 120px)',
                 }}
               >
                 <div className="relative">
-                  {/* 🔥 PostCardを統一サイズで表示（ビューポート対応） */}
+                  {/* 🔥 PostCard - 本番環境対応の高さ制限 */}
                   <div 
                     className="w-full"
-                    style={{ 
-                      maxHeight: 'calc(var(--fullscreen-vh, 1vh) * 100 - 120px)',
-                      overflow: 'hidden',
-                    }}
+                    style={postContainerStyles}
                   >
                     <PostCard
                       post={currentPost}
@@ -400,6 +453,21 @@ export const FullScreenPostViewer: React.FC<FullScreenPostViewerProps> = ({
               />
             )}
           </div>
+
+          {/* 🔥 デバッグ情報（開発環境のみ） */}
+          {process.env.NODE_ENV === 'development' && (
+            <div 
+              className="absolute z-70 bg-black/80 text-white text-xs p-2 rounded"
+              style={{
+                bottom: 80,
+                left: 16,
+              }}
+            >
+              <div>高さ: {actualHeight}px</div>
+              <div>幅: {window.innerWidth}px</div>
+              <div>UA: {navigator.userAgent.includes('Safari') ? 'Safari' : 'Chrome'}</div>
+            </div>
+          )}
         </motion.div>
       )}
     </AnimatePresence>
