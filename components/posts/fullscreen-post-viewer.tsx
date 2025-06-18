@@ -223,7 +223,10 @@ export const FullScreenPostViewer: React.FC<FullScreenPostViewerProps> = ({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: '60px 16px',
+    paddingTop: '68px',
+    paddingBottom: '52px',
+    paddingLeft: '16px',
+    paddingRight: '16px',
   };
 
   const postContainerStyles: React.CSSProperties = {
@@ -232,6 +235,7 @@ export const FullScreenPostViewer: React.FC<FullScreenPostViewerProps> = ({
     height: `calc(100vh - 120px)`,
     maxHeight: `calc(100vh - 120px)`,
     overflow: 'hidden',
+    transform: 'translateY(8px)',
   };
 
   if (!mounted || !isOpen || !currentPost) return null;
