@@ -1030,8 +1030,8 @@ export default function Timeline() {
             placeholder="店舗名やキーワードで検索"
             value={generalSearchTerm}
             onChange={(e) => setGeneralSearchTerm(e.target.value)}
-            className="pr-10 w-full text-base" // text-baseを追加
-            style={{ fontSize: '16px' }} // 明示的に16pxを指定してモバイルでのズームを防ぐ
+            className="pr-10 w-full text-base"
+            style={{ fontSize: '16px' }}
             autoComplete="off"
             autoCorrect="off"
             autoCapitalize="off"
@@ -1061,7 +1061,6 @@ export default function Timeline() {
                   onClick={() => {
                     setGeneralSearchTerm(term);
                     setSearchMode('all');
-                    // 検索履歴クリック時も即座に検索実行
                     setTimeout(() => {
                       if (fetchPostsRef.current) {
                         fetchPostsRef.current(0, true, term);
@@ -1149,14 +1148,13 @@ export default function Timeline() {
       
       <div 
         className="timeline-scroll-container custom-scrollbar overscroll-none"
-        style={{ 
-          height: 'calc(100vh - 280px)',
-          maxHeight: 'calc(100vh - 280px)',
-          overflowY: 'auto',
-          overflowX: 'hidden'
-        }}
       >
-        <div className="p-4 pb-safe">
+        <div 
+          className="p-4"
+          style={{
+            paddingBottom: '24px' // 🔥 下部メッセージ表示用の十分な余白
+          }}
+        >
           {posts.length === 0 && !loading && !isSearching ? (
             <div className="text-center py-10">
               <LayoutGrid size={48} className="mx-auto text-muted-foreground mb-4" />
@@ -1241,15 +1239,19 @@ export default function Timeline() {
             </div>
           )}
           
+          {/* 🔥 完全表示対応のメッセージ */}
           {!hasMore && posts.length > 0 && (
-            <div className="text-center py-8">
+            <div 
+              className="text-center py-8"
+              style={{
+                marginBottom: '16px' // 🔥 追加の下部マージン
+              }}
+            >
               <p className="text-muted-foreground">
                 {searchMode === 'nearby' ? '5km圏内の投稿をすべて表示しました' : 'すべての投稿を読み込みました'}
               </p>
             </div>
           )}
-          
-          <div className="h-4"></div>
         </div>
       </div>
 

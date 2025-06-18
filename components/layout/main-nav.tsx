@@ -49,7 +49,8 @@ export function MainNav() {
   };
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-10 bg-background border-t border-border pb-safe">
+    <nav className="bg-background border-t border-border">
+      {/* 🔥 Chrome余白問題解決：セーフエリアパディング完全削除 */}
       <div className="flex justify-around items-center h-16">
         {navItems.map((item) => {
           const isActive = pathname === item.href;

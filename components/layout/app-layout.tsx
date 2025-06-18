@@ -34,7 +34,7 @@ export default function AppLayout({
     return isMobileUserAgent || (isMobileWidth && isTouchDevice);
   };
 
-  // bodyクラスの設定とviewport height の設定
+  // 🔥 ブラウザ横断対応のビューポート高さ設定（強化版）
   useEffect(() => {
     // 地図ページの場合、bodyに map-page クラスを追加
     if (isMapPage) {
@@ -47,6 +47,7 @@ export default function AppLayout({
       document.body.style.overflow = 'auto';
     }
 
+    // 🔥 ブラウザ横断対応のビューポート高さ計算
     const updateViewportHeight = () => {
       const isMobile = getIsMobile();
       const currentHeight = window.innerHeight;
@@ -54,6 +55,11 @@ export default function AppLayout({
       // 基本のCSS変数を設定
       const vh = currentHeight * 0.01;
       document.documentElement.style.setProperty('--vh', `${vh}px`);
+      
+      // 🔥 safe-area-inset-bottom の取得と設定
+      const computedStyle = getComputedStyle(document.documentElement);
+      const safeAreaBottom = computedStyle.getPropertyValue('env(safe-area-inset-bottom)') || '0px';
+      document.documentElement.style.setProperty('--safe-area-bottom', safeAreaBottom);
       
       if (isMobile) {
         const visualViewportHeight = window.visualViewport?.height || currentHeight;
@@ -67,7 +73,9 @@ export default function AppLayout({
             isMapPage,
             currentHeight,
             visualViewportHeight,
-            actualHeight
+            actualHeight,
+            userAgent: navigator.userAgent.substring(0, 50) + '...',
+            safeAreaBottom
           });
         }
       } else {
@@ -78,41 +86,44 @@ export default function AppLayout({
 
     updateViewportHeight();
 
-    // 地図ページの場合のみ、複数回実行
-    if (isMapPage) {
-      const timeouts = [
-        setTimeout(updateViewportHeight, 100),
-        setTimeout(updateViewportHeight, 500),
-        setTimeout(updateViewportHeight, 1000),
-      ];
+    // 🔥 全てのページで複数回実行（Chrome対応強化）
+    const timeouts = [
+      setTimeout(updateViewportHeight, 50),
+      setTimeout(updateViewportHeight, 150),
+      setTimeout(updateViewportHeight, 300),
+      setTimeout(updateViewportHeight, 500),
+      setTimeout(updateViewportHeight, 1000),
+    ];
 
-      const handleResize = () => {
-        setTimeout(updateViewportHeight, 50);
-      };
-      
-      const handleOrientationChange = () => {
-        setTimeout(updateViewportHeight, 200);
-      };
+    const handleResize = () => {
+      // デバウンス処理で頻繁な実行を防ぐ
+      clearTimeout((window as any).resizeTimeout);
+      (window as any).resizeTimeout = setTimeout(updateViewportHeight, 100);
+    };
+    
+    const handleOrientationChange = () => {
+      // 画面回転時は少し遅延させて確実に取得
+      setTimeout(updateViewportHeight, 200);
+      setTimeout(updateViewportHeight, 500);
+    };
 
-      window.addEventListener('resize', handleResize, { passive: true });
-      window.addEventListener('orientationchange', handleOrientationChange, { passive: true });
-      
-      if (window.visualViewport) {
-        window.visualViewport.addEventListener('resize', handleResize, { passive: true });
-      }
-
-      return () => {
-        timeouts.forEach(clearTimeout);
-        window.removeEventListener('resize', handleResize);
-        window.removeEventListener('orientationchange', handleOrientationChange);
-        if (window.visualViewport) {
-          window.visualViewport.removeEventListener('resize', handleResize);
-        }
-      };
+    window.addEventListener('resize', handleResize, { passive: true });
+    window.addEventListener('orientationchange', handleOrientationChange, { passive: true });
+    
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', handleResize, { passive: true });
     }
 
-    // クリーンアップ（ページ離脱時にクラスを削除）
     return () => {
+      timeouts.forEach(clearTimeout);
+      clearTimeout((window as any).resizeTimeout);
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('orientationchange', handleOrientationChange);
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', handleResize);
+      }
+      
+      // クリーンアップ（ページ離脱時にクラスを削除）
       if (isMapPage) {
         document.body.classList.remove('map-page');
       }
@@ -132,10 +143,8 @@ export default function AppLayout({
   if (isMapPage) {
     return (
       <div 
-        className="flex flex-col bg-background"
+        className="flex flex-col bg-background h-full-viewport"
         style={{ 
-          height: 'calc(var(--mobile-vh, 100vh))',
-          maxHeight: 'calc(var(--mobile-vh, 100vh))',
           overflow: 'hidden'
         }}
       >
@@ -188,37 +197,62 @@ export default function AppLayout({
     );
   }
 
-  // 通常ページ用レイアウト（スクロール可能）
+  // 🔥 通常ページ用レイアウト（余白完全削除版）
   return (
-    <div className="flex flex-col min-h-screen bg-background">
+    <div 
+      className="bg-background h-full-viewport"
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden'
+      }}
+    >
       {/* 固定ヘッダー */}
       {showHeader && (
-        <div className="sticky top-0 z-50">
+        <div className="flex-shrink-0 z-50">
           <AppHeader />
         </div>
       )}
       
-      {/* メインコンテンツエリア（スクロール可能） */}
-      <main className="flex-1 relative">
-        <motion.div
-          key={pathname}
-          initial="hidden"
-          animate="enter"
-          exit="exit"
-          variants={variants}
-          transition={{ duration: 0.3, type: 'tween' }}
-          className="min-h-full"
+      {/* 🔥 メインコンテンツエリア（余白完全削除） */}
+      <main 
+        className="flex-1 relative"
+        style={{
+          overflow: 'hidden',
+          height: showHeader && showNav ? 'calc(100vh - 56px - 64px)' : 
+                  showHeader ? 'calc(100vh - 56px)' : 
+                  showNav ? 'calc(100vh - 64px)' : '100vh'
+        }}
+      >
+        <div
           style={{
-            paddingBottom: showNav ? '80px' : '16px'
+            height: '100%',
+            overflowY: 'auto',
+            overflowX: 'hidden',
+            WebkitOverflowScrolling: 'touch'
           }}
+          className="custom-scrollbar"
         >
-          {children}
-        </motion.div>
+          <motion.div
+            key={pathname}
+            initial="hidden"
+            animate="enter"
+            exit="exit"
+            variants={variants}
+            transition={{ duration: 0.3, type: 'tween' }}
+            style={{
+              minHeight: '100%',
+              paddingBottom: '0px' // 🔥 完全に削除
+            }}
+          >
+            {children}
+          </motion.div>
+        </div>
       </main>
       
-      {/* 固定フッター */}
+      {/* 🔥 固定フッター（余白なし） */}
       {showNav && (
-        <div className="fixed bottom-0 left-0 right-0 z-50">
+        <div className="flex-shrink-0 z-50">
           <MainNav />
         </div>
       )}
