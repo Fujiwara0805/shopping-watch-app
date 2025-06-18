@@ -41,6 +41,31 @@ export const FullScreenPostViewer: React.FC<FullScreenPostViewerProps> = ({
     }
   }, [initialIndex, posts.length]);
 
+  // 🔥 ブラウザ横断対応のビューポート高さ設定
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const updateViewportHeight = () => {
+      const currentHeight = window.innerHeight;
+      const vh = currentHeight * 0.01;
+      document.documentElement.style.setProperty('--fullscreen-vh', `${vh}px`);
+    };
+
+    updateViewportHeight();
+
+    const handleResize = () => {
+      setTimeout(updateViewportHeight, 100);
+    };
+
+    window.addEventListener('resize', handleResize, { passive: true });
+    window.addEventListener('orientationchange', handleResize, { passive: true });
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('orientationchange', handleResize);
+    };
+  }, [isOpen]);
+
   // 閉じる処理を確実に実行
   const handleClose = useCallback(() => {
     console.log('フルスクリーンビューアーを閉じます');
@@ -73,14 +98,22 @@ export const FullScreenPostViewer: React.FC<FullScreenPostViewerProps> = ({
 
     if (isOpen) {
       document.addEventListener('keydown', handleKeyDown);
-      // スクロールを無効化
+      // 🔥 ブラウザ横断対応のスクロール無効化
+      const originalOverflow = document.body.style.overflow;
+      const originalPosition = document.body.style.position;
       document.body.style.overflow = 'hidden';
-    }
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
+      document.body.style.height = '100%';
 
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = 'auto';
-    };
+      return () => {
+        document.removeEventListener('keydown', handleKeyDown);
+        document.body.style.overflow = originalOverflow;
+        document.body.style.position = originalPosition;
+        document.body.style.width = '';
+        document.body.style.height = '';
+      };
+    }
   }, [isOpen, currentIndex, handleClose]);
 
   const handleNext = useCallback(() => {
@@ -141,14 +174,31 @@ export const FullScreenPostViewer: React.FC<FullScreenPostViewerProps> = ({
         <motion.div
           ref={containerRef}
           className="fixed inset-0 z-50 bg-black bg-opacity-90 flex items-center justify-center"
+          style={{
+            // 🔥 ブラウザ横断対応の高さ設定
+            height: 'calc(var(--fullscreen-vh, 1vh) * 100)',
+            maxHeight: 'calc(var(--fullscreen-vh, 1vh) * 100)',
+            overflow: 'hidden',
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+          }}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.3 }}
           onClick={handleBackgroundClick}
         >
-          {/* 閉じるボタン - 画面右上に固定配置 */}
-          <div className="absolute top-4 right-4 z-70">
+          {/* 🔥 閉じるボタン - セーフエリア対応 */}
+          <div 
+            className="absolute z-70"
+            style={{
+              top: 'max(16px, env(safe-area-inset-top, 0px))',
+              right: 'max(16px, env(safe-area-inset-right, 0px))',
+            }}
+          >
             <Button
               variant="ghost"
               size="icon"
@@ -159,8 +209,13 @@ export const FullScreenPostViewer: React.FC<FullScreenPostViewerProps> = ({
             </Button>
           </div>
 
-          {/* インジケーター */}
-          <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-60 flex space-x-1">
+          {/* 🔥 インジケーター - セーフエリア対応 */}
+          <div 
+            className="absolute left-1/2 transform -translate-x-1/2 z-60 flex space-x-1"
+            style={{
+              top: 'max(16px, env(safe-area-inset-top, 0px))',
+            }}
+          >
             {posts.map((_, index) => (
               <div
                 key={index}
@@ -172,13 +227,24 @@ export const FullScreenPostViewer: React.FC<FullScreenPostViewerProps> = ({
             ))}
           </div>
 
-          {/* カウンター */}
-          <div className="absolute top-4 left-4 z-60 text-white text-sm font-medium bg-black/50 px-3 py-1 rounded-full">
+          {/* 🔥 カウンター - セーフエリア対応 */}
+          <div 
+            className="absolute z-60 text-white text-sm font-medium bg-black/50 px-3 py-1 rounded-full"
+            style={{
+              top: 'max(16px, env(safe-area-inset-top, 0px))',
+              left: 'max(16px, env(safe-area-inset-left, 0px))',
+            }}
+          >
             {currentIndex + 1} / {posts.length}
           </div>
 
-          {/* ナビゲーションヒント */}
-          <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-60 text-white/70 text-xs text-center">
+          {/* 🔥 ナビゲーションヒント - セーフエリア対応 */}
+          <div 
+            className="absolute left-1/2 transform -translate-x-1/2 z-60 text-white/70 text-xs text-center"
+            style={{
+              bottom: 'max(16px, env(safe-area-inset-bottom, 0px))',
+            }}
+          >
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-1">
                 <ChevronLeft className="h-4 w-4" />
@@ -198,9 +264,18 @@ export const FullScreenPostViewer: React.FC<FullScreenPostViewerProps> = ({
             </div>
           </div>
 
-          {/* メインコンテンツ */}
+          {/* 🔥 メインコンテンツ - ビューポート高さ対応 */}
           <motion.div
-            className="w-full h-full max-w-lg mx-auto flex items-center justify-center p-4"
+            className="w-full h-full max-w-lg mx-auto flex items-center justify-center"
+            style={{
+              // 🔥 セーフエリアを考慮したパディング
+              paddingTop: 'max(60px, calc(env(safe-area-inset-top, 0px) + 60px))',
+              paddingBottom: 'max(60px, calc(env(safe-area-inset-bottom, 0px) + 60px))',
+              paddingLeft: 'max(16px, env(safe-area-inset-left, 0px))',
+              paddingRight: 'max(16px, env(safe-area-inset-right, 0px))',
+              height: 'calc(var(--fullscreen-vh, 1vh) * 100)',
+              maxHeight: 'calc(var(--fullscreen-vh, 1vh) * 100)',
+            }}
             drag
             dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
             dragElastic={0.2}
@@ -235,12 +310,22 @@ export const FullScreenPostViewer: React.FC<FullScreenPostViewerProps> = ({
                   damping: 30,
                   opacity: { duration: 0.2 },
                 }}
-                className="w-full h-fit max-h-[85vh] overflow-hidden"
-                style={{ pointerEvents: 'auto' }}
+                className="w-full h-fit overflow-hidden"
+                style={{ 
+                  pointerEvents: 'auto',
+                  // 🔥 最大高さをセーフエリアを考慮して設定
+                  maxHeight: 'calc(var(--fullscreen-vh, 1vh) * 100 - 120px)',
+                }}
               >
                 <div className="relative">
-                  {/* PostCardを統一サイズで表示 */}
-                  <div className="w-full" style={{ maxHeight: '85vh' }}>
+                  {/* 🔥 PostCardを統一サイズで表示（ビューポート対応） */}
+                  <div 
+                    className="w-full"
+                    style={{ 
+                      maxHeight: 'calc(var(--fullscreen-vh, 1vh) * 100 - 120px)',
+                      overflow: 'hidden',
+                    }}
+                  >
                     <PostCard
                       post={currentPost}
                       onLike={onLike}

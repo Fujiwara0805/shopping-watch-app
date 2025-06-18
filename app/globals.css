@@ -52,6 +52,9 @@
     /* マップページ専用の変数 */
     --map-viewport-height: 100vh;
     --map-content-height: 400px;
+    
+    /* 🔥 フルスクリーン専用のビューポート変数 */
+    --fullscreen-vh: 1vh;
   }
 
   * {
@@ -652,6 +655,49 @@
       max-height: calc(-webkit-fill-available - 56px - 64px) !important;
       /* 🔥 下部メッセージ表示のための追加スペース */
       padding-bottom: 8px !important;
+    }
+  }
+
+  /* 🔥 フルスクリーンビューアー専用のユーティリティ */
+  .fullscreen-container {
+    height: 100vh;
+    height: calc(var(--fullscreen-vh, 1vh) * 100);
+    max-height: 100vh;
+    max-height: calc(var(--fullscreen-vh, 1vh) * 100);
+    overflow: hidden;
+  }
+
+  /* 🔥 フルスクリーンでのセーフエリア対応 */
+  .fullscreen-safe-top {
+    padding-top: max(16px, env(safe-area-inset-top, 0px));
+  }
+
+  .fullscreen-safe-bottom {
+    padding-bottom: max(16px, env(safe-area-inset-bottom, 0px));
+  }
+
+  .fullscreen-safe-left {
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+  }
+
+  .fullscreen-safe-right {
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+
+  /* 🔥 Chrome/Safari横断でのフルスクリーン対応 */
+  @supports not (-webkit-touch-callout: none) {
+    .fullscreen-container {
+      height: 100vh !important;
+      height: calc(var(--fullscreen-vh, 1vh) * 100) !important;
+      max-height: 100vh !important;
+      max-height: calc(var(--fullscreen-vh, 1vh) * 100) !important;
+    }
+  }
+
+  @supports (-webkit-touch-callout: none) {
+    .fullscreen-container {
+      height: -webkit-fill-available !important;
+      max-height: -webkit-fill-available !important;
     }
   }
 }
