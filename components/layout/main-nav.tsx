@@ -49,9 +49,35 @@ export function MainNav() {
   };
 
   return (
-    <nav className="bg-background border-t border-border">
+    <nav 
+      className="bg-background border-t border-border"
+      style={{
+        // 🔥 完全固定ナビゲーション（画面ずれ防止）
+        position: 'fixed',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        zIndex: 9999, // Google Places より高い z-index
+        width: '100%',
+        height: '64px', // 高さを明示的に指定
+        // 🔥 Chrome/Safari統一のセーフエリア対応
+        paddingBottom: 'max(0px, env(safe-area-inset-bottom, 0px))',
+        // 🔥 背景を確実に表示
+        backgroundColor: 'hsl(var(--background))',
+        borderTop: '1px solid hsl(var(--border))',
+        // 🔥 画面ずれ防止のための追加設定
+        transform: 'translateZ(0)', // ハードウェアアクセラレーション
+        backfaceVisibility: 'hidden', // 描画最適化
+      }}
+    >
       {/* 🔥 Chrome余白問題解決：セーフエリアパディング完全削除 */}
-      <div className="flex justify-around items-center h-16">
+      <div 
+        className="flex justify-around items-center"
+        style={{
+          height: '64px', // ナビゲーション本体の高さ
+          width: '100%',
+        }}
+      >
         {navItems.map((item) => {
           const isActive = pathname === item.href;
           
