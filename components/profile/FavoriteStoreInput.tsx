@@ -35,29 +35,22 @@ const FavoriteStoreInput = React.forwardRef<HTMLInputElement, FavoriteStoreInput
     const [locationError, setLocationError] = useState<string | null>(null);
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [keyboardHeight, setKeyboardHeight] = useState(0);
-    const originalViewportRef = useRef<string>('');
 
     // forwardRefで渡されたrefとローカルのrefをマージ
     useImperativeHandle(ref, () => localInputRef.current as HTMLInputElement);
 
-    // 🔥 完全ズームアップ防止：viewport meta tagの厳格制御
-    const preventZoom = useCallback(() => {
-      const viewport = document.querySelector('meta[name="viewport"]') as HTMLMetaElement;
-      if (viewport) {
-        originalViewportRef.current = viewport.content;
-        // 🔥 より厳格なズームアップ防止設定
-        viewport.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover, shrink-to-fit=no';
-      }
+    // 🔥 固定ナビゲーション対応のビューポート高さ計算
+    const getActualViewportHeight = useCallback(() => {
+      // CSS変数から実際のビューポート高さを取得
+      const vhValue = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--vh')) || 1;
+      const actualVh = vhValue * 100;
+      
+      // 🔥 固定ナビゲーションの高さを考慮（64px + セーフエリア）
+      const navHeight = 64 + (window.innerHeight - actualVh);
+      return actualVh - navHeight;
     }, []);
 
-    const restoreZoom = useCallback(() => {
-      const viewport = document.querySelector('meta[name="viewport"]') as HTMLMetaElement;
-      if (viewport && originalViewportRef.current) {
-        viewport.content = originalViewportRef.current;
-      }
-    }, []);
-
-    // 🔥 キーボード表示検出の改善
+    // 🔥 キーボード表示検出（固定ナビ対応強化）
     const detectKeyboardHeight = useCallback(() => {
       const isMobile = window.innerWidth <= 768;
       if (!isMobile) return 0;
@@ -66,8 +59,8 @@ const FavoriteStoreInput = React.forwardRef<HTMLInputElement, FavoriteStoreInput
       const visualVh = window.visualViewport?.height || actualVh;
       const heightDiff = actualVh - visualVh;
       
-      // キーボードが表示されている場合（高さの差が120px以上に変更して感度向上）
-      return heightDiff > 120 ? heightDiff : 0;
+      // キーボードが表示されている場合（高さの差が100px以上）
+      return heightDiff > 100 ? heightDiff : 0;
     }, []);
 
     const getCurrentLocation = () => {
@@ -98,7 +91,7 @@ const FavoriteStoreInput = React.forwardRef<HTMLInputElement, FavoriteStoreInput
       }
     };
 
-    // 🔥 Google Places ドロップダウンの位置調整（超コンパクト版）
+    // 🔥 Google Places ドロップダウンの位置調整（固定ナビ対応版）
     const adjustDropdownPosition = useCallback(() => {
       if (!localInputRef.current) return;
 
@@ -113,127 +106,110 @@ const FavoriteStoreInput = React.forwardRef<HTMLInputElement, FavoriteStoreInput
           const currentKeyboardHeight = detectKeyboardHeight();
           
           if (isMobile) {
-            // 🔥 ドロップダウンのz-indexを固定ナビより低く設定
-            dropdown.style.zIndex = '9998';
+            // 🔥 固定ナビゲーションより低いz-indexに設定
+            dropdown.style.zIndex = '9998'; // main-nav の 9999 より低く
             dropdown.style.position = 'fixed';
             
-            // 🔥 利用可能な高さを正確に計算
+            // 🔥 利用可能な高さを計算（キーボード + 固定ナビを考慮）
             const windowHeight = window.innerHeight;
             const navHeight = 64; // 固定ナビゲーションの高さ
-            const headerHeight = 56; // ヘッダーの高さ
-            const availableHeight = windowHeight - currentKeyboardHeight - navHeight - headerHeight;
+            const availableHeight = windowHeight - currentKeyboardHeight - navHeight;
+            const dropdownMaxHeight = Math.min(120, availableHeight * 0.25); // 最大25%の高さ
             
-            // 🔥 ドロップダウンを超コンパクトに（最大2件分の高さ）
-            const maxDropdownHeight = Math.min(88, Math.max(44, availableHeight * 0.2)); // 最大2件分（44px × 2）
+            // ドロップダウンを入力フィールドの下に配置
+            let top = inputRect.bottom;
             
-            // 🔥 入力フィールドの下に配置、必要に応じて上に配置
-            let top = inputRect.bottom + 2; // マージンを2pxに縮小
-            const spaceBelow = windowHeight - currentKeyboardHeight - navHeight - inputRect.bottom;
-            const spaceAbove = inputRect.top - headerHeight;
-            
-            // 下に十分なスペースがない場合は上に配置
-            if (spaceBelow < maxDropdownHeight && spaceAbove > maxDropdownHeight) {
-              top = inputRect.top - maxDropdownHeight - 2;
+            // 🔥 固定ナビゲーションとの衝突を回避
+            const maxTop = windowHeight - navHeight - dropdownMaxHeight - 10; // 10pxのマージン
+            if (top + dropdownMaxHeight > maxTop) {
+              // 上に表示
+              top = Math.max(10, inputRect.top - dropdownMaxHeight);
             }
             
-            // 🔥 画面境界内に収める
-            top = Math.max(headerHeight + 2, Math.min(top, windowHeight - navHeight - maxDropdownHeight - 2));
-            
-            // 🔥 位置とサイズを設定（超コンパクト）
-            dropdown.style.top = `${top}px`;
-            dropdown.style.left = `${Math.max(8, inputRect.left)}px`;
-            dropdown.style.width = `${Math.min(inputRect.width, window.innerWidth - 16)}px`;
-            dropdown.style.maxHeight = `${maxDropdownHeight}px`;
+            // 🔥 位置設定（固定ナビとの干渉防止）
+            dropdown.style.top = `${Math.max(10, Math.min(top, maxTop))}px`;
+            dropdown.style.left = `${inputRect.left}px`;
+            dropdown.style.width = `${inputRect.width}px`;
+            dropdown.style.maxHeight = `${dropdownMaxHeight}px`;
             dropdown.style.overflowY = 'auto';
-            dropdown.style.borderRadius = '0.375rem'; // 角丸を小さく
-            dropdown.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.1)'; // シャドウを軽く
-            dropdown.style.border = '1px solid #e5e7eb';
-            dropdown.style.backgroundColor = '#ffffff';
+            dropdown.style.borderRadius = '0.5rem';
+            dropdown.style.marginTop = '4px';
+            dropdown.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)';
             
-            // 🔥 スクロール防止のための追加設定
-            dropdown.style.transform = 'translateZ(0)';
-            dropdown.style.backfaceVisibility = 'hidden';
-            dropdown.style.willChange = 'transform';
-            
-            // 🔥 検索候補を最大2件に制限
-            const items = dropdown.querySelectorAll('.pac-item');
-            items.forEach((item, index) => {
-              const htmlItem = item as HTMLElement;
-              if (index >= 2) {
-                htmlItem.style.display = 'none'; // 3件目以降を非表示
-              } else {
-                htmlItem.style.display = 'flex';
-              }
-            });
-            
+            // 🔥 画面ずれ防止：スクロールを無効化
+            const isChrome = /Chrome/.test(navigator.userAgent) && !/Edge/.test(navigator.userAgent);
+            if (isChrome && currentKeyboardHeight > 0) {
+              // スクロールせずに位置調整のみ
+              dropdown.style.transform = 'translateZ(0)';
+              dropdown.style.backfaceVisibility = 'hidden';
+            }
           } else {
             // デスクトップでの標準位置設定
             dropdown.style.position = 'absolute';
             dropdown.style.zIndex = '9998';
-            dropdown.style.maxHeight = '120px'; // デスクトップでも小さく
+            dropdown.style.maxHeight = '200px';
           }
         }
       });
     }, [detectKeyboardHeight]);
 
-    // 🔥 Google Places ドロップダウンの監視（改善版）
+    // 🔥 Google Places ドロップダウンの監視（固定ナビ対応版）
     const observeDropdown = useCallback(() => {
+      // 既存のオブザーバーがあれば切断
       if (dropdownObserverRef.current) {
         dropdownObserverRef.current.disconnect();
       }
 
       const observer = new MutationObserver((mutations) => {
         mutations.forEach((mutation) => {
-          if (mutation.type === 'childList' || mutation.type === 'attributes') {
+          if (mutation.type === 'childList') {
             const pacContainers = document.querySelectorAll('.pac-container');
-            let hasVisibleDropdown = false;
             
             pacContainers.forEach((container) => {
               const dropdown = container as HTMLElement;
               
-              if (dropdown && dropdown.style.display !== 'none' && dropdown.children.length > 0) {
-                hasVisibleDropdown = true;
-                // 🔥 現在のスクロール位置を保持
+              if (dropdown && dropdown.style.display !== 'none') {
+                setIsDropdownOpen(true);
+                // 🔥 画面ずれ防止：スクロール位置を固定
                 const currentScrollY = window.scrollY;
-                
-                // 🔥 非同期で位置調整を実行
-                requestAnimationFrame(() => {
-                  adjustDropdownPosition();
-                  // 不要なスクロールを防止
-                  if (Math.abs(window.scrollY - currentScrollY) > 3) {
-                    window.scrollTo({ top: currentScrollY, behavior: 'instant' });
-                  }
-                });
+                adjustDropdownPosition();
+                // スクロール位置が変わった場合は元に戻す
+                if (window.scrollY !== currentScrollY) {
+                  window.scrollTo(0, currentScrollY);
+                }
+              } else {
+                setIsDropdownOpen(false);
               }
             });
-            
-            setIsDropdownOpen(hasVisibleDropdown);
           }
         });
       });
 
       observer.observe(document.body, {
         childList: true,
-        subtree: true,
-        attributes: true,
-        attributeFilter: ['style', 'class']
+        subtree: true
       });
 
       dropdownObserverRef.current = observer;
     }, [adjustDropdownPosition]);
 
-    // 🔥 入力フィールドフォーカス時の処理（完全ズームアップ防止版）
-    const handleInputFocus = useCallback((e: React.FocusEvent<HTMLInputElement>) => {
+    // 🔥 入力フィールドフォーカス時の処理（ズームアップ防止版）
+    const handleInputFocus = useCallback(() => {
       const isMobile = window.innerWidth <= 768;
       
       if (isMobile) {
-        // 🔥 ズームアップを完全に防止
-        preventZoom();
-        
         // 🔥 現在のスクロール位置を保存
         const currentScrollY = window.scrollY;
         
-        // 🔥 入力フィールドが見える位置にスクロール（最小限）
+        // 🔥 ズームアップを防止するため、viewport meta tagを一時的に変更
+        const viewportMeta = document.querySelector('meta[name="viewport"]') as HTMLMetaElement;
+        const originalContent = viewportMeta?.content || '';
+        
+        if (viewportMeta) {
+          viewportMeta.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
+        }
+        
+        // キーボード高さを更新
         setTimeout(() => {
           const newKeyboardHeight = detectKeyboardHeight();
           setKeyboardHeight(newKeyboardHeight);
@@ -241,41 +217,48 @@ const FavoriteStoreInput = React.forwardRef<HTMLInputElement, FavoriteStoreInput
           if (localInputRef.current) {
             const inputRect = localInputRef.current.getBoundingClientRect();
             const windowHeight = window.innerHeight;
-            const navHeight = 64;
-            const headerHeight = 56;
-            const availableHeight = windowHeight - newKeyboardHeight - navHeight - headerHeight;
+            const navHeight = 64; // 固定ナビゲーションの高さ
+            const availableHeight = windowHeight - newKeyboardHeight - navHeight;
             
-            // 入力フィールドが見える範囲にあるかチェック
-            const inputTop = inputRect.top;
+            // 🔥 入力フィールドが見える範囲にあるかチェック
             const inputBottom = inputRect.bottom;
-            const visibleAreaTop = headerHeight + 4;
-            const visibleAreaBottom = availableHeight - 4;
+            const visibleAreaTop = 60; // ヘッダー分
+            const visibleAreaBottom = availableHeight;
             
             // 必要最小限のスクロールのみ実行
-            if (inputBottom > visibleAreaBottom || inputTop < visibleAreaTop) {
-              const targetScrollPosition = currentScrollY + inputTop - (availableHeight * 0.2); // より控えめなスクロール
+            if (inputBottom > visibleAreaBottom || inputRect.top < visibleAreaTop) {
+              const targetScrollPosition = window.pageYOffset + inputRect.top - (availableHeight * 0.3);
               
               window.scrollTo({
                 top: Math.max(0, targetScrollPosition),
                 behavior: 'smooth'
               });
+            } else {
+              // スクロール位置を元に戻す
+              window.scrollTo(0, currentScrollY);
             }
           }
-        }, 50); // 遅延を短縮
+          
+          // 🔥 一定時間後にviewport meta tagを元に戻す
+          setTimeout(() => {
+            if (viewportMeta && originalContent) {
+              viewportMeta.content = originalContent;
+            }
+          }, 1000);
+        }, 300); // キーボード表示の遅延を考慮
       }
-    }, [preventZoom, detectKeyboardHeight]);
+    }, [detectKeyboardHeight]);
 
-    // 🔥 入力フィールドのblur時の処理（ズームアップ防止解除）
+    // 🔥 入力フィールドのblur時の処理（ズームアップ防止用）
     const handleInputBlur = useCallback(() => {
-      // 🔥 少し遅延してからズーム制御を解除（ドロップダウン選択を考慮）
-      setTimeout(() => {
-        if (!isDropdownOpen) {
-          restoreZoom();
-        }
-      }, 200);
-    }, [restoreZoom, isDropdownOpen]);
+      // 🔥 フォーカスが外れた時にviewport meta tagを確実に元に戻す
+      const viewportMeta = document.querySelector('meta[name="viewport"]') as HTMLMetaElement;
+      if (viewportMeta) {
+        viewportMeta.content = 'width=device-width, initial-scale=1.0';
+      }
+    }, []);
 
-    // 🔥 ビューポート変更の監視（改善版）
+    // 🔥 ビューポート変更の監視（画面ずれ防止版）
     useEffect(() => {
       const handleViewportChange = () => {
         const newKeyboardHeight = detectKeyboardHeight();
@@ -284,25 +267,26 @@ const FavoriteStoreInput = React.forwardRef<HTMLInputElement, FavoriteStoreInput
         if (isDropdownOpen) {
           // 🔥 スクロール位置を保持しながら位置調整
           const currentScrollY = window.scrollY;
-          requestAnimationFrame(() => {
-            adjustDropdownPosition();
-            // 不要なスクロールを防止
-            if (Math.abs(window.scrollY - currentScrollY) > 5) {
-              window.scrollTo({ top: currentScrollY, behavior: 'instant' });
+          adjustDropdownPosition();
+          // 不要なスクロールを防止
+          setTimeout(() => {
+            if (Math.abs(window.scrollY - currentScrollY) > 10) {
+              window.scrollTo(0, currentScrollY);
             }
-          });
+          }, 50);
         }
       };
 
-      // イベントリスナーを追加
-      window.addEventListener('resize', handleViewportChange, { passive: true });
+      // リサイズとスクロールイベントの監視
+      window.addEventListener('resize', handleViewportChange);
       window.addEventListener('scroll', adjustDropdownPosition, { passive: true });
       
-      // iOS Safari専用のビューポート変更検出
+      // 🔥 iOS Safari専用のビューポート変更検出
       if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
         window.addEventListener('orientationchange', handleViewportChange);
+        // visualViewport API対応
         if (window.visualViewport) {
-          window.visualViewport.addEventListener('resize', handleViewportChange, { passive: true });
+          window.visualViewport.addEventListener('resize', handleViewportChange);
         }
       }
 
@@ -351,19 +335,29 @@ const FavoriteStoreInput = React.forwardRef<HTMLInputElement, FavoriteStoreInput
       }
 
       autocompleteRef.current = new window.google.maps.places.Autocomplete(localInputRef.current, options);
+      console.log('FavoriteStoreInput: Autocomplete initialized with input element:', localInputRef.current);
 
       // ドロップダウン監視を開始
       observeDropdown();
 
+      // 🔥 入力フィールドにフォーカス・ブラーイベントリスナーを追加
+      if (localInputRef.current) {
+        localInputRef.current.addEventListener('focus', handleInputFocus);
+        localInputRef.current.addEventListener('blur', handleInputBlur);
+      }
+
       const listener = autocompleteRef.current!.addListener('place_changed', () => {
         const place = autocompleteRef.current?.getPlace();
+        console.log('FavoriteStoreInput place_changed - place:', place);
 
         if (place && place.place_id && place.name) {
           setInputValue(place.name);
           const storeValue = { id: place.place_id, name: place.name };
+          console.log('FavoriteStoreInput place_changed - calling onChange with:', storeValue);
           onChange(storeValue);
         } else {
           const currentInputValue = localInputRef.current?.value || '';
+          console.log('FavoriteStoreInput place_changed - no valid place selected or place cleared. Input value:', currentInputValue);
           
           if (currentInputValue && currentInputValue !== (value?.name || '')) {
             onChange(null);
@@ -373,11 +367,10 @@ const FavoriteStoreInput = React.forwardRef<HTMLInputElement, FavoriteStoreInput
         }
         
         setIsDropdownOpen(false);
-        // 🔥 選択後にズーム制御を解除
-        restoreZoom();
       });
 
       return () => {
+        // クリーンアップ
         if (autocompleteRef.current && window.google?.maps?.event?.clearInstanceListeners) {
           window.google.maps.event.clearInstanceListeners(autocompleteRef.current);
         }
@@ -386,10 +379,12 @@ const FavoriteStoreInput = React.forwardRef<HTMLInputElement, FavoriteStoreInput
           dropdownObserverRef.current.disconnect();
         }
         
-        // 🔥 クリーンアップ時にズーム制御を解除
-        restoreZoom();
+        if (localInputRef.current) {
+          localInputRef.current.removeEventListener('focus', handleInputFocus);
+          localInputRef.current.removeEventListener('blur', handleInputBlur);
+        }
       };
-    }, [isMapsApiLoaded, mapsApiLoadError, userLocation, onChange, value, observeDropdown, restoreZoom]);
+    }, [isMapsApiLoaded, mapsApiLoadError, userLocation, onChange, value, observeDropdown, handleInputFocus, handleInputBlur]);
 
     useEffect(() => {
       setInputValue(value?.name || '');
@@ -399,6 +394,7 @@ const FavoriteStoreInput = React.forwardRef<HTMLInputElement, FavoriteStoreInput
       setInputValue(event.target.value);
       
       if (!event.target.value) {
+        console.log('FavoriteStoreInput handleInputChange - input cleared, calling onChange(null)');
         onChange(null);
         setIsDropdownOpen(false);
       }
@@ -409,10 +405,9 @@ const FavoriteStoreInput = React.forwardRef<HTMLInputElement, FavoriteStoreInput
       if (localInputRef.current) {
         localInputRef.current.value = '';
       }
+      console.log('FavoriteStoreInput handleClear - calling onChange(null)');
       onChange(null);
       setIsDropdownOpen(false);
-      // 🔥 クリア時にズーム制御を解除
-      restoreZoom();
     };
     
     if (mapsApiLoadError) {
@@ -427,26 +422,18 @@ const FavoriteStoreInput = React.forwardRef<HTMLInputElement, FavoriteStoreInput
             type="text"
             value={inputValue}
             onChange={handleInputChange}
-            onFocus={handleInputFocus}
-            onBlur={handleInputBlur}
             placeholder={placeholder}
             className={`pr-10 ${className || ''}`}
             style={{ 
-              // 🔥 ズームアップ防止：フォントサイズを小さく設定
-              fontSize: '14px !important', // 16pxから14pxに変更
-              lineHeight: '1.4',
+              // 🔥 ズームアップ防止：16px以上のフォントサイズを強制
+              fontSize: '16px !important',
               // 🔥 追加のズームアップ防止設定
               WebkitTextSizeAdjust: '100%',
               textSizeAdjust: '100%',
-              WebkitUserSelect: 'text',
-              userSelect: 'text',
               ...style,
-              // 🔥 フォーカススタイルの統一
+              // 🔥 Chrome/Safari統一のフォーカススタイル
               outline: 'none',
               WebkitTapHighlightColor: 'transparent',
-              // 🔥 追加の安定化設定
-              WebkitTransform: 'translateZ(0)',
-              transform: 'translateZ(0)',
             }}
             disabled={disabled || !isMapsApiLoaded}
             autoComplete="off"
@@ -455,17 +442,16 @@ const FavoriteStoreInput = React.forwardRef<HTMLInputElement, FavoriteStoreInput
             spellCheck="false"
             // 🔥 ズームアップ防止のための追加属性
             inputMode="text"
-            data-testid="favorite-store-input"
           />
           {inputValue && !disabled && (
             <Button
               type="button"
               variant="ghost"
               size="sm"
-              className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 p-0" // サイズを小さく
+              className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
               onClick={handleClear}
             >
-              <X className="h-3 w-3" />
+              <X className="h-4 w-4" />
             </Button>
           )}
         </div>
@@ -491,7 +477,7 @@ const FavoriteStoreInput = React.forwardRef<HTMLInputElement, FavoriteStoreInput
         {/* 🔥 デバッグ情報（開発時のみ表示） */}
         {process.env.NODE_ENV === 'development' && keyboardHeight > 0 && (
           <p className="text-xs text-muted-foreground">
-            キーボード高さ: {keyboardHeight}px | ドロップダウン表示: {isDropdownOpen ? 'あり' : 'なし'}
+            キーボード高さ: {keyboardHeight}px | 利用可能高さ: {getActualViewportHeight()}px
           </p>
         )}
       </div>
@@ -502,3 +488,4 @@ const FavoriteStoreInput = React.forwardRef<HTMLInputElement, FavoriteStoreInput
 FavoriteStoreInput.displayName = 'FavoriteStoreInput';
 
 export default FavoriteStoreInput;
+
