@@ -11,6 +11,7 @@ import { LoadingProvider } from '@/contexts/loading-context';
 import { FeedbackProvider } from '@/contexts/feedback-context';
 import { FeedbackIntegration } from '@/components/feedback/feedback-integration';
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { Analytics } from "@vercel/analytics/react";
 
 const notoSansJP = Noto_Sans_JP({ 
   subsets: ['latin'],
@@ -74,6 +75,7 @@ export default function RootLayout({
           </ThemeProvider>
         </LoadingProvider>
         <SpeedInsights />
+        <Analytics />
       </body>
     </html>
   );
