@@ -43,65 +43,38 @@
     --color-gray: 0 0% 96%;
     --color-brown: 25 80% 25%;
     
-    /* 🔥 ブラウザ横断対応のビューポート変数 */
+    /* 基本的なビューポート変数（非マップページ用） */
     --vh: 1vh;
     --actual-vh: 100vh;
-    --mobile-vh: 100vh;
-    --safe-area-bottom: 0px;
     
     /* マップページ専用の変数 */
     --map-viewport-height: 100vh;
     --map-content-height: 400px;
-    
-    /* 🔥 フルスクリーン専用のビューポート変数 */
-    --fullscreen-vh: 1vh;
   }
 
   * {
     @apply border-border;
   }
   
-  /* 🔥 基本のベース設定（Chrome余白問題解決版） */
-  html {
+  /* 基本のベース設定 */
+  html, body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
     -webkit-tap-highlight-color: transparent;
     text-rendering: optimizeLegibility;
-    overflow-x: hidden;
+    overflow-x: hidden; /* 横スクロールのみ無効 */
     position: relative;
     width: 100%;
+    height: 100%;
     margin: 0;
     padding: 0;
-    /* 🔥 Chrome専用の高さ設定 */
-    height: 100vh;
-    height: calc(var(--vh, 1vh) * 100);
-    max-height: 100vh;
-    max-height: calc(var(--vh, 1vh) * 100);
-  }
-  
-  body {
-    @apply bg-background text-foreground;
-    overflow-x: hidden;
-    position: relative;
-    width: 100%;
-    margin: 0;
-    padding: 0;
-    /* 🔥 Chrome専用の高さ設定（余白問題解決） */
-    height: 100vh;
-    height: calc(var(--vh, 1vh) * 100);
-    max-height: 100vh;
-    max-height: calc(var(--vh, 1vh) * 100);
     /* デフォルトは通常のスクロール */
     overflow-y: auto;
   }
   
-  /* Next.js ルートコンテナ（Chrome余白問題解決） */
+  /* Next.js ルートコンテナ */
   #__next {
-    height: 100vh;
-    height: calc(var(--vh, 1vh) * 100);
-    max-height: 100vh;
-    max-height: calc(var(--vh, 1vh) * 100);
-    overflow: hidden;
+    min-height: 100%;
   }
   
   /* Remove browser styling */
@@ -370,53 +343,16 @@
   }
   
   /* ==================================================
-   * 🔥 Chrome専用の余白問題解決
+   * iOS Safari 専用修正
    * ================================================== */
   
-  /* WebKit系ブラウザ（Safari）専用修正 */
   @supports (-webkit-touch-callout: none) {
-    html, body {
-      height: -webkit-fill-available !important;
-    }
-    
-    #__next {
-      height: -webkit-fill-available !important;
-    }
-    
     body.map-page-active {
       height: -webkit-fill-available !important;
     }
 
     body.map-page-active #__next {
       height: -webkit-fill-available !important;
-    }
-  }
-  
-  /* 🔥 Chrome系ブラウザでの余白問題完全解決 */
-  @supports not (-webkit-touch-callout: none) {
-    html {
-      height: 100vh !important;
-      height: calc(var(--vh, 1vh) * 100) !important;
-      max-height: 100vh !important;
-      max-height: calc(var(--vh, 1vh) * 100) !important;
-      overflow: hidden !important;
-    }
-    
-    body {
-      height: 100vh !important;
-      height: calc(var(--vh, 1vh) * 100) !important;
-      max-height: 100vh !important;
-      max-height: calc(var(--vh, 1vh) * 100) !important;
-      overflow-y: auto !important;
-      overflow-x: hidden !important;
-    }
-    
-    #__next {
-      height: 100vh !important;
-      height: calc(var(--vh, 1vh) * 100) !important;
-      max-height: 100vh !important;
-      max-height: calc(var(--vh, 1vh) * 100) !important;
-      overflow: hidden !important;
     }
   }
   
@@ -452,9 +388,9 @@
     to { opacity: 0; transform: translateY(10px); }
   }
   
-  /* 🔥 セーフエリア対応（Chrome余白問題解決版） */
+  /* iOS home indicator area safe space */
   .pb-safe {
-    padding-bottom: 0px !important;
+    padding-bottom: env(safe-area-inset-bottom, 16px);
   }
   
   /* Prevent overscroll behavior */
@@ -481,42 +417,22 @@
     touch-action: manipulation;
   }
   
-  /* 🔥 Chrome余白問題解決版のビューポート高さユーティリティ */
+  /* 通常ページ用のビューポート高さユーティリティ */
   .h-screen {
     height: 100vh;
     height: calc(var(--vh, 1vh) * 100);
-    max-height: 100vh;
-    max-height: calc(var(--vh, 1vh) * 100);
   }
   
   .h-dynamic {
-    height: 100vh;
-    height: calc(var(--vh, 1vh) * 100);
-    max-height: 100vh;
-    max-height: calc(var(--vh, 1vh) * 100);
+    height: var(--actual-vh);
   }
   
   .min-h-dynamic {
-    min-height: 100vh;
-    min-height: calc(var(--vh, 1vh) * 100);
+    min-height: var(--actual-vh);
   }
   
   .max-h-dynamic {
-    max-height: 100vh;
-    max-height: calc(var(--vh, 1vh) * 100);
-  }
-  
-  /* 🔥 Chrome余白問題解決版のフルハイト */
-  .h-full-viewport {
-    height: 100vh;
-    height: calc(var(--vh, 1vh) * 100);
-    max-height: 100vh;
-    max-height: calc(var(--vh, 1vh) * 100);
-  }
-  
-  .min-h-full-viewport {
-    min-height: 100vh;
-    min-height: calc(var(--vh, 1vh) * 100);
+    max-height: var(--actual-vh);
   }
   
   /* スクロール可能コンテンツ用ユーティリティ */
@@ -624,107 +540,5 @@
     padding: 4px 8px;
     font-size: 12px;
     z-index: 9999;
-  }
-
-  /* 🔥 Timeline専用のスクロールコンテナ修正（メッセージ完全表示対応） */
-  .timeline-scroll-container {
-    height: 100% !important;
-    max-height: 100% !important;
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
-    -webkit-overflow-scrolling: touch !important;
-    overscroll-behavior: contain !important;
-    /* 🔥 スクロール時のパディング調整 */
-    scroll-padding-bottom: 24px !important;
-  }
-
-  /* 🔥 Chrome余白問題完全解決版（メッセージ表示対応） */
-  @supports not (-webkit-touch-callout: none) {
-    .timeline-scroll-container {
-      height: calc(100vh - 56px - 64px) !important;
-      max-height: calc(100vh - 56px - 64px) !important;
-      /* 🔥 下部メッセージ表示のための追加スペース */
-      padding-bottom: 8px !important;
-    }
-  }
-
-  /* 🔥 Safari対応（メッセージ表示対応） */
-  @supports (-webkit-touch-callout: none) {
-    .timeline-scroll-container {
-      height: calc(-webkit-fill-available - 56px - 64px) !important;
-      max-height: calc(-webkit-fill-available - 56px - 64px) !important;
-      /* 🔥 下部メッセージ表示のための追加スペース */
-      padding-bottom: 8px !important;
-    }
-  }
-
-  /* 🔥 フルスクリーンビューアー専用のユーティリティ */
-  .fullscreen-container {
-    height: 100vh;
-    height: calc(var(--fullscreen-vh, 1vh) * 100);
-    max-height: 100vh;
-    max-height: calc(var(--fullscreen-vh, 1vh) * 100);
-    overflow: hidden;
-  }
-
-  /* 🔥 フルスクリーンでのセーフエリア対応 */
-  .fullscreen-safe-top {
-    padding-top: max(16px, env(safe-area-inset-top, 0px));
-  }
-
-  .fullscreen-safe-bottom {
-    padding-bottom: max(16px, env(safe-area-inset-bottom, 0px));
-  }
-
-  .fullscreen-safe-left {
-    padding-left: max(16px, env(safe-area-inset-left, 0px));
-  }
-
-  .fullscreen-safe-right {
-    padding-right: max(16px, env(safe-area-inset-right, 0px));
-  }
-
-  /* 🔥 Chrome/Safari横断でのフルスクリーン対応 */
-  @supports not (-webkit-touch-callout: none) {
-    .fullscreen-container {
-      height: 100vh !important;
-      height: calc(var(--fullscreen-vh, 1vh) * 100) !important;
-      max-height: 100vh !important;
-      max-height: calc(var(--fullscreen-vh, 1vh) * 100) !important;
-    }
-  }
-
-  @supports (-webkit-touch-callout: none) {
-    .fullscreen-container {
-      height: -webkit-fill-available !important;
-      max-height: -webkit-fill-available !important;
-    }
-  }
-
-  /* 🔥 ズームアップ防止のための追加設定 */
-  @media screen and (max-width: 768px) {
-    /* すべての入力フィールドでズームアップを防止 */
-    input, textarea, select {
-      font-size: 16px !important;
-      -webkit-text-size-adjust: 100%;
-      text-size-adjust: 100%;
-    }
-    
-    /* Google Places Autocomplete の入力フィールド専用設定 */
-    .pac-target-input {
-      font-size: 16px !important;
-      -webkit-text-size-adjust: 100% !important;
-      text-size-adjust: 100% !important;
-      -webkit-transform: translateZ(0);
-      transform: translateZ(0);
-    }
-  }
-
-  /* 🔥 viewport meta tag がない場合の緊急対応 */
-  @viewport {
-    width: device-width;
-    initial-scale: 1.0;
-    maximum-scale: 1.0;
-    user-scalable: no;
   }
 }
