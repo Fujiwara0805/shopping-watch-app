@@ -700,4 +700,31 @@
       max-height: -webkit-fill-available !important;
     }
   }
+
+  /* 🔥 ズームアップ防止のための追加設定 */
+  @media screen and (max-width: 768px) {
+    /* すべての入力フィールドでズームアップを防止 */
+    input, textarea, select {
+      font-size: 16px !important;
+      -webkit-text-size-adjust: 100%;
+      text-size-adjust: 100%;
+    }
+    
+    /* Google Places Autocomplete の入力フィールド専用設定 */
+    .pac-target-input {
+      font-size: 16px !important;
+      -webkit-text-size-adjust: 100% !important;
+      text-size-adjust: 100% !important;
+      -webkit-transform: translateZ(0);
+      transform: translateZ(0);
+    }
+  }
+
+  /* 🔥 viewport meta tag がない場合の緊急対応 */
+  @viewport {
+    width: device-width;
+    initial-scale: 1.0;
+    maximum-scale: 1.0;
+    user-scalable: no;
+  }
 }

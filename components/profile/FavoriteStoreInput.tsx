@@ -193,13 +193,21 @@ const FavoriteStoreInput = React.forwardRef<HTMLInputElement, FavoriteStoreInput
       dropdownObserverRef.current = observer;
     }, [adjustDropdownPosition]);
 
-    // 🔥 入力フィールドフォーカス時の処理（画面ずれ防止版）
+    // 🔥 入力フィールドフォーカス時の処理（ズームアップ防止版）
     const handleInputFocus = useCallback(() => {
       const isMobile = window.innerWidth <= 768;
       
       if (isMobile) {
         // 🔥 現在のスクロール位置を保存
         const currentScrollY = window.scrollY;
+        
+        // 🔥 ズームアップを防止するため、viewport meta tagを一時的に変更
+        const viewportMeta = document.querySelector('meta[name="viewport"]') as HTMLMetaElement;
+        const originalContent = viewportMeta?.content || '';
+        
+        if (viewportMeta) {
+          viewportMeta.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
+        }
         
         // キーボード高さを更新
         setTimeout(() => {
@@ -230,9 +238,25 @@ const FavoriteStoreInput = React.forwardRef<HTMLInputElement, FavoriteStoreInput
               window.scrollTo(0, currentScrollY);
             }
           }
+          
+          // 🔥 一定時間後にviewport meta tagを元に戻す
+          setTimeout(() => {
+            if (viewportMeta && originalContent) {
+              viewportMeta.content = originalContent;
+            }
+          }, 1000);
         }, 300); // キーボード表示の遅延を考慮
       }
     }, [detectKeyboardHeight]);
+
+    // 🔥 入力フィールドのblur時の処理（ズームアップ防止用）
+    const handleInputBlur = useCallback(() => {
+      // 🔥 フォーカスが外れた時にviewport meta tagを確実に元に戻す
+      const viewportMeta = document.querySelector('meta[name="viewport"]') as HTMLMetaElement;
+      if (viewportMeta) {
+        viewportMeta.content = 'width=device-width, initial-scale=1.0';
+      }
+    }, []);
 
     // 🔥 ビューポート変更の監視（画面ずれ防止版）
     useEffect(() => {
@@ -316,9 +340,10 @@ const FavoriteStoreInput = React.forwardRef<HTMLInputElement, FavoriteStoreInput
       // ドロップダウン監視を開始
       observeDropdown();
 
-      // 入力フィールドにフォーカスイベントリスナーを追加
+      // 🔥 入力フィールドにフォーカス・ブラーイベントリスナーを追加
       if (localInputRef.current) {
         localInputRef.current.addEventListener('focus', handleInputFocus);
+        localInputRef.current.addEventListener('blur', handleInputBlur);
       }
 
       const listener = autocompleteRef.current!.addListener('place_changed', () => {
@@ -356,9 +381,10 @@ const FavoriteStoreInput = React.forwardRef<HTMLInputElement, FavoriteStoreInput
         
         if (localInputRef.current) {
           localInputRef.current.removeEventListener('focus', handleInputFocus);
+          localInputRef.current.removeEventListener('blur', handleInputBlur);
         }
       };
-    }, [isMapsApiLoaded, mapsApiLoadError, userLocation, onChange, value, observeDropdown, handleInputFocus]);
+    }, [isMapsApiLoaded, mapsApiLoadError, userLocation, onChange, value, observeDropdown, handleInputFocus, handleInputBlur]);
 
     useEffect(() => {
       setInputValue(value?.name || '');
@@ -399,17 +425,23 @@ const FavoriteStoreInput = React.forwardRef<HTMLInputElement, FavoriteStoreInput
             placeholder={placeholder}
             className={`pr-10 ${className || ''}`}
             style={{ 
-              fontSize: '16px', 
+              // 🔥 ズームアップ防止：16px以上のフォントサイズを強制
+              fontSize: '16px !important',
+              // 🔥 追加のズームアップ防止設定
+              WebkitTextSizeAdjust: '100%',
+              textSizeAdjust: '100%',
               ...style,
               // 🔥 Chrome/Safari統一のフォーカススタイル
               outline: 'none',
-              WebkitTapHighlightColor: 'transparent'
+              WebkitTapHighlightColor: 'transparent',
             }}
             disabled={disabled || !isMapsApiLoaded}
             autoComplete="off"
             autoCorrect="off"
             autoCapitalize="off"
             spellCheck="false"
+            // 🔥 ズームアップ防止のための追加属性
+            inputMode="text"
           />
           {inputValue && !disabled && (
             <Button
