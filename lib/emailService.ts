@@ -1,9 +1,20 @@
 import { Resend } from 'resend';
 
-// 環境変数が存在しない場合のフォールバック処理を追加
+// 環境変数の詳細ログ出力（本番環境でも一時的に有効にする）
+console.log('=== 環境変数チェック ===');
+console.log('NODE_ENV:', process.env.NODE_ENV);
+console.log('RESEND_API_KEY exists:', !!process.env.RESEND_API_KEY);
+console.log('RESEND_API_KEY prefix:', process.env.RESEND_API_KEY?.substring(0, 10) + '...');
+console.log('RESEND_FROM_EMAIL:', process.env.RESEND_FROM_EMAIL);
+console.log('RESEND_FROM_NAME:', process.env.RESEND_FROM_NAME);
+console.log('NEXT_PUBLIC_APP_URL:', process.env.NEXT_PUBLIC_APP_URL);
+console.log('========================');
+
 const resendApiKey = process.env.RESEND_API_KEY;
 if (!resendApiKey) {
-  console.warn('RESEND_API_KEY environment variable is not set');
+  console.error('❌ RESEND_API_KEY environment variable is not set');
+} else {
+  console.log('✅ RESEND_API_KEY is configured');
 }
 
 const resend = new Resend(resendApiKey || 'dummy-key-for-build');
@@ -14,43 +25,37 @@ interface SendPasswordResetEmailParams {
 }
 
 export async function sendPasswordResetEmail({ to, resetToken }: SendPasswordResetEmailParams) {
+  console.log('🚀 sendPasswordResetEmail called with:', { to, tokenLength: resetToken.length });
+  
   // 実際のメール送信時にAPIキーをチェック
   if (!process.env.RESEND_API_KEY) {
-    console.error('RESEND_API_KEY environment variable is not configured');
+    console.error('❌ RESEND_API_KEY environment variable is not configured');
     throw new Error('メール送信の設定が完了していません。管理者にお問い合わせください。');
   }
   
   // 必要な環境変数をチェック
   if (!process.env.NEXT_PUBLIC_APP_URL) {
-    console.error('NEXT_PUBLIC_APP_URL environment variable is not configured');
+    console.error('❌ NEXT_PUBLIC_APP_URL environment variable is not configured');
     throw new Error('アプリケーションURLが設定されていません。');
   }
   
   const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL}/reset-password?token=${resetToken}`;
   
-  // 環境に応じた送信者情報の設定
-  const isDevelopment = process.env.NODE_ENV === 'development';
-  const isProduction = process.env.NODE_ENV === 'production';
-  
-  let fromEmail: string;
+  // 送信者情報の設定
+  const fromEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
   const fromName = process.env.RESEND_FROM_NAME || 'Tokudoku App';
   
-  if (isProduction) {
-    // 本番環境：認証されたtokudoku.comドメインを使用
-    fromEmail = process.env.RESEND_FROM_EMAIL || 'noreply@tokudoku.com';
-  } else {
-    // 開発環境：Resendのデフォルトまたは設定された値を使用
-    fromEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
-  }
-  
-  console.log('メール送信設定:', {
+  console.log('📧 メール送信設定:', {
     environment: process.env.NODE_ENV,
     from: `${fromName} <${fromEmail}>`,
     to: to,
-    resetUrl: resetUrl.substring(0, 50) + '...' // セキュリティのため一部のみログ出力
+    resetUrl: resetUrl.substring(0, 50) + '...',
+    apiKeyPrefix: process.env.RESEND_API_KEY?.substring(0, 10) + '...'
   });
   
   try {
+    console.log('📤 Resend API呼び出し開始...');
+    
     const { data, error } = await resend.emails.send({
       from: `${fromName} <${fromEmail}>`,
       to: [to],
@@ -107,58 +112,53 @@ export async function sendPasswordResetEmail({ to, resetToken }: SendPasswordRes
       `,
     });
 
+    console.log('📨 Resend API レスポンス:', {
+      success: !error,
+      data: data,
+      error: error,
+      timestamp: new Date().toISOString()
+    });
+
     if (error) {
-      console.error('Resend APIエラー詳細:', {
+      console.error('❌ Resend APIエラー詳細:', {
         name: error.name,
         message: error.message,
         statusCode: (error as any).statusCode,
         to: to,
         from: fromEmail,
-        environment: process.env.NODE_ENV
+        environment: process.env.NODE_ENV,
+        fullError: error
       });
       
-      // 403エラー（validation_error）の場合の具体的な処理
-      if (error.message?.includes('validation_error') || 
-          error.message?.includes('verify a domain') ||
-          (error as any).statusCode === 403) {
-        
-        if (isDevelopment) {
-          // 開発環境では管理者メールアドレスのみ送信可能
-          const testEmail = 'tiki4091@gmail.com';
-          if (to !== testEmail) {
-            throw new Error(`開発環境では ${testEmail} にのみメール送信が可能です。`);
-          }
-        }
-        
-        if (isProduction) {
-          // 本番環境でドメイン認証が必要
-          throw new Error('tokudoku.comドメインの認証が完了していません。Resendダッシュボードでドメイン認証を完了してください。');
-        }
-        
-        // 一般的なドメイン認証エラー
-        throw new Error('メール送信にはドメインの認証が必要です。管理者にお問い合わせください。');
-      }
-      
-      // その他のエラー
-      throw new Error(`メールの送信に失敗しました: ${error.message}`);
+      // エラーを必ず投げる
+      throw new Error(`メール送信エラー: ${error.message}`);
     }
 
-    console.log('パスワードリセットメール送信成功:', {
-      messageId: data?.id,
+    if (!data) {
+      console.error('❌ Resend APIからデータが返されませんでした');
+      throw new Error('メール送信に失敗しました：レスポンスデータが空です');
+    }
+
+    console.log('✅ パスワードリセットメール送信成功:', {
+      messageId: data.id,
       to: to,
-      environment: process.env.NODE_ENV
+      environment: process.env.NODE_ENV,
+      timestamp: new Date().toISOString()
     });
-    return { success: true, messageId: data?.id };
+    
+    return { success: true, messageId: data.id };
+    
   } catch (error: any) {
-    console.error('メール送信中にエラー:', {
+    console.error('💥 メール送信中にエラー:', {
       error: error.message,
       stack: error.stack,
       to: to,
       fromEmail: fromEmail,
-      environment: process.env.NODE_ENV
+      environment: process.env.NODE_ENV,
+      timestamp: new Date().toISOString()
     });
     
-    // エラーメッセージをそのまま再スロー（既に適切に処理されている）
-    throw error;
+    // エラーを必ず再スロー
+    throw new Error(`メール送信に失敗しました: ${error.message}`);
   }
 }
