@@ -1293,21 +1293,22 @@ export default function Timeline() {
             </Button>
           </div>
 
-          {/* 🔥 カテゴリ選択をドロップダウン形式に変更 */}
+          {/* カテゴリ選択をドロップダウン形式に変更（3つ表示、スクロール対応） */}
           <div>
             <h3 className="font-semibold text-lg mb-2">カテゴリーで絞り込み</h3>
             <Select 
               onValueChange={(value: string) => setTempActiveFilter(value)} 
               value={tempActiveFilter}
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="w-full focus:ring-0 focus:ring-offset-0 focus:border-input">
                 <SelectValue placeholder="カテゴリを選択" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="max-h-[200px]">
                 {categories.map((category) => (
                   <SelectItem 
                     key={category} 
                     value={category === 'すべて' ? 'all' : category}
+                    className="text-lg py-3"
                   >
                     {category}
                   </SelectItem>
@@ -1319,15 +1320,15 @@ export default function Timeline() {
           <div>
             <h3 className="font-semibold text-lg mb-2">表示順</h3>
             <Select onValueChange={(value: SortOption) => setTempSortBy(value)} value={tempSortBy}>
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="w-full focus:ring-0 focus:ring-offset-0 focus:border-input">
                 <SelectValue placeholder="並び替え" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="created_at_desc">新着順</SelectItem>
-                <SelectItem value="created_at_asc">古い順</SelectItem>
-                <SelectItem value="expires_at_asc">期限が近い順</SelectItem>
-                <SelectItem value="likes_desc">いいねが多い順</SelectItem>
-                {userLocation && <SelectItem value="distance_asc">距離が近い順</SelectItem>}
+              <SelectContent className="max-h-[200px]">
+                <SelectItem value="created_at_desc" className="text-lg py-3">新着順</SelectItem>
+                <SelectItem value="created_at_asc" className="text-lg py-3">古い順</SelectItem>
+                <SelectItem value="expires_at_asc" className="text-lg py-3">期限が近い順</SelectItem>
+                <SelectItem value="likes_desc" className="text-lg py-3">いいねが多い順</SelectItem>
+                {userLocation && <SelectItem value="distance_asc" className="text-lg py-3">距離が近い順</SelectItem>}
               </SelectContent>
             </Select>
           </div>
@@ -1336,26 +1337,29 @@ export default function Timeline() {
           <div>
             <h3 className="font-semibold text-lg mb-2">特別な検索</h3>
             <Select onValueChange={(value: SearchMode) => setTempSearchMode(value)} value={tempSearchMode}>
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="w-full focus:ring-0 focus:ring-offset-0 focus:border-input">
                 <SelectValue placeholder="検索方法を選択" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">すべての投稿</SelectItem>
+              <SelectContent className="max-h-[200px]">
+                <SelectItem value="all" className="text-lg py-3">すべての投稿</SelectItem>
                 <SelectItem 
                   value="favorite_store" 
                   disabled={!currentUserId || favoriteStoreIds.length === 0}
+                  className="text-lg py-3"
                 >
                   お気に入り店舗の投稿 {favoriteStoreIds.length > 0 && `(${favoriteStoreIds.length}店舗)`}
                 </SelectItem>
                 <SelectItem 
                   value="liked_posts" 
                   disabled={!currentUserId || likedPostIds.length === 0}
+                  className="text-lg py-3"
                 >
                   いいねした投稿 
                 </SelectItem>
                 <SelectItem 
                   value="hybrid" 
                   disabled={!currentUserId || (favoriteStoreIds.length === 0 && likedPostIds.length === 0)}
+                  className="text-lg py-3"
                 >
                   複合検索 (お気に入り + いいね) 
                 </SelectItem>
