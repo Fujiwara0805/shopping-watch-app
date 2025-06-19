@@ -175,6 +175,9 @@ export default function PostPage() {
   const selectedCategory = form.watch('category');
   const watchedFormValues = form.watch(); // フォームの全フィールドを監視
 
+  // 価格計算モーダルの状態
+  const [showPriceInfoModal, setShowPriceInfoModal] = useState(false);
+
   useEffect(() => {
     return () => {
       if (imagePreviewUrl && imagePreviewUrl.startsWith('blob:')) {
@@ -652,6 +655,11 @@ export default function PostPage() {
     }, 100);
   };
 
+  const handleMoveToPriceCalculator = () => {
+    setShowPriceInfoModal(false);
+    window.open('https://discount-calculator-app.vercel.app/', '_blank');
+  };
+
   if (status === "loading") {
     return (
       <AppLayout>
@@ -1059,7 +1067,17 @@ export default function PostPage() {
                 name="price"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-xl flex font-semibold items-center"><Tag className="mr-2 h-6 w-6" />価格 (税込)<span className="text-destructive ml-1">※</span></FormLabel>
+                    <FormLabel className="text-xl flex font-semibold items-center">
+                      <Tag className="mr-2 h-6 w-6" />
+                      価格 (税込)<span className="text-destructive ml-1">※</span>
+                      <span
+                        className="ml-2 flex items-center text-sm text-blue-600 cursor-pointer hover:underline"
+                        onClick={() => setShowPriceInfoModal(true)}
+                      >
+                        <HelpCircle className="h-4 w-4 mr-1" />
+                        何％割引っていくら？
+                      </span>
+                    </FormLabel>
                     <FormControl>
                       <Input
                         type="number"
@@ -1193,6 +1211,25 @@ export default function PostPage() {
                   onClick={handleMoveToMap}
                 >
                   お店を探す画面へ移動
+                </Button>
+              </div>
+            </div>
+          </CustomModal>
+
+          <CustomModal
+            isOpen={showPriceInfoModal}
+            onClose={() => setShowPriceInfoModal(false)}
+            title="価格計算について"
+          >
+            <div className="pt-2">
+              <p className="mb-4 text-center">
+                割引率から価格を計算したい場合は、専用の計算ツールをご利用ください。
+              </p>
+              <div className="mt-6 flex justify-center">
+                <Button
+                  onClick={handleMoveToPriceCalculator}
+                >
+                  割引計算ツールを開く
                 </Button>
               </div>
             </div>
