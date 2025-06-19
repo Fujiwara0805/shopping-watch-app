@@ -65,7 +65,12 @@ export async function sendPasswordResetEmail({ to, resetToken }: SendPasswordRes
           <div style="background-color: white; border-radius: 12px; padding: 40px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
             <div style="text-align: center; margin-bottom: 32px;">
               <div style="width: 64px; height: 64px; background-color: #73370c; border-radius: 50%; margin: 0 auto 16px; display: flex; align-items: center; justify-content: center;">
-                <span style="color: white; font-size: 24px;">🔒</span>
+                <!-- SVGロックアイコン -->
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M6 10V8C6 5.79086 7.79086 4 10 4H14C16.2091 4 18 5.79086 18 8V10" stroke="white" stroke-width="2" stroke-linecap="round"/>
+                  <rect x="4" y="10" width="16" height="10" rx="2" fill="white"/>
+                  <circle cx="12" cy="15" r="2" fill="#73370c"/>
+                </svg>
               </div>
               <h1 style="color: #73370c; margin: 0; font-size: 24px; font-weight: bold;">パスワードリセット</h1>
             </div>
