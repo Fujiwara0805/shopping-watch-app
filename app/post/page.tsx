@@ -30,7 +30,7 @@ import { ja } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 import { useLoadScript, Autocomplete, GoogleMap } from "@react-google-maps/api";
 import { useLoading } from '@/contexts/loading-context';
-import { setTimeout } from 'timers/promises';
+// import { setTimeout } from 'timers/promises';
 import { PostCard } from '@/components/posts/post-card';
 
 declare global {
@@ -142,6 +142,9 @@ export default function PostPage() {
   
   // 位置情報取得状況の表示用
   const [locationStatus, setLocationStatus] = useState<'none' | 'getting' | 'success' | 'error'>('none');
+
+  // refを追加：内容フィールドへのフォーカス用
+  const contentTextareaRef = useRef<HTMLTextAreaElement>(null);
 
   const { isLoaded, loadError } = useLoadScript({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
@@ -633,6 +636,22 @@ export default function PostPage() {
     );
   };
 
+  // カテゴリー選択後のフォーカス制御
+  const handleCategoryChange = (value: string) => {
+    form.setValue("category", value, { shouldValidate: true });
+    
+    // カテゴリー選択後に「内容」フィールドにフォーカスを移動
+    setTimeout(() => {
+      if (contentTextareaRef.current) {
+        contentTextareaRef.current.focus();
+        contentTextareaRef.current.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'center' 
+        });
+      }
+    }, 100);
+  };
+
   if (status === "loading") {
     return (
       <AppLayout>
@@ -933,13 +952,13 @@ export default function PostPage() {
                     <FormLabel className="text-xl flex font-semibold items-center">
                       <LayoutGrid className="mr-2 h-6 w-6" /> カテゴリ<span className="text-destructive ml-1">※</span>
                     </FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value || ""}>
+                    <Select onValueChange={handleCategoryChange} value={field.value || ""}>
                       <FormControl>
                         <SelectTrigger className="w-full text-lg py-6">
                           <SelectValue placeholder="カテゴリを選択してください" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent>
+                      <SelectContent className="max-h-[200px]">
                         {categories.map((category) => (
                           <SelectItem key={category} value={category} className="text-lg py-3">
                             {category}
@@ -971,6 +990,10 @@ export default function PostPage() {
                         autoCapitalize="off"
                         spellCheck="false"
                         {...field}
+                        ref={(e) => {
+                          field.ref(e);
+                          (contentTextareaRef as any).current = e;
+                        }}
                       />
                     </FormControl>
                     <FormMessage />
