@@ -1,19 +1,19 @@
 {
   "name": "トクドク β版",
-  "short_name": "トクドク β版",
-  "description": "近所のスーパーのお得情報をリアルタイムでお届けします",
+  "short_name": "トクドク",
+  "description": "お気に入りの店舗を登録して、よく行くスーパーや近所のお店を登録できます。お気に入りに追加すると、お得な情報をいち早くゲットできます。",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#FF6B35",
+  "theme_color": "#73370c",
   "icons": [
     {
-      "src": "/icon-192.png",
+      "src": "https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png",
       "type": "image/png",
       "sizes": "192x192"
     },
     {
-      "src": "/icon-512.png",
+      "src": "https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"

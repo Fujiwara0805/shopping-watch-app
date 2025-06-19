@@ -21,13 +21,41 @@ const notoSansJP = Noto_Sans_JP({
 
 export const metadata: Metadata = {
   title: 'トクドク β版',
-  description: 'みんなでお得な情報を共有しよう！',
+  description: 'お気に入りの店舗を登録して、よく行くスーパーや近所のお店を登録できます。お気に入りに追加すると、お得な情報をいち早くゲットできます。',
   viewport: 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no',
-  themeColor: '#FF6B35',
+  themeColor: '#73370c',
   manifest: '/manifest.json',
   icons: {
-    icon: 'https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png',
-    apple: 'https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png',
+    icon: [
+      { url: 'https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png', sizes: '192x192', type: 'image/png' },
+      { url: 'https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png', sizes: '512x512', type: 'image/png' },
+    ],
+    apple: [
+      { url: 'https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png', sizes: '192x192', type: 'image/png' },
+    ],
+    shortcut: 'https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png',
+  },
+  openGraph: {
+    title: 'トクドク β版',
+    description: 'お気に入りの店舗を登録して、よく行くスーパーや近所のお店を登録できます。お気に入りに追加すると、お得な情報をいち早くゲットできます。',
+    url: 'https://www.tokudoku.com',
+    siteName: 'トクドク β版',
+    images: [
+      {
+        url: 'https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png',
+        width: 512,
+        height: 512,
+        alt: 'トクドク β版',
+      },
+    ],
+    locale: 'ja_JP',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary',
+    title: 'トクドク β版',
+    description: 'お気に入りの店舗を登録して、よく行くスーパーや近所のお店を登録できます。お気に入りに追加すると、お得な情報をいち早くゲットできます。',
+    images: ['https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png'],
   },
 };
 
