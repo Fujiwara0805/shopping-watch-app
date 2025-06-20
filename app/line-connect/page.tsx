@@ -35,8 +35,8 @@ export default function LineConnectPage() {
   const [showQRCode, setShowQRCode] = useState(false);
   const [isAddFriendClicked, setIsAddFriendClicked] = useState(false);
 
-  // LINE Bot Basic ID
-  const LINE_BOT_ID = '@208subra';
+  // 正しいLINE Bot Basic ID
+  const LINE_BOT_ID = '@208uubra';
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -192,12 +192,24 @@ export default function LineConnectPage() {
     const isAndroid = /android/.test(userAgent);
     const isMobile = isIOS || isAndroid;
     
+    // デバッグ用ログ追加
+    console.log('LINE友達追加開始:', {
+      botId: LINE_BOT_ID,
+      userAgent,
+      isIOS,
+      isAndroid,
+      isMobile
+    });
+    
     try {
       if (isMobile) {
         if (isIOS) {
-          // iOS版LINEアプリ直接起動
+          // iOS版 - より確実な方法
           const iosLineUrl = `line://ti/p/${LINE_BOT_ID}`;
           const fallbackUrl = `https://line.me/R/ti/p/${LINE_BOT_ID}`;
+          
+          console.log('iOS LINE URL:', iosLineUrl);
+          console.log('iOS Fallback URL:', fallbackUrl);
           
           // LINEアプリを開く試行
           window.location.href = iosLineUrl;
@@ -210,27 +222,33 @@ export default function LineConnectPage() {
           }, 2000);
           
         } else if (isAndroid) {
-          // Android版Intent URL
-          const androidUrl = `intent://ti/p/${LINE_BOT_ID}#Intent;scheme=line;package=jp.naver.line.android;S.browser_fallback_url=https%3A%2F%2Fline.me%2FR%2Fti%2Fp%2F${encodeURIComponent(LINE_BOT_ID)};end`;
+          // Android版 - Intent URLとフォールバック
+          const fallbackUrl = `https://line.me/R/ti/p/${LINE_BOT_ID}`;
+          const androidUrl = `intent://ti/p/${LINE_BOT_ID}#Intent;scheme=line;package=jp.naver.line.android;S.browser_fallback_url=${encodeURIComponent(fallbackUrl)};end`;
+          
+          console.log('Android Intent URL:', androidUrl);
+          console.log('Android Fallback URL:', fallbackUrl);
+          
           window.location.href = androidUrl;
         }
       } else {
         // デスクトップの場合
-        window.open(`https://line.me/R/ti/p/${LINE_BOT_ID}`, '_blank');
+        const webUrl = `https://line.me/R/ti/p/${LINE_BOT_ID}`;
+        console.log('Desktop LINE URL:', webUrl);
+        window.open(webUrl, '_blank');
       }
       
       toast({
         title: "LINE友達追加",
-        description: isMobile 
-          ? "LINEアプリで友達追加を完了してから、「接続確認」ボタンをタップしてください。"
-          : "LINE Web版またはQRコードで友達追加を完了してください。",
-        duration: 6000,
+        description: "LINEの友達追加ページが開きます。友達追加を完了してから「接続確認」ボタンをタップしてください。",
+        duration: 8000,
       });
       
     } catch (error) {
       console.error('LINE友達追加でエラーが発生:', error);
       // エラー時のフォールバック
-      window.open(`https://line.me/R/ti/p/${LINE_BOT_ID}`, '_blank');
+      const fallbackUrl = `https://line.me/R/ti/p/${LINE_BOT_ID}`;
+      window.open(fallbackUrl, '_blank');
       
       toast({
         title: "LINE友達追加",
@@ -413,7 +431,126 @@ export default function LineConnectPage() {
                           </>
                         )}
                       </Button>
+
+                      {/* QRコード表示ボタンを追加 */}
+                      <Button 
+                        onClick={() => setShowQRCode(!showQRCode)}
+                        variant="outline"
+                        className="w-full"
+                        size="lg"
+                      >
+                        <QrCode className="w-5 h-5 mr-2" />
+                        QRコードで友達追加
+                      </Button>
+
+                      {/* QRコード表示エリア */}
+                      {showQRCode && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          className="bg-white p-4 rounded-lg border text-center"
+                        >
+                          <p className="text-sm text-gray-600 mb-3">
+                            LINEアプリでQRコードを読み取ってください
+                          </p>
+                          
+                          {/* QRコード画像（LINE公式のQRコード生成URLを使用） */}
+                          <div className="flex justify-center mb-3">
+                            <img 
+                              src={`https://qr-official.line.me/gs/M_${LINE_BOT_ID.replace('@', '')}_GW.png`}
+                              alt="LINE QR Code"
+                              className="w-48 h-48 border rounded-lg"
+                              onError={(e) => {
+                                // QRコード読み込みエラー時のフォールバック
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = 'none';
+                                const parent = target.parentElement;
+                                if (parent) {
+                                  parent.innerHTML = `
+                                    <div class="w-48 h-48 border rounded-lg flex items-center justify-center bg-gray-100">
+                                      <div class="text-center">
+                                        <div class="w-12 h-12 mx-auto mb-2 text-gray-400">📱</div>
+                                        <p class="text-sm text-gray-500">QRコードを表示できません</p>
+                                        <p class="text-xs text-gray-400 mt-1">Bot ID: ${LINE_BOT_ID}</p>
+                                      </div>
+                                    </div>
+                                  `;
+                                }
+                              }}
+                            />
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <p className="text-xs text-gray-500">
+                              または、LINEアプリで「{LINE_BOT_ID}」を検索
+                            </p>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={handleCopyId}
+                              className="text-xs"
+                            >
+                              <Copy className="w-3 h-3 mr-1" />
+                              Bot IDをコピー
+                            </Button>
+                          </div>
+                        </motion.div>
+                      )}
+
+                      {/* 接続確認ボタン */}
+                      <Button 
+                        onClick={handleLinkConnection}
+                        disabled={linking}
+                        variant="outline"
+                        className="w-full"
+                        size="lg"
+                      >
+                        {linking ? (
+                          <RefreshCw className="w-5 h-5 mr-2 animate-spin" />
+                        ) : (
+                          <Link className="w-5 h-5 mr-2" />
+                        )}
+                        {linking ? '接続確認中...' : '接続確認'}
+                      </Button>
                     </div>
+
+                    {/* 手動案内セクションを追加 */}
+                    <div className="bg-yellow-50 p-4 rounded-lg text-left mt-4">
+                      <h4 className="font-medium text-yellow-900 mb-2 flex items-center">
+                        <Info className="w-5 h-5 mr-2" />
+                        📱 手動で友達追加する方法
+                      </h4>
+                      <ol className="text-sm text-yellow-800 space-y-2">
+                        <li>1. LINEアプリを開く</li>
+                        <li>2. 「友だち追加」→「検索」をタップ</li>
+                        <li>3. 「ID」を選択して「{LINE_BOT_ID}」を入力</li>
+                        <li>4. 検索結果から「トクドク」を友達追加</li>
+                        <li>5. このページに戻って「接続確認」をタップ</li>
+                      </ol>
+                    </div>
+
+                    {/* デバッグ情報（開発時のみ表示） */}
+                    {process.env.NODE_ENV === 'development' && (
+                      <div className="bg-gray-50 p-3 rounded-lg text-xs mt-4">
+                        <h5 className="font-medium mb-2">デバッグ情報:</h5>
+                        <div className="space-y-1 text-gray-600">
+                          <p>Bot ID: {LINE_BOT_ID}</p>
+                          <p>User Agent: {typeof navigator !== 'undefined' ? navigator.userAgent : 'N/A'}</p>
+                          <p>URL: https://line.me/R/ti/p/{LINE_BOT_ID}</p>
+                          <p>
+                            <a 
+                              href={`https://line.me/R/ti/p/${LINE_BOT_ID}`} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:underline"
+                            >
+                              URLをテスト
+                            </a>
+                          </p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
