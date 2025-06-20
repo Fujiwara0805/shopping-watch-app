@@ -329,7 +329,7 @@ function ProfileSetupContent() {
               render={({ field }) => (
                 <FormItem className="favorite-store-field">
                   <FormLabel className="text-2xl flex items-center font-semibold">
-                    <Store className="mr-2 h-6 w-6 text-primary" /> お気に入り店舗
+                    <Store className="mr-2 h-5 w-5 text-primary" /> お気に入り店舗
                   </FormLabel>
                   <FormControl>
                     <FavoriteStoreInput
@@ -341,7 +341,6 @@ function ProfileSetupContent() {
                       }}
                       disabled={isSaving}
                       ref={field.ref}
-                      className="py-6"
                       style={{ fontSize: '16px' }}
                     />
                   </FormControl>
@@ -356,7 +355,7 @@ function ProfileSetupContent() {
               render={({ field }) => (
                 <FormItem className="favorite-store-field">
                   <FormLabel className="text-2xl flex items-center font-semibold">
-                    <Store className="mr-2 h-6 w-6 text-primary font-semibold" /> お気に入り店舗
+                    <Store className="mr-2 h-5 w-5 text-primary" /> お気に入り店舗
                   </FormLabel>
                   <FormControl>
                     <FavoriteStoreInput
@@ -368,7 +367,6 @@ function ProfileSetupContent() {
                       }}
                       disabled={isSaving}
                       ref={field.ref}
-                      className="py-6"
                       style={{ fontSize: '16px' }}
                     />
                   </FormControl>
@@ -383,7 +381,7 @@ function ProfileSetupContent() {
               render={({ field }) => (
                 <FormItem className="favorite-store-field">
                   <FormLabel className="text-2xl flex items-center font-semibold">
-                    <Store className="mr-2 h-6 w-6 text-primary font-semibold" /> お気に入り店舗
+                    <Store className="mr-2 h-5 w-5 text-primary" /> お気に入り店舗
                   </FormLabel>
                   <FormControl>
                     <FavoriteStoreInput
@@ -395,7 +393,6 @@ function ProfileSetupContent() {
                       }}
                       disabled={isSaving}
                       ref={field.ref}
-                      className="py-6"
                       style={{ fontSize: '16px' }}
                     />
                   </FormControl>
