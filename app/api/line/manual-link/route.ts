@@ -31,7 +31,18 @@ export async function POST(request: NextRequest) {
 
     console.log(`🔗 Manual LINE linking request: User ${session.user.id} -> LINE ${cleanLineUserId}`);
 
-    // 1. 現在のユーザーの状況確認
+    // 1. app_profileを取得
+    const { data: profileData, error: profileError } = await supabase
+      .from('app_profiles')
+      .select('id, user_id')
+      .eq('user_id', session.user.id)
+      .single();
+
+    if (profileError || !profileData) {
+      return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
+    }
+
+    // 2. 現在のユーザーの状況確認
     const { data: currentUser, error: userError } = await supabase
       .from('app_users')
       .select('line_id, email')
@@ -51,7 +62,7 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // 2. 指定されたLINE IDが既に他のユーザーに紐付けられていないかチェック
+    // 3. 指定されたLINE IDが既に他のユーザーに紐付けられていないかチェック
     const { data: existingLineUser, error: lineUserError } = await supabase
       .from('app_users')
       .select('id, email')
@@ -71,81 +82,39 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // 3. デバッグログからこのLINE IDが実際に友達追加されているかチェック
-    const { data: debugLogs, error: debugError } = await supabase
-      .from('debug_logs')
-      .select('data, created_at')
-      .eq('type', 'new_line_user_follow')
-      .contains('data', { lineUserId: cleanLineUserId })
-      .order('created_at', { ascending: false })
-      .limit(1);
-
-    if (debugError) {
-      console.error('Error checking debug logs:', debugError);
-    }
-
-    const hasFollowEvent = debugLogs && debugLogs.length > 0;
-    const followEventTime = hasFollowEvent ? debugLogs[0].created_at : null;
-
-    if (!hasFollowEvent) {
-      console.warn(`⚠️  No follow event found for LINE user ${cleanLineUserId}`);
-      // 警告するが、紐付けは許可する（デバッグログが無い場合もある）
-    } else {
-      console.log(`✅ Found follow event for LINE user ${cleanLineUserId} at ${followEventTime}`);
-    }
-
-    // 4. LINE User IDを現在のユーザーに紐付け
+    // 4. LINE User IDをapp_usersに設定
     const { error: updateError } = await supabase
       .from('app_users')
       .update({ 
         line_id: cleanLineUserId,
-        updated_at: new Date().toISOString()
+        update_at: new Date().toISOString()
       })
       .eq('id', session.user.id);
 
     if (updateError) {
       console.error('Error updating user with LINE ID:', updateError);
-      
-      // エラーログを保存
-      await supabase
-        .from('debug_logs')
-        .insert({
-          type: 'manual_line_link_error',
-          data: {
-            userId: session.user.id,
-            userEmail: currentUser.email,
-            lineUserId: cleanLineUserId,
-            error: updateError.message,
-            timestamp: new Date().toISOString()
-          }
-        });
-
       return NextResponse.json({ error: 'Failed to link LINE account' }, { status: 500 });
     }
 
-    // 5. 成功ログを保存
-    await supabase
-      .from('debug_logs')
-      .insert({
-        type: 'manual_line_link_success',
-        data: {
-          userId: session.user.id,
-          userEmail: currentUser.email,
-          lineUserId: cleanLineUserId,
-          hasFollowEvent: hasFollowEvent,
-          followEventTime: followEventTime,
-          timestamp: new Date().toISOString()
-        }
-      });
+    // 5. pending_line_connectionsがあれば、app_profile.idで更新
+    const { error: pendingUpdateError } = await supabase
+      .from('pending_line_connections')
+      .update({ connected_to_user_id: profileData.id })
+      .eq('line_user_id', cleanLineUserId)
+      .is('connected_to_user_id', null);
 
-    console.log(`✅ Successfully linked user ${session.user.id} to LINE ${cleanLineUserId}`);
+    if (pendingUpdateError) {
+      console.warn('Warning updating pending connection:', pendingUpdateError);
+      // エラーでも処理は継続（pending_line_connectionsの更新は必須ではない）
+    }
+
+    console.log(`✅ Successfully linked user ${session.user.id} (profile: ${profileData.id}) to LINE ${cleanLineUserId}`);
 
     return NextResponse.json({
       success: true,
       message: 'LINE account successfully linked',
       lineUserId: cleanLineUserId,
-      hasFollowEvent: hasFollowEvent,
-      followEventTime: followEventTime
+      profileId: profileData.id
     });
 
   } catch (error) {
