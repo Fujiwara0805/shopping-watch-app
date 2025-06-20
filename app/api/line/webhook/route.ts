@@ -18,13 +18,12 @@ function verifySignature(body: string, signature: string): boolean {
       .update(body)
       .digest('base64');
     
-    // LINEからの署名は base64 文字列のみ（sha256=プレフィックスなし）
-    const isValid = hash === signature;
+    const expectedSignature = `sha256=${hash}`;
+    const isValid = expectedSignature === signature;
     
     console.log('Signature verification:', {
       provided: signature,
-      expected: hash, // sha256=プレフィックスを削除
-      expectedWithPrefix: `sha256=${hash}`, // デバッグ用
+      expected: expectedSignature,
       isValid: isValid,
       bodyLength: body.length
     });

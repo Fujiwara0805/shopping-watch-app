@@ -15,27 +15,15 @@ export async function GET(request: NextRequest) {
 
     console.log(`🔍 Checking LINE connection for user: ${session.user.id}`);
 
-    // app_usersからapp_profilesを取得してLINE接続状況を確認
-    const { data: profileData, error } = await supabase
-      .from('app_profiles')
-      .select('id, user_id')
-      .eq('user_id', session.user.id)
-      .single();
-
-    if (error || !profileData) {
-      console.error('Error fetching profile:', error);
-      return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
-    }
-
-    // app_usersのline_idを確認
-    const { data: userData, error: userError } = await supabase
+    // ユーザーのLINE接続状況を確認
+    const { data: userData, error } = await supabase
       .from('app_users')
       .select('line_id, email')
       .eq('id', session.user.id)
       .single();
 
-    if (userError) {
-      console.error('Error checking LINE connection:', userError);
+    if (error) {
+      console.error('Error checking LINE connection:', error);
       return NextResponse.json({ error: 'Database error' }, { status: 500 });
     }
 
@@ -46,8 +34,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ 
       isConnected,
       lineId: userData?.line_id || null,
-      userEmail: userData?.email || null,
-      profileId: profileData.id
+      userEmail: userData?.email || null
     });
   } catch (error) {
     console.error('Error in LINE connection check:', error);
@@ -65,18 +52,7 @@ export async function POST(request: NextRequest) {
 
     console.log(`🔗 Auto-linking attempt for user: ${session.user.id}`);
 
-    // 1. app_profileを取得
-    const { data: profileData, error: profileError } = await supabase
-      .from('app_profiles')
-      .select('id, user_id')
-      .eq('user_id', session.user.id)
-      .single();
-
-    if (profileError || !profileData) {
-      return NextResponse.json({ success: false, error: 'Profile not found' });
-    }
-
-    // 2. 既に接続済みかチェック
+    // 1. 既に接続済みかチェック
     const { data: currentUser, error: userError } = await supabase
       .from('app_users')
       .select('line_id, email')
@@ -95,12 +71,12 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // 3. 同じメールアドレスでの既存LINE接続をチェック
+    // 2. 同じメールアドレスでの既存LINE接続をチェック
     const { data: existingLineUser } = await supabase
       .from('app_users')
       .select('line_id')
       .eq('email', currentUser.email)
-      .not('line_id', 'is', null)
+      .filter('line_id', 'not.is', null)
       .maybeSingle();
 
     if (existingLineUser?.line_id) {
@@ -119,7 +95,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 4. 最近のフォローイベントから自動接続を試行（app_profile.idで検索）
+    // 3. 最近のフォローイベントから自動接続を試行
     const { data: pendingConnections, error: pendingError } = await supabase
       .from('pending_line_connections')
       .select('*')
@@ -132,20 +108,20 @@ export async function POST(request: NextRequest) {
       // 最新のフォローイベントを使用（時間的に最も近いもの）
       const latestConnection = pendingConnections[0];
       
-      // app_usersテーブルを更新
+      // 接続を実行
       const { error: linkError } = await supabase
         .from('app_users')
         .update({ 
           line_id: latestConnection.line_user_id,
-          update_at: new Date().toISOString()
+          updated_at: new Date().toISOString()
         })
         .eq('id', session.user.id);
 
       if (!linkError) {
-        // pending_line_connectionsをapp_profile.idで更新
+        // 接続済みとしてマーク
         await supabase
           .from('pending_line_connections')
-          .update({ connected_to_user_id: profileData.id })
+          .update({ connected_to_user_id: session.user.id })
           .eq('id', latestConnection.id);
 
         // 接続完了メッセージをLINEに送信
@@ -159,7 +135,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 5. 自動接続できない場合
+    // 4. 自動接続できない場合
     return NextResponse.json({ 
       success: false, 
       error: 'No recent LINE follow events found. Please add the bot as a friend first.' 
