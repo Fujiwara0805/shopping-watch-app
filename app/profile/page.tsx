@@ -184,7 +184,7 @@ const LineNotificationSettings = ({
       <div className="flex items-center justify-between">
         <div className="space-y-0.5 flex-1 min-w-0">
           <div className="flex items-center space-x-2">
-            <Label className="text-sm font-medium">LINE通知(未実装)</Label>
+            <Label className="text-sm font-medium">LINE通知</Label>
             {isConnected ? (
               <Badge variant="secondary" className="bg-green-100 text-green-800 text-xs">
                 <CheckCircle className="h-3 w-3 mr-1" />
@@ -310,14 +310,15 @@ function ProfilePageContent() {
   }, [session?.user?.id]);
 
   // LINE接続状況の確認
-  const checkLineConnection = async () => {
+  const checkLineConnection = async (showToast = false) => {
     try {
       setCheckingLineConnection(true);
       const response = await fetch('/api/line/check-connection');
       const data = await response.json();
       setIsLineConnected(data.isConnected);
       
-      if (data.isConnected) {
+      // showToastがtrueの場合のみトーストを表示
+      if (showToast && data.isConnected) {
         toast({
           title: "LINE接続確認完了",
           description: "LINEアカウントが正常に接続されています。",
@@ -325,20 +326,23 @@ function ProfilePageContent() {
       }
     } catch (error) {
       console.error('Error checking LINE connection:', error);
-      toast({
-        title: "接続確認エラー",
-        description: "LINE接続状況の確認に失敗しました。",
-        variant: "destructive"
-      });
+      // エラーの場合は常にトーストを表示
+      if (showToast) {
+        toast({
+          title: "接続確認エラー",
+          description: "LINE接続状況の確認に失敗しました。",
+          variant: "destructive"
+        });
+      }
     } finally {
       setCheckingLineConnection(false);
     }
   };
 
-  // 初回LINE接続状況確認
+  // 初回LINE接続状況確認（トーストなし）
   useEffect(() => {
     if (session?.user?.id) {
-      checkLineConnection();
+      checkLineConnection(false);
     }
   }, [session?.user?.id]);
   
@@ -622,7 +626,7 @@ function ProfilePageContent() {
                       isConnected={isLineConnected}
                       loading={checkingLineConnection}
                       onNavigateToLineConnect={handleNavigateToLineConnect}
-                      onRefreshConnection={checkLineConnection}
+                      onRefreshConnection={() => checkLineConnection(true)}
                     />
                   </div>
                 </motion.div>

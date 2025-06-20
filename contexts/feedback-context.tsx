@@ -32,8 +32,10 @@ export const FeedbackProvider: React.FC<FeedbackProviderProps> = ({ children }) 
   const [isActive, setIsActive] = useState(true);
   const [lastShownTime, setLastShownTime] = useState<number | null>(null);
 
-  // 5分 = 300,000ミリ秒
+  // 5分 = 300,000ミリ秒（初回表示用）
   const FEEDBACK_DELAY = 5 * 60 * 1000;
+  // 48時間 = 172,800,000ミリ秒（再表示抑制用）
+  const FEEDBACK_COOLDOWN = 48 * 60 * 60 * 1000;
 
   // ローカルストレージのキー（ユーザー固有）
   const getFeedbackKey = (userEmail: string) => `tokudoku_feedback_submitted_${userEmail}`;
@@ -73,33 +75,53 @@ export const FeedbackProvider: React.FC<FeedbackProviderProps> = ({ children }) 
     const lastShownTimestamp = lastShown ? parseInt(lastShown) : 0;
     const now = Date.now();
 
-    // 5分経過していない場合は待機
+    // 48時間以内に表示済みかチェック
     const timeSinceLastShown = now - lastShownTimestamp;
-    if (timeSinceLastShown < FEEDBACK_DELAY) {
-      const remainingTime = FEEDBACK_DELAY - timeSinceLastShown;
-      console.log(`FeedbackProvider: 次回表示まで残り${Math.ceil(remainingTime / 1000)}秒`);
+    if (lastShownTimestamp > 0 && timeSinceLastShown < FEEDBACK_COOLDOWN) {
+      const remainingCooldown = FEEDBACK_COOLDOWN - timeSinceLastShown;
+      const remainingHours = Math.ceil(remainingCooldown / (60 * 60 * 1000));
+      console.log(`FeedbackProvider: 48時間クールダウン中（残り約${remainingHours}時間）`);
+      return;
+    }
 
-    const timer = setTimeout(() => {
-      if (isActive && session?.user?.email) {
+    // 初回表示または48時間経過後の5分待機
+    if (lastShownTimestamp === 0) {
+      // 初回訪問の場合、5分後に表示
+      console.log('FeedbackProvider: 初回訪問、5分後にフィードバックモーダル表示予定');
+      const timer = setTimeout(() => {
+        if (isActive && session?.user?.email) {
           const currentFeedbackSubmitted = localStorage.getItem(feedbackSubmittedKey);
           if (currentFeedbackSubmitted !== 'true') {
-        console.log('FeedbackProvider: 5分経過、フィードバックモーダル表示');
-        setShowFeedbackModal(true);
+            console.log('FeedbackProvider: 5分経過、フィードバックモーダル表示');
+            setShowFeedbackModal(true);
             setLastShownTime(Date.now());
             localStorage.setItem(lastShownKey, Date.now().toString());
           }
-      }
-      }, remainingTime);
+        }
+      }, FEEDBACK_DELAY);
 
       return () => clearTimeout(timer);
     } else {
-      // 既に5分経過している場合は即座に表示
-      console.log('FeedbackProvider: 5分経過済み、フィードバックモーダル表示');
+      // 48時間経過後、即座に表示
+      console.log('FeedbackProvider: 48時間経過済み、フィードバックモーダル表示');
       setShowFeedbackModal(true);
       setLastShownTime(now);
       localStorage.setItem(lastShownKey, now.toString());
     }
   }, [session, status, isActive]);
+
+  // モーダルを閉じる時の処理を追加
+  const handleCloseModal = (show: boolean) => {
+    setShowFeedbackModal(show);
+    
+    // モーダルを閉じる時（show = false）に最終表示時間を記録
+    if (!show && session?.user?.email) {
+      const userEmail = session.user.email;
+      const lastShownKey = getLastShownKey(userEmail);
+      localStorage.setItem(lastShownKey, Date.now().toString());
+      console.log('FeedbackProvider: フィードバックモーダル閉じる、48時間クールダウン開始');
+    }
+  };
 
   // 強制的にフィードバックモーダルを表示する関数
   const showFeedbackModalForced = () => {
@@ -126,7 +148,7 @@ export const FeedbackProvider: React.FC<FeedbackProviderProps> = ({ children }) 
 
   const value: FeedbackContextType = {
     showFeedbackModal,
-    setShowFeedbackModal,
+    setShowFeedbackModal: handleCloseModal,
     hasShownFeedback,
     resetFeedbackTimer,
     showFeedbackModalForced,
