@@ -199,10 +199,10 @@ export async function GET(request: NextRequest) {
           const now = new Date();
           const diffMinutes = (now.getTime() - followTime.getTime()) / (1000 * 60);
           
-          if (diffMinutes <= 30) { // 30分以内のもので表示（手動接続の場合は少し長めに）
+          if (diffMinutes <= 60) { // 60分以内のもので表示（手動接続の場合はより長めに）
             filteredFollows.push({
               lineUserId: lineUserId,
-              displayName: log.data.displayName || 'Unknown User',
+              displayName: log.data.displayName || 'LINE User',
               timestamp: log.created_at,
               minutesAgo: Math.floor(diffMinutes)
             });
@@ -211,7 +211,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    console.log(`📝 Found ${filteredFollows.length} unlinked recent follows (last 30 minutes)`);
+    console.log(`📝 Found ${filteredFollows.length} unlinked recent follows (last 60 minutes)`);
 
     return NextResponse.json({
       recentFollows: filteredFollows,

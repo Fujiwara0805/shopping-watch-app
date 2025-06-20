@@ -169,12 +169,12 @@ async function linkLatestLineUser(userId: string) {
               // まだ紐付けられていないLINE IDを発見
               console.log(`🎯 Found unlinked LINE user: ${lineUserId} from ${follow.created_at}`);
               
-              // 5分以内の友達追加のみを自動リンク対象とする（セキュリティ向上）
+              // 30分以内の友達追加のみを自動リンク対象とする（より柔軟な接続を可能に）
               const followTime = new Date(follow.created_at);
               const now = new Date();
               const diffMinutes = (now.getTime() - followTime.getTime()) / (1000 * 60);
               
-              if (diffMinutes <= 5) {
+              if (diffMinutes <= 30) {
                 // 紐付けを実行
                 const { error: linkError } = await supabase
                   .from('app_users')

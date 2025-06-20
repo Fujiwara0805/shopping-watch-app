@@ -11,13 +11,14 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { MessageCircle, Bell, CheckCircle, ExternalLink, Copy, RefreshCw, Link, User, Clock, AlertTriangle, Info, ArrowLeft, QrCode, Smartphone } from 'lucide-react';
+import { MessageCircle, Bell, CheckCircle, ExternalLink, Copy, RefreshCw, Link, User, Clock, AlertTriangle, Info, ArrowLeft, QrCode, Smartphone, Settings } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface RecentFollow {
   lineUserId: string;
   displayName: string;
   timestamp: string;
+  minutesAgo: number;
 }
 
 export default function LineConnectPage() {
@@ -96,22 +97,26 @@ export default function LineConnectPage() {
           });
         }
       } else {
+        console.log('自動接続失敗、手動接続オプションを表示');
         toast({
-          title: "自動接続失敗",
-          description: "自動接続に失敗しました。手動接続をお試しください。",
-          variant: "destructive"
+          title: "自動接続を確認中...",
+          description: "自動接続できない場合は、手動接続をお試しください。",
+          variant: "default"
         });
+        
+        // 手動接続オプションを表示し、最近の友達追加を取得
         setShowManualLink(true);
         await loadRecentFollows();
       }
     } catch (error) {
       console.error('Error linking LINE connection:', error);
       toast({
-        title: "接続エラー",
-        description: "LINE接続処理でエラーが発生しました。",
-        variant: "destructive"
+        title: "接続確認中",
+        description: "自動接続を確認できませんでした。手動接続をお試しください。",
+        variant: "default"
       });
       setShowManualLink(true);
+      await loadRecentFollows();
     } finally {
       setLinking(false);
     }
@@ -125,6 +130,7 @@ export default function LineConnectPage() {
       
       if (response.ok) {
         setRecentFollows(data.recentFollows || []);
+        console.log('Recent follows loaded:', data.recentFollows);
       }
     } catch (error) {
       console.error('Error loading recent follows:', error);
@@ -192,7 +198,6 @@ export default function LineConnectPage() {
     const isAndroid = /android/.test(userAgent);
     const isMobile = isIOS || isAndroid;
     
-    // デバッグ用ログ追加
     console.log('LINE友達追加開始:', {
       botId: LINE_BOT_ID,
       userAgent,
@@ -204,17 +209,11 @@ export default function LineConnectPage() {
     try {
       if (isMobile) {
         if (isIOS) {
-          // iOS版 - より確実な方法
           const iosLineUrl = `line://ti/p/${LINE_BOT_ID}`;
           const fallbackUrl = `https://line.me/R/ti/p/${LINE_BOT_ID}`;
           
-          console.log('iOS LINE URL:', iosLineUrl);
-          console.log('iOS Fallback URL:', fallbackUrl);
-          
-          // LINEアプリを開く試行
           window.location.href = iosLineUrl;
           
-          // フォールバック処理（2秒後）
           setTimeout(() => {
             if (!document.hidden) {
               window.open(fallbackUrl, '_blank');
@@ -222,42 +221,34 @@ export default function LineConnectPage() {
           }, 2000);
           
         } else if (isAndroid) {
-          // Android版 - Intent URLとフォールバック
           const fallbackUrl = `https://line.me/R/ti/p/${LINE_BOT_ID}`;
           const androidUrl = `intent://ti/p/${LINE_BOT_ID}#Intent;scheme=line;package=jp.naver.line.android;S.browser_fallback_url=${encodeURIComponent(fallbackUrl)};end`;
-          
-          console.log('Android Intent URL:', androidUrl);
-          console.log('Android Fallback URL:', fallbackUrl);
           
           window.location.href = androidUrl;
         }
       } else {
-        // デスクトップの場合
         const webUrl = `https://line.me/R/ti/p/${LINE_BOT_ID}`;
-        console.log('Desktop LINE URL:', webUrl);
         window.open(webUrl, '_blank');
       }
       
       toast({
         title: "LINE友達追加",
-        description: "LINEの友達追加ページが開きます。友達追加を完了してから「接続確認」ボタンをタップしてください。",
+        description: "友達追加を完了したら「接続確認」ボタンをタップしてください。",
         duration: 8000,
       });
       
     } catch (error) {
       console.error('LINE友達追加でエラーが発生:', error);
-      // エラー時のフォールバック
       const fallbackUrl = `https://line.me/R/ti/p/${LINE_BOT_ID}`;
       window.open(fallbackUrl, '_blank');
       
       toast({
         title: "LINE友達追加",
-        description: "LINEで友達追加を完了してください。",
+        description: "友達追加を完了してください。",
         variant: "default"
       });
     }
     
-    // 状態をリセット
     setTimeout(() => {
       setIsAddFriendClicked(false);
     }, 3000);
@@ -307,7 +298,6 @@ export default function LineConnectPage() {
           transition={{ duration: 0.5 }}
           className="space-y-6"
         >
-
           <Card>
             <CardHeader className="text-center">
               <div className="mx-auto mb-4 w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
@@ -372,26 +362,6 @@ export default function LineConnectPage() {
                     </ul>
                   </div>
 
-                  {/* LINE Bot ID表示 */}
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <h4 className="font-medium text-gray-900 mb-2">LINE Bot ID</h4>
-                    <div className="flex items-center space-x-2">
-                      <code className="bg-white px-3 py-2 rounded border text-sm font-mono flex-1">
-                        {LINE_BOT_ID}
-                      </code>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleCopyId}
-                      >
-                        <Copy className="w-4 h-4" />
-                      </Button>
-                    </div>
-                    <p className="text-xs text-gray-500 mt-2">
-                      LINEアプリで直接検索することもできます
-                    </p>
-                  </div>
-
                   <div className="text-center space-y-4">
                     <p className="text-muted-foreground text-sm">
                       LINE通知を受け取るには、以下の手順に従ってください：
@@ -406,7 +376,7 @@ export default function LineConnectPage() {
                         <li>1. 下の「LINE友達追加」ボタンをタップ</li>
                         <li>2. LINEアプリで友達追加を完了</li>
                         <li>3. このページに戻って「接続確認」ボタンをタップ</li>
-                        <li>4. 接続完了！</li>
+                        <li>4. 自動接続できない場合は手動接続を選択</li>
                       </ol>
                     </div>
                     
@@ -432,72 +402,6 @@ export default function LineConnectPage() {
                         )}
                       </Button>
 
-                      {/* QRコード表示ボタンを追加 */}
-                      <Button 
-                        onClick={() => setShowQRCode(!showQRCode)}
-                        variant="outline"
-                        className="w-full"
-                        size="lg"
-                      >
-                        <QrCode className="w-5 h-5 mr-2" />
-                        QRコードで友達追加
-                      </Button>
-
-                      {/* QRコード表示エリア */}
-                      {showQRCode && (
-                        <motion.div
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: 'auto' }}
-                          exit={{ opacity: 0, height: 0 }}
-                          className="bg-white p-4 rounded-lg border text-center"
-                        >
-                          <p className="text-sm text-gray-600 mb-3">
-                            LINEアプリでQRコードを読み取ってください
-                          </p>
-                          
-                          {/* QRコード画像（LINE公式のQRコード生成URLを使用） */}
-                          <div className="flex justify-center mb-3">
-                            <img 
-                              src={`https://qr-official.line.me/gs/M_${LINE_BOT_ID.replace('@', '')}_GW.png`}
-                              alt="LINE QR Code"
-                              className="w-48 h-48 border rounded-lg"
-                              onError={(e) => {
-                                // QRコード読み込みエラー時のフォールバック
-                                const target = e.target as HTMLImageElement;
-                                target.style.display = 'none';
-                                const parent = target.parentElement;
-                                if (parent) {
-                                  parent.innerHTML = `
-                                    <div class="w-48 h-48 border rounded-lg flex items-center justify-center bg-gray-100">
-                                      <div class="text-center">
-                                        <div class="w-12 h-12 mx-auto mb-2 text-gray-400">📱</div>
-                                        <p class="text-sm text-gray-500">QRコードを表示できません</p>
-                                        <p class="text-xs text-gray-400 mt-1">Bot ID: ${LINE_BOT_ID}</p>
-                                      </div>
-                                    </div>
-                                  `;
-                                }
-                              }}
-                            />
-                          </div>
-                          
-                          <div className="space-y-2">
-                            <p className="text-xs text-gray-500">
-                              または、LINEアプリで「{LINE_BOT_ID}」を検索
-                            </p>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={handleCopyId}
-                              className="text-xs"
-                            >
-                              <Copy className="w-3 h-3 mr-1" />
-                              Bot IDをコピー
-                            </Button>
-                          </div>
-                        </motion.div>
-                      )}
-
                       {/* 接続確認ボタン */}
                       <Button 
                         onClick={handleLinkConnection}
@@ -515,8 +419,153 @@ export default function LineConnectPage() {
                       </Button>
                     </div>
 
-                    {/* 手動案内セクションを追加 */}
-                    <div className="bg-yellow-50 p-4 rounded-lg text-left mt-4">
+                    {/* 手動接続セクション */}
+                    {showManualLink && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="bg-orange-50 p-4 rounded-lg border border-orange-200"
+                      >
+                        <h4 className="font-medium text-orange-900 mb-3 flex items-center">
+                          <Settings className="w-5 h-5 mr-2" />
+                          手動接続
+                        </h4>
+                        
+                        <p className="text-sm text-orange-800 mb-4">
+                          自動接続ができない場合は、以下の方法で手動接続できます。
+                        </p>
+
+                        {/* 最近の友達追加リスト */}
+                        {recentFollows.length > 0 && (
+                          <div className="mb-4">
+                            <h5 className="text-sm font-medium text-orange-900 mb-2">
+                              最近の友達追加 (クリックして接続):
+                            </h5>
+                            <div className="space-y-2">
+                              {recentFollows.map((follow, index) => (
+                                <button
+                                  key={index}
+                                  onClick={() => handleCopyLineUserId(follow.lineUserId)}
+                                  className="w-full p-3 bg-white border border-orange-200 rounded-lg text-left hover:bg-orange-50 transition-colors"
+                                >
+                                  <div className="flex items-center justify-between">
+                                    <div>
+                                      <p className="font-medium text-sm text-gray-900">
+                                        {follow.displayName}
+                                      </p>
+                                      <p className="text-xs text-gray-500">
+                                        {follow.minutesAgo}分前に友達追加
+                                      </p>
+                                    </div>
+                                    <Copy className="w-4 h-4 text-orange-600" />
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* 手動入力フィールド */}
+                        <div className="space-y-3">
+                          <div>
+                            <Label htmlFor="manualLinkId" className="text-sm font-medium text-orange-900">
+                              LINE User ID
+                            </Label>
+                            <Input
+                              id="manualLinkId"
+                              value={manualLinkId}
+                              onChange={(e) => setManualLinkId(e.target.value)}
+                              placeholder="Uで始まる33文字のID"
+                              className="mt-1"
+                            />
+                            <p className="text-xs text-orange-600 mt-1">
+                              LINEアプリの設定 → プロフィール → ユーザー名で確認できます
+                            </p>
+                          </div>
+                          
+                          <Button
+                            onClick={handleManualLink}
+                            disabled={manualLinking || !manualLinkId.trim()}
+                            className="w-full bg-orange-500 hover:bg-orange-600 text-white"
+                          >
+                            {manualLinking ? (
+                              <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                            ) : (
+                              <Link className="w-4 h-4 mr-2" />
+                            )}
+                            {manualLinking ? '接続中...' : '手動接続'}
+                          </Button>
+                        </div>
+                      </motion.div>
+                    )}
+
+                    {/* QRコード表示ボタン */}
+                    <Button 
+                      onClick={() => setShowQRCode(!showQRCode)}
+                      variant="outline"
+                      className="w-full"
+                      size="lg"
+                    >
+                      <QrCode className="w-5 h-5 mr-2" />
+                      QRコードで友達追加
+                    </Button>
+
+                    {/* QRコード表示エリア */}
+                    {showQRCode && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="bg-white p-4 rounded-lg border text-center"
+                      >
+                        <p className="text-sm text-gray-600 mb-3">
+                          LINEアプリでQRコードを読み取ってください
+                        </p>
+                        
+                        <div className="flex justify-center mb-3">
+                          <img 
+                            src={`https://qr-official.line.me/gs/M_${LINE_BOT_ID.replace('@', '')}_GW.png`}
+                            alt="LINE QR Code"
+                            className="w-48 h-48 border rounded-lg"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                              const parent = target.parentElement;
+                              if (parent) {
+                                parent.innerHTML = `
+                                  <div class="w-48 h-48 border rounded-lg flex items-center justify-center bg-gray-100">
+                                    <div class="text-center">
+                                      <div class="w-12 h-12 mx-auto mb-2 text-gray-400">📱</div>
+                                      <p class="text-sm text-gray-500">QRコードを表示できません</p>
+                                      <p class="text-xs text-gray-400 mt-1">Bot ID: ${LINE_BOT_ID}</p>
+                                    </div>
+                                  </div>
+                                `;
+                              }
+                            }}
+                          />
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <p className="text-xs text-gray-500">
+                            または、LINEアプリで「{LINE_BOT_ID}」を検索
+                          </p>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleCopyId}
+                            className="text-xs"
+                          >
+                            <Copy className="w-3 h-3 mr-1" />
+                            Bot IDをコピー
+                          </Button>
+                        </div>
+                      </motion.div>
+                    )}
+
+                    {/* 手動案内セクション */}
+                    <div className="bg-yellow-50 p-4 rounded-lg text-left">
                       <h4 className="font-medium text-yellow-900 mb-2 flex items-center">
                         <Info className="w-5 h-5 mr-2" />
                         📱 手動で友達追加する方法
@@ -529,28 +578,6 @@ export default function LineConnectPage() {
                         <li>5. このページに戻って「接続確認」をタップ</li>
                       </ol>
                     </div>
-
-                    {/* デバッグ情報（開発時のみ表示） */}
-                    {process.env.NODE_ENV === 'development' && (
-                      <div className="bg-gray-50 p-3 rounded-lg text-xs mt-4">
-                        <h5 className="font-medium mb-2">デバッグ情報:</h5>
-                        <div className="space-y-1 text-gray-600">
-                          <p>Bot ID: {LINE_BOT_ID}</p>
-                          <p>User Agent: {typeof navigator !== 'undefined' ? navigator.userAgent : 'N/A'}</p>
-                          <p>URL: https://line.me/R/ti/p/{LINE_BOT_ID}</p>
-                          <p>
-                            <a 
-                              href={`https://line.me/R/ti/p/${LINE_BOT_ID}`} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="text-blue-600 hover:underline"
-                            >
-                              URLをテスト
-                            </a>
-                          </p>
-                        </div>
-                      </div>
-                    )}
                   </div>
                 </div>
               )}
@@ -568,6 +595,7 @@ export default function LineConnectPage() {
               </p>
             </CardContent>
           </Card>
+          
           <div className="flex items-center space-x-4 mb-6">
             <Button
               variant="outline"
