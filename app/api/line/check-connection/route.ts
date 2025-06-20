@@ -76,8 +76,8 @@ export async function POST(request: NextRequest) {
       .from('app_users')
       .select('line_id')
       .eq('email', currentUser.email)
-      .not('line_id', 'is', null)
-      .single();
+      .filter('line_id', 'not.is', null)
+      .maybeSingle();
 
     if (existingLineUser?.line_id) {
       // 既存の接続を現在のユーザーにコピー
@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
       .from('pending_line_connections')
       .select('*')
       .is('connected_to_user_id', null)
-      .gt('expires_at', new Date().toISOString())
+      .gte('expires_at', new Date().toISOString())
       .order('followed_at', { ascending: false })
       .limit(5);
 
