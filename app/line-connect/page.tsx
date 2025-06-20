@@ -10,16 +10,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
-import { MessageCircle, Bell, CheckCircle, ExternalLink, Copy, RefreshCw, Link, User, Clock, AlertTriangle, Info, ArrowLeft, QrCode, Smartphone, Settings } from 'lucide-react';
+import { MessageCircle, CheckCircle, ExternalLink, Copy, RefreshCw, Link, QrCode, Settings, Info, Smartphone } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-
-interface RecentFollow {
-  lineUserId: string;
-  displayName: string;
-  timestamp: string;
-  minutesAgo: number;
-}
 
 export default function LineConnectPage() {
   const { data: session, status } = useSession();
@@ -31,8 +23,6 @@ export default function LineConnectPage() {
   const [manualLinkId, setManualLinkId] = useState('');
   const [manualLinking, setManualLinking] = useState(false);
   const [showManualLink, setShowManualLink] = useState(false);
-  const [recentFollows, setRecentFollows] = useState<RecentFollow[]>([]);
-  const [loadingRecent, setLoadingRecent] = useState(false);
   const [showQRCode, setShowQRCode] = useState(false);
   const [isAddFriendClicked, setIsAddFriendClicked] = useState(false);
 
@@ -99,43 +89,22 @@ export default function LineConnectPage() {
       } else {
         console.log('自動接続失敗、手動接続オプションを表示');
         toast({
-          title: "自動接続を確認中...",
-          description: "自動接続できない場合は、手動接続をお試しください。",
+          title: "手動接続をお試しください",
+          description: "自動接続ができませんでした。下記の手動接続をご利用ください。",
           variant: "default"
         });
-        
-        // 手動接続オプションを表示し、最近の友達追加を取得
         setShowManualLink(true);
-        await loadRecentFollows();
       }
     } catch (error) {
       console.error('Error linking LINE connection:', error);
       toast({
-        title: "接続確認中",
-        description: "自動接続を確認できませんでした。手動接続をお試しください。",
+        title: "手動接続をお試しください",
+        description: "自動接続を確認できませんでした。手動接続をご利用ください。",
         variant: "default"
       });
       setShowManualLink(true);
-      await loadRecentFollows();
     } finally {
       setLinking(false);
-    }
-  };
-
-  const loadRecentFollows = async () => {
-    try {
-      setLoadingRecent(true);
-      const response = await fetch('/api/line/manual-link');
-      const data = await response.json();
-      
-      if (response.ok) {
-        setRecentFollows(data.recentFollows || []);
-        console.log('Recent follows loaded:', data.recentFollows);
-      }
-    } catch (error) {
-      console.error('Error loading recent follows:', error);
-    } finally {
-      setLoadingRecent(false);
     }
   };
 
@@ -189,7 +158,6 @@ export default function LineConnectPage() {
     }
   };
 
-  // 改善されたLINE友達追加機能
   const handleAddFriend = () => {
     setIsAddFriendClicked(true);
     
@@ -197,14 +165,6 @@ export default function LineConnectPage() {
     const isIOS = /iphone|ipad|ipod/.test(userAgent);
     const isAndroid = /android/.test(userAgent);
     const isMobile = isIOS || isAndroid;
-    
-    console.log('LINE友達追加開始:', {
-      botId: LINE_BOT_ID,
-      userAgent,
-      isIOS,
-      isAndroid,
-      isMobile
-    });
     
     try {
       if (isMobile) {
@@ -259,15 +219,6 @@ export default function LineConnectPage() {
     toast({
       title: "コピーしました",
       description: "LINE Bot IDをクリップボードにコピーしました。",
-    });
-  };
-
-  const handleCopyLineUserId = (userId: string) => {
-    navigator.clipboard.writeText(userId);
-    setManualLinkId(userId);
-    toast({
-      title: "LINE User IDをコピーしました",
-      description: "手動接続の入力欄に設定されました。",
     });
   };
 
@@ -350,9 +301,10 @@ export default function LineConnectPage() {
                 </motion.div>
               ) : (
                 <div className="space-y-6">
+                  {/* 通知機能の説明 */}
                   <div className="bg-blue-50 p-4 rounded-lg">
                     <h3 className="font-semibold text-blue-900 mb-2 flex items-center">
-                      <Bell className="w-5 h-5 mr-2" />
+                      <MessageCircle className="w-5 h-5 mr-2" />
                       LINE通知の特徴
                     </h3>
                     <ul className="text-sm text-blue-800 space-y-1">
@@ -362,6 +314,7 @@ export default function LineConnectPage() {
                     </ul>
                   </div>
 
+                  {/* 設定手順 */}
                   <div className="text-center space-y-4">
                     <p className="text-muted-foreground text-sm">
                       LINE通知を受け取るには、以下の手順に従ってください：
@@ -374,7 +327,7 @@ export default function LineConnectPage() {
                       </h4>
                       <ol className="text-sm text-yellow-800 space-y-1">
                         <li>1. 下の「LINE友達追加」ボタンをタップ</li>
-                        <li>2. LINEアプリで友達追加を完了</li>
+                        <li>2. LINEアプリで「トクドク」を友達追加</li>
                         <li>3. このページに戻って「接続確認」ボタンをタップ</li>
                         <li>4. 自動接続できない場合は手動接続を選択</li>
                       </ol>
@@ -433,38 +386,22 @@ export default function LineConnectPage() {
                         </h4>
                         
                         <p className="text-sm text-orange-800 mb-4">
-                          自動接続ができない場合は、以下の方法で手動接続できます。
+                          自動接続ができない場合は、LINE User IDを直接入力して接続できます。
                         </p>
 
-                        {/* 最近の友達追加リスト */}
-                        {recentFollows.length > 0 && (
-                          <div className="mb-4">
-                            <h5 className="text-sm font-medium text-orange-900 mb-2">
-                              最近の友達追加 (クリックして接続):
-                            </h5>
-                            <div className="space-y-2">
-                              {recentFollows.map((follow, index) => (
-                                <button
-                                  key={index}
-                                  onClick={() => handleCopyLineUserId(follow.lineUserId)}
-                                  className="w-full p-3 bg-white border border-orange-200 rounded-lg text-left hover:bg-orange-50 transition-colors"
-                                >
-                                  <div className="flex items-center justify-between">
-                                    <div>
-                                      <p className="font-medium text-sm text-gray-900">
-                                        {follow.displayName}
-                                      </p>
-                                      <p className="text-xs text-gray-500">
-                                        {follow.minutesAgo}分前に友達追加
-                                      </p>
-                                    </div>
-                                    <Copy className="w-4 h-4 text-orange-600" />
-                                  </div>
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                        )}
+                        {/* LINE User IDの取得方法 */}
+                        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                          <h5 className="text-sm font-medium text-blue-900 mb-2">
+                            📱 LINE User IDの確認方法:
+                          </h5>
+                          <ol className="text-xs text-blue-800 space-y-1">
+                            <li>1. LINEアプリを開く</li>
+                            <li>2. 「ホーム」→「設定」(歯車アイコン)</li>
+                            <li>3. 「プロフィール」をタップ</li>
+                            <li>4. 「ユーザー名」の下に表示されているID</li>
+                            <li>5. 「U」で始まる33文字の文字列をコピー</li>
+                          </ol>
+                        </div>
 
                         {/* 手動入力フィールド */}
                         <div className="space-y-3">
@@ -476,11 +413,11 @@ export default function LineConnectPage() {
                               id="manualLinkId"
                               value={manualLinkId}
                               onChange={(e) => setManualLinkId(e.target.value)}
-                              placeholder="Uで始まる33文字のID"
-                              className="mt-1"
+                              placeholder="Uで始まる33文字のID (例: U1234567890abcdef1234567890abcdef1)"
+                              className="mt-1 font-mono text-xs"
                             />
                             <p className="text-xs text-orange-600 mt-1">
-                              LINEアプリの設定 → プロフィール → ユーザー名で確認できます
+                              ※ 必ず「U」で始まり、33文字ちょうどである必要があります
                             </p>
                           </div>
                           
@@ -496,6 +433,14 @@ export default function LineConnectPage() {
                             )}
                             {manualLinking ? '接続中...' : '手動接続'}
                           </Button>
+                        </div>
+
+                        {/* 注意事項 */}
+                        <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                          <p className="text-xs text-yellow-700">
+                            <strong>⚠️ 注意:</strong> LINE User IDは個人情報です。
+                            正確なIDを入力し、他人には教えないでください。
+                          </p>
                         </div>
                       </motion.div>
                     )}
@@ -584,6 +529,7 @@ export default function LineConnectPage() {
             </CardContent>
           </Card>
 
+          {/* プライバシー情報 */}
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">プライバシーについて</CardTitle>
