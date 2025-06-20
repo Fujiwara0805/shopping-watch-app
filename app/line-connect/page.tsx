@@ -377,70 +377,44 @@ export default function LineConnectPage() {
                       <motion.div
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
                         className="bg-orange-50 p-4 rounded-lg border border-orange-200"
                       >
                         <h4 className="font-medium text-orange-900 mb-3 flex items-center">
                           <Settings className="w-5 h-5 mr-2" />
-                          手動接続
+                          接続のトラブルシューティング
                         </h4>
                         
-                        <p className="text-sm text-orange-800 mb-4">
-                          自動接続ができない場合は、LINE User IDを直接入力して接続できます。
-                        </p>
-
-                        {/* LINE User IDの取得方法 */}
-                        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                          <h5 className="text-sm font-medium text-blue-900 mb-2">
-                            📱 LINE User IDの確認方法:
-                          </h5>
-                          <ol className="text-xs text-blue-800 space-y-1">
-                            <li>1. LINEアプリを開く</li>
-                            <li>2. 「ホーム」→「設定」(歯車アイコン)</li>
-                            <li>3. 「プロフィール」をタップ</li>
-                            <li>4. 「ユーザー名」の下に表示されているID</li>
-                            <li>5. 「U」で始まる33文字の文字列をコピー</li>
-                          </ol>
-                        </div>
-
-                        {/* 手動入力フィールド */}
                         <div className="space-y-3">
-                          <div>
-                            <Label htmlFor="manualLinkId" className="text-sm font-medium text-orange-900">
-                              LINE User ID
-                            </Label>
-                            <Input
-                              id="manualLinkId"
-                              value={manualLinkId}
-                              onChange={(e) => setManualLinkId(e.target.value)}
-                              placeholder="Uで始まる33文字のID (例: U1234567890abcdef1234567890abcdef1)"
-                              className="mt-1 font-mono text-xs"
-                            />
-                            <p className="text-xs text-orange-600 mt-1">
-                              ※ 必ず「U」で始まり、33文字ちょうどである必要があります
-                            </p>
+                          <div className="bg-blue-50 p-3 rounded-lg">
+                            <h5 className="text-sm font-medium text-blue-900 mb-2">
+                              📱 接続できない場合の対処法:
+                            </h5>
+                            <ol className="text-xs text-blue-800 space-y-1">
+                              <li>1. LINEで「トクドク」を友達追加済みか確認</li>
+                              <li>2. 友達追加から30分以内に接続確認を実行</li>
+                              <li>3. アプリを一度閉じて再起動</li>
+                              <li>4. 再度「接続確認」ボタンをタップ</li>
+                            </ol>
                           </div>
-                          
+
                           <Button
-                            onClick={handleManualLink}
-                            disabled={manualLinking || !manualLinkId.trim()}
+                            onClick={handleLinkConnection}
+                            disabled={linking}
                             className="w-full bg-orange-500 hover:bg-orange-600 text-white"
                           >
-                            {manualLinking ? (
+                            {linking ? (
                               <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
                             ) : (
-                              <Link className="w-4 h-4 mr-2" />
+                              <RefreshCw className="w-4 h-4 mr-2" />
                             )}
-                            {manualLinking ? '接続中...' : '手動接続'}
+                            再度接続確認
                           </Button>
-                        </div>
 
-                        {/* 注意事項 */}
-                        <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                          <p className="text-xs text-yellow-700">
-                            <strong>⚠️ 注意:</strong> LINE User IDは個人情報です。
-                            正確なIDを入力し、他人には教えないでください。
-                          </p>
+                          <div className="text-center">
+                            <p className="text-xs text-orange-600">
+                              それでも接続できない場合は、アプリ内のお問い合わせからご連絡ください。
+                            </p>
+                          </div>
                         </div>
                       </motion.div>
                     )}

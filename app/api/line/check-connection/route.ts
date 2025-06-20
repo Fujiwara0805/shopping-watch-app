@@ -52,216 +52,137 @@ export async function POST(request: NextRequest) {
 
     console.log(`🔗 Auto-linking attempt for user: ${session.user.id}`);
 
-    // Webhookイベントからの最新のLINE友達追加を確認して紐付け
-    const result = await linkLatestLineUser(session.user.id);
+    // 1. 既に接続済みかチェック
+    const { data: currentUser, error: userError } = await supabase
+      .from('app_users')
+      .select('line_id, email')
+      .eq('id', session.user.id)
+      .single();
 
-    console.log(`🔗 Auto-linking result for user ${session.user.id}:`, result);
+    if (userError) {
+      return NextResponse.json({ success: false, error: 'User not found' });
+    }
 
-    return NextResponse.json(result);
+    if (currentUser.line_id) {
+      return NextResponse.json({ 
+        success: true, 
+        alreadyConnected: true,
+        lineId: currentUser.line_id
+      });
+    }
+
+    // 2. 同じメールアドレスでの既存LINE接続をチェック
+    const { data: existingLineUser } = await supabase
+      .from('app_users')
+      .select('line_id')
+      .eq('email', currentUser.email)
+      .not('line_id', 'is', null)
+      .single();
+
+    if (existingLineUser?.line_id) {
+      // 既存の接続を現在のユーザーにコピー
+      const { error: updateError } = await supabase
+        .from('app_users')
+        .update({ line_id: existingLineUser.line_id })
+        .eq('id', session.user.id);
+
+      if (!updateError) {
+        return NextResponse.json({
+          success: true,
+          newConnection: true,
+          lineId: existingLineUser.line_id
+        });
+      }
+    }
+
+    // 3. 最近のフォローイベントから自動接続を試行
+    const { data: pendingConnections, error: pendingError } = await supabase
+      .from('pending_line_connections')
+      .select('*')
+      .is('connected_to_user_id', null)
+      .gt('expires_at', new Date().toISOString())
+      .order('followed_at', { ascending: false })
+      .limit(5);
+
+    if (!pendingError && pendingConnections && pendingConnections.length > 0) {
+      // 最新のフォローイベントを使用（時間的に最も近いもの）
+      const latestConnection = pendingConnections[0];
+      
+      // 接続を実行
+      const { error: linkError } = await supabase
+        .from('app_users')
+        .update({ 
+          line_id: latestConnection.line_user_id,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', session.user.id);
+
+      if (!linkError) {
+        // 接続済みとしてマーク
+        await supabase
+          .from('pending_line_connections')
+          .update({ connected_to_user_id: session.user.id })
+          .eq('id', latestConnection.id);
+
+        // 接続完了メッセージをLINEに送信
+        await sendConnectionSuccessMessage(latestConnection.line_user_id);
+
+        return NextResponse.json({
+          success: true,
+          newConnection: true,
+          lineId: latestConnection.line_user_id
+        });
+      }
+    }
+
+    // 4. 自動接続できない場合
+    return NextResponse.json({ 
+      success: false, 
+      error: 'No recent LINE follow events found. Please add the bot as a friend first.' 
+    });
+
   } catch (error) {
     console.error('Error in LINE connection linking:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
-async function linkLatestLineUser(userId: string) {
-  try {
-    console.log(`🔗 Starting auto-link process for user: ${userId}`);
-
-    // 1. 現在のユーザーが既にLINE接続を持っているかチェック
-    const { data: currentUser, error: userError } = await supabase
-      .from('app_users')
-      .select('line_id, email')
-      .eq('id', userId)
-      .single();
-
-    if (userError) {
-      console.error('Error fetching current user:', userError);
-      return { success: false, error: 'User not found' };
-    }
-
-    if (currentUser.line_id) {
-      console.log(`ℹ️  User ${userId} already has LINE ID: ${currentUser.line_id}`);
-      return { 
-        success: true, 
-        alreadyConnected: true,
-        message: 'Already connected to LINE',
-        lineId: currentUser.line_id
-      };
-    }
-
-    console.log(`🔍 User ${userId} (${currentUser.email}) is not connected to LINE. Attempting to link...`);
-
-    // 2. 同じメールアドレスでLINE認証履歴を確認
-    const { data: lineAuthUser, error: lineAuthError } = await supabase
-      .from('app_users')
-      .select('id, line_id, email')
-      .eq('email', currentUser.email)
-      .not('line_id', 'is', null)
-      .single();
-
-    if (!lineAuthError && lineAuthUser && lineAuthUser.line_id) {
-      console.log(`🔗 Found existing LINE auth for email ${currentUser.email}: ${lineAuthUser.line_id}`);
-      
-      // 同じメールアドレスで既にLINE認証されたアカウントがある場合、そのline_idを使用
-      const { error: updateError } = await supabase
-        .from('app_users')
-        .update({ 
-          line_id: lineAuthUser.line_id,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', userId);
-
-      if (updateError) {
-        console.error('Error updating user with existing LINE ID:', updateError);
-        return { success: false, error: 'Failed to link existing LINE account' };
-      }
-
-      // 成功ログを保存
-      await supabase
-        .from('debug_logs')
-        .insert({
-          type: 'existing_line_account_linked',
-          data: {
-            userId: userId,
-            userEmail: currentUser.email,
-            lineUserId: lineAuthUser.line_id,
-            sourceUserId: lineAuthUser.id,
-            timestamp: new Date().toISOString()
-          }
-        });
-
-      console.log(`✅ Successfully linked user ${userId} to existing LINE ID ${lineAuthUser.line_id}`);
-      
-      return {
-        success: true,
-        newConnection: true,
-        message: 'Successfully connected to existing LINE account',
-        lineId: lineAuthUser.line_id
-      };
-    }
-
-    // 3. デバッグログから最近の友達追加イベントをチェック
-    try {
-      const { data: recentFollows, error: debugError } = await supabase
-        .from('debug_logs')
-        .select('data, created_at')
-        .eq('type', 'new_line_user_follow')
-        .order('created_at', { ascending: false })
-        .limit(10); // より多くのレコードをチェック
-
-      if (!debugError && recentFollows && recentFollows.length > 0) {
-        console.log(`🔍 Found ${recentFollows.length} recent follow events`);
-        
-        // 最新の友達追加イベントの中で、まだ紐付けられていないユーザーがいるかチェック
-        for (const follow of recentFollows) {
-          const lineUserId = follow.data.lineUserId;
-          
-          if (lineUserId) {
-            // このLINE IDが既に他のユーザーに紐付けられていないかチェック
-            const { data: existingUser, error: checkError } = await supabase
-              .from('app_users')
-              .select('id, email')
-              .eq('line_id', lineUserId)
-              .single();
-
-            if (checkError && checkError.code === 'PGRST116') {
-              // まだ紐付けられていないLINE IDを発見
-              console.log(`🎯 Found unlinked LINE user: ${lineUserId} from ${follow.created_at}`);
-              
-              // 30分以内の友達追加のみを自動リンク対象とする（より柔軟な接続を可能に）
-              const followTime = new Date(follow.created_at);
-              const now = new Date();
-              const diffMinutes = (now.getTime() - followTime.getTime()) / (1000 * 60);
-              
-              if (diffMinutes <= 30) {
-                // 紐付けを実行
-                const { error: linkError } = await supabase
-                  .from('app_users')
-                  .update({ 
-                    line_id: lineUserId,
-                    updated_at: new Date().toISOString()
-                  })
-                  .eq('id', userId);
-
-                if (!linkError) {
-                  console.log(`✅ Successfully auto-linked user ${userId} to LINE ${lineUserId}`);
-                  
-                  // 成功ログを保存
-                  await supabase
-                    .from('debug_logs')
-                    .insert({
-                      type: 'auto_line_link_success',
-                      data: {
-                        userId: userId,
-                        userEmail: currentUser.email,
-                        lineUserId: lineUserId,
-                        followTimestamp: follow.created_at,
-                        linkDelayMinutes: diffMinutes,
-                        timestamp: new Date().toISOString()
-                      }
-                    });
-                  
-                  return {
-                    success: true,
-                    newConnection: true,
-                    message: 'Successfully auto-linked to recent follow event',
-                    lineId: lineUserId
-                  };
-                } else {
-                  console.error('Error linking user to LINE:', linkError);
-                }
-              } else {
-                console.log(`⏰ Follow event too old (${diffMinutes.toFixed(1)} minutes ago), skipping auto-link`);
-              }
-            } else if (existingUser) {
-              console.log(`ℹ️  LINE ID ${lineUserId} already linked to user ${existingUser.id} (${existingUser.email})`);
-            }
-          }
-        }
-      } else {
-        console.log('📭 No recent follow events found in debug logs');
-      }
-    } catch (debugError) {
-      console.warn('Warning: Error checking debug logs for recent follows:', debugError);
-    }
-
-    // 4. 自動紐付けできない場合
-    console.log(`❌ Auto-link failed for user ${userId}`);
-    
-    // 失敗ログを保存（デバッグ用）
-    await supabase
-      .from('debug_logs')
-      .insert({
-        type: 'auto_line_link_failed',
-        data: {
-          userId: userId,
-          userEmail: currentUser.email,
-          reason: 'No unlinked recent follow events found',
-          timestamp: new Date().toISOString()
-        }
-      });
-
-    return { 
-      success: false, 
-      error: 'LINE connection not found. Please make sure you have added the bot as a friend and try the manual connection option.' 
-    };
-
-  } catch (error) {
-    console.error('Error in linkLatestLineUser:', error);
-    
-    // エラーログを保存
-    await supabase
-      .from('debug_logs')
-      .insert({
-        type: 'auto_line_link_error',
-        data: {
-          userId: userId,
-          error: error instanceof Error ? error.message : 'Unknown error',
-          timestamp: new Date().toISOString()
-        }
-      });
-
-    return { success: false, error: 'Internal server error' };
+// LINE Messaging API関数を追加
+async function sendLineMessage(lineUserId: string, message: string) {
+  const CHANNEL_ACCESS_TOKEN = process.env.LINE_CHANNEL_ACCESS_TOKEN;
+  
+  if (!CHANNEL_ACCESS_TOKEN) {
+    console.warn('LINE_CHANNEL_ACCESS_TOKEN not configured');
+    return;
   }
+
+  try {
+    const response = await fetch('https://api.line.me/v2/bot/message/push', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${CHANNEL_ACCESS_TOKEN}`,
+      },
+      body: JSON.stringify({
+        to: lineUserId,
+        messages: [{ type: 'text', text: message }]
+      })
+    });
+
+    if (!response.ok) {
+      console.error('Failed to send LINE message:', await response.text());
+    }
+  } catch (error) {
+    console.error('Error sending LINE message:', error);
+  }
+}
+
+async function sendConnectionSuccessMessage(lineUserId: string) {
+  const successMessage = `🎉 アプリとの連携が完了しました！
+
+これで、お気に入り店舗の新着情報をLINEで受け取れるようになりました。
+
+📱 通知設定の変更はアプリのプロフィール画面から行えます。`;
+
+  await sendLineMessage(lineUserId, successMessage);
 }

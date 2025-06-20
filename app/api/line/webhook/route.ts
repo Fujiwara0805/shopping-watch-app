@@ -197,9 +197,22 @@ async function handleFollowEvent(event: any) {
       console.error('❌ Database error:', dbError);
     }
 
-    // ウェルカムメッセージを送信
-    console.log(`📤 Sending welcome message to ${lineUserId}`);
-    await sendWelcomeMessage(lineUserId, displayName);
+    // フォローイベントを一時的に保存（接続待ちユーザーとして）
+    const { error: insertError } = await supabase
+      .from('pending_line_connections')
+      .insert({
+        line_user_id: lineUserId,
+        display_name: displayName,
+        followed_at: new Date().toISOString(),
+        expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString() // 30分後に期限切れ
+      });
+
+    if (insertError) {
+      console.error('Error saving pending connection:', insertError);
+    }
+
+    // ウェルカムメッセージに接続方法を含める
+    await sendWelcomeMessageWithConnection(lineUserId, displayName);
 
   } catch (error) {
     console.error('❌ Error handling follow event:', error);
@@ -256,17 +269,17 @@ async function handleMessageEvent(event: any) {
   }
 }
 
-async function sendWelcomeMessage(lineUserId: string, displayName: string) {
-  const welcomeMessage = `${displayName}さん、ショッピングウォッチの公式LINEアカウントを友だち追加いただき、ありがとうございます！🎉
+async function sendWelcomeMessageWithConnection(lineUserId: string, displayName: string) {
+  const welcomeMessage = `${displayName}さん、トクドクの公式LINEアカウントを友だち追加いただき、ありがとうございます！🎉
 
-お気に入り店舗の新着情報をLINEで受け取るには、アプリでアカウント設定を完了してください。
-
-📱 アプリの設定手順：
-1. アプリにログイン
+📱 アプリとの連携方法：
+1. トクドクアプリを開く
 2. プロフィール → 設定 → LINE通知設定
-3. 「接続確認」で連携を確認
+3. 「接続確認」ボタンをタップ
 
-何かご不明な点がございましたら、「ヘルプ」とメッセージをお送りください！`;
+⏰ 連携は友だち追加から30分以内に行ってください。
+
+何かご不明な点がございましたら、いつでもメッセージをお送りください！`;
 
   await sendLineMessage(lineUserId, welcomeMessage);
 }
