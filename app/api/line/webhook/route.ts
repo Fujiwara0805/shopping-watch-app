@@ -198,6 +198,7 @@ async function handleFollowEvent(event: any) {
     }
 
     // フォローイベントを一時的に保存（接続待ちユーザーとして）
+    console.log(`💾 Attempting to save pending connection for user: ${lineUserId}`);
     const { error: insertError } = await supabase
       .from('pending_line_connections')
       .insert({
@@ -208,7 +209,17 @@ async function handleFollowEvent(event: any) {
       });
 
     if (insertError) {
-      console.error('Error saving pending connection:', insertError);
+      console.error('❌ Error saving pending connection:', {
+        error: insertError,
+        code: insertError.code,
+        message: insertError.message,
+        details: insertError.details,
+        hint: insertError.hint,
+        lineUserId: lineUserId,
+        displayName: displayName
+      });
+    } else {
+      console.log(`✅ Successfully saved pending connection for user: ${lineUserId}`);
     }
 
     // ウェルカムメッセージに接続方法を含める
