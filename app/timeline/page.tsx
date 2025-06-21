@@ -167,7 +167,7 @@ const HamburgerMenu = ({ currentUser }: { currentUser: any }) => {
       icon: FileText,
       label: '広告・チラシ(未実装)',
       onClick: () => {
-        router.push('/flyers');
+        router.push('/');
         setIsOpen(false);
       }
     },
