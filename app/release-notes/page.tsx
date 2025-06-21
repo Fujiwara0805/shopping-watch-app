@@ -22,7 +22,6 @@ import {
 import AppLayout from '@/components/layout/app-layout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import { useFeedback } from '@/contexts/feedback-context';
 
@@ -107,12 +106,37 @@ const getReleaseTypeBadge = (type: ReleaseType) => {
 // サンプルリリースノートデータ
 const releaseNotes: ReleaseNote[] = [
   {
+    version: '1.0.2',
+    date: '2025-06-21',
+    type: 'minor',
+    title: 'LINE通知機能の追加',
+    description: 'トクドクのLINE公式アカウントとの連携機能を追加しました。お気に入り店舗の新着情報をLINEでも受け取れるようになり、より便利にお得情報をキャッチできます。',
+    isLatest: true,
+    changes: [
+      {
+        type: 'new',
+        title: 'LINE公式アカウント連携機能',
+        description: 'トクドクのLINE公式アカウント（@208uubra）を友達追加することで、アプリとLINEアカウントを連携できるようになりました。'
+      },
+      {
+        type: 'new',
+        title: 'LINE通知機能',
+        description: 'お気に入り店舗に新しい投稿があった際に、アプリ内通知に加えてLINEでも通知を受け取ることができるようになりました。アプリを開いていなくても重要な情報を見逃しません。'
+      },
+      {
+        type: 'improvement',
+        title: 'プロフィール画面の改善',
+        description: 'プロフィール画面にLINE連携の設定項目を追加し、接続状況の確認や設定変更が簡単に行えるようになりました。'
+      }
+    ]
+  },
+  {
     version: '1.0.1',
     date: '2025-06-18',
     type: 'minor',
     title: 'アプリの品質向上のためのアップデート',
     description: 'いつもトクドクをご利用いただきありがとうございます。皆様により快適なアプリ体験を提供するため、サービスの安定性向上に関するアップデートを行いました。',
-    isLatest: true,
+    isLatest: false,
     changes: [
       {
         type: 'improvement',
@@ -338,7 +362,7 @@ export default function ReleaseNotesPage() {
         >
           <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 text-center border border-blue-200">
             <Smartphone className="h-6 w-6 mx-auto text-blue-600 mb-2" />
-            <p className="text-lg font-bold text-blue-900">v1.0.0</p>
+            <p className="text-lg font-bold text-blue-900">v1.0.1</p>
             <p className="text-xs text-blue-700">現在のバージョン</p>
           </div>
           <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4 text-center border border-green-200">
