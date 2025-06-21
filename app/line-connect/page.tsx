@@ -8,8 +8,6 @@ import AppLayout from '@/components/layout/app-layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { MessageCircle, CheckCircle, ExternalLink, Copy, RefreshCw, Link, QrCode, Settings, Info, Smartphone } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -310,20 +308,19 @@ export default function LineConnectPage() {
                     <ul className="text-sm text-blue-800 space-y-1">
                       <li>• お気に入り店舗の新着投稿をリアルタイムで通知</li>
                       <li>• アプリを開かなくても重要な情報をキャッチ</li>
-                      <li>• 通知設定はいつでも変更可能</li>
                     </ul>
                   </div>
 
                   {/* 設定手順 */}
                   <div className="text-center space-y-4">
                     <p className="text-muted-foreground text-sm">
-                      LINE通知を受け取るには、以下の手順に従ってください：
+                      LINE通知を受け取るには、<br />以下の手順に従ってください：
                     </p>
                     
                     <div className="bg-yellow-50 p-4 rounded-lg text-left">
                       <h4 className="font-medium text-yellow-900 mb-2 flex items-center">
                         <Smartphone className="w-5 h-5 mr-2" />
-                        📱 設定手順
+                          設定手順
                       </h4>
                       <ol className="text-sm text-yellow-800 space-y-1">
                         <li>1. 下の「LINE友達追加」ボタンをタップ</li>
@@ -387,7 +384,7 @@ export default function LineConnectPage() {
                         <div className="space-y-3">
                           <div className="bg-blue-50 p-3 rounded-lg">
                             <h5 className="text-sm font-medium text-blue-900 mb-2">
-                              📱 接続できない場合の対処法:
+                               接続できない場合の対処法:
                             </h5>
                             <ol className="text-xs text-blue-800 space-y-1">
                               <li>1. LINEで「トクドク」を友達追加済みか確認</li>

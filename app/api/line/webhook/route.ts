@@ -299,7 +299,7 @@ async function sendLinkInstructions(lineUserId: string) {
   const linkMessage = `アプリとの連携方法をご案内します！
 
 📱 連携手順：
-1. ショッピングウォッチアプリを開く
+1. トクドクアプリを開く
 2. プロフィール画面の「設定」をタップ
 3. 「LINE通知設定」で接続状況を確認
 4. 「接続確認」ボタンをタップ
@@ -312,14 +312,14 @@ async function sendLinkInstructions(lineUserId: string) {
 }
 
 async function sendHelpMessage(lineUserId: string) {
-  const helpMessage = `ショッピングウォッチ LINE Bot ヘルプ
+  const helpMessage = `トクドク LINE Bot ヘルプ
 
 🔗 よく使われるキーワード：
 「連携」- アプリとの連携方法をご案内
 「ヘルプ」- このヘルプメッセージを表示
 
 📱 アプリについて：
-ショッピングウォッチは、お得な商品情報を共有できるアプリです。お気に入り店舗を設定すると、新着情報をLINEでお知らせします。
+トクドクは、お得な商品情報を共有しあう口コミアプリです。お気に入り店舗を設定すると、新着情報をLINEでお知らせします。
 
 ❓ その他のご質問：
 アプリ内のお問い合わせ機能をご利用ください。`;
@@ -330,7 +330,7 @@ async function sendHelpMessage(lineUserId: string) {
 async function sendGeneralResponse(lineUserId: string) {
   const generalMessage = `メッセージをお送りいただき、ありがとうございます！
 
-ショッピングウォッチでは、お気に入り店舗の値引き情報をリアルタイムでお知らせしています。
+トクドクでは、お気に入り店舗の値引き情報をリアルタイムでお知らせしています。
 
 💡 便利な機能：
 「連携」→ アプリとの連携方法
