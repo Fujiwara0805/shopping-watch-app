@@ -32,6 +32,8 @@ export function AppHeader() {
         return '通知';
       case '/contact':
         return 'お問い合わせ';
+      case '/board':
+        return '掲示板';
       case '/memo':
         return '買い物メモ';
       case '/flyers':
