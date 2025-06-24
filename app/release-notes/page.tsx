@@ -106,12 +106,42 @@ const getReleaseTypeBadge = (type: ReleaseType) => {
 // サンプルリリースノートデータ
 const releaseNotes: ReleaseNote[] = [
   {
+    version: '1.0.3',
+    date: '2025-06-24',
+    type: 'minor',
+    title: '掲示板機能の追加',
+    description: '新機能「掲示板」を追加しました！みんなで今日買うものを共有し、人気商品ランキングをチェックできる新しいコミュニティ機能です。',
+    isLatest: true,
+    changes: [
+      {
+        type: 'new',
+        title: '掲示板機能',
+        description: '「今日買うもの」を投稿・共有できる掲示板機能を追加しました。他のユーザーが何を買う予定なのかを確認できます。'
+      },
+      {
+        type: 'new',
+        title: '人気商品ランキング',
+        description: 'みんなが投稿した商品の中から人気の商品をランキング形式で表示します。トレンドをチェックしてお買い物の参考にしてください。'
+      },
+      {
+        type: 'new',
+        title: 'リアルタイム更新',
+        description: '掲示板の投稿内容はリアルタイムで更新され、最新の情報をいつでも確認できます。'
+      },
+      {
+        type: 'improvement',
+        title: 'ナビゲーションの改善',
+        description: 'メインナビゲーションに掲示板へのアクセスを追加し、より使いやすくなりました。'
+      }
+    ]
+  },
+  {
     version: '1.0.2',
     date: '2025-06-21',
     type: 'minor',
     title: 'LINE通知機能の追加',
     description: 'トクドクのLINE公式アカウントとの連携機能を追加しました。お気に入り店舗の新着情報をLINEでも受け取れるようになり、より便利にお得情報をキャッチできます。',
-    isLatest: true,
+    isLatest: false,
     changes: [
       {
         type: 'new',
@@ -362,7 +392,7 @@ export default function ReleaseNotesPage() {
         >
           <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 text-center border border-blue-200">
             <Smartphone className="h-6 w-6 mx-auto text-blue-600 mb-2" />
-            <p className="text-lg font-bold text-blue-900">v1.0.1</p>
+            <p className="text-lg font-bold text-blue-900">v1.0.3</p>
             <p className="text-xs text-blue-700">現在のバージョン</p>
           </div>
           <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4 text-center border border-green-200">
