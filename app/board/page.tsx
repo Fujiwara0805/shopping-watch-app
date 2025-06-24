@@ -496,7 +496,7 @@ export default function BoardPage() {
                 className="bg-[#73370c] hover:bg-[#5c2c0a] text-white font-medium border-0 shadow-sm"
               >
                 <Clock className="h-4 w-4 mr-1" />
-                タイムライン画面へ
+                タイムライン画面
               </Button>
               <Button
                 variant="default"
@@ -714,7 +714,7 @@ export default function BoardPage() {
                           買い物メモ連携
                         </p>
                         <p className="text-xs text-blue-800">
-                          入力した商品は自動的に買い物メモにも追加されます。
+                          入力した商品は自動的に買い物メモに追加されます。
                         </p>
                       </div>
                     </div>
@@ -753,6 +753,21 @@ export default function BoardPage() {
           className="max-w-lg"
         >
           <div className="space-y-6">
+            {/* 注意メッセージ */}
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+              <div className="flex items-start space-x-2">
+                <Info className="h-4 w-4 text-red-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-medium text-red-800 mb-1">
+                    ご注意
+                  </p>
+                  <p className="text-xs text-red-700">
+                    投稿後の<strong>編集・削除はできません</strong>。内容をよくご確認の上、投稿してください。
+                  </p>
+                </div>
+              </div>
+            </div>
+
             {/* 商品入力 */}
             <div className="space-y-3">
               <label className="text-sm font-semibold text-gray-800 flex items-center">
@@ -838,6 +853,16 @@ export default function BoardPage() {
               />
               <div className="text-xs text-gray-500 text-right">
                 {memo.length}/100文字
+              </div>
+              <div className="text-xs text-gray-500 mt-2">
+                検索候補が表示されない場合は、
+                <button
+                  onClick={handleGoToContact}
+                  className="text-blue-600 hover:text-blue-800 underline font-medium mx-1 transition-colors"
+                >
+                  お問い合わせフォーム
+                </button>
+                よりご連絡ください。
               </div>
             </div>
 

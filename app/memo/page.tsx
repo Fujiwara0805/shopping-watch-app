@@ -188,6 +188,11 @@ export default function MemoPage() {
     }
   };
 
+  // 割引表（タイムライン）への遷移
+  const handleGoToTimeline = () => {
+    router.push('/timeline');
+  };
+
   return (
     <AppLayout>
       <div className="p-4 max-w-2xl mx-auto">
@@ -200,12 +205,40 @@ export default function MemoPage() {
               </div>
             )}
           </div>
+          
         </header>
 
         <div className="flex gap-2 mb-4">
           <Input type="text" value={newItemName} onChange={e => setNewItemName(e.target.value)} placeholder="アイテム名を入力 (例: 牛乳)" className="text-base" />
           <Button onClick={handleAddItemFromInput} size="icon" className="shrink-0" disabled={newItemName.trim() === ''}><Plus size={20} /></Button>
         </div>
+
+        {/* 割引表への案内カードを追加 */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-6 p-4 bg-gradient-to-r from-orange-50 to-red-50 border border-orange-200 rounded-lg"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="bg-orange-100 p-2 rounded-full">
+                <PackageCheck className="h-5 w-5 text-orange-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-orange-900">便利な割引表！</h3>
+                <p className="text-sm text-orange-700">何％OFFがいくらか瞬時に<br />確認できます。</p>
+              </div>
+            </div>
+            <Button
+              onClick={handleGoToTimeline}
+              variant="outline"
+              size="sm"
+              className="border-orange-300 text-orange-700 hover:bg-orange-100"
+            >
+              割引表へ
+            </Button>
+          </div>
+        </motion.div>
 
         {showUsageGuide && (
           <AnimatePresence>
@@ -254,6 +287,17 @@ export default function MemoPage() {
                   </div>
                   <p className="text-xs text-blue-700 pl-1">
                     タップで直接リストに追加。編集は<Edit size={12} className="inline-block mx-0.5 -mt-0.5" />ボタンから行えます。
+                  </p>
+                </div>
+
+                {/* 割引表の案内を追加 */}
+                <div className="p-3 rounded-lg border bg-orange-50 border-orange-200/80">
+                  <div className="flex items-center gap-2.5 mb-1.5">
+                    <PackageCheck className="h-5 w-5 text-orange-600" />
+                    <h3 className="font-semibold text-orange-800">割引表で特売情報をチェック</h3>
+                  </div>
+                  <p className="text-xs text-orange-700 pl-1">
+                    買い物前に割引表を確認して、お得な商品を見つけましょう。
                   </p>
                 </div>
               </div>
