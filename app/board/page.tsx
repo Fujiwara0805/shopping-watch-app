@@ -17,7 +17,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import { useRouter } from 'next/navigation';
 
-// 掲示板リクエストの型定義
+// 掲示板投稿の型定義
 interface BoardRequest {
   id: string;
   product_name: string;
@@ -136,7 +136,7 @@ export default function BoardPage() {
     return allProducts.includes(productInput);
   }, [productInput, allProducts]);
 
-  // 掲示板リクエストを取得（有効期限内のもののみ）
+  // 掲示板投稿を取得（有効期限内のもののみ）
   const fetchRequests = useCallback(async () => {
     try {
       const now = new Date().toISOString();
@@ -148,7 +148,7 @@ export default function BoardPage() {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('リクエスト取得エラー:', error);
+        console.error('投稿取得エラー:', error);
         // エラーがあってもページは表示する
         setRequests([]);
         return;
@@ -157,7 +157,7 @@ export default function BoardPage() {
       setRequests(data || []);
       setLastRefresh(new Date());
     } catch (error) {
-      console.error('リクエスト取得エラー:', error);
+      console.error('投稿取得エラー:', error);
       setRequests([]);
     }
   }, []);
@@ -185,7 +185,7 @@ export default function BoardPage() {
     setRankings(sortedProducts);
   }, [requests]);
 
-  // 期限切れリクエストを削除（クライアントサイドでの補助的な処理）
+  // 期限切れ投稿を削除（クライアントサイドでの補助的な処理）
   const removeExpiredRequests = useCallback(() => {
     const now = new Date();
     setRequests(prev => prev.filter(request => new Date(request.expires_at) > now));
@@ -206,7 +206,7 @@ export default function BoardPage() {
     loadData();
   }, [fetchRequests]);
 
-  // リクエストが更新されたらランキングを計算
+  // 投稿が更新されたらランキングを計算
   useEffect(() => {
     calculateRankings();
   }, [requests, calculateRankings]);
@@ -268,7 +268,7 @@ export default function BoardPage() {
     setShowSuggestions(false);
   };
 
-  // 商品リクエストを送信
+  // 商品投稿を送信
   const handleSubmitRequest = async () => {
     if (!selectedProduct || !isValidProduct) {
       toast({
@@ -303,13 +303,13 @@ export default function BoardPage() {
       // 3. 成功通知
       if (memo.trim()) {
         toast({
-          title: "✨ リクエストを送信しました！",
-          description: `${selectedProduct}のリクエストが掲示板に追加され、買い物メモにも追加されました。`,
+          title: "✨ 投稿を送信しました！",
+          description: `${selectedProduct}の投稿が掲示板に追加され、買い物メモにも追加されました。`,
         });
       } else {
         toast({
-          title: "✨ リクエストを送信しました！",
-          description: `${selectedProduct}のリクエストが掲示板に追加され、買い物メモにも追加されました。`,
+          title: "✨ 投稿を送信しました！",
+          description: `${selectedProduct}の投稿が掲示板に追加され、買い物メモにも追加されました。`,
         });
       }
 
@@ -321,10 +321,10 @@ export default function BoardPage() {
       // 手動でデータを更新
       await fetchRequests();
     } catch (error) {
-      console.error('リクエスト送信エラー:', error);
+      console.error('投稿送信エラー:', error);
       toast({
         title: "エラーが発生しました",
-        description: "リクエストの送信に失敗しました。もう一度お試しください。",
+        description: "投稿の送信に失敗しました。もう一度お試しください。",
         variant: "destructive",
       });
     } finally {
@@ -332,7 +332,7 @@ export default function BoardPage() {
     }
   };
 
-  // 買い物メモに追加（既存のリクエストから）
+  // 買い物メモに追加（既存の投稿から）
   const addToShoppingMemo = (productName: string) => {
     try {
       // ローカルストレージから既存のメモを取得
@@ -404,7 +404,7 @@ export default function BoardPage() {
     setLoading(false);
     toast({
       title: "更新しました",
-      description: "最新のリクエスト情報を取得しました。",
+      description: "最新の投稿情報を取得しました。",
     });
   };
 
@@ -510,7 +510,7 @@ export default function BoardPage() {
             </div>
           </motion.div>
 
-          {/* リクエストボタン */}
+          {/* 投稿ボタン */}
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -545,7 +545,7 @@ export default function BoardPage() {
                       </h2>
                     </div>
                     <div className="text-sm text-gray-500">
-                      （随時更新中）
+                      （リアルタイム更新）
                     </div>
                   </div>
                 </CardHeader>
