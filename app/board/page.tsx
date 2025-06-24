@@ -743,7 +743,7 @@ export default function BoardPage() {
             <div className="space-y-3">
               <label className="text-sm font-semibold text-gray-800 flex items-center">
                 <ShoppingCart className="h-4 w-4 mr-2 text-orange-500" />
-                買うものを選択してください（ひらがなで統一）
+                買うものを選択してください（ひらがな）
               </label>
               
               <div className="relative">
