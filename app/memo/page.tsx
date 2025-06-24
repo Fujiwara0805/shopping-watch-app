@@ -190,7 +190,8 @@ export default function MemoPage() {
 
   // 割引表（タイムライン）への遷移
   const handleGoToTimeline = () => {
-    router.push('/timeline');
+    window.open('https://discount-calculator-app.vercel.app', '_blank');
+    
   };
 
   return (
