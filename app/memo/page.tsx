@@ -290,17 +290,6 @@ export default function MemoPage() {
                     タップで直接リストに追加。編集は<Edit size={12} className="inline-block mx-0.5 -mt-0.5" />ボタンから行えます。
                   </p>
                 </div>
-
-                {/* 割引表の案内を追加 */}
-                <div className="p-3 rounded-lg border bg-orange-50 border-orange-200/80">
-                  <div className="flex items-center gap-2.5 mb-1.5">
-                    <PackageCheck className="h-5 w-5 text-orange-600" />
-                    <h3 className="font-semibold text-orange-800">割引表で特売情報をチェック</h3>
-                  </div>
-                  <p className="text-xs text-orange-700 pl-1">
-                    買い物前に割引表を確認して、お得な商品を見つけましょう。
-                  </p>
-                </div>
               </div>
 
               {/* 今後表示しないオプションを追加 */}
