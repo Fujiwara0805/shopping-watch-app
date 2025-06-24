@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Clock, TrendingUp, Loader2, ShoppingCart, Sparkles, RefreshCw, Calendar, MessageSquare, ShoppingBag, Notebook, Info, Mail } from 'lucide-react';
+import { Plus, Clock, TrendingUp, Loader2, ShoppingCart, Sparkles, RefreshCw, Calendar, MessageSquare, ShoppingBag, Notebook, Info, Mail, Search, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { CustomModal } from '@/components/ui/custom-modal';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/lib/supabaseClient';
@@ -40,37 +40,60 @@ interface MemoItem {
   checked: boolean;
 }
 
-// 商品選択肢（カテゴリ別に整理）
+// 商品選択肢（カテゴリ別に整理）- 全てひらがなに統一
 const PRODUCT_CATEGORIES = {
   '野菜': [
-    'トマト', 'きゅうり', '玉ねぎ', 'にんじん', 'じゃがいも', 
-    'キャベツ', 'レタス', 'ピーマン', 'なす', 'ブロッコリー', 
-    'ほうれん草', '大根', 'もやし'
+    'とまと', 'きゅうり', 'たまねぎ', 'にんじん', 'じゃがいも', 
+    'きゃべつ', 'れたす', 'ぴーまん', 'なす', 'ぶろっこりー', 
+    'ほうれんそう', 'だいこん', 'もやし', 'ごーやー', 'おくら',
+    'かぼちゃ', 'とうもろこし', 'いんげん', 'あすぱらがす', 'せろり',
+    'ちんげんさい', 'はくさい', 'みずな', 'にら', 'ねぎ',
+    'らっきょう', 'しょうが', 'にんにく', 'ごぼう', 'れんこん',
+    'たけのこ', 'しいたけ', 'えのき', 'しめじ', 'まいたけ',
+    'えりんぎ', 'なめこ', 'きくらげ', 'わかめ', 'のり',
+    'こまつな', 'みつば', 'しそ', 'ぱせり', 'ばじる',
+    'ろーずまりー', 'たいむ', 'せーじ', 'おれがの', 'みんと',
+    'かいわれだいこん', 'すぷらうと', 'べびーりーふ', 'るっこら', 'くれそん',
+    'えんどうまめ', 'そらまめ', 'だいず', 'あずき', 'いんげんまめ',
+    'らでぃっしゅ', 'かぶ', 'やまいも', 'さといも', 'さつまいも'
   ],
   '果物': [
-    'バナナ', 'りんご', 'みかん', 'いちご', 'ぶどう', 'メロン', 
-    'スイカ', 'パイナップル', 'キウイ', 'オレンジ'
+    'ばなな', 'りんご', 'みかん', 'いちご', 'ぶどう', 'めろん', 
+    'すいか', 'ぱいなっぷる', 'きうい', 'おれんじ', 'れもん',
+    'らいむ', 'ぐれーぷふるーつ', 'もも', 'なし', 'かき',
+    'ぷらむ', 'あんず', 'さくらんぼ', 'ぶるーべりー', 'らずべりー',
+    'いちじく', 'ざくろ', 'まんごー', 'ぱぱいや', 'どらごんふるーつ'
   ],
   '肉類': [
-    '豚肉', '鶏肉', '牛肉', 'ひき肉', 'ソーセージ', 'ハム', 'ベーコン'
+    'ぶたにく', 'とりにく', 'ぎゅうにく', 'ひきにく', 'そーせーじ', 
+    'はむ', 'べーこん', 'らむにく', 'あいにく', 'しかにく'
   ],
   '魚介類': [
-    '魚', 'サーモン', 'まぐろ', 'えび', 'いか', 'たこ', 'あじ', 'さば'
+    'さかな', 'さーもん', 'まぐろ', 'えび', 'いか', 'たこ', 
+    'あじ', 'さば', 'いわし', 'さんま', 'ぶり', 'たい',
+    'ひらめ', 'かれい', 'あなご', 'うなぎ', 'かに', 'ほたて',
+    'あさり', 'しじみ', 'はまぐり', 'むーる貝'
   ],
   '乳製品・卵': [
-    '牛乳', '卵', 'チーズ', 'ヨーグルト', 'バター'
+    'ぎゅうにゅう', 'たまご', 'ちーず', 'よーぐると', 'ばたー',
+    'せいくりーむ', 'あいすくりーむ', 'こんでんすみるく'
   ],
   '主食': [
-    'パン', 'お米', 'パスタ', 'うどん', 'そば', 'ラーメン'
+    'ぱん', 'おこめ', 'ぱすた', 'うどん', 'そば', 'らーめん',
+    'そーめん', 'ひやむぎ', 'やきそば', 'おにぎり', 'もち'
   ],
   'その他': [
-    '調味料', '冷凍食品', 'お菓子', '飲み物', 'その他'
+    'ちょうみりょう', 'れいとうしょくひん', 'おかし', 'のみもの',
+    'じゅーす', 'こーひー', 'こうちゃ', 'りょくちゃ', 'みず',
+    'びーる', 'わいん', 'にほんしゅ', 'しょうちゅう', 'その他'
   ]
 };
 
 export default function BoardPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<string>('');
+  const [productInput, setProductInput] = useState<string>('');
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [requests, setRequests] = useState<BoardRequest[]>([]);
   const [rankings, setRankings] = useState<ProductRanking[]>([]);
@@ -79,6 +102,25 @@ export default function BoardPage() {
   const { toast } = useToast();
   const router = useRouter();
   const [memo, setMemo] = useState('');
+
+  // 全商品リストを作成
+  const allProducts = useMemo(() => {
+    return Object.values(PRODUCT_CATEGORIES).flat();
+  }, []);
+
+  // 検索候補をフィルタリング
+  const filteredSuggestions = useMemo(() => {
+    if (!productInput.trim()) return [];
+    
+    return allProducts.filter(product =>
+      product.toLowerCase().includes(productInput.toLowerCase())
+    ).slice(0, 10); // 最大10件まで表示
+  }, [productInput, allProducts]);
+
+  // 入力値が有効な商品かチェック
+  const isValidProduct = useMemo(() => {
+    return allProducts.includes(productInput);
+  }, [productInput, allProducts]);
 
   // 掲示板リクエストを取得（有効期限内のもののみ）
   const fetchRequests = useCallback(async () => {
@@ -191,9 +233,37 @@ export default function BoardPage() {
     };
   }, []);
 
+  // 商品入力の処理
+  const handleProductInputChange = (value: string) => {
+    setProductInput(value);
+    setSelectedProduct(value);
+    setShowSuggestions(value.trim().length > 0);
+  };
+
+  // 候補選択の処理
+  const handleSuggestionSelect = (product: string) => {
+    setProductInput(product);
+    setSelectedProduct(product);
+    setShowSuggestions(false);
+  };
+
+  // 入力フィールドのクリア
+  const handleClearInput = () => {
+    setProductInput('');
+    setSelectedProduct('');
+    setShowSuggestions(false);
+  };
+
   // 商品リクエストを送信
   const handleSubmitRequest = async () => {
-    if (!selectedProduct) return;
+    if (!selectedProduct || !isValidProduct) {
+      toast({
+        title: "入力エラー",
+        description: "選択肢から商品を選択してください。",
+        variant: "destructive",
+      });
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -231,6 +301,7 @@ export default function BoardPage() {
 
       setIsModalOpen(false);
       setSelectedProduct('');
+      setProductInput('');
       setMemo('');
       
       // 手動でデータを更新
@@ -298,6 +369,8 @@ export default function BoardPage() {
     
     setIsModalOpen(true);
     setSelectedProduct('');
+    setProductInput('');
+    setShowSuggestions(false);
     setMemo('');
   }, []);
 
@@ -305,6 +378,8 @@ export default function BoardPage() {
   const handleCloseModal = useCallback(() => {
     setIsModalOpen(false);
     setSelectedProduct('');
+    setProductInput('');
+    setShowSuggestions(false);
     setMemo('');
   }, []);
 
@@ -664,49 +739,73 @@ export default function BoardPage() {
           className="max-w-lg"
         >
           <div className="space-y-6">
-            {/* 商品選択 */}
+            {/* 商品入力 */}
             <div className="space-y-3">
               <label className="text-sm font-semibold text-gray-800 flex items-center">
                 <ShoppingCart className="h-4 w-4 mr-2 text-orange-500" />
-                商品を選択してください
+                買うものを選択してください（ひらがなで統一）
               </label>
               
-              <Select value={selectedProduct} onValueChange={setSelectedProduct}>
-                <SelectTrigger className="h-12 text-base border-2 border-gray-200 hover:border-orange-300 focus:border-orange-500 transition-colors">
-                  <SelectValue placeholder="商品を選択..." />
-                </SelectTrigger>
-                <SelectContent className="max-h-[200px]">
-                  {Object.entries(PRODUCT_CATEGORIES).map(([category, products]) => (
-                    <div key={category}>
-                      <div className="px-2 py-1 text-xs font-semibold text-gray-500 bg-gray-100 sticky top-0">
-                        {category}
-                      </div>
-                      {products.slice(0, 5).map((product) => (
-                        <SelectItem 
-                          key={product} 
-                          value={product}
-                          className="py-2 hover:bg-orange-50 focus:bg-orange-50"
+              <div className="relative">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Input
+                    value={productInput}
+                    onChange={(e) => handleProductInputChange(e.target.value)}
+                    onFocus={() => setShowSuggestions(productInput.trim().length > 0)}
+                    placeholder="商品名を入力してください..."
+                    className={cn(
+                      "h-12 pl-10 pr-10 text-base border-2 transition-colors",
+                      isValidProduct || !productInput 
+                        ? "border-gray-200 hover:border-orange-300 focus:border-orange-500" 
+                        : "border-red-300 hover:border-red-400 focus:border-red-500"
+                    )}
+                    style={{ fontSize: '16px' }}
+                  />
+                  {productInput && (
+                    <button
+                      onClick={handleClearInput}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+
+                {/* 検索候補 */}
+                <AnimatePresence>
+                  {showSuggestions && filteredSuggestions.length > 0 && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto"
+                    >
+                      {filteredSuggestions.map((product, index) => (
+                        <button
+                          key={product}
+                          onClick={() => handleSuggestionSelect(product)}
+                          className="w-full text-left px-4 py-3 hover:bg-orange-50 transition-colors border-b border-gray-100 last:border-b-0"
                         >
-                          <span className="font-medium">{product}</span>
-                        </SelectItem>
+                          <span className="font-medium text-gray-900">{product}</span>
+                        </button>
                       ))}
-                      {products.length > 5 && (
-                        <div className="max-h-32 overflow-y-auto">
-                          {products.slice(5).map((product) => (
-                            <SelectItem 
-                              key={product} 
-                              value={product}
-                              className="py-2 hover:bg-orange-50 focus:bg-orange-50"
-                            >
-                              <span className="font-medium">{product}</span>
-                            </SelectItem>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </SelectContent>
-              </Select>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* バリデーションメッセージ */}
+                {productInput && !isValidProduct && (
+                  <motion.p
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="text-xs text-red-600 mt-1 flex items-center"
+                  >
+                    <Info className="h-3 w-3 mr-1" />
+                    選択肢から商品を選択してください
+                  </motion.p>
+                )}
+              </div>
             </div>
 
             {/* メモ入力 */}
@@ -740,8 +839,8 @@ export default function BoardPage() {
               </Button>
               <Button
                 onClick={handleSubmitRequest}
-                disabled={!selectedProduct || isSubmitting}
-                className="flex-1 h-12 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
+                disabled={!selectedProduct || !isValidProduct || isSubmitting}
+                className="flex-1 h-12 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSubmitting ? (
                   <>
