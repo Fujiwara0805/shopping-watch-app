@@ -283,7 +283,7 @@ export default function BoardPage() {
     try {
       // 1. 掲示板に投稿（メモの有無に関わらず）
       const expiresAt = new Date();
-      expiresAt.setHours(expiresAt.getHours() + 8);
+      expiresAt.setHours(expiresAt.getHours() + 5);
 
       const { error } = await supabase
         .from('board_requests')
@@ -544,7 +544,7 @@ export default function BoardPage() {
                         人気商品ランキング
                       </h2>
                     </div>
-                    <div className="text-sm text-gray-500">
+                    <div className="text-xs text-gray-500">
                       （リアルタイム更新）
                     </div>
                   </div>
@@ -702,7 +702,7 @@ export default function BoardPage() {
                           自動削除について
                         </p>
                         <p className="text-xs text-blue-800">
-                          投稿は<strong>8時間後に自動削除</strong>されます。
+                          投稿は<strong>5時間後に自動削除</strong>されます。
                         </p>
                       </div>
                     </div>
@@ -715,6 +715,18 @@ export default function BoardPage() {
                         </p>
                         <p className="text-xs text-blue-800">
                           入力した商品は自動的に買い物メモに追加されます。
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start space-x-3 p-2.5 rounded-lg bg-white/50">
+                      <ShoppingBag className="h-4 w-4 text-blue-600 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-xs font-medium text-blue-900 mb-0.5">
+                          匿名投稿について
+                        </p>
+                        <p className="text-xs text-blue-800">
+                          投稿は<strong>完全匿名</strong>で行われるため、個人情報が漏洩する心配はありません。
                         </p>
                       </div>
                     </div>
