@@ -545,7 +545,7 @@ export default function BoardPage() {
                       </h2>
                     </div>
                     <div className="text-xs text-gray-500">
-                      （リアルタイム更新）
+                      （常時更新）
                     </div>
                   </div>
                 </CardHeader>
