@@ -510,7 +510,7 @@ export default function BoardPage() {
             <Card className="bg-white/80 backdrop-blur-sm border-orange-200 shadow-lg">
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-semibold flex items-center space-x-2" style={{ color: '#73370c' }}>
+                  <h2 className="text-lg font-semibold flex items-center space-x-2" style={{ color: '#73370c' }}>
                     <ShoppingCart className="h-5 w-5 text-orange-500" />
                     <span>みんなの今日買うもの</span>
                   </h2>
@@ -720,7 +720,7 @@ export default function BoardPage() {
                 onChange={(e) => setMemo(e.target.value)}
                 placeholder="具体的な商品名や希望（値段や数量など）をご記入ください（100文字まで）"
                 className="min-h-20 text-base border-2 border-gray-200 hover:border-orange-300 focus:border-orange-500 transition-colors resize-none"
-                style={{ fontSize: '16px' }}
+                style={{ fontSize: '14px' }}
                 maxLength={100}
               />
               <div className="text-xs text-gray-500 text-right">
