@@ -661,7 +661,7 @@ export default function Timeline() {
         }
       }
       
-      // データ処理の改善
+      // データ処理の改善 - likes_countをそのまま使用
       let processedPosts = (data as PostFromDB[]).map(post => {
         let distance;
         
@@ -679,13 +679,12 @@ export default function Timeline() {
           ? (authorData as any).user_id 
           : null;
 
-        // いいね状態の正確な判定
-        const isLikedByCurrentUser = Array.isArray(post.post_likes) 
-          ? post.post_likes.some((like: PostLike) => like.user_id === currentUserId)
-          : currentLikedPostIds.includes(post.id); // フォールバック
-
-        // 実際のいいね数を post_likes テーブルから計算
-        const actualLikesCount = Array.isArray(post.post_likes) ? post.post_likes.length : 0;
+        // いいね状態の判定（ログインユーザーのみ）
+        const isLikedByCurrentUser = currentUserId 
+          ? Array.isArray(post.post_likes) 
+            ? post.post_likes.some((like: PostLike) => like.user_id === currentUserId)
+            : currentLikedPostIds.includes(post.id)
+          : false; // 非ログインユーザーはローカルストレージで判定
 
         // ユーザーの投稿数を取得
         const authorPostsCount = authorData?.id ? authorPostCounts[authorData.id] || 0 : 0;
@@ -696,7 +695,7 @@ export default function Timeline() {
           author_user_id: authorUserId,
           author_posts_count: authorPostsCount,
           isLikedByCurrentUser,
-          likes_count: actualLikesCount, // post_likes テーブルから計算した正確な値を使用
+          likes_count: post.likes_count, // データベースの値をそのまま使用
           distance,
         };
       });
@@ -812,52 +811,99 @@ export default function Timeline() {
 
   // いいね処理の改善
   const handleLike = async (postId: string, isLiked: boolean) => {
-    if (!currentUserId) return;
-
     const post = posts.find(p => p.id === postId);
     if (post && post.author_user_id === currentUserId) {
-      return;
+      return; // 自分の投稿にはいいねできない
     }
 
     try {
-      if (isLiked) {
-        console.log('いいね追加:', { postId, currentUserId });
-        const { error } = await supabase
-          .from('post_likes')
-          .insert({ 
-            post_id: postId, 
-            user_id: currentUserId,
-            created_at: new Date().toISOString()
-          });
-        if (error) throw error;
-        
-        // いいねした投稿リストを即座に更新
-        setLikedPostIds(prev => [postId, ...prev.filter(id => id !== postId)]);
+      if (currentUserId) {
+        // ログインユーザーの場合
+        await handleAuthenticatedLike(postId, isLiked);
       } else {
-        console.log('いいね削除:', { postId, currentUserId });
-        const { error } = await supabase
-          .from('post_likes')
-          .delete()
-          .match({ post_id: postId, user_id: currentUserId });
-        if (error) throw error;
-        
-        // いいねした投稿リストから削除
-        setLikedPostIds(prev => prev.filter(id => id !== postId));
+        // 非ログインユーザーの場合
+        await handleAnonymousLike(postId, isLiked);
       }
-      
-      // UIの更新 - 正確な増減を行う
-      setPosts(prevPosts => prevPosts.map(p => 
-        p.id === postId 
-          ? { 
-              ...p, 
-              isLikedByCurrentUser: isLiked, 
-              likes_count: isLiked ? p.likes_count + 1 : Math.max(0, p.likes_count - 1)
-            } 
-          : p
-      ));
     } catch (error) {
       console.error("いいね処理エラー:", error);
     }
+  };
+
+  // ログインユーザーのいいね処理
+  const handleAuthenticatedLike = async (postId: string, isLiked: boolean) => {
+    if (isLiked) {
+      console.log('いいね追加:', { postId, currentUserId });
+      const { error } = await supabase
+        .from('post_likes')
+        .insert({ 
+          post_id: postId, 
+          user_id: currentUserId,
+          created_at: new Date().toISOString()
+        });
+      if (error) throw error;
+      
+      // いいねした投稿リストを即座に更新
+      setLikedPostIds(prev => [postId, ...prev.filter(id => id !== postId)]);
+    } else {
+      console.log('いいね削除:', { postId, currentUserId });
+      const { error } = await supabase
+        .from('post_likes')
+        .delete()
+        .match({ post_id: postId, user_id: currentUserId });
+      if (error) throw error;
+      
+      // いいねした投稿リストから削除
+      setLikedPostIds(prev => prev.filter(id => id !== postId));
+    }
+    
+    // UIの更新（トリガーにより自動更新されるため楽観的更新）
+    setPosts(prevPosts => prevPosts.map(p => 
+      p.id === postId 
+        ? { 
+            ...p, 
+            isLikedByCurrentUser: isLiked, 
+            likes_count: isLiked ? p.likes_count + 1 : Math.max(0, p.likes_count - 1)
+          } 
+        : p
+    ));
+  };
+
+  // 非ログインユーザーのいいね処理を修正
+  const handleAnonymousLike = async (postId: string, isLiked: boolean) => {
+    // ローカルストレージでの重複チェック
+    const anonymousLikes = JSON.parse(localStorage.getItem('anonymousLikes') || '[]');
+    
+    if (isLiked && !anonymousLikes.includes(postId)) {
+      // いいね追加（まだいいねしていない場合のみ）
+      anonymousLikes.push(postId);
+      localStorage.setItem('anonymousLikes', JSON.stringify(anonymousLikes));
+      
+      // サーバーサイドでカウントのみ更新
+      const { error } = await supabase.rpc('increment_anonymous_like', { post_id: postId });
+      if (error) throw error;
+      
+    } else if (!isLiked && anonymousLikes.includes(postId)) {
+      // いいね削除（既にいいねしている場合のみ）
+      const updatedLikes = anonymousLikes.filter((id: string) => id !== postId);
+      localStorage.setItem('anonymousLikes', JSON.stringify(updatedLikes));
+      
+      const { error } = await supabase.rpc('decrement_anonymous_like', { post_id: postId });
+      if (error) throw error;
+    } else {
+      // 無効な操作（既にいいね済みなのに追加しようとした、または未いいねなのに削除しようとした）
+      console.warn('無効ないいね操作:', { postId, isLiked, currentLikes: anonymousLikes });
+      return; // 何もしない
+    }
+    
+    // UIの更新
+    setPosts(prevPosts => prevPosts.map(p => 
+      p.id === postId 
+        ? { 
+            ...p, 
+            likes_count: isLiked ? p.likes_count + 1 : Math.max(0, p.likes_count - 1)
+          } 
+        : p
+    ));
   };
 
   // 投稿カードクリック時のハンドラー

@@ -224,24 +224,67 @@ export const PostCard = memo(({
   // 自分の投稿かどうかの判定を改善
   const isMyPost = isOwnPost || (post.author_user_id === currentUserId);
 
+  // 非ログインユーザーのいいね状態をローカルストレージから取得
+  const [anonymousLikedPosts, setAnonymousLikedPosts] = useState<string[]>([]);
+  
+  useEffect(() => {
+    if (!currentUserId) {
+      const anonymousLikes = JSON.parse(localStorage.getItem('anonymousLikes') || '[]');
+      setAnonymousLikedPosts(anonymousLikes);
+    }
+  }, [currentUserId]);
+
+  // いいね状態の判定（ログイン・非ログイン両対応）
+  const isLiked = currentUserId 
+    ? post.isLikedByCurrentUser 
+    : anonymousLikedPosts.includes(post.id);
+
   const handleLikeClick = useCallback(async (e: React.MouseEvent) => {
-    e.stopPropagation(); // 親のclickイベントを防ぐ
+    e.stopPropagation();
     
-    if (isLiking) return; // 重複クリック防止
+    if (isLiking) return;
     
-    // 自分の投稿にはいいねできない
-    if (isMyPost) {
+    // 自分の投稿にはいいねできない（ログインユーザーのみ）
+    if (isMyPost && currentUserId) {
       toast({
         title: "自分の投稿にはいいねできません",
         duration: 2000,
       });
       return;
     }
+
+    // 非ログインユーザーの重複チェック
+    if (!currentUserId) {
+      const anonymousLikes = JSON.parse(localStorage.getItem('anonymousLikes') || '[]');
+      const alreadyLiked = anonymousLikes.includes(post.id);
+      
+      // 既にいいね済みの場合は削除、未いいねの場合は追加
+      if (alreadyLiked && !isLiked) {
+        // 状態が不整合の場合は修正
+        setAnonymousLikedPosts(prev => prev.filter(id => id !== post.id));
+        return;
+      } else if (!alreadyLiked && isLiked) {
+        // 状態が不整合の場合は修正
+        setAnonymousLikedPosts(prev => [...prev, post.id]);
+        return;
+      }
+    }
     
-    if (onLike && currentUserId) {
+    if (onLike) {
       setIsLiking(true);
       try {
-        await onLike(post.id, !(post.isLikedByCurrentUser ?? false));
+        await onLike(post.id, !isLiked);
+        
+        // 非ログインユーザーの場合、ローカル状態も更新
+        if (!currentUserId) {
+          if (!isLiked) {
+            // いいね追加
+            setAnonymousLikedPosts(prev => [...prev, post.id]);
+          } else {
+            // いいね削除
+            setAnonymousLikedPosts(prev => prev.filter(id => id !== post.id));
+          }
+        }
       } catch (error) {
         console.error('いいね処理エラー:', error);
         toast({
@@ -252,14 +295,8 @@ export const PostCard = memo(({
       } finally {
         setIsLiking(false);
       }
-    } else if (!currentUserId) {
-      toast({
-        title: "ログインが必要です",
-        description: "いいねをするにはログインしてください。",
-        duration: 3000,
-      });
     }
-  }, [onLike, currentUserId, post.id, post.isLikedByCurrentUser, isLiking, toast, isMyPost]);
+  }, [onLike, post.id, isLiked, isLiking, toast, isMyPost, currentUserId]);
 
   const handleShareClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation(); // 親のclickイベントを防ぐ
@@ -431,17 +468,17 @@ export const PostCard = memo(({
                       size="icon"
                       className={cn(
                         "bg-black/60 text-white rounded-full hover:bg-black/80 transition-colors backdrop-blur-sm",
-                        isMyPost && "opacity-50 cursor-not-allowed"
+                        isMyPost && currentUserId && "opacity-50 cursor-not-allowed"
                       )}
                       onClick={handleLikeClick}
-                      disabled={isLiking || isMyPost}
-                      title={isMyPost ? "自分の投稿にはいいねできません" : "いいね"}
+                      disabled={isLiking || (isMyPost && Boolean(currentUserId))}
+                      title={isMyPost && currentUserId ? "自分の投稿にはいいねできません" : "いいね"}
                     >
                       <Heart 
                         size={18} 
                         className={cn(
                           "transition-all duration-200",
-                          post.isLikedByCurrentUser ? "text-red-500 fill-red-500 scale-110" : "",
+                          isLiked ? "text-red-500 fill-red-500 scale-110" : "text-white hover:text-red-300",
                           isLiking && "animate-pulse"
                         )} 
                       />
