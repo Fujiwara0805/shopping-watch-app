@@ -88,8 +88,18 @@ export function MapSearchControl({
             const place = newAutocomplete.getPlace();
             console.log("MapSearchControl: Place selected:", place);
             
-            if (place && place.geometry && place.name) {
-              setInputValue(place.name);
+            if (place && place.geometry && (place.name || place.formatted_address)) {
+              // 表示名を決定（nameが優先、なければformatted_address）
+              const displayName = place.name || place.formatted_address || '';
+              
+              // Reactの状態を更新
+              setInputValue(displayName);
+              
+              // 入力フィールドの値も直接更新（Google Maps APIとの同期のため）
+              if (inputRef.current) {
+                inputRef.current.value = displayName;
+              }
+              
               let distanceText: string | null = null;
               
               // 距離計算
@@ -101,8 +111,11 @@ export function MapSearchControl({
                 distanceText = (distance / 1000).toFixed(1) + ' km';
               }
               
-              onPlaceSelected(place, distanceText);
-              inputRef.current?.blur();
+              // 少し遅延を入れてから処理を実行（UIの更新を確実にするため）
+              setTimeout(() => {
+                onPlaceSelected(place, distanceText);
+                inputRef.current?.blur();
+              }, 100);
             } else {
               console.warn("MapSearchControl: Invalid place selected:", place);
               if (onSearchError) {
@@ -137,11 +150,23 @@ export function MapSearchControl({
   };
   
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setInputValue(event.target.value);
+    const newValue = event.target.value;
+    setInputValue(newValue);
+    
+    // Google Maps APIの入力フィールドとも同期
+    if (inputRef.current && inputRef.current.value !== newValue) {
+      inputRef.current.value = newValue;
+    }
   };
 
   const handleFocus = () => setIsFocused(true);
-  const handleBlur = () => setIsFocused(false);
+  
+  const handleBlur = () => {
+    // ブラー時に少し遅延を入れる（オートコンプリートの選択を妨げないため）
+    setTimeout(() => {
+      setIsFocused(false);
+    }, 150);
+  };
 
   if (loadError) {
     console.error("MapSearchControl: Google Maps API load error:", loadError);
