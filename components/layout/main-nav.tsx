@@ -4,14 +4,19 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Home, MapPin, PlusCircle, User } from "lucide-react";
+import { Clock, MapPin, PlusCircle, User, MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   {
     name: "タイムライン",
     href: "/timeline",
-    icon: Home,
+    icon: Clock,
+  },
+  {
+    name: "掲示板",
+    href: "/board",
+    icon: MessageSquare,
   },
   {
     name: "お店を探す",

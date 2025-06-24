@@ -373,7 +373,7 @@ export default function BoardPage() {
                 
                 <div className="space-y-1">
                   <p className="text-base text-amber-800 font-medium">
-                    今日買うものを共有すると
+                    今日買うものを投稿すると
                   </p>
                   <p className="text-base text-amber-900 font-bold flex items-center justify-center space-x-1">
                     <Sparkles className="h-4 w-4 text-yellow-500" />
@@ -384,7 +384,7 @@ export default function BoardPage() {
                 
                 <div className="flex items-center justify-center space-x-2 text-sm text-amber-700">
                   <div className="w-8 h-0.5 bg-amber-300"></div>
-                  <span className="font-medium">みんなで共有しましょう</span>
+                  <span className="font-medium">今日買うものを入力すると、<br />自動的に買い物メモに追加されます。</span>
                   <div className="w-8 h-0.5 bg-amber-300"></div>
                 </div>
               </div>
@@ -406,7 +406,7 @@ export default function BoardPage() {
                 onClick={handleGoToTimeline}
                 className="bg-[#73370c] hover:bg-[#5c2c0a] text-white font-medium border-0 shadow-sm"
               >
-                <Calendar className="h-4 w-4 mr-1" />
+                <Clock className="h-4 w-4 mr-1" />
                 タイムライン画面へ
               </Button>
               <Button
@@ -451,7 +451,7 @@ export default function BoardPage() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
                       <TrendingUp className="h-5 w-5 text-orange-500" />
-                      <h2 className="text-xl font-semibold text-gray-900">
+                      <h2 className="text-xl font-semibold" style={{ color: '#73370c' }}>
                         人気商品ランキング
                       </h2>
                     </div>
@@ -510,8 +510,9 @@ export default function BoardPage() {
             <Card className="bg-white/80 backdrop-blur-sm border-orange-200 shadow-lg">
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-semibold text-gray-900">
-                    今日買うもの一覧
+                  <h2 className="text-xl font-semibold flex items-center space-x-2" style={{ color: '#73370c' }}>
+                    <ShoppingCart className="h-5 w-5 text-orange-500" />
+                    <span>みんなの今日買うもの</span>
                   </h2>
                   <div className="text-sm text-gray-500">
                     最終更新: {formatDistanceToNow(lastRefresh, { addSuffix: true, locale: ja })}
@@ -717,7 +718,7 @@ export default function BoardPage() {
               <Textarea
                 value={memo}
                 onChange={(e) => setMemo(e.target.value)}
-                placeholder="詳細や希望があれば記入してください（100文字まで）"
+                placeholder="具体的な商品名や希望（値段や数量など）をご記入ください（100文字まで）"
                 className="min-h-20 text-base border-2 border-gray-200 hover:border-orange-300 focus:border-orange-500 transition-colors resize-none"
                 style={{ fontSize: '16px' }}
                 maxLength={100}
