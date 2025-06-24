@@ -719,7 +719,7 @@ export default function BoardPage() {
                 value={memo}
                 onChange={(e) => setMemo(e.target.value)}
                 placeholder="具体的な商品名や希望（値段や数量など）をご記入ください（100文字まで）"
-                className="min-h-30 text-base border-2 border-gray-200 hover:border-orange-300 focus:border-orange-500 transition-colors resize-none"
+                className="min-h-32 text-base border-2 border-gray-200 hover:border-orange-300 focus:border-orange-500 transition-colors resize-none"
                 style={{ fontSize: '16px' }}
                 maxLength={100}
               />
