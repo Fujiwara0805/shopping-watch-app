@@ -66,6 +66,7 @@ interface ExtendedPostWithAuthor extends PostWithAuthor {
   expiry_option: "1h" | "3h" | "6h" | "12h";
   app_profile_id: string;
   author_user_id?: string;
+  author_posts_count?: number;
 }
 
 type SortOption = 'created_at_desc' | 'created_at_asc' | 'expires_at_asc' | 'distance_asc' | 'likes_desc';
@@ -634,6 +635,32 @@ export default function Timeline() {
         throw dbError;
       }
       
+      // ユーザーごとの総投稿数を取得（有効期限切れも含む）
+      const authorIds = (data as PostFromDB[]).map(post => {
+        const authorData = Array.isArray(post.author) ? post.author[0] : post.author;
+        return authorData?.id;
+      }).filter(Boolean);
+      const uniqueAuthorIds = Array.from(new Set(authorIds)) as string[];
+
+      let authorPostCounts: Record<string, number> = {};
+      if (uniqueAuthorIds.length > 0) {
+        try {
+          const { data: countData, error: countError } = await supabase
+            .from('posts')
+            .select('app_profile_id');
+
+          if (!countError && countData) {
+            // 各ユーザーの総投稿数をカウント
+            authorPostCounts = countData.reduce((acc, post) => {
+              acc[post.app_profile_id] = (acc[post.app_profile_id] || 0) + 1;
+              return acc;
+            }, {} as Record<string, number>);
+          }
+        } catch (e) {
+          console.warn('投稿数の取得に失敗しました:', e);
+        }
+      }
+      
       // データ処理の改善
       let processedPosts = (data as PostFromDB[]).map(post => {
         let distance;
@@ -657,10 +684,14 @@ export default function Timeline() {
           ? post.post_likes.some((like: PostLike) => like.user_id === currentUserId)
           : currentLikedPostIds.includes(post.id); // フォールバック
 
+        // ユーザーの投稿数を取得
+        const authorPostsCount = authorData?.id ? authorPostCounts[authorData.id] || 0 : 0;
+
         return {
           ...post,
           author: authorData,
           author_user_id: authorUserId,
+          author_posts_count: authorPostsCount,
           isLikedByCurrentUser,
           likes_count: post.likes_count || (Array.isArray(post.post_likes) ? post.post_likes.length : 0),
           distance,

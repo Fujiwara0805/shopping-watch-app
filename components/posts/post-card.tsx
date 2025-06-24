@@ -55,6 +55,7 @@ export interface ExtendedPostWithAuthor extends PostWithAuthor {
   consumption_deadline?: string;
   distance?: number;
   author_user_id?: string; // authorから取得するuser_id
+  author_posts_count?: number; // ユーザーの投稿数を追加
 }
 
 interface PostCardProps {
@@ -364,12 +365,28 @@ export const PostCard = memo(({
                   </p>
                   {isMyPost && <Badge variant="secondary" className="text-xs">自分の投稿</Badge>}
                 </div>
-                <p className={cn(
-                  "text-xs",
-                  isFullScreen ? "text-white/80" : "text-muted-foreground"
-                )}>
-                  {formattedDate}
-                </p>
+                <div className="flex items-center space-x-2">
+                  <p className={cn(
+                    "text-xs",
+                    isFullScreen ? "text-white/80" : "text-muted-foreground"
+                  )}>
+                    {formattedDate}
+                  </p>
+                  {post.author_posts_count && post.author_posts_count > 0 && (
+                    <>
+                      <span className={cn(
+                        "text-xs",
+                        isFullScreen ? "text-white/60" : "text-muted-foreground/60"
+                      )}>•</span>
+                      <p className={cn(
+                        "text-xs",
+                        isFullScreen ? "text-white/80" : "text-muted-foreground"
+                      )}>
+                        投稿数: {post.author_posts_count}
+                      </p>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
             
@@ -407,42 +424,56 @@ export const PostCard = memo(({
                   onLoad={() => setImageLoaded(true)}
                 />
                 
-                <div className="absolute top-2 left-2 flex items-center space-x-2">
-                  <Button 
-                    variant="ghost" 
-                    size="icon"
-                    className={cn(
-                      "bg-black/60 text-white rounded-full hover:bg-black/80 transition-colors backdrop-blur-sm",
-                      isMyPost && "opacity-50 cursor-not-allowed"
-                    )}
-                    onClick={handleLikeClick}
-                    disabled={isLiking || isMyPost}
-                    title={isMyPost ? "自分の投稿にはいいねできません" : "いいね"}
-                  >
-                    <Heart 
-                      size={18} 
+                <div className="absolute top-2 left-2 flex flex-col items-start space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
                       className={cn(
-                        "transition-all duration-200",
-                        post.isLikedByCurrentUser ? "text-red-500 fill-red-500 scale-110" : "",
-                        isLiking && "animate-pulse"
-                      )} 
-                    />
-                  </Button>
-                  
-                  <Button 
-                    variant="ghost" 
-                    size="icon"
-                    className="bg-black/60 text-white rounded-full hover:bg-black/80 transition-colors backdrop-blur-sm"
-                    onClick={handleShareClick}
-                  >
-                    <Share2 size={18} />
-                  </Button>
+                        "bg-black/60 text-white rounded-full hover:bg-black/80 transition-colors backdrop-blur-sm",
+                        isMyPost && "opacity-50 cursor-not-allowed"
+                      )}
+                      onClick={handleLikeClick}
+                      disabled={isLiking || isMyPost}
+                      title={isMyPost ? "自分の投稿にはいいねできません" : "いいね"}
+                    >
+                      <Heart 
+                        size={18} 
+                        className={cn(
+                          "transition-all duration-200",
+                          post.isLikedByCurrentUser ? "text-red-500 fill-red-500 scale-110" : "",
+                          isLiking && "animate-pulse"
+                        )} 
+                      />
+                    </Button>
+                    
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      className="bg-black/60 text-white rounded-full hover:bg-black/80 transition-colors backdrop-blur-sm"
+                      onClick={handleShareClick}
+                    >
+                      <Share2 size={18} />
+                    </Button>
 
-                  {post.expires_at && (
-                    <div className="bg-black/60 text-white text-xs px-2 py-1 rounded-full flex items-center space-x-1 backdrop-blur-sm">
-                      <Clock size={14} />
-                      <span>{formatRemainingTime(new Date(post.expires_at).getTime())}</span>
-                    </div>
+                    {post.expires_at && (
+                      <div className="bg-black/60 text-white text-xs px-2 py-1 rounded-full flex items-center space-x-1 backdrop-blur-sm">
+                        <Clock size={14} />
+                        <span>{formatRemainingTime(new Date(post.expires_at).getTime())}</span>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* いいね数の数字のみ表示 */}
+                  {post.likes_count > 0 && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ duration: 0.3 }}
+                      className="bg-black/60 text-white text-xs px-2 py-1 rounded-full backdrop-blur-sm"
+                    >
+                      <span className="font-medium">{post.likes_count}</span>
+                    </motion.div>
                   )}
                 </div>
                 
