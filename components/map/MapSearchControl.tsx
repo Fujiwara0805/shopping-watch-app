@@ -229,7 +229,7 @@ export function MapSearchControl({
             style={{
               caretColor: 'white',
               textShadow: '0 1px 2px rgba(0,0,0,0.2)',
-              fontSize: '16px' // モバイルでのズーム無効化
+              fontSize: '18px' // モバイルでのズーム無効化
             }}
             disabled={!isMapsApiLoaded || !map}
             autoComplete="off"
