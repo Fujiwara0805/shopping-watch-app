@@ -366,26 +366,26 @@ export const PostCard = memo(({
                   {isMyPost && <Badge variant="secondary" className="text-xs">自分の投稿</Badge>}
                 </div>
                 <div className="flex items-center space-x-2">
-                  <p className={cn(
-                    "text-xs",
-                    isFullScreen ? "text-white/80" : "text-muted-foreground"
-                  )}>
-                    {formattedDate}
-                  </p>
                   {post.author_posts_count && post.author_posts_count > 0 && (
                     <>
-                      <span className={cn(
-                        "text-xs",
-                        isFullScreen ? "text-white/60" : "text-muted-foreground/60"
-                      )}>•</span>
                       <p className={cn(
                         "text-xs",
                         isFullScreen ? "text-white/80" : "text-muted-foreground"
                       )}>
                         投稿数: {post.author_posts_count}
                       </p>
+                      <span className={cn(
+                        "text-xs",
+                        isFullScreen ? "text-white/60" : "text-muted-foreground/60"
+                      )}>•</span>
                     </>
                   )}
+                  <p className={cn(
+                    "text-xs",
+                    isFullScreen ? "text-white/80" : "text-muted-foreground"
+                  )}>
+                    {formattedDate}
+                  </p>
                 </div>
               </div>
             </div>
@@ -464,7 +464,7 @@ export const PostCard = memo(({
                     )}
                   </div>
                   
-                  {/* いいね数の数字のみ表示 */}
+                  {/* いいね数の表示を「いいね：数字」形式に変更 */}
                   {post.likes_count > 0 && (
                     <motion.div
                       initial={{ opacity: 0, scale: 0.8 }}
@@ -472,7 +472,7 @@ export const PostCard = memo(({
                       transition={{ duration: 0.3 }}
                       className="bg-black/60 text-white text-xs px-2 py-1 rounded-full backdrop-blur-sm"
                     >
-                      <span className="font-medium">{post.likes_count}</span>
+                      <span className="font-medium">いいね：{post.likes_count}</span>
                     </motion.div>
                   )}
                 </div>

@@ -684,6 +684,9 @@ export default function Timeline() {
           ? post.post_likes.some((like: PostLike) => like.user_id === currentUserId)
           : currentLikedPostIds.includes(post.id); // フォールバック
 
+        // 実際のいいね数を post_likes テーブルから計算
+        const actualLikesCount = Array.isArray(post.post_likes) ? post.post_likes.length : 0;
+
         // ユーザーの投稿数を取得
         const authorPostsCount = authorData?.id ? authorPostCounts[authorData.id] || 0 : 0;
 
@@ -693,7 +696,7 @@ export default function Timeline() {
           author_user_id: authorUserId,
           author_posts_count: authorPostsCount,
           isLikedByCurrentUser,
-          likes_count: post.likes_count || (Array.isArray(post.post_likes) ? post.post_likes.length : 0),
+          likes_count: actualLikesCount, // post_likes テーブルから計算した正確な値を使用
           distance,
         };
       });
@@ -842,13 +845,13 @@ export default function Timeline() {
         setLikedPostIds(prev => prev.filter(id => id !== postId));
       }
       
-      // UIの更新
+      // UIの更新 - 正確な増減を行う
       setPosts(prevPosts => prevPosts.map(p => 
         p.id === postId 
           ? { 
               ...p, 
               isLikedByCurrentUser: isLiked, 
-              likes_count: isLiked ? (p.likes_count || 0) + 1 : Math.max(0, (p.likes_count || 0) - 1)
+              likes_count: isLiked ? p.likes_count + 1 : Math.max(0, p.likes_count - 1)
             } 
           : p
       ));
