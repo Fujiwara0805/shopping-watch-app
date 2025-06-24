@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { LayoutGrid, Search, Star, MapPin, Loader2, SlidersHorizontal, Heart, Plus, X, AlertCircle, Menu, User, Edit, Store, HelpCircle, FileText, LogOut, Settings, Globe, NotebookText, Calculator, Zap } from 'lucide-react';
+import { LayoutGrid, Search, Star, MapPin, Loader2, SlidersHorizontal, Heart, Plus, X, AlertCircle, Menu, User, Edit, Store, HelpCircle, FileText, LogOut, Settings, Globe, NotebookText, Calculator, Zap, MessageSquare } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { PostWithAuthor } from '@/types/post';
 import { useSession, signOut } from 'next-auth/react';
@@ -144,6 +144,14 @@ const HamburgerMenu = ({ currentUser }: { currentUser: any }) => {
       label: '投稿する',
       onClick: () => {
         router.push('/post');
+        setIsOpen(false);
+      }
+    },
+    {
+      icon: MessageSquare,
+      label: '掲示板',
+      onClick: () => {
+        router.push('/board');
         setIsOpen(false);
       }
     },
