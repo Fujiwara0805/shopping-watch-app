@@ -522,7 +522,6 @@ export default function BoardPage() {
               className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white shadow-xl hover:shadow-2xl transition-all duration-300 px-8 py-4 text-lg font-semibold rounded-full flex items-center space-x-3"
               type="button"
             >
-              <Plus className="h-6 w-6" />
               <span>今日買うものを入力</span>
               <Sparkles className="h-5 w-5" />
             </button>

@@ -262,26 +262,6 @@ export default function LoginPage() {
               </Button>
             </motion.div>
 
-            {/* LINEログインは現在非対応 */}
-            {/* <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="mb-6">
-              <Button
-                onClick={handleLineLogin}
-                disabled={isLoading}
-                variant="outline"
-                className="w-full border-[#73370c]/20 hover:bg-[#73370c]/5 text-[#73370c] text-base sm:text-lg py-6 sm:py-7 shadow-md flex items-center justify-center space-x-3 rounded-lg transition-colors"
-                style={{ fontSize: '16px' }}
-              >
-                {isLoading ? (
-                  <Loader2 className="h-6 w-6 animate-spin" />
-                ) : (
-                  <>
-                    <LineIcon className="w-6 h-6" />
-                    <span className="font-medium">LINEで続ける</span>
-                  </>
-                )}
-              </Button>
-            </motion.div> */}
-
             <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="mb-6">
               <Link href="/register" className="w-full">
                 <Button
@@ -290,7 +270,6 @@ export default function LoginPage() {
                   style={{ fontSize: '16px' }}
                 >
                   <span>新規登録</span>
-                  <ArrowRight className="h-4 w-4" />
                 </Button>
               </Link>
             </motion.div>
@@ -303,7 +282,6 @@ export default function LoginPage() {
                 style={{ fontSize: '16px' }}
               >
                 <span>ログインせず続ける</span>
-                <ArrowRight className="h-4 w-4" />
               </Button>
             </motion.div>
 
