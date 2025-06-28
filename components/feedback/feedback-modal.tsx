@@ -12,7 +12,6 @@ import {
   MessageSquare, 
   Send, 
   X, 
-  Sparkles,
   ThumbsUp,
   Gift
 } from 'lucide-react';
