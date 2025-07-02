@@ -1,11 +1,18 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, lazy, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
+import Image from 'next/image';
 import { ChevronLeft, ChevronRight, MapPin, Bell, Users, Tag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Logo } from '@/components/common/logo';
+
+// Framer Motionを動的インポート
+const MotionDiv = lazy(() => 
+  import('framer-motion').then(mod => ({ default: mod.motion.div }))
+);
+const AnimatePresence = lazy(() => 
+  import('framer-motion').then(mod => ({ default: mod.AnimatePresence }))
+);
 
 const onboardingSlides = [
   {
@@ -100,11 +107,18 @@ export default function Onboarding() {
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
-      {/* ヘッダー - 固定高さ */}
+      {/* ヘッダー - 画像最適化 */}
       <header className="flex-shrink-0 p-4 pt-[calc(var(--sat)+0.5rem)] flex justify-between items-center">
         <div className="flex items-center space-x-2">
           <div className="rounded-full p-2">
-            <img src="https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png" alt="App Icon" className="h-12 w-12 object-contain" />
+            <Image 
+              src="https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png" 
+              alt="App Icon" 
+              width={48}
+              height={48}
+              priority
+              className="object-contain"
+            />
           </div>
           {/* <span className="font-bold text-xl tracking-wider">トクドク</span> */}
         </div>
@@ -117,28 +131,30 @@ export default function Onboarding() {
         </Button>
       </header>
       
-      {/* メインコンテンツ - 残りの領域を使用 */}
+      {/* メインコンテンツ - アニメーションを軽量化 */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        <AnimatePresence mode="wait">
-          <motion.div 
-            key={currentSlide}
-            initial={{ opacity: 0, x: 50 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -50 }}
-            transition={{ duration: 0.3 }}
-            className="flex-1 flex flex-col items-center justify-center px-4 sm:px-6"
-          >
-            <div className={`${onboardingSlides[currentSlide].color} p-5 sm:p-6 rounded-full mb-4 sm:mb-6`}>
-              {onboardingSlides[currentSlide].icon}
-            </div>
-            <h2 className="text-2xl sm:text-3xl font-bold mb-3 sm:mb-4 text-center">
-              {onboardingSlides[currentSlide].title}
-            </h2>
-            <p className="text-base sm:text-lg text-center text-muted-foreground mb-4 sm:mb-6 max-w-xs sm:max-w-sm">
-              {onboardingSlides[currentSlide].description}
-            </p>
-          </motion.div>
-        </AnimatePresence>
+        <Suspense fallback={<div className="flex-1 flex items-center justify-center">読み込み中...</div>}>
+          <AnimatePresence mode="wait">
+            <MotionDiv 
+              key={currentSlide}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.2 }}
+              className="flex-1 flex flex-col items-center justify-center px-4 sm:px-6"
+            >
+              <div className={`${onboardingSlides[currentSlide].color} p-5 sm:p-6 rounded-full mb-4 sm:mb-6`}>
+                {onboardingSlides[currentSlide].icon}
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-bold mb-3 sm:mb-4 text-center">
+                {onboardingSlides[currentSlide].title}
+              </h2>
+              <p className="text-base sm:text-lg text-center text-muted-foreground mb-4 sm:mb-6 max-w-xs sm:max-w-sm">
+                {onboardingSlides[currentSlide].description}
+              </p>
+            </MotionDiv>
+          </AnimatePresence>
+        </Suspense>
         
         {/* ページインジケーター */}
         <div className="flex-shrink-0 flex justify-center space-x-2 mb-4 sm:mb-6">

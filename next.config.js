@@ -4,10 +4,23 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
-  images: { unoptimized: true },
+  images: {
+    domains: ['res.cloudinary.com'],
+    formats: ['image/webp', 'image/avif'],
+  },
   webpack: (config, { isServer }) => {
     if (!isServer) {
-      config.cache = false;
+      config.optimization.splitChunks = {
+        chunks: 'all',
+        cacheGroups: {
+          framerMotion: {
+            name: 'framer-motion',
+            test: /[\\/]node_modules[\\/]framer-motion[\\/]/,
+            priority: 30,
+            reuseExistingChunk: true,
+          },
+        },
+      };
     }
     return config;
   },
