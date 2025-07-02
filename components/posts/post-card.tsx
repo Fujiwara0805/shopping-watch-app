@@ -8,7 +8,7 @@ import { Heart, Share2, Clock, Link as LinkIcon, ExternalLink, Instagram, Copy, 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { PostWithAuthor, AuthorProfile } from '@/types/post';
 import { supabase } from '@/lib/supabaseClient';
