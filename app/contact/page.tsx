@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from 'react';
 import { motion } from 'framer-motion';
 import AppLayout from '@/components/layout/app-layout';
 import { Button } from '@/components/ui/button';

@@ -40,74 +40,9 @@ interface MemoItem {
   checked: boolean;
 }
 
-// 商品選択肢（カテゴリ別に整理）- 全てひらがなに統一
-const PRODUCT_CATEGORIES = {
-  '野菜': [
-    'とまと', 'きゅうり', 'たまねぎ', 'にんじん', 'じゃがいも', 
-    'きゃべつ', 'れたす', 'ぴーまん', 'なす', 'ぶろっこりー', 
-    'ほうれんそう', 'だいこん', 'もやし', 'ごーやー', 'おくら',
-    'かぼちゃ', 'とうもろこし', 'いんげん', 'あすぱらがす', 'せろり',
-    'ちんげんさい', 'はくさい', 'みずな', 'にら', 'ねぎ',
-    'らっきょう', 'しょうが', 'にんにく', 'ごぼう', 'れんこん',
-    'たけのこ', 'しいたけ', 'えのき', 'しめじ', 'まいたけ',
-    'えりんぎ', 'なめこ', 'きくらげ', 'わかめ', 'のり',
-    'こまつな', 'みつば', 'しそ', 'ぱせり', 'ばじる',
-    'ろーずまりー', 'たいむ', 'せーじ', 'おれがの', 'みんと',
-    'かいわれだいこん', 'すぷらうと', 'べびーりーふ', 'るっこら', 'くれそん',
-    'えんどうまめ', 'そらまめ', 'だいず', 'あずき', 'いんげんまめ',
-    'らでぃっしゅ', 'かぶ', 'やまいも', 'さといも', 'さつまいも'
-  ],
-  '果物': [
-    'ばなな', 'りんご', 'みかん', 'いちご', 'ぶどう', 'めろん', 
-    'すいか', 'ぱいなっぷる', 'きうい', 'おれんじ', 'れもん',
-    'らいむ', 'ぐれーぷふるーつ', 'もも', 'なし', 'かき',
-    'ぷらむ', 'あんず', 'さくらんぼ', 'ぶるーべりー', 'らずべりー',
-    'いちじく', 'ざくろ', 'まんごー', 'ぱぱいや', 'どらごんふるーつ'
-  ],
-  '肉類': [
-    'ぶたにく', 'とりにく', 'ぎゅうにく', 'ひきにく', 'そーせーじ', 
-    'はむ', 'べーこん', 'らむにく', 'あいにく', 'しかにく'
-  ],
-  '魚介類': [
-    'さかな', 'さーもん', 'まぐろ', 'えび', 'いか', 'たこ', 
-    'あじ', 'さば', 'いわし', 'さんま', 'ぶり', 'たい',
-    'ひらめ', 'かれい', 'あなご', 'うなぎ', 'かに', 'ほたて',
-    'あさり', 'しじみ', 'はまぐり', 'むーる貝'
-  ],
-  '乳製品・卵': [
-    'ぎゅうにゅう', 'たまご', 'ちーず', 'よーぐると', 'ばたー',
-    'せいくりーむ', 'あいすくりーむ', 'こんでんすみるく'
-  ],
-  '発酵食品': [
-    'なっとう', 'みそ', 'しょうゆ', 'つけもの', 'きむち',
-    'ぬかづけ', 'しおこうじ', 'あまざけ', 'こうじ', 'みりん',
-    'ぽん酢', 'もろみ', 'かつおぶし', 'こんぶ', 'わかめ'
-  ],
-  '調味料': [
-    'しょうゆ', 'みそ', 'さとう', 'しお', 'す', 'くろず',
-    'りんごす', 'みりん', 'りょうりしゅ', 'ごまあぶら', 'おりーぶおいる',
-    'さらだあぶら', 'まよねーず', 'けちゃっぷ', 'そーす',
-    'おいすたーそーす', 'しょうがちゅーぶ', 'にんにくちゅーぶ', 'わさび',
-    'からし', 'らー油', 'ごまだれ', 'ぽんず', 'めんつゆ',
-    'だしのもと', 'こんそめ', 'ちゅうかだし', 'かれーるー', 'しちゅーるー',
-    'みそしる', 'すーぷのもと', 'こしょう', 'しちみとうがらし'
-  ],
-  '主食': [
-    'ぱん', 'おこめ', 'ぱすた', 'うどん', 'そば', 'らーめん',
-    'そーめん', 'ひやむぎ', 'やきそば', 'おにぎり', 'もち'
-  ],
-  'その他': [
-    'れいとうしょくひん', 'おかし', 'のみもの',
-    'じゅーす', 'こーひー', 'こうちゃ', 'りょくちゃ', 'みず',
-    'びーる', 'わいん', 'にほんしゅ', 'しょうちゅう', 'その他'
-  ]
-};
-
 export default function BoardPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<string>('');
   const [productInput, setProductInput] = useState<string>('');
-  const [showSuggestions, setShowSuggestions] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [requests, setRequests] = useState<BoardRequest[]>([]);
   const [rankings, setRankings] = useState<ProductRanking[]>([]);
@@ -116,25 +51,6 @@ export default function BoardPage() {
   const { toast } = useToast();
   const router = useRouter();
   const [memo, setMemo] = useState('');
-
-  // 全商品リストを作成
-  const allProducts = useMemo(() => {
-    return Object.values(PRODUCT_CATEGORIES).flat();
-  }, []);
-
-  // 検索候補をフィルタリング
-  const filteredSuggestions = useMemo(() => {
-    if (!productInput.trim()) return [];
-    
-    return allProducts.filter(product =>
-      product.toLowerCase().includes(productInput.toLowerCase())
-    ).slice(0, 10); // 最大10件まで表示
-  }, [productInput, allProducts]);
-
-  // 入力値が有効な商品かチェック
-  const isValidProduct = useMemo(() => {
-    return allProducts.includes(productInput);
-  }, [productInput, allProducts]);
 
   // 掲示板投稿を取得（有効期限内のもののみ）
   const fetchRequests = useCallback(async () => {
@@ -250,30 +166,30 @@ export default function BoardPage() {
   // 商品入力の処理
   const handleProductInputChange = (value: string) => {
     setProductInput(value);
-    setSelectedProduct(value);
-    setShowSuggestions(value.trim().length > 0);
-  };
-
-  // 候補選択の処理
-  const handleSuggestionSelect = (product: string) => {
-    setProductInput(product);
-    setSelectedProduct(product);
-    setShowSuggestions(false);
   };
 
   // 入力フィールドのクリア
   const handleClearInput = () => {
     setProductInput('');
-    setSelectedProduct('');
-    setShowSuggestions(false);
   };
 
   // 商品投稿を送信
   const handleSubmitRequest = async () => {
-    if (!selectedProduct || !isValidProduct) {
+    const trimmedInput = productInput.trim();
+    
+    if (!trimmedInput) {
       toast({
         title: "入力エラー",
-        description: "選択肢から商品を選択してください。",
+        description: "商品名を入力してください。",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (trimmedInput.length > 50) {
+      toast({
+        title: "入力エラー",
+        description: "商品名は50文字以内で入力してください。",
         variant: "destructive",
       });
       return;
@@ -288,7 +204,7 @@ export default function BoardPage() {
       const { error } = await supabase
         .from('board_requests')
         .insert({
-          product_name: selectedProduct,
+          product_name: trimmedInput,
           memo: memo.trim() || null,
           expires_at: expiresAt.toISOString(),
         });
@@ -298,23 +214,15 @@ export default function BoardPage() {
       }
 
       // 2. 買い物メモに追加（メモの有無に関わらず）
-      addToShoppingMemo(selectedProduct);
+      addToShoppingMemo(trimmedInput);
 
       // 3. 成功通知
-      if (memo.trim()) {
-        toast({
-          title: "✨ 投稿を送信しました！",
-          description: `${selectedProduct}の投稿が掲示板に追加され、買い物メモにも追加されました。`,
-        });
-      } else {
-        toast({
-          title: "✨ 投稿を送信しました！",
-          description: `${selectedProduct}の投稿が掲示板に追加され、買い物メモにも追加されました。`,
-        });
-      }
+      toast({
+        title: "✨ 投稿を送信しました！",
+        description: `${trimmedInput}の投稿が掲示板に追加され、買い物メモにも追加されました。`,
+      });
 
       setIsModalOpen(false);
-      setSelectedProduct('');
       setProductInput('');
       setMemo('');
       
@@ -382,18 +290,14 @@ export default function BoardPage() {
     }
     
     setIsModalOpen(true);
-    setSelectedProduct('');
     setProductInput('');
-    setShowSuggestions(false);
     setMemo('');
   }, []);
 
   // モーダルを閉じる
   const handleCloseModal = useCallback(() => {
     setIsModalOpen(false);
-    setSelectedProduct('');
     setProductInput('');
-    setShowSuggestions(false);
     setMemo('');
   }, []);
 
@@ -729,25 +633,6 @@ export default function BoardPage() {
                         </p>
                       </div>
                     </div>
-                    
-                    <div className="flex items-start space-x-3 p-2.5 rounded-lg bg-white/50">
-                      <Mail className="h-4 w-4 text-blue-600 flex-shrink-0 mt-0.5" />
-                      <div>
-                        <p className="text-xs font-medium text-blue-900 mb-0.5">
-                          商品追加のご要望
-                        </p>
-                        <p className="text-xs text-blue-800">
-                          商品の選択肢に追加してほしい商品がございましたら、
-                          <button
-                            onClick={handleGoToContact}
-                            className="text-blue-600 hover:text-blue-800 underline font-medium mx-1 transition-colors"
-                          >
-                            問い合わせ画面
-                          </button>
-                          よりご連絡ください。
-                        </p>
-                      </div>
-                    </div>
                   </div>
                 </div>
               </CardContent>
@@ -760,7 +645,7 @@ export default function BoardPage() {
           isOpen={isModalOpen}
           onClose={handleCloseModal}
           title="今日買うものを入力"
-          description="商品を選択して投稿すると、ボードに表示され、同時に買い物メモにも追加されます。"
+          description="商品名を入力して投稿すると、ボードに表示され、同時に買い物メモにも追加されます。"
           className="max-w-lg"
         >
           <div className="space-y-6">
@@ -783,24 +668,18 @@ export default function BoardPage() {
             <div className="space-y-3">
               <label className="text-sm font-semibold text-gray-800 flex items-center">
                 <ShoppingCart className="h-4 w-4 mr-2 text-orange-500" />
-                買うものを選択してください（ひらがな）
+                買うものを入力してください
               </label>
               
               <div className="relative">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                   <Input
                     value={productInput}
                     onChange={(e) => handleProductInputChange(e.target.value)}
-                    onFocus={() => setShowSuggestions(productInput.trim().length > 0)}
-                    placeholder="商品名を入力してください..."
-                    className={cn(
-                      "h-12 pl-10 pr-10 text-base border-2 transition-colors",
-                      isValidProduct || !productInput 
-                        ? "border-gray-200 hover:border-orange-300 focus:border-orange-500" 
-                        : "border-red-300 hover:border-red-400 focus:border-red-500"
-                    )}
+                    placeholder="商品名を入力してください（50文字以内）"
+                    className="h-12 text-base border-2 border-gray-200 hover:border-orange-300 focus:border-orange-500 transition-colors"
                     style={{ fontSize: '16px' }}
+                    maxLength={50}
                   />
                   {productInput && (
                     <button
@@ -811,40 +690,11 @@ export default function BoardPage() {
                     </button>
                   )}
                 </div>
-
-                {/* 検索候補 */}
-                <AnimatePresence>
-                  {showSuggestions && filteredSuggestions.length > 0 && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                      className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto"
-                    >
-                      {filteredSuggestions.map((product, index) => (
-                        <button
-                          key={product}
-                          onClick={() => handleSuggestionSelect(product)}
-                          className="w-full text-left px-4 py-3 hover:bg-orange-50 transition-colors border-b border-gray-100 last:border-b-0"
-                        >
-                          <span className="font-medium text-gray-900">{product}</span>
-                        </button>
-                      ))}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                {/* バリデーションメッセージ */}
-                {productInput && !isValidProduct && (
-                  <motion.p
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="text-xs text-red-600 mt-1 flex items-center"
-                  >
-                    <Info className="h-3 w-3 mr-1" />
-                    選択肢から商品を選択してください
-                  </motion.p>
-                )}
+                
+                {/* 文字数カウンター */}
+                <div className="text-xs text-gray-500 text-right mt-1">
+                  {productInput.length}/50文字
+                </div>
               </div>
             </div>
 
@@ -865,16 +715,6 @@ export default function BoardPage() {
               <div className="text-xs text-gray-500 text-right">
                 {memo.length}/100文字
               </div>
-              <div className="text-xs text-gray-500 mt-2">
-                検索候補が表示されない場合は、
-                <button
-                  onClick={handleGoToContact}
-                  className="text-blue-600 hover:text-blue-800 underline font-medium mx-1 transition-colors"
-                >
-                  お問い合わせフォーム
-                </button>
-                よりご連絡ください。
-              </div>
             </div>
 
             {/* ボタン */}
@@ -889,7 +729,7 @@ export default function BoardPage() {
               </Button>
               <Button
                 onClick={handleSubmitRequest}
-                disabled={!selectedProduct || !isValidProduct || isSubmitting}
+                disabled={!productInput.trim() || isSubmitting}
                 className="flex-1 h-12 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSubmitting ? (
