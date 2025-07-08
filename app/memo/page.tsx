@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, Plus, Trash2, History, WifiOff, Loader2, Edit, LogIn, X, CheckSquare, Sparkles, PackageCheck, ShoppingBag } from 'lucide-react';
+import { Check, Plus, Trash2, History, WifiOff, Loader2, Edit, LogIn, X, CheckSquare, Sparkles, PackageCheck, ShoppingBag, MessageSquare } from 'lucide-react';
 import AppLayout from '@/components/layout/app-layout';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -194,6 +194,11 @@ export default function MemoPage() {
     
   };
 
+  // 掲示板への遷移
+  const handleGoToBoard = () => {
+    router.push('/board');
+  };
+
   return (
     <AppLayout>
       <div className="p-4 max-w-2xl mx-auto">
@@ -214,32 +219,7 @@ export default function MemoPage() {
           <Button onClick={handleAddItemFromInput} size="icon" className="shrink-0" disabled={newItemName.trim() === ''}><Plus size={20} /></Button>
         </div>
 
-        {/* 割引表への案内カードを追加 */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-6 p-4 bg-gradient-to-r from-orange-50 to-red-50 border border-orange-200 rounded-lg"
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="bg-orange-100 p-2 rounded-full">
-                <PackageCheck className="h-5 w-5 text-orange-600" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-orange-900">便利な割引表！</h3>
-                <p className="text-sm text-orange-700">何％OFFがいくらか瞬時に<br />確認できます。</p>
-              </div>
-            </div>
-            <Button
-              onClick={handleGoToTimeline}
-              variant="outline"
-              size="sm"
-              className="border-orange-300 text-orange-700 hover:bg-orange-100"
-            >
-              割引表へ
-            </Button>
-          </div>
-        </motion.div>
+        {/* 割引表への案内カードを削除 */}
 
         {showUsageGuide && (
           <AnimatePresence>
@@ -386,6 +366,64 @@ export default function MemoPage() {
               )}
             </>
           )}
+        </div>
+
+        {/* 画面下部の遷移ボタン */}
+        <div className="mt-8 space-y-4">
+          {/* 割引表への遷移ボタン */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="p-4 bg-gradient-to-r from-orange-50 to-red-50 border border-orange-200 rounded-lg"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="bg-orange-100 p-2 rounded-full">
+                  <PackageCheck className="h-5 w-5 text-orange-600" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-orange-900">便利な割引表！</h3>
+                  <p className="text-sm text-orange-700">何％OFFがいくらか瞬時に<br />確認できます。</p>
+                </div>
+              </div>
+              <Button
+                onClick={handleGoToTimeline}
+                variant="outline"
+                size="sm"
+                className="border-orange-300 text-orange-700 hover:bg-orange-100"
+              >
+                割引表へ
+              </Button>
+            </div>
+          </motion.div>
+
+          {/* 掲示板への遷移ボタン */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="bg-blue-100 p-2 rounded-full">
+                  <MessageSquare className="h-5 w-5 text-blue-600" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-blue-900">地域の掲示板</h3>
+                  <p className="text-sm text-blue-700">買い物リストを共有すると<br />お得情報が手に入るかも？</p>
+                </div>
+              </div>
+              <Button
+                onClick={handleGoToBoard}
+                variant="outline"
+                size="sm"
+                className="border-blue-300 text-blue-700 hover:bg-blue-100"
+              >
+                掲示板へ
+              </Button>
+            </div>
+          </motion.div>
         </div>
       </div>
       

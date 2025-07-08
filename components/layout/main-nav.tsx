@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Clock, MapPin, PlusCircle, User, MessageSquare } from "lucide-react";
+import { Clock, MapPin, PlusCircle, User, ShoppingBag } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -14,9 +14,9 @@ const navItems = [
     icon: Clock,
   },
   {
-    name: "掲示板",
-    href: "/board",
-    icon: MessageSquare,
+    name: "買い物メモ",
+    href: "/memo",
+    icon: ShoppingBag,
   },
   {
     name: "お店を探す",
