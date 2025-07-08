@@ -216,11 +216,16 @@ export default function BoardPage() {
       // 2. 買い物メモに追加（メモの有無に関わらず）
       addToShoppingMemo(trimmedInput);
 
-      // 3. 成功通知
-      toast({
+      // 3. 成功通知（1秒後に自動削除）
+      const successToast = toast({
         title: "✨ 投稿を送信しました！",
         description: `${trimmedInput}の投稿が掲示板に追加され、買い物メモにも追加されました。`,
       });
+
+      // 1秒後に自動的にトーストを削除
+      setTimeout(() => {
+        successToast.dismiss();
+      }, 1000);
 
       setIsModalOpen(false);
       setProductInput('');
@@ -250,11 +255,16 @@ export default function BoardPage() {
       // 同じ商品が既に存在するかチェック
       const isDuplicate = memoItems.some(item => item.name === productName);
       if (isDuplicate) {
-        toast({
+        const duplicateToast = toast({
           title: "既に追加済みです",
           description: `${productName}は既に買い物メモに追加されています。`,
           variant: "default",
         });
+        
+        // 1秒後に自動的にトーストを削除
+        setTimeout(() => {
+          duplicateToast.dismiss();
+        }, 1000);
         return;
       }
 
@@ -268,10 +278,15 @@ export default function BoardPage() {
       memoItems = [newItem, ...memoItems];
       localStorage.setItem('shoppingMemo', JSON.stringify(memoItems));
       
-      toast({
+      const addedToast = toast({
         title: "🛒 買い物メモに追加しました！",
         description: `${productName}を買い物メモに追加しました。`,
       });
+      
+      // 1秒後に自動的にトーストを削除
+      setTimeout(() => {
+        addedToast.dismiss();
+      }, 1000);
     } catch (error) {
       console.error('買い物メモ追加エラー:', error);
       toast({

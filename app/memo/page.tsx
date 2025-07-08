@@ -410,7 +410,7 @@ export default function MemoPage() {
                   <MessageSquare className="h-5 w-5 text-blue-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-blue-900">地域の掲示板</h3>
+                  <h3 className="font-semibold text-blue-900">掲示板</h3>
                   <p className="text-sm text-blue-700">買い物リストを共有すると<br />お得情報が手に入るかも？</p>
                 </div>
               </div>
