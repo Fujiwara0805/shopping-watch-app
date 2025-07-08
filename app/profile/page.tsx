@@ -543,9 +543,9 @@ function ProfilePageContent() {
                   <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-green-100 to-blue-100 rounded-full flex items-center justify-center">
                     <NotebookText className="h-8 w-8 text-green-500" />
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-800 mb-2">さっそく買い物を始めよう！</h3>
+                  
                   <p className="text-gray-600 mb-4 text-sm max-w-xs mx-auto">
-                    買い忘れ防止に役立つ、シンプルで使いやすい機能です
+                    買い忘れ防止に役立つ、<br />シンプルで使いやすい機能です
                   </p>
                   <Button
                     onClick={() => router.push('/memo')}
