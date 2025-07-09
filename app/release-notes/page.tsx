@@ -106,12 +106,47 @@ const getReleaseTypeBadge = (type: ReleaseType) => {
 // サンプルリリースノートデータ
 const releaseNotes: ReleaseNote[] = [
   {
+    version: '1.0.5',
+    date: '2025-07-09',
+    type: 'minor',
+    title: '称号＆ランキングシステムの導入',
+    description: 'ユーザー同士で「いいね」の数を競い合う「称号＆ランキング」システムを導入しました！月間ランキングで上位を目指し、特別な称号を手に入れましょう。',
+    isLatest: true,
+    changes: [
+      {
+        type: 'new',
+        title: 'ランキング機能',
+        description: '投稿への「いいね」数に基づいた月間ランキングを追加しました。毎月1日〜25日の期間で集計され、上位入賞者には特別な称号が与えられます。'
+      },
+      {
+        type: 'new',
+        title: 'ランキングページ',
+        description: '上位4名を特別なカードで表示し、5位以降はスクロールで確認できる専用ページを追加しました。お品書きでルールの確認もできます。'
+      },
+      {
+          type: 'new',
+          title: '匿名ユーザーのいいね集計',
+          description: 'ログインしていないユーザーからの「いいね」もランキングに反映されるようになりました。より多くの応援がランキングを動かします。'
+      },
+      {
+        type: 'improvement',
+        title: 'マイページのUI改善',
+        description: 'マイページに「ランキングを確認」ボタンを設置し、ランキングページへ直接アクセスできるようになりました。'
+      },
+      {
+        type: 'improvement',
+        title: 'データベースの最適化',
+        description: 'ランキング集計を高速かつ効率的に行うためのデータベース関数やトリガーを導入し、パフォーマンスを向上させました。'
+      }
+    ]
+  },
+  {
     version: '1.0.4',
     date: '2025-07-08',
     type: 'minor',
     title: '買い物メモ機能の追加とナビゲーション改善',
     description: '新機能「買い物メモ」を追加しました！オフラインでも使える便利な買い物リスト機能と、ログイン時の「よく買うもの」同期機能で、より快適なお買い物をサポートします。',
-    isLatest: true,
+    isLatest: false,
     changes: [
       {
         type: 'new',
@@ -432,7 +467,7 @@ export default function ReleaseNotesPage() {
         >
           <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 text-center border border-blue-200">
             <Smartphone className="h-6 w-6 mx-auto text-blue-600 mb-2" />
-            <p className="text-lg font-bold text-blue-900">v1.0.3</p>
+            <p className="text-lg font-bold text-blue-900">v1.0.5</p>
             <p className="text-xs text-blue-700">現在のバージョン</p>
           </div>
           <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4 text-center border border-green-200">
