@@ -487,8 +487,15 @@ export const PostCard = memo(({
                     <Button 
                       variant="ghost" 
                       size="icon"
-                      className="bg-black/60 text-white rounded-full hover:bg-black/80 transition-colors backdrop-blur-sm"
-                      onClick={handleShareClick}
+                      className={cn(
+                        "bg-black/60 text-white rounded-full transition-colors backdrop-blur-sm",
+                        isFullScreen 
+                          ? "opacity-50 cursor-not-allowed" 
+                          : "hover:bg-black/80"
+                      )}
+                      onClick={isFullScreen ? undefined : handleShareClick}
+                      disabled={isFullScreen}
+                      title={isFullScreen ? "フルスクリーンモードでは共有できません" : "共有"}
                     >
                       <Share2 size={18} />
                     </Button>
@@ -552,56 +559,59 @@ export const PostCard = memo(({
         </CardContent>
       </Card>
 
-      <CustomModal
-        isOpen={showShareDialog}
-        onClose={() => setShowShareDialog(false)}
-        title="投稿を共有"
-        description="このお得情報を友達に知らせよう！"
-      >
-        <div className="space-y-3">
-          <Button
-            variant="outline"
-            className="w-full justify-start text-left py-3 h-auto text-base"
-            onClick={() => {
-                copyToClipboard(`${window.location.origin}/post/${post.id}`, "リンクをコピーしました！");
-            }}
-          >
-            <LinkIcon className="mr-2.5 h-5 w-5" />
-            リンクをコピー
-          </Button>
-          <Button
-            className="w-full justify-start text-left py-3 h-auto text-base bg-[#1DA1F2] hover:bg-[#1a91da] text-white"
-            onClick={() => {
-                window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(`${post.store_name}の${post.category}がお得！ ${post.content}`)}&url=${encodeURIComponent(`${window.location.origin}/post/${post.id}`)}`, '_blank');
-                setShowShareDialog(false);
-            }}
-          >
-            <svg className="mr-2.5 h-5 w-5 fill-current" viewBox="0 0 24 24" aria-hidden="true"><g><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"></path></g></svg>
-            X (Twitter) で共有
-          </Button>
-          <Button
-            variant="outline"
-            className="w-full justify-start text-left py-3 h-auto text-base bg-[#E1306C] hover:bg-[#c92a5f] text-white"
-            onClick={handleInstagramShare}
-          >
-            <Instagram className="mr-2.5 h-5 w-5" />
-            Instagramで共有
-          </Button>
-          {navigator.share && typeof navigator.share === 'function' && (
+      {/* フルスクリーンモードでない場合のみシェアモーダルを表示 */}
+      {!isFullScreen && (
+        <CustomModal
+          isOpen={showShareDialog}
+          onClose={() => setShowShareDialog(false)}
+          title="投稿を共有"
+          description="このお得情報を友達に知らせよう！"
+        >
+          <div className="space-y-3">
             <Button
               variant="outline"
               className="w-full justify-start text-left py-3 h-auto text-base"
-              onClick={handleNativeShare}
+              onClick={() => {
+                  copyToClipboard(`${window.location.origin}/post/${post.id}`, "リンクをコピーしました！");
+              }}
             >
-              <ExternalLink className="mr-2.5 h-5 w-5" />
-              その他のアプリで共有
+              <LinkIcon className="mr-2.5 h-5 w-5" />
+              リンクをコピー
             </Button>
-          )}
-        </div>
-        <div className="mt-6 flex justify-end">
-            <Button variant="ghost" onClick={() => setShowShareDialog(false)} className="text-base px-5 py-2.5 h-auto">閉じる</Button>
-        </div>
-      </CustomModal>
+            <Button
+              className="w-full justify-start text-left py-3 h-auto text-base bg-[#1DA1F2] hover:bg-[#1a91da] text-white"
+              onClick={() => {
+                  window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(`${post.store_name}の${post.category}がお得！ ${post.content}`)}&url=${encodeURIComponent(`${window.location.origin}/post/${post.id}`)}`, '_blank');
+                  setShowShareDialog(false);
+              }}
+            >
+              <svg className="mr-2.5 h-5 w-5 fill-current" viewBox="0 0 24 24" aria-hidden="true"><g><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"></path></g></svg>
+              X (Twitter) で共有
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full justify-start text-left py-3 h-auto text-base bg-[#E1306C] hover:bg-[#c92a5f] text-white"
+              onClick={handleInstagramShare}
+            >
+              <Instagram className="mr-2.5 h-5 w-5" />
+              Instagramで共有
+            </Button>
+            {navigator.share && typeof navigator.share === 'function' && (
+              <Button
+                variant="outline"
+                className="w-full justify-start text-left py-3 h-auto text-base"
+                onClick={handleNativeShare}
+              >
+                <ExternalLink className="mr-2.5 h-5 w-5" />
+                その他のアプリで共有
+              </Button>
+            )}
+          </div>
+          <div className="mt-6 flex justify-end">
+              <Button variant="ghost" onClick={() => setShowShareDialog(false)} className="text-base px-5 py-2.5 h-auto">閉じる</Button>
+          </div>
+        </CustomModal>
+      )}
     </>
   );
 });
