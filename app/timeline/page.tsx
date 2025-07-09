@@ -21,6 +21,7 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
+import { getAnonymousSessionId } from '@/lib/session'; // 新しく追加
 
 // 型定義の追加
 interface AuthorData {
@@ -810,22 +811,55 @@ export default function Timeline() {
   }, [loadMorePosts]);
 
   // いいね処理の改善
-  const handleLike = async (postId: string, isLiked: boolean) => {
-    const post = posts.find(p => p.id === postId);
-    if (post && post.author_user_id === currentUserId) {
-      return; // 自分の投稿にはいいねできない
+  const handleLike = async (postId: string) => {
+    // 最初にUIを楽観的に更新
+    setPosts(currentPosts =>
+      currentPosts.map(p =>
+        p.id === postId ? { ...p, likes_count: (p.likes_count || 0) + 1, isLikedByCurrentUser: true } : p
+      )
+    );
+
+    let error;
+
+    if (!session) {
+      // 匿名ユーザーの場合
+      const anonymousLikes = JSON.parse(localStorage.getItem('anonymousLikes') || '[]');
+      if (!anonymousLikes.includes(postId)) {
+        const newAnonymousLikes = [...anonymousLikes, postId];
+        localStorage.setItem('anonymousLikes', JSON.stringify(newAnonymousLikes));
+      }
+      
+      const sessionId = getAnonymousSessionId();
+      const { error: insertError } = await supabase
+        .from('anonymous_post_likes')
+        .insert({ post_id: postId, session_id: sessionId });
+      error = insertError;
+
+    } else {
+      // ログインユーザーの場合
+      const { error: insertError } = await supabase
+        .from('post_likes')
+        .insert({ post_id: postId, user_id: session.user.id });
+      error = insertError;
     }
 
-    try {
-      if (currentUserId) {
-        // ログインユーザーの場合
-        await handleAuthenticatedLike(postId, isLiked);
-      } else {
-        // 非ログインユーザーの場合
-        await handleAnonymousLike(postId, isLiked);
+    if (error) {
+      console.error('Error liking post:', error);
+      // エラーが発生した場合はUIを元に戻す
+      setPosts(currentPosts =>
+        currentPosts.map(p =>
+          p.id === postId ? { ...p, likes_count: (p.likes_count || 0) - 1, isLikedByCurrentUser: false } : p
+        )
+      );
+      if(!session) {
+        const newAnonymousLikes = JSON.parse(localStorage.getItem('anonymousLikes') || '[]').filter((id: string) => id !== postId);
+        localStorage.setItem('anonymousLikes', JSON.stringify(newAnonymousLikes));
       }
-    } catch (error) {
-      console.error("いいね処理エラー:", error);
+      // toast({ // toastは削除されたためコメントアウト
+      //   title: "エラー",
+      //   description: "いいねの処理に失敗しました。",
+      //   variant: "destructive",
+      // });
     }
   };
 

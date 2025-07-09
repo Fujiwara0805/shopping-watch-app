@@ -50,6 +50,8 @@ export function AppHeader() {
         return '設定';
       case '/release-notes':
         return 'リリースノート';
+      case '/hunter-ranking':
+        return 'ランキング';
       default:
         return '';
     }

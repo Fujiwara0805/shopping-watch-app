@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bell, LogOut, Settings, Edit, MapPin, Heart, Store as StoreIcon, Calendar, TrendingUp, Award, Star, User, Sparkles, ShoppingBag, Info, X, Trash2, NotebookText, CheckCircle, ExternalLink, ArrowRight } from 'lucide-react';
+import { Bell, LogOut, Settings, Edit, MapPin, Heart, Store as StoreIcon, Calendar, TrendingUp, Award, Star, User, Sparkles, ShoppingBag, Info, X, Trash2, NotebookText, CheckCircle, ExternalLink, ArrowRight, Trophy } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -13,10 +13,9 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { useSession, signOut } from 'next-auth/react';
 import { supabase } from '@/lib/supabaseClient';
-import { PostWithAuthor, AuthorProfile } from '@/types/post';
 import { cn } from '@/lib/utils';
-import { CustomModal } from '@/components/ui/custom-modal';
 import { useToast } from '@/hooks/use-toast';
+import { getHunterLevel, HUNTER_LEVELS } from '@/lib/hunter-level';
 
 interface AppProfile {
   id: string;
@@ -34,15 +33,13 @@ interface AppProfile {
 }
 
 // 統計カードのコンポーネント - よりコンパクトに
-const StatCard = ({ icon: Icon, title, value, subtitle, gradient, delay = 0, showInfo = false, onInfoClick }: {
+const StatCard = ({ icon: Icon, title, value, subtitle, gradient, delay = 0 }: {
   icon: any;
   title: string;
-  value: number | string;
+  value: React.ReactNode;
   subtitle?: string;
   gradient: string;
   delay?: number;
-  showInfo?: boolean;
-  onInfoClick?: () => void;
 }) => (
   <motion.div
     initial={{ opacity: 0, y: 20 }}
@@ -63,18 +60,8 @@ const StatCard = ({ icon: Icon, title, value, subtitle, gradient, delay = 0, sho
     <div className="relative z-10 text-center">
       <div className="flex items-center justify-center mb-2">
         <Icon className="h-4 w-4 text-gray-700" />
-        {showInfo && (
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            onClick={onInfoClick}
-            className="p-1 rounded-full bg-blue-500 text-white hover:bg-blue-600 transition-colors ml-1"
-          >
-            <Info className="h-2 w-2" />
-          </motion.button>
-        )}
       </div>
-      <p className="text-xl font-bold mb-1 text-gray-800">{value}</p>
+      <div className="text-3xl font-bold mb-1 text-gray-800 min-h-8 flex items-center justify-center">{value}</div>
       <p className="text-gray-600 text-xs font-medium">{title}</p>
       {subtitle && <p className="text-gray-500 text-xs mt-1">{subtitle}</p>}
     </div>
@@ -254,8 +241,8 @@ function ProfilePageContent() {
   const router = useRouter();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("memo");
-  const [showPointsModal, setShowPointsModal] = useState(false);
-  
+  const [currentUserLevel, setCurrentUserLevel] = useState<any>(null);
+
   // LINE接続状況の管理
   const [isLineConnected, setIsLineConnected] = useState(false);
   const [checkingLineConnection, setCheckingLineConnection] = useState(false);
@@ -297,6 +284,24 @@ function ProfilePageContent() {
             console.error('ProfilePageContent: Error fetching posts count:', postsCountError);
           } else {
             setUserPostsCount(postsCount || 0);
+          }
+
+          // 総いいね数を取得してハンターレベルを計算
+          const { data: likesData, error: likesError } = await supabase
+            .from('post_likes')
+            .select('post_id')
+            .in('post_id', 
+              await supabase
+                .from('posts')
+                .select('id')
+                .eq('app_profile_id', appProfileData.id)
+                .then(result => result.data?.map(post => post.id) || [])
+            );
+
+          if (!likesError && likesData) {
+            const totalLikes = likesData.length;
+            const level = getHunterLevel(totalLikes);
+            setCurrentUserLevel(level);
           }
         }
       } catch (e) {
@@ -486,16 +491,24 @@ function ProfilePageContent() {
               gradient="bg-green-100"
               delay={0.4}
             />
-            <StatCard
-              icon={Award}
-              title="ポイント"
-              value="未実装"
-              subtitle="獲得ポイント（未実装）"
-              gradient="bg-yellow-100"
-              delay={0.5}
-              showInfo={true}
-              onInfoClick={() => setShowPointsModal(true)}
-            />
+            {/* 称号カードをランキング確認ボタンに置き換え */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.5 }}
+              className="h-full"
+            >
+              <button
+                onClick={() => router.push('/hunter-ranking')}
+                className="w-full h-full bg-yellow-100 rounded-xl p-3 flex flex-col items-center justify-center text-center backdrop-blur-sm border border-white/30 shadow-md hover:shadow-lg transition-all duration-300 group hover:bg-yellow-200"
+              >
+                <div className="p-3 rounded-full bg-white/50 mb-2 group-hover:bg-white transition-colors">
+                  <Trophy className="h-6 w-6 text-yellow-700" />
+                </div>
+                <p className="font-bold text-gray-800">ランキングを確認</p>
+                <p className="text-xs text-gray-600 mt-1">称号と順位を見る</p>
+              </button>
+            </motion.div>
           </div>
         </div>
       </div>
@@ -668,49 +681,6 @@ function ProfilePageContent() {
         </Tabs>
       </div>
 
-      {/* ポイント説明モーダル */}
-      <CustomModal
-        isOpen={showPointsModal}
-        onClose={() => setShowPointsModal(false)}
-        title="ポイントシステム"
-        description="投稿でポイントを貯めて、お得な特典と交換しよう！"
-        showCloseButton={true}
-        dialogContentClassName="max-w-sm"
-      >
-        <div className="flex items-center text-lg font-bold text-gray-900 mb-4">
-          <Award className="h-5 w-5 mr-2 text-yellow-500" />
-          ポイントシステム
-        </div>
-        <div className="space-y-3 py-3">
-          <div className="bg-gradient-to-r from-yellow-50 to-amber-50 rounded-lg p-3 border border-yellow-200">
-            <h4 className="font-semibold text-gray-900 mb-1 flex items-center text-sm">
-              <Sparkles className="h-4 w-4 mr-1 text-yellow-500" />
-              ポイントの貯め方
-            </h4>
-            <p className="text-xs text-gray-700">
-              投稿をするたびに、<span className="font-bold text-yellow-700">最大5ポイント</span>をもらえます。
-              質の高い投稿ほど、より多くのポイントがもらえます！
-            </p>
-          </div>
-          
-          <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-3 border border-green-200">
-            <h4 className="font-semibold text-gray-900 mb-1 flex items-center text-sm">
-              <ShoppingBag className="h-4 w-4 mr-1 text-green-500" />
-              ポイントの使い方
-            </h4>
-            <p className="text-xs text-gray-700">
-              貯まったポイントは、<span className="font-bold text-green-700">Amazonギフト券</span>と交換できます。
-              さまざまな額面のギフト券をご用意しています。
-            </p>
-          </div>
-          
-          <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
-            <p className="text-xs text-blue-600 text-center">
-              ※ ポイントシステムは現在開発中です。<br />近日公開予定！
-            </p>
-          </div>
-        </div>
-      </CustomModal>
     </div>
   );
 }
