@@ -351,7 +351,7 @@ export default function PostPage() {
         toast({
           title: "⚠️ 位置情報の保存に問題がありました",
           description: "投稿は保存されましたが、位置情報が正しく保存されませんでした。",
-          duration: 5000,
+          duration: 1000,
         });
       } else if (values.store_latitude && values.store_longitude) {
         console.log("PostPage: Location data saved successfully!");
@@ -442,7 +442,7 @@ export default function PostPage() {
       toast({
         title: "⚠️ ファイルサイズが大きすぎます",
         description: "5MB以下の画像を選択してください。",
-        duration: 3000,
+        duration: 1000,
       });
       return;
     }
@@ -464,7 +464,7 @@ export default function PostPage() {
     toast({
       title: "✅ 画像をアップロードしました",
       description: "画像が正常に選択されました",
-      duration: 3000,
+      duration: 1000,
     });
     
     console.log("PostPage: Image uploaded:", {
@@ -580,7 +580,7 @@ export default function PostPage() {
           toast({
             title: "✅ 店舗の位置情報を取得しました",
             description: `${storeName} (緯度: ${lat.toFixed(6)}, 経度: ${lng.toFixed(6)})`,
-            duration: 3000,
+            duration: 1000,
           });
         } else {
           console.warn("PostPage: Place has no geometry, location, or name:", place);
@@ -778,7 +778,7 @@ export default function PostPage() {
                                   toast({
                                     title: "✅ 店舗情報と位置情報を取得しました",
                                     description: `${store.name} (緯度: ${lat.toFixed(6)}, 経度: ${lng.toFixed(6)})`,
-                                    duration: 3000,
+                                    duration: 1000,
                                   });
                                 } else {
                                   console.warn("PostPage: Store has no location data, trying to fetch from Google Places:", store);
@@ -834,7 +834,7 @@ export default function PostPage() {
                                           toast({
                                             title: "✅ 店舗情報と位置情報を取得しました",
                                             description: `${store.name} (緯度: ${lat.toFixed(6)}, 経度: ${lng.toFixed(6)})`,
-                                            duration: 3000,
+                                            duration: 1000,
                                           });
                                         } else {
                                           console.warn("PostPage: No geometry found in place result");
@@ -842,7 +842,7 @@ export default function PostPage() {
                                           toast({
                                             title: "⚠️ 位置情報を取得できませんでした",
                                             description: "手動で位置情報を設定するか、別の店舗を選択してください",
-                                            duration: 5000,
+                                            duration: 1000,
                                           });
                                         }
                                       } else {
