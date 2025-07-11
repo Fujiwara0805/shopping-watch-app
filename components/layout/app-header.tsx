@@ -34,6 +34,8 @@ export function AppHeader() {
         return 'お問い合わせ';
       case '/board':
         return '掲示板';
+      case '/board/location':
+        return 'ログイン者限定掲示板';
       case '/memo':
         return '買い物メモ';
       case '/flyers':

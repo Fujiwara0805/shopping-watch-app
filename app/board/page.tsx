@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Clock, TrendingUp, Loader2, ShoppingCart, Sparkles, RefreshCw, Calendar, MessageSquare, ShoppingBag, Notebook, Info, Mail, Search, X } from 'lucide-react';
+import { Plus, Clock, TrendingUp, Loader2, ShoppingCart, Sparkles, RefreshCw, Calendar, MessageSquare, ShoppingBag, Notebook, Info, Mail, Search, X, Users, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -342,6 +342,11 @@ export default function BoardPage() {
     router.push('/contact');
   };
 
+  // ログイン者限定掲示板への遷移
+  const handleGoToLocationBoard = () => {
+    router.push('/board/location');
+  };
+
   if (loading) {
     return (
       <AppLayout>
@@ -411,11 +416,11 @@ export default function BoardPage() {
               <Button
                 variant="default"
                 size="sm"
-                onClick={handleGoToTimeline}
-                className="bg-[#73370c] hover:bg-[#5c2c0a] text-white font-medium border-0 shadow-sm"
+                onClick={handleGoToLocationBoard}
+                className="bg-[#3b82f6] hover:bg-[#2563eb] text-white font-medium border-0 shadow-sm"
               >
-                <Clock className="h-4 w-4 mr-1" />
-                タイムライン画面
+                <MapPin className="h-4 w-4 mr-1" />
+                ログイン者限定掲示板
               </Button>
               <Button
                 variant="default"
