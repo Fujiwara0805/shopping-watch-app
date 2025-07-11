@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { motion } from 'framer-motion';
-import { Plus, Users, Mail, Copy, Trash2, Crown, UserPlus, Settings } from 'lucide-react';
+import { Plus, Users, Mail, Copy, Trash2, Crown, UserPlus, Settings, ShoppingCart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -76,6 +76,21 @@ export default function FamilyGroupPage() {
   useEffect(() => {
     if (status === 'authenticated') {
       fetchGroups();
+    }
+  }, [status]);
+
+  // URLパラメータをチェックして自動更新
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('refresh') === 'true') {
+      // URLパラメータをクリア
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, '', newUrl);
+      
+      // データを再取得
+      if (status === 'authenticated') {
+        fetchGroups();
+      }
     }
   }, [status]);
 
@@ -301,10 +316,11 @@ export default function FamilyGroupPage() {
                             </Button>
                             <Button
                               size="sm"
-                              onClick={() => router.push('/board/family')}
+                              onClick={() => router.push('/family-group/shopping')}
                               className="bg-green-500 hover:bg-green-600"
                             >
-                              掲示板を見る
+                              <ShoppingCart className="h-4 w-4 mr-1" />
+                              買い物メモを見る
                             </Button>
                           </div>
                         </div>

@@ -8,6 +8,23 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
+// 画像URLを生成するヘルパー関数
+function getAvatarUrl(avatarPath: string | null): string | null {
+  if (!avatarPath) return null;
+  
+  // 既に完全なURLの場合はそのまま返す
+  if (avatarPath.startsWith('http')) {
+    return avatarPath;
+  }
+  
+  // Supabaseストレージの公開URLを生成
+  const { data } = supabase.storage
+    .from('avatars')
+    .getPublicUrl(avatarPath);
+  
+  return data.publicUrl;
+}
+
 // GET: ユーザーのグループ情報を取得
 export async function GET(request: NextRequest) {
   try {
@@ -41,16 +58,13 @@ export async function GET(request: NextRequest) {
     // グループのメンバー情報も取得
     const groups = await Promise.all(
       (memberGroups || []).map(async (memberGroup) => {
+        // メンバー情報を取得
         const { data: members, error: membersError } = await supabase
           .from('family_group_members')
           .select(`
             user_id,
             role,
-            joined_at,
-            app_profiles (
-              display_name,
-              avatar_url
-            )
+            joined_at
           `)
           .eq('group_id', memberGroup.group_id);
 
@@ -58,11 +72,33 @@ export async function GET(request: NextRequest) {
           console.error('Group members fetch error:', membersError);
         }
 
+        // 各メンバーのプロフィール情報を別途取得
+        const membersWithProfiles = await Promise.all(
+          (members || []).map(async (member) => {
+            const { data: profile } = await supabase
+              .from('app_profiles')
+              .select('display_name, avatar_url')
+              .eq('user_id', member.user_id)
+              .single();
+
+            // 画像URLを正しく生成
+            const avatarUrl = profile?.avatar_url ? getAvatarUrl(profile.avatar_url) : null;
+
+            return {
+              ...member,
+              app_profiles: {
+                display_name: profile?.display_name || null,
+                avatar_url: avatarUrl
+              }
+            };
+          })
+        );
+
         return {
           ...memberGroup.family_groups,
           userRole: memberGroup.role,
           joinedAt: memberGroup.joined_at,
-          members: members || []
+          members: membersWithProfiles
         };
       })
     );

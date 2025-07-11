@@ -76,12 +76,14 @@ export default function JoinGroupPage({ params }: { params: { token: string } })
 
       toast({
         title: "✅ 参加完了",
-        description: "グループに参加しました",
-        duration: 1000,
+        description: "グループに参加しました。掲示板に移動します...",
+        duration: 2000,
       });
 
-      // グループ管理ページにリダイレクト
-      router.push('/family-group');
+      // データベースの同期を待ってから掲示板にリダイレクト
+      setTimeout(() => {
+        router.push('/board/family?joined=true');
+      }, 2000);
     } catch (error: any) {
       toast({
         title: "エラー",
