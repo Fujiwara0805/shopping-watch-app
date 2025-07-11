@@ -225,3 +225,53 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'サーバーエラー' }, { status: 500 });
   }
 }
+
+// DELETE: 投稿の削除
+export async function DELETE(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'ログインが必要です' }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const postId = searchParams.get('id');
+
+    if (!postId) {
+      return NextResponse.json({ error: '投稿IDが必要です' }, { status: 400 });
+    }
+
+    // 投稿の所有者確認
+    const { data: post, error: fetchError } = await supabase
+      .from('location_board_posts')
+      .select('user_id')
+      .eq('id', postId)
+      .single();
+
+    if (fetchError) {
+      console.error('Post fetch error:', fetchError);
+      return NextResponse.json({ error: '投稿が見つかりません' }, { status: 404 });
+    }
+
+    if (post.user_id !== session.user.id) {
+      return NextResponse.json({ error: '削除権限がありません' }, { status: 403 });
+    }
+
+    // 投稿を削除
+    const { error: deleteError } = await supabase
+      .from('location_board_posts')
+      .delete()
+      .eq('id', postId);
+
+    if (deleteError) {
+      console.error('Delete error:', deleteError);
+      return NextResponse.json({ error: 'データベースエラー' }, { status: 500 });
+    }
+
+    return NextResponse.json({ message: '投稿が削除されました' });
+
+  } catch (error) {
+    console.error('API error:', error);
+    return NextResponse.json({ error: 'サーバーエラー' }, { status: 500 });
+  }
+}

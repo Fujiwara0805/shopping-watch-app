@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Clock, TrendingUp, Loader2, ShoppingCart, Sparkles, RefreshCw, Calendar, MessageSquare, ShoppingBag, Notebook, Info, Mail, Search, X, Users, MapPin } from 'lucide-react';
+import { Plus, Clock, TrendingUp, Loader2, ShoppingCart, Sparkles, RefreshCw, Calendar, MessageSquare, ShoppingBag, Notebook, Info, Mail, Search, X, Users, MapPin, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -424,8 +424,8 @@ export default function BoardPage() {
                 onClick={handleGoToLocationBoard}
                 className="bg-[#3b82f6] hover:bg-[#2563eb] text-white font-medium border-0 shadow-sm"
               >
-                <MapPin className="h-4 w-4 mr-1" />
-                掲示板(ログイン必須)
+                <Lock className="h-4 w-4 mr-1" />
+                ログイン者限定
               </Button>
               <Button
                 variant="default"

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Clock, TrendingUp, Loader2, ShoppingCart, Sparkles, RefreshCw, Calendar, MessageSquare, ShoppingBag, Notebook, Info, Mail, Search, X, MapPin, Users, ArrowLeft, Lock } from 'lucide-react';
+import { Plus, Clock, TrendingUp, Loader2, ShoppingCart, Sparkles, RefreshCw, Calendar, MessageSquare, ShoppingBag, Notebook, Info, Mail, Search, X, MapPin, Users, ArrowLeft, Lock, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -26,6 +26,7 @@ interface LocationBoardPost {
   created_at: string;
   expires_at: string;
   distance?: number;
+  user_id: string; // 追加
   user: {
     nickname: string;
     profile_image_url?: string;
@@ -136,6 +137,40 @@ export default function LocationBoardPage() {
     return () => clearInterval(interval);
   }, [session, location?.latitude, location?.longitude, fetchPosts]);
 
+  // 投稿削除機能
+  const handleDeletePost = async (postId: string) => {
+    if (!confirm('この投稿を削除しますか？')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/board/location?id=${postId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || '削除に失敗しました');
+      }
+
+      toast({
+        title: "削除完了",
+        description: "投稿が削除されました",
+        duration: 1000,
+      });
+
+      // 投稿一覧を更新
+      await fetchPosts();
+    } catch (error: any) {
+      toast({
+        title: "エラー",
+        description: error.message || "削除に失敗しました",
+        variant: "destructive",
+        duration: 1000,
+      });
+    }
+  };
+
   // 投稿の送信
   const handleSubmitPost = async () => {
     if (!session?.user?.id || !location) {
@@ -143,6 +178,7 @@ export default function LocationBoardPage() {
         title: "エラー",
         description: "ログインと位置情報が必要です",
         variant: "destructive",
+        duration: 1000,
       });
       return;
     }
@@ -152,6 +188,7 @@ export default function LocationBoardPage() {
         title: "エラー",
         description: "商品名を入力してください",
         variant: "destructive",
+        duration: 1000,
       });
       return;
     }
@@ -181,6 +218,7 @@ export default function LocationBoardPage() {
       toast({
         title: "✅ 投稿完了",
         description: "投稿が完了しました",
+        duration: 1000,
       });
 
       // 買い物メモに追加
@@ -198,6 +236,7 @@ export default function LocationBoardPage() {
         title: "エラー",
         description: error.message || "投稿に失敗しました",
         variant: "destructive",
+        duration: 1000,
       });
     } finally {
       setIsSubmitting(false);
@@ -219,6 +258,7 @@ export default function LocationBoardPage() {
         toast({
           title: "ℹ️ すでに追加されています",
           description: `${productName}は既に買い物メモに存在します。`,
+          duration: 1000,
         });
         return;
       }
@@ -232,14 +272,11 @@ export default function LocationBoardPage() {
       memoItems = [newItem, ...memoItems];
       localStorage.setItem('shoppingMemo', JSON.stringify(memoItems));
       
-      const addedToast = toast({
+      toast({
         title: "🛒 買い物メモに追加しました！",
         description: `${productName}を買い物メモに追加しました。`,
+        duration: 1000,
       });
-      
-      setTimeout(() => {
-        addedToast.dismiss();
-      }, 1000);
     } catch (error) {
       console.error('買い物メモ追加エラー:', error);
     }
@@ -254,6 +291,7 @@ export default function LocationBoardPage() {
     toast({
       title: "更新しました",
       description: "最新の投稿情報を取得しました。",
+      duration: 1000,
     });
   };
 
@@ -378,7 +416,6 @@ export default function LocationBoardPage() {
                 onClick={() => router.push('/board')}
                 className="border-gray-300"
               >
-                <ArrowLeft className="h-4 w-4 mr-1" />
                 戻る
               </Button>
               <Button
@@ -580,6 +617,20 @@ export default function LocationBoardPage() {
                                 </span>
                               </div>
                             </div>
+                            
+                            {/* 削除ボタン（自分の投稿のみ表示） */}
+                            {post.user_id === session?.user?.id && (
+                              <div className="ml-2">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleDeletePost(post.id)}
+                                  className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            )}
                           </div>
                         </motion.div>
                       ))}
