@@ -189,12 +189,12 @@ export async function sendInvitationEmail(
   }
   
   // 必要な環境変数をチェック
-  if (!process.env.NEXTAUTH_URL) {
-    console.error('❌ NEXTAUTH_URL environment variable is not configured');
+  if (!process.env.NEXT_PUBLIC_APP_URL) {
+    console.error('❌ NEXT_PUBLIC_APP_URL environment variable is not configured');
     throw new Error('アプリケーションURLが設定されていません。');
   }
   
-  const inviteLink = `${process.env.NEXTAUTH_URL}/family-group/join/${token}`;
+  const inviteLink = `${process.env.NEXT_PUBLIC_APP_URL}/family-group/join/${token}`;
   
   // 送信者情報（既存設定を使用）
   const fromEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
@@ -218,14 +218,7 @@ export async function sendInvitationEmail(
       html: `
         <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8f9fa;">
           <div style="background-color: white; border-radius: 12px; padding: 40px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-            <div style="text-align: center; margin-bottom: 32px;">
-              <div style="width: 64px; height: 64px; background-color: #3b82f6; border-radius: 50%; margin: 0 auto 16px; display: flex; align-items: center; justify-content: center;">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M16 7C16 9.20914 14.2091 11 12 11C9.79086 11 8 9.20914 8 7C8 4.79086 9.79086 3 12 3C14.2091 3 16 4.79086 16 7Z" stroke="white" stroke-width="2"/>
-                  <path d="M12 14C8.13401 14 5 17.134 5 21H19C19 17.134 15.866 14 12 14Z" stroke="white" stroke-width="2"/>
-                </svg>
-              </div>
-              <h1 style="color: #3b82f6; margin: 0; font-size: 24px; font-weight: bold;">家族グループへの招待</h1>
+              <h1 style="color: #3b82f6; margin: 0; font-size: 20px; font-weight: bold;">家族グループへの招待</h1>
             </div>
             
             <p style="color: #374151; font-size: 16px; line-height: 1.6; margin-bottom: 24px;">
