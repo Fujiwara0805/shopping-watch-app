@@ -167,3 +167,129 @@ export async function sendPasswordResetEmail({ to, resetToken }: SendPasswordRes
     throw new Error(`メール送信に失敗しました: ${error.message}`);
   }
 }
+
+// 招待メール送信関数（修正版）
+export async function sendInvitationEmail(
+  email: string, 
+  token: string, 
+  groupName: string,
+  inviterName: string
+) {
+  console.log('🚀 sendInvitationEmail called with:', { 
+    email, 
+    groupName, 
+    inviterName,
+    tokenLength: token.length 
+  });
+  
+  // APIキーチェック
+  if (!process.env.RESEND_API_KEY) {
+    console.error('❌ RESEND_API_KEY environment variable is not configured');
+    throw new Error('メール送信の設定が完了していません。');
+  }
+  
+  // 必要な環境変数をチェック
+  if (!process.env.NEXTAUTH_URL) {
+    console.error('❌ NEXTAUTH_URL environment variable is not configured');
+    throw new Error('アプリケーションURLが設定されていません。');
+  }
+  
+  const inviteLink = `${process.env.NEXTAUTH_URL}/family-group/join/${token}`;
+  
+  // 送信者情報（既存設定を使用）
+  const fromEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
+  const fromName = process.env.RESEND_FROM_NAME || 'Tokudoku App';
+  
+  console.log('📧 メール送信設定:', {
+    from: `${fromName} <${fromEmail}>`,
+    to: email,
+    groupName,
+    inviterName,
+    inviteLink: inviteLink.substring(0, 50) + '...'
+  });
+  
+  try {
+    console.log('📤 Resend API呼び出し開始...');
+    
+    const { data, error } = await resend.emails.send({
+      from: `${fromName} <${fromEmail}>`,
+      to: [email],
+      subject: `【トクドク】${groupName}への招待`,
+      html: `
+        <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8f9fa;">
+          <div style="background-color: white; border-radius: 12px; padding: 40px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+            <div style="text-align: center; margin-bottom: 32px;">
+              <div style="width: 64px; height: 64px; background-color: #3b82f6; border-radius: 50%; margin: 0 auto 16px; display: flex; align-items: center; justify-content: center;">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M16 7C16 9.20914 14.2091 11 12 11C9.79086 11 8 9.20914 8 7C8 4.79086 9.79086 3 12 3C14.2091 3 16 4.79086 16 7Z" stroke="white" stroke-width="2"/>
+                  <path d="M12 14C8.13401 14 5 17.134 5 21H19C19 17.134 15.866 14 12 14Z" stroke="white" stroke-width="2"/>
+                </svg>
+              </div>
+              <h1 style="color: #3b82f6; margin: 0; font-size: 24px; font-weight: bold;">家族グループへの招待</h1>
+            </div>
+            
+            <p style="color: #374151; font-size: 16px; line-height: 1.6; margin-bottom: 24px;">
+              <strong>${inviterName}</strong>さんから、家族グループ「<strong>${groupName}</strong>」への招待が届きました。
+            </p>
+            
+            <p style="color: #374151; font-size: 16px; line-height: 1.6; margin-bottom: 32px;">
+              下記のボタンをクリックして、グループに参加してください：
+            </p>
+            
+            <div style="text-align: center; margin: 32px 0;">
+              <a href="${inviteLink}" 
+                 style="background-color: #3b82f6; color: white; padding: 16px 32px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: 600; font-size: 16px;">
+                グループに参加する
+              </a>
+            </div>
+            
+            <div style="background-color: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 16px; margin: 24px 0;">
+              <p style="color: #92400e; font-size: 14px; margin: 0; font-weight: 600;">
+                ⏰ この招待は<strong>7日間</strong>有効です
+              </p>
+            </div>
+            
+            <div style="border-top: 1px solid #e5e7eb; padding-top: 24px; margin-top: 32px;">
+              <p style="color: #6b7280; font-size: 14px; line-height: 1.5; margin-bottom: 16px;">
+                もしボタンが機能しない場合は、下記のURLを直接ブラウザにコピー&ペーストしてください：
+              </p>
+              <p style="word-break: break-all; color: #3b82f6; font-size: 12px; background-color: #f3f4f6; padding: 12px; border-radius: 4px; font-family: 'Courier New', monospace;">
+                ${inviteLink}
+              </p>
+            </div>
+            
+            <div style="border-top: 1px solid #e5e7eb; padding-top: 24px; margin-top: 24px;">
+              <p style="color: #9ca3af; font-size: 12px; text-align: center; margin: 0;">
+                このメールに心当たりがない場合は、無視してください。<br><br>
+                © ${new Date().getFullYear()} ${fromName}
+              </p>
+            </div>
+          </div>
+        </div>
+      `,
+    });
+
+    console.log('📨 Resend API レスポンス:', {
+      success: !error,
+      data: data,
+      error: error
+    });
+
+    if (error) {
+      console.error('❌ Resend APIエラー詳細:', error);
+      throw new Error(`招待メール送信エラー: ${error.message}`);
+    }
+
+    if (!data) {
+      console.error('❌ Resend APIからデータが返されませんでした');
+      throw new Error('招待メール送信に失敗しました：レスポンスデータが空です');
+    }
+
+    console.log('✅ 招待メール送信成功:', { messageId: data.id, to: email });
+    return { success: true, messageId: data.id };
+    
+  } catch (error: any) {
+    console.error('💥 招待メール送信中にエラー:', error);
+    throw new Error(`招待メール送信に失敗しました: ${error.message}`);
+  }
+}
