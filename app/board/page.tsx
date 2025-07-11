@@ -400,6 +400,18 @@ export default function BoardPage() {
                   <span className="font-medium">今日買うものを入力すると、<br />自動的に買い物メモに追加されます。</span>
                   <div className="w-8 h-0.5 bg-amber-300"></div>
                 </div>
+
+                {/* ログイン者限定掲示板の説明を追加 */}
+                <div className="mt-3 pt-2 border-t border-amber-300">
+                  <div className="flex items-center justify-center space-x-2 text-sm text-blue-700 bg-blue-50/50 rounded-md p-2">
+                    <MapPin className="h-4 w-4 text-blue-600" />
+                    <span className="font-medium text-center">
+                      ログイン者限定掲示板では<br />
+                      <strong>周辺5km圏内の投稿</strong>を閲覧できます
+                    </span>
+                    <MapPin className="h-4 w-4 text-blue-600" />
+                  </div>
+                </div>
               </div>
             </div>
             
@@ -420,7 +432,7 @@ export default function BoardPage() {
                 className="bg-[#3b82f6] hover:bg-[#2563eb] text-white font-medium border-0 shadow-sm"
               >
                 <MapPin className="h-4 w-4 mr-1" />
-                ログイン者限定掲示板
+                掲示板(ログイン必須)
               </Button>
               <Button
                 variant="default"
