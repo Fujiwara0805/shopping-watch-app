@@ -60,6 +60,11 @@ export default function FamilyShoppingPage() {
   const [loading, setLoading] = useState(true);
   const [isMutating, setIsMutating] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
+  
+  // 個別のローディング状態を管理
+  const [addingItem, setAddingItem] = useState(false);
+  const [togglingItems, setTogglingItems] = useState<Set<string>>(new Set());
+  const [deletingItems, setDeletingItems] = useState<Set<string>>(new Set());
 
   // URLパラメータからグループIDを取得
   const groupId = searchParams.get('groupId');
@@ -114,7 +119,7 @@ export default function FamilyShoppingPage() {
         title: "エラー",
         description: "データの取得に失敗しました",
         variant: "destructive",
-        duration: 3000,
+        duration: 1000,
       });
     } finally {
       setLoading(false);
@@ -128,10 +133,25 @@ export default function FamilyShoppingPage() {
 
   // アイテムの追加
   const handleAddItemFromInput = async () => {
-    if (!isOnline || isMutating || newItemName.trim() === '') return;
+    if (!isOnline || isMutating || newItemName.trim() === '' || addingItem) return;
     
+    setAddingItem(true);
     setIsMutating(true);
+    
+    let loadingTimeout: NodeJS.Timeout | undefined;
+    
     try {
+      // 2秒後にローディング表示
+      loadingTimeout = setTimeout(() => {
+        if (addingItem) {
+          toast({
+            title: "処理中",
+            description: "✅アイテムを追加しています",
+            duration: 1000,
+          });
+        }
+      }, 2000);
+
       const response = await fetch('/api/family-group/shopping', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -148,27 +168,49 @@ export default function FamilyShoppingPage() {
 
       setNewItemName('');
       await fetchData();
+      
+      toast({
+        title: "成功",
+        description: "✅アイテムを追加しました",
+        duration: 1000,
+      });
     } catch (error: any) {
       toast({
         title: "エラー",
         description: error.message,
         variant: "destructive",
-        duration: 3000,
+        duration: 1000,
       });
     } finally {
+      if (loadingTimeout) clearTimeout(loadingTimeout);
+      setAddingItem(false);
       setIsMutating(false);
     }
   };
 
   // アイテムの完了状態を切り替え
   const handleToggleCheck = async (id: string) => {
-    if (!isOnline || isMutating) return;
+    if (!isOnline || togglingItems.has(id)) return;
 
     const item = items.find(item => item.id === id);
     if (!item) return;
 
-    setIsMutating(true);
+    setTogglingItems(prev => new Set(prev).add(id));
+    
+    let loadingTimeout: NodeJS.Timeout | undefined;
+    
     try {
+      // 2秒後にローディング表示
+      loadingTimeout = setTimeout(() => {
+        if (togglingItems.has(id)) {
+          toast({
+            title: "処理中",
+            description: `${item.is_completed ? '未完了に' : '完了に'}変更しています...`,
+            duration: 1000,
+          });
+        }
+      }, 2000);
+
       const response = await fetch('/api/family-group/shopping', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -185,24 +227,52 @@ export default function FamilyShoppingPage() {
       }
 
       await fetchData();
+      
+      toast({
+        title: "成功",
+        description: `${item.is_completed ? '未完了' : '完了'}に変更しました`,
+        duration: 1000,
+      });
     } catch (error: any) {
       toast({
         title: "エラー",
         description: error.message,
         variant: "destructive",
-        duration: 3000,
+        duration: 1000,
       });
     } finally {
-      setIsMutating(false);
+      if (loadingTimeout) clearTimeout(loadingTimeout);
+      setTogglingItems(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(id);
+        return newSet;
+      });
     }
   };
 
   // アイテムの削除
   const handleDeleteShoppingItem = async (id: string) => {
-    if (!isOnline || isMutating) return;
+    if (!isOnline || deletingItems.has(id)) return;
 
-    setIsMutating(true);
+    const item = items.find(item => item.id === id);
+    if (!item) return;
+
+    setDeletingItems(prev => new Set(prev).add(id));
+    
+    let loadingTimeout: NodeJS.Timeout | undefined;
+    
     try {
+      // 2秒後にローディング表示
+      loadingTimeout = setTimeout(() => {
+        if (deletingItems.has(id)) {
+          toast({
+            title: "処理中",
+            description: "アイテムを削除しています...",
+            duration: 1000,
+          });
+        }
+      }, 2000);
+
       const url = groupId 
         ? `/api/family-group/shopping?id=${id}&groupId=${groupId}`
         : `/api/family-group/shopping?id=${id}`;
@@ -217,15 +287,26 @@ export default function FamilyShoppingPage() {
       }
 
       await fetchData();
+      
+      toast({
+        title: "成功",
+        description: "アイテムを削除しました",
+        duration: 1000,
+      });
     } catch (error: any) {
       toast({
         title: "エラー",
         description: error.message,
         variant: "destructive",
-        duration: 3000,
+        duration: 1000,
       });
     } finally {
-      setIsMutating(false);
+      if (loadingTimeout) clearTimeout(loadingTimeout);
+      setDeletingItems(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(id);
+        return newSet;
+      });
     }
   };
 
@@ -282,14 +363,19 @@ export default function FamilyShoppingPage() {
             placeholder="リストの追加をしてください" 
             className="text-base"
             onKeyPress={(e) => e.key === 'Enter' && handleAddItemFromInput()}
+            disabled={addingItem || !isOnline}
           />
           <Button 
             onClick={handleAddItemFromInput} 
             size="icon" 
             className="shrink-0" 
-            disabled={newItemName.trim() === '' || !isOnline || isMutating}
+            disabled={newItemName.trim() === '' || !isOnline || addingItem}
           >
-            <Plus size={20} />
+            {addingItem ? (
+              <Loader2 size={20} className="animate-spin" />
+            ) : (
+              <Plus size={20} />
+            )}
           </Button>
         </div>
 
@@ -364,9 +450,13 @@ export default function FamilyShoppingPage() {
                         "flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center", 
                         item.is_completed ? "bg-primary border-primary" : "border-muted-foreground"
                       )}
-                      disabled={isMutating || !isOnline}
+                      disabled={togglingItems.has(item.id) || !isOnline}
                     >
-                      {item.is_completed && <Check size={16} className="text-primary-foreground" />}
+                      {togglingItems.has(item.id) ? (
+                        <Loader2 size={12} className="animate-spin text-muted-foreground" />
+                      ) : (
+                        item.is_completed && <Check size={16} className="text-primary-foreground" />
+                      )}
                     </button>
                     <div className="flex-grow">
                       <span className={cn("text-lg", item.is_completed && "line-through text-muted-foreground")}>
@@ -394,9 +484,13 @@ export default function FamilyShoppingPage() {
                       size="icon" 
                       onClick={() => handleDeleteShoppingItem(item.id)} 
                       className="text-muted-foreground hover:text-destructive"
-                      disabled={isMutating || !isOnline}
+                      disabled={deletingItems.has(item.id) || !isOnline}
                     >
-                      <Trash2 size={18} />
+                      {deletingItems.has(item.id) ? (
+                        <Loader2 size={18} className="animate-spin" />
+                      ) : (
+                        <Trash2 size={18} />
+                      )}
                     </Button>
                   </motion.div>
                 ))}
@@ -419,9 +513,13 @@ export default function FamilyShoppingPage() {
                         <button 
                           onClick={() => handleToggleCheck(item.id)} 
                           className="flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center bg-primary border-primary"
-                          disabled={isMutating || !isOnline}
+                          disabled={togglingItems.has(item.id) || !isOnline}
                         >
-                          <Check size={16} className="text-primary-foreground" />
+                          {togglingItems.has(item.id) ? (
+                            <Loader2 size={12} className="animate-spin text-primary-foreground" />
+                          ) : (
+                            <Check size={16} className="text-primary-foreground" />
+                          )}
                         </button>
                         <div className="flex-grow">
                           <span className="text-lg line-through text-muted-foreground">
@@ -436,9 +534,13 @@ export default function FamilyShoppingPage() {
                           size="icon" 
                           onClick={() => handleDeleteShoppingItem(item.id)} 
                           className="text-muted-foreground hover:text-destructive"
-                          disabled={isMutating || !isOnline}
+                          disabled={deletingItems.has(item.id) || !isOnline}
                         >
-                          <Trash2 size={18} />
+                          {deletingItems.has(item.id) ? (
+                            <Loader2 size={18} className="animate-spin" />
+                          ) : (
+                            <Trash2 size={18} />
+                          )}
                         </Button>
                       </motion.div>
                     ))}
