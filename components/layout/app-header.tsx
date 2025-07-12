@@ -34,8 +34,10 @@ export function AppHeader() {
         return 'お問い合わせ';
       case '/board':
         return '掲示板';
-      case '/board/location':
-        return '掲示板';
+      case '/family-group':
+        return 'グループ管理';
+      case '/family-group/shopping':
+        return '共有リスト';
       case '/memo':
         return '買い物メモ';
       case '/flyers':

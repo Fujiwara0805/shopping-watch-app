@@ -18,19 +18,26 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'ログインが必要です' }, { status: 401 });
     }
 
-    const { email, groupId } = await request.json();
+    const { email, groupId, generateOnly } = await request.json();
 
-    if (!email || !groupId) {
-      return NextResponse.json({ error: 'メールアドレスとグループIDが必要です' }, { status: 400 });
+    if (!groupId) {
+      return NextResponse.json({ error: 'グループIDが必要です' }, { status: 400 });
     }
 
-    // メールアドレスの簡単なバリデーション
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return NextResponse.json({ error: '有効なメールアドレスを入力してください' }, { status: 400 });
+    // generateOnlyの場合はemailは不要
+    if (!generateOnly && !email) {
+      return NextResponse.json({ error: 'メールアドレスが必要です' }, { status: 400 });
     }
 
-    // グループの存在確認とユーザーの権限確認（修正版）
+    // メールアドレスのバリデーション（generateOnlyでない場合のみ）
+    if (!generateOnly && email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return NextResponse.json({ error: '有効なメールアドレスを入力してください' }, { status: 400 });
+      }
+    }
+
+    // グループの存在確認とユーザーの権限確認
     const { data: membership, error: membershipError } = await supabase
       .from('family_group_members')
       .select('role, group_id')
@@ -55,6 +62,53 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'グループ情報の取得に失敗しました' }, { status: 500 });
     }
 
+    // 招待トークン生成
+    const token = crypto.randomUUID();
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7); // 7日後に期限切れ
+
+    // 招待者の名前を取得
+    const { data: inviterProfile } = await supabase
+      .from('app_profiles')
+      .select('display_name')
+      .eq('user_id', session.user.id)
+      .single();
+
+    const inviterName = inviterProfile?.display_name || session.user.name || 'ユーザー';
+    const inviteLink = `${process.env.NEXTAUTH_URL}/family-group/join/${token}`;
+
+    // generateOnlyの場合は、リンクのみを返す
+    if (generateOnly) {
+      // 一時的な招待レコードを作成（実際の招待は後で行う）
+      const { data: invitation, error: invitationError } = await supabase
+        .from('family_group_invitations')
+        .insert({
+          group_id: groupId,
+          inviter_id: session.user.id,
+          invitee_email: 'temp@example.com', // 一時的なメール
+          token,
+          expires_at: expiresAt.toISOString(),
+          status: 'pending'
+        })
+        .select()
+        .single();
+
+      if (invitationError) {
+        console.error('Invitation creation error:', invitationError);
+        return NextResponse.json({ 
+          error: '招待リンクの生成に失敗しました'
+        }, { status: 500 });
+      }
+
+      return NextResponse.json({ 
+        inviteLink,
+        groupName: groupInfo.name,
+        inviterName,
+        message: '招待リンクを生成しました'
+      }, { status: 200 });
+    }
+
+    // 通常のメール招待処理
     // 既に招待済みかチェック
     const { data: existingInvitation } = await supabase
       .from('family_group_invitations')
@@ -87,20 +141,6 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'このユーザーは既にグループのメンバーです' }, { status: 400 });
       }
     }
-
-    // 招待者の名前を取得
-    const { data: inviterProfile } = await supabase
-      .from('app_profiles')
-      .select('display_name')
-      .eq('user_id', session.user.id)
-      .single();
-
-    const inviterName = inviterProfile?.display_name || session.user.name || 'ユーザー';
-
-    // 招待トークン生成
-    const token = crypto.randomUUID();
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7); // 7日後に期限切れ
 
     // メール送信を先に試行
     let emailSent = false;
@@ -150,8 +190,6 @@ export async function POST(request: NextRequest) {
         error: 'メールは送信されましたが、招待レコードの作成に失敗しました。管理者にお問い合わせください。'
       }, { status: 500 });
     }
-
-    const inviteLink = `${process.env.NEXTAUTH_URL}/family-group/join/${token}`;
 
     return NextResponse.json({ 
       invitation,

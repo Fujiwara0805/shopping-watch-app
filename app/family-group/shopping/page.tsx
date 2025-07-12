@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 
 // 家族共有の買い物アイテム
@@ -51,6 +51,7 @@ interface FamilyGroup {
 export default function FamilyShoppingPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
   
   const [currentGroup, setCurrentGroup] = useState<FamilyGroup | null>(null);
@@ -59,6 +60,9 @@ export default function FamilyShoppingPage() {
   const [loading, setLoading] = useState(true);
   const [isMutating, setIsMutating] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
+
+  // URLパラメータからグループIDを取得
+  const groupId = searchParams.get('groupId');
 
   // 未ログインの場合はリダイレクト
   useEffect(() => {
@@ -87,7 +91,11 @@ export default function FamilyShoppingPage() {
     }
 
     try {
-      const response = await fetch('/api/family-group/shopping');
+      const url = groupId 
+        ? `/api/family-group/shopping?groupId=${groupId}`
+        : '/api/family-group/shopping';
+      
+      const response = await fetch(url);
       if (!response.ok) {
         throw new Error('データの取得に失敗しました');
       }
@@ -111,7 +119,7 @@ export default function FamilyShoppingPage() {
     } finally {
       setLoading(false);
     }
-  }, [status, session, router, toast]);
+  }, [status, session, router, toast, groupId]);
 
   // 初回読み込み
   useEffect(() => {
@@ -128,7 +136,8 @@ export default function FamilyShoppingPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          item_name: newItemName.trim()
+          item_name: newItemName.trim(),
+          group_id: groupId || currentGroup?.id
         }),
       });
 
@@ -165,7 +174,8 @@ export default function FamilyShoppingPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           item_id: id,
-          is_completed: !item.is_completed
+          is_completed: !item.is_completed,
+          group_id: groupId || currentGroup?.id
         }),
       });
 
@@ -193,7 +203,11 @@ export default function FamilyShoppingPage() {
 
     setIsMutating(true);
     try {
-      const response = await fetch(`/api/family-group/shopping?id=${id}`, {
+      const url = groupId 
+        ? `/api/family-group/shopping?id=${id}&groupId=${groupId}`
+        : `/api/family-group/shopping?id=${id}`;
+      
+      const response = await fetch(url, {
         method: 'DELETE',
       });
 
@@ -259,40 +273,13 @@ export default function FamilyShoppingPage() {
   return (
     <AppLayout>
       <div className="p-4 max-w-2xl mx-auto">
-        {/* ヘッダー */}
-        <header className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => router.push('/family-group')}
-              className="text-muted-foreground hover:text-foreground"
-            >
-              <ArrowLeft className="h-4 w-4 mr-1" />
-              戻る
-            </Button>
-            {isMutating && <Loader2 className="h-5 w-5 animate-spin text-primary" />}
-            {!isOnline && (
-              <div className="flex items-center gap-2 text-sm text-yellow-600 bg-yellow-100 px-3 py-1 rounded-full">
-                <WifiOff size={16} /><span>オフライン</span>
-              </div>
-            )}
-          </div>
-        </header>
-
-        {/* グループ情報 */}
-        <div className="mb-4 text-center">
-          <h1 className="text-2xl font-bold text-foreground">{currentGroup.name}</h1>
-          <p className="text-sm text-muted-foreground">家族の買い物メモ</p>
-        </div>
-
         {/* アイテム追加 */}
-        <div className="flex gap-2 mb-6">
+        <div className="flex gap-2 mb-6 py-2">
           <Input 
             type="text" 
             value={newItemName} 
             onChange={e => setNewItemName(e.target.value)} 
-            placeholder="アイテム名を入力 (例: 牛乳)" 
+            placeholder="リストの追加をしてください" 
             className="text-base"
             onKeyPress={(e) => e.key === 'Enter' && handleAddItemFromInput()}
           />

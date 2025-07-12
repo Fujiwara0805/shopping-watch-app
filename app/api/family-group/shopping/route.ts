@@ -33,45 +33,75 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'ログインが必要です' }, { status: 401 });
     }
 
-    console.log(`Fetching shopping items for user: ${session.user.id}`);
+    // URLパラメータからグループIDを取得
+    const { searchParams } = new URL(request.url);
+    const groupId = searchParams.get('groupId');
+
+    console.log(`Fetching shopping items for user: ${session.user.id}, groupId: ${groupId}`);
     
-    // ユーザーが参加しているグループを取得
-    const { data: userGroups, error: groupsError } = await supabase
-      .from('family_group_members')
-      .select(`
-        group_id,
-        role,
-        family_groups (
-          id,
-          name,
-          owner_id
-        )
-      `)
-      .eq('user_id', session.user.id)
-      .order('joined_at', { ascending: false });
+    let targetGroupId: string;
 
-    if (groupsError) {
-      console.error('Groups fetch error:', groupsError);
-      throw groupsError;
+    if (groupId) {
+      // 指定されたグループIDのアクセス権限をチェック
+      const { data: membership, error: membershipError } = await supabase
+        .from('family_group_members')
+        .select('group_id, role')
+        .eq('group_id', groupId)
+        .eq('user_id', session.user.id)
+        .single();
+
+      if (membershipError || !membership) {
+        return NextResponse.json({ 
+          error: 'このグループにアクセスする権限がありません' 
+        }, { status: 403 });
+      }
+
+      targetGroupId = groupId;
+    } else {
+      // グループIDが指定されていない場合は最新に参加したグループを使用
+      const { data: userGroups, error: groupsError } = await supabase
+        .from('family_group_members')
+        .select('group_id, role')
+        .eq('user_id', session.user.id)
+        .order('joined_at', { ascending: false });
+
+      if (groupsError || !userGroups || userGroups.length === 0) {
+        return NextResponse.json({ 
+          group: null,
+          items: [],
+          message: 'グループに参加していません' 
+        });
+      }
+
+      targetGroupId = userGroups[0].group_id;
     }
 
-    if (!userGroups || userGroups.length === 0) {
+    // グループ情報を取得
+    const { data: groupInfo, error: groupError } = await supabase
+      .from('family_groups')
+      .select('id, name, owner_id')
+      .eq('id', targetGroupId)
+      .single();
+
+    if (groupError || !groupInfo) {
       return NextResponse.json({ 
-        group: null,
-        items: [],
-        message: 'グループに参加していません' 
-      });
+        error: 'グループ情報の取得に失敗しました' 
+      }, { status: 500 });
     }
 
-    // 最新に参加したグループを使用
-    const currentGroup = userGroups[0];
-    const groupId = currentGroup.group_id;
+    // ユーザーのロールを取得
+    const { data: userRole } = await supabase
+      .from('family_group_members')
+      .select('role')
+      .eq('group_id', targetGroupId)
+      .eq('user_id', session.user.id)
+      .single();
 
     // グループメンバー情報を取得
     const { data: members } = await supabase
       .from('family_group_members')
       .select('user_id, role, joined_at')
-      .eq('group_id', groupId);
+      .eq('group_id', targetGroupId);
 
     const membersWithProfiles = await Promise.all(
       (members || []).map(async (member) => {
@@ -81,7 +111,6 @@ export async function GET(request: NextRequest) {
           .eq('user_id', member.user_id)
           .single();
 
-        // 画像URLを正しく生成
         const avatarUrl = profile?.avatar_url ? getAvatarUrl(profile.avatar_url) : null;
 
         return {
@@ -109,7 +138,7 @@ export async function GET(request: NextRequest) {
         created_at,
         user_id
       `)
-      .eq('group_id', groupId)
+      .eq('group_id', targetGroupId)
       .order('is_completed', { ascending: true })
       .order('created_at', { ascending: false });
 
@@ -137,7 +166,6 @@ export async function GET(request: NextRequest) {
           completedByProfile = profile;
         }
 
-        // 画像URLを正しく生成
         const creatorAvatarUrl = creatorProfile?.avatar_url ? getAvatarUrl(creatorProfile.avatar_url) : null;
         const completedByAvatarUrl = completedByProfile?.avatar_url ? getAvatarUrl(completedByProfile.avatar_url) : null;
 
@@ -156,14 +184,14 @@ export async function GET(request: NextRequest) {
     );
 
     // グループ情報を整形
-    const groupInfo = {
-      ...currentGroup.family_groups,
-      userRole: currentGroup.role,
+    const group = {
+      ...groupInfo,
+      userRole: userRole?.role || 'member',
       members: membersWithProfiles
     };
 
     return NextResponse.json({ 
-      group: groupInfo,
+      group: group,
       items: itemsWithUsers,
       total: itemsWithUsers.length,
       completed: itemsWithUsers.filter(item => item.is_completed).length,
@@ -185,43 +213,64 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { item_name } = body;
+    const { item_name, group_id } = body;
 
     // バリデーション
     if (!item_name || item_name.length > 100) {
       return NextResponse.json({ error: 'アイテム名は1文字以上100文字以下で入力してください' }, { status: 400 });
     }
 
-    // ユーザーが参加しているグループを取得
-    const { data: userGroup, error: groupError } = await supabase
-      .from('family_group_members')
-      .select('group_id, role')
-      .eq('user_id', session.user.id)
-      .single();
+    let targetGroupId: string;
 
-    if (groupError || !userGroup) {
-      return NextResponse.json({ error: 'グループに参加していません' }, { status: 403 });
+    if (group_id) {
+      // 指定されたグループIDのアクセス権限をチェック
+      const { data: membership, error: membershipError } = await supabase
+        .from('family_group_members')
+        .select('group_id, role')
+        .eq('group_id', group_id)
+        .eq('user_id', session.user.id)
+        .single();
+
+      if (membershipError || !membership) {
+        return NextResponse.json({ 
+          error: 'このグループにアクセスする権限がありません' 
+        }, { status: 403 });
+      }
+
+      targetGroupId = group_id;
+    } else {
+      // グループIDが指定されていない場合は最新に参加したグループを使用
+      const { data: userGroup, error: groupError } = await supabase
+        .from('family_group_members')
+        .select('group_id, role')
+        .eq('user_id', session.user.id)
+        .order('joined_at', { ascending: false })
+        .single();
+
+      if (groupError || !userGroup) {
+        return NextResponse.json({ error: 'グループに参加していません' }, { status: 400 });
+      }
+
+      targetGroupId = userGroup.group_id;
     }
 
-    // データベースに保存
+    // アイテムを追加
     const { data: newItem, error: insertError } = await supabase
       .from('family_shopping_items')
-      .insert([
-        {
-          group_id: userGroup.group_id,
-          user_id: session.user.id,
-          item_name: item_name.trim(),
-          quantity: 1,
-          priority: 'normal',
-          is_completed: false
-        }
-      ])
+      .insert({
+        group_id: targetGroupId,
+        item_name: item_name.trim(),
+        user_id: session.user.id,
+        quantity: 1,
+        priority: 'normal',
+        is_completed: false
+      })
       .select()
       .single();
 
     if (insertError) {
-      console.error('Database error:', insertError);
-      return NextResponse.json({ error: 'データベースエラー' }, { status: 500 });
+      console.error('Insert error:', insertError);
+      return NextResponse.json({ error: 'アイテムの追加に失敗しました' }, { status: 500 });
     }
 
     // 作成者のプロフィール情報を取得
@@ -231,7 +280,6 @@ export async function POST(request: NextRequest) {
       .eq('user_id', session.user.id)
       .single();
 
-    // 画像URLを正しく生成
     const avatarUrl = profile?.avatar_url ? getAvatarUrl(profile.avatar_url) : null;
 
     // レスポンス用にデータを整形
@@ -255,7 +303,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// PUT: アイテムの完了状態を更新
+// PUT: 買い物アイテムの完了状態を更新
 export async function PUT(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -264,16 +312,16 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { item_id, is_completed } = body;
+    const { item_id, is_completed, group_id } = body;
 
-    if (!item_id) {
-      return NextResponse.json({ error: 'アイテムIDが必要です' }, { status: 400 });
+    if (!item_id || typeof is_completed !== 'boolean') {
+      return NextResponse.json({ error: '無効なパラメータです' }, { status: 400 });
     }
 
-    // アイテムの存在確認とグループメンバーシップ確認
+    // アイテムの存在確認とグループアクセス権限チェック
     const { data: item, error: itemError } = await supabase
       .from('family_shopping_items')
-      .select('id, group_id, is_completed')
+      .select('id, group_id')
       .eq('id', item_id)
       .single();
 
@@ -281,28 +329,24 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'アイテムが見つかりません' }, { status: 404 });
     }
 
-    // ユーザーがグループメンバーか確認
-    const { data: membership, error: membershipError } = await supabase
+    // グループメンバーシップを確認
+    const { data: membership } = await supabase
       .from('family_group_members')
       .select('group_id')
       .eq('group_id', item.group_id)
       .eq('user_id', session.user.id)
       .single();
 
-    if (membershipError || !membership) {
-      return NextResponse.json({ error: 'このアイテムを更新する権限がありません' }, { status: 403 });
+    if (!membership) {
+      return NextResponse.json({ error: 'このグループにアクセスする権限がありません' }, { status: 403 });
     }
 
-    // 完了状態を更新
-    const updateData: any = { is_completed };
-    
-    if (is_completed) {
-      updateData.completed_by = session.user.id;
-      updateData.completed_at = new Date().toISOString();
-    } else {
-      updateData.completed_by = null;
-      updateData.completed_at = null;
-    }
+    // アイテムを更新
+    const updateData: any = {
+      is_completed,
+      completed_by: is_completed ? session.user.id : null,
+      completed_at: is_completed ? new Date().toISOString() : null
+    };
 
     const { error: updateError } = await supabase
       .from('family_shopping_items')
@@ -311,7 +355,7 @@ export async function PUT(request: NextRequest) {
 
     if (updateError) {
       console.error('Update error:', updateError);
-      return NextResponse.json({ error: 'データベースエラー' }, { status: 500 });
+      return NextResponse.json({ error: '更新に失敗しました' }, { status: 500 });
     }
 
     return NextResponse.json({ 
@@ -324,7 +368,7 @@ export async function PUT(request: NextRequest) {
   }
 }
 
-// DELETE: アイテムの削除
+// DELETE: 買い物アイテムを削除
 export async function DELETE(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -334,32 +378,38 @@ export async function DELETE(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const itemId = searchParams.get('id');
+    const groupId = searchParams.get('groupId');
 
     if (!itemId) {
       return NextResponse.json({ error: 'アイテムIDが必要です' }, { status: 400 });
     }
 
-    // アイテムの所有者確認またはグループメンバー確認
-    const { data: item, error: fetchError } = await supabase
+    // アイテムの存在確認とグループアクセス権限チェック
+    const { data: item, error: itemError } = await supabase
       .from('family_shopping_items')
-      .select('user_id, group_id')
+      .select('id, group_id, user_id')
       .eq('id', itemId)
       .single();
 
-    if (fetchError || !item) {
+    if (itemError || !item) {
       return NextResponse.json({ error: 'アイテムが見つかりません' }, { status: 404 });
     }
 
-    // 作成者またはグループメンバーのみ削除可能
+    // グループメンバーシップを確認
     const { data: membership } = await supabase
       .from('family_group_members')
-      .select('group_id')
+      .select('group_id, role')
       .eq('group_id', item.group_id)
       .eq('user_id', session.user.id)
       .single();
 
     if (!membership) {
-      return NextResponse.json({ error: '削除権限がありません' }, { status: 403 });
+      return NextResponse.json({ error: 'このグループにアクセスする権限がありません' }, { status: 403 });
+    }
+
+    // 作成者または管理者のみ削除可能
+    if (item.user_id !== session.user.id && membership.role !== 'owner') {
+      return NextResponse.json({ error: '削除する権限がありません' }, { status: 403 });
     }
 
     // アイテムを削除
@@ -370,7 +420,7 @@ export async function DELETE(request: NextRequest) {
 
     if (deleteError) {
       console.error('Delete error:', deleteError);
-      return NextResponse.json({ error: 'データベースエラー' }, { status: 500 });
+      return NextResponse.json({ error: '削除に失敗しました' }, { status: 500 });
     }
 
     return NextResponse.json({ message: 'アイテムが削除されました' });
