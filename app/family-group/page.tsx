@@ -607,7 +607,7 @@ ${data.inviteLink}
                               className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white"
                             >
                               <List className="h-4 w-4 mr-1" />
-                              共有リスト
+                              共有メモ
                             </Button>
                           </div>
 
@@ -740,6 +740,7 @@ ${data.inviteLink}
                 placeholder="例: 田中家の買い物"
                 maxLength={50}
                 className="mt-1"
+                style={{ fontSize: '16px' }}
               />
               <p className="text-xs text-gray-500 mt-1">
                 {groupName.length}/50文字
@@ -905,7 +906,7 @@ ${data.inviteLink}
                 この操作は取り消すことができません。以下のデータがすべて削除されます：
               </p>
               <ul className="text-sm text-red-700 list-disc list-inside space-y-1">
-                <li>グループ内のすべての買い物メモ</li>
+                <li>グループ内のすべてのメモ</li>
                 <li>メンバー情報</li>
                 <li>未完了の招待</li>
               </ul>

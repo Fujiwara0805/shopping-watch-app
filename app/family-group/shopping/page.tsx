@@ -498,7 +498,7 @@ export default function FamilyShoppingPage() {
             size="lg"
           >
             <Plus className="h-5 w-5 mr-2" />
-            リストを追加
+            メモを追加
           </Button>
           <Button
             onClick={handleRefresh}
@@ -561,11 +561,11 @@ export default function FamilyShoppingPage() {
           {localItems.length === 0 ? (
             <div className="text-center py-12 px-6 bg-secondary/20 rounded-xl border-2 border-dashed border-secondary/30">
               <ListTodo strokeWidth={1.5} className="mx-auto h-16 w-16 text-muted-foreground/40 mb-4" />
-              <h3 className="text-lg font-semibold text-foreground/80 mb-2">グループで共有する<br />リストを作成しましょう！</h3>
+              <h3 className="text-lg font-semibold text-foreground/80 mb-2">グループで共有する<br />メモを作成しましょう！</h3>
               <p className="text-sm text-muted-foreground">
-                「リストを追加」ボタンを使って<br />
-                買い物メモや家事の分担、作業分担などの<br />
-                トゥードゥリストを管理できます。
+                「メモを追加」ボタンを使って<br />
+                買い物メモや家事の分担、<br />
+                作業分担などのTODO管理できます。
               </p>
             </div>
           ) : (
@@ -774,6 +774,7 @@ export default function FamilyShoppingPage() {
               onChange={(e) => setNewItemName(e.target.value)}
               placeholder="例: 牛乳、掃除機かけ、資料作成"
               className="text-base"
+              style={{ fontSize: '16px' }}
             />
           </div>
           
@@ -786,6 +787,7 @@ export default function FamilyShoppingPage() {
               onChange={(e) => setNewItemMemo(e.target.value)}
               placeholder="例: 低脂肪1リットル、リビングと寝室、来週の会議用"
               className="text-sm resize-none"
+              style={{ fontSize: '16px' }}
               rows={2}
             />
           </div>

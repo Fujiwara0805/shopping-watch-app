@@ -37,7 +37,7 @@ export function AppHeader() {
       case '/family-group':
         return 'グループ管理';
       case '/family-group/shopping':
-        return '共有リスト';
+        return '共有メモ';
       case '/memo':
         return '買い物メモ';
       case '/flyers':
