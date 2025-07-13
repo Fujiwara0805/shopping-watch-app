@@ -4,14 +4,13 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { motion } from 'framer-motion';
-import { Plus, Users, Mail, Copy, UserPlus, ShoppingCart, Share2, Check, ChevronDown, ChevronRight, ArrowLeft, Sparkles, Trash2, LogOut, AlertTriangle, Loader2 } from 'lucide-react';
+import { Plus, Users, Mail, Copy, UserPlus, List, Share2, Check, ChevronDown, ChevronRight, ArrowLeft, Sparkles, Trash2, LogOut, AlertTriangle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { CustomModal } from '@/components/ui/custom-modal';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Textarea } from '@/components/ui/textarea';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useToast } from '@/hooks/use-toast';
 import AppLayout from '@/components/layout/app-layout';
@@ -257,14 +256,15 @@ export default function FamilyGroupPage() {
       }
 
       const data = await response.json();
-      const message = `🛒 ${data.groupName}の買い物グループに招待されました！
+      const message = `📋 ${data.groupName}のTODOグループに招待されました！
 
-家族や友人と買い物メモを共有して、効率的にお買い物しましょう✨
+家族や友人とTODOリストを共有して、効率的にタスクを管理しましょう✨
+買い物メモ、家事の分担、作業リストなど何でも管理できます！
 
 参加はこちらから：
 ${data.inviteLink}
 
-#買い物アプリ #家族グループ #トクドクアプリ`;
+#TODOアプリ #家族グループ #トクドクアプリ`;
       
       setInviteLink(data.inviteLink);
       setInviteMessage(message);
@@ -483,10 +483,9 @@ ${data.inviteLink}
                 </div>
                 
                 <div className="space-y-2">
-                  <h1 className="text-2xl font-bold text-blue-900">家族グループ管理</h1>
                   <p className="text-base text-blue-800 font-medium flex items-center justify-center space-x-1">
                     <Sparkles className="h-4 w-4 text-yellow-500" />
-                    <span>家族や友人とのグループを作成して、<br />買い物メモを共有しましょう</span>
+                    <span>家族や友人とグループを作成して、<br />メモを共有しましょう！</span>
                     <Sparkles className="h-4 w-4 text-yellow-500" />
                   </p>
                 </div>
@@ -494,8 +493,8 @@ ${data.inviteLink}
                 <div className="flex items-center justify-center space-x-2 text-sm text-blue-700">
                   <div className="w-8 h-0.5 bg-blue-300"></div>
                   <span className="font-medium text-center">
-                    グループを作成して招待を送信<br />
-                    みんなで買い物リストを共有できます
+                    買い物メモはもちろん、<br />家事の分担や作業リストを<br />
+                    グループで共有しよう
                   </span>
                   <div className="w-8 h-0.5 bg-blue-300"></div>
                 </div>
@@ -540,7 +539,8 @@ ${data.inviteLink}
                     グループがありません
                   </h3>
                   <p className="text-blue-600 mb-4">
-                    最初のグループを作成して、家族や友人と買い物メモを共有しましょう
+                    最初のグループを作成して、家族や友人と<br />
+                    TODOリストを共有しましょう
                   </p>
                   <Button
                     onClick={() => setIsCreateModalOpen(true)}
@@ -588,11 +588,6 @@ ${data.inviteLink}
                                 </p>
                               </div>
                             </div>
-                            {group.userRole === 'owner' && (
-                              <Badge className="bg-gradient-to-r from-yellow-400 to-orange-400 text-white">
-                                オーナー
-                              </Badge>
-                            )}
                           </div>
                           
                           {/* ボタン群 */}
@@ -611,7 +606,7 @@ ${data.inviteLink}
                               onClick={() => router.push(`/family-group/shopping?groupId=${group.id}`)}
                               className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white"
                             >
-                              <ShoppingCart className="h-4 w-4 mr-1" />
+                              <List className="h-4 w-4 mr-1" />
                               共有リスト
                             </Button>
                           </div>

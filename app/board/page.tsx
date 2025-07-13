@@ -393,18 +393,6 @@ export default function BoardPage() {
                   <span className="font-medium">今日買うものを入力すると、<br />自動的に買い物メモに追加されます。</span>
                   <div className="w-8 h-0.5 bg-amber-300"></div>
                 </div>
-
-                {/* ログイン者限定掲示板の説明を更新 */}
-                <div className="mt-3 pt-2 border-t border-amber-300">
-                  <div className="flex items-center justify-center space-x-2 text-sm text-blue-700 bg-blue-50/50 rounded-md p-2">
-                    <Users className="h-4 w-4 text-blue-600" />
-                    <span className="font-medium text-center">
-                      家族掲示板では<br />
-                      <strong>グループメンバー限定</strong>で投稿を共有できます
-                    </span>
-                    <Users className="h-4 w-4 text-blue-600" />
-                  </div>
-                </div>
               </div>
             </div>
             
@@ -421,11 +409,11 @@ export default function BoardPage() {
               <Button
                 variant="default"
                 size="sm"
-                onClick={() => router.push('/family-group')}
-                className="bg-[#3b82f6] hover:bg-[#2563eb] text-white font-medium border-0 shadow-sm"
+                onClick={handleGoToTimeline}
+                className="bg-[#73370c] hover:bg-[#5c2a0a] text-white font-medium border-0 shadow-sm"
               >
-                <Users className="h-4 w-4 mr-1" />
-                家族掲示板
+                <Calendar className="h-4 w-4 mr-1" />
+                タイムライン
               </Button>
               <Button
                 variant="default"
