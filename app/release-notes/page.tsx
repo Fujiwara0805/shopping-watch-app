@@ -106,12 +106,52 @@ const getReleaseTypeBadge = (type: ReleaseType) => {
 // サンプルリリースノートデータ
 const releaseNotes: ReleaseNote[] = [
   {
+    version: '1.0.6',
+    date: '2025-07-13',
+    type: 'minor',
+    title: '家族グループ機能の追加',
+    description: '家族や友人とTODOリストを共有できる「家族グループ機能」を追加しました！買い物メモはもちろん、家事の分担や作業リストをグループで管理できるようになりました。',
+    isLatest: true,
+    changes: [
+      {
+        type: 'new',
+        title: '家族グループ作成・管理機能',
+        description: '家族や友人とのグループを作成し、メンバーを招待できるようになりました。オーナーはグループを削除でき、メンバーは自由に退出できます。'
+      },
+      {
+        type: 'new',
+        title: '共有リスト機能',
+        description: 'グループメンバー間でTODOリストを共有できるようになりました。買い物メモ、家事の分担、作業リストなど様々な用途で活用できます。'
+      },
+      {
+        type: 'new',
+        title: 'リアルタイム同期',
+        description: 'グループ内のリスト変更はリアルタイムで同期され、誰が追加・完了したかも表示されます。オフライン時でもローカルで操作でき、オンライン復帰時に自動同期されます。'
+      },
+      {
+        type: 'new',
+        title: '招待機能',
+        description: 'メールやSNSを通じてグループメンバーを招待できます。招待リンクの生成やメッセージの共有が簡単に行えます。'
+      },
+      {
+        type: 'new',
+        title: 'メモ機能の強化',
+        description: '共有リストのアイテムにメモを追加できるようになりました。詳細な情報や補足事項を記録して、より効率的な共有が可能です。'
+      },
+      {
+        type: 'improvement',
+        title: 'ナビゲーションの改善',
+        description: '買い物メモページからグループ管理画面へ直接アクセスできるボタンを追加しました。グループ機能の利用がより便利になりました。'
+      }
+    ]
+  },
+  {
     version: '1.0.5',
     date: '2025-07-09',
     type: 'minor',
     title: '称号＆ランキングシステムの導入',
     description: 'ユーザー同士で「いいね」の数を競い合う「称号＆ランキング」システムを導入しました！月間ランキングで上位を目指し、特別な称号を手に入れましょう。',
-    isLatest: true,
+    isLatest: false,
     changes: [
       {
         type: 'new',
@@ -467,7 +507,7 @@ export default function ReleaseNotesPage() {
         >
           <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 text-center border border-blue-200">
             <Smartphone className="h-6 w-6 mx-auto text-blue-600 mb-2" />
-            <p className="text-lg font-bold text-blue-900">v1.0.5</p>
+            <p className="text-lg font-bold text-blue-900">v1.0.6</p>
             <p className="text-xs text-blue-700">現在のバージョン</p>
           </div>
           <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4 text-center border border-green-200">
