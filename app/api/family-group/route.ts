@@ -168,3 +168,115 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'サーバーエラー' }, { status: 500 });
   }
 }
+
+// DELETE: グループの削除または退出
+export async function DELETE(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'ログインが必要です' }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const groupId = searchParams.get('groupId');
+    const action = searchParams.get('action'); // 'delete' または 'leave'
+
+    if (!groupId) {
+      return NextResponse.json({ error: 'グループIDが必要です' }, { status: 400 });
+    }
+
+    if (!action || !['delete', 'leave'].includes(action)) {
+      return NextResponse.json({ error: '無効なアクションです' }, { status: 400 });
+    }
+
+    // グループメンバーシップを確認
+    const { data: membership, error: membershipError } = await supabase
+      .from('family_group_members')
+      .select('role')
+      .eq('group_id', groupId)
+      .eq('user_id', session.user.id)
+      .single();
+
+    if (membershipError || !membership) {
+      return NextResponse.json({ error: 'グループが見つからないか、権限がありません' }, { status: 403 });
+    }
+
+    if (action === 'delete') {
+      // グループ削除（オーナーのみ）
+      if (membership.role !== 'owner') {
+        return NextResponse.json({ error: 'グループを削除する権限がありません' }, { status: 403 });
+      }
+
+      // 関連データを削除（カスケード削除）
+      // 1. 買い物アイテムを削除
+      const { error: itemsError } = await supabase
+        .from('family_shopping_items')
+        .delete()
+        .eq('group_id', groupId);
+
+      if (itemsError) {
+        console.error('Shopping items deletion error:', itemsError);
+        return NextResponse.json({ error: '買い物アイテムの削除に失敗しました' }, { status: 500 });
+      }
+
+      // 2. 招待を削除
+      const { error: invitationsError } = await supabase
+        .from('family_group_invitations')
+        .delete()
+        .eq('group_id', groupId);
+
+      if (invitationsError) {
+        console.error('Invitations deletion error:', invitationsError);
+        return NextResponse.json({ error: '招待の削除に失敗しました' }, { status: 500 });
+      }
+
+      // 3. メンバーを削除
+      const { error: membersError } = await supabase
+        .from('family_group_members')
+        .delete()
+        .eq('group_id', groupId);
+
+      if (membersError) {
+        console.error('Members deletion error:', membersError);
+        return NextResponse.json({ error: 'メンバーの削除に失敗しました' }, { status: 500 });
+      }
+
+      // 4. グループを削除
+      const { error: groupError } = await supabase
+        .from('family_groups')
+        .delete()
+        .eq('id', groupId);
+
+      if (groupError) {
+        console.error('Group deletion error:', groupError);
+        return NextResponse.json({ error: 'グループの削除に失敗しました' }, { status: 500 });
+      }
+
+      return NextResponse.json({ message: 'グループを削除しました' });
+
+    } else if (action === 'leave') {
+      // グループ退出（メンバーのみ）
+      if (membership.role === 'owner') {
+        return NextResponse.json({ error: 'オーナーはグループから退出できません。グループを削除してください。' }, { status: 403 });
+      }
+
+      // メンバーシップを削除
+      const { error: leaveError } = await supabase
+        .from('family_group_members')
+        .delete()
+        .eq('group_id', groupId)
+        .eq('user_id', session.user.id);
+
+      if (leaveError) {
+        console.error('Leave group error:', leaveError);
+        return NextResponse.json({ error: 'グループからの退出に失敗しました' }, { status: 500 });
+      }
+
+      return NextResponse.json({ message: 'グループから退出しました' });
+    }
+
+  } catch (error) {
+    console.error('API error:', error);
+    return NextResponse.json({ error: 'サーバーエラー' }, { status: 500 });
+  }
+}

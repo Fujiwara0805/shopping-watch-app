@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     const inviterName = inviterProfile?.display_name || session.user.name || 'ユーザー';
-    const inviteLink = `${process.env.NEXTAUTH_URL}/family-group/join/${token}`;
+    const inviteLink = `https://tokudoku.com/family-group/join/${token}`;
 
     // generateOnlyの場合は、リンクのみを返す
     if (generateOnly) {

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { motion } from 'framer-motion';
-import { Plus, Users, Mail, Copy, UserPlus, ShoppingCart, Share2, Check, ChevronDown, ChevronRight, ArrowLeft, Sparkles } from 'lucide-react';
+import { Plus, Users, Mail, Copy, UserPlus, ShoppingCart, Share2, Check, ChevronDown, ChevronRight, ArrowLeft, Sparkles, Trash2, LogOut, AlertTriangle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -51,6 +51,27 @@ export default function FamilyGroupPage() {
   const [selectedGroupName, setSelectedGroupName] = useState('');
   const [copiedMessage, setCopiedMessage] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+  const [deletingGroups, setDeletingGroups] = useState<Set<string>>(new Set());
+  const [leavingGroups, setLeavingGroups] = useState<Set<string>>(new Set());
+  const [deleteConfirmModal, setDeleteConfirmModal] = useState<{
+    isOpen: boolean;
+    groupId: string;
+    groupName: string;
+  }>({
+    isOpen: false,
+    groupId: '',
+    groupName: ''
+  });
+  
+  const [leaveConfirmModal, setLeaveConfirmModal] = useState<{
+    isOpen: boolean;
+    groupId: string;
+    groupName: string;
+  }>({
+    isOpen: false,
+    groupId: '',
+    groupName: ''
+  });
 
   // 未ログインの場合はリダイレクト
   useEffect(() => {
@@ -300,6 +321,130 @@ ${data.inviteLink}
     setExpandedGroups(newExpanded);
   };
 
+  // グループ削除
+  const handleDeleteGroup = async (groupId: string) => {
+    if (deletingGroups.has(groupId)) return;
+
+    setDeletingGroups(prev => new Set(prev).add(groupId));
+    
+    let loadingTimeout: NodeJS.Timeout | undefined;
+    
+    try {
+      // 2秒後にローディング表示
+      loadingTimeout = setTimeout(() => {
+        if (deletingGroups.has(groupId)) {
+          toast({
+            title: "処理中",
+            description: "グループを削除しています...",
+            duration: 1000,
+          });
+        }
+      }, 2000);
+
+      const response = await fetch(`/api/family-group?groupId=${groupId}&action=delete`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'グループの削除に失敗しました');
+      }
+
+      toast({
+        title: "✅ グループ削除完了",
+        description: "グループを削除しました",
+        duration: 1000,
+      });
+
+      await fetchGroups();
+    } catch (error: any) {
+      toast({
+        title: "エラー",
+        description: error.message,
+        variant: "destructive",
+        duration: 1000,
+      });
+    } finally {
+      if (loadingTimeout) clearTimeout(loadingTimeout);
+      setDeletingGroups(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(groupId);
+        return newSet;
+      });
+    }
+  };
+
+  // グループ退出
+  const handleLeaveGroup = async (groupId: string) => {
+    if (leavingGroups.has(groupId)) return;
+
+    setLeavingGroups(prev => new Set(prev).add(groupId));
+    
+    let loadingTimeout: NodeJS.Timeout | undefined;
+    
+    try {
+      // 2秒後にローディング表示
+      loadingTimeout = setTimeout(() => {
+        if (leavingGroups.has(groupId)) {
+          toast({
+            title: "処理中",
+            description: "グループから退出しています...",
+            duration: 1000,
+          });
+        }
+      }, 2000);
+
+      const response = await fetch(`/api/family-group?groupId=${groupId}&action=leave`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'グループからの退出に失敗しました');
+      }
+
+      toast({
+        title: "✅ 退出完了",
+        description: "グループから退出しました",
+        duration: 1000,
+      });
+
+      await fetchGroups();
+    } catch (error: any) {
+      toast({
+        title: "エラー",
+        description: error.message,
+        variant: "destructive",
+        duration: 1000,
+      });
+    } finally {
+      if (loadingTimeout) clearTimeout(loadingTimeout);
+      setLeavingGroups(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(groupId);
+        return newSet;
+      });
+    }
+  };
+
+  // グループ削除確認モーダルを開く
+  const openDeleteConfirmModal = (groupId: string, groupName: string) => {
+    setDeleteConfirmModal({
+      isOpen: true,
+      groupId,
+      groupName
+    });
+  };
+
+  // グループ退出確認モーダルを開く
+  const openLeaveConfirmModal = (groupId: string, groupName: string) => {
+    setLeaveConfirmModal({
+      isOpen: true,
+      groupId,
+      groupName
+    });
+  };
+
   if (status === 'loading' || loading) {
     return (
       <AppLayout>
@@ -470,6 +615,51 @@ ${data.inviteLink}
                               共有リスト
                             </Button>
                           </div>
+
+                          {/* グループ管理ボタン */}
+                          <div className="pt-2 border-t border-blue-100">
+                            {group.userRole === 'owner' ? (
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                className="w-full"
+                                disabled={deletingGroups.has(group.id)}
+                                onClick={() => openDeleteConfirmModal(group.id, group.name)}
+                              >
+                                {deletingGroups.has(group.id) ? (
+                                  <>
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                    削除中...
+                                  </>
+                                ) : (
+                                  <>
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    グループを削除
+                                  </>
+                                )}
+                              </Button>
+                            ) : (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="w-full border-gray-300 text-gray-700 hover:bg-gray-50"
+                                disabled={leavingGroups.has(group.id)}
+                                onClick={() => openLeaveConfirmModal(group.id, group.name)}
+                              >
+                                {leavingGroups.has(group.id) ? (
+                                  <>
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                    退出中...
+                                  </>
+                                ) : (
+                                  <>
+                                    <LogOut className="h-4 w-4 mr-2" />
+                                    グループから退出
+                                  </>
+                                )}
+                              </Button>
+                            )}
+                          </div>
                           
                           {/* メンバー（トグル表示） */}
                           <Collapsible
@@ -615,15 +805,13 @@ ${data.inviteLink}
                   <label className="text-sm font-medium text-gray-700 mb-2 block">
                     招待メッセージ
                   </label>
-                  <Textarea
-                    value={inviteMessage}
-                    onChange={(e) => setInviteMessage(e.target.value)}
-                    placeholder="招待メッセージを編集できます..."
-                    className="min-h-[120px] resize-none text-sm mb-2"
-                    rows={6}
-                  />
-                  <p className="text-xs text-gray-500 mt-2 ">
-                    メッセージは自由に編集できます
+                  <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                    <pre className="text-sm text-gray-700 whitespace-pre-wrap font-sans">
+                      {inviteMessage}
+                    </pre>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">
+                    このメッセージをコピーしてSNSで共有してください
                   </p>
                 </div>
                 
@@ -703,6 +891,91 @@ ${data.inviteLink}
               </motion.div>
             </TabsContent>
           </Tabs>
+        </CustomModal>
+
+        {/* グループ削除確認モーダル */}
+        <CustomModal
+          isOpen={deleteConfirmModal.isOpen}
+          onClose={() => setDeleteConfirmModal({ isOpen: false, groupId: '', groupName: '' })}
+          title="グループを削除しますか？"
+          description={`「${deleteConfirmModal.groupName}」を完全に削除します。`}
+        >
+          <div className="space-y-4">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <div className="flex items-center space-x-2 mb-2">
+                <AlertTriangle className="h-5 w-5 text-red-500" />
+                <span className="font-medium text-red-800">警告</span>
+              </div>
+              <p className="text-sm text-red-700 mb-2">
+                この操作は取り消すことができません。以下のデータがすべて削除されます：
+              </p>
+              <ul className="text-sm text-red-700 list-disc list-inside space-y-1">
+                <li>グループ内のすべての買い物メモ</li>
+                <li>メンバー情報</li>
+                <li>未完了の招待</li>
+              </ul>
+            </div>
+            
+            <div className="flex space-x-3 pt-4">
+              <Button
+                variant="outline"
+                onClick={() => setDeleteConfirmModal({ isOpen: false, groupId: '', groupName: '' })}
+                className="flex-1"
+                disabled={deletingGroups.has(deleteConfirmModal.groupId)}
+              >
+                キャンセル
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => {
+                  handleDeleteGroup(deleteConfirmModal.groupId);
+                  setDeleteConfirmModal({ isOpen: false, groupId: '', groupName: '' });
+                }}
+                disabled={deletingGroups.has(deleteConfirmModal.groupId)}
+                className="flex-1"
+              >
+                削除する
+              </Button>
+            </div>
+          </div>
+        </CustomModal>
+
+        {/* グループ退出確認モーダル */}
+        <CustomModal
+          isOpen={leaveConfirmModal.isOpen}
+          onClose={() => setLeaveConfirmModal({ isOpen: false, groupId: '', groupName: '' })}
+          title="グループから退出しますか？"
+          description={`「${leaveConfirmModal.groupName}」から退出します。`}
+        >
+          <div className="space-y-4">
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+              <p className="text-sm text-yellow-800">
+                退出すると、このグループの買い物メモにアクセスできなくなります。
+                再度参加するには、オーナーからの招待が必要です。
+              </p>
+            </div>
+            
+            <div className="flex space-x-3 pt-4">
+              <Button
+                variant="outline"
+                onClick={() => setLeaveConfirmModal({ isOpen: false, groupId: '', groupName: '' })}
+                className="flex-1"
+                disabled={leavingGroups.has(leaveConfirmModal.groupId)}
+              >
+                キャンセル
+              </Button>
+              <Button
+                onClick={() => {
+                  handleLeaveGroup(leaveConfirmModal.groupId);
+                  setLeaveConfirmModal({ isOpen: false, groupId: '', groupName: '' });
+                }}
+                disabled={leavingGroups.has(leaveConfirmModal.groupId)}
+                className="flex-1"
+              >
+                退出する
+              </Button>
+            </div>
+          </div>
         </CustomModal>
       </div>
     </AppLayout>

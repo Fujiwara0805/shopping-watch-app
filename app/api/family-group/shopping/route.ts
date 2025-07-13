@@ -204,7 +204,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST: 新しい買い物アイテムを追加
+// POST: 家族グループの買い物メモを追加
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -213,11 +213,16 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { item_name, group_id } = body;
+    const { item_name, memo, group_id } = body;
 
     // バリデーション
     if (!item_name || item_name.length > 100) {
       return NextResponse.json({ error: 'アイテム名は1文字以上100文字以下で入力してください' }, { status: 400 });
+    }
+
+    // メモのバリデーション
+    if (memo && memo.length > 500) {
+      return NextResponse.json({ error: 'メモは500文字以下で入力してください' }, { status: 400 });
     }
 
     let targetGroupId: string;
@@ -254,12 +259,13 @@ export async function POST(request: NextRequest) {
       targetGroupId = userGroup.group_id;
     }
 
-    // アイテムを追加
+    // アイテムを追加（メモフィールドを含む）
     const { data: newItem, error: insertError } = await supabase
       .from('family_shopping_items')
       .insert({
         group_id: targetGroupId,
         item_name: item_name.trim(),
+        memo: memo ? memo.trim() : null,
         user_id: session.user.id,
         quantity: 1,
         priority: 'normal',
@@ -280,26 +286,24 @@ export async function POST(request: NextRequest) {
       .eq('user_id', session.user.id)
       .single();
 
-    const avatarUrl = profile?.avatar_url ? getAvatarUrl(profile.avatar_url) : null;
-
-    // レスポンス用にデータを整形
-    const formattedItem = {
+    const responseItem = {
       ...newItem,
       creator: {
-        display_name: profile?.display_name || '匿名ユーザー',
-        avatar_url: avatarUrl
+        display_name: profile?.display_name || '匿名',
+        avatar_url: getAvatarUrl(profile?.avatar_url || null)
       },
       completed_by_profile: null
     };
 
+    console.log('Item created successfully:', responseItem);
+    
     return NextResponse.json({ 
-      item: formattedItem,
+      item: responseItem,
       message: 'アイテムが追加されました' 
     }, { status: 201 });
-
   } catch (error) {
-    console.error('API error:', error);
-    return NextResponse.json({ error: 'サーバーエラー' }, { status: 500 });
+    console.error('POST error:', error);
+    return NextResponse.json({ error: 'サーバーエラーが発生しました' }, { status: 500 });
   }
 }
 

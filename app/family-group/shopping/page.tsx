@@ -2,16 +2,40 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, Plus, Trash2, History, WifiOff, Loader2, Edit, LogIn, X, CheckSquare, Sparkles, PackageCheck, ShoppingBag, MessageSquare, Users, ArrowLeft, Crown } from 'lucide-react';
+import { Check, Plus, Trash2, History, WifiOff, Loader2, Edit, LogIn, X, CheckSquare, Sparkles, PackageCheck, ShoppingBag, MessageSquare, Users, ArrowLeft, Crown, StickyNote, ListTodo, Home, Briefcase } from 'lucide-react';
 import AppLayout from '@/components/layout/app-layout';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { useSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
+import { useLocalStorage } from 'usehooks-ts';
+import { CustomModal } from '@/components/ui/custom-modal';
 
-// 家族共有の買い物アイテム
+// ローカルストレージ用のアイテム（拡張版）
+interface LocalShoppingItem {
+  id: string;
+  item_name: string;
+  memo?: string;
+  is_completed: boolean;
+  created_at: string;
+  user_id: string; // 作成者ID
+  completed_by?: string; // 完了者ID
+  completed_at?: string; // 完了日時
+  synced: boolean; // サーバーと同期済みかどうか
+  creator: {
+    display_name: string;
+    avatar_url?: string;
+  };
+  completed_by_profile?: {
+    display_name: string;
+    avatar_url?: string;
+  } | null;
+}
+
+// サーバーから取得するアイテム（既存）
 interface FamilyShoppingItem {
   id: string;
   item_name: string;
@@ -55,19 +79,38 @@ export default function FamilyShoppingPage() {
   const { toast } = useToast();
   
   const [currentGroup, setCurrentGroup] = useState<FamilyGroup | null>(null);
-  const [items, setItems] = useState<FamilyShoppingItem[]>([]);
-  const [newItemName, setNewItemName] = useState('');
   const [loading, setLoading] = useState(true);
-  const [isMutating, setIsMutating] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
   
-  // 個別のローディング状態を管理
-  const [addingItem, setAddingItem] = useState(false);
-  const [togglingItems, setTogglingItems] = useState<Set<string>>(new Set());
-  const [deletingItems, setDeletingItems] = useState<Set<string>>(new Set());
-
-  // URLパラメータからグループIDを取得
+  // ローカルストレージベースの高速リスト
   const groupId = searchParams.get('groupId');
+  const [localItems, setLocalItems] = useLocalStorage<LocalShoppingItem[]>(
+    `family-shopping-${groupId || 'default'}`, 
+    []
+  );
+  
+  // UI状態
+  const [newItemName, setNewItemName] = useState('');
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [newItemMemo, setNewItemMemo] = useState('');
+  const [syncingItems, setSyncingItems] = useState<Set<string>>(new Set());
+
+  // 現在のユーザープロフィール情報を取得
+  const getCurrentUserProfile = () => {
+    if (!session?.user) return null;
+    
+    const currentMember = currentGroup?.members.find(
+      member => member.user_id === session.user.id
+    );
+    
+    return currentMember ? {
+      display_name: currentMember.app_profiles?.display_name || '匿名',
+      avatar_url: currentMember.app_profiles?.avatar_url
+    } : {
+      display_name: '匿名',
+      avatar_url: undefined
+    };
+  };
 
   // 未ログインの場合はリダイレクト
   useEffect(() => {
@@ -88,8 +131,8 @@ export default function FamilyShoppingPage() {
     };
   }, []);
 
-  // データを取得
-  const fetchData = useCallback(async () => {
+  // サーバーデータを取得
+  const fetchServerData = useCallback(async () => {
     if (status !== 'authenticated' || !session?.user?.id) {
       setLoading(false);
       return;
@@ -112,7 +155,9 @@ export default function FamilyShoppingPage() {
       }
       
       setCurrentGroup(data.group);
-      setItems(data.items || []);
+      
+      // サーバーデータとローカルデータを同期
+      syncWithServer(data.items || []);
     } catch (error) {
       console.error('Data fetch error:', error);
       toast({
@@ -126,188 +171,250 @@ export default function FamilyShoppingPage() {
     }
   }, [status, session, router, toast, groupId]);
 
+  // サーバーデータとローカルデータを同期
+  const syncWithServer = (serverData: FamilyShoppingItem[]) => {
+    const serverItemIds = new Set(serverData.map(item => item.id));
+    
+    // ローカルの未同期アイテムを保持し、サーバーデータを統合
+    setLocalItems(prev => {
+      const unsyncedItems = prev.filter(item => !item.synced);
+      
+      // サーバーデータをローカル形式に変換
+      const serverAsLocal: LocalShoppingItem[] = serverData.map(item => ({
+        id: item.id,
+        item_name: item.item_name,
+        memo: item.memo || undefined,
+        is_completed: item.is_completed,
+        created_at: item.created_at,
+        user_id: item.user_id,
+        completed_by: item.completed_by || undefined,
+        completed_at: item.completed_at || undefined,
+        synced: true,
+        creator: item.creator,
+        completed_by_profile: item.completed_by_profile
+      }));
+      
+      // 未同期アイテムと同期済みアイテムを結合
+      const allItems = [...unsyncedItems, ...serverAsLocal];
+      
+      // 作成日時でソート（新しい順）
+      return allItems.sort((a, b) => {
+        if (a.is_completed !== b.is_completed) {
+          return a.is_completed ? 1 : -1; // 未完了を上に
+        }
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      });
+    });
+  };
+
   // 初回読み込み
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    fetchServerData();
+  }, [fetchServerData]);
 
-  // アイテムの追加
-  const handleAddItemFromInput = async () => {
-    if (!isOnline || isMutating || newItemName.trim() === '' || addingItem) return;
+  // アイテムの追加（ローカル優先）
+  const handleAddItem = async () => {
+    if (newItemName.trim() === '' || !session?.user?.id) return;
     
-    setAddingItem(true);
-    setIsMutating(true);
+    const currentUserProfile = getCurrentUserProfile();
+    if (!currentUserProfile) return;
+
+    const newItem: LocalShoppingItem = {
+      id: crypto.randomUUID(),
+      item_name: newItemName.trim(),
+      memo: newItemMemo.trim() || undefined,
+      is_completed: false,
+      created_at: new Date().toISOString(),
+      user_id: session.user.id,
+      synced: false,
+      creator: currentUserProfile
+    };
     
-    let loadingTimeout: NodeJS.Timeout | undefined;
+    // ローカルに即座に追加
+    setLocalItems(prev => [newItem, ...prev]);
+    setNewItemName('');
+    setNewItemMemo('');
+    setIsAddModalOpen(false);
+    
+    toast({
+      title: "✅アイテムを追加しました",
+      description: newItem.item_name,
+      duration: 1000,
+    });
+    
+    // 並行してサーバーに送信
+    if (isOnline && currentGroup) {
+      syncItemToServer(newItem);
+    }
+  };
+
+  // サーバーへの同期
+  const syncItemToServer = async (item: LocalShoppingItem) => {
+    setSyncingItems(prev => new Set(prev).add(item.id));
     
     try {
-      // 2秒後にローディング表示
-      loadingTimeout = setTimeout(() => {
-        if (addingItem) {
-          toast({
-            title: "処理中",
-            description: "✅アイテムを追加しています",
-            duration: 1000,
-          });
-        }
-      }, 2000);
-
       const response = await fetch('/api/family-group/shopping', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          item_name: newItemName.trim(),
+          item_name: item.item_name,
+          memo: item.memo,
           group_id: groupId || currentGroup?.id
         }),
       });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'アイテムの追加に失敗しました');
+      if (response.ok) {
+        const data = await response.json();
+        
+        // ローカルアイテムを同期済みに更新
+        setLocalItems(prev => prev.map(localItem => 
+          localItem.id === item.id 
+            ? { 
+                ...localItem, 
+                id: data.item.id, 
+                synced: true,
+                creator: data.item.creator // サーバーから正確なプロフィール情報を取得
+              }
+            : localItem
+        ));
+      } else {
+        throw new Error('サーバー同期に失敗しました');
       }
-
-      setNewItemName('');
-      await fetchData();
-      
+    } catch (error) {
+      console.error('Sync error:', error);
       toast({
-        title: "成功",
-        description: "✅アイテムを追加しました",
-        duration: 1000,
-      });
-    } catch (error: any) {
-      toast({
-        title: "エラー",
-        description: error.message,
+        title: "同期エラー",
+        description: "サーバーとの同期に失敗しました",
         variant: "destructive",
         duration: 1000,
       });
     } finally {
-      if (loadingTimeout) clearTimeout(loadingTimeout);
-      setAddingItem(false);
-      setIsMutating(false);
+      setSyncingItems(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(item.id);
+        return newSet;
+      });
     }
   };
 
   // アイテムの完了状態を切り替え
   const handleToggleCheck = async (id: string) => {
-    if (!isOnline || togglingItems.has(id)) return;
+    const item = localItems.find(item => item.id === id);
+    if (!item || !session?.user?.id) return;
 
-    const item = items.find(item => item.id === id);
-    if (!item) return;
+    const currentUserProfile = getCurrentUserProfile();
+    if (!currentUserProfile) return;
 
-    setTogglingItems(prev => new Set(prev).add(id));
-    
-    let loadingTimeout: NodeJS.Timeout | undefined;
-    
-    try {
-      // 2秒後にローディング表示
-      loadingTimeout = setTimeout(() => {
-        if (togglingItems.has(id)) {
-          toast({
-            title: "処理中",
-            description: `${item.is_completed ? '未完了に' : '完了に'}変更しています...`,
-            duration: 1000,
-          });
+    const newCompletedState = !item.is_completed;
+    const now = new Date().toISOString();
+
+    // ローカルで即座に更新
+    setLocalItems(prev => prev.map(localItem =>
+      localItem.id === id 
+        ? { 
+            ...localItem, 
+            is_completed: newCompletedState,
+            completed_by: newCompletedState ? session.user.id : undefined,
+            completed_at: newCompletedState ? now : undefined,
+            completed_by_profile: newCompletedState ? currentUserProfile : null
+          }
+        : localItem
+    ));
+
+    toast({
+      title: "✅ 成功",
+      description: `${newCompletedState ? '完了' : '未完了'}に変更しました`,
+      duration: 1000,
+    });
+
+    // サーバーと同期済みの場合は、サーバーも更新
+    if (item.synced && isOnline) {
+      try {
+        const response = await fetch('/api/family-group/shopping', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            item_id: id,
+            is_completed: newCompletedState,
+            group_id: groupId || currentGroup?.id
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error('更新に失敗しました');
         }
-      }, 2000);
-
-      const response = await fetch('/api/family-group/shopping', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          item_id: id,
-          is_completed: !item.is_completed,
-          group_id: groupId || currentGroup?.id
-        }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || '更新に失敗しました');
+      } catch (error) {
+        console.error('Toggle error:', error);
+        toast({
+          title: "エラー",
+          description: "サーバー更新に失敗しました",
+          variant: "destructive",
+          duration: 1000,
+        });
       }
-
-      await fetchData();
-      
-      toast({
-        title: "成功",
-        description: `${item.is_completed ? '未完了' : '完了'}に変更しました`,
-        duration: 1000,
-      });
-    } catch (error: any) {
-      toast({
-        title: "エラー",
-        description: error.message,
-        variant: "destructive",
-        duration: 1000,
-      });
-    } finally {
-      if (loadingTimeout) clearTimeout(loadingTimeout);
-      setTogglingItems(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(id);
-        return newSet;
-      });
     }
   };
 
   // アイテムの削除
-  const handleDeleteShoppingItem = async (id: string) => {
-    if (!isOnline || deletingItems.has(id)) return;
-
-    const item = items.find(item => item.id === id);
+  const handleDeleteItem = async (id: string) => {
+    const item = localItems.find(item => item.id === id);
     if (!item) return;
 
-    setDeletingItems(prev => new Set(prev).add(id));
-    
-    let loadingTimeout: NodeJS.Timeout | undefined;
-    
-    try {
-      // 2秒後にローディング表示
-      loadingTimeout = setTimeout(() => {
-        if (deletingItems.has(id)) {
-          toast({
-            title: "処理中",
-            description: "アイテムを削除しています...",
-            duration: 1000,
-          });
+    // ローカルから即座に削除
+    setLocalItems(prev => prev.filter(item => item.id !== id));
+
+    toast({
+      title: "✅ 成功",
+      description: "アイテムを削除しました",
+      duration: 1000,
+    });
+
+    // サーバーと同期済みの場合は、サーバーからも削除
+    if (item.synced && isOnline) {
+      try {
+        const url = groupId 
+          ? `/api/family-group/shopping?id=${id}&groupId=${groupId}`
+          : `/api/family-group/shopping?id=${id}`;
+        
+        const response = await fetch(url, {
+          method: 'DELETE',
+        });
+
+        if (!response.ok) {
+          throw new Error('削除に失敗しました');
         }
-      }, 2000);
-
-      const url = groupId 
-        ? `/api/family-group/shopping?id=${id}&groupId=${groupId}`
-        : `/api/family-group/shopping?id=${id}`;
-      
-      const response = await fetch(url, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || '削除に失敗しました');
+      } catch (error) {
+        console.error('Delete error:', error);
+        toast({
+          title: "エラー",
+          description: "サーバー削除に失敗しました",
+          variant: "destructive",
+          duration: 1000,
+        });
       }
-
-      await fetchData();
-      
-      toast({
-        title: "成功",
-        description: "アイテムを削除しました",
-        duration: 1000,
-      });
-    } catch (error: any) {
-      toast({
-        title: "エラー",
-        description: error.message,
-        variant: "destructive",
-        duration: 1000,
-      });
-    } finally {
-      if (loadingTimeout) clearTimeout(loadingTimeout);
-      setDeletingItems(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(id);
-        return newSet;
-      });
     }
+  };
+
+  // 未同期アイテムの再同期
+  const handleRetrySync = async () => {
+    if (!isOnline || !currentGroup) return;
+    
+    const unsyncedItems = localItems.filter(item => !item.synced);
+    
+    for (const item of unsyncedItems) {
+      await syncItemToServer(item);
+    }
+  };
+
+  // 手動更新機能
+  const handleRefresh = async () => {
+    setLoading(true);
+    await fetchServerData();
+    toast({
+      title: "✅ 更新完了",
+      description: "最新のデータを取得しました",
+      duration: 1000,
+    });
   };
 
   // ローディング状態
@@ -348,33 +455,62 @@ export default function FamilyShoppingPage() {
     );
   }
 
-  const checkedItems = items.filter(item => item.is_completed);
-  const uncheckedItems = items.filter(item => !item.is_completed);
+  const checkedItems = localItems.filter(item => item.is_completed);
+  const uncheckedItems = localItems.filter(item => !item.is_completed);
+  const unsyncedCount = localItems.filter(item => !item.synced).length;
 
   return (
     <AppLayout>
       <div className="p-4 max-w-2xl mx-auto">
-        {/* アイテム追加 */}
-        <div className="flex gap-2 mb-6 py-2">
-          <Input 
-            type="text" 
-            value={newItemName} 
-            onChange={e => setNewItemName(e.target.value)} 
-            placeholder="リストの追加をしてください" 
-            className="text-base"
-            onKeyPress={(e) => e.key === 'Enter' && handleAddItemFromInput()}
-            disabled={addingItem || !isOnline}
-          />
-          <Button 
-            onClick={handleAddItemFromInput} 
-            size="icon" 
-            className="shrink-0" 
-            disabled={newItemName.trim() === '' || !isOnline || addingItem}
+        {/* ヘッダー */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2 flex-wrap">
+            {!isOnline && (
+              <div className="flex items-center gap-2 text-sm text-yellow-600 bg-yellow-100 px-3 py-1 rounded-full">
+                <WifiOff size={16} />
+                <span>オフライン</span>
+              </div>
+            )}
+            {syncingItems.size > 0 && (
+              <div className="flex items-center gap-2 text-sm text-blue-600 bg-blue-100 px-3 py-1 rounded-full">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>同期中</span>
+              </div>
+            )}
+            {unsyncedCount > 0 && isOnline && (
+              <Button
+                onClick={handleRetrySync}
+                size="sm"
+                variant="outline"
+                className="text-xs text-orange-600 border-orange-300 hover:bg-orange-50"
+              >
+                未同期({unsyncedCount})を再同期
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* アイテム追加と更新ボタン */}
+        <div className="mb-6 flex gap-3">
+          <Button
+            onClick={() => setIsAddModalOpen(true)}
+            className="flex-1 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white"
+            size="lg"
           >
-            {addingItem ? (
-              <Loader2 size={20} className="animate-spin" />
+            <Plus className="h-5 w-5 mr-2" />
+            リストを追加
+          </Button>
+          <Button
+            onClick={handleRefresh}
+            variant="outline"
+            size="lg"
+            className="border-blue-300 text-blue-600 hover:bg-blue-50"
+            disabled={loading}
+          >
+            {loading ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
             ) : (
-              <Plus size={20} />
+              <History className="h-5 w-5" />
             )}
           </Button>
         </div>
@@ -399,7 +535,6 @@ export default function FamilyShoppingPage() {
                       alt={member.app_profiles.display_name || '匿名'}
                       className="w-full h-full object-cover"
                       onError={(e) => {
-                        // 画像読み込みエラー時のフォールバック
                         const target = e.target as HTMLImageElement;
                         target.style.display = 'none';
                         const parent = target.parentElement;
@@ -421,14 +556,16 @@ export default function FamilyShoppingPage() {
           </div>
         </div>
 
-        {/* 買い物リスト */}
+        {/* 共有リスト */}
         <div className="space-y-3">
-          {items.length === 0 ? (
+          {localItems.length === 0 ? (
             <div className="text-center py-12 px-6 bg-secondary/20 rounded-xl border-2 border-dashed border-secondary/30">
-              <ShoppingBag strokeWidth={1.5} className="mx-auto h-16 w-16 text-muted-foreground/40 mb-4" />
-              <h3 className="text-lg font-semibold text-foreground/80 mb-2">家族の買い物メモを作成しましょう！</h3>
+              <ListTodo strokeWidth={1.5} className="mx-auto h-16 w-16 text-muted-foreground/40 mb-4" />
+              <h3 className="text-lg font-semibold text-foreground/80 mb-2">グループで共有する<br />リストを作成しましょう！</h3>
               <p className="text-sm text-muted-foreground">
-                「+」ボタンを使って<br />買うものをメモに追加できます。
+                「リストを追加」ボタンを使って<br />
+                買い物メモや家事の分担、作業分担などの<br />
+                トゥードゥリストを管理できます。
               </p>
             </div>
           ) : (
@@ -450,23 +587,24 @@ export default function FamilyShoppingPage() {
                         "flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center", 
                         item.is_completed ? "bg-primary border-primary" : "border-muted-foreground"
                       )}
-                      disabled={togglingItems.has(item.id) || !isOnline}
                     >
-                      {togglingItems.has(item.id) ? (
-                        <Loader2 size={12} className="animate-spin text-muted-foreground" />
-                      ) : (
-                        item.is_completed && <Check size={16} className="text-primary-foreground" />
-                      )}
+                      {item.is_completed && <Check size={16} className="text-primary-foreground" />}
                     </button>
                     <div className="flex-grow">
                       <span className={cn("text-lg", item.is_completed && "line-through text-muted-foreground")}>
                         {item.item_name}
                       </span>
-                      <div className="text-xs text-muted-foreground flex items-center gap-1">
+                      {item.memo && (
+                        <div className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
+                          <StickyNote className="h-3 w-3" />
+                          <span>{item.memo}</span>
+                        </div>
+                      )}
+                      <div className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
                         {item.creator.avatar_url ? (
                           <img
                             src={item.creator.avatar_url}
-                            alt={item.creator.display_name || '匿名'}
+                            alt={item.creator.display_name}
                             className="w-3 h-3 rounded-full object-cover"
                             onError={(e) => {
                               const target = e.target as HTMLImageElement;
@@ -476,21 +614,29 @@ export default function FamilyShoppingPage() {
                         ) : (
                           <Users className="h-3 w-3" />
                         )}
-                        <span>追加者: {item.creator.display_name || '匿名'}</span>
+                        <span>追加者: {item.creator.display_name}</span>
+                      </div>
+                      <div className="flex items-center gap-2 mt-1">
+                        {!item.synced && (
+                          <div className="text-xs text-orange-600 bg-orange-100 px-2 py-0.5 rounded">
+                            未同期
+                          </div>
+                        )}
+                        {syncingItems.has(item.id) && (
+                          <div className="flex items-center gap-1 text-xs text-blue-600">
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                            <span>同期中</span>
+                          </div>
+                        )}
                       </div>
                     </div>
                     <Button 
                       variant="ghost" 
                       size="icon" 
-                      onClick={() => handleDeleteShoppingItem(item.id)} 
+                      onClick={() => handleDeleteItem(item.id)} 
                       className="text-muted-foreground hover:text-destructive"
-                      disabled={deletingItems.has(item.id) || !isOnline}
                     >
-                      {deletingItems.has(item.id) ? (
-                        <Loader2 size={18} className="animate-spin" />
-                      ) : (
-                        <Trash2 size={18} />
-                      )}
+                      <Trash2 size={18} />
                     </Button>
                   </motion.div>
                 ))}
@@ -499,7 +645,7 @@ export default function FamilyShoppingPage() {
               {/* 完了済みアイテム */}
               {checkedItems.length > 0 && (
                 <>
-                  <div className="text-sm text-muted-foreground pt-4">購入済み ({checkedItems.length})</div>
+                  <div className="text-sm text-muted-foreground pt-4">完了済み ({checkedItems.length})</div>
                   <AnimatePresence>
                     {checkedItems.map(item => (
                       <motion.div 
@@ -513,34 +659,30 @@ export default function FamilyShoppingPage() {
                         <button 
                           onClick={() => handleToggleCheck(item.id)} 
                           className="flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center bg-primary border-primary"
-                          disabled={togglingItems.has(item.id) || !isOnline}
                         >
-                          {togglingItems.has(item.id) ? (
-                            <Loader2 size={12} className="animate-spin text-primary-foreground" />
-                          ) : (
-                            <Check size={16} className="text-primary-foreground" />
-                          )}
+                          <Check size={16} className="text-primary-foreground" />
                         </button>
                         <div className="flex-grow">
                           <span className="text-lg line-through text-muted-foreground">
                             {item.item_name}
                           </span>
-                          <div className="text-xs text-muted-foreground">
+                          {item.memo && (
+                            <div className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
+                              <StickyNote className="h-3 w-3" />
+                              <span>{item.memo}</span>
+                            </div>
+                          )}
+                          <div className="text-xs text-muted-foreground mt-1">
                             完了者: {item.completed_by_profile?.display_name || '匿名'}
                           </div>
                         </div>
                         <Button 
                           variant="ghost" 
                           size="icon" 
-                          onClick={() => handleDeleteShoppingItem(item.id)} 
+                          onClick={() => handleDeleteItem(item.id)} 
                           className="text-muted-foreground hover:text-destructive"
-                          disabled={deletingItems.has(item.id) || !isOnline}
                         >
-                          {deletingItems.has(item.id) ? (
-                            <Loader2 size={18} className="animate-spin" />
-                          ) : (
-                            <Trash2 size={18} />
-                          )}
+                          <Trash2 size={18} />
                         </Button>
                       </motion.div>
                     ))}
@@ -553,10 +695,39 @@ export default function FamilyShoppingPage() {
 
         {/* 画面下部の遷移ボタン */}
         <div className="mt-8 space-y-4">
+          {/* 活用例の表示 */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg"
+          >
+            <div className="space-y-3">
+              <h3 className="font-semibold text-green-900 flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-green-600" />
+                活用例
+              </h3>
+              <div className="grid grid-cols-1 gap-2 text-sm">
+                <div className="flex items-center gap-2 text-green-800">
+                  <ShoppingBag className="h-4 w-4 text-green-600" />
+                  <span>買い物メモ（牛乳、パン、野菜など）</span>
+                </div>
+                <div className="flex items-center gap-2 text-green-800">
+                  <Home className="h-4 w-4 text-green-600" />
+                  <span>家事の分担（掃除、洗濯、料理など）</span>
+                </div>
+                <div className="flex items-center gap-2 text-green-800">
+                  <Briefcase className="h-4 w-4 text-green-600" />
+                  <span>作業分担（プロジェクト、イベント準備など）</span>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
           {/* 個人メモへの遷移ボタン */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
             className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg"
           >
             <div className="flex items-center justify-between">
@@ -579,36 +750,68 @@ export default function FamilyShoppingPage() {
               </Button>
             </div>
           </motion.div>
-
-          {/* 掲示板への遷移ボタン */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="p-4 bg-gradient-to-r from-orange-50 to-red-50 border border-orange-200 rounded-lg"
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="bg-orange-100 p-2 rounded-full">
-                  <MessageSquare className="h-5 w-5 text-orange-600" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-orange-900">掲示板</h3>
-                  <p className="text-sm text-orange-700">買い物リストを共有すると<br />お得情報が手に入るかも？</p>
-                </div>
-              </div>
-              <Button
-                onClick={() => router.push('/board')}
-                variant="outline"
-                size="sm"
-                className="border-orange-300 text-orange-700 hover:bg-orange-100"
-              >
-                掲示板へ
-              </Button>
-            </div>
-          </motion.div>
         </div>
       </div>
+
+      {/* アイテム追加モーダル */}
+      <CustomModal
+        isOpen={isAddModalOpen}
+        onClose={() => {
+          setIsAddModalOpen(false);
+          setNewItemName('');
+          setNewItemMemo('');
+        }}
+        title="新しいアイテムを追加"
+        description="グループで共有するリストに追加するアイテムを入力してください。"
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="text-sm font-medium text-gray-700 mb-2 block">
+              アイテム名 *
+            </label>
+            <Input
+              value={newItemName}
+              onChange={(e) => setNewItemName(e.target.value)}
+              placeholder="例: 牛乳、掃除機かけ、資料作成"
+              className="text-base"
+            />
+          </div>
+          
+          <div>
+            <label className="text-sm font-medium text-gray-700 mb-2 block">
+              メモ（任意）
+            </label>
+            <Textarea
+              value={newItemMemo}
+              onChange={(e) => setNewItemMemo(e.target.value)}
+              placeholder="例: 低脂肪1リットル、リビングと寝室、来週の会議用"
+              className="text-sm resize-none"
+              rows={2}
+            />
+          </div>
+          
+          <div className="flex space-x-3 pt-4">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsAddModalOpen(false);
+                setNewItemName('');
+                setNewItemMemo('');
+              }}
+              className="flex-1"
+            >
+              キャンセル
+            </Button>
+            <Button
+              onClick={handleAddItem}
+              disabled={newItemName.trim() === ''}
+              className="flex-1"
+            >
+              追加する
+            </Button>
+          </div>
+        </div>
+      </CustomModal>
     </AppLayout>
   );
 }
