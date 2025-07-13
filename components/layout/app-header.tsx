@@ -36,7 +36,7 @@ export function AppHeader() {
         return '掲示板';
       case '/family-group':
         return 'グループ管理';
-      case '/family-group/join':
+      case '/family-group/join/[token]':
         return '招待状';
       case '/family-group/shopping':
         return '共有メモ';
