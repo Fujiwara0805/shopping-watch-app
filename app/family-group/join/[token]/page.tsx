@@ -203,14 +203,7 @@ export default function JoinGroupPage({ params }: { params: { token: string } })
                       </p>
                     </div>
 
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                      <div className="flex items-center space-x-2">
-                        <Mail className="h-4 w-4 text-blue-600" />
-                        <span className="text-sm text-blue-800">
-                          招待先: {invitation.invitee_email}
-                        </span>
-                      </div>
-                    </div>
+                    {/* メールアドレス表示部分を削除 */}
 
                     {status === 'unauthenticated' ? (
                       <div className="space-y-4">
@@ -227,7 +220,7 @@ export default function JoinGroupPage({ params }: { params: { token: string } })
                     ) : session?.user?.email !== invitation.invitee_email ? (
                       <div className="space-y-4">
                         <p className="text-sm text-red-600 text-center">
-                          招待されたメールアドレス（{invitation.invitee_email}）でログインしてください
+                          招待されたメールアドレスでログインしてください
                         </p>
                         <Button
                           onClick={() => router.push(`/login?callbackUrl=${encodeURIComponent(window.location.pathname)}`)}
