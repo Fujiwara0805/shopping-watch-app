@@ -53,10 +53,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '招待の有効期限が切れています' }, { status: 400 });
     }
 
-    // ユーザーのメールアドレスが招待されたメールアドレスと一致するかチェック
-    if (session.user.email !== invitation.invitee_email) {
-      return NextResponse.json({ error: '招待されたメールアドレスでログインしてください' }, { status: 403 });
-    }
+    // メールアドレスチェックを削除
+    // リンクを知っているユーザーであれば誰でも参加可能
 
     // 既にメンバーかチェック
     const { data: existingMember } = await supabase
