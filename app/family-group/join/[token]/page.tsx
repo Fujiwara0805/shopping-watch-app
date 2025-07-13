@@ -217,19 +217,6 @@ export default function JoinGroupPage({ params }: { params: { token: string } })
                           ログインして参加
                         </Button>
                       </div>
-                    ) : session?.user?.email !== invitation.invitee_email ? (
-                      <div className="space-y-4">
-                        <p className="text-sm text-red-600 text-center">
-                          招待されたメールアドレスでログインしてください
-                        </p>
-                        <Button
-                          onClick={() => router.push(`/login?callbackUrl=${encodeURIComponent(window.location.pathname)}`)}
-                          variant="outline"
-                          className="w-full"
-                        >
-                          別のアカウントでログイン
-                        </Button>
-                      </div>
                     ) : (
                       <div className="flex space-x-3">
                         <Button

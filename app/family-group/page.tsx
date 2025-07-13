@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { motion } from 'framer-motion';
-import { Plus, Users, Mail, Copy, UserPlus, List, Share2, Check, ChevronDown, ChevronRight, ArrowLeft, Sparkles, Trash2, LogOut, AlertTriangle, Loader2 } from 'lucide-react';
+import { Plus, Users, Mail, Copy, UserPlus, List, Share2, Check, ChevronDown, ChevronRight, ArrowLeft, Sparkles, Trash2, LogOut, AlertTriangle, Loader2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -835,6 +835,16 @@ ${data.inviteLink}
                       )}
                     </Button>
                   </motion.div>
+                  
+                  {/* セキュリティ注意文言を追加 */}
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-sm text-red-600 font-medium">
+                      ⚠️ 注意：メンバーに追加したいユーザー以外にはリンクを教えないでください
+                    </p>
+                    <p className="text-xs text-red-500 mt-1">
+                      このリンクを知っている人は誰でもグループに参加できます
+                    </p>
+                  </div>
                 </div>
                 
                 <div className="flex justify-end pt-4">
