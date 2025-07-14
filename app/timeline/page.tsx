@@ -641,7 +641,7 @@ const CommentsModal = ({
               onChange={(e) => setNewComment(e.target.value)}
               placeholder="コメントを入力..."
               className="resize-none"
-              style={{ fontSize: '16px' }}
+              style={{ fontSize: '16px' }} // 16px以上に設定済み
               rows={3}
             />
             <div className="flex justify-end space-x-2">
@@ -1795,28 +1795,29 @@ export default function Timeline() {
           )}
         </div>
         
-        {/* 5キロ圏内検索ボタンを追加 */}
-        <Button
-          onClick={handleRefreshLocation}
-          disabled={isGettingLocation}
-          className="bg-green-600 text-white hover:bg-green-700 text-sm px-3 py-2 whitespace-nowrap"
-        >
-          {isGettingLocation ? (
-            <Loader2 className="h-4 w-4 animate-spin mr-1" />
-          ) : (
-            <MapPin className="h-4 w-4 mr-1" />
-          )}
-          5km圏内
-        </Button>
-        
-        <Button onClick={() => setShowFilterModal(true)} variant="outline" className="relative">
-          <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
-          {activeFiltersCount > 0 && (
-            <Badge className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
-              {activeFiltersCount}
-            </Badge>
-          )}
-        </Button>
+        {/* フィルターボタンと5キロ圏内ボタンを縦に2列配置 */}
+        <div className="flex flex-col space-y-1">
+          <Button onClick={() => setShowFilterModal(true)} variant="outline" className="relative text-xs px-2 py-1 h-8">
+            <SlidersHorizontal className="h-3 w-3 text-muted-foreground" />
+            {(activeFilter !== 'all' || sortBy !== 'created_at_desc') && (
+              <Badge className="absolute -top-1 -right-1 h-3 w-3 rounded-full p-0 flex items-center justify-center text-xs">
+                {(activeFilter !== 'all' ? 1 : 0) + (sortBy !== 'created_at_desc' ? 1 : 0)}
+              </Badge>
+            )}
+          </Button>
+          
+          <Button
+            onClick={handleRefreshLocation}
+            disabled={isGettingLocation}
+            className="bg-green-600 text-white hover:bg-green-700 text-xs px-2 py-1 h-8 whitespace-nowrap"
+          >
+            {isGettingLocation ? (
+              <Loader2 className="h-3 w-3 animate-spin" />
+            ) : (
+              <MapPin className="h-3 w-3" />
+            )}
+          </Button>
+        </div>
       </div>
 
       {/* リアルタイム検索中の表示 */}
@@ -1983,8 +1984,6 @@ export default function Timeline() {
         description="検索条件と表示順を設定できます。"
       >
         <div className="space-y-6 max-h-[70vh] overflow-y-auto">
-          {/* おすすめの検索セクションを削除 */}
-
           {/* カテゴリ選択 */}
           <div>
             <h3 className="font-semibold text-lg mb-2">カテゴリーで絞り込み</h3>
@@ -2027,7 +2026,7 @@ export default function Timeline() {
             </Select>
           </div>
 
-          {/* 特別な検索セクションを削除または簡素化 */}
+          {/* 特別な検索（周辺検索を削除） */}
           <div>
             <h3 className="font-semibold text-lg mb-2">特別な検索</h3>
             <Select onValueChange={(value: SearchMode) => setTempSearchMode(value)} value={tempSearchMode}>
@@ -2035,7 +2034,6 @@ export default function Timeline() {
                 <SelectValue placeholder="検索方法を選択" />
               </SelectTrigger>
               <SelectContent className="max-h-[200px]">
-                <SelectItem value="nearby" className="text-lg py-3">周辺検索 (5km圏内)</SelectItem>
                 <SelectItem 
                   value="favorite_store" 
                   disabled={!currentUserId || favoriteStoreIds.length === 0}
@@ -2072,7 +2070,7 @@ export default function Timeline() {
           <Button variant="outline" onClick={() => {
             setTempActiveFilter('all');
             setTempSortBy('created_at_desc');
-            setTempSearchMode('nearby'); // 'all' → 'nearby'に変更
+            setTempSearchMode('nearby');
           }}>
             すべてクリア
           </Button>
