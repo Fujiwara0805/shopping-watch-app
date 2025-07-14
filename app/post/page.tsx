@@ -25,13 +25,9 @@ import { calculateExpiresAt } from '@/lib/expires-at-date';
 import { v4 as uuidv4 } from 'uuid';
 import FavoriteStoreInput from '@/components/profile/FavoriteStoreInput';
 import { CustomModal } from '@/components/ui/custom-modal';
-import { format } from "date-fns";
-import { ja } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 import { useLoadScript, Autocomplete, GoogleMap } from "@react-google-maps/api";
 import { useLoading } from '@/contexts/loading-context';
-// import { setTimeout } from 'timers/promises';
-import { PostCard } from '@/components/posts/post-card';
 
 declare global {
   interface Window {
@@ -728,7 +724,7 @@ export default function PostPage() {
                     </div>
                   </div>
                 </FormControl>
-                <p className="text-sm text-red-500 mt-1">※陳列している商品の画像をアップしないでください。購入後の商品の画像をアップしてください。</p>
+                <p className="text-sm text-red-500 mt-1">※アップロードする画像は自己責任でお願いします。</p>
                 {!imageFile && (
                   <p className="text-sm text-muted-foreground mt-1 ">
                     未アップロードの場合、自動的に画像が設定されます。
