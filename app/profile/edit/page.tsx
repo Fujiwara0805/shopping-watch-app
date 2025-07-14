@@ -538,14 +538,14 @@ export default function ProfileEditPage() {
                       <SelectValue placeholder="年齢層を選択してください" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="10s">10代</SelectItem>
-                      <SelectItem value="20s">20代</SelectItem>
-                      <SelectItem value="30s">30代</SelectItem>
-                      <SelectItem value="40s">40代</SelectItem>
-                      <SelectItem value="50s">50代</SelectItem>
-                      <SelectItem value="60s">60代</SelectItem>
-                      <SelectItem value="70s">70代</SelectItem>
-                      <SelectItem value="80s_plus">80代以上</SelectItem>
+                      <SelectItem value="10代">10代</SelectItem>
+                      <SelectItem value="20代">20代</SelectItem>
+                      <SelectItem value="30代">30代</SelectItem>
+                      <SelectItem value="40代">40代</SelectItem>
+                      <SelectItem value="50代">50代</SelectItem>
+                      <SelectItem value="60代">60代</SelectItem>
+                      <SelectItem value="70代">70代</SelectItem>
+                      <SelectItem value="80代以上">80代以上</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -555,19 +555,19 @@ export default function ProfileEditPage() {
                   <Label className="text-sm font-medium">性別</Label>
                   <RadioGroup value={gender} onValueChange={setGender}>
                     <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="male" id="male" />
+                      <RadioGroupItem value="男性" id="male" />
                       <Label htmlFor="male" className="text-sm">男性</Label>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="female" id="female" />
+                      <RadioGroupItem value="女性" id="female" />
                       <Label htmlFor="female" className="text-sm">女性</Label>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="other" id="other" />
+                      <RadioGroupItem value="その他" id="other" />
                       <Label htmlFor="other" className="text-sm">その他</Label>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="no_answer" id="no_answer" />
+                      <RadioGroupItem value="回答しない" id="no_answer" />
                       <Label htmlFor="no_answer" className="text-sm">回答しない</Label>
                     </div>
                   </RadioGroup>
@@ -582,53 +582,53 @@ export default function ProfileEditPage() {
                         <SelectValue placeholder="都道府県" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="hokkaido">北海道</SelectItem>
-                        <SelectItem value="aomori">青森県</SelectItem>
-                        <SelectItem value="iwate">岩手県</SelectItem>
-                        <SelectItem value="miyagi">宮城県</SelectItem>
-                        <SelectItem value="akita">秋田県</SelectItem>
-                        <SelectItem value="yamagata">山形県</SelectItem>
-                        <SelectItem value="fukushima">福島県</SelectItem>
-                        <SelectItem value="ibaraki">茨城県</SelectItem>
-                        <SelectItem value="tochigi">栃木県</SelectItem>
-                        <SelectItem value="gunma">群馬県</SelectItem>
-                        <SelectItem value="saitama">埼玉県</SelectItem>
-                        <SelectItem value="chiba">千葉県</SelectItem>
-                        <SelectItem value="tokyo">東京都</SelectItem>
-                        <SelectItem value="kanagawa">神奈川県</SelectItem>
-                        <SelectItem value="niigata">新潟県</SelectItem>
-                        <SelectItem value="toyama">富山県</SelectItem>
-                        <SelectItem value="ishikawa">石川県</SelectItem>
-                        <SelectItem value="fukui">福井県</SelectItem>
-                        <SelectItem value="yamanashi">山梨県</SelectItem>
-                        <SelectItem value="nagano">長野県</SelectItem>
-                        <SelectItem value="gifu">岐阜県</SelectItem>
-                        <SelectItem value="shizuoka">静岡県</SelectItem>
-                        <SelectItem value="aichi">愛知県</SelectItem>
-                        <SelectItem value="mie">三重県</SelectItem>
-                        <SelectItem value="shiga">滋賀県</SelectItem>
-                        <SelectItem value="kyoto">京都府</SelectItem>
-                        <SelectItem value="osaka">大阪府</SelectItem>
-                        <SelectItem value="hyogo">兵庫県</SelectItem>
-                        <SelectItem value="nara">奈良県</SelectItem>
-                        <SelectItem value="wakayama">和歌山県</SelectItem>
-                        <SelectItem value="tottori">鳥取県</SelectItem>
-                        <SelectItem value="shimane">島根県</SelectItem>
-                        <SelectItem value="okayama">岡山県</SelectItem>
-                        <SelectItem value="hiroshima">広島県</SelectItem>
-                        <SelectItem value="yamaguchi">山口県</SelectItem>
-                        <SelectItem value="tokushima">徳島県</SelectItem>
-                        <SelectItem value="kagawa">香川県</SelectItem>
-                        <SelectItem value="ehime">愛媛県</SelectItem>
-                        <SelectItem value="kochi">高知県</SelectItem>
-                        <SelectItem value="fukuoka">福岡県</SelectItem>
-                        <SelectItem value="saga">佐賀県</SelectItem>
-                        <SelectItem value="nagasaki">長崎県</SelectItem>
-                        <SelectItem value="kumamoto">熊本県</SelectItem>
-                        <SelectItem value="oita">大分県</SelectItem>
-                        <SelectItem value="miyazaki">宮崎県</SelectItem>
-                        <SelectItem value="kagoshima">鹿児島県</SelectItem>
-                        <SelectItem value="okinawa">沖縄県</SelectItem>
+                        <SelectItem value="北海道">北海道</SelectItem>
+                        <SelectItem value="青森県">青森県</SelectItem>
+                        <SelectItem value="岩手県">岩手県</SelectItem>
+                        <SelectItem value="宮城県">宮城県</SelectItem>
+                        <SelectItem value="秋田県">秋田県</SelectItem>
+                        <SelectItem value="山形県">山形県</SelectItem>
+                        <SelectItem value="福島県">福島県</SelectItem>
+                        <SelectItem value="茨城県">茨城県</SelectItem>
+                        <SelectItem value="栃木県">栃木県</SelectItem>
+                        <SelectItem value="群馬県">群馬県</SelectItem>
+                        <SelectItem value="埼玉県">埼玉県</SelectItem>
+                        <SelectItem value="千葉県">千葉県</SelectItem>
+                        <SelectItem value="東京都">東京都</SelectItem>
+                        <SelectItem value="神奈川県">神奈川県</SelectItem>
+                        <SelectItem value="新潟県">新潟県</SelectItem>
+                        <SelectItem value="富山県">富山県</SelectItem>
+                        <SelectItem value="石川県">石川県</SelectItem>
+                        <SelectItem value="福井県">福井県</SelectItem>
+                        <SelectItem value="山梨県">山梨県</SelectItem>
+                        <SelectItem value="長野県">長野県</SelectItem>
+                        <SelectItem value="岐阜県">岐阜県</SelectItem>
+                        <SelectItem value="静岡県">静岡県</SelectItem>
+                        <SelectItem value="愛知県">愛知県</SelectItem>
+                        <SelectItem value="三重県">三重県</SelectItem>
+                        <SelectItem value="滋賀県">滋賀県</SelectItem>
+                        <SelectItem value="京都府">京都府</SelectItem>
+                        <SelectItem value="大阪府">大阪府</SelectItem>
+                        <SelectItem value="兵庫県">兵庫県</SelectItem>
+                        <SelectItem value="奈良県">奈良県</SelectItem>
+                        <SelectItem value="和歌山県">和歌山県</SelectItem>
+                        <SelectItem value="鳥取県">鳥取県</SelectItem>
+                        <SelectItem value="島根県">島根県</SelectItem>
+                        <SelectItem value="岡山県">岡山県</SelectItem>
+                        <SelectItem value="広島県">広島県</SelectItem>
+                        <SelectItem value="山口県">山口県</SelectItem>
+                        <SelectItem value="徳島県">徳島県</SelectItem>
+                        <SelectItem value="香川県">香川県</SelectItem>
+                        <SelectItem value="愛媛県">愛媛県</SelectItem>
+                        <SelectItem value="高知県">高知県</SelectItem>
+                        <SelectItem value="福岡県">福岡県</SelectItem>
+                        <SelectItem value="佐賀県">佐賀県</SelectItem>
+                        <SelectItem value="長崎県">長崎県</SelectItem>
+                        <SelectItem value="熊本県">熊本県</SelectItem>
+                        <SelectItem value="大分県">大分県</SelectItem>
+                        <SelectItem value="宮崎県">宮崎県</SelectItem>
+                        <SelectItem value="鹿児島県">鹿児島県</SelectItem>
+                        <SelectItem value="沖縄県">沖縄県</SelectItem>
                       </SelectContent>
                     </Select>
                     <Input
@@ -653,29 +653,29 @@ export default function ProfileEditPage() {
               <CardContent className="space-y-4">
                 <RadioGroup value={familyStructure} onValueChange={setFamilyStructure}>
                   <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="single" id="single" />
+                    <RadioGroupItem value="単身" id="single" />
                     <Label htmlFor="single" className="text-sm">単身</Label>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="couple" id="couple" />
+                    <RadioGroupItem value="夫婦のみ" id="couple" />
                     <Label htmlFor="couple" className="text-sm">夫婦のみ</Label>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="family_with_children" id="family_with_children" />
+                    <RadioGroupItem value="子どもがいる家庭" id="family_with_children" />
                     <Label htmlFor="family_with_children" className="text-sm">子どもがいる家庭</Label>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="single_parent" id="single_parent" />
+                    <RadioGroupItem value="ひとり親世帯" id="single_parent" />
                     <Label htmlFor="single_parent" className="text-sm">ひとり親世帯</Label>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="three_generation" id="three_generation" />
+                    <RadioGroupItem value="三世代同居" id="three_generation" />
                     <Label htmlFor="three_generation" className="text-sm">三世代同居</Label>
                   </div>
                 </RadioGroup>
 
                 {/* 子どもの詳細情報 */}
-                {(familyStructure === 'family_with_children' || familyStructure === 'single_parent' || familyStructure === 'three_generation') && (
+                {(familyStructure === '子どもがいる家庭' || familyStructure === 'ひとり親世帯' || familyStructure === '三世代同居') && (
                   <motion.div
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
@@ -690,11 +690,11 @@ export default function ProfileEditPage() {
                           <SelectValue placeholder="人数を選択" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="1">1人</SelectItem>
-                          <SelectItem value="2">2人</SelectItem>
-                          <SelectItem value="3">3人</SelectItem>
-                          <SelectItem value="4">4人</SelectItem>
-                          <SelectItem value="5_plus">5人以上</SelectItem>
+                          <SelectItem value="1人">1人</SelectItem>
+                          <SelectItem value="2人">2人</SelectItem>
+                          <SelectItem value="3人">3人</SelectItem>
+                          <SelectItem value="4人">4人</SelectItem>
+                          <SelectItem value="5人以上">5人以上</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -703,13 +703,13 @@ export default function ProfileEditPage() {
                       <Label className="text-sm font-medium">お子さまの年齢層（複数選択可）</Label>
                       <div className="grid grid-cols-2 gap-2">
                         {[
-                          { value: 'infant', label: '乳児（0-1歳）' },
-                          { value: 'toddler', label: '幼児（2-3歳）' },
-                          { value: 'preschool', label: '未就学児（4-6歳）' },
-                          { value: 'elementary', label: '小学生（7-12歳）' },
-                          { value: 'middle_school', label: '中学生（13-15歳）' },
-                          { value: 'high_school', label: '高校生（16-18歳）' },
-                          { value: 'adult', label: '成人（19歳以上）' }
+                          { value: '乳児（0-1歳）', label: '乳児（0-1歳）' },
+                          { value: '幼児（2-3歳）', label: '幼児（2-3歳）' },
+                          { value: '未就学児（4-6歳）', label: '未就学児（4-6歳）' },
+                          { value: '小学生（7-12歳）', label: '小学生（7-12歳）' },
+                          { value: '中学生（13-15歳）', label: '中学生（13-15歳）' },
+                          { value: '高校生（16-18歳）', label: '高校生（16-18歳）' },
+                          { value: '成人（19歳以上）', label: '成人（19歳以上）' }
                         ].map((ageGroup) => (
                           <div key={ageGroup.value} className="flex items-center space-x-2">
                             <Checkbox
@@ -744,6 +744,7 @@ export default function ProfileEditPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                {/* 職業 */}
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">職業</Label>
                   <Select value={occupation} onValueChange={setOccupation}>
@@ -751,15 +752,15 @@ export default function ProfileEditPage() {
                       <SelectValue placeholder="職業を選択してください" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="company_employee">会社員（正社員）</SelectItem>
-                      <SelectItem value="contract_employee">契約社員・派遣社員</SelectItem>
-                      <SelectItem value="public_servant">公務員</SelectItem>
-                      <SelectItem value="self_employed">自営業・フリーランス</SelectItem>
-                      <SelectItem value="part_time">パート・アルバイト</SelectItem>
-                      <SelectItem value="student">学生</SelectItem>
-                      <SelectItem value="homemaker">主婦・主夫</SelectItem>
-                      <SelectItem value="retired">退職・年金受給者</SelectItem>
-                      <SelectItem value="other">その他</SelectItem>
+                      <SelectItem value="会社員（正社員）">会社員（正社員）</SelectItem>
+                      <SelectItem value="契約社員・派遣社員">契約社員・派遣社員</SelectItem>
+                      <SelectItem value="公務員">公務員</SelectItem>
+                      <SelectItem value="自営業・フリーランス">自営業・フリーランス</SelectItem>
+                      <SelectItem value="パート・アルバイト">パート・アルバイト</SelectItem>
+                      <SelectItem value="学生">学生</SelectItem>
+                      <SelectItem value="主婦・主夫">主婦・主夫</SelectItem>
+                      <SelectItem value="退職・年金受給者">退職・年金受給者</SelectItem>
+                      <SelectItem value="その他">その他</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -771,13 +772,13 @@ export default function ProfileEditPage() {
                       <SelectValue placeholder="世帯年収を選択してください" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="under_300">300万円未満</SelectItem>
-                      <SelectItem value="300_500">300万円～500万円未満</SelectItem>
-                      <SelectItem value="500_700">500万円～700万円未満</SelectItem>
-                      <SelectItem value="700_1000">700万円～1000万円未満</SelectItem>
-                      <SelectItem value="1000_1500">1000万円～1500万円未満</SelectItem>
-                      <SelectItem value="over_1500">1500万円以上</SelectItem>
-                      <SelectItem value="no_answer">回答しない</SelectItem>
+                      <SelectItem value="300万円未満">300万円未満</SelectItem>
+                      <SelectItem value="300万円～500万円未満">300万円～500万円未満</SelectItem>
+                      <SelectItem value="500万円～700万円未満">500万円～700万円未満</SelectItem>
+                      <SelectItem value="700万円～1000万円未満">700万円～1000万円未満</SelectItem>
+                      <SelectItem value="1000万円～1500万円未満">1000万円～1500万円未満</SelectItem>
+                      <SelectItem value="1500万円以上">1500万円以上</SelectItem>
+                      <SelectItem value="回答しない">回答しない</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -800,10 +801,10 @@ export default function ProfileEditPage() {
                       <SelectValue placeholder="頻度を選択してください" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="rarely">週1回未満</SelectItem>
-                      <SelectItem value="weekly">週1-2回</SelectItem>
-                      <SelectItem value="frequent">週3-4回</SelectItem>
-                      <SelectItem value="daily">ほぼ毎日</SelectItem>
+                      <SelectItem value="週1回未満">週1回未満</SelectItem>
+                      <SelectItem value="週1-2回">週1-2回</SelectItem>
+                      <SelectItem value="週3-4回">週3-4回</SelectItem>
+                      <SelectItem value="ほぼ毎日">ほぼ毎日</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -815,11 +816,11 @@ export default function ProfileEditPage() {
                       <SelectValue placeholder="時間帯を選択してください" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="morning">朝（6-9時）</SelectItem>
-                      <SelectItem value="forenoon">午前（9-12時）</SelectItem>
-                      <SelectItem value="afternoon">午後（12-18時）</SelectItem>
-                      <SelectItem value="evening">夜（18-22時）</SelectItem>
-                      <SelectItem value="night">深夜（22時以降）</SelectItem>
+                      <SelectItem value="朝（6-9時）">朝（6-9時）</SelectItem>
+                      <SelectItem value="午前（9-12時）">午前（9-12時）</SelectItem>
+                      <SelectItem value="午後（12-18時）">午後（12-18時）</SelectItem>
+                      <SelectItem value="夜（18-22時）">夜（18-22時）</SelectItem>
+                      <SelectItem value="深夜（22時以降）">深夜（22時以降）</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -831,11 +832,11 @@ export default function ProfileEditPage() {
                       <SelectValue placeholder="金額を選択してください" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="under_1000">1,000円未満</SelectItem>
-                      <SelectItem value="1000_3000">1,000円～3,000円</SelectItem>
-                      <SelectItem value="3000_5000">3,000円～5,000円</SelectItem>
-                      <SelectItem value="5000_10000">5,000円～10,000円</SelectItem>
-                      <SelectItem value="over_10000">10,000円以上</SelectItem>
+                      <SelectItem value="1,000円未満">1,000円未満</SelectItem>
+                      <SelectItem value="1,000円～3,000円">1,000円～3,000円</SelectItem>
+                      <SelectItem value="3,000円～5,000円">3,000円～5,000円</SelectItem>
+                      <SelectItem value="5,000円～10,000円">5,000円～10,000円</SelectItem>
+                      <SelectItem value="10,000円以上">10,000円以上</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -847,11 +848,11 @@ export default function ProfileEditPage() {
                       <SelectValue placeholder="スタイルを選択してください" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="planned">計画的（リストを作成）</SelectItem>
-                      <SelectItem value="impulse">衝動的（その場で判断）</SelectItem>
-                      <SelectItem value="sale_focused">セール重視</SelectItem>
-                      <SelectItem value="quality_focused">品質重視</SelectItem>
-                      <SelectItem value="convenience_focused">利便性重視</SelectItem>
+                      <SelectItem value="計画的（リストを作成）">計画的（リストを作成）</SelectItem>
+                      <SelectItem value="衝動的（その場で判断）">衝動的（その場で判断）</SelectItem>
+                      <SelectItem value="セール重視">セール重視</SelectItem>
+                      <SelectItem value="品質重視">品質重視</SelectItem>
+                      <SelectItem value="利便性重視">利便性重視</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

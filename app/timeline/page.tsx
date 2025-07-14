@@ -29,7 +29,6 @@ interface AuthorData {
   user_id: string;
   display_name: string;
   avatar_url: string | null;
-  bio?: string;
 }
 
 interface PostLike {
@@ -558,8 +557,7 @@ export default function Timeline() {
             id,
             user_id,
             display_name,
-            avatar_url,
-            bio
+            avatar_url
           ),
           post_likes!fk_post_likes_post_id (
             post_id,

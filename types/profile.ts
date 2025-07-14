@@ -3,14 +3,27 @@ export interface Profile {
   display_name: string | null; // ニックネーム
   avatar_url: string | null;
   updated_at: string | null;
-  bio: string | null; // 自己紹介
   favorite_store_1_id?: string | null;
   favorite_store_1_name?: string | null;
   favorite_store_2_id?: string | null;
   favorite_store_2_name?: string | null;
   favorite_store_3_id?: string | null;
   favorite_store_3_name?: string | null;
-  // 必要に応じて他のプロフィール項目を追加
+  // データ利活用項目を追加
+  age_group?: string | null;
+  gender?: string | null;
+  prefecture?: string | null;
+  city?: string | null;
+  family_structure?: string | null;
+  children_count?: string | null;
+  children_age_groups?: string[] | null;
+  occupation?: string | null;
+  household_income?: string | null;
+  shopping_frequency?: string | null;
+  primary_shopping_time?: string | null;
+  average_spending?: string | null;
+  shopping_style?: string | null;
+  data_consent?: boolean;
 }
 
 export type ProfileUpdate = Partial<Omit<Profile, 'id'>> & {
