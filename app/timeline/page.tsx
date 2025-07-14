@@ -80,7 +80,7 @@ interface PostFromDB {
 }
 
 type SortOption = 'created_at_desc' | 'created_at_asc' | 'expires_at_asc' | 'distance_asc' | 'likes_desc' | 'views_desc' | 'comments_desc';
-type SearchMode = 'all' | 'category' | 'favorite_store' | 'liked_posts' | 'nearby' | 'hybrid';
+type SearchMode = 'all' | 'category' | 'favorite_store' | 'liked_posts' | 'hybrid';
 
 const categories = ['すべて', '惣菜', '弁当', '肉', '魚', '野菜', '果物', '米・パン類', 'デザート類', 'その他'];
 const SEARCH_RADIUS_METERS = 5000; // 5km
@@ -910,11 +910,11 @@ export default function Timeline() {
   const [isSearching, setIsSearching] = useState(false);
   
   const [activeFilter, setActiveFilter] = useState<string>('all');
-  const [searchMode, setSearchMode] = useState<SearchMode>('nearby'); // 常にnearbyに固定
+  const [searchMode, setSearchMode] = useState<SearchMode>('all'); // 'nearby'から'all'に変更
   const [sortBy, setSortBy] = useState<SortOption>('created_at_desc');
   
   const [tempActiveFilter, setTempActiveFilter] = useState<string>('all');
-  const [tempSearchMode, setTempSearchMode] = useState<SearchMode>('nearby'); // 常にnearbyに固定
+  const [tempSearchMode, setTempSearchMode] = useState<SearchMode>('all'); // 'nearby'から'all'に変更
   const [tempSortBy, setTempSortBy] = useState<SortOption>('created_at_desc');
   
   const [hasMore, setHasMore] = useState(true);
@@ -1301,13 +1301,6 @@ export default function Timeline() {
         });
       }
 
-      // 周辺検索の処理
-      if (currentSearchMode === 'nearby' && currentUserLocation) {
-        processedPosts = processedPosts.filter(post => {
-          return post.distance !== undefined && post.distance <= SEARCH_RADIUS_METERS;
-        });
-      }
-
       // 距離によるソート
       if (currentSortBy === 'distance_asc' && currentUserLocation) {
         processedPosts = processedPosts
@@ -1321,7 +1314,7 @@ export default function Timeline() {
         setPosts(prevPosts => [...prevPosts, ...processedPosts as ExtendedPostWithAuthor[]]);
       }
 
-      setHasMore(data.length === 20 && currentSearchMode !== 'nearby' && currentSearchMode !== 'liked_posts');
+      setHasMore(data.length === 20); // 'nearby'条件を削除
     } catch (e: any) {
       console.error("投稿の取得に失敗しました:", e);
       setError("投稿の読み込みに失敗しました。しばらくしてから再度お試しください。");
@@ -1438,7 +1431,7 @@ export default function Timeline() {
   }, [highlightPostId, posts]);
 
   const loadMorePosts = useCallback(() => {
-    if (!loadingMore && hasMore && searchModeRef.current !== 'nearby' && fetchPostsRef.current) {
+    if (!loadingMore && hasMore && fetchPostsRef.current) {
       fetchPostsRef.current(posts.length, false, debouncedSearchTerm);
     }
   }, [posts.length, loadingMore, hasMore, debouncedSearchTerm]);
@@ -1583,7 +1576,6 @@ export default function Timeline() {
             longitude: position.coords.longitude,
           });
           setIsGettingLocation(false);
-          setTempSearchMode('nearby');
         },
         (error) => {
           console.error('位置情報の取得に失敗しました:', error);
@@ -1795,7 +1787,7 @@ export default function Timeline() {
           )}
         </div>
         
-        {/* フィルターボタンと5キロ圏内ボタンを横に並べる */}
+        {/* フィルターボタンのみ表示（5km圏内ボタンを削除） */}
         <Button onClick={() => setShowFilterModal(true)} variant="outline" className="relative">
           <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
           {(activeFilter !== 'all' || sortBy !== 'created_at_desc') && (
@@ -1803,19 +1795,6 @@ export default function Timeline() {
               {(activeFilter !== 'all' ? 1 : 0) + (sortBy !== 'created_at_desc' ? 1 : 0)}
             </Badge>
           )}
-        </Button>
-        
-        <Button
-          onClick={handleRefreshLocation}
-          disabled={isGettingLocation}
-          className="bg-green-600 text-white hover:bg-green-700 whitespace-nowrap"
-        >
-          {isGettingLocation ? (
-            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-          ) : (
-            <MapPin className="h-4 w-4 mr-2" />
-          )}
-          5km圏内
         </Button>
       </div>
 
@@ -1860,15 +1839,6 @@ export default function Timeline() {
         </div>
       )}
 
-      {/* 周辺検索の結果表示（常に表示） */}
-      {userLocation && !loading && (
-        <div className="px-4 py-2 bg-green-50 border-b">
-          <p className="text-sm text-green-700">
-            📍 現在地から5km圏内の投稿を表示中 ({posts.length}件)
-          </p>
-        </div>
-      )}
-      
       <div className="timeline-scroll-container custom-scrollbar overscroll-none">
         <div className="p-4" style={{ paddingBottom: '24px' }}>
           {posts.length === 0 && !loading && !isSearching ? (
@@ -1885,15 +1855,6 @@ export default function Timeline() {
                   <Button onClick={() => setGeneralSearchTerm('')} className="mt-4">
                     検索をクリア
                   </Button>
-                </div>
-              ) : searchMode === 'nearby' ? (
-                <div>
-                  <p className="text-xl text-muted-foreground mb-2">
-                    現在地から5km圏内に投稿がありません
-                  </p>
-                  <p className="text-sm text-gray-500 mb-4">
-                    範囲を広げるか、別の検索条件をお試しください
-                  </p>
                 </div>
               ) : (
                 <p className="text-xl text-muted-foreground">検索条件に合う投稿はまだありません。</p>
@@ -1936,7 +1897,7 @@ export default function Timeline() {
                       onView={handleView}
                       onComment={handleCommentClick}
                       currentUserId={currentUserId}
-                      showDistance={searchMode === 'nearby' && post.distance !== undefined}
+                      showDistance={false} // 常にfalse
                       isOwnPost={post.author_user_id === currentUserId}
                       enableComments={true}
                     />
@@ -1959,7 +1920,7 @@ export default function Timeline() {
           {!hasMore && posts.length > 0 && (
             <div className="text-center py-8" style={{ marginBottom: '16px' }}>
               <p className="text-muted-foreground">
-                {searchMode === 'nearby' ? '5km圏内の投稿をすべて表示しました' : 'すべての投稿を読み込みました'}
+                すべての投稿を読み込みました
               </p>
             </div>
           )}
@@ -1983,7 +1944,6 @@ export default function Timeline() {
         description="検索条件と表示順を設定できます。"
       >
         <div className="space-y-6 max-h-[70vh] overflow-y-auto">
-          {/* カテゴリ選択 */}
           <div>
             <h3 className="font-semibold text-lg mb-2">カテゴリーで絞り込み</h3>
             <Select 
@@ -2020,19 +1980,15 @@ export default function Timeline() {
                 <SelectItem value="likes_desc" className="text-lg py-3">いいねが多い順</SelectItem>
                 <SelectItem value="views_desc" className="text-lg py-3">表示回数が多い順</SelectItem>
                 <SelectItem value="comments_desc" className="text-lg py-3">コメントが多い順</SelectItem>
-                {userLocation && <SelectItem value="distance_asc" className="text-lg py-3">距離が近い順</SelectItem>}
               </SelectContent>
             </Select>
           </div>
-
-          {/* 特別な検索セクションを完全に削除 */}
         </div>
 
         <div className="mt-6 flex justify-between">
           <Button variant="outline" onClick={() => {
             setTempActiveFilter('all');
             setTempSortBy('created_at_desc');
-            // searchModeは常にnearbyのまま
           }}>
             すべてクリア
           </Button>
