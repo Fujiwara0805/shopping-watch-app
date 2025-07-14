@@ -106,12 +106,52 @@ const getReleaseTypeBadge = (type: ReleaseType) => {
 // サンプルリリースノートデータ
 const releaseNotes: ReleaseNote[] = [
   {
+    version: '1.0.7',
+    date: '2025-07-14',
+    type: 'minor',
+    title: 'データ利活用機能の追加とプロフィール機能の強化',
+    description: 'より良いサービス提供のため、ユーザー属性データの収集機能を追加しました。収集したデータは個人を特定しない統計データとして、地域の店舗様への情報提供や機能改善に活用させていただきます。',
+    isLatest: true,
+    changes: [
+      {
+        type: 'new',
+        title: 'データ利活用機能',
+        description: '年齢層、性別、居住地域、家族構成、職業・収入、買い物行動などの属性データを収集する機能を追加しました。データは個人を特定しない統計データとして活用されます。'
+      },
+      {
+        type: 'new',
+        title: 'プロフィール完成度表示',
+        description: 'プロフィール設定画面と編集画面に完成度を表示する機能を追加しました。入力状況を視覚的に確認できます。'
+      },
+      {
+        type: 'new',
+        title: 'データ利用同意機能',
+        description: 'データ利活用に関する同意機能を追加しました。プロフィールの作成・更新時にデータ利用への同意が必要になります。'
+      },
+      {
+        type: 'improvement',
+        title: 'プロフィール画面の改善',
+        description: 'プロフィール設定画面と編集画面のUIを改善し、カード形式でより見やすく整理しました。'
+      },
+      {
+        type: 'improvement',
+        title: 'データベース構造の最適化',
+        description: 'データ利活用項目に対応するためのデータベース構造を最適化し、効率的なデータ管理を実現しました。'
+      },
+      {
+        type: 'security',
+        title: 'プライバシー保護の強化',
+        description: 'データ利活用に関するプライバシーポリシーを更新し、個人情報保護を強化しました。'
+      }
+    ]
+  },
+  {
     version: '1.0.6',
     date: '2025-07-13',
     type: 'minor',
     title: '家族グループ機能の追加',
     description: '家族や友人とTODOリストを共有できる「家族グループ機能」を追加しました！買い物メモはもちろん、家事の分担や作業リストをグループで管理できるようになりました。',
-    isLatest: true,
+    isLatest: false,
     changes: [
       {
         type: 'new',
@@ -507,7 +547,7 @@ export default function ReleaseNotesPage() {
         >
           <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 text-center border border-blue-200">
             <Smartphone className="h-6 w-6 mx-auto text-blue-600 mb-2" />
-            <p className="text-lg font-bold text-blue-900">v1.0.6</p>
+            <p className="text-lg font-bold text-blue-900">v1.0.7</p>
             <p className="text-xs text-blue-700">現在のバージョン</p>
           </div>
           <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4 text-center border border-green-200">

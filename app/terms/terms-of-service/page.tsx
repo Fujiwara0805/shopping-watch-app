@@ -71,8 +71,49 @@ export default function TermsOfServicePage() {
             </section>
 
             <section>
+              <h2 className="text-xl font-bold text-gray-900 mb-4 pb-2 border-b border-yellow-200">
+                第3条（データ利活用について）
+              </h2>
+              <div className="bg-yellow-50 p-4 rounded-lg mb-4">
+                <p className="text-base leading-7 font-medium text-yellow-800">
+                  本サービスでは、サービス向上と地域経済活性化のため、ユーザーの同意に基づいてデータ利活用を行います。
+                </p>
+              </div>
+              <div className="space-y-3 pl-4">
+                <div className="flex items-start space-x-3">
+                  <span className="flex-shrink-0 w-6 h-6 bg-yellow-100 text-yellow-800 rounded-full flex items-center justify-center text-xs font-bold">1</span>
+                  <p className="text-base leading-7">
+                    <span className="font-bold text-yellow-700">データ利活用の内容</span><br />
+                    <span className="text-sm text-gray-600">年齢層、性別、居住地域、家族構成、職業・収入、買い物行動等の属性データを個人を特定しない統計データとして活用します。</span>
+                  </p>
+                </div>
+                <div className="flex items-start space-x-3">
+                  <span className="flex-shrink-0 w-6 h-6 bg-yellow-100 text-yellow-800 rounded-full flex items-center justify-center text-xs font-bold">2</span>
+                  <p className="text-base leading-7">
+                    <span className="font-bold text-yellow-700">利用目的</span><br />
+                    <span className="text-sm text-gray-600">サービス改善、地域店舗様への統計情報提供、地域経済活性化への貢献</span>
+                  </p>
+                </div>
+                <div className="flex items-start space-x-3">
+                  <span className="flex-shrink-0 w-6 h-6 bg-yellow-100 text-yellow-800 rounded-full flex items-center justify-center text-xs font-bold">3</span>
+                  <p className="text-base leading-7">
+                    <span className="font-bold text-yellow-700">同意の任意性</span><br />
+                    <span className="text-sm text-gray-600">データ利活用への同意は任意であり、同意の撤回はいつでも可能です。</span>
+                  </p>
+                </div>
+                <div className="flex items-start space-x-3">
+                  <span className="flex-shrink-0 w-6 h-6 bg-yellow-100 text-yellow-800 rounded-full flex items-center justify-center text-xs font-bold">4</span>
+                  <p className="text-base leading-7">
+                    <span className="font-bold text-yellow-700">プライバシー保護</span><br />
+                    <span className="text-sm text-gray-600">個人を特定できる情報は一切含まれず、統計データのみの活用となります。</span>
+                  </p>
+                </div>
+              </div>
+            </section>
+
+            <section>
               <h2 className="text-xl font-bold text-gray-900 mb-4 pb-2 border-b border-red-200">
-                第3条（禁止事項）
+                第4条（禁止事項）
               </h2>
               <div className="bg-red-50 p-4 rounded-lg mb-4">
                 <p className="text-base leading-7 font-medium text-red-800">
@@ -125,6 +166,13 @@ export default function TermsOfServicePage() {
                 <div className="flex items-start space-x-3">
                   <span className="flex-shrink-0 w-6 h-6 bg-red-100 text-red-800 rounded-full flex items-center justify-center text-xs font-bold">7</span>
                   <p className="text-base leading-7">
+                    <span className="font-bold text-red-700">データ利活用の悪用</span><br />
+                    <span className="text-sm text-gray-600">（虚偽の属性データの入力や統計データの不正利用）</span>
+                  </p>
+                </div>
+                <div className="flex items-start space-x-3">
+                  <span className="flex-shrink-0 w-6 h-6 bg-red-100 text-red-800 rounded-full flex items-center justify-center text-xs font-bold">8</span>
+                  <p className="text-base leading-7">
                     <span className="font-bold text-red-700">その他の違反行為</span><br />
                     <span className="text-sm text-gray-600">（法令に違反する行為や公序良俗に反する行為）</span>
                   </p>
@@ -134,7 +182,7 @@ export default function TermsOfServicePage() {
 
             <section>
               <h2 className="text-xl font-bold text-gray-900 mb-4 pb-2 border-b border-gray-200">
-                第4条（投稿コンテンツ）
+                第5条（投稿コンテンツ）
               </h2>
               <div className="space-y-3 pl-4">
                 <div className="flex items-start space-x-3">
@@ -160,7 +208,7 @@ export default function TermsOfServicePage() {
 
             <section>
               <h2 className="text-xl font-bold text-gray-900 mb-4 pb-2 border-b border-gray-200">
-                第5条（アカウントの停止・削除）
+                第6条（アカウントの停止・削除）
               </h2>
               <div className="space-y-3 pl-4">
                 <div className="flex items-start space-x-3">
@@ -175,12 +223,18 @@ export default function TermsOfServicePage() {
                     アカウントが削除された場合、投稿されたコンテンツも削除されます。
                   </p>
                 </div>
+                <div className="flex items-start space-x-3">
+                  <span className="flex-shrink-0 w-6 h-6 bg-yellow-100 text-yellow-800 rounded-full flex items-center justify-center text-xs font-bold">3</span>
+                  <p className="text-base leading-7">
+                    データ利活用に関する統計データは、匿名化処理後に保存される場合があります。
+                  </p>
+                </div>
               </div>
             </section>
 
             <section>
               <h2 className="text-xl font-bold text-gray-900 mb-4 pb-2 border-b border-gray-200">
-                第6条（サービスの変更・停止）
+                第7条（サービスの変更・停止）
               </h2>
               <div className="space-y-3 pl-4">
                 <div className="flex items-start space-x-3">
@@ -195,12 +249,18 @@ export default function TermsOfServicePage() {
                     システムメンテナンス、障害対応等により、一時的にサービスを停止する場合があります。
                   </p>
                 </div>
+                <div className="flex items-start space-x-3">
+                  <span className="flex-shrink-0 w-6 h-6 bg-pink-100 text-pink-800 rounded-full flex items-center justify-center text-xs font-bold">3</span>
+                  <p className="text-base leading-7">
+                    データ利活用に関する重要な変更については、事前に通知いたします。
+                  </p>
+                </div>
               </div>
             </section>
 
             <section>
               <h2 className="text-xl font-bold text-gray-900 mb-4 pb-2 border-b border-gray-200">
-                第7条（個人情報の取扱い）
+                第8条（個人情報の取扱い）
               </h2>
               <div className="space-y-3 pl-4">
                 <div className="flex items-start space-x-3">
@@ -209,12 +269,18 @@ export default function TermsOfServicePage() {
                     個人情報の取扱いについては、別途定めるプライバシーポリシーに従います。
                   </p>
                 </div>
+                <div className="flex items-start space-x-3">
+                  <span className="flex-shrink-0 w-6 h-6 bg-indigo-100 text-indigo-800 rounded-full flex items-center justify-center text-xs font-bold">2</span>
+                  <p className="text-base leading-7">
+                    データ利活用に関する詳細については、プライバシーポリシーおよびサービスポリシーをご確認ください。
+                  </p>
+                </div>
               </div>
             </section>
 
             <section>
               <h2 className="text-xl font-bold text-gray-900 mb-4 pb-2 border-b border-gray-200">
-                第8条（免責事項）
+                第9条（免責事項）
               </h2>
               <div className="space-y-3 pl-4">
                 <div className="flex items-start space-x-3">
@@ -235,12 +301,18 @@ export default function TermsOfServicePage() {
                     本サービスの利用により生じた損害について、当社は一切の責任を負いません。
                   </p>
                 </div>
+                <div className="flex items-start space-x-3">
+                  <span className="flex-shrink-0 w-6 h-6 bg-gray-100 text-gray-800 rounded-full flex items-center justify-center text-xs font-bold">4</span>
+                  <p className="text-base leading-7">
+                    データ利活用により生じた損害について、当社は一切の責任を負いません。
+                  </p>
+                </div>
               </div>
             </section>
 
             <section>
               <h2 className="text-xl font-bold text-gray-900 mb-4 pb-2 border-b border-gray-200">
-                第9条（サービス利用料）
+                第10条（サービス利用料）
               </h2>
               <div className="space-y-3 pl-4">
                 <div className="flex items-start space-x-3">
@@ -260,7 +332,7 @@ export default function TermsOfServicePage() {
 
             <section>
               <h2 className="text-xl font-bold text-gray-900 mb-4 pb-2 border-b border-gray-200">
-                第10条（規約の変更）
+                第11条（規約の変更）
               </h2>
               <div className="space-y-3 pl-4">
                 <div className="flex items-start space-x-3">
@@ -275,12 +347,18 @@ export default function TermsOfServicePage() {
                     規約の変更は、本サービス上での告知により効力を生じます。
                   </p>
                 </div>
+                <div className="flex items-start space-x-3">
+                  <span className="flex-shrink-0 w-6 h-6 bg-orange-100 text-orange-800 rounded-full flex items-center justify-center text-xs font-bold">3</span>
+                  <p className="text-base leading-7">
+                    データ利活用に関する重要な変更については、事前に通知いたします。
+                  </p>
+                </div>
               </div>
             </section>
 
             <section>
               <h2 className="text-xl font-bold text-gray-900 mb-4 pb-2 border-b border-gray-200">
-                第11条（準拠法・管轄裁判所）
+                第12条（準拠法・管轄裁判所）
               </h2>
               <div className="space-y-3 pl-4">
                 <div className="flex items-start space-x-3">
@@ -301,7 +379,7 @@ export default function TermsOfServicePage() {
             <div className="bg-gray-100 p-4 rounded-lg text-center">
               <p className="text-sm text-gray-600">
                 <span className="font-bold">制定日：</span>2025年6月14日<br />
-                <span className="font-bold">最終更新日：</span>2025年6月14日
+                <span className="font-bold">最終更新日：</span>2025年7月14日
               </p>
             </div>
           </div>

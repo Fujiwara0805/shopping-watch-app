@@ -60,11 +60,41 @@ export default function PrivacyPolicyPage() {
                     </div>
                     <div className="flex items-start space-x-2">
                       <span className="w-2 h-2 bg-blue-400 rounded-full mt-2 flex-shrink-0"></span>
-                      <p className="text-sm text-gray-700">自己紹介文</p>
+                      <p className="text-sm text-gray-700">お気に入り店舗情報（最大3店舗）</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-r">
+                  <h3 className="font-bold text-yellow-800 mb-3">データ利活用情報（任意・同意必須）</h3>
+                  <div className="space-y-2">
+                    <div className="flex items-start space-x-2">
+                      <span className="w-2 h-2 bg-yellow-400 rounded-full mt-2 flex-shrink-0"></span>
+                      <p className="text-sm text-gray-700">
+                        <span className="font-bold">基本属性</span><br />
+                        <span className="text-xs text-gray-600">（年齢層、性別、居住地域）</span>
+                      </p>
                     </div>
                     <div className="flex items-start space-x-2">
-                      <span className="w-2 h-2 bg-blue-400 rounded-full mt-2 flex-shrink-0"></span>
-                      <p className="text-sm text-gray-700">お気に入り店舗情報（最大3店舗）</p>
+                      <span className="w-2 h-2 bg-yellow-400 rounded-full mt-2 flex-shrink-0"></span>
+                      <p className="text-sm text-gray-700">
+                        <span className="font-bold">家族構成</span><br />
+                        <span className="text-xs text-gray-600">（世帯形態、お子さまの人数・年齢層）</span>
+                      </p>
+                    </div>
+                    <div className="flex items-start space-x-2">
+                      <span className="w-2 h-2 bg-yellow-400 rounded-full mt-2 flex-shrink-0"></span>
+                      <p className="text-sm text-gray-700">
+                        <span className="font-bold">職業・収入</span><br />
+                        <span className="text-xs text-gray-600">（職業カテゴリ、世帯年収）</span>
+                      </p>
+                    </div>
+                    <div className="flex items-start space-x-2">
+                      <span className="w-2 h-2 bg-yellow-400 rounded-full mt-2 flex-shrink-0"></span>
+                      <p className="text-sm text-gray-700">
+                        <span className="font-bold">買い物行動</span><br />
+                        <span className="text-xs text-gray-600">（頻度、時間帯、平均金額、スタイル）</span>
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -113,7 +143,8 @@ export default function PrivacyPolicyPage() {
                   "LINE通知の配信",
                   "サービス改善・統計分析",
                   "お問い合わせ対応",
-                  "利用規約違反の調査・対応"
+                  "利用規約違反の調査・対応",
+                  "地域の店舗様への統計情報提供"
                 ].map((purpose, index) => (
                   <div key={index} className="flex items-center space-x-2 p-3 bg-gray-50 rounded-lg">
                     <span className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0"></span>
@@ -125,47 +156,101 @@ export default function PrivacyPolicyPage() {
 
             <section>
               <h2 className="text-xl font-bold text-gray-900 mb-4 pb-2 border-b border-gray-200">
-                3. 個人情報の第三者提供
+                3. データ利活用について
               </h2>
-              <ol className="list-disc pl-8">
-                <li>当社は、以下の場合を除き、個人情報を第三者に提供しません。</li>
-                <li>ユーザーの同意がある場合</li>
-                <li>法令に基づく場合</li>
-                <li>人の生命、身体または財産の保護のために必要がある場合</li>
-              </ol>
+              <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg mb-4">
+                <h3 className="font-bold text-yellow-800 mb-2">データ利活用の概要</h3>
+                <p className="text-sm text-gray-700 leading-6">
+                  ユーザーの同意に基づいて収集した属性データは、個人を特定しない統計データとして処理し、以下の目的で活用いたします。
+                </p>
+              </div>
+              
+              <div className="space-y-4">
+                <div className="bg-white border border-gray-200 p-4 rounded-lg">
+                  <h3 className="font-bold text-gray-900 mb-2">サービス改善</h3>
+                  <p className="text-sm text-gray-600">ユーザー層の分析により、より良い機能開発とサービス向上を実現します。</p>
+                </div>
+                
+                <div className="bg-white border border-gray-200 p-4 rounded-lg">
+                  <h3 className="font-bold text-gray-900 mb-2">店舗様への情報提供</h3>
+                  <p className="text-sm text-gray-600">地域の店舗様に対して、匿名化された顧客層の統計情報を提供し、より良い商品・サービスの提供をサポートします。</p>
+                </div>
+                
+                <div className="bg-white border border-gray-200 p-4 rounded-lg">
+                  <h3 className="font-bold text-gray-900 mb-2">地域経済の活性化</h3>
+                  <p className="text-sm text-gray-600">地域の消費動向データを活用し、地域経済の活性化に貢献します。</p>
+                </div>
+              </div>
+              
+              <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg mt-4">
+                <h3 className="font-bold text-blue-800 mb-2">プライバシー保護</h3>
+                <ul className="text-sm text-blue-700 space-y-1">
+                  <li>• 個人を特定できる情報は一切含まれません</li>
+                  <li>• 統計データのみの提供となります</li>
+                  <li>• データ利用への同意は任意です</li>
+                  <li>• 同意の撤回はいつでも可能です</li>
+                </ul>
+              </div>
             </section>
 
             <section>
               <h2 className="text-xl font-bold text-gray-900 mb-4 pb-2 border-b border-gray-200">
-                4. 個人情報の管理
+                4. 個人情報の第三者提供
+              </h2>
+              <div className="space-y-3">
+                <p className="text-base leading-7">
+                  当社は、以下の場合を除き、個人情報を第三者に提供しません。
+                </p>
+                <ol className="list-decimal pl-8 space-y-2">
+                  <li>ユーザーの同意がある場合</li>
+                  <li>法令に基づく場合</li>
+                  <li>人の生命、身体または財産の保護のために必要がある場合</li>
+                  <li>データ利活用について同意いただいた統計データの提供</li>
+                </ol>
+                
+                <div className="bg-gray-50 border border-gray-200 p-4 rounded-lg mt-4">
+                  <h3 className="font-bold text-gray-900 mb-2">統計データの提供について</h3>
+                  <p className="text-sm text-gray-600 leading-6">
+                    データ利活用に同意いただいた情報は、個人を特定できない統計データとして地域の店舗様に提供される場合があります。
+                    この場合も、個人情報保護法に基づく適切な処理を行います。
+                  </p>
+                </div>
+              </div>
+            </section>
+
+            <section>
+              <h2 className="text-xl font-bold text-gray-900 mb-4 pb-2 border-b border-gray-200">
+                5. 個人情報の管理
               </h2>
               <p className="text-base leading-7 mb-4">
                 当社は、個人情報の漏洩、滅失または毀損の防止その他の個人情報の安全管理のために必要かつ適切な措置を講じます。
               </p>
-              <ul className="list-disc pl-8">
+              <ul className="list-disc pl-8 space-y-2">
                 <li>適切なセキュリティ対策を実施</li>
                 <li>不正アクセス・漏洩の防止</li>
                 <li>定期的なセキュリティ監査の実施</li>
                 <li>暗号化技術による情報保護</li>
+                <li>データ利活用情報の匿名化処理</li>
               </ul>
             </section>
 
             <section>
               <h2 className="text-xl font-bold text-gray-900 mb-4 pb-2 border-b border-gray-200">
-                5. 個人情報の開示・訂正・削除
+                6. 個人情報の開示・訂正・削除
               </h2>
-              <ol className="list-disc pl-8">
+              <ol className="list-disc pl-8 space-y-2">
                 <li>ユーザーは、当社が保有する自己の個人情報について、開示、訂正、削除を求めることができます。</li>
                 <li>開示等の請求は、お問い合わせフォームより行ってください。</li>
                 <li>当社は、請求に応じて合理的な期間内に対応いたします。</li>
+                <li>データ利活用への同意撤回もいつでも可能です。</li>
               </ol>
             </section>
 
             <section>
               <h2 className="text-xl font-bold text-gray-900 mb-4 pb-2 border-b border-gray-200">
-                6. Cookie等の利用
+                7. Cookie等の利用
               </h2>
-              <ol className="list-disc pl-8">
+              <ol className="list-disc pl-8 space-y-2">
                 <li>本サービスでは、ユーザーの利便性向上のためCookieを使用する場合があります。</li>
                 <li>Cookieの使用を希望しない場合は、ブラウザの設定により無効にすることができます。</li>
               </ol>
@@ -173,7 +258,7 @@ export default function PrivacyPolicyPage() {
 
             <section>
               <h2 className="text-xl font-bold text-gray-900 mb-4 pb-2 border-b border-gray-200">
-                7. 外部サービスとの連携
+                8. 外部サービスとの連携
               </h2>
               <p className="text-base leading-7 mb-4">
                 本サービスでは、以下の外部サービスと連携しています。
@@ -200,27 +285,29 @@ export default function PrivacyPolicyPage() {
 
             <section>
               <h2 className="text-xl font-bold text-gray-900 mb-4 pb-2 border-b border-gray-200">
-                8. 個人情報の保存期間
+                9. 個人情報の保存期間
               </h2>
-              <ol className="list-disc pl-8">
+              <ol className="list-disc pl-8 space-y-2">
                 <li>個人情報は、利用目的の達成に必要な期間保存します。</li>
                 <li>アカウント削除時は、法令で保存が義務付けられている情報を除き、個人情報を削除します。</li>
+                <li>データ利活用に関する統計データは、匿名化処理後に保存される場合があります。</li>
               </ol>
             </section>
 
             <section>
               <h2 className="text-xl font-bold text-gray-900 mb-4 pb-2 border-b border-gray-200">
-                9. プライバシーポリシーの変更
+                10. プライバシーポリシーの変更
               </h2>
-              <ol className="list-disc pl-8">
+              <ol className="list-disc pl-8 space-y-2">
                 <li>当社は、必要に応じて本プライバシーポリシーを変更することができます。</li>
                 <li>変更は、本サービス上での告知により効力を生じます。</li>
+                <li>重要な変更については、事前に通知いたします。</li>
               </ol>
             </section>
 
             <section>
               <h2 className="text-xl font-bold text-gray-900 mb-4 pb-2 border-b border-gray-200">
-                10. お問い合わせ
+                11. お問い合わせ
               </h2>
               <div className="bg-blue-50 p-4 rounded-lg">
                 <p className="text-base leading-7 text-blue-800">
@@ -233,7 +320,7 @@ export default function PrivacyPolicyPage() {
             <div className="bg-gray-100 p-4 rounded-lg text-center">
               <p className="text-sm text-gray-600">
                 <span className="font-bold">制定日：</span>2025年6月14日<br />
-                <span className="font-bold">最終更新日：</span>2025年6月14日
+                <span className="font-bold">最終更新日：</span>2025年7月14日
               </p>
             </div>
           </div>
