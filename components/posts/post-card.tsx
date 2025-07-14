@@ -465,7 +465,11 @@ export const PostCard = memo(({
               <MapPin className="h-5 w-5 text-gray-500 flex-shrink-0" />
               <Button
                 variant="ghost"
-                className="p-0 h-auto font-medium text-lg hover:bg-transparent hover:text-primary flex items-center space-x-1 min-w-0"
+                className={cn(
+                  "p-0 h-auto font-medium hover:bg-transparent hover:text-primary flex items-center space-x-1 min-w-0",
+                  // 15文字以上の場合はテキストサイズを小さく
+                  (post.store_name || '').length >= 15 ? "text-sm" : "text-lg"
+                )}
                 onClick={handleCopyStoreName}
                 title="店舗名をコピー"
               >

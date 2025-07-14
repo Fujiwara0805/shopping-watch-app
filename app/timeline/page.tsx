@@ -910,11 +910,11 @@ export default function Timeline() {
   const [isSearching, setIsSearching] = useState(false);
   
   const [activeFilter, setActiveFilter] = useState<string>('all');
-  const [searchMode, setSearchMode] = useState<SearchMode>('nearby'); // 'all' → 'nearby'に変更
+  const [searchMode, setSearchMode] = useState<SearchMode>('nearby'); // 常にnearbyに固定
   const [sortBy, setSortBy] = useState<SortOption>('created_at_desc');
   
   const [tempActiveFilter, setTempActiveFilter] = useState<string>('all');
-  const [tempSearchMode, setTempSearchMode] = useState<SearchMode>('nearby'); // 'all' → 'nearby'に変更
+  const [tempSearchMode, setTempSearchMode] = useState<SearchMode>('nearby'); // 常にnearbyに固定
   const [tempSortBy, setTempSortBy] = useState<SortOption>('created_at_desc');
   
   const [hasMore, setHasMore] = useState(true);
@@ -1795,29 +1795,28 @@ export default function Timeline() {
           )}
         </div>
         
-        {/* フィルターボタンと5キロ圏内ボタンを縦に2列配置 */}
-        <div className="flex flex-col space-y-1">
-          <Button onClick={() => setShowFilterModal(true)} variant="outline" className="relative text-xs px-2 py-1 h-8">
-            <SlidersHorizontal className="h-3 w-3 text-muted-foreground" />
-            {(activeFilter !== 'all' || sortBy !== 'created_at_desc') && (
-              <Badge className="absolute -top-1 -right-1 h-3 w-3 rounded-full p-0 flex items-center justify-center text-xs">
-                {(activeFilter !== 'all' ? 1 : 0) + (sortBy !== 'created_at_desc' ? 1 : 0)}
-              </Badge>
-            )}
-          </Button>
-          
-          <Button
-            onClick={handleRefreshLocation}
-            disabled={isGettingLocation}
-            className="bg-green-600 text-white hover:bg-green-700 text-xs px-2 py-1 h-8 whitespace-nowrap"
-          >
-            {isGettingLocation ? (
-              <Loader2 className="h-3 w-3 animate-spin" />
-            ) : (
-              <MapPin className="h-3 w-3" />
-            )}
-          </Button>
-        </div>
+        {/* フィルターボタンと5キロ圏内ボタンを横に並べる */}
+        <Button onClick={() => setShowFilterModal(true)} variant="outline" className="relative">
+          <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
+          {(activeFilter !== 'all' || sortBy !== 'created_at_desc') && (
+            <Badge className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
+              {(activeFilter !== 'all' ? 1 : 0) + (sortBy !== 'created_at_desc' ? 1 : 0)}
+            </Badge>
+          )}
+        </Button>
+        
+        <Button
+          onClick={handleRefreshLocation}
+          disabled={isGettingLocation}
+          className="bg-green-600 text-white hover:bg-green-700 whitespace-nowrap"
+        >
+          {isGettingLocation ? (
+            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+          ) : (
+            <MapPin className="h-4 w-4 mr-2" />
+          )}
+          5km圏内
+        </Button>
       </div>
 
       {/* リアルタイム検索中の表示 */}
@@ -1830,7 +1829,7 @@ export default function Timeline() {
         </div>
       )}
 
-      {/* アクティブなフィルタの表示（searchMode === 'nearby'を除外） */}
+      {/* アクティブなフィルタの表示（searchModeを除外） */}
       {(activeFilter !== 'all' || sortBy !== 'created_at_desc') && (
         <div className="px-4 py-2 bg-gray-50 border-b">
           <div className="flex flex-wrap gap-2 items-center">
@@ -1861,7 +1860,7 @@ export default function Timeline() {
         </div>
       )}
 
-      {/* 周辺検索の結果表示 */}
+      {/* 周辺検索の結果表示（常に表示） */}
       {userLocation && !loading && (
         <div className="px-4 py-2 bg-green-50 border-b">
           <p className="text-sm text-green-700">
@@ -2026,51 +2025,14 @@ export default function Timeline() {
             </Select>
           </div>
 
-          {/* 特別な検索（周辺検索を削除） */}
-          <div>
-            <h3 className="font-semibold text-lg mb-2">特別な検索</h3>
-            <Select onValueChange={(value: SearchMode) => setTempSearchMode(value)} value={tempSearchMode}>
-              <SelectTrigger className="w-full focus:ring-0 focus:ring-offset-0 focus:border-input">
-                <SelectValue placeholder="検索方法を選択" />
-              </SelectTrigger>
-              <SelectContent className="max-h-[200px]">
-                <SelectItem 
-                  value="favorite_store" 
-                  disabled={!currentUserId || favoriteStoreIds.length === 0}
-                  className="text-lg py-3"
-                >
-                  お気に入り店舗の投稿 {favoriteStoreIds.length > 0 && `(${favoriteStoreIds.length}店舗)`}
-                </SelectItem>
-                <SelectItem 
-                  value="liked_posts" 
-                  disabled={!currentUserId || likedPostIds.length === 0}
-                  className="text-lg py-3"
-                >
-                  いいねした投稿 
-                </SelectItem>
-                <SelectItem 
-                  value="hybrid" 
-                  disabled={!currentUserId || (favoriteStoreIds.length === 0 && likedPostIds.length === 0)}
-                  className="text-lg py-3"
-                >
-                  複合検索 (お気に入り + いいね) 
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {tempSearchMode === 'liked_posts' && likedPostIds.length > 0 && (
-            <p className="text-xs text-gray-500 mt-1">
-              最新のいいね順で表示されます
-            </p>
-          )}
+          {/* 特別な検索セクションを完全に削除 */}
         </div>
 
         <div className="mt-6 flex justify-between">
           <Button variant="outline" onClick={() => {
             setTempActiveFilter('all');
             setTempSortBy('created_at_desc');
-            setTempSearchMode('nearby');
+            // searchModeは常にnearbyのまま
           }}>
             すべてクリア
           </Button>
