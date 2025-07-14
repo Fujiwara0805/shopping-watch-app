@@ -30,3 +30,18 @@ export interface PostWithAuthor extends Omit<Post, 'app_profile_id'> {
   author: AuthorProfile | null;
   isLikedByCurrentUser?: boolean;
 }
+
+export interface Comment {
+  id: string;
+  post_id: string;
+  app_profile_id: string;
+  parent_comment_id: string | null;
+  content: string;
+  created_at: string;
+  updated_at: string;
+  is_deleted: boolean;
+  author: AuthorProfile;
+  replies?: Comment[];
+  likes_count: number;
+  isLikedByCurrentUser?: boolean;
+}

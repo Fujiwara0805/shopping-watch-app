@@ -4,7 +4,7 @@ import { useState, useCallback, useRef, useEffect, memo } from 'react';
 import { motion } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
 import { ja } from 'date-fns/locale';
-import { Heart, Share2, Clock, Link as LinkIcon, ExternalLink, Instagram, Copy, Laugh, Smile, Meh, Frown, Angry, MapPin } from 'lucide-react';
+import { Heart, Share2, Clock, Link as LinkIcon, ExternalLink, Instagram, Copy, Laugh, Smile, Meh, Frown, Angry, MapPin, Eye, MessageCircle } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -15,6 +15,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { CustomModal } from '@/components/ui/custom-modal';
 import { useToast } from '@/hooks/use-toast';
 import React from 'react';
+import { ExtendedPostWithAuthor } from '@/app/timeline/page';
 
 const discountIcons = [
   { value: 0, Icon: Angry, label: "0%" },
@@ -39,7 +40,6 @@ function formatRemainingTime(expiresAt: number): string {
   return `残り約${minutes}分`;
 }
 
-// 距離をフォーマット
 function formatDistance(distance?: number): string {
   if (!distance) return '';
   if (distance < 1000) {
@@ -48,25 +48,37 @@ function formatDistance(distance?: number): string {
   return `${(distance / 1000).toFixed(1)}km`;
 }
 
-export interface ExtendedPostWithAuthor extends PostWithAuthor {
-  isLikedByCurrentUser?: boolean;
-  likes_count: number;
-  remaining_items?: number;
-  consumption_deadline?: string;
-  distance?: number;
-  author_user_id?: string; // authorから取得するuser_id
-  author_posts_count?: number; // ユーザーの投稿数を追加
+function formatViewCount(count: number): string {
+  if (count < 1000) {
+    return count.toString();
+  } else if (count < 10000) {
+    return `${(count / 1000).toFixed(1)}k`;
+  } else {
+    return `${Math.floor(count / 1000)}k`;
+  }
+}
+
+function formatCommentCount(count: number): string {
+  if (count < 1000) {
+    return count.toString();
+  } else if (count < 10000) {
+    return `${(count / 1000).toFixed(1)}k`;
+  } else {
+    return `${Math.floor(count / 1000)}k`;
+  }
 }
 
 interface PostCardProps {
   post: ExtendedPostWithAuthor;
   onLike?: (postId: string, isLiked: boolean) => Promise<void>;
+  onView?: (postId: string) => Promise<void>;
+  onComment?: (post: ExtendedPostWithAuthor) => void;
   currentUserId?: string | null;
   showDistance?: boolean;
   isOwnPost?: boolean;
   onClick?: (postId: string) => void;
   disableClick?: boolean;
-  isFullScreen?: boolean; // フルスクリーンモード時のスタイル適用
+  enableComments?: boolean;
 }
 
 // 最適化された画像コンポーネント
@@ -89,7 +101,6 @@ const OptimizedImage = memo(({
   const imgRef = useRef<HTMLImageElement>(null);
   const [loadStarted, setLoadStarted] = useState(false);
 
-  // Intersection Observer for lazy loading
   useEffect(() => {
     const img = imgRef.current;
     if (!img) return;
@@ -105,7 +116,7 @@ const OptimizedImage = memo(({
         });
       },
       {
-        rootMargin: '50px', // 50px手前から読み込み開始
+        rootMargin: '50px',
         threshold: 0.1
       }
     );
@@ -114,7 +125,6 @@ const OptimizedImage = memo(({
     return () => observer.unobserve(img);
   }, [loadStarted]);
 
-  // プリロード機能（画面に入ったら即座に読み込む）
   useEffect(() => {
     if (isInView && !isLoaded && !hasError) {
       const img = new Image();
@@ -132,14 +142,12 @@ const OptimizedImage = memo(({
 
   return (
     <div ref={imgRef} className={cn("relative overflow-hidden", className)}>
-      {/* プレースホルダー */}
       {!isLoaded && !hasError && (
         <div className="absolute inset-0 bg-gradient-to-br from-gray-200 to-gray-300 animate-pulse flex items-center justify-center">
           <div className="w-8 h-8 bg-gray-400 rounded animate-pulse" />
         </div>
       )}
       
-      {/* エラー時のフォールバック */}
       {hasError && (
         <div className="absolute inset-0 bg-gray-200 flex items-center justify-center">
           <div className="text-gray-500 text-sm text-center">
@@ -149,7 +157,6 @@ const OptimizedImage = memo(({
         </div>
       )}
       
-      {/* 実際の画像 */}
       {isLoaded && !hasError && (
         <motion.img
           src={src}
@@ -167,7 +174,6 @@ const OptimizedImage = memo(({
 
 OptimizedImage.displayName = 'OptimizedImage';
 
-// メモ化されたバッジコンポーネント
 const DiscountBadge = memo(({ discountRate }: { discountRate: number | null | undefined }) => {
   if (discountRate == null) return null;
 
@@ -189,7 +195,6 @@ const DiscountBadge = memo(({ discountRate }: { discountRate: number | null | un
 
 DiscountBadge.displayName = 'DiscountBadge';
 
-// メモ化されたアバターコンポーネント
 const UserAvatar = memo(({ author }: { author: AuthorProfile | null }) => {
   const authorAvatarUrl = author?.avatar_url
     ? supabase.storage.from('avatars').getPublicUrl(author.avatar_url).data.publicUrl
@@ -205,26 +210,27 @@ const UserAvatar = memo(({ author }: { author: AuthorProfile | null }) => {
 
 UserAvatar.displayName = 'UserAvatar';
 
-// メモ化された投稿カードコンポーネント
 export const PostCard = memo(({ 
   post, 
   onLike, 
+  onView,
+  onComment,
   currentUserId, 
   showDistance = false, 
   isOwnPost, 
   onClick,
   disableClick = false,
-  isFullScreen = false 
+  enableComments = false
 }: PostCardProps) => {
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [isLiking, setIsLiking] = useState(false);
+  const [hasBeenViewed, setHasBeenViewed] = useState(false);
   const { toast } = useToast();
+  const cardRef = useRef<HTMLDivElement>(null);
 
-  // 自分の投稿かどうかの判定を改善
   const isMyPost = isOwnPost || (post.author_user_id === currentUserId);
 
-  // 非ログインユーザーのいいね状態をローカルストレージから取得
   const [anonymousLikedPosts, setAnonymousLikedPosts] = useState<string[]>([]);
   
   useEffect(() => {
@@ -234,7 +240,33 @@ export const PostCard = memo(({
     }
   }, [currentUserId]);
 
-  // いいね状態の判定（ログイン・非ログイン両対応）
+  // ビュー数カウント（Intersection Observer使用）
+  useEffect(() => {
+    if (!onView || hasBeenViewed) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && entry.intersectionRatio > 0.5) {
+            setHasBeenViewed(true);
+            onView(post.id);
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      {
+        threshold: 0.5,
+        rootMargin: '0px'
+      }
+    );
+
+    if (cardRef.current) {
+      observer.observe(cardRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [onView, post.id, hasBeenViewed]);
+
   const isLiked = currentUserId 
     ? post.isLikedByCurrentUser 
     : anonymousLikedPosts.includes(post.id);
@@ -244,27 +276,22 @@ export const PostCard = memo(({
     
     if (isLiking) return;
     
-    // 自分の投稿にはいいねできない（ログインユーザーのみ）
     if (isMyPost && currentUserId) {
       toast({
         title: "自分の投稿にはいいねできません",
-        duration: 2000,
+        duration: 1000, // 2000 → 1000に変更
       });
       return;
     }
 
-    // 非ログインユーザーの重複チェック
     if (!currentUserId) {
       const anonymousLikes = JSON.parse(localStorage.getItem('anonymousLikes') || '[]');
       const alreadyLiked = anonymousLikes.includes(post.id);
       
-      // 既にいいね済みの場合は削除、未いいねの場合は追加
       if (alreadyLiked && !isLiked) {
-        // 状態が不整合の場合は修正
         setAnonymousLikedPosts(prev => prev.filter(id => id !== post.id));
         return;
       } else if (!alreadyLiked && isLiked) {
-        // 状態が不整合の場合は修正
         setAnonymousLikedPosts(prev => [...prev, post.id]);
         return;
       }
@@ -275,13 +302,10 @@ export const PostCard = memo(({
       try {
         await onLike(post.id, !isLiked);
         
-        // 非ログインユーザーの場合、ローカル状態も更新
         if (!currentUserId) {
           if (!isLiked) {
-            // いいね追加
             setAnonymousLikedPosts(prev => [...prev, post.id]);
           } else {
-            // いいね削除
             setAnonymousLikedPosts(prev => prev.filter(id => id !== post.id));
           }
         }
@@ -290,7 +314,7 @@ export const PostCard = memo(({
         toast({
           title: "エラーが発生しました",
           description: "いいね処理に失敗しました。",
-          duration: 3000,
+          duration: 1000, // 3000 → 1000に変更
         });
       } finally {
         setIsLiking(false);
@@ -299,9 +323,16 @@ export const PostCard = memo(({
   }, [onLike, post.id, isLiked, isLiking, toast, isMyPost, currentUserId]);
 
   const handleShareClick = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation(); // 親のclickイベントを防ぐ
+    e.stopPropagation();
     setShowShareDialog(true);
   }, []);
+
+  const handleCommentClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onComment) {
+      onComment(post);
+    }
+  }, [onComment, post]);
 
   const handleCardClick = useCallback(() => {
     if (!disableClick && onClick) {
@@ -339,14 +370,14 @@ export const PostCard = memo(({
     navigator.clipboard.writeText(text).then(() => {
       toast({
         title: `✅ ${message}`,
-        duration: 2000,
+        duration: 1000, // 2000 → 1000に変更
       });
       setShowShareDialog(false);
     }).catch(err => console.error("コピー失敗:", err));
   }, [toast]);
 
   const handleCopyStoreName = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation(); // 親のclickイベントを防ぐ
+    e.stopPropagation();
     if (post.store_name) {
       copyToClipboard(post.store_name, `「${post.store_name}」をコピーしました！`);
     }
@@ -372,7 +403,6 @@ export const PostCard = memo(({
         console.error('ネイティブ共有失敗:', error);
       }
     } else {
-      console.warn('ネイティブ共有APIが利用できません、またはこのデータを共有できません。');
       copyToClipboard(shareData.url, "リンクをコピーしました！");
     }
   }, [post.store_name, post.category, post.content, post.id, copyToClipboard]);
@@ -380,11 +410,11 @@ export const PostCard = memo(({
   return (
     <>
       <Card 
+        ref={cardRef}
         className={cn(
           "overflow-hidden transition-all duration-200",
           !disableClick && "hover:shadow-lg cursor-pointer",
-          isMyPost && "ring-2 ring-blue-200 bg-blue-50/30",
-          isFullScreen && "bg-black/20 border-white/20"
+          isMyPost && "ring-2 ring-blue-200 bg-blue-50/30"
         )}
         onClick={handleCardClick}
       >
@@ -394,10 +424,7 @@ export const PostCard = memo(({
               <UserAvatar author={post.author} />
               <div className="flex flex-col">
                 <div className="flex items-center space-x-2">
-                  <p className={cn(
-                    "font-semibold text-base",
-                    isFullScreen ? "text-white" : "text-foreground"
-                  )}>
+                  <p className="font-semibold text-base text-foreground">
                     {post.author?.display_name || '不明な投稿者'}
                   </p>
                   {isMyPost && <Badge variant="secondary" className="text-xs">自分の投稿</Badge>}
@@ -405,22 +432,13 @@ export const PostCard = memo(({
                 <div className="flex items-center space-x-2">
                   {post.author_posts_count && post.author_posts_count > 0 && (
                     <>
-                      <p className={cn(
-                        "text-xs",
-                        isFullScreen ? "text-white/80" : "text-muted-foreground"
-                      )}>
+                      <p className="text-xs text-muted-foreground">
                         投稿数: {post.author_posts_count}
                       </p>
-                      <span className={cn(
-                        "text-xs",
-                        isFullScreen ? "text-white/60" : "text-muted-foreground/60"
-                      )}>•</span>
+                      <span className="text-xs text-muted-foreground/60">•</span>
                     </>
                   )}
-                  <p className={cn(
-                    "text-xs",
-                    isFullScreen ? "text-white/80" : "text-muted-foreground"
-                  )}>
+                  <p className="text-xs text-muted-foreground">
                     {formattedDate}
                   </p>
                 </div>
@@ -439,20 +457,34 @@ export const PostCard = memo(({
               )}
             </div>
           </div>
+
+          {/* 場所情報をカテゴリーの下に配置 */}
+          <div className="flex items-center justify-between mt-2">
+            <div className="flex-1"></div>
+            <div className="flex items-center space-x-2">
+              <MapPin className="h-5 w-5 text-gray-500 flex-shrink-0" />
+              <Button
+                variant="ghost"
+                className="p-0 h-auto font-medium text-lg hover:bg-transparent hover:text-primary flex items-center space-x-1 min-w-0"
+                onClick={handleCopyStoreName}
+                title="店舗名をコピー"
+              >
+                <span className="truncate max-w-[250px]">{post.store_name || '店舗不明'}</span>
+                <Copy className="h-4 w-4 flex-shrink-0" />
+              </Button>
+            </div>
+          </div>
         </CardHeader>
         
         <CardContent className="p-3 pt-1 flex flex-col h-full">
-          <div className="flex-grow overflow-hidden" style={{ flexBasis: 'auto', marginBottom: '0.75rem' }}>
-            <p className={cn(
-              "text-lg whitespace-pre-line line-clamp-6",
-              isFullScreen ? "text-white" : "text-muted-foreground"
-            )}>
+          <div className="flex-grow overflow-hidden mb-3">
+            <p className="text-lg whitespace-pre-line line-clamp-6 text-muted-foreground">
               {post.content || '内容がありません'}
             </p>
           </div>
           
           {postImageUrl && (
-            <div className="flex justify-center w-full">
+            <div className="flex justify-center w-full mb-3">
               <div className="relative rounded-md overflow-hidden" style={{ width: '350px', height: '350px' }}>
                 <OptimizedImage
                   src={postImageUrl}
@@ -461,85 +493,32 @@ export const PostCard = memo(({
                   onLoad={() => setImageLoaded(true)}
                 />
                 
-                <div className="absolute top-2 left-2 flex flex-col items-start space-y-2">
-                  <div className="flex items-center space-x-2">
-                    <Button 
-                      variant="ghost" 
-                      size="icon"
-                      className={cn(
-                        "bg-black/60 text-white rounded-full hover:bg-black/80 transition-colors backdrop-blur-sm",
-                        isMyPost && currentUserId && "opacity-50 cursor-not-allowed"
-                      )}
-                      onClick={handleLikeClick}
-                      disabled={isLiking || (isMyPost && Boolean(currentUserId))}
-                      title={isMyPost && currentUserId ? "自分の投稿にはいいねできません" : "いいね"}
-                    >
-                      <Heart 
-                        size={18} 
-                        className={cn(
-                          "transition-all duration-200",
-                          isLiked ? "text-red-500 fill-red-500 scale-110" : "text-white hover:text-red-300",
-                          isLiking && "animate-pulse"
-                        )} 
-                      />
-                    </Button>
-                    
-                    <Button 
-                      variant="ghost" 
-                      size="icon"
-                      className={cn(
-                        "bg-black/60 text-white rounded-full transition-colors backdrop-blur-sm",
-                        isFullScreen 
-                          ? "opacity-50 cursor-not-allowed" 
-                          : "hover:bg-black/80"
-                      )}
-                      onClick={isFullScreen ? undefined : handleShareClick}
-                      disabled={isFullScreen}
-                      title={isFullScreen ? "フルスクリーンモードでは共有できません" : "共有"}
-                    >
-                      <Share2 size={18} />
-                    </Button>
-
-                    {post.expires_at && (
-                      <div className="bg-black/60 text-white text-xs px-2 py-1 rounded-full flex items-center space-x-1 backdrop-blur-sm">
-                        <Clock size={14} />
-                        <span>{formatRemainingTime(new Date(post.expires_at).getTime())}</span>
-                      </div>
-                    )}
-                  </div>
-                  
-                  {/* いいね数の表示を「いいね：数字」形式に変更 */}
-                  {post.likes_count > 0 && (
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ duration: 0.3 }}
-                      className="bg-black/60 text-white text-xs px-2 py-1 rounded-full backdrop-blur-sm"
-                    >
-                      <span className="font-medium">いいね：{post.likes_count}</span>
-                    </motion.div>
+                {/* 残り時間と閲覧数を画像の左上に配置 */}
+                <div className="absolute top-2 left-2 flex flex-col space-y-1">
+                  {post.expires_at && (
+                    <div className="bg-black/60 text-white text-xs px-2 py-1 rounded-full flex items-center space-x-1 backdrop-blur-sm">
+                      <Clock size={14} />
+                      <span>{formatRemainingTime(new Date(post.expires_at).getTime())}</span>
+                    </div>
                   )}
+                  
+                  {/* 閲覧数を残り時間の下に配置（アイコンと数字に合ったサイズ） */}
+                  <div className="bg-black/60 text-white text-xs px-2 py-1 rounded-full flex items-center space-x-1 backdrop-blur-sm w-fit">
+                    <Eye size={14} />
+                    <span>{formatViewCount(post.views_count)}</span>
+                  </div>
                 </div>
                 
-                <Button 
-                  variant="ghost"
-                  className="absolute bottom-1 left-1 bg-black/60 text-white text-lg font-bold px-3 py-1 rounded-md h-auto hover:bg-black/80 transition-colors flex items-center space-x-1 backdrop-blur-sm"
-                  onClick={handleCopyStoreName}
-                >
-                  <Copy size={16} />
-                  <span className="max-w-[150px] truncate">{post.store_name || '店舗不明'}</span>
-                </Button>
-
-                <div className="absolute top-[30px] right-2 flex flex-col items-end space-y-2">
+                {/* 割引率と価格は右上に配置 */}
+                <div className="absolute top-2 right-2 flex flex-col items-end space-y-2">
                   <DiscountBadge discountRate={post.discount_rate} />
                   
                   {post.price != null && (
-                    <div className="relative mt-2">
+                    <div className="relative">
                       <div className="relative bg-gradient-to-br from-yellow-400 via-yellow-300 to-yellow-500 text-red-600 font-black text-3xl px-4 py-3 overflow-hidden"
                            style={{
                              clipPath: 'polygon(5% 15%, 15% 5%, 25% 20%, 35% 0%, 45% 15%, 55% 5%, 65% 20%, 75% 0%, 85% 15%, 95% 5%, 100% 20%, 95% 30%, 100% 40%, 90% 50%, 100% 60%, 95% 70%, 100% 80%, 85% 85%, 75% 100%, 65% 80%, 55% 95%, 45% 85%, 35% 100%, 25% 80%, 15% 95%, 5% 85%, 0% 80%, 5% 70%, 0% 60%, 10% 50%, 0% 40%, 5% 30%, 0% 20%)'
                            }}>
-                        {/* チラシ風の背景パターン */}
                         <div className="absolute inset-0 opacity-20">
                           <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-white/50 to-transparent"></div>
                           <div className="absolute bottom-0 right-0 w-4 h-4 bg-red-400 rounded-full transform translate-x-2 translate-y-2"></div>
@@ -551,67 +530,112 @@ export const PostCard = memo(({
                       </div>
                     </div>
                   )}
-                  
                 </div>
               </div>
             </div>
           )}
+
+          {/* 新しい統計・アクション行（横幅重視のレイアウト） */}
+          <div className="bg-gray-50 rounded-lg p-2 mt-2">
+            <div className="grid grid-cols-3 gap-1 h-6"> {/* h-6で縦幅を24px(6*4)に変更 */}
+              {/* いいね */}
+              <button
+                onClick={handleLikeClick}
+                className={cn(
+                  "flex items-center justify-center space-x-1 h-full rounded-md hover:bg-gray-100 transition-colors px-1",
+                  isLiked && "text-red-500",
+                  isMyPost && currentUserId && "opacity-50 cursor-not-allowed",
+                  isLiking && "opacity-50 cursor-not-allowed"
+                )}
+                disabled={isLiking || (isMyPost && Boolean(currentUserId))}
+                title={isMyPost && currentUserId ? "自分の投稿にはいいねできません" : "いいね"}
+              >
+                <Heart className={cn(
+                  "h-4 w-4 transition-all duration-200 flex-shrink-0",
+                  isLiked ? "text-red-500 fill-red-500" : "text-gray-600 hover:text-red-500",
+                  isLiking && "animate-pulse"
+                )} />
+                <span className="text-sm font-medium truncate">{post.likes_count}</span>
+                <span className="text-sm text-gray-500 truncate">いいね</span>
+              </button>
+
+              {/* コメント数 */}
+              {enableComments && (
+                <button
+                  onClick={handleCommentClick}
+                  className="flex items-center justify-center space-x-1 h-full rounded-md hover:bg-gray-100 transition-colors text-gray-600 hover:text-blue-500 px-1"
+                  title="コメント"
+                >
+                  <MessageCircle className="h-4 w-4 flex-shrink-0" />
+                  <span className="text-sm font-medium truncate">{formatCommentCount(post.comments_count)}</span>
+                  <span className="text-sm text-gray-500 truncate">コメント</span>
+                </button>
+              )}
+
+              {/* シェアボタン */}
+              <button
+                onClick={handleShareClick}
+                className="flex items-center justify-center space-x-1 h-full rounded-md hover:bg-gray-100 transition-colors text-gray-600 hover:text-gray-800 px-1"
+                title="共有"
+              >
+                <Share2 className="h-4 w-4 flex-shrink-0" />
+                <span className="text-sm font-medium truncate">共有</span>
+              </button>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
-      {/* フルスクリーンモードでない場合のみシェアモーダルを表示 */}
-      {!isFullScreen && (
-        <CustomModal
-          isOpen={showShareDialog}
-          onClose={() => setShowShareDialog(false)}
-          title="投稿を共有"
-          description="このお得情報を友達に知らせよう！"
-        >
-          <div className="space-y-3">
+      <CustomModal
+        isOpen={showShareDialog}
+        onClose={() => setShowShareDialog(false)}
+        title="投稿を共有"
+        description="このお得情報を友達に知らせよう！"
+      >
+        <div className="space-y-3">
+          <Button
+            variant="outline"
+            className="w-full justify-start text-left py-3 h-auto text-base"
+            onClick={() => {
+                copyToClipboard(`${window.location.origin}/post/${post.id}`, "リンクをコピーしました！");
+            }}
+          >
+            <LinkIcon className="mr-2.5 h-5 w-5" />
+            リンクをコピー
+          </Button>
+          <Button
+            className="w-full justify-start text-left py-3 h-auto text-base bg-[#1DA1F2] hover:bg-[#1a91da] text-white"
+            onClick={() => {
+                window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(`${post.store_name}の${post.category}がお得！ ${post.content}`)}&url=${encodeURIComponent(`${window.location.origin}/post/${post.id}`)}`, '_blank');
+                setShowShareDialog(false);
+            }}
+          >
+            <svg className="mr-2.5 h-5 w-5 fill-current" viewBox="0 0 24 24" aria-hidden="true"><g><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"></path></g></svg>
+            X (Twitter) で共有
+          </Button>
+          <Button
+            variant="outline"
+            className="w-full justify-start text-left py-3 h-auto text-base bg-[#E1306C] hover:bg-[#c92a5f] text-white"
+            onClick={handleInstagramShare}
+          >
+            <Instagram className="mr-2.5 h-5 w-5" />
+            Instagramで共有
+          </Button>
+          {navigator.share && typeof navigator.share === 'function' && (
             <Button
               variant="outline"
               className="w-full justify-start text-left py-3 h-auto text-base"
-              onClick={() => {
-                  copyToClipboard(`${window.location.origin}/post/${post.id}`, "リンクをコピーしました！");
-              }}
+              onClick={handleNativeShare}
             >
-              <LinkIcon className="mr-2.5 h-5 w-5" />
-              リンクをコピー
+              <ExternalLink className="mr-2.5 h-5 w-5" />
+              その他のアプリで共有
             </Button>
-            <Button
-              className="w-full justify-start text-left py-3 h-auto text-base bg-[#1DA1F2] hover:bg-[#1a91da] text-white"
-              onClick={() => {
-                  window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(`${post.store_name}の${post.category}がお得！ ${post.content}`)}&url=${encodeURIComponent(`${window.location.origin}/post/${post.id}`)}`, '_blank');
-                  setShowShareDialog(false);
-              }}
-            >
-              <svg className="mr-2.5 h-5 w-5 fill-current" viewBox="0 0 24 24" aria-hidden="true"><g><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"></path></g></svg>
-              X (Twitter) で共有
-            </Button>
-            <Button
-              variant="outline"
-              className="w-full justify-start text-left py-3 h-auto text-base bg-[#E1306C] hover:bg-[#c92a5f] text-white"
-              onClick={handleInstagramShare}
-            >
-              <Instagram className="mr-2.5 h-5 w-5" />
-              Instagramで共有
-            </Button>
-            {navigator.share && typeof navigator.share === 'function' && (
-              <Button
-                variant="outline"
-                className="w-full justify-start text-left py-3 h-auto text-base"
-                onClick={handleNativeShare}
-              >
-                <ExternalLink className="mr-2.5 h-5 w-5" />
-                その他のアプリで共有
-              </Button>
-            )}
-          </div>
-          <div className="mt-6 flex justify-end">
-              <Button variant="ghost" onClick={() => setShowShareDialog(false)} className="text-base px-5 py-2.5 h-auto">閉じる</Button>
-          </div>
-        </CustomModal>
-      )}
+          )}
+        </div>
+        <div className="mt-6 flex justify-end">
+            <Button variant="ghost" onClick={() => setShowShareDialog(false)} className="text-base px-5 py-2.5 h-auto">閉じる</Button>
+        </div>
+      </CustomModal>
     </>
   );
 });

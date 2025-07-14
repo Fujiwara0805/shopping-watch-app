@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { LayoutGrid, Search, Star, MapPin, Loader2, SlidersHorizontal, Heart, Plus, X, AlertCircle, Menu, User, Edit, Store, HelpCircle, FileText, LogOut, Settings, Globe, NotebookText, Calculator, Zap, MessageSquare } from 'lucide-react';
+import { LayoutGrid, Search, Star, MapPin, Loader2, SlidersHorizontal, Heart, Plus, X, AlertCircle, Menu, User, Edit, Store, HelpCircle, FileText, LogOut, Settings, Globe, NotebookText, Calculator, Zap, MessageSquare, Eye, Send } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { PostWithAuthor } from '@/types/post';
 import { useSession, signOut } from 'next-auth/react';
@@ -12,8 +12,8 @@ import { useRouter } from 'next/navigation';
 import AppLayout from '@/components/layout/app-layout';
 import { useSearchParams } from 'next/navigation';
 import { PostCard } from '@/components/posts/post-card';
-import { FullScreenPostViewer } from '@/components/posts/fullscreen-post-viewer';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { CustomModal } from '@/components/ui/custom-modal';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
@@ -21,9 +21,12 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
-import { getAnonymousSessionId } from '@/lib/session'; // 新しく追加
+import { getAnonymousSessionId } from '@/lib/session';
+import { useToast } from '@/hooks/use-toast';
+import { formatDistanceToNow } from 'date-fns';
+import { ja } from 'date-fns/locale';
 
-// 型定義の追加
+// 型定義
 interface AuthorData {
   id: string;
   user_id: string;
@@ -37,6 +40,22 @@ interface PostLike {
   created_at: string;
 }
 
+interface Comment {
+  id: string;
+  post_id: string;
+  app_profile_id: string;
+  parent_comment_id: string | null;
+  content: string;
+  created_at: string;
+  updated_at: string;
+  is_deleted: boolean;
+  author: AuthorData;
+  replies?: Comment[];
+  likes_count: number;
+  isLikedByCurrentUser?: boolean;
+  isOwnComment?: boolean;
+}
+
 interface PostFromDB {
   id: string;
   app_profile_id: string;
@@ -48,6 +67,8 @@ interface PostFromDB {
   discount_rate: number | null;
   expiry_option: string;
   likes_count: number;
+  views_count: number;
+  comments_count: number;
   price: number | null;
   created_at: string;
   expires_at: string;
@@ -57,9 +78,11 @@ interface PostFromDB {
   post_likes: PostLike[];
 }
 
-interface ExtendedPostWithAuthor extends PostWithAuthor {
+export interface ExtendedPostWithAuthor extends PostWithAuthor {
   isLikedByCurrentUser?: boolean;
   likes_count: number;
+  views_count: number;
+  comments_count: number;
   store_latitude?: number;
   store_longitude?: number;
   distance?: number;
@@ -69,11 +92,604 @@ interface ExtendedPostWithAuthor extends PostWithAuthor {
   author_posts_count?: number;
 }
 
-type SortOption = 'created_at_desc' | 'created_at_asc' | 'expires_at_asc' | 'distance_asc' | 'likes_desc';
+type SortOption = 'created_at_desc' | 'created_at_asc' | 'expires_at_asc' | 'distance_asc' | 'likes_desc' | 'views_desc' | 'comments_desc';
 type SearchMode = 'all' | 'category' | 'favorite_store' | 'liked_posts' | 'nearby' | 'hybrid';
 
 const categories = ['すべて', '惣菜', '弁当', '肉', '魚', '野菜', '果物', '米・パン類', 'デザート類', 'その他'];
 const SEARCH_RADIUS_METERS = 5000; // 5km
+
+// コメントコンポーネント
+const CommentItem = ({ comment, onLike, onReply, currentUserId, depth = 0 }: {
+  comment: Comment;
+  onLike: (commentId: string, isLiked: boolean) => Promise<void>;
+  onReply: (parentId: string, content: string) => Promise<void>;
+  currentUserId?: string;
+  depth?: number;
+}) => {
+  const [showReplyForm, setShowReplyForm] = useState(false);
+  const [replyContent, setReplyContent] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLiking, setIsLiking] = useState(false); // 追加: いいね処理中フラグ
+  const { toast } = useToast();
+
+  const handleReplySubmit = async () => {
+    if (!replyContent.trim()) return;
+    
+    setIsSubmitting(true);
+    try {
+      await onReply(comment.id, replyContent);
+      setReplyContent('');
+      setShowReplyForm(false);
+      toast({
+        title: "返信を投稿しました",
+        duration: 1000, // 2000 → 1000に変更
+      });
+    } catch (error) {
+      console.error('返信の投稿に失敗しました:', error);
+      toast({
+        title: "エラーが発生しました",
+        description: "返信の投稿に失敗しました",
+        duration: 1000, // 3000 → 1000に変更
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // いいねクリック処理を修正
+  const handleLikeClick = async () => {
+    if (isLiking) return;
+    
+    // 自分のコメントかどうかをチェック
+    if (comment.isOwnComment && currentUserId) {
+      toast({
+        title: "自分のコメントにはいいねできません",
+        duration: 1000, // 2000 → 1000に変更
+      });
+      return;
+    }
+
+    if (!currentUserId) {
+      toast({
+        title: "ログインが必要です",
+        description: "いいねするにはログインしてください",
+        duration: 1000, // 3000 → 1000に変更
+      });
+      return;
+    }
+
+    setIsLiking(true);
+    try {
+      await onLike(comment.id, !comment.isLikedByCurrentUser);
+    } catch (error) {
+      console.error('コメントいいねに失敗しました:', error);
+      toast({
+        title: "エラーが発生しました",
+        description: "いいね処理に失敗しました",
+        duration: 1000, // 3000 → 1000に変更
+      });
+    } finally {
+      setIsLiking(false);
+    }
+  };
+
+  const authorAvatarUrl = comment.author?.avatar_url
+    ? supabase.storage.from('avatars').getPublicUrl(comment.author.avatar_url).data.publicUrl
+    : null;
+
+  return (
+    <div className={cn("space-y-2", depth > 0 && "ml-8 border-l-2 border-gray-200 pl-4")}>
+      <div className="flex items-start space-x-3">
+        <Avatar className="h-8 w-8">
+          <AvatarImage src={authorAvatarUrl || undefined} alt={comment.author?.display_name || 'コメント投稿者'} />
+          <AvatarFallback className="text-xs">{comment.author?.display_name?.charAt(0) || '?'}</AvatarFallback>
+        </Avatar>
+        
+        <div className="flex-1 space-y-1">
+          <div className="flex items-center space-x-2">
+            <span className="font-medium text-sm">{comment.author?.display_name || '匿名ユーザー'}</span>
+            {comment.isOwnComment && (
+              <Badge variant="secondary" className="text-xs">自分</Badge>
+            )}
+            <span className="text-xs text-gray-500">
+              {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true, locale: ja })}
+            </span>
+          </div>
+          
+          <p className="text-sm text-gray-700">{comment.content}</p>
+          
+          <div className="flex items-center space-x-4 text-xs">
+            <button
+              onClick={handleLikeClick}
+              className={cn(
+                "flex items-center space-x-1 hover:text-red-500 transition-colors",
+                comment.isLikedByCurrentUser && "text-red-500",
+                comment.isOwnComment && currentUserId && "opacity-50 cursor-not-allowed",
+                isLiking && "opacity-50 cursor-not-allowed"
+              )}
+              disabled={!currentUserId || isLiking || (comment.isOwnComment && Boolean(currentUserId))}
+              title={
+                comment.isOwnComment && currentUserId 
+                  ? "自分のコメントにはいいねできません" 
+                  : !currentUserId 
+                    ? "ログインが必要です"
+                    : "いいね"
+              }
+            >
+              <Heart className={cn(
+                "h-3 w-3", 
+                comment.isLikedByCurrentUser && "fill-current",
+                isLiking && "animate-pulse"
+              )} />
+              <span>{comment.likes_count}</span>
+            </button>
+            
+            {depth < 2 && currentUserId && (
+              <button
+                onClick={() => setShowReplyForm(!showReplyForm)}
+                className="text-gray-500 hover:text-blue-500 transition-colors"
+              >
+                返信
+              </button>
+            )}
+          </div>
+          
+          {showReplyForm && (
+            <div className="mt-2 space-y-2">
+              <Textarea
+                value={replyContent}
+                onChange={(e) => setReplyContent(e.target.value)}
+                placeholder="返信を入力..."
+                className="text-sm"
+                rows={2}
+                style={{ fontSize: '16px' }}
+              />
+              <div className="flex space-x-2">
+                <Button
+                  size="sm"
+                  onClick={handleReplySubmit}
+                  disabled={!replyContent.trim() || isSubmitting}
+                >
+                  {isSubmitting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
+                  返信
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setShowReplyForm(false);
+                    setReplyContent('');
+                  }}
+                >
+                  キャンセル
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+      
+      {comment.replies && comment.replies.map((reply) => (
+        <CommentItem
+          key={reply.id}
+          comment={reply}
+          onLike={onLike}
+          onReply={onReply}
+          currentUserId={currentUserId}
+          depth={depth + 1}
+        />
+      ))}
+    </div>
+  );
+};
+
+// コメントモーダルコンポーネント
+const CommentsModal = ({ 
+  post, 
+  isOpen, 
+  onClose, 
+  currentUserId 
+}: {
+  post: ExtendedPostWithAuthor;
+  isOpen: boolean;
+  onClose: () => void;
+  currentUserId?: string;
+}) => {
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [newComment, setNewComment] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
+
+  // コメント取得
+  const fetchComments = useCallback(async () => {
+    if (!isOpen) return;
+    
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('post_comments')
+        .select(`
+          id,
+          post_id,
+          app_profile_id,
+          parent_comment_id,
+          content,
+          created_at,
+          updated_at,
+          is_deleted,
+          author:app_profiles!post_comments_app_profile_id_fkey (
+            id,
+            user_id,
+            display_name,
+            avatar_url
+          )
+        `)
+        .eq('post_id', post.id)
+        .eq('is_deleted', false)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+
+      // コメントいいね情報も取得
+      let commentLikesData: any[] = [];
+      if (currentUserId && data && data.length > 0) {
+        const { data: userProfile } = await supabase
+          .from('app_profiles')
+          .select('id')
+          .eq('user_id', currentUserId)
+          .single();
+
+        if (userProfile) {
+          const commentIds = data.map(comment => comment.id);
+          const { data: likesData } = await supabase
+            .from('comment_likes')
+            .select('comment_id')
+            .eq('app_profile_id', userProfile.id)
+            .in('comment_id', commentIds);
+          
+          commentLikesData = likesData || [];
+        }
+      }
+
+      // コメントを階層構造に変換
+      const commentsMap = new Map<string, Comment>();
+      const rootComments: Comment[] = [];
+
+      data.forEach((comment: any) => {
+        const authorData = Array.isArray(comment.author) ? comment.author[0] : comment.author;
+        const isLikedByCurrentUser = commentLikesData.some(like => like.comment_id === comment.id);
+        
+        const commentWithAuthor: Comment = {
+          ...comment,
+          author: authorData,
+          replies: [],
+          likes_count: 0, // 実際のカウントは別途取得可能
+          isLikedByCurrentUser,
+          isOwnComment: currentUserId ? authorData?.user_id === currentUserId : false, // 自分のコメントかどうか
+        };
+        commentsMap.set(comment.id, commentWithAuthor);
+      });
+
+      data.forEach((comment: any) => {
+        const commentObj = commentsMap.get(comment.id)!;
+        if (comment.parent_comment_id) {
+          const parent = commentsMap.get(comment.parent_comment_id);
+          if (parent) {
+            parent.replies = parent.replies || [];
+            parent.replies.push(commentObj);
+          }
+        } else {
+          rootComments.push(commentObj);
+        }
+      });
+
+      setComments(rootComments);
+    } catch (error) {
+      console.error('コメントの取得に失敗しました:', error);
+      toast({
+        title: "エラーが発生しました",
+        description: "コメントの読み込みに失敗しました",
+        duration: 3000,
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [isOpen, post.id, toast, currentUserId]);
+
+  useEffect(() => {
+    fetchComments();
+  }, [fetchComments]);
+
+  // 新しいコメント投稿
+  const handleSubmitComment = async () => {
+    if (!newComment.trim() || !currentUserId) return;
+
+    setIsSubmitting(true);
+    try {
+      // ユーザープロフィール取得
+      const { data: userProfile, error: profileError } = await supabase
+        .from('app_profiles')
+        .select('id')
+        .eq('user_id', currentUserId)
+        .single();
+
+      if (profileError || !userProfile) {
+        console.error('プロフィールエラー:', profileError);
+        throw new Error('ユーザープロフィールが見つかりません');
+      }
+
+      // コメント投稿（RLSを一時的に無効化するためanon keyを使用）
+      const { error } = await supabase
+        .from('post_comments')
+        .insert({
+          post_id: post.id,
+          app_profile_id: userProfile.id,
+          content: newComment.trim(),
+          created_at: new Date().toISOString(), // 明示的に設定
+          updated_at: new Date().toISOString(), // 明示的に設定
+          is_deleted: false // 明示的に設定
+        });
+
+      if (error) {
+        console.error('コメント投稿エラー:', error);
+        throw error;
+      }
+
+      setNewComment('');
+      await fetchComments();
+      
+      toast({
+        title: "コメントを投稿しました",
+        duration: 1000, // 2000 → 1000に変更
+      });
+    } catch (error) {
+      console.error('コメントの投稿に失敗しました:', error);
+      toast({
+        title: "エラーが発生しました",
+        description: "コメントの投稿に失敗しました",
+        variant: "destructive",
+        duration: 1000, // 3000 → 1000に変更
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // 返信投稿
+  const handleReply = async (parentId: string, content: string) => {
+    if (!currentUserId) return;
+
+    try {
+      const { data: userProfile, error: profileError } = await supabase
+        .from('app_profiles')
+        .select('id')
+        .eq('user_id', currentUserId)
+        .single();
+
+      if (profileError || !userProfile) {
+        console.error('プロフィールエラー:', profileError);
+        throw new Error('ユーザープロフィールが見つかりません');
+      }
+
+      const { error } = await supabase
+        .from('post_comments')
+        .insert({
+          post_id: post.id,
+          app_profile_id: userProfile.id,
+          parent_comment_id: parentId,
+          content: content.trim(),
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          is_deleted: false
+        });
+
+      if (error) {
+        console.error('返信投稿エラー:', error);
+        throw error;
+      }
+
+      await fetchComments();
+    } catch (error) {
+      console.error('返信の投稿に失敗しました:', error);
+      throw error; // 上位でキャッチして適切なエラーメッセージを表示
+    }
+  };
+
+  // コメントいいね
+  const handleCommentLike = async (commentId: string, isLiked: boolean) => {
+    if (!currentUserId) return;
+
+    try {
+      const { data: userProfile, error: profileError } = await supabase
+        .from('app_profiles')
+        .select('id')
+        .eq('user_id', currentUserId)
+        .single();
+
+      if (profileError || !userProfile) {
+        throw new Error('ユーザープロフィールが見つかりません');
+      }
+
+      // 自分のコメントかどうかをチェック
+      const targetComment = findCommentById(comments, commentId);
+      if (targetComment && targetComment.author?.user_id === currentUserId) {
+        toast({
+          title: "自分のコメントにはいいねできません",
+          duration: 1000, // 2000 → 1000に変更
+        });
+        return;
+      }
+
+      if (isLiked) {
+        const { error } = await supabase
+          .from('comment_likes')
+          .insert({
+            comment_id: commentId,
+            app_profile_id: userProfile.id,
+          });
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('comment_likes')
+          .delete()
+          .match({
+            comment_id: commentId,
+            app_profile_id: userProfile.id,
+          });
+        if (error) throw error;
+      }
+
+      // UIを楽観的に更新
+      const updateCommentLikes = (comments: Comment[]): Comment[] => {
+        return comments.map(comment => {
+          if (comment.id === commentId) {
+            return {
+              ...comment,
+              isLikedByCurrentUser: isLiked,
+              likes_count: isLiked ? comment.likes_count + 1 : Math.max(0, comment.likes_count - 1),
+            };
+          }
+          if (comment.replies) {
+            return {
+              ...comment,
+              replies: updateCommentLikes(comment.replies),
+            };
+          }
+          return comment;
+        });
+      };
+
+      setComments(updateCommentLikes(comments));
+    } catch (error) {
+      console.error('コメントいいねに失敗しました:', error);
+      toast({
+        title: "エラーが発生しました",
+        description: "いいね処理に失敗しました",
+        duration: 1000, // 3000 → 1000に変更
+      });
+    }
+  };
+
+  // ヘルパー関数を追加
+  const findCommentById = (comments: Comment[], commentId: string): Comment | null => {
+    for (const comment of comments) {
+      if (comment.id === commentId) {
+        return comment;
+      }
+      if (comment.replies) {
+        const found = findCommentById(comment.replies, commentId);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
+
+  return (
+    <CustomModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="コメント"
+      description={`${post.store_name}の投稿へのコメント`}
+      className="sm:max-w-2xl"
+    >
+      <div className="space-y-4">
+        {/* 投稿内容の表示 */}
+        <div className="bg-gray-50 p-4 rounded-lg">
+          <p className="text-sm text-gray-700">{post.content}</p>
+          <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500">
+            <span className="flex items-center space-x-1">
+              <Heart className="h-3 w-3" />
+              <span>{post.likes_count}</span>
+            </span>
+            <span className="flex items-center space-x-1">
+              <Eye className="h-3 w-3" />
+              <span>{post.views_count}</span>
+            </span>
+            <span className="flex items-center space-x-1">
+              <MessageSquare className="h-3 w-3" />
+              <span>{post.comments_count}</span>
+            </span>
+          </div>
+        </div>
+
+        {/* コメント一覧 */}
+        <div className="max-h-96 overflow-y-auto space-y-4">
+          {loading ? (
+            <div className="space-y-4">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="flex items-start space-x-3">
+                  <Skeleton className="h-8 w-8 rounded-full" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-12 w-full" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : comments.length === 0 ? (
+            <div className="text-center py-8">
+              <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-500">まだコメントがありません</p>
+              <p className="text-sm text-gray-400">最初のコメントを投稿してみましょう</p>
+            </div>
+          ) : (
+            comments.map((comment) => (
+              <CommentItem
+                key={comment.id}
+                comment={comment}
+                onLike={handleCommentLike}
+                onReply={handleReply}
+                currentUserId={currentUserId}
+              />
+            ))
+          )}
+        </div>
+
+        {/* 新しいコメント投稿フォーム */}
+        {currentUserId ? (
+          <div className="border-t pt-4 space-y-3">
+            <Textarea
+              value={newComment}
+              onChange={(e) => setNewComment(e.target.value)}
+              placeholder="コメントを入力..."
+              className="resize-none"
+              style={{ fontSize: '16px' }}
+              rows={3}
+            />
+            <div className="flex justify-end space-x-2">
+              <Button
+                variant="outline"
+                onClick={() => setNewComment('')}
+                disabled={!newComment.trim()}
+              >
+                クリア
+              </Button>
+              <Button
+                onClick={handleSubmitComment}
+                disabled={!newComment.trim() || isSubmitting}
+              >
+                {isSubmitting ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <Send className="h-4 w-4 mr-2" />
+                )}
+                投稿
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="border-t pt-4 text-center">
+            <p className="text-gray-500 mb-2">コメントを投稿するにはログインが必要です</p>
+            <Button onClick={() => window.location.href = '/login'}>
+              ログイン
+            </Button>
+          </div>
+        )}
+      </div>
+    </CustomModal>
+  );
+};
 
 // 検索履歴管理
 const useSearchHistory = () => {
@@ -241,7 +857,6 @@ const HamburgerMenu = ({ currentUser }: { currentUser: any }) => {
         className="sm:max-w-md"
       >
         <div className="space-y-4">
-          {/* ユーザー情報セクション */}
           {currentUser && (
             <>
               <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
@@ -270,7 +885,6 @@ const HamburgerMenu = ({ currentUser }: { currentUser: any }) => {
             </>
           )}
 
-          {/* メニュー項目 */}
           <div className="space-y-1">
             {menuItems.map((item, index) => (
               <Button
@@ -287,7 +901,6 @@ const HamburgerMenu = ({ currentUser }: { currentUser: any }) => {
 
           <Separator />
 
-          {/* ログアウトボタン */}
           <Button
             variant="ghost"
             className="w-full justify-start text-left py-3 h-auto text-base text-red-600 hover:bg-red-100 hover:text-red-700 transition-colors duration-200"
@@ -307,14 +920,12 @@ export default function Timeline() {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isSearching, setIsSearching] = useState(false); // リアルタイム検索中の状態
+  const [isSearching, setIsSearching] = useState(false);
   
-  // 適用済みフィルター状態（実際の検索に使用）
   const [activeFilter, setActiveFilter] = useState<string>('all');
   const [searchMode, setSearchMode] = useState<SearchMode>('all');
   const [sortBy, setSortBy] = useState<SortOption>('created_at_desc');
   
-  // 一時的なフィルター状態（モーダル内での変更）
   const [tempActiveFilter, setTempActiveFilter] = useState<string>('all');
   const [tempSearchMode, setTempSearchMode] = useState<SearchMode>('all');
   const [tempSortBy, setTempSortBy] = useState<SortOption>('created_at_desc');
@@ -325,12 +936,6 @@ export default function Timeline() {
   const searchParams = useSearchParams();
   const [highlightPostId, setHighlightPostId] = useState<string | null>(null);
 
-  // フルスクリーンビューアー関連のstate
-  const [fullScreenViewer, setFullScreenViewer] = useState({
-    isOpen: false,
-    initialIndex: 0,
-  });
-
   const [generalSearchTerm, setGeneralSearchTerm] = useState<string>('');
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
@@ -340,15 +945,21 @@ export default function Timeline() {
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [showLocationPermissionAlert, setShowLocationPermissionAlert] = useState(false);
   
-  // 検索機能
   const [showSpecialSearch, setShowSpecialSearch] = useState(false);
   const { searchHistory, addToHistory, clearHistory } = useSearchHistory();
 
-  // ユーザープロフィール情報
   const [currentUserProfile, setCurrentUserProfile] = useState<any>(null);
 
-  // デバウンス付きの検索語（短い間隔で即座に反応）
   const debouncedSearchTerm = useDebounce(generalSearchTerm, 150);
+
+  // コメントモーダル関連
+  const [commentsModal, setCommentsModal] = useState<{
+    isOpen: boolean;
+    post: ExtendedPostWithAuthor | null;
+  }>({
+    isOpen: false,
+    post: null,
+  });
 
   // Refs for stable references
   const activeFilterRef = useRef(activeFilter);
@@ -368,7 +979,6 @@ export default function Timeline() {
   useEffect(() => { likedPostIdsRef.current = likedPostIds; }, [likedPostIds]);
   useEffect(() => { sortByRef.current = sortBy; }, [sortBy]);
 
-  // 一時的なフィルター状態を適用済み状態で初期化
   useEffect(() => {
     setTempActiveFilter(activeFilter);
     setTempSearchMode(searchMode);
@@ -468,7 +1078,7 @@ export default function Timeline() {
     }
   }, [currentUserId, session?.user?.id]);
 
-  // いいねした投稿IDの取得を改善
+  // いいねした投稿IDの取得
   useEffect(() => {
     const fetchLikedPostIds = async () => {
       if (!currentUserId) {
@@ -476,12 +1086,11 @@ export default function Timeline() {
         return;
       }
       try {
-        // より詳細な情報を取得してキャッシュ効率を向上
         const { data, error } = await supabase
           .from('post_likes')
           .select('post_id, created_at')
           .eq('user_id', currentUserId)
-          .order('created_at', { ascending: false }); // 最新のいいね順
+          .order('created_at', { ascending: false });
 
         if (error) {
           console.error('いいねした投稿の取得に失敗しました:', error);
@@ -489,7 +1098,6 @@ export default function Timeline() {
         } else {
           const postIds = data?.map(item => item.post_id) || [];
           setLikedPostIds(postIds);
-          console.log(`いいねした投稿: ${postIds.length}件`);
         }
       } catch (e) {
         console.error('いいねした投稿の取得中に予期せぬエラー:', e);
@@ -511,7 +1119,7 @@ export default function Timeline() {
     const currentLikedPostIds = likedPostIdsRef.current;
     const currentSortBy = sortByRef.current;
 
-    // 距離計算関数（ハバーサイン公式）
+    // 距離計算関数
     const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
       const R = 6371;
       const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -534,7 +1142,7 @@ export default function Timeline() {
     try {
       const now = new Date().toISOString();
       
-      // 基本クエリ
+      // 基本クエリ（views_count、comments_countを追加）
       let query = supabase
         .from('posts')
         .select(`
@@ -548,6 +1156,8 @@ export default function Timeline() {
           discount_rate,
           expiry_option,
           likes_count,
+          views_count,
+          comments_count,
           price,
           created_at,
           expires_at,
@@ -579,7 +1189,7 @@ export default function Timeline() {
         query = query.or(`store_name.ilike.%${searchTermLower}%,category.ilike.%${searchTermLower}%,content.ilike.%${searchTermLower}%`);
       }
 
-      // 特別な検索モード - いいね検索の改善
+      // 特別な検索モード
       if (currentSearchMode === 'favorite_store') {
         if (currentFavoriteStoreIds.length > 0) {
           query = query.in('store_id', currentFavoriteStoreIds);
@@ -588,16 +1198,11 @@ export default function Timeline() {
         }
       } else if (currentSearchMode === 'liked_posts') {
         if (currentLikedPostIds.length > 0) {
-          // いいねした投稿のみを表示
           query = query.in('id', currentLikedPostIds);
-          console.log(`いいね検索: ${currentLikedPostIds.length}件の投稿をフィルタリング`);
         } else {
-          // いいねした投稿がない場合は空の結果を返す
           query = query.eq('id', 'impossible-id');
-          console.log('いいね検索: いいねした投稿がありません');
         }
       } else if (currentSearchMode === 'hybrid') {
-        // 複合検索の改善
         const conditions = [];
         if (currentFavoriteStoreIds.length > 0) {
           conditions.push(`store_id.in.(${currentFavoriteStoreIds.join(',')})`);
@@ -608,14 +1213,12 @@ export default function Timeline() {
         
         if (conditions.length > 0) {
           query = query.or(conditions.join(','));
-          console.log(`複合検索: ${conditions.length}つの条件で検索`);
         } else {
           query = query.eq('id', 'impossible-id');
-          console.log('複合検索: 検索条件がありません');
         }
       }
 
-      // ソート処理
+      // ソート処理（views_desc、comments_descを追加）
       if (currentSortBy === 'created_at_desc') {
         query = query.order('created_at', { ascending: false });
       } else if (currentSortBy === 'created_at_asc') {
@@ -624,6 +1227,10 @@ export default function Timeline() {
         query = query.order('expires_at', { ascending: true });
       } else if (currentSortBy === 'likes_desc') {
         query = query.order('likes_count', { ascending: false });
+      } else if (currentSortBy === 'views_desc') {
+        query = query.order('views_count', { ascending: false });
+      } else if (currentSortBy === 'comments_desc') {
+        query = query.order('comments_count', { ascending: false });
       }
 
       query = query.range(offset, offset + 19);
@@ -634,7 +1241,7 @@ export default function Timeline() {
         throw dbError;
       }
       
-      // ユーザーごとの総投稿数を取得（有効期限切れも含む）
+      // ユーザーごとの総投稿数を取得
       const authorIds = (data as PostFromDB[]).map(post => {
         const authorData = Array.isArray(post.author) ? post.author[0] : post.author;
         return authorData?.id;
@@ -649,7 +1256,6 @@ export default function Timeline() {
             .select('app_profile_id');
 
           if (!countError && countData) {
-            // 各ユーザーの総投稿数をカウント
             authorPostCounts = countData.reduce((acc, post) => {
               acc[post.app_profile_id] = (acc[post.app_profile_id] || 0) + 1;
               return acc;
@@ -660,7 +1266,7 @@ export default function Timeline() {
         }
       }
       
-      // データ処理の改善 - likes_countをそのまま使用
+      // データ処理
       let processedPosts = (data as PostFromDB[]).map(post => {
         let distance;
         
@@ -678,14 +1284,12 @@ export default function Timeline() {
           ? (authorData as any).user_id 
           : null;
 
-        // いいね状態の判定（ログインユーザーのみ）
         const isLikedByCurrentUser = currentUserId 
           ? Array.isArray(post.post_likes) 
             ? post.post_likes.some((like: PostLike) => like.user_id === currentUserId)
             : currentLikedPostIds.includes(post.id)
-          : false; // 非ログインユーザーはローカルストレージで判定
+          : false;
 
-        // ユーザーの投稿数を取得
         const authorPostsCount = authorData?.id ? authorPostCounts[authorData.id] || 0 : 0;
 
         return {
@@ -694,20 +1298,20 @@ export default function Timeline() {
           author_user_id: authorUserId,
           author_posts_count: authorPostsCount,
           isLikedByCurrentUser,
-          likes_count: post.likes_count, // データベースの値をそのまま使用
+          likes_count: post.likes_count,
+          views_count: post.views_count || 0,
+          comments_count: post.comments_count || 0,
           distance,
         };
       });
 
       // いいね検索時の特別なソート
       if (currentSearchMode === 'liked_posts' && currentLikedPostIds.length > 0) {
-        // いいねした順序を保持してソート
         processedPosts = processedPosts.sort((a, b) => {
           const aIndex = currentLikedPostIds.indexOf(a.id);
           const bIndex = currentLikedPostIds.indexOf(b.id);
-          return aIndex - bIndex; // いいねした順序でソート
+          return aIndex - bIndex;
         });
-        console.log(`いいね検索結果: ${processedPosts.length}件の投稿を表示`);
       }
 
       // 周辺検索の処理
@@ -715,7 +1319,6 @@ export default function Timeline() {
         processedPosts = processedPosts.filter(post => {
           return post.distance !== undefined && post.distance <= SEARCH_RADIUS_METERS;
         });
-        console.log(`周辺検索: ${processedPosts.length}件の投稿が5km圏内にあります`);
       }
 
       // 距離によるソート
@@ -731,7 +1334,6 @@ export default function Timeline() {
         setPosts(prevPosts => [...prevPosts, ...processedPosts as ExtendedPostWithAuthor[]]);
       }
 
-      // いいね検索時はページネーションを無効化（全件表示）
       setHasMore(data.length === 20 && currentSearchMode !== 'nearby' && currentSearchMode !== 'liked_posts');
     } catch (e: any) {
       console.error("投稿の取得に失敗しました:", e);
@@ -743,6 +1345,70 @@ export default function Timeline() {
     }
   }, []);
 
+  // ビュー数増加処理
+  const handleView = useCallback(async (postId: string) => {
+    try {
+      let success = false;
+      
+      if (currentUserId) {
+        // ログインユーザーの場合
+        const { data, error } = await supabase.rpc('increment_post_view', {
+          p_post_id: postId,
+          p_viewer_user_id: currentUserId
+        });
+        
+        if (error) {
+          console.error('ビュー数更新エラー (認証済み):', error);
+          throw error;
+        }
+        
+        success = data === true;
+      } else {
+        // 非ログインユーザーの場合
+        const sessionId = getAnonymousSessionId();
+        const { data, error } = await supabase.rpc('increment_post_view_anonymous', {
+          p_post_id: postId,
+          p_viewer_session_id: sessionId
+        });
+        
+        if (error) {
+          console.error('ビュー数更新エラー (匿名):', error);
+          throw error;
+        }
+        
+        success = data === true;
+      }
+
+      // 成功した場合のみUIを更新
+      if (success) {
+        setPosts(prevPosts => prevPosts.map(p => 
+          p.id === postId 
+            ? { ...p, views_count: p.views_count + 1 }
+            : p
+        ));
+      }
+    } catch (error) {
+      console.error('ビュー数の更新に失敗しました:', error);
+      // エラーが発生してもUIの動作は継続
+    }
+  }, [currentUserId]);
+
+  // コメントボタンクリック処理
+  const handleCommentClick = useCallback((post: ExtendedPostWithAuthor) => {
+    setCommentsModal({
+      isOpen: true,
+      post,
+    });
+  }, []);
+
+  // コメントモーダルを閉じる処理
+  const handleCloseCommentsModal = useCallback(() => {
+    setCommentsModal({
+      isOpen: false,
+      post: null,
+    });
+  }, []);
+
   // 初回データ取得
   useEffect(() => {
     if (fetchPostsRef.current) {
@@ -750,22 +1416,19 @@ export default function Timeline() {
     }
   }, []);
 
-  // 検索履歴への追加（別useEffect）
+  // 検索履歴への追加
   useEffect(() => {
     if (debouncedSearchTerm && debouncedSearchTerm.length >= 2) {
       addToHistory(debouncedSearchTerm);
     }
   }, [debouncedSearchTerm, addToHistory]);
 
-  // リアルタイム検索の実装 - 依存関係を最小化
+  // リアルタイム検索の実装
   const fetchPostsRef = useRef<typeof fetchPosts>();
   fetchPostsRef.current = fetchPosts;
 
   useEffect(() => {
-    
-    // 初期ロード完了後のみ実行
     if (loading && posts.length === 0) {
-      console.log('初期ロード中のためスキップ');
       return;
     }
 
@@ -808,63 +1471,32 @@ export default function Timeline() {
     }
   }, [loadMorePosts]);
 
-  // いいね処理の改善
-  const handleLike = async (postId: string) => {
-    // 最初にUIを楽観的に更新
-    setPosts(currentPosts =>
-      currentPosts.map(p =>
-        p.id === postId ? { ...p, likes_count: (p.likes_count || 0) + 1, isLikedByCurrentUser: true } : p
-      )
-    );
-
-    let error;
-
-    if (!session) {
-      // 匿名ユーザーの場合
-      const anonymousLikes = JSON.parse(localStorage.getItem('anonymousLikes') || '[]');
-      if (!anonymousLikes.includes(postId)) {
-        const newAnonymousLikes = [...anonymousLikes, postId];
-        localStorage.setItem('anonymousLikes', JSON.stringify(newAnonymousLikes));
+  // いいね処理の統合
+  const handleLike = useCallback(async (postId: string, isLiked: boolean) => {
+    try {
+      if (currentUserId) {
+        await handleAuthenticatedLike(postId, isLiked);
+      } else {
+        await handleAnonymousLike(postId, isLiked);
       }
-      
-      const sessionId = getAnonymousSessionId();
-      const { error: insertError } = await supabase
-        .from('anonymous_post_likes')
-        .insert({ post_id: postId, session_id: sessionId });
-      error = insertError;
-
-    } else {
-      // ログインユーザーの場合
-      const { error: insertError } = await supabase
-        .from('post_likes')
-        .insert({ post_id: postId, user_id: session.user.id });
-      error = insertError;
+    } catch (error) {
+      console.error('いいね処理エラー:', error);
+      // エラー時はUIを元に戻す
+      setPosts(prevPosts => prevPosts.map(p => 
+        p.id === postId 
+          ? { 
+              ...p, 
+              isLikedByCurrentUser: !isLiked, 
+              likes_count: isLiked ? p.likes_count - 1 : p.likes_count + 1
+            } 
+          : p
+      ));
     }
-
-    if (error) {
-      console.error('Error liking post:', error);
-      // エラーが発生した場合はUIを元に戻す
-      setPosts(currentPosts =>
-        currentPosts.map(p =>
-          p.id === postId ? { ...p, likes_count: (p.likes_count || 0) - 1, isLikedByCurrentUser: false } : p
-        )
-      );
-      if(!session) {
-        const newAnonymousLikes = JSON.parse(localStorage.getItem('anonymousLikes') || '[]').filter((id: string) => id !== postId);
-        localStorage.setItem('anonymousLikes', JSON.stringify(newAnonymousLikes));
-      }
-      // toast({ // toastは削除されたためコメントアウト
-      //   title: "エラー",
-      //   description: "いいねの処理に失敗しました。",
-      //   variant: "destructive",
-      // });
-    }
-  };
+  }, [currentUserId]);
 
   // ログインユーザーのいいね処理
   const handleAuthenticatedLike = async (postId: string, isLiked: boolean) => {
     if (isLiked) {
-      console.log('いいね追加:', { postId, currentUserId });
       const { error } = await supabase
         .from('post_likes')
         .insert({ 
@@ -874,21 +1506,17 @@ export default function Timeline() {
         });
       if (error) throw error;
       
-      // いいねした投稿リストを即座に更新
       setLikedPostIds(prev => [postId, ...prev.filter(id => id !== postId)]);
     } else {
-      console.log('いいね削除:', { postId, currentUserId });
       const { error } = await supabase
         .from('post_likes')
         .delete()
         .match({ post_id: postId, user_id: currentUserId });
       if (error) throw error;
       
-      // いいねした投稿リストから削除
       setLikedPostIds(prev => prev.filter(id => id !== postId));
     }
     
-    // UIの更新（トリガーにより自動更新されるため楽観的更新）
     setPosts(prevPosts => prevPosts.map(p => 
       p.id === postId 
         ? { 
@@ -900,34 +1528,27 @@ export default function Timeline() {
     ));
   };
 
-  // 非ログインユーザーのいいね処理を修正
+  // 非ログインユーザーのいいね処理
   const handleAnonymousLike = async (postId: string, isLiked: boolean) => {
-    // ローカルストレージでの重複チェック
     const anonymousLikes = JSON.parse(localStorage.getItem('anonymousLikes') || '[]');
     
     if (isLiked && !anonymousLikes.includes(postId)) {
-      // いいね追加（まだいいねしていない場合のみ）
       anonymousLikes.push(postId);
       localStorage.setItem('anonymousLikes', JSON.stringify(anonymousLikes));
       
-      // サーバーサイドでカウントのみ更新
       const { error } = await supabase.rpc('increment_anonymous_like', { post_id: postId });
       if (error) throw error;
       
     } else if (!isLiked && anonymousLikes.includes(postId)) {
-      // いいね削除（既にいいねしている場合のみ）
       const updatedLikes = anonymousLikes.filter((id: string) => id !== postId);
       localStorage.setItem('anonymousLikes', JSON.stringify(updatedLikes));
       
       const { error } = await supabase.rpc('decrement_anonymous_like', { post_id: postId });
       if (error) throw error;
     } else {
-      // 無効な操作（既にいいね済みなのに追加しようとした、または未いいねなのに削除しようとした）
-      console.warn('無効ないいね操作:', { postId, isLiked, currentLikes: anonymousLikes });
-      return; // 何もしない
+      return;
     }
     
-    // UIの更新
     setPosts(prevPosts => prevPosts.map(p => 
       p.id === postId 
         ? { 
@@ -937,25 +1558,6 @@ export default function Timeline() {
         : p
     ));
   };
-
-  // 投稿カードクリック時のハンドラー
-  const handlePostClick = useCallback((postId: string) => {
-    const postIndex = posts.findIndex(post => post.id === postId);
-    if (postIndex !== -1) {
-      setFullScreenViewer({
-        isOpen: true,
-        initialIndex: postIndex,
-      });
-    }
-  }, [posts]);
-
-  // フルスクリーンビューアーを閉じる
-  const closeFullScreenViewer = useCallback(() => {
-    setFullScreenViewer({
-      isOpen: false,
-      initialIndex: 0,
-    });
-  }, []);
 
   const handleNearbySearch = () => {
     setShowLocationPermissionAlert(true);
@@ -971,7 +1573,6 @@ export default function Timeline() {
           });
           setIsGettingLocation(false);
           setShowLocationPermissionAlert(false);
-          console.log('位置情報取得成功:', position.coords.latitude, position.coords.longitude);
         },
         (error) => {
           console.error('位置情報の取得に失敗しました:', error);
@@ -993,14 +1594,12 @@ export default function Timeline() {
 
   // フィルターを適用する処理
   const handleApplyFilters = () => {
-    // 一時的な状態を実際の状態に適用
     setActiveFilter(tempActiveFilter);
     setSearchMode(tempSearchMode);
     setSortBy(tempSortBy);
     
     setShowFilterModal(false);
     
-    // フィルター適用後にデータを再取得
     setTimeout(() => {
       if (fetchPostsRef.current) {
         fetchPostsRef.current(0, true);
@@ -1008,30 +1607,26 @@ export default function Timeline() {
     }, 100);
   };
 
-  // モーダルを閉じる処理（変更を破棄）
+  // モーダルを閉じる処理
   const handleCloseModal = () => {
-    // 一時的な状態を現在の適用済み状態にリセット
     setTempActiveFilter(activeFilter);
     setTempSearchMode(searchMode);
     setTempSortBy(sortBy);
     setShowFilterModal(false);
   };
 
-  // 修正されたすべてクリア機能
+  // すべてクリア機能
   const handleClearAllFilters = useCallback(() => {
-    // すべてのフィルターをリセット
     setActiveFilter('all');
     setSearchMode('all');
     setSortBy('created_at_desc');
     setGeneralSearchTerm('');
     setUserLocation(null);
     
-    // 一時的な状態もリセット
     setTempActiveFilter('all');
     setTempSearchMode('all');
     setTempSortBy('created_at_desc');
     
-    // フィルターをクリアした後、強制的に全投稿を再取得
     setTimeout(() => {
       if (fetchPostsRef.current) {
         fetchPostsRef.current(0, true);
@@ -1059,8 +1654,8 @@ export default function Timeline() {
               placeholder="店舗名やキーワードで検索"
               value={generalSearchTerm}
               onChange={(e) => setGeneralSearchTerm(e.target.value)}
-              className="pr-10 w-full text-base" // text-baseを追加してモバイルでのズームを防ぐ
-              style={{ fontSize: '16px' }} // 明示的に16pxを指定
+              className="pr-10 w-full text-base"
+              style={{ fontSize: '16px' }}
               autoComplete="off"
               autoCorrect="off"
               autoCapitalize="off"
@@ -1266,15 +1861,8 @@ export default function Timeline() {
         </div>
       )}
       
-      <div 
-        className="timeline-scroll-container custom-scrollbar overscroll-none"
-      >
-        <div 
-          className="p-4"
-          style={{
-            paddingBottom: '24px' // 🔥 下部メッセージ表示用の十分な余白
-          }}
-        >
+      <div className="timeline-scroll-container custom-scrollbar overscroll-none">
+        <div className="p-4" style={{ paddingBottom: '24px' }}>
           {posts.length === 0 && !loading && !isSearching ? (
             <div className="text-center py-10">
               <LayoutGrid size={48} className="mx-auto text-muted-foreground mb-4" />
@@ -1331,17 +1919,18 @@ export default function Timeline() {
                     exit={{ opacity: 0, y: -20 }}
                     transition={{ duration: 0.3, delay: index * 0.05 }}
                     className={cn(
-                      "cursor-pointer transform transition-transform hover:scale-105",
                       post.id === highlightPostId && 'ring-4 ring-primary ring-offset-2 rounded-xl'
                     )}
-                    onClick={() => handlePostClick(post.id)}
                   >
                     <PostCard 
                       post={post} 
                       onLike={handleLike}
+                      onView={handleView}
+                      onComment={handleCommentClick}
                       currentUserId={currentUserId}
                       showDistance={searchMode === 'nearby' && post.distance !== undefined}
                       isOwnPost={post.author_user_id === currentUserId}
+                      enableComments={true}
                     />
                   </motion.div>
                 ))}
@@ -1359,14 +1948,8 @@ export default function Timeline() {
             </div>
           )}
           
-          {/* 🔥 完全表示対応のメッセージ */}
           {!hasMore && posts.length > 0 && (
-            <div 
-              className="text-center py-8"
-              style={{
-                marginBottom: '16px' // 🔥 追加の下部マージン
-              }}
-            >
+            <div className="text-center py-8" style={{ marginBottom: '16px' }}>
               <p className="text-muted-foreground">
                 {searchMode === 'nearby' ? '5km圏内の投稿をすべて表示しました' : 'すべての投稿を読み込みました'}
               </p>
@@ -1375,16 +1958,15 @@ export default function Timeline() {
         </div>
       </div>
 
-      {/* フルスクリーン投稿ビューアー */}
-      <FullScreenPostViewer
-        posts={posts}
-        initialIndex={fullScreenViewer.initialIndex}
-        isOpen={fullScreenViewer.isOpen}
-        onClose={closeFullScreenViewer}
-        onLike={handleLike}
-        currentUserId={currentUserId}
-        showDistance={searchMode === 'nearby'}
-      />
+      {/* コメントモーダル */}
+      {commentsModal.post && (
+        <CommentsModal
+          post={commentsModal.post}
+          isOpen={commentsModal.isOpen}
+          onClose={handleCloseCommentsModal}
+          currentUserId={currentUserId}
+        />
+      )}
 
       <CustomModal
         isOpen={showFilterModal}
@@ -1413,7 +1995,7 @@ export default function Timeline() {
             </Button>
           </div>
 
-          {/* カテゴリ選択をドロップダウン形式に変更（3つ表示、スクロール対応） */}
+          {/* カテゴリ選択 */}
           <div>
             <h3 className="font-semibold text-lg mb-2">カテゴリーで絞り込み</h3>
             <Select 
@@ -1448,12 +2030,14 @@ export default function Timeline() {
                 <SelectItem value="created_at_asc" className="text-lg py-3">古い順</SelectItem>
                 <SelectItem value="expires_at_asc" className="text-lg py-3">期限が近い順</SelectItem>
                 <SelectItem value="likes_desc" className="text-lg py-3">いいねが多い順</SelectItem>
+                <SelectItem value="views_desc" className="text-lg py-3">表示回数が多い順</SelectItem>
+                <SelectItem value="comments_desc" className="text-lg py-3">コメントが多い順</SelectItem>
                 {userLocation && <SelectItem value="distance_asc" className="text-lg py-3">距離が近い順</SelectItem>}
               </SelectContent>
             </Select>
           </div>
 
-          {/* 特別な検索（ドロップダウン形式） */}
+          {/* 特別な検索 */}
           <div>
             <h3 className="font-semibold text-lg mb-2">特別な検索</h3>
             <Select onValueChange={(value: SearchMode) => setTempSearchMode(value)} value={tempSearchMode}>
@@ -1487,7 +2071,6 @@ export default function Timeline() {
             </Select>
           </div>
 
-          {/* いいね検索の説明を追加 */}
           {tempSearchMode === 'liked_posts' && likedPostIds.length > 0 && (
             <p className="text-xs text-gray-500 mt-1">
               最新のいいね順で表示されます

@@ -19,3 +19,11 @@ export function getAnonymousSessionId(): string {
   }
   return sessionId;
 }
+
+// セッションIDをクリア（ログイン時など）
+export function clearAnonymousSession(): void {
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('anonymousSessionId');
+    localStorage.removeItem('anonymousLikes');
+  }
+}
