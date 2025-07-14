@@ -25,6 +25,7 @@ import { getAnonymousSessionId } from '@/lib/session';
 import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
 import { ja } from 'date-fns/locale';
+import { ExtendedPostWithAuthor } from '@/types/timeline';
 
 // 型定義
 interface AuthorData {
@@ -76,20 +77,6 @@ interface PostFromDB {
   store_longitude?: number;
   author: AuthorData | AuthorData[] | null;
   post_likes: PostLike[];
-}
-
-export interface ExtendedPostWithAuthor extends PostWithAuthor {
-  isLikedByCurrentUser?: boolean;
-  likes_count: number;
-  views_count: number;
-  comments_count: number;
-  store_latitude?: number;
-  store_longitude?: number;
-  distance?: number;
-  expiry_option: "1h" | "3h" | "6h" | "12h";
-  app_profile_id: string;
-  author_user_id?: string;
-  author_posts_count?: number;
 }
 
 type SortOption = 'created_at_desc' | 'created_at_asc' | 'expires_at_asc' | 'distance_asc' | 'likes_desc' | 'views_desc' | 'comments_desc';
@@ -923,11 +910,11 @@ export default function Timeline() {
   const [isSearching, setIsSearching] = useState(false);
   
   const [activeFilter, setActiveFilter] = useState<string>('all');
-  const [searchMode, setSearchMode] = useState<SearchMode>('all');
+  const [searchMode, setSearchMode] = useState<SearchMode>('nearby'); // 'all' → 'nearby'に変更
   const [sortBy, setSortBy] = useState<SortOption>('created_at_desc');
   
   const [tempActiveFilter, setTempActiveFilter] = useState<string>('all');
-  const [tempSearchMode, setTempSearchMode] = useState<SearchMode>('all');
+  const [tempSearchMode, setTempSearchMode] = useState<SearchMode>('nearby'); // 'all' → 'nearby'に変更
   const [tempSortBy, setTempSortBy] = useState<SortOption>('created_at_desc');
   
   const [hasMore, setHasMore] = useState(true);
@@ -1559,10 +1546,34 @@ export default function Timeline() {
     ));
   };
 
-  const handleNearbySearch = () => {
-    setShowLocationPermissionAlert(true);
+  // 位置情報を初期化時に取得
+  useEffect(() => {
+    const getCurrentLocation = () => {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            setUserLocation({
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude,
+            });
+          },
+          (error) => {
+            console.error('位置情報の取得に失敗しました:', error);
+            setError('位置情報の取得に失敗しました。ブラウザの設定で位置情報を許可してください。');
+          },
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+        );
+      } else {
+        setError('お使いのブラウザは位置情報に対応していません。');
+      }
+    };
+
+    getCurrentLocation();
+  }, []);
+
+  // handleNearbySearchを削除し、位置情報更新ボタンの処理に変更
+  const handleRefreshLocation = () => {
     setIsGettingLocation(true);
-    setTempSearchMode('nearby');
     
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -1572,23 +1583,18 @@ export default function Timeline() {
             longitude: position.coords.longitude,
           });
           setIsGettingLocation(false);
-          setShowLocationPermissionAlert(false);
+          setTempSearchMode('nearby');
         },
         (error) => {
           console.error('位置情報の取得に失敗しました:', error);
           setError('位置情報の取得に失敗しました。ブラウザの設定で位置情報を許可してください。');
           setIsGettingLocation(false);
-          setShowLocationPermissionAlert(false);
-          setUserLocation(null);
-          setTempSearchMode('all');
         },
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
       );
     } else {
       setError('お使いのブラウザは位置情報に対応していません。');
       setIsGettingLocation(false);
-      setShowLocationPermissionAlert(false);
-      setTempSearchMode('all');
     }
   };
 
@@ -1775,7 +1781,6 @@ export default function Timeline() {
                   className="w-full text-left p-2 hover:bg-gray-100 text-sm"
                   onClick={() => {
                     setGeneralSearchTerm(term);
-                    setSearchMode('all');
                     setTimeout(() => {
                       if (fetchPostsRef.current) {
                         fetchPostsRef.current(0, true, term);
@@ -1789,6 +1794,21 @@ export default function Timeline() {
             </div>
           )}
         </div>
+        
+        {/* 5キロ圏内検索ボタンを追加 */}
+        <Button
+          onClick={handleRefreshLocation}
+          disabled={isGettingLocation}
+          className="bg-green-600 text-white hover:bg-green-700 text-sm px-3 py-2 whitespace-nowrap"
+        >
+          {isGettingLocation ? (
+            <Loader2 className="h-4 w-4 animate-spin mr-1" />
+          ) : (
+            <MapPin className="h-4 w-4 mr-1" />
+          )}
+          5km圏内
+        </Button>
+        
         <Button onClick={() => setShowFilterModal(true)} variant="outline" className="relative">
           <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
           {activeFiltersCount > 0 && (
@@ -1809,20 +1829,8 @@ export default function Timeline() {
         </div>
       )}
 
-      {/* 位置情報許可のアラート */}
-      {showLocationPermissionAlert && (
-        <div className="px-4 py-2">
-          <Alert>
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              周辺検索を行うため、ブラウザの位置情報へのアクセスを許可してください。現在地から5km圏内の投稿のみ表示されます。
-            </AlertDescription>
-          </Alert>
-        </div>
-      )}
-
-      {/* アクティブなフィルタの表示 */}
-      {activeFiltersCount > 0 && (
+      {/* アクティブなフィルタの表示（searchMode === 'nearby'を除外） */}
+      {(activeFilter !== 'all' || sortBy !== 'created_at_desc') && (
         <div className="px-4 py-2 bg-gray-50 border-b">
           <div className="flex flex-wrap gap-2 items-center">
             <span className="text-sm text-gray-600">アクティブなフィルタ:</span>
@@ -1834,28 +1842,28 @@ export default function Timeline() {
                 </button>
               </Badge>
             )}
-            {searchMode !== 'all' && (
+            {sortBy !== 'created_at_desc' && (
               <Badge variant="secondary" className="flex items-center gap-1">
-                {searchMode === 'favorite_store' && 'お気に入り店舗'}
-                {searchMode === 'liked_posts' && 'いいねした投稿'}
-                {searchMode === 'nearby' && `周辺検索 (5km圏内)`}
-                {searchMode === 'hybrid' && '複合検索'}
-                <button onClick={() => setSearchMode('all')} className="ml-1">
+                並び順: {sortBy === 'likes_desc' ? 'いいね順' : sortBy === 'views_desc' ? '閲覧順' : sortBy === 'comments_desc' ? 'コメント順' : sortBy === 'expires_at_asc' ? '期限順' : sortBy === 'distance_asc' ? '距離順' : '新着順'}
+                <button onClick={() => setSortBy('created_at_desc')} className="ml-1">
                   <X className="h-3 w-3" />
                 </button>
               </Badge>
             )}
-            <Button variant="ghost" size="sm" onClick={handleClearAllFilters}>
+            <Button variant="ghost" size="sm" onClick={() => {
+              setActiveFilter('all');
+              setSortBy('created_at_desc');
+            }}>
               すべてクリア
             </Button>
           </div>
         </div>
       )}
 
-      {/* 周辺検索時の結果表示 */}
-      {searchMode === 'nearby' && userLocation && !loading && (
-        <div className="px-4 py-2 bg-blue-50 border-b">
-          <p className="text-sm text-blue-700">
+      {/* 周辺検索の結果表示 */}
+      {userLocation && !loading && (
+        <div className="px-4 py-2 bg-green-50 border-b">
+          <p className="text-sm text-green-700">
             📍 現在地から5km圏内の投稿を表示中 ({posts.length}件)
           </p>
         </div>
@@ -1975,25 +1983,7 @@ export default function Timeline() {
         description="検索条件と表示順を設定できます。"
       >
         <div className="space-y-6 max-h-[70vh] overflow-y-auto">
-          {/* おすすめの検索 */}
-          <div>
-            <h3 className="font-semibold text-lg mb-2">おすすめの検索</h3>
-            <Button
-              onClick={handleNearbySearch}
-              disabled={isGettingLocation}
-              className={cn(
-                "w-full justify-start",
-                tempSearchMode === 'nearby' ? "bg-green-600 text-white hover:bg-green-700" : "bg-gray-200 text-gray-800 hover:bg-gray-300"
-              )}
-            >
-              {isGettingLocation ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <MapPin className="h-4 w-4 mr-2" />
-              )}
-              周辺から検索 (5km圏内)
-            </Button>
-          </div>
+          {/* おすすめの検索セクションを削除 */}
 
           {/* カテゴリ選択 */}
           <div>
@@ -2037,7 +2027,7 @@ export default function Timeline() {
             </Select>
           </div>
 
-          {/* 特別な検索 */}
+          {/* 特別な検索セクションを削除または簡素化 */}
           <div>
             <h3 className="font-semibold text-lg mb-2">特別な検索</h3>
             <Select onValueChange={(value: SearchMode) => setTempSearchMode(value)} value={tempSearchMode}>
@@ -2045,7 +2035,7 @@ export default function Timeline() {
                 <SelectValue placeholder="検索方法を選択" />
               </SelectTrigger>
               <SelectContent className="max-h-[200px]">
-                <SelectItem value="all" className="text-lg py-3">すべての投稿</SelectItem>
+                <SelectItem value="nearby" className="text-lg py-3">周辺検索 (5km圏内)</SelectItem>
                 <SelectItem 
                   value="favorite_store" 
                   disabled={!currentUserId || favoriteStoreIds.length === 0}
@@ -2079,7 +2069,11 @@ export default function Timeline() {
         </div>
 
         <div className="mt-6 flex justify-between">
-          <Button variant="outline" onClick={handleClearAllFilters}>
+          <Button variant="outline" onClick={() => {
+            setTempActiveFilter('all');
+            setTempSortBy('created_at_desc');
+            setTempSearchMode('nearby'); // 'all' → 'nearby'に変更
+          }}>
             すべてクリア
           </Button>
           <Button onClick={handleApplyFilters}>フィルターを適用</Button>

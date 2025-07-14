@@ -15,7 +15,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { CustomModal } from '@/components/ui/custom-modal';
 import { useToast } from '@/hooks/use-toast';
 import React from 'react';
-import { ExtendedPostWithAuthor } from '@/app/timeline/page';
+import { ExtendedPostWithAuthor } from '@/types/timeline';
 
 const discountIcons = [
   { value: 0, Icon: Angry, label: "0%" },
