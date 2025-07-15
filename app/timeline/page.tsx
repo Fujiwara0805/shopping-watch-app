@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { LayoutGrid, Search, Star, MapPin, Loader2, SlidersHorizontal, Heart, Plus, X, AlertCircle, Menu, User, Edit, Store, HelpCircle, FileText, LogOut, Settings, Globe, NotebookText, Calculator, Zap, MessageSquare, Eye, Send, RefreshCw } from 'lucide-react';
+import { LayoutGrid, Search, Star, MapPin, Loader2, SlidersHorizontal, Heart, Plus, X, AlertCircle, Menu, User, Edit, Store, HelpCircle, FileText, LogOut, Settings, Globe, NotebookText, Calculator, Zap, MessageSquare, Eye, Send, RefreshCw, UserPlus, Link as LinkIcon, ExternalLink, Instagram } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { PostWithAuthor } from '@/types/post';
 import { useSession, signOut } from 'next-auth/react';
@@ -905,7 +905,8 @@ const HamburgerMenu = ({ currentUser }: { currentUser: any }) => {
 };
 
 export default function Timeline() {
-  const router = useRouter(); // この行を追加
+  const router = useRouter();
+  const { toast } = useToast(); // この行を追加
   
   const [posts, setPosts] = useState<ExtendedPostWithAuthor[]>([]);
   const [loading, setLoading] = useState(true);
@@ -940,7 +941,7 @@ export default function Timeline() {
 
   const [currentUserProfile, setCurrentUserProfile] = useState<any>(null);
 
-  const debouncedSearchTerm = useDebounce(generalSearchTerm, 150);
+  const debouncedSearchTerm = useDebounce(generalSearchTerm, 800); // 150ms → 800msに変更
 
   // コメントモーダル関連
   const [commentsModal, setCommentsModal] = useState<{
@@ -1412,7 +1413,7 @@ export default function Timeline() {
 
   // 検索履歴への追加
   useEffect(() => {
-    if (debouncedSearchTerm && debouncedSearchTerm.length >= 2) {
+    if (debouncedSearchTerm && debouncedSearchTerm.length >= 3) { // 2文字 → 3文字に変更
       addToHistory(debouncedSearchTerm);
     }
   }, [debouncedSearchTerm, addToHistory]);
@@ -1426,9 +1427,12 @@ export default function Timeline() {
       return;
     }
 
-    setIsSearching(true);
-    if (fetchPostsRef.current) {
-      fetchPostsRef.current(0, true, debouncedSearchTerm);
+    // 検索語が空の場合は即座に実行、そうでなければデバウンス後に実行
+    if (debouncedSearchTerm === '' || debouncedSearchTerm.length >= 2) {
+      setIsSearching(true);
+      if (fetchPostsRef.current) {
+        fetchPostsRef.current(0, true, debouncedSearchTerm);
+      }
     }
   }, [debouncedSearchTerm]);
 
@@ -1636,6 +1640,9 @@ export default function Timeline() {
     return count;
   }, [activeFilter, searchMode, sortBy]);
 
+  // 招待モーダルの状態を追加
+  const [showInviteModal, setShowInviteModal] = useState(false);
+
   if (loading && posts.length === 0) {
     return (
       <AppLayout>
@@ -1797,7 +1804,7 @@ export default function Timeline() {
       </div>
 
       {/* リアルタイム検索中の表示 */}
-      {isSearching && generalSearchTerm && (
+      {isSearching && generalSearchTerm && generalSearchTerm.length >= 2 && (
         <div className="px-4 py-2 bg-blue-50 border-b">
           <div className="flex items-center space-x-2">
             <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
@@ -1846,6 +1853,15 @@ export default function Timeline() {
             style={{ backgroundColor: '#f97415' }}
           >
             投稿する
+          </Button>
+          <Button
+            onClick={() => setShowInviteModal(true)}
+            variant="outline"
+            className="flex-1"
+            style={{ backgroundColor: '#eefdf6' }}
+          >
+            <UserPlus className="h-4 w-4 mr-2" />
+            招待する
           </Button>
           <Button
             onClick={() => {
@@ -2020,6 +2036,53 @@ export default function Timeline() {
             すべてクリア
           </Button>
           <Button onClick={handleApplyFilters}>フィルターを適用</Button>
+        </div>
+      </CustomModal>
+
+      {/* 招待モーダル */}
+      <CustomModal
+        isOpen={showInviteModal}
+        onClose={() => setShowInviteModal(false)}
+        title="トクドクに友達を招待"
+        description="お得な情報を友達と共有しましょう！"
+        className="sm:max-w-md"
+      >
+        <div className="space-y-4">
+          {/* 招待メッセージ */}
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <h3 className="font-semibold text-sm mb-2" style={{ color: '#73370c' }}>招待メッセージ</h3>
+            <div className="bg-white p-3 rounded border">
+              <p className="text-sm text-gray-700 mb-3">
+                お得な情報がたくさん見つかる「トクドク」に参加しませんか？
+              </p>
+              <p className="text-sm text-blue-600 font-medium">
+                https://tokudoku.com/
+              </p>
+            </div>
+          </div>
+
+          {/* コピーボタン */}
+          <Button
+            onClick={() => {
+              const message = `お得な情報がたくさん見つかる「トクドク」に参加しませんか？\n\nhttps://tokudoku.com/`;
+              navigator.clipboard.writeText(message);
+              toast({
+                title: "招待メッセージをコピーしました！",
+                description: "SNSやメッセージアプリで友達に送ってください",
+                duration: 1000,
+              });
+            }}
+            className="w-full"
+          >
+            <LinkIcon className="h-4 w-4 mr-2" />
+            招待メッセージをコピー
+          </Button>
+        </div>
+
+        <div className="mt-6 flex justify-end">
+          <Button variant="ghost" onClick={() => setShowInviteModal(false)} className="text-base px-5 py-2.5 h-auto">
+            閉じる
+          </Button>
         </div>
       </CustomModal>
     </AppLayout>

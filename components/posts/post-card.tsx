@@ -4,7 +4,7 @@ import { useState, useCallback, useRef, useEffect, memo } from 'react';
 import { motion } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
 import { ja } from 'date-fns/locale';
-import { Heart, Share2, Clock, Link as LinkIcon, ExternalLink, Instagram, Copy, Laugh, Smile, Meh, Frown, Angry, MapPin, Eye, MessageCircle, ChevronDown, Tag, DollarSign } from 'lucide-react';
+import { Heart, Share2, Clock, Link as LinkIcon, ExternalLink, Instagram, Copy, Laugh, Smile, Meh, Frown, Angry, MapPin, Eye, MessageCircle, ChevronDown, Tag, DollarSign, UserPlus } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -498,7 +498,15 @@ export const PostCard = memo(({
                                 {post.store_name || '店舗不明'}
                               </span>
                             </Button>
-                            <Copy className="h-4 w-4 text-gray-400 hover:text-gray-600 flex-shrink-0 ml-2" />
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={handleCopyStoreName}
+                              className="p-1 h-auto hover:bg-gray-100"
+                              title="店舗名をコピー"
+                            >
+                              <Copy className="h-4 w-4 text-gray-400 hover:text-gray-600 flex-shrink-0" />
+                            </Button>
                           </div>
                         </td>
                       </tr>
@@ -528,7 +536,7 @@ export const PostCard = memo(({
                         </td>
                         <td className="p-3">
                           <span className="text-base font-medium" style={{ color: '#73370c' }}>
-                            {post.price != null ? `¥${post.price.toLocaleString()}` : '価格不明'}
+                            {post.price != null ? `${post.price.toLocaleString()}円〜` : '価格不明'}
                           </span>
                         </td>
                       </tr>
@@ -596,24 +604,24 @@ export const PostCard = memo(({
 
           {/* 新しい統計・アクション行（横幅重視のレイアウト） */}
           <div className="bg-gray-50 rounded-lg p-2 mt-2">
-            <div className="grid grid-cols-3 gap-1 h-6"> {/* h-6で縦幅を24px(6*4)に変更 */}
+            <div className="grid grid-cols-3 gap-1 h-6">
               {/* いいね */}
               <button
                 onClick={handleLikeClick}
-                      className={cn(
-                  "flex items-center justify-center space-x-1 h-full rounded-md transition-colors px-1",
+                className={cn(
+                  "flex items-center justify-center space-x-1 h-full rounded-md transition-colors px-1 border border-gray-300",
                   isLiked && "text-red-500",
                   isMyPost && currentUserId && "opacity-50 cursor-not-allowed",
                   isLiking && "opacity-50 cursor-not-allowed"
                 )}
                 style={{ backgroundColor: '#fcebeb' }}
-                      disabled={isLiking || (isMyPost && Boolean(currentUserId))}
-                      title={isMyPost && currentUserId ? "自分の投稿にはいいねできません" : "いいね"}
-                    >
+                disabled={isLiking || (isMyPost && Boolean(currentUserId))}
+                title={isMyPost && currentUserId ? "自分の投稿にはいいねできません" : "いいね"}
+              >
                 <Heart className={cn(
                   "h-4 w-4 transition-all duration-200 flex-shrink-0",
                   isLiked ? "text-red-500 fill-red-500" : "text-gray-600 hover:text-red-500",
-                          isLiking && "animate-pulse"
+                  isLiking && "animate-pulse"
                 )} />
                 <span className="text-base font-medium truncate">{post.likes_count}</span>
                 <span className="text-base text-gray-500 truncate">いいね</span>
@@ -623,7 +631,7 @@ export const PostCard = memo(({
               {enableComments && (
                 <button
                   onClick={handleCommentClick}
-                  className="flex items-center justify-center space-x-1 h-full rounded-md transition-colors text-gray-600 hover:text-blue-500 px-1"
+                  className="flex items-center justify-center space-x-1 h-full rounded-md transition-colors text-gray-600 hover:text-blue-500 px-1 border border-gray-300"
                   style={{ backgroundColor: '#eff4ff' }}
                   title="コメント"
                 >
@@ -636,7 +644,7 @@ export const PostCard = memo(({
               {/* シェアボタン */}
               <button
                 onClick={handleShareClick}
-                className="flex items-center justify-center space-x-1 h-full rounded-md transition-colors text-gray-600 hover:text-gray-800 px-1"
+                className="flex items-center justify-center space-x-1 h-full rounded-md transition-colors text-gray-600 hover:text-gray-800 px-1 border border-gray-300"
                 style={{ backgroundColor: '#eefdf6' }}
                 title="共有"
               >
