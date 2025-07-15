@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { useNotification } from '@/contexts/NotificationContext';
-import { Clock, MapPin, PlusCircle, User, ShoppingBag } from 'lucide-react';
+import { Clock, MapPin, PlusCircle, User, ShoppingBag, Newspaper } from 'lucide-react';
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
@@ -18,9 +18,9 @@ interface MapLayoutProps {
 // ナビゲーションアイテム
 const navItems = [
   {
-    name: "タイムライン",
+    name: "おとく板",
     href: "/timeline",
-    icon: Clock,
+    icon: Newspaper,
   },
   {
     name: "買い物メモ",
@@ -31,11 +31,6 @@ const navItems = [
     name: "お店を探す",
     href: "/map",
     icon: MapPin,
-  },
-  {
-    name: "投稿する",
-    href: "/post",
-    icon: PlusCircle,
   },
   {
     name: "マイページ",

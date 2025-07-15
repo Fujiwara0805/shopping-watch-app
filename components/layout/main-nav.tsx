@@ -4,14 +4,14 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Clock, MapPin, User, ShoppingBag } from "lucide-react";
+import { Newspaper, MapPin, User, ShoppingBag } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   {
-    name: "タイムライン",
+    name: "おとく板",
     href: "/timeline",
-    icon: Clock,
+    icon: Newspaper,
   },
   {
     name: "買い物メモ",

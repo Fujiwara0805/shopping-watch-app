@@ -17,7 +17,7 @@ export function AppHeader() {
   const getPageTitle = () => {
     switch (pathname) {
       case '/timeline':
-        return 'タイムライン';
+        return 'おとく板';
       case '/map':
         return 'お店を探す';
       case '/post':
