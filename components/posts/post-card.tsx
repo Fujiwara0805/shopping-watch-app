@@ -4,7 +4,7 @@ import { useState, useCallback, useRef, useEffect, memo } from 'react';
 import { motion } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
 import { ja } from 'date-fns/locale';
-import { Heart, Share2, Clock, Link as LinkIcon, ExternalLink, Instagram, Copy, Laugh, Smile, Meh, Frown, Angry, MapPin, Eye, MessageCircle } from 'lucide-react';
+import { Heart, Share2, Clock, Link as LinkIcon, ExternalLink, Instagram, Copy, Laugh, Smile, Meh, Frown, Angry, MapPin, Eye, MessageCircle, ChevronDown, Tag, DollarSign } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -223,6 +223,7 @@ export const PostCard = memo(({
   enableComments = false
 }: PostCardProps) => {
   const [showShareDialog, setShowShareDialog] = useState(false);
+  const [showBasicInfo, setShowBasicInfo] = useState(false); // 追加
   const [imageLoaded, setImageLoaded] = useState(false);
   const [isLiking, setIsLiking] = useState(false);
   const [hasBeenViewed, setHasBeenViewed] = useState(false);
@@ -419,12 +420,13 @@ export const PostCard = memo(({
         onClick={handleCardClick}
       >
         <CardHeader className="p-3 pb-1 space-y-0">
-          <div className="flex justify-between items-start">
+          {/* 投稿者情報セクション（独立） */}
+          <div className="flex justify-between items-start mb-3"> {/* mb-1で4px間隔 */}
             <div className="flex items-center space-x-2">
               <UserAvatar author={post.author} />
               <div className="flex flex-col">
                 <div className="flex items-center space-x-2">
-                  <p className="font-semibold text-base text-foreground">
+                  <p className="font-semibold text-base" style={{ color: '#73370c' }}>
                     {post.author?.display_name || '不明な投稿者'}
                   </p>
                   {isMyPost && <Badge variant="secondary" className="text-xs">自分の投稿</Badge>}
@@ -432,68 +434,146 @@ export const PostCard = memo(({
                 <div className="flex items-center space-x-2">
                   {post.author_posts_count && post.author_posts_count > 0 && (
                     <>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs" style={{ color: '#73370c' }}>
                         投稿数: {post.author_posts_count}
                       </p>
-                      <span className="text-xs text-muted-foreground/60">•</span>
+                      <span className="text-xs" style={{ color: '#73370c' }}>•</span>
                     </>
                   )}
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs" style={{ color: '#73370c' }}>
                     {formattedDate}
                   </p>
                 </div>
-                
-                {/* 場所情報を投稿者情報の下に移動 */}
-                <div className="flex items-center space-x-1 mt-1">
-                  <MapPin className="h-4 w-4 text-gray-500 flex-shrink-0" />
-                  <Button
-                    variant="ghost"
-                    className={cn(
-                      "p-0 h-auto font-medium hover:bg-transparent hover:text-primary flex items-center space-x-1 min-w-0",
-                      // 15文字以上の場合はテキストサイズを小さく
-                      (post.store_name || '').length >= 15 ? "text-sm" : "text-base"
-                    )}
-                    onClick={handleCopyStoreName}
-                    title="店舗名をコピー"
-                  >
-                    <span className="truncate max-w-[200px]">{post.store_name || '店舗不明'}</span>
-                    <Copy className="h-3 w-3 flex-shrink-0" />
-                  </Button>
-                </div>
               </div>
             </div>
-            
-            <div className="flex flex-col items-end space-y-2">
-              <Badge className={cn("text-lg", getCategoryColor(post.category || ''))}>
-                {post.category || '不明'}
-              </Badge>
+          </div>
+          
+          {/* 基本情報セクション（トグル形式・5行2列表形式） */}
+          <div className="mt-1"> {/* mb-1で4px間隔 */}
+            <div className="border border-gray-200 rounded-md overflow-hidden">
+              {/* トグルヘッダー */}
+              <button
+                onClick={() => setShowBasicInfo(!showBasicInfo)}
+                className="w-full bg-gray-50 border-b border-gray-200 p-3 flex items-center justify-between hover:bg-gray-100 transition-colors"
+              >
+                <span className="text-base font-medium" style={{ color: '#73370c' }}>基本情報</span> {/* text-sm → text-base */}
+                <motion.div
+                  animate={{ rotate: showBasicInfo ? 180 : 0 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <ChevronDown className="h-4 w-4 text-gray-500" />
+                </motion.div>
+              </button>
+              
+              {/* トグルコンテンツ */}
+              <motion.div
+                initial={false}
+                animate={{ height: showBasicInfo ? 'auto' : 0 }}
+                transition={{ duration: 0.2 }}
+                className="overflow-hidden"
+              >
+                <div className="bg-white">
+                  <table className="w-full">
+                    <tbody>
+                      {/* 1行目: 場所 */}
+                      <tr className="border-b border-gray-100">
+                        <td className="p-3 bg-gray-50 w-1/3 font-medium border-r border-gray-100">
+                          <div className="flex items-center space-x-2">
+                            <MapPin className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                            <span className="text-base" style={{ color: '#73370c' }}>場所</span> {/* text-sm → text-base */}
+                          </div>
+                        </td>
+                        <td className="p-3">
+                          <div className="flex items-center justify-between">
+                            <Button
+                              variant="ghost"
+                              className="p-0 h-auto font-normal hover:bg-transparent hover:text-primary flex-1"
+                              onClick={handleCopyStoreName}
+                              title="店舗名をコピー"
+                            >
+                              <span className={cn(
+                                "whitespace-normal break-words",
+                                (post.store_name || '').length > 20 ? "text-sm" : "text-base"
+                              )} style={{ color: '#73370c' }}>
+                                {post.store_name || '店舗不明'}
+                              </span>
+                            </Button>
+                            <Copy className="h-4 w-4 text-gray-400 hover:text-gray-600 flex-shrink-0 ml-2" />
+                          </div>
+                        </td>
+                      </tr>
+                      
+                      {/* 2行目: カテゴリ */}
+                      <tr className="border-b border-gray-100">
+                        <td className="p-3 bg-gray-50 w-1/3 font-medium border-r border-gray-100">
+                          <div className="flex items-center space-x-2">
+                            <Tag className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                            <span className="text-base" style={{ color: '#73370c' }}>カテゴリ</span> {/* text-sm → text-base */}
+                          </div>
+                        </td>
+                        <td className="p-3">
+                          <Badge className={cn("text-base", getCategoryColor(post.category || ''))}>
+                            {post.category || '不明'}
+                          </Badge>
+                        </td>
+                      </tr>
+                      
+                      {/* 3行目: 価格 */}
+                      <tr className="border-b border-gray-100">
+                        <td className="p-3 bg-gray-50 w-1/3 font-medium border-r border-gray-100">
+                          <div className="flex items-center space-x-2">
+                            <DollarSign className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                            <span className="text-base" style={{ color: '#73370c' }}>価格</span> {/* text-sm → text-base */}
+                          </div>
+                        </td>
+                        <td className="p-3">
+                          <span className="text-base font-medium" style={{ color: '#73370c' }}>
+                            {post.price != null ? `¥${post.price.toLocaleString()}` : '価格不明'}
+                          </span>
+                        </td>
+                      </tr>
+                      
+                      {/* 4行目: 視聴回数 */}
+                      <tr className="border-b border-gray-100">
+                        <td className="p-3 bg-gray-50 w-1/3 font-medium border-r border-gray-100">
+                          <div className="flex items-center space-x-2">
+                            <Eye className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                            <span className="text-base" style={{ color: '#73370c' }}>視聴回数</span> {/* text-sm → text-base */}
+                          </div>
+                        </td>
+                        <td className="p-3">
+                          <span className="text-base" style={{ color: '#73370c' }}>
+                            {formatViewCount(post.views_count)}
+                          </span>
+                        </td>
+                      </tr>
+                      
+                      {/* 5行目: 残り時間 */}
+                      <tr>
+                        <td className="p-3 bg-gray-50 w-1/3 font-medium border-r border-gray-100">
+                          <div className="flex items-center space-x-2">
+                            <Clock className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                            <span className="text-base" style={{ color: '#73370c' }}>残り時間</span> {/* text-sm → text-base */}
+                          </div>
+                        </td>
+                        <td className="p-3">
+                          <span className="text-base" style={{ color: '#73370c' }}>
+                            {post.expires_at ? formatRemainingTime(new Date(post.expires_at).getTime()) : '期限なし'}
+                          </span>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </motion.div>
             </div>
           </div>
-
-          {/* 削除: 場所情報の元の位置を削除 */}
-          {/* <div className="flex items-center justify-between mt-2">
-            <div className="flex-1"></div>
-            <div className="flex items-center space-x-2">
-              <MapPin className="h-5 w-5 text-gray-500 flex-shrink-0" />
-              <Button
-                variant="ghost"
-                className={cn(
-                  "p-0 h-auto font-medium hover:bg-transparent hover:text-primary flex items-center space-x-1 min-w-0",
-                  (post.store_name || '').length >= 15 ? "text-sm" : "text-lg"
-                )}
-                onClick={handleCopyStoreName}
-                title="店舗名をコピー"
-              >
-                <span className="truncate max-w-[250px]">{post.store_name || '店舗不明'}</span>
-                <Copy className="h-4 w-4 flex-shrink-0" />
-              </Button>
-            </div>
-          </div> */}
         </CardHeader>
         
         <CardContent className="p-3 pt-1 flex flex-col h-full">
-          <div className="flex-grow overflow-hidden mb-3">
-            <p className="text-lg whitespace-pre-line line-clamp-6 text-muted-foreground">
+          {/* 投稿内容との間隔調整 */}
+          <div className="flex-grow overflow-hidden mb-3 mt-1"> {/* mt-1で4px間隔 */}
+            <p className="text-lg whitespace-pre-line line-clamp-6" style={{ color: '#73370c' }}>
               {post.content || '内容がありません'}
             </p>
           </div>
@@ -508,44 +588,8 @@ export const PostCard = memo(({
                   onLoad={() => setImageLoaded(true)}
                 />
                 
-                {/* 残り時間と閲覧数を画像の左上に配置 */}
-                <div className="absolute top-2 left-2 flex flex-col space-y-1">
-                  {post.expires_at && (
-                    <div className="bg-black/60 text-white text-xs px-2 py-1 rounded-full flex items-center space-x-1 backdrop-blur-sm">
-                      <Clock size={14} />
-                      <span>{formatRemainingTime(new Date(post.expires_at).getTime())}</span>
-                    </div>
-                  )}
-                  
-                  {/* 閲覧数を残り時間の下に配置（アイコンと数字に合ったサイズ） */}
-                  <div className="bg-black/60 text-white text-xs px-2 py-1 rounded-full flex items-center space-x-1 backdrop-blur-sm w-fit">
-                    <Eye size={14} />
-                    <span>{formatViewCount(post.views_count)}</span>
-                  </div>
-                </div>
-                
-                {/* 割引率と価格は右上に配置 */}
-                <div className="absolute top-2 right-2 flex flex-col items-end space-y-2">
-                  <DiscountBadge discountRate={post.discount_rate} />
-                  
-                  {post.price != null && (
-                    <div className="relative">
-                      <div className="relative bg-gradient-to-br from-yellow-400 via-yellow-300 to-yellow-500 text-red-600 font-black text-3xl px-4 py-3 overflow-hidden"
-                           style={{
-                             clipPath: 'polygon(5% 15%, 15% 5%, 25% 20%, 35% 0%, 45% 15%, 55% 5%, 65% 20%, 75% 0%, 85% 15%, 95% 5%, 100% 20%, 95% 30%, 100% 40%, 90% 50%, 100% 60%, 95% 70%, 100% 80%, 85% 85%, 75% 100%, 65% 80%, 55% 95%, 45% 85%, 35% 100%, 25% 80%, 15% 95%, 5% 85%, 0% 80%, 5% 70%, 0% 60%, 10% 50%, 0% 40%, 5% 30%, 0% 20%)'
-                           }}>
-                        <div className="absolute inset-0 opacity-20">
-                          <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-white/50 to-transparent"></div>
-                          <div className="absolute bottom-0 right-0 w-4 h-4 bg-red-400 rounded-full transform translate-x-2 translate-y-2"></div>
-                        </div>
-                        <div className="relative z-10 flex items-center" style={{ textShadow: '2px 2px 0 white, -2px -2px 0 white, 2px -2px 0 white, -2px 2px 0 white, 1px 1px 0 white, -1px -1px 0 white, 1px -1px 0 white, -1px 1px 0 white' }}>
-                          <span className="text-2xl mr-1">¥</span>
-                          <span className="tracking-tight">{post.price.toLocaleString()}</span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
+                {/* 削除: 画像上のオーバーレイ要素をすべて削除 */}
+                {/* 残り時間と閲覧数、割引率と価格のオーバーレイを削除 */}
               </div>
             </div>
           )}
@@ -556,23 +600,23 @@ export const PostCard = memo(({
               {/* いいね */}
               <button
                 onClick={handleLikeClick}
-                className={cn(
+                      className={cn(
                   "flex items-center justify-center space-x-1 h-full rounded-md transition-colors px-1",
                   isLiked && "text-red-500",
                   isMyPost && currentUserId && "opacity-50 cursor-not-allowed",
                   isLiking && "opacity-50 cursor-not-allowed"
                 )}
                 style={{ backgroundColor: '#fcebeb' }}
-                disabled={isLiking || (isMyPost && Boolean(currentUserId))}
-                title={isMyPost && currentUserId ? "自分の投稿にはいいねできません" : "いいね"}
-              >
+                      disabled={isLiking || (isMyPost && Boolean(currentUserId))}
+                      title={isMyPost && currentUserId ? "自分の投稿にはいいねできません" : "いいね"}
+                    >
                 <Heart className={cn(
                   "h-4 w-4 transition-all duration-200 flex-shrink-0",
                   isLiked ? "text-red-500 fill-red-500" : "text-gray-600 hover:text-red-500",
-                  isLiking && "animate-pulse"
+                          isLiking && "animate-pulse"
                 )} />
-                <span className="text-sm font-medium truncate">{post.likes_count}</span>
-                <span className="text-sm text-gray-500 truncate">いいね</span>
+                <span className="text-base font-medium truncate">{post.likes_count}</span>
+                <span className="text-base text-gray-500 truncate">いいね</span>
               </button>
 
               {/* コメント数 */}
@@ -581,11 +625,11 @@ export const PostCard = memo(({
                   onClick={handleCommentClick}
                   className="flex items-center justify-center space-x-1 h-full rounded-md transition-colors text-gray-600 hover:text-blue-500 px-1"
                   style={{ backgroundColor: '#eff4ff' }}
-                  title="コメントする"
+                  title="コメント"
                 >
                   <MessageCircle className="h-4 w-4 flex-shrink-0" />
-                  <span className="text-sm font-medium truncate">{formatCommentCount(post.comments_count)}</span>
-                  <span className="text-sm text-gray-500 truncate">コメントする</span>
+                  <span className="text-base font-medium truncate">{formatCommentCount(post.comments_count)}</span>
+                  <span className="text-base text-gray-500 truncate">コメント</span>
                 </button>
               )}
 
@@ -597,63 +641,63 @@ export const PostCard = memo(({
                 title="共有"
               >
                 <Share2 className="h-4 w-4 flex-shrink-0" />
-                <span className="text-sm font-medium truncate">共有</span>
+                <span className="text-base font-medium truncate">共有</span>
               </button>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      <CustomModal
-        isOpen={showShareDialog}
-        onClose={() => setShowShareDialog(false)}
-        title="投稿を共有"
-        description="このお得情報を友達に知らせよう！"
-      >
-        <div className="space-y-3">
-          <Button
-            variant="outline"
-            className="w-full justify-start text-left py-3 h-auto text-base"
-            onClick={() => {
-                copyToClipboard(`${window.location.origin}/post/${post.id}`, "リンクをコピーしました！");
-            }}
-          >
-            <LinkIcon className="mr-2.5 h-5 w-5" />
-            リンクをコピー
-          </Button>
-          <Button
-            className="w-full justify-start text-left py-3 h-auto text-base bg-[#1DA1F2] hover:bg-[#1a91da] text-white"
-            onClick={() => {
-                window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(`${post.store_name}の${post.category}がお得！ ${post.content}`)}&url=${encodeURIComponent(`${window.location.origin}/post/${post.id}`)}`, '_blank');
-                setShowShareDialog(false);
-            }}
-          >
-            <svg className="mr-2.5 h-5 w-5 fill-current" viewBox="0 0 24 24" aria-hidden="true"><g><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"></path></g></svg>
-            X (Twitter) で共有
-          </Button>
-          <Button
-            variant="outline"
-            className="w-full justify-start text-left py-3 h-auto text-base bg-[#E1306C] hover:bg-[#c92a5f] text-white"
-            onClick={handleInstagramShare}
-          >
-            <Instagram className="mr-2.5 h-5 w-5" />
-            Instagramで共有
-          </Button>
-          {navigator.share && typeof navigator.share === 'function' && (
+        <CustomModal
+          isOpen={showShareDialog}
+          onClose={() => setShowShareDialog(false)}
+          title="投稿を共有"
+          description="このお得情報を友達に知らせよう！"
+        >
+          <div className="space-y-3">
             <Button
               variant="outline"
               className="w-full justify-start text-left py-3 h-auto text-base"
-              onClick={handleNativeShare}
+              onClick={() => {
+                  copyToClipboard(`${window.location.origin}/post/${post.id}`, "リンクをコピーしました！");
+              }}
             >
-              <ExternalLink className="mr-2.5 h-5 w-5" />
-              その他のアプリで共有
+              <LinkIcon className="mr-2.5 h-5 w-5" />
+              リンクをコピー
             </Button>
-          )}
-        </div>
-        <div className="mt-6 flex justify-end">
-            <Button variant="ghost" onClick={() => setShowShareDialog(false)} className="text-base px-5 py-2.5 h-auto">閉じる</Button>
-        </div>
-      </CustomModal>
+            <Button
+              className="w-full justify-start text-left py-3 h-auto text-base bg-[#1DA1F2] hover:bg-[#1a91da] text-white"
+              onClick={() => {
+                  window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(`${post.store_name}の${post.category}がお得！ ${post.content}`)}&url=${encodeURIComponent(`${window.location.origin}/post/${post.id}`)}`, '_blank');
+                  setShowShareDialog(false);
+              }}
+            >
+              <svg className="mr-2.5 h-5 w-5 fill-current" viewBox="0 0 24 24" aria-hidden="true"><g><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"></path></g></svg>
+              X (Twitter) で共有
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full justify-start text-left py-3 h-auto text-base bg-[#E1306C] hover:bg-[#c92a5f] text-white"
+              onClick={handleInstagramShare}
+            >
+              <Instagram className="mr-2.5 h-5 w-5" />
+              Instagramで共有
+            </Button>
+            {navigator.share && typeof navigator.share === 'function' && (
+              <Button
+                variant="outline"
+                className="w-full justify-start text-left py-3 h-auto text-base"
+                onClick={handleNativeShare}
+              >
+                <ExternalLink className="mr-2.5 h-5 w-5" />
+                その他のアプリで共有
+              </Button>
+            )}
+          </div>
+          <div className="mt-6 flex justify-end">
+              <Button variant="ghost" onClick={() => setShowShareDialog(false)} className="text-base px-5 py-2.5 h-auto">閉じる</Button>
+          </div>
+        </CustomModal>
     </>
   );
 });
