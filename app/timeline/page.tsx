@@ -1932,7 +1932,12 @@ export default function Timeline() {
                       onView={handleView}
                       onComment={handleCommentClick}
                       currentUserId={currentUserId}
-                      showDistance={!!userLocation && post.distance !== undefined} // 距離表示を有効化
+                      showDistance={
+                        // 開発環境では常に距離を表示、本番環境では条件付き
+                        process.env.NODE_ENV === 'development' 
+                          ? post.distance !== undefined
+                          : !!userLocation && post.distance !== undefined
+                      }
                       isOwnPost={post.author_user_id === currentUserId}
                       enableComments={true}
                     />

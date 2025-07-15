@@ -560,11 +560,11 @@ export const PostCard = memo(({
                       </tr>
                       
                       {/* 5行目: 残り時間 */}
-                      <tr>
+                      <tr className={cn(showDistance && post.distance !== undefined ? "border-b border-gray-100" : "")}>
                         <td className="p-3 bg-gray-50 w-1/3 font-medium border-r border-gray-100">
                           <div className="flex items-center space-x-2">
                             <Clock className="h-4 w-4 text-gray-500 flex-shrink-0" />
-                            <span className="text-base" style={{ color: '#73370c' }}>残り時間</span> {/* text-sm → text-base */}
+                            <span className="text-base" style={{ color: '#73370c' }}>残り時間</span>
                           </div>
                         </td>
                         <td className="p-3">
@@ -573,6 +573,23 @@ export const PostCard = memo(({
                           </span>
                         </td>
                       </tr>
+                      
+                      {/* 6行目: 距離（開発環境でのみ表示） */}
+                      {showDistance && post.distance !== undefined && (
+                        <tr>
+                          <td className="p-3 bg-gray-50 w-1/3 font-medium border-r border-gray-100">
+                            <div className="flex items-center space-x-2">
+                              <MapPin className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                              <span className="text-base" style={{ color: '#73370c' }}>距離</span>
+                            </div>
+                          </td>
+                          <td className="p-3">
+                            <span className="text-base font-medium text-blue-600">
+                              {formatDistance(post.distance)}
+                            </span>
+                          </td>
+                        </tr>
+                      )}
                     </tbody>
                   </table>
                 </div>
