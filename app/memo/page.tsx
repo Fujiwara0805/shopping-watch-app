@@ -406,23 +406,23 @@ export default function MemoPage() {
             </div>
           </motion.div>
 
-          {/* グループ管理への遷移ボタン */}
+          {/* グループ管理への遷移ボタン（ブルー配色に変更） */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg"
+            className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg"
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
-                <div className="bg-green-100 p-2 rounded-full">
-                  <Users className="h-5 w-5 text-green-600" />
+                <div className="bg-blue-100 p-2 rounded-full">
+                  <Users className="h-5 w-5 text-blue-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-green-900">グループ共有</h3>
-                  <p className="text-sm text-green-700">
+                  <h3 className="font-semibold text-blue-900">グループ共有</h3>
+                  <p className="text-sm text-blue-700">
                     家族や友人とメモを共有<br />
-                    <span className="text-green-600 font-medium">※ログインが必須です</span>
+                    <span className="text-blue-600 font-medium">※ログインが必須です</span>
                   </p>
                 </div>
               </div>
@@ -430,40 +430,14 @@ export default function MemoPage() {
                 onClick={handleGoToFamilyGroup}
                 variant="outline"
                 size="sm"
-                className="border-green-300 text-green-700 hover:bg-green-100"
+                className="border-blue-300 text-blue-700 hover:bg-blue-100"
               >
                 管理画面へ
               </Button>
             </div>
           </motion.div>
 
-          {/* 掲示板への遷移ボタン */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg"
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="bg-blue-100 p-2 rounded-full">
-                  <MessageSquare className="h-5 w-5 text-blue-600" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-blue-900">掲示板</h3>
-                  <p className="text-sm text-blue-700">多くのユーザーとメモを共有して<br />お得情報を手に入れよう！</p>
-                </div>
-              </div>
-              <Button
-                onClick={handleGoToBoard}
-                variant="outline"
-                size="sm"
-                className="border-blue-300 text-blue-700 hover:bg-blue-100"
-              >
-                掲示板へ
-              </Button>
-            </div>
-          </motion.div>
+          {/* 削除: 掲示板への遷移ボタン */}
         </div>
       </div>
       
