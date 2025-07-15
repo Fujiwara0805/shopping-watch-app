@@ -4,7 +4,7 @@ import { useState, useCallback, useRef, useEffect, memo } from 'react';
 import { motion } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
 import { ja } from 'date-fns/locale';
-import { Heart, Share2, Clock, Link as LinkIcon, ExternalLink, Instagram, Copy, Laugh, Smile, Meh, Frown, Angry, MapPin, Eye, MessageCircle, ChevronDown, Tag, DollarSign, UserPlus, Info, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Heart, Share2, Clock, Link as LinkIcon, ExternalLink, Instagram, Copy, Laugh, Smile, Meh, Frown, Angry, MapPin, Eye, MessageCircle, ChevronDown, Tag, DollarSign, UserPlus, Info, ChevronLeft, ChevronRight, ShoppingCart, Utensils, Camera, GamepadIcon, Wrench, Layers } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -342,8 +342,57 @@ export const PostCard = memo(({
     }
   }, [disableClick, onClick, post.id]);
   
+  // ジャンルのアイコンとカラーを取得する関数
+  const getGenreIconAndColor = useCallback((genre: string) => {
+    switch(genre) {
+      case 'ショッピング':
+        return {
+          icon: ShoppingCart,
+          bgColor: 'bg-purple-100',
+          textColor: 'text-purple-800',
+          borderColor: 'border-purple-200'
+        };
+      case '飲食店':
+        return {
+          icon: Utensils,
+          bgColor: 'bg-orange-100',
+          textColor: 'text-orange-800',
+          borderColor: 'border-orange-200'
+        };
+      case '観光':
+        return {
+          icon: Camera,
+          bgColor: 'bg-teal-100',
+          textColor: 'text-teal-800',
+          borderColor: 'border-teal-200'
+        };
+      case 'レジャー':
+        return {
+          icon: GamepadIcon,
+          bgColor: 'bg-pink-100',
+          textColor: 'text-pink-800',
+          borderColor: 'border-pink-200'
+        };
+      case 'サービス':
+        return {
+          icon: Wrench,
+          bgColor: 'bg-indigo-100',
+          textColor: 'text-indigo-800',
+          borderColor: 'border-indigo-200'
+        };
+      default:
+        return {
+          icon: Layers,
+          bgColor: 'bg-slate-100',
+          textColor: 'text-slate-800',
+          borderColor: 'border-slate-200'
+        };
+    }
+  }, []);
+
   const getCategoryColor = useCallback((category: string) => {
     switch(category) {
+      // ショッピング系
       case '惣菜':
         return 'bg-yellow-100 text-yellow-800 border-yellow-200';
       case '弁当':
@@ -356,6 +405,64 @@ export const PostCard = memo(({
         return 'bg-emerald-100 text-emerald-800 border-emerald-200';
       case '果物':
         return 'bg-orange-100 text-orange-800 border-orange-200';
+      case '米・パン類':
+        return 'bg-amber-100 text-amber-800 border-amber-200';
+      case 'デザート類':
+        return 'bg-pink-100 text-pink-800 border-pink-200';
+      case '日用品':
+        return 'bg-cyan-100 text-cyan-800 border-cyan-200';
+      case '衣料品':
+        return 'bg-violet-100 text-violet-800 border-violet-200';
+      
+      // 飲食店系
+      case '和食':
+        return 'bg-red-100 text-red-800 border-red-200';
+      case '洋食':
+        return 'bg-blue-100 text-blue-800 border-blue-200';
+      case '中華':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'イタリアン':
+        return 'bg-green-100 text-green-800 border-green-200';
+      case 'フレンチ':
+        return 'bg-purple-100 text-purple-800 border-purple-200';
+      case 'カフェ':
+        return 'bg-amber-100 text-amber-800 border-amber-200';
+      case 'ファストフード':
+        return 'bg-orange-100 text-orange-800 border-orange-200';
+      
+      // 観光系
+      case '観光スポット':
+        return 'bg-teal-100 text-teal-800 border-teal-200';
+      case '宿泊施設':
+        return 'bg-indigo-100 text-indigo-800 border-indigo-200';
+      case '温泉':
+        return 'bg-rose-100 text-rose-800 border-rose-200';
+      case '博物館・美術館':
+        return 'bg-purple-100 text-purple-800 border-purple-200';
+      case '公園':
+        return 'bg-green-100 text-green-800 border-green-200';
+      
+      // レジャー系
+      case 'アミューズメント':
+        return 'bg-pink-100 text-pink-800 border-pink-200';
+      case 'スポーツ':
+        return 'bg-blue-100 text-blue-800 border-blue-200';
+      case '映画・エンタメ':
+        return 'bg-purple-100 text-purple-800 border-purple-200';
+      case 'アウトドア':
+        return 'bg-green-100 text-green-800 border-green-200';
+      
+      // サービス系
+      case '美容・健康':
+        return 'bg-pink-100 text-pink-800 border-pink-200';
+      case '教育':
+        return 'bg-blue-100 text-blue-800 border-blue-200';
+      case '医療':
+        return 'bg-red-100 text-red-800 border-red-200';
+      case '修理・メンテナンス':
+        return 'bg-gray-100 text-gray-800 border-gray-200';
+      
+      // デフォルト
       default:
         return 'bg-gray-100 text-gray-800 border-gray-200';
     }
@@ -425,6 +532,9 @@ export const PostCard = memo(({
   }, [post.image_urls, post.image_url]);
 
   const imageUrls = getImageUrls();
+
+  const genreIconAndColor = getGenreIconAndColor(post.genre || '');
+  const GenreIcon = genreIconAndColor.icon;
 
   return (
     <>
@@ -536,14 +646,20 @@ export const PostCard = memo(({
                       <tr className="border-b border-gray-100">
                         <td className="p-3 bg-gray-50 w-1/3 font-medium border-r border-gray-100">
                           <div className="flex items-center space-x-2">
-                            <Tag className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                            <GenreIcon className="h-4 w-4 text-gray-500 flex-shrink-0" />
                             <span className="text-base" style={{ color: '#73370c' }}>ジャンル</span>
                           </div>
                         </td>
                         <td className="p-3">
-                          <span className="text-base" style={{ color: '#73370c' }}>
-                            {post.genre || '不明'}
-                          </span>
+                          <div className={cn(
+                            "inline-flex items-center space-x-2 px-3 py-1 rounded-full text-base font-medium border",
+                            genreIconAndColor.bgColor,
+                            genreIconAndColor.textColor,
+                            genreIconAndColor.borderColor
+                          )}>
+                            <GenreIcon className="h-4 w-4 flex-shrink-0" />
+                            <span>{post.genre || '不明'}</span>
+                          </div>
                         </td>
                       </tr>
                       
@@ -607,7 +723,7 @@ export const PostCard = memo(({
                         </td>
                       </tr>
                       
-                      {/* 7行目: 距離（開発環境でのみ表示） */}
+                      {/* 7行目: 距離（開発環境でのみ表示）
                       {showDistance && post.distance !== undefined && (
                         <tr>
                           <td className="p-3 bg-gray-50 w-1/3 font-medium border-r border-gray-100">
@@ -622,7 +738,7 @@ export const PostCard = memo(({
                             </span>
                           </td>
                         </tr>
-                      )}
+                      )} */}
                     </tbody>
                   </table>
                 </div>

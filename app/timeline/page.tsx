@@ -85,7 +85,27 @@ interface PostFromDB {
 type SortOption = 'created_at_desc' | 'created_at_asc' | 'expires_at_asc' | 'distance_asc' | 'likes_desc' | 'views_desc' | 'comments_desc';
 type SearchMode = 'all' | 'category' | 'favorite_store' | 'liked_posts' | 'hybrid';
 
-const categories = ['すべて', '惣菜', '弁当', '肉', '魚', '野菜', '果物', '米・パン類', 'デザート類', 'その他'];
+// 🔥 更新されたカテゴリー分類
+const genreCategories = {
+  'ショッピング': ['惣菜', '弁当', '肉', '魚', '野菜', '果物', '米・パン類', 'デザート類', '日用品', '衣料品', 'その他'],
+  '飲食店': ['和食', '洋食', '中華', 'イタリアン', 'フレンチ', 'カフェ', 'ファストフード', 'その他'],
+  '観光': ['観光スポット', '宿泊施設', '温泉', '博物館・美術館', '公園', 'その他'],
+  'レジャー': ['アミューズメント', 'スポーツ', '映画・エンタメ', 'アウトドア', 'その他'],
+  'サービス': ['美容・健康', '教育', '医療', '修理・メンテナンス', 'その他'],
+  'その他': ['その他']
+};
+
+// 🔥 全カテゴリーを取得する関数
+const getAllCategories = () => {
+  const allCategories = new Set<string>();
+  Object.values(genreCategories).forEach(categories => {
+    categories.forEach(category => allCategories.add(category));
+  });
+  return ['すべて', ...Array.from(allCategories).sort()];
+};
+
+const categories = getAllCategories();
+const genres = ['すべて', 'ショッピング', '飲食店', '観光', 'レジャー', 'サービス', 'その他'];
 const SEARCH_RADIUS_METERS = 5000; // 5km
 
 // コメントコンポーネント
@@ -908,11 +928,13 @@ export default function Timeline() {
   const [isSearching, setIsSearching] = useState(false);
   
   const [activeFilter, setActiveFilter] = useState<string>('all');
-  const [searchMode, setSearchMode] = useState<SearchMode>('all'); // 'nearby'から'all'に変更
+  const [activeGenreFilter, setActiveGenreFilter] = useState<string>('all'); // 追加
+  const [searchMode, setSearchMode] = useState<SearchMode>('all');
   const [sortBy, setSortBy] = useState<SortOption>('created_at_desc');
   
   const [tempActiveFilter, setTempActiveFilter] = useState<string>('all');
-  const [tempSearchMode, setTempSearchMode] = useState<SearchMode>('all'); // 'nearby'から'all'に変更
+  const [tempActiveGenreFilter, setTempActiveGenreFilter] = useState<string>('all'); // 追加
+  const [tempSearchMode, setTempSearchMode] = useState<SearchMode>('all');
   const [tempSortBy, setTempSortBy] = useState<SortOption>('created_at_desc');
   
   const [hasMore, setHasMore] = useState(true);
@@ -947,6 +969,7 @@ export default function Timeline() {
 
   // Refs for stable references
   const activeFilterRef = useRef(activeFilter);
+  const activeGenreFilterRef = useRef(activeGenreFilter); // 追加
   const searchModeRef = useRef(searchMode);
   const userLocationRef = useRef(userLocation);
   const favoriteStoreIdsRef = useRef(favoriteStoreIds);
@@ -956,6 +979,7 @@ export default function Timeline() {
 
   // Update refs
   useEffect(() => { activeFilterRef.current = activeFilter; }, [activeFilter]);
+  useEffect(() => { activeGenreFilterRef.current = activeGenreFilter; }, [activeGenreFilter]); // 追加
   useEffect(() => { searchModeRef.current = searchMode; }, [searchMode]);
   useEffect(() => { userLocationRef.current = userLocation; }, [userLocation]);
   useEffect(() => { favoriteStoreIdsRef.current = favoriteStoreIds; }, [favoriteStoreIds]);
@@ -965,9 +989,10 @@ export default function Timeline() {
 
   useEffect(() => {
     setTempActiveFilter(activeFilter);
+    setTempActiveGenreFilter(activeGenreFilter); // 追加
     setTempSearchMode(searchMode);
     setTempSortBy(sortBy);
-  }, [activeFilter, searchMode, sortBy]);
+  }, [activeFilter, activeGenreFilter, searchMode, sortBy]); // activeGenreFilter追加
 
   useEffect(() => {
     const id = searchParams.get('highlightPostId');
@@ -1097,6 +1122,7 @@ export default function Timeline() {
   // 投稿データの取得
   const fetchPosts = useCallback(async (offset = 0, isInitial = false, searchTerm = '') => {
     const currentActiveFilter = activeFilterRef.current;
+    const currentActiveGenreFilter = activeGenreFilterRef.current; // 追加
     const currentSearchMode = searchModeRef.current;
     const currentUserLocation = userLocationRef.current;
     const currentFavoriteStoreIds = favoriteStoreIdsRef.current;
@@ -1167,6 +1193,11 @@ export default function Timeline() {
       // カテゴリフィルタ
       if (currentActiveFilter !== 'all') {
         query = query.eq('category', currentActiveFilter);
+      }
+
+      // ジャンルフィルタ（追加）
+      if (currentActiveGenreFilter !== 'all') {
+        query = query.eq('genre', currentActiveGenreFilter);
       }
 
       // 検索語による絞り込み（genreも検索対象に追加）
@@ -1586,6 +1617,7 @@ export default function Timeline() {
   // フィルターを適用する処理
   const handleApplyFilters = () => {
     setActiveFilter(tempActiveFilter);
+    setActiveGenreFilter(tempActiveGenreFilter); // 追加
     setSearchMode(tempSearchMode);
     setSortBy(tempSortBy);
     
@@ -1601,6 +1633,7 @@ export default function Timeline() {
   // モーダルを閉じる処理
   const handleCloseModal = () => {
     setTempActiveFilter(activeFilter);
+    setTempActiveGenreFilter(activeGenreFilter); // 追加
     setTempSearchMode(searchMode);
     setTempSortBy(sortBy);
     setShowFilterModal(false);
@@ -1609,12 +1642,14 @@ export default function Timeline() {
   // すべてクリア機能
   const handleClearAllFilters = useCallback(() => {
     setActiveFilter('all');
+    setActiveGenreFilter('all'); // 追加
     setSearchMode('all');
     setSortBy('created_at_desc');
     setGeneralSearchTerm('');
     setUserLocation(null);
     
     setTempActiveFilter('all');
+    setTempActiveGenreFilter('all'); // 追加
     setTempSearchMode('all');
     setTempSortBy('created_at_desc');
     
@@ -1629,13 +1664,43 @@ export default function Timeline() {
   const activeFiltersCount = useMemo(() => {
     let count = 0;
     if (activeFilter !== 'all') count++;
+    if (activeGenreFilter !== 'all') count++; // 追加
     if (searchMode !== 'all') count++;
     if (sortBy !== 'created_at_desc') count++;
     return count;
-  }, [activeFilter, searchMode, sortBy]);
+  }, [activeFilter, activeGenreFilter, searchMode, sortBy]); // activeGenreFilter追加
 
   // 招待モーダルの状態を追加
   const [showInviteModal, setShowInviteModal] = useState(false);
+
+  // 🔥 ジャンル変更時にカテゴリーフィルターをリセットする機能
+  const handleGenreFilterChange = (genre: string) => {
+    setTempActiveGenreFilter(genre);
+    
+    // ジャンルが変更された場合、カテゴリーフィルターをリセット
+    if (genre !== 'all' && tempActiveFilter !== 'all') {
+      const selectedGenreCategories = genreCategories[genre as keyof typeof genreCategories];
+      if (selectedGenreCategories && !selectedGenreCategories.includes(tempActiveFilter)) {
+        setTempActiveFilter('all');
+      }
+    }
+  };
+
+  // 🔥 選択されたジャンルに基づいて利用可能なカテゴリーを取得
+  const getAvailableCategories = () => {
+    if (tempActiveGenreFilter === 'all') {
+      return categories;
+    }
+    
+    const genreCategories_typed = genreCategories as Record<string, string[]>;
+    const selectedGenreCategories = genreCategories_typed[tempActiveGenreFilter];
+    
+    if (selectedGenreCategories) {
+      return ['すべて', ...selectedGenreCategories];
+    }
+    
+    return categories;
+  };
 
   if (loading && posts.length === 0) {
     return (
@@ -1788,9 +1853,9 @@ export default function Timeline() {
           {/* フィルターボタン */}
           <Button onClick={() => setShowFilterModal(true)} variant="outline" className="relative">
             <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
-            {(activeFilter !== 'all' || sortBy !== 'created_at_desc') && (
+            {(activeFilter !== 'all' || activeGenreFilter !== 'all' || sortBy !== 'created_at_desc') && (
               <Badge className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
-                {(activeFilter !== 'all' ? 1 : 0) + (sortBy !== 'created_at_desc' ? 1 : 0)}
+                {(activeFilter !== 'all' ? 1 : 0) + (activeGenreFilter !== 'all' ? 1 : 0) + (sortBy !== 'created_at_desc' ? 1 : 0)}
               </Badge>
             )}
           </Button>
@@ -1808,7 +1873,7 @@ export default function Timeline() {
       )}
 
       {/* アクティブなフィルタの表示（searchModeを除外） */}
-      {(activeFilter !== 'all' || sortBy !== 'created_at_desc') && (
+      {(activeFilter !== 'all' || activeGenreFilter !== 'all' || sortBy !== 'created_at_desc') && (
         <div className="px-4 py-2 bg-gray-50 border-b">
           <div className="flex flex-wrap gap-2 items-center">
             <span className="text-sm text-gray-600">アクティブなフィルタ:</span>
@@ -1816,6 +1881,14 @@ export default function Timeline() {
               <Badge variant="secondary" className="flex items-center gap-1">
                 カテゴリ: {activeFilter}
                 <button onClick={() => setActiveFilter('all')} className="ml-1">
+                  <X className="h-3 w-3" />
+                </button>
+              </Badge>
+            )}
+            {activeGenreFilter !== 'all' && (
+              <Badge variant="secondary" className="flex items-center gap-1">
+                ジャンル: {activeGenreFilter}
+                <button onClick={() => setActiveGenreFilter('all')} className="ml-1">
                   <X className="h-3 w-3" />
                 </button>
               </Badge>
@@ -1830,6 +1903,7 @@ export default function Timeline() {
             )}
             <Button variant="ghost" size="sm" onClick={() => {
               setActiveFilter('all');
+              setActiveGenreFilter('all');
               setSortBy('created_at_desc');
             }}>
               すべてクリア
@@ -1987,7 +2061,37 @@ export default function Timeline() {
       >
         <div className="space-y-6 max-h-[70vh] overflow-y-auto">
           <div>
-            <h3 className="font-semibold text-lg mb-2">カテゴリーで絞り込み</h3>
+            <h3 className="font-semibold text-lg mb-2">ジャンルで絞り込み</h3>
+            <Select 
+              onValueChange={handleGenreFilterChange} 
+              value={tempActiveGenreFilter}
+            >
+              <SelectTrigger className="w-full focus:ring-0 focus:ring-offset-0 focus:border-input">
+                <SelectValue placeholder="ジャンルを選択" />
+              </SelectTrigger>
+              <SelectContent className="max-h-[200px]">
+                {genres.map((genre) => (
+                  <SelectItem 
+                    key={genre} 
+                    value={genre === 'すべて' ? 'all' : genre}
+                    className="text-lg py-3"
+                  >
+                    {genre}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <h3 className="font-semibold text-lg mb-2">
+              カテゴリーで絞り込み
+              {tempActiveGenreFilter !== 'all' && (
+                <span className="text-sm text-gray-500 ml-2">
+                  ({tempActiveGenreFilter}のカテゴリー)
+                </span>
+              )}
+            </h3>
             <Select 
               onValueChange={(value: string) => setTempActiveFilter(value)} 
               value={tempActiveFilter}
@@ -1996,7 +2100,7 @@ export default function Timeline() {
                 <SelectValue placeholder="カテゴリを選択" />
               </SelectTrigger>
               <SelectContent className="max-h-[200px]">
-                {categories.map((category) => (
+                {getAvailableCategories().map((category) => (
                   <SelectItem 
                     key={category} 
                     value={category === 'すべて' ? 'all' : category}
@@ -2030,6 +2134,7 @@ export default function Timeline() {
         <div className="mt-6 flex justify-between">
           <Button variant="outline" onClick={() => {
             setTempActiveFilter('all');
+            setTempActiveGenreFilter('all');
             setTempSortBy('created_at_desc');
           }}>
             すべてクリア
