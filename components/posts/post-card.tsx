@@ -576,7 +576,7 @@ export const PostCard = memo(({
             </div>
           </div>
           
-          {/* 基本情報セクション（トグル形式・6行2列表形式） */}
+          {/* 詳細情報セクション（トグル形式・6行2列表形式） */}
           <div className="mt-1">
             <div className="border border-gray-200 rounded-md overflow-hidden">
               {/* トグルヘッダー */}
@@ -586,7 +586,7 @@ export const PostCard = memo(({
               >
                 <div className="flex items-center space-x-2">
                   <Info className="h-4 w-4 text-gray-500" />
-                  <span className="text-base font-medium" style={{ color: '#73370c' }}>基本情報</span>
+                  <span className="text-base font-medium" style={{ color: '#73370c' }}>詳細情報</span>
                 </div>
                 <motion.div
                   animate={{ rotate: showBasicInfo ? 180 : 0 }}

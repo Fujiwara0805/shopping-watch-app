@@ -51,6 +51,7 @@ export function MapView() {
   const [selectedPlaceMarker, setSelectedPlaceMarker] = useState<google.maps.Marker | null>(null);
   const [distanceToSelectedPlace, setDistanceToSelectedPlace] = useState<string | null>(null);
   const [userLocationMarker, setUserLocationMarker] = useState<google.maps.Marker | null>(null);
+  const [userLocationCircle, setUserLocationCircle] = useState<google.maps.Circle | null>(null);
 
   // 改良されたガイド表示制御（許可状態を考慮）
   useEffect(() => {
@@ -385,13 +386,35 @@ export function MapView() {
         }
       }
 
+      // 5km圏内の円を表示
+      if (userLocationCircle) {
+        userLocationCircle.setCenter(userPosition);
+      } else {
+        try {
+          const circle = new window.google.maps.Circle({
+            strokeColor: '#10b981', // 緑色のボーダー
+            strokeOpacity: 0.8,
+            strokeWeight: 2,
+            fillColor: '#effdf4', // 指定された緑色
+            fillOpacity: 0.35,
+            map: map,
+            center: userPosition,
+            radius: 5000, // 5km = 5000m
+          });
+          setUserLocationCircle(circle);
+          console.log(`MapView ${browserInfo.name}: User location circle created successfully`);
+        } catch (error) {
+          console.error(`MapView ${browserInfo.name}: Failed to create user location circle:`, error);
+        }
+      }
+
       map.panTo(userPosition);
       const currentZoom = map.getZoom();
       if (currentZoom !== undefined && currentZoom < 15) {
         map.setZoom(15);
       }
     }
-  }, [map, latitude, longitude, mapInitialized, userLocationMarker, browserInfo.name]);
+  }, [map, latitude, longitude, mapInitialized, userLocationMarker, userLocationCircle, browserInfo.name]);
 
   // 改良された再試行機能
   const handleRetry = () => {
@@ -402,6 +425,20 @@ export function MapView() {
     mapInstanceRef.current = null;
     setMap(null);
     setShowLocationGuide(false);
+    
+    // 既存のマーカーと円をクリーンアップ
+    if (userLocationMarker) {
+      userLocationMarker.setMap(null);
+      setUserLocationMarker(null);
+    }
+    if (userLocationCircle) {
+      userLocationCircle.setMap(null);
+      setUserLocationCircle(null);
+    }
+    if (selectedPlaceMarker) {
+      selectedPlaceMarker.setMap(null);
+      setSelectedPlaceMarker(null);
+    }
     
     if (mapContainerRef.current) {
       mapContainerRef.current.innerHTML = '';

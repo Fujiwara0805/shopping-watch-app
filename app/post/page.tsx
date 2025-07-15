@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { Camera, Upload, X, Store as StoreIcon, LayoutGrid, ClipboardList, Image as ImageIcon, CalendarClock, PackageIcon, ClockIcon, Tag, HelpCircle, MapPin, CheckCircle, Layers } from 'lucide-react';
+import { Camera, Upload, X, Store as StoreIcon, LayoutGrid, ClipboardList, Image as ImageIcon, CalendarClock, PackageIcon, ClockIcon, Tag, HelpCircle, MapPin, CheckCircle, Layers, ChevronDown, ChevronUp, Settings } from 'lucide-react';
 import AppLayout from '@/components/layout/app-layout';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -661,24 +661,47 @@ export default function PostPage() {
     );
   };
 
-  // 🔥 カテゴリー選択後のフォーカス制御
-  const handleCategoryChange = (value: string) => {
-    form.setValue("category", value, { shouldValidate: true });
-    
-    setTimeout(() => {
-      if (contentTextareaRef.current) {
-        contentTextareaRef.current.focus();
-        contentTextareaRef.current.scrollIntoView({ 
-          behavior: 'smooth', 
-          block: 'center' 
-        });
-      }
-    }, 100);
-  };
+  // 🔥 カテゴリー選択後のフォーカス制御を削除
+  // const handleCategoryChange = (value: string) => {
+  //   form.setValue("category", value, { shouldValidate: true });
+  //   
+  //   setTimeout(() => {
+  //     if (contentTextareaRef.current) {
+  //       contentTextareaRef.current.focus();
+  //       contentTextareaRef.current.scrollIntoView({ 
+  //         behavior: 'smooth', 
+  //         block: 'center' 
+  //       });
+  //     }
+  //   }, 100);
+  // };
 
   const handleMoveToPriceCalculator = () => {
     setShowPriceInfoModal(false);
     window.open('https://discount-calculator-app.vercel.app/', '_blank');
+  };
+
+  // 🔥 オプション項目の表示状態管理
+  const [showOptionalFields, setShowOptionalFields] = useState(false);
+  const [optionalFieldsExpanded, setOptionalFieldsExpanded] = useState({
+    location: false,
+    genre: false,
+    category: false,
+    price: false
+  });
+
+  // 🔥 オプションフィールドの切り替え
+  const toggleOptionalField = (field: keyof typeof optionalFieldsExpanded) => {
+    setOptionalFieldsExpanded(prev => ({
+      ...prev,
+      [field]: !prev[field]
+    }));
+  };
+
+  // 🔥 オプション項目の値が入力されているかチェック
+  const hasOptionalValues = () => {
+    const values = form.getValues();
+    return !!(values.storeId || values.genre || values.category || values.price);
   };
 
   if (status === "loading") {
@@ -703,7 +726,7 @@ export default function PostPage() {
           <Form {...form}>
             <form onSubmit={form.handleSubmit(triggerConfirmationModal)} className="space-y-6 pb-20">
               
-              {/* 🔥 複数画像アップロード */}
+              {/* 🔥 1. 商品画像 */}
               <FormItem>
                 <FormLabel className="text-xl mb-2 flex items-center">
                   <ImageIcon className="mr-2 h-7 w-7" />
@@ -768,128 +791,21 @@ export default function PostPage() {
                 <p className="text-sm text-red-500 mt-1">※アップロードする画像は自己責任でお願いします。</p>
               </FormItem>
 
-              {/* 🔥 店舗選択（任意） */}
-              <FormField
-                control={form.control}
-                name="storeId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xl font-semibold flex items-center">
-                      <StoreIcon className="mr-2 h-6 w-6" />場所 (任意)
-                      <span
-                        className="ml-2 flex items-center text-sm text-blue-600 cursor-pointer hover:underline"
-                        onClick={() => setShowStoreSearchInfoModal(true)}
-                      >
-                        <HelpCircle className="h-4 w-4 mr-1" />
-                        検索候補が表示されない時は...
-                      </span>
-                    </FormLabel>
-                    <FormControl>
-                      <div className="space-y-2">
-                        <div className="relative mobile-store-search">
-                          <FavoriteStoreInput
-                            value={{ id: field.value, name: form.getValues("storeName") }}
-                            onChange={async (store) => {
-                              // 既存の店舗選択ロジックを維持
-                              if (store) {
-                                form.setValue("storeId", store.id, { shouldValidate: true });
-                                form.setValue("storeName", store.name, { shouldValidate: true });
-                                // 位置情報設定ロジック...
-                              } else {
-                                form.setValue("storeId", "", { shouldValidate: true });
-                                form.setValue("storeName", "", { shouldValidate: true });
-                              }
-                            }}
-                            placeholder="お店を検索または選択してください（任意）"
-                            style={{ fontSize: '16px' }}
-                          />
-                        </div>
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* 🔥 ジャンル選択（任意） */}
-              <FormField
-                control={form.control}
-                name="genre"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xl flex font-semibold items-center">
-                      <Layers className="mr-2 h-6 w-6" /> ジャンル (任意)
-                    </FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value || ""}>
-                      <FormControl>
-                        <SelectTrigger className="w-full text-lg py-6">
-                          <SelectValue placeholder="ジャンルを選択してください" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent className="max-h-[200px]">
-                        {Object.keys(genreCategories).map((genre) => (
-                          <SelectItem key={genre} value={genre} className="text-lg py-3">
-                            {genre}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* 🔥 カテゴリー選択（任意・ジャンルに応じて変更） */}
-              <FormField
-                control={form.control}
-                name="category"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xl flex font-semibold items-center">
-                      <LayoutGrid className="mr-2 h-6 w-6" /> カテゴリ (任意)
-                    </FormLabel>
-                    <Select 
-                      onValueChange={handleCategoryChange} 
-                      value={field.value || ""}
-                      disabled={!selectedGenre}
-                    >
-                      <FormControl>
-                        <SelectTrigger className="w-full text-lg py-6">
-                          <SelectValue placeholder={
-                            selectedGenre 
-                              ? "カテゴリを選択してください" 
-                              : "まずジャンルを選択してください"
-                          } />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent className="max-h-[200px]">
-                        {selectedGenre && genreCategories[selectedGenre as keyof typeof genreCategories]?.map((category) => (
-                          <SelectItem key={category} value={category} className="text-lg py-3">
-                            {category}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              {/* 🔥 内容（必須） */}
+              {/* 🔥 2. 内容（必須） */}
               <FormField
                 control={form.control}
                 name="content"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-xl flex font-semibold items-center">
-                      <ClipboardList className="mr-2 h-6 w-6" /> 内容<span className="text-destructive ml-1">※</span>
+                      <ClipboardList className="mr-2 h-6 w-6" /> 投稿内容<span className="text-destructive ml-1">※</span>
                     </FormLabel>
                     <FormControl>
                       <Textarea
-                        placeholder="商品の状態や残り数量、みんなに知らせたい情報を記入してください（240文字以内）"
+                        placeholder="みんなに知らせたい日常生活のちょっとしたおトク(得・徳)な情報やこんなおトクな情報が欲しいといった要望を記入してください（240文字以内）"
                         className="resize-none"
-                        style={{ fontSize: '16px' }}
-                        rows={5}
+                        style={{ fontSize: '16px', minHeight: '140px' }}
+                        rows={7}
                         autoComplete="off"
                         autoCorrect="off"
                         autoCapitalize="off"
@@ -905,89 +821,296 @@ export default function PostPage() {
                   </FormItem>
                 )}
               />
-              
-              {/* 🔥 価格（任意） */}
-              <FormField
-                control={form.control}
-                name="price"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xl flex font-semibold items-center">
-                      <Tag className="mr-2 h-6 w-6" />
-                      価格 (税込・任意)
-                      <span
-                        className="ml-2 flex items-center text-sm text-blue-600 cursor-pointer hover:underline"
-                        onClick={() => setShowPriceInfoModal(true)}
-                      >
-                        <HelpCircle className="h-4 w-4 mr-1" />
-                        何％割引っていくら？
-                      </span>
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        placeholder="例: 500"
-                        {...field}
-                        value={field.value === undefined ? '' : String(field.value)}
-                        onChange={(e) => {
-                          const value = e.target.value;
-                          if (value === '' || /^[0-9]+$/.test(value)) {
-                             field.onChange(value === '' ? undefined : parseInt(value, 10));
-                          }
-                        }}
-                        style={{ fontSize: '16px' }}
-                        disabled={isUploading}
-                        autoComplete="off"
-                        autoCorrect="off"
-                        autoCapitalize="off"
-                        spellCheck="false"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              {/* 🔥 掲載期間（必須） */}
+
+              {/* 🔥 3. 掲載期間（必須） */}
               <FormField
                 control={form.control}
                 name="expiryOption"
                 render={({ field }) => (
-                  <FormItem className="space-y-3">
+                  <FormItem>
                     <FormLabel className="text-xl flex font-semibold items-center">
                       <ClockIcon className="mr-2 h-6 w-6" /> 掲載期間<span className="text-destructive ml-1">※</span>
                     </FormLabel>
-                    <FormControl>
-                      <RadioGroup
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                        className="grid grid-cols-2 gap-2"
-                      >
+                    <Select onValueChange={field.onChange} value={field.value || ""}>
+                      <FormControl>
+                        <SelectTrigger className="w-full text-lg py-6">
+                          <SelectValue placeholder="掲載期間を選択してください" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
                         {expiryOptions.map((option) => (
-                          <div key={option.value}>
-                            <RadioGroupItem
-                              value={option.value.toString()}
-                              id={`expiryOption-${option.value}`}
-                              className="peer sr-only"
-                            />
-                            <Label
-                              htmlFor={`expiryOption-${option.value}`}
-                              className={cn(
-                                "flex flex-col items-center justify-center rounded-md border-2 border-muted p-3 text-lg h-full",
-                                "hover:border-primary peer-data-[state=checked]:border-primary",
-                                "peer-data-[state=checked]:bg-primary/10"
-                              )}
-                            >
-                              {option.label}
-                            </Label>
-                          </div>
+                          <SelectItem key={option.value} value={option.value} className="text-lg py-3">
+                            {option.label}
+                          </SelectItem>
                         ))}
-                      </RadioGroup>
-                    </FormControl>
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+
+              {/* 🔥 4. オプション項目バー */}
+              <div className="border rounded-lg bg-card">
+                <motion.div
+                  className="p-4 cursor-pointer select-none"
+                  onClick={() => setShowOptionalFields(!showOptionalFields)}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <Settings className="mr-2 h-5 w-5 text-muted-foreground" />
+                      <span className="text-lg font-semibold">詳細情報 (任意)</span>
+                      {hasOptionalValues() && (
+                        <div className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                          入力済み
+                        </div>
+                      )}
+                    </div>
+                    {showOptionalFields ? (
+                      <ChevronUp className="h-5 w-5 text-muted-foreground" />
+                    ) : (
+                      <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                    )}
+                  </div>
+                </motion.div>
+
+                {showOptionalFields && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="border-t"
+                  >
+                    <div className="p-4 space-y-4">
+                      {/* オプション項目のトグルボタン */}
+                      <div className="grid grid-cols-2 gap-2">
+                        <Button
+                          type="button"
+                          variant={optionalFieldsExpanded.location ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => toggleOptionalField('location')}
+                          className="justify-start"
+                        >
+                          <StoreIcon className="mr-2 h-4 w-4" />
+                          場所
+                        </Button>
+                        <Button
+                          type="button"
+                          variant={optionalFieldsExpanded.genre ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => toggleOptionalField('genre')}
+                          className="justify-start"
+                        >
+                          <Layers className="mr-2 h-4 w-4" />
+                          ジャンル
+                        </Button>
+                        <Button
+                          type="button"
+                          variant={optionalFieldsExpanded.category ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => toggleOptionalField('category')}
+                          className="justify-start"
+                        >
+                          <LayoutGrid className="mr-2 h-4 w-4" />
+                          カテゴリ
+                        </Button>
+                        <Button
+                          type="button"
+                          variant={optionalFieldsExpanded.price ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => toggleOptionalField('price')}
+                          className="justify-start"
+                        >
+                          <Tag className="mr-2 h-4 w-4" />
+                          価格
+                        </Button>
+                      </div>
+
+                      {/* 場所入力フィールド */}
+                      {optionalFieldsExpanded.location && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          <FormField
+                            control={form.control}
+                            name="storeId"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-lg font-semibold flex items-center">
+                                  <StoreIcon className="mr-2 h-5 w-5" />
+                                  場所
+                                  <span
+                                    className="ml-2 flex items-center text-sm text-blue-600 cursor-pointer hover:underline"
+                                    onClick={() => setShowStoreSearchInfoModal(true)}
+                                  >
+                                    <HelpCircle className="h-4 w-4 mr-1" />
+                                    検索候補が表示されない時は...
+                                  </span>
+                                </FormLabel>
+                                <FormControl>
+                                  <div className="space-y-2">
+                                    <div className="relative mobile-store-search">
+                                      <FavoriteStoreInput
+                                        value={{ id: field.value, name: form.getValues("storeName") }}
+                                        onChange={async (store) => {
+                                          if (store) {
+                                            form.setValue("storeId", store.id, { shouldValidate: true });
+                                            form.setValue("storeName", store.name, { shouldValidate: true });
+                                          } else {
+                                            form.setValue("storeId", "", { shouldValidate: true });
+                                            form.setValue("storeName", "", { shouldValidate: true });
+                                          }
+                                        }}
+                                        placeholder="お店を検索または選択してください"
+                                        style={{ fontSize: '16px' }}
+                                      />
+                                    </div>
+                                  </div>
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </motion.div>
+                      )}
+
+                      {/* ジャンル選択フィールド */}
+                      {optionalFieldsExpanded.genre && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          <FormField
+                            control={form.control}
+                            name="genre"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-lg flex font-semibold items-center">
+                                  <Layers className="mr-2 h-5 w-5" /> ジャンル
+                                </FormLabel>
+                                <Select onValueChange={field.onChange} value={field.value || ""}>
+                                  <FormControl>
+                                    <SelectTrigger className="w-full text-lg py-6">
+                                      <SelectValue placeholder="ジャンルを選択してください" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent className="max-h-[200px]">
+                                    {Object.keys(genreCategories).map((genre) => (
+                                      <SelectItem key={genre} value={genre} className="text-lg py-3">
+                                        {genre}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </motion.div>
+                      )}
+
+                      {/* カテゴリー選択フィールド */}
+                      {optionalFieldsExpanded.category && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          <FormField
+                            control={form.control}
+                            name="category"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-lg flex font-semibold items-center">
+                                  <LayoutGrid className="mr-2 h-5 w-5" /> カテゴリ
+                                </FormLabel>
+                                <Select 
+                                  onValueChange={field.onChange} 
+                                  value={field.value || ""}
+                                  disabled={!selectedGenre}
+                                >
+                                  <FormControl>
+                                    <SelectTrigger className="w-full text-lg py-6">
+                                      <SelectValue placeholder={
+                                        selectedGenre 
+                                          ? "カテゴリを選択してください" 
+                                          : "まずジャンルを選択してください"
+                                      } />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent className="max-h-[200px]">
+                                    {selectedGenre && genreCategories[selectedGenre as keyof typeof genreCategories]?.map((category) => (
+                                      <SelectItem key={category} value={category} className="text-lg py-3">
+                                        {category}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </motion.div>
+                      )}
+
+                      {/* 価格入力フィールド */}
+                      {optionalFieldsExpanded.price && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          <FormField
+                            control={form.control}
+                            name="price"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-lg flex font-semibold items-center">
+                                  <Tag className="mr-2 h-5 w-5" />
+                                  価格 (税込)
+                                  {/* <span
+                                    className="ml-2 flex items-center text-sm text-blue-600 cursor-pointer hover:underline"
+                                    onClick={() => setShowPriceInfoModal(true)}
+                                  >
+                                    <HelpCircle className="h-4 w-4 mr-1" />
+                                    何％割引っていくら？
+                                  </span> */}
+                                </FormLabel>
+                                <FormControl>
+                                  <Input
+                                    type="number"
+                                    placeholder="例: 500"
+                                    {...field}
+                                    value={field.value === undefined ? '' : String(field.value)}
+                                    onChange={(e) => {
+                                      const value = e.target.value;
+                                      if (value === '' || /^[0-9]+$/.test(value)) {
+                                         field.onChange(value === '' ? undefined : parseInt(value, 10));
+                                      }
+                                    }}
+                                    style={{ fontSize: '16px' }}
+                                    disabled={isUploading}
+                                    autoComplete="off"
+                                    autoCorrect="off"
+                                    autoCapitalize="off"
+                                    spellCheck="false"
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </motion.div>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+              </div>
               
               {submitError && (
                 <p className="text-sm text-destructive text-center bg-destructive/10 p-3 rounded-md">{submitError}</p>
