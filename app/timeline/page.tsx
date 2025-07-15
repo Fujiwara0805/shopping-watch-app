@@ -754,14 +754,6 @@ const HamburgerMenu = ({ currentUser }: { currentUser: any }) => {
       }
     },
     {
-      icon: MessageSquare,
-      label: '掲示板',
-      onClick: () => {
-        router.push('/board');
-        setIsOpen(false);
-      }
-    },
-    {
       icon: Store,
       label: 'お店を探す',
       onClick: () => {
