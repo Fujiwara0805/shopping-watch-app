@@ -1,25 +1,28 @@
 export interface Post {
   id: string;
-  app_profile_id: string; // postsテーブルの実際の外部キーカラム名
-  store_id: string;
-  store_name: string;
-  category: string;
+  app_profile_id: string;
+  store_id: string | null;
+  store_name: string | null;
+  genre: string | null; // 新規追加
+  category: string | null;
   content: string;
   image_url: string | null;
-  discount_rate: number | null;
+  image_urls: string | null; // 新規追加（JSON文字列）
   price: number | null;
   expiry_option: '1h' | '3h' | '6h' | '12h';
   created_at: string;
   expires_at?: string;
   likes_count: number;
+  views_count: number;
+  comments_count: number;
   post_likes?: Array<{ user_id: string }>;
   
   // 店舗の位置情報
   store_latitude?: number | null;
   store_longitude?: number | null;
-  location_geom?: string | null; // PostGIS POINT型
+  location_geom?: string | null;
   
-  // 端末（投稿者）の位置情報（新規追加）
+  // 端末（投稿者）の位置情報
   user_latitude?: number | null;
   user_longitude?: number | null;
   user_location_geom?: string | null;

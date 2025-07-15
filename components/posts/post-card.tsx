@@ -4,11 +4,12 @@ import { useState, useCallback, useRef, useEffect, memo } from 'react';
 import { motion } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
 import { ja } from 'date-fns/locale';
-import { Heart, Share2, Clock, Link as LinkIcon, ExternalLink, Instagram, Copy, Laugh, Smile, Meh, Frown, Angry, MapPin, Eye, MessageCircle, ChevronDown, Tag, DollarSign, UserPlus, Info } from 'lucide-react';
+import { Heart, Share2, Clock, Link as LinkIcon, ExternalLink, Instagram, Copy, Laugh, Smile, Meh, Frown, Angry, MapPin, Eye, MessageCircle, ChevronDown, Tag, DollarSign, UserPlus, Info, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { cn } from '@/lib/utils';
 import { PostWithAuthor, AuthorProfile } from '@/types/post';
 import { supabase } from '@/lib/supabaseClient';
@@ -223,7 +224,7 @@ export const PostCard = memo(({
   enableComments = false
 }: PostCardProps) => {
   const [showShareDialog, setShowShareDialog] = useState(false);
-  const [showBasicInfo, setShowBasicInfo] = useState(false); // 追加
+  const [showBasicInfo, setShowBasicInfo] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [isLiking, setIsLiking] = useState(false);
   const [hasBeenViewed, setHasBeenViewed] = useState(false);
@@ -408,6 +409,23 @@ export const PostCard = memo(({
     }
   }, [post.store_name, post.category, post.content, post.id, copyToClipboard]);
 
+  // 複数画像の処理
+  const getImageUrls = useCallback(() => {
+    if (post.image_urls) {
+      try {
+        const urls = JSON.parse(post.image_urls);
+        return Array.isArray(urls) ? urls : [];
+      } catch (error) {
+        console.error('画像URLsの解析エラー:', error);
+        return [];
+      }
+    }
+    // 旧形式の単一画像対応
+    return post.image_url ? [post.image_url] : [];
+  }, [post.image_urls, post.image_url]);
+
+  const imageUrls = getImageUrls();
+
   return (
     <>
       <Card 
@@ -421,7 +439,7 @@ export const PostCard = memo(({
       >
         <CardHeader className="p-3 pb-1 space-y-0">
           {/* 投稿者情報セクション（独立） */}
-          <div className="flex justify-between items-start mb-3"> {/* mb-1で4px間隔 */}
+          <div className="flex justify-between items-start mb-3">
             <div className="flex items-center space-x-2">
               <UserAvatar author={post.author} />
               <div className="flex flex-col">
@@ -448,8 +466,8 @@ export const PostCard = memo(({
             </div>
           </div>
           
-          {/* 基本情報セクション（トグル形式・5行2列表形式） */}
-          <div className="mt-1"> {/* mb-1で4px間隔 */}
+          {/* 基本情報セクション（トグル形式・6行2列表形式） */}
+          <div className="mt-1">
             <div className="border border-gray-200 rounded-md overflow-hidden">
               {/* トグルヘッダー */}
               <button
@@ -483,7 +501,7 @@ export const PostCard = memo(({
                         <td className="p-3 bg-gray-50 w-1/3 font-medium border-r border-gray-100">
                           <div className="flex items-center space-x-2">
                             <MapPin className="h-4 w-4 text-gray-500 flex-shrink-0" />
-                            <span className="text-base" style={{ color: '#73370c' }}>場所</span> {/* text-sm → text-base */}
+                            <span className="text-base" style={{ color: '#73370c' }}>場所</span>
                           </div>
                         </td>
                         <td className="p-3">
@@ -514,12 +532,27 @@ export const PostCard = memo(({
                         </td>
                       </tr>
                       
-                      {/* 2行目: カテゴリ */}
+                      {/* 2行目: ジャンル */}
                       <tr className="border-b border-gray-100">
                         <td className="p-3 bg-gray-50 w-1/3 font-medium border-r border-gray-100">
                           <div className="flex items-center space-x-2">
                             <Tag className="h-4 w-4 text-gray-500 flex-shrink-0" />
-                            <span className="text-base" style={{ color: '#73370c' }}>カテゴリ</span> {/* text-sm → text-base */}
+                            <span className="text-base" style={{ color: '#73370c' }}>ジャンル</span>
+                          </div>
+                        </td>
+                        <td className="p-3">
+                          <span className="text-base" style={{ color: '#73370c' }}>
+                            {post.genre || '不明'}
+                          </span>
+                        </td>
+                      </tr>
+                      
+                      {/* 3行目: カテゴリ */}
+                      <tr className="border-b border-gray-100">
+                        <td className="p-3 bg-gray-50 w-1/3 font-medium border-r border-gray-100">
+                          <div className="flex items-center space-x-2">
+                            <Tag className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                            <span className="text-base" style={{ color: '#73370c' }}>カテゴリ</span>
                           </div>
                         </td>
                         <td className="p-3">
@@ -529,12 +562,12 @@ export const PostCard = memo(({
                         </td>
                       </tr>
                       
-                      {/* 3行目: 価格 */}
+                      {/* 4行目: 価格 */}
                       <tr className="border-b border-gray-100">
                         <td className="p-3 bg-gray-50 w-1/3 font-medium border-r border-gray-100">
                           <div className="flex items-center space-x-2">
                             <DollarSign className="h-4 w-4 text-gray-500 flex-shrink-0" />
-                            <span className="text-base" style={{ color: '#73370c' }}>価格</span> {/* text-sm → text-base */}
+                            <span className="text-base" style={{ color: '#73370c' }}>価格</span>
                           </div>
                         </td>
                         <td className="p-3">
@@ -544,12 +577,12 @@ export const PostCard = memo(({
                         </td>
                       </tr>
                       
-                      {/* 4行目: 視聴回数 */}
+                      {/* 5行目: 視聴回数 */}
                       <tr className="border-b border-gray-100">
                         <td className="p-3 bg-gray-50 w-1/3 font-medium border-r border-gray-100">
                           <div className="flex items-center space-x-2">
                             <Eye className="h-4 w-4 text-gray-500 flex-shrink-0" />
-                            <span className="text-base" style={{ color: '#73370c' }}>視聴回数</span> {/* text-sm → text-base */}
+                            <span className="text-base" style={{ color: '#73370c' }}>視聴回数</span>
                           </div>
                         </td>
                         <td className="p-3">
@@ -559,7 +592,7 @@ export const PostCard = memo(({
                         </td>
                       </tr>
                       
-                      {/* 5行目: 残り時間 */}
+                      {/* 6行目: 残り時間 */}
                       <tr className={cn(showDistance && post.distance !== undefined ? "border-b border-gray-100" : "")}>
                         <td className="p-3 bg-gray-50 w-1/3 font-medium border-r border-gray-100">
                           <div className="flex items-center space-x-2">
@@ -574,7 +607,7 @@ export const PostCard = memo(({
                         </td>
                       </tr>
                       
-                      {/* 6行目: 距離（開発環境でのみ表示） */}
+                      {/* 7行目: 距離（開発環境でのみ表示） */}
                       {showDistance && post.distance !== undefined && (
                         <tr>
                           <td className="p-3 bg-gray-50 w-1/3 font-medium border-r border-gray-100">
@@ -600,24 +633,61 @@ export const PostCard = memo(({
         
         <CardContent className="p-3 pt-1 flex flex-col h-full">
           {/* 投稿内容との間隔調整 */}
-          <div className="flex-grow overflow-hidden mb-3 mt-1"> {/* mt-1で4px間隔 */}
+          <div className="flex-grow overflow-hidden mb-3 mt-1">
             <p className="text-lg whitespace-pre-line line-clamp-6" style={{ color: '#73370c' }}>
               {post.content || '内容がありません'}
             </p>
           </div>
           
-          {postImageUrl && (
+          {/* 画像表示エリア（複数画像対応） */}
+          {imageUrls.length > 0 && (
             <div className="flex justify-center w-full mb-3">
               <div className="relative rounded-md overflow-hidden" style={{ width: '350px', height: '350px' }}>
-                <OptimizedImage
-                  src={postImageUrl}
-                  alt="投稿画像"
-                  className="w-full h-full"
-                  onLoad={() => setImageLoaded(true)}
-                />
-                
-                {/* 削除: 画像上のオーバーレイ要素をすべて削除 */}
-                {/* 残り時間と閲覧数、割引率と価格のオーバーレイを削除 */}
+                {imageUrls.length === 1 ? (
+                  // 単一画像の場合
+                  <OptimizedImage
+                    src={imageUrls[0]}
+                    alt="投稿画像"
+                    className="w-full h-full"
+                    onLoad={() => setImageLoaded(true)}
+                  />
+                ) : (
+                  // 複数画像の場合（カルーセル）
+                  <Carousel className="w-full h-full">
+                    <CarouselContent>
+                      {imageUrls.map((imageUrl, index) => (
+                        <CarouselItem key={index}>
+                          <OptimizedImage
+                            src={imageUrl}
+                            alt={`投稿画像 ${index + 1}`}
+                            className="w-full h-full"
+                            onLoad={() => setImageLoaded(true)}
+                          />
+                        </CarouselItem>
+                      ))}
+                    </CarouselContent>
+                    
+                    {/* カルーセルナビゲーション */}
+                    <CarouselPrevious 
+                      className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white/90 text-gray-700 border-gray-300 shadow-lg"
+                      size="sm"
+                    />
+                    <CarouselNext 
+                      className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white/90 text-gray-700 border-gray-300 shadow-lg"
+                      size="sm"
+                    />
+                    
+                    {/* 画像インジケーター */}
+                    <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex space-x-1">
+                      {imageUrls.map((_, index) => (
+                        <div
+                          key={index}
+                          className="w-2 h-2 rounded-full bg-white/60 shadow-sm"
+                        />
+                      ))}
+                    </div>
+                  </Carousel>
+                )}
               </div>
             </div>
           )}

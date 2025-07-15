@@ -62,10 +62,11 @@ interface PostFromDB {
   app_profile_id: string;
   store_id: string;
   store_name: string;
+  genre: string | null; // 追加
   category: string;
   content: string;
   image_url: string | null;
-  discount_rate: number | null;
+  image_urls: string | null; // 追加
   expiry_option: string;
   likes_count: number;
   views_count: number;
@@ -1125,7 +1126,7 @@ export default function Timeline() {
     try {
       const now = new Date().toISOString();
       
-      // 基本クエリ（user_latitude、user_longitudeを追加）
+      // 基本クエリ（genre、image_urlsを追加、discount_rateを削除）
       let query = supabase
         .from('posts')
         .select(`
@@ -1133,10 +1134,11 @@ export default function Timeline() {
           app_profile_id,
           store_id,
           store_name,
+          genre,
           category,
           content,
           image_url,
-          discount_rate,
+          image_urls,
           expiry_option,
           likes_count,
           views_count,
@@ -1167,11 +1169,11 @@ export default function Timeline() {
         query = query.eq('category', currentActiveFilter);
       }
 
-      // 検索語による絞り込み
+      // 検索語による絞り込み（genreも検索対象に追加）
       const effectiveSearchTerm = searchTerm;
       if (effectiveSearchTerm && effectiveSearchTerm.trim()) {
         const searchTermLower = effectiveSearchTerm.toLowerCase();
-        query = query.or(`store_name.ilike.%${searchTermLower}%,category.ilike.%${searchTermLower}%,content.ilike.%${searchTermLower}%`);
+        query = query.or(`store_name.ilike.%${searchTermLower}%,genre.ilike.%${searchTermLower}%,category.ilike.%${searchTermLower}%,content.ilike.%${searchTermLower}%`);
       }
 
       // 特別な検索モード
