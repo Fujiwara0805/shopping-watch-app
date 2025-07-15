@@ -442,6 +442,24 @@ export const PostCard = memo(({
                     {formattedDate}
                   </p>
                 </div>
+                
+                {/* 場所情報を投稿者情報の下に移動 */}
+                <div className="flex items-center space-x-1 mt-1">
+                  <MapPin className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                  <Button
+                    variant="ghost"
+                    className={cn(
+                      "p-0 h-auto font-medium hover:bg-transparent hover:text-primary flex items-center space-x-1 min-w-0",
+                      // 15文字以上の場合はテキストサイズを小さく
+                      (post.store_name || '').length >= 15 ? "text-sm" : "text-base"
+                    )}
+                    onClick={handleCopyStoreName}
+                    title="店舗名をコピー"
+                  >
+                    <span className="truncate max-w-[200px]">{post.store_name || '店舗不明'}</span>
+                    <Copy className="h-3 w-3 flex-shrink-0" />
+                  </Button>
+                </div>
               </div>
             </div>
             
@@ -449,17 +467,11 @@ export const PostCard = memo(({
               <Badge className={cn("text-lg", getCategoryColor(post.category || ''))}>
                 {post.category || '不明'}
               </Badge>
-              {showDistance && post.distance && (
-                <Badge variant="outline" className="text-xs flex items-center">
-                  <MapPin className="h-3 w-3 mr-1" />
-                  {formatDistance(post.distance)}
-                </Badge>
-              )}
             </div>
           </div>
 
-          {/* 場所情報をカテゴリーの下に配置 */}
-          <div className="flex items-center justify-between mt-2">
+          {/* 削除: 場所情報の元の位置を削除 */}
+          {/* <div className="flex items-center justify-between mt-2">
             <div className="flex-1"></div>
             <div className="flex items-center space-x-2">
               <MapPin className="h-5 w-5 text-gray-500 flex-shrink-0" />
@@ -467,7 +479,6 @@ export const PostCard = memo(({
                 variant="ghost"
                 className={cn(
                   "p-0 h-auto font-medium hover:bg-transparent hover:text-primary flex items-center space-x-1 min-w-0",
-                  // 15文字以上の場合はテキストサイズを小さく
                   (post.store_name || '').length >= 15 ? "text-sm" : "text-lg"
                 )}
                 onClick={handleCopyStoreName}
@@ -477,7 +488,7 @@ export const PostCard = memo(({
                 <Copy className="h-4 w-4 flex-shrink-0" />
               </Button>
             </div>
-          </div>
+          </div> */}
         </CardHeader>
         
         <CardContent className="p-3 pt-1 flex flex-col h-full">
@@ -546,11 +557,12 @@ export const PostCard = memo(({
               <button
                 onClick={handleLikeClick}
                 className={cn(
-                  "flex items-center justify-center space-x-1 h-full rounded-md hover:bg-gray-100 transition-colors px-1",
+                  "flex items-center justify-center space-x-1 h-full rounded-md transition-colors px-1",
                   isLiked && "text-red-500",
                   isMyPost && currentUserId && "opacity-50 cursor-not-allowed",
                   isLiking && "opacity-50 cursor-not-allowed"
                 )}
+                style={{ backgroundColor: '#fcebeb' }}
                 disabled={isLiking || (isMyPost && Boolean(currentUserId))}
                 title={isMyPost && currentUserId ? "自分の投稿にはいいねできません" : "いいね"}
               >
@@ -567,19 +579,21 @@ export const PostCard = memo(({
               {enableComments && (
                 <button
                   onClick={handleCommentClick}
-                  className="flex items-center justify-center space-x-1 h-full rounded-md hover:bg-gray-100 transition-colors text-gray-600 hover:text-blue-500 px-1"
-                  title="コメント"
+                  className="flex items-center justify-center space-x-1 h-full rounded-md transition-colors text-gray-600 hover:text-blue-500 px-1"
+                  style={{ backgroundColor: '#eff4ff' }}
+                  title="コメントする"
                 >
                   <MessageCircle className="h-4 w-4 flex-shrink-0" />
                   <span className="text-sm font-medium truncate">{formatCommentCount(post.comments_count)}</span>
-                  <span className="text-sm text-gray-500 truncate">コメント</span>
+                  <span className="text-sm text-gray-500 truncate">コメントする</span>
                 </button>
               )}
 
               {/* シェアボタン */}
               <button
                 onClick={handleShareClick}
-                className="flex items-center justify-center space-x-1 h-full rounded-md hover:bg-gray-100 transition-colors text-gray-600 hover:text-gray-800 px-1"
+                className="flex items-center justify-center space-x-1 h-full rounded-md transition-colors text-gray-600 hover:text-gray-800 px-1"
+                style={{ backgroundColor: '#eefdf6' }}
                 title="共有"
               >
                 <Share2 className="h-4 w-4 flex-shrink-0" />

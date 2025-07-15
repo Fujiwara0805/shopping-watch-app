@@ -12,6 +12,12 @@ export interface ExtendedPostWithAuthor extends PostWithAuthor {
   author_posts_count?: number;
   app_profile_id: string;
   expiry_option: "1h" | "3h" | "6h" | "12h";
+  
+  // 店舗の位置情報
   store_latitude?: number;
   store_longitude?: number;
+  
+  // 端末（投稿者）の位置情報（新規追加）
+  user_latitude?: number;
+  user_longitude?: number;
 }

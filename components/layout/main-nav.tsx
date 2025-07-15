@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Clock, MapPin, PlusCircle, User, ShoppingBag } from "lucide-react";
+import { Clock, MapPin, User, ShoppingBag } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -24,11 +24,6 @@ const navItems = [
     icon: MapPin,
   },
   {
-    name: "投稿する",
-    href: "/post",
-    icon: PlusCircle,
-  },
-  {
     name: "マイページ",
     href: "/profile",
     icon: User,
@@ -44,15 +39,8 @@ export function MainNav() {
     setIsLoggedIn(localStorage.getItem('isLoggedIn') === 'true');
   }, []);
   
-  const handlePostClick = (e: React.MouseEvent) => {
-    /*
-    if (!isLoggedIn) {
-      e.preventDefault();
-      window.location.href = '/login';
-    }
-    */
-  };
-
+  // 削除: handlePostClick関数は不要
+  
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-10 bg-background border-t border-border pb-safe">
       <div className="flex justify-around items-center h-16">
@@ -63,7 +51,6 @@ export function MainNav() {
             <Link
               key={item.href}
               href={item.href}
-              onClick={item.href === '/post' ? handlePostClick : undefined}
               className={cn(
                 "flex flex-col items-center justify-center w-full h-full relative",
                 "transition-colors duration-200",

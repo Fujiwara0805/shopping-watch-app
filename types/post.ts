@@ -14,9 +14,15 @@ export interface Post {
   likes_count: number;
   post_likes?: Array<{ user_id: string }>;
   
+  // 店舗の位置情報
   store_latitude?: number | null;
   store_longitude?: number | null;
   location_geom?: string | null; // PostGIS POINT型
+  
+  // 端末（投稿者）の位置情報（新規追加）
+  user_latitude?: number | null;
+  user_longitude?: number | null;
+  user_location_geom?: string | null;
 }
 
 export interface AuthorProfile {

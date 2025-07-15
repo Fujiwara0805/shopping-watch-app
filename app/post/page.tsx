@@ -28,6 +28,7 @@ import { CustomModal } from '@/components/ui/custom-modal';
 import { useToast } from "@/hooks/use-toast";
 import { useLoadScript, Autocomplete, GoogleMap } from "@react-google-maps/api";
 import { useLoading } from '@/contexts/loading-context';
+import { useGoogleMapsApi } from '@/components/providers/GoogleMapsApiProvider';
 
 declare global {
   interface Window {
@@ -142,10 +143,7 @@ export default function PostPage() {
   // refを追加：内容フィールドへのフォーカス用
   const contentTextareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const { isLoaded, loadError } = useLoadScript({
-    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
-    libraries,
-  });
+  const { isLoaded, loadError } = useGoogleMapsApi();
 
   // 🔥 厳密なフォーム設定
   const form = useForm<PostFormValues>({
@@ -309,25 +307,52 @@ export default function PostPage() {
         expires_at: calculateExpiresAt(values.expiryOption).toISOString(),
       };
 
-      // 🔥 位置情報を確実に設定
+      // 🔥 店舗の位置情報を設定（Google Places APIから取得）
       if (values.store_latitude && values.store_longitude) {
         postData.store_latitude = Number(values.store_latitude);
         postData.store_longitude = Number(values.store_longitude);
         postData.location_geom = `POINT(${values.store_longitude} ${values.store_latitude})`;
         
-        console.log("PostPage: Saving post with location data:", {
+        console.log("PostPage: Saving post with store location data:", {
           store_latitude: postData.store_latitude,
           store_longitude: postData.store_longitude,
           location_geom: postData.location_geom
         });
+      }
+
+      // 🔥 端末の位置情報を設定（強化版）
+      if (latitude && longitude) {
+        postData.user_latitude = Number(latitude);
+        postData.user_longitude = Number(longitude);
+        postData.user_location_geom = `POINT(${longitude} ${latitude})`;
+        
+        console.log("PostPage: ✅ 端末位置情報を保存:", {
+          user_latitude: postData.user_latitude,
+          user_longitude: postData.user_longitude,
+          user_location_geom: postData.user_location_geom
+        });
       } else {
-        console.log("PostPage: Saving post without location data");
+        console.warn("PostPage: ⚠️ 端末位置情報が取得できていません");
+        console.warn("PostPage: 位置情報の状態:", {
+          latitude,
+          longitude,
+          locationLoading,
+          locationError,
+          permissionState
+        });
+        
+        // 位置情報がない場合の警告表示
+        toast({
+          title: "⚠️ 位置情報が取得できていません",
+          description: "5km圏内表示機能を利用するために位置情報を許可してください",
+          duration: 3000,
+        });
       }
 
       const { data: insertedPost, error: insertError } = await supabase
         .from('posts')
         .insert(postData)
-        .select('id, store_id, store_name, app_profile_id, store_latitude, store_longitude')
+        .select('id, store_id, store_name, app_profile_id, store_latitude, store_longitude, user_latitude, user_longitude')
         .single();
 
       if (insertError || !insertedPost) {
@@ -485,6 +510,28 @@ export default function PostPage() {
       router.replace(`/login?callbackUrl=${encodeURIComponent(window.location.pathname)}`);
     }
   }, [session, status, router]);
+
+  // 🔥 位置情報取得の改善
+  useEffect(() => {
+    if (!latitude && !longitude && !locationLoading && !locationError) {
+      console.log("PostPage: 位置情報の手動取得を試行");
+      requestLocation();
+    }
+  }, [latitude, longitude, locationLoading, locationError, requestLocation]);
+
+  // 🔥 投稿前の位置情報チェック
+  const checkLocationBeforeSubmit = () => {
+    if (!latitude || !longitude) {
+      toast({
+        title: "位置情報が必要です",
+        description: "5km圏内表示機能のために位置情報を許可してください",
+        duration: 3000,
+      });
+      requestLocation();
+      return false;
+    }
+    return true;
+  };
 
   const getSelectPlaceholder = () => {
     if (permissionState === 'pending' || locationLoading) return "現在地を取得中...";
@@ -805,27 +852,6 @@ export default function PostPage() {
                                           form.setValue("location_lat", lat, { shouldValidate: true });
                                           form.setValue("location_lng", lng, { shouldValidate: true });
                                           setLocationStatus('success');
-                                          
-                                          // 🔥 取得した位置情報をデータベースに保存
-                                          try {
-                                            supabase
-                                              .from('stores')
-                                              .update({
-                                                latitude: lat,
-                                                longitude: lng,
-                                                location_geom: `POINT(${lng} ${lat})`
-                                              })
-                                              .eq('id', store.id)
-                                              .then(({ error }) => {
-                                                if (error) {
-                                                  console.error("PostPage: Error updating store location:", error);
-                                                } else {
-                                                  console.log("PostPage: Store location updated successfully");
-                                                }
-                                              });
-                                          } catch (error) {
-                                            console.error("PostPage: Error saving store location:", error);
-                                          }
                                           
                                           toast({
                                             title: "✅ 店舗情報と位置情報を取得しました",

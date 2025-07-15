@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { LayoutGrid, Search, Star, MapPin, Loader2, SlidersHorizontal, Heart, Plus, X, AlertCircle, Menu, User, Edit, Store, HelpCircle, FileText, LogOut, Settings, Globe, NotebookText, Calculator, Zap, MessageSquare, Eye, Send } from 'lucide-react';
+import { LayoutGrid, Search, Star, MapPin, Loader2, SlidersHorizontal, Heart, Plus, X, AlertCircle, Menu, User, Edit, Store, HelpCircle, FileText, LogOut, Settings, Globe, NotebookText, Calculator, Zap, MessageSquare, Eye, Send, RefreshCw } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { PostWithAuthor } from '@/types/post';
 import { useSession, signOut } from 'next-auth/react';
@@ -75,6 +75,8 @@ interface PostFromDB {
   expires_at: string;
   store_latitude?: number;
   store_longitude?: number;
+  user_latitude?: number;
+  user_longitude?: number;
   author: AuthorData | AuthorData[] | null;
   post_likes: PostLike[];
 }
@@ -903,6 +905,8 @@ const HamburgerMenu = ({ currentUser }: { currentUser: any }) => {
 };
 
 export default function Timeline() {
+  const router = useRouter(); // この行を追加
+  
   const [posts, setPosts] = useState<ExtendedPostWithAuthor[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -925,7 +929,6 @@ export default function Timeline() {
 
   const [generalSearchTerm, setGeneralSearchTerm] = useState<string>('');
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
-  const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [favoriteStoreIds, setFavoriteStoreIds] = useState<string[]>([]);
   const [favoriteStoreNames, setFavoriteStoreNames] = useState<string[]>([]);
   const [likedPostIds, setLikedPostIds] = useState<string[]>([]);
@@ -1129,7 +1132,7 @@ export default function Timeline() {
     try {
       const now = new Date().toISOString();
       
-      // 基本クエリ（views_count、comments_countを追加）
+      // 基本クエリ（user_latitude、user_longitudeを追加）
       let query = supabase
         .from('posts')
         .select(`
@@ -1150,6 +1153,8 @@ export default function Timeline() {
           expires_at,
           store_latitude,
           store_longitude,
+          user_latitude,
+          user_longitude,
           author:app_profiles!posts_app_profile_id_fkey (
             id,
             user_id,
@@ -1253,16 +1258,17 @@ export default function Timeline() {
         }
       }
       
-      // データ処理
+      // データ処理（距離計算を端末位置情報ベースに変更）
       let processedPosts = (data as PostFromDB[]).map(post => {
         let distance;
         
-        if (currentUserLocation && post.store_latitude && post.store_longitude) {
+        // 端末位置情報を使用して距離計算
+        if (currentUserLocation && post.user_latitude && post.user_longitude) {
           distance = calculateDistance(
             currentUserLocation.latitude,
             currentUserLocation.longitude,
-            post.store_latitude,
-            post.store_longitude
+            post.user_latitude,
+            post.user_longitude
           );
         }
 
@@ -1301,6 +1307,13 @@ export default function Timeline() {
         });
       }
 
+      // �� 5km圏内フィルタリング機能を追加
+      if (currentUserLocation) {
+        processedPosts = processedPosts.filter(post => {
+          return post.distance !== undefined && post.distance <= SEARCH_RADIUS_METERS;
+        });
+      }
+
       // 距離によるソート
       if (currentSortBy === 'distance_asc' && currentUserLocation) {
         processedPosts = processedPosts
@@ -1314,7 +1327,8 @@ export default function Timeline() {
         setPosts(prevPosts => [...prevPosts, ...processedPosts as ExtendedPostWithAuthor[]]);
       }
 
-      setHasMore(data.length === 20); // 'nearby'条件を削除
+      // 5km圏内フィルタリング適用時はhasMoreをfalseに設定
+      setHasMore(data.length === 20 && !currentUserLocation);
     } catch (e: any) {
       console.error("投稿の取得に失敗しました:", e);
       setError("投稿の読み込みに失敗しました。しばらくしてから再度お試しください。");
@@ -1539,7 +1553,7 @@ export default function Timeline() {
     ));
   };
 
-  // 位置情報を初期化時に取得
+  // 位置情報を初期化時に取得（自動取得）
   useEffect(() => {
     const getCurrentLocation = () => {
       if (navigator.geolocation) {
@@ -1549,12 +1563,19 @@ export default function Timeline() {
               latitude: position.coords.latitude,
               longitude: position.coords.longitude,
             });
+            
+            // 位置情報取得後に投稿を取得
+            setTimeout(() => {
+              if (fetchPostsRef.current) {
+                fetchPostsRef.current(0, true);
+              }
+            }, 100);
           },
           (error) => {
             console.error('位置情報の取得に失敗しました:', error);
             setError('位置情報の取得に失敗しました。ブラウザの設定で位置情報を許可してください。');
           },
-          { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 } // 5分間キャッシュ
         );
       } else {
         setError('お使いのブラウザは位置情報に対応していません。');
@@ -1563,32 +1584,6 @@ export default function Timeline() {
 
     getCurrentLocation();
   }, []);
-
-  // handleNearbySearchを削除し、位置情報更新ボタンの処理に変更
-  const handleRefreshLocation = () => {
-    setIsGettingLocation(true);
-    
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setUserLocation({
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-          });
-          setIsGettingLocation(false);
-        },
-        (error) => {
-          console.error('位置情報の取得に失敗しました:', error);
-          setError('位置情報の取得に失敗しました。ブラウザの設定で位置情報を許可してください。');
-          setIsGettingLocation(false);
-        },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-      );
-    } else {
-      setError('お使いのブラウザは位置情報に対応していません。');
-      setIsGettingLocation(false);
-    }
-  };
 
   // フィルターを適用する処理
   const handleApplyFilters = () => {
@@ -1735,67 +1730,70 @@ export default function Timeline() {
 
   return (
     <AppLayout>
-      <div className="sticky top-0 z-10 border-b p-4 flex items-center space-x-2 bg-[#73370c]">
-        <HamburgerMenu currentUser={currentUserProfile} />
-        <div className="relative flex-1">
-          <Input
-            type="text"
-            placeholder="店舗名やキーワードで検索"
-            value={generalSearchTerm}
-            onChange={(e) => setGeneralSearchTerm(e.target.value)}
-            className="pr-10 w-full text-base"
-            style={{ fontSize: '16px' }}
-            autoComplete="off"
-            autoCorrect="off"
-            autoCapitalize="off"
-            spellCheck="false"
-          />
-          <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center">
-            {isSearching && generalSearchTerm ? (
-              <Loader2 className="h-4 w-4 text-muted-foreground animate-spin" />
-            ) : (
-              <Search className="h-4 w-4 text-muted-foreground" />
+      <div className="sticky top-0 z-10 border-b bg-[#73370c]">
+        {/* 検索行 */}
+        <div className="p-4 flex items-center space-x-2">
+          <HamburgerMenu currentUser={currentUserProfile} />
+          <div className="relative flex-1">
+            <Input
+              type="text"
+              placeholder="店舗名やキーワードで検索"
+              value={generalSearchTerm}
+              onChange={(e) => setGeneralSearchTerm(e.target.value)}
+              className="pr-10 w-full text-base"
+              style={{ fontSize: '16px' }}
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck="false"
+            />
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center">
+              {isSearching && generalSearchTerm ? (
+                <Loader2 className="h-4 w-4 text-muted-foreground animate-spin" />
+              ) : (
+                <Search className="h-4 w-4 text-muted-foreground" />
+              )}
+            </div>
+            
+            {/* 検索履歴のドロップダウン */}
+            {searchHistory.length > 0 && generalSearchTerm === '' && (
+              <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-md mt-1 shadow-lg z-20">
+                <div className="p-2 border-b bg-gray-50 flex justify-between items-center">
+                  <span className="text-sm text-gray-600">検索履歴</span>
+                  <Button variant="ghost" size="sm" onClick={clearHistory}>
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+                {searchHistory.slice(0, 5).map((term, index) => (
+                  <button
+                    key={index}
+                    className="w-full text-left p-2 hover:bg-gray-100 text-sm"
+                    onClick={() => {
+                      setGeneralSearchTerm(term);
+                      setTimeout(() => {
+                        if (fetchPostsRef.current) {
+                          fetchPostsRef.current(0, true, term);
+                        }
+                      }, 50);
+                    }}
+                  >
+                    {term}
+                  </button>
+                ))}
+              </div>
             )}
           </div>
           
-          {/* 検索履歴のドロップダウン */}
-          {searchHistory.length > 0 && generalSearchTerm === '' && (
-            <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-md mt-1 shadow-lg z-20">
-              <div className="p-2 border-b bg-gray-50 flex justify-between items-center">
-                <span className="text-sm text-gray-600">検索履歴</span>
-                <Button variant="ghost" size="sm" onClick={clearHistory}>
-                  <X className="h-3 w-3" />
-                </Button>
-              </div>
-              {searchHistory.slice(0, 5).map((term, index) => (
-                <button
-                  key={index}
-                  className="w-full text-left p-2 hover:bg-gray-100 text-sm"
-                  onClick={() => {
-                    setGeneralSearchTerm(term);
-                    setTimeout(() => {
-                      if (fetchPostsRef.current) {
-                        fetchPostsRef.current(0, true, term);
-                      }
-                    }, 50);
-                  }}
-                >
-                  {term}
-                </button>
-              ))}
-            </div>
-          )}
+          {/* フィルターボタン */}
+          <Button onClick={() => setShowFilterModal(true)} variant="outline" className="relative">
+            <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
+            {(activeFilter !== 'all' || sortBy !== 'created_at_desc') && (
+              <Badge className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
+                {(activeFilter !== 'all' ? 1 : 0) + (sortBy !== 'created_at_desc' ? 1 : 0)}
+              </Badge>
+            )}
+          </Button>
         </div>
-        
-        {/* フィルターボタンのみ表示（5km圏内ボタンを削除） */}
-        <Button onClick={() => setShowFilterModal(true)} variant="outline" className="relative">
-          <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
-          {(activeFilter !== 'all' || sortBy !== 'created_at_desc') && (
-            <Badge className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
-              {(activeFilter !== 'all' ? 1 : 0) + (sortBy !== 'created_at_desc' ? 1 : 0)}
-            </Badge>
-          )}
-        </Button>
       </div>
 
       {/* リアルタイム検索中の表示 */}
@@ -1839,6 +1837,31 @@ export default function Timeline() {
         </div>
       )}
 
+      {/* 投稿するボタンと更新ボタンの行 */}
+      <div className="px-4 py-3 bg-gray-50 border-b">
+        <div className="flex space-x-2">
+          <Button
+            onClick={() => router.push('/post')}
+            className="flex-1 text-white hover:opacity-90"
+            style={{ backgroundColor: '#f97415' }}
+          >
+            投稿する
+          </Button>
+          <Button
+            onClick={() => {
+              if (fetchPostsRef.current) {
+                fetchPostsRef.current(0, true, debouncedSearchTerm);
+              }
+            }}
+            variant="outline"
+            className="flex-1"
+          >
+            <RefreshCw className="h-4 w-4 mr-2" />
+            更新
+          </Button>
+        </div>
+      </div>
+
       <div className="timeline-scroll-container custom-scrollbar overscroll-none">
         <div className="p-4" style={{ paddingBottom: '24px' }}>
           {posts.length === 0 && !loading && !isSearching ? (
@@ -1856,20 +1879,24 @@ export default function Timeline() {
                     検索をクリア
                   </Button>
                 </div>
+              ) : !userLocation ? (
+                <div>
+                  <p className="text-xl text-muted-foreground mb-2">
+                    位置情報を取得中...
+                  </p>
+                  <p className="text-sm text-gray-500 mb-4">
+                    5km圏内の投稿を表示するために位置情報を取得しています
+                  </p>
+                </div>
               ) : (
-                <p className="text-xl text-muted-foreground">検索条件に合う投稿はまだありません。</p>
-              )}
-              {searchMode !== 'all' && (
-                <Button onClick={() => {
-                  setSearchMode('all');
-                  setTimeout(() => {
-                    if (fetchPostsRef.current) {
-                      fetchPostsRef.current(0, true);
-                    }
-                  }, 50);
-                }} className="mt-4">
-                  すべての投稿を表示
-                </Button>
+                <div>
+                  <p className="text-xl text-muted-foreground mb-2">
+                    現在地から5km圏内に投稿がありません
+                  </p>
+                  <p className="text-sm text-gray-500 mb-4">
+                    別の場所に移動するか、時間をおいて再度確認してください
+                  </p>
+                </div>
               )}
             </div>
           ) : (
@@ -1897,7 +1924,7 @@ export default function Timeline() {
                       onView={handleView}
                       onComment={handleCommentClick}
                       currentUserId={currentUserId}
-                      showDistance={false} // 常にfalse
+                      showDistance={!!userLocation && post.distance !== undefined} // 距離表示を有効化
                       isOwnPost={post.author_user_id === currentUserId}
                       enableComments={true}
                     />
@@ -1920,7 +1947,7 @@ export default function Timeline() {
           {!hasMore && posts.length > 0 && (
             <div className="text-center py-8" style={{ marginBottom: '16px' }}>
               <p className="text-muted-foreground">
-                すべての投稿を読み込みました
+                すべての投稿を表示しました
               </p>
             </div>
           )}
