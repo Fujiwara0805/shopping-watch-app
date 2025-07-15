@@ -4,7 +4,7 @@ import { useState, useCallback, useRef, useEffect, memo } from 'react';
 import { motion } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
 import { ja } from 'date-fns/locale';
-import { Heart, Share2, Clock, Link as LinkIcon, ExternalLink, Instagram, Copy, Laugh, Smile, Meh, Frown, Angry, MapPin, Eye, MessageCircle, ChevronDown, Tag, DollarSign, UserPlus } from 'lucide-react';
+import { Heart, Share2, Clock, Link as LinkIcon, ExternalLink, Instagram, Copy, Laugh, Smile, Meh, Frown, Angry, MapPin, Eye, MessageCircle, ChevronDown, Tag, DollarSign, UserPlus, Info } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -456,7 +456,10 @@ export const PostCard = memo(({
                 onClick={() => setShowBasicInfo(!showBasicInfo)}
                 className="w-full bg-gray-50 border-b border-gray-200 p-3 flex items-center justify-between hover:bg-gray-100 transition-colors"
               >
-                <span className="text-base font-medium" style={{ color: '#73370c' }}>基本情報</span> {/* text-sm → text-base */}
+                <div className="flex items-center space-x-2">
+                  <Info className="h-4 w-4 text-gray-500" />
+                  <span className="text-base font-medium" style={{ color: '#73370c' }}>基本情報</span>
+                </div>
                 <motion.div
                   animate={{ rotate: showBasicInfo ? 180 : 0 }}
                   transition={{ duration: 0.2 }}
