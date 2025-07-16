@@ -2087,8 +2087,8 @@ export default function Timeline() {
             <h3 className="font-semibold text-lg mb-2">
               カテゴリーで絞り込み
               {tempActiveGenreFilter !== 'all' && (
-                <span className="text-sm text-gray-500 ml-2">
-                  ({tempActiveGenreFilter}のカテゴリー)
+                <span className="text-xs text-gray-500 ml-2">
+                  ({tempActiveGenreFilter})
                 </span>
               )}
             </h3>
