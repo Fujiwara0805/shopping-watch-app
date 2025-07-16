@@ -4,7 +4,7 @@ import { useState, useCallback, useRef, useEffect, memo } from 'react';
 import { motion } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
 import { ja } from 'date-fns/locale';
-import { Heart, Share2, Clock, Link as LinkIcon, ExternalLink, Instagram, Copy, Laugh, Smile, Meh, Frown, Angry, MapPin, Eye, MessageCircle, ChevronDown, Tag, DollarSign, UserPlus, Info, ChevronLeft, ChevronRight, ShoppingCart, Utensils, Camera, GamepadIcon, Wrench, Layers, FileIcon, Calendar, Briefcase, ShoppingBag, Users, MessageSquareText } from 'lucide-react';
+import { Heart, Share2, Clock, Link as LinkIcon, ExternalLink, Instagram, Copy, Laugh, Smile, Meh, Frown, Angry, MapPin, Eye, MessageCircle, ChevronDown, Tag, DollarSign, UserPlus, Info, ChevronLeft, ChevronRight, ShoppingCart, Utensils, Camera, GamepadIcon, Wrench, Layers, FileIcon, Calendar, Briefcase, ShoppingBag, Users, MessageSquareText, Trash2, Flag, AlertTriangle, Loader2 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -74,6 +74,7 @@ interface PostCardProps {
   onLike?: (postId: string, isLiked: boolean) => Promise<void>;
   onView?: (postId: string) => Promise<void>;
   onComment?: (post: ExtendedPostWithAuthor) => void;
+  onDelete?: (postId: string) => void; // 🔥 追加：投稿削除コールバック
   currentUserId?: string | null;
   showDistance?: boolean;
   isOwnPost?: boolean;
@@ -216,6 +217,7 @@ export const PostCard = memo(({
   onLike, 
   onView,
   onComment,
+  onDelete, // 🔥 追加
   currentUserId, 
   showDistance = false, 
   isOwnPost, 
@@ -228,6 +230,15 @@ export const PostCard = memo(({
   const [imageLoaded, setImageLoaded] = useState(false);
   const [isLiking, setIsLiking] = useState(false);
   const [hasBeenViewed, setHasBeenViewed] = useState(false);
+  
+  // 🔥 追加：削除・通報モーダル関連
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [reportReason, setReportReason] = useState('');
+  const [reportDetails, setReportDetails] = useState('');
+  const [isReporting, setIsReporting] = useState(false);
+  
   const { toast } = useToast();
   const cardRef = useRef<HTMLDivElement>(null);
 
@@ -668,6 +679,109 @@ export const PostCard = memo(({
   const genreIconAndColor = getGenreIconAndColor(post.genre || '');
   const GenreIcon = genreIconAndColor.icon;
 
+  // 🔥 追加：投稿削除処理
+  const handleDeletePost = async () => {
+    if (!currentUserId || !isMyPost) return;
+
+    setIsDeleting(true);
+    try {
+      // 🔥 変更：物理削除から論理削除に変更
+      const { error } = await supabase
+        .from('posts')
+        .update({ is_deleted: true })
+        .eq('id', post.id);
+
+      if (error) {
+        console.error('投稿削除エラー:', error);
+        throw error;
+      }
+
+      toast({
+        title: "投稿を削除しました",
+        duration: 1000,
+      });
+
+      setShowDeleteModal(false);
+      
+      // 親コンポーネントに削除を通知
+      if (onDelete) {
+        onDelete(post.id);
+      }
+    } catch (error) {
+      console.error('投稿の削除に失敗しました:', error);
+      toast({
+        title: "エラーが発生しました",
+        description: "投稿の削除に失敗しました",
+        duration: 3000,
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  // 🔥 追加：通報処理
+  const handleReportPost = async () => {
+    if (!reportReason.trim()) {
+      toast({
+        title: "通報理由を選択してください",
+        duration: 2000,
+      });
+      return;
+    }
+
+    setIsReporting(true);
+    try {
+      // お問い合わせフォームに送信
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: '通報システム',
+          email: 'report@tokudoku.com',
+          subject: `投稿通報 - ${post.id}`,
+          message: `
+【投稿通報】
+投稿ID: ${post.id}
+投稿者: ${post.author?.display_name || '不明'}
+店舗名: ${post.store_name}
+投稿内容: ${post.content}
+
+通報理由: ${reportReason}
+詳細: ${reportDetails || 'なし'}
+
+通報者: ${currentUserId ? 'ログインユーザー' : '匿名ユーザー'}
+通報日時: ${new Date().toLocaleString('ja-JP')}
+          `,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('通報の送信に失敗しました');
+      }
+
+      toast({
+        title: "通報を送信しました",
+        description: "担当者が内容を確認いたします",
+        duration: 2000,
+      });
+
+      setShowReportModal(false);
+      setReportReason('');
+      setReportDetails('');
+    } catch (error) {
+      console.error('通報の送信に失敗しました:', error);
+      toast({
+        title: "エラーが発生しました",
+        description: "通報の送信に失敗しました",
+        duration: 3000,
+      });
+    } finally {
+      setIsReporting(false);
+    }
+  };
+
   return (
     <>
       <Card 
@@ -706,6 +820,22 @@ export const PostCard = memo(({
                 </div>
               </div>
             </div>
+            
+            {/* 🔥 追加：自分の投稿の場合は削除ボタン */}
+            {isMyPost && currentUserId && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowDeleteModal(true);
+                }}
+                className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                title="投稿を削除"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
           </div>
           
           {/* 詳細情報セクション（トグル形式・6行2列表形式） */}
@@ -1057,56 +1187,186 @@ export const PostCard = memo(({
         </CardContent>
       </Card>
 
-        <CustomModal
-          isOpen={showShareDialog}
-          onClose={() => setShowShareDialog(false)}
-          title="投稿を共有"
-          description="このお得情報を友達に知らせよう！"
-        >
-          <div className="space-y-3">
+      {/* 🔥 追加：削除確認モーダル */}
+      <CustomModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        title="投稿の削除"
+        description="この投稿を削除しますか？"
+      >
+        <div className="space-y-4">
+          <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+            <div className="flex items-center space-x-2">
+              <AlertTriangle className="h-5 w-5 text-red-600" />
+              <span className="text-red-800 font-medium">注意</span>
+            </div>
+            <p className="text-red-700 text-sm mt-2">
+              削除した投稿は復元できません。本当に削除しますか？
+            </p>
+          </div>
+          
+          <div className="flex justify-end space-x-3">
+            <Button
+              variant="outline"
+              onClick={() => setShowDeleteModal(false)}
+              disabled={isDeleting}
+            >
+              キャンセル
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeletePost}
+              disabled={isDeleting}
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  削除中...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  削除する
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
+      </CustomModal>
+
+      {/* 🔥 追加：通報モーダル */}
+      <CustomModal
+        isOpen={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        title="投稿を通報"
+        description="不適切な投稿を報告してください"
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium mb-2">通報理由</label>
+            <select
+              value={reportReason}
+              onChange={(e) => setReportReason(e.target.value)}
+              className="w-full p-2 border rounded-md"
+            >
+              <option value="">選択してください</option>
+              <option value="spam">スパム・宣伝</option>
+              <option value="inappropriate">不適切な内容</option>
+              <option value="harassment">嫌がらせ・誹謗中傷</option>
+              <option value="fake">虚偽の情報</option>
+              <option value="copyright">著作権侵害</option>
+              <option value="other">その他</option>
+            </select>
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium mb-2">詳細（任意）</label>
+            <textarea
+              value={reportDetails}
+              onChange={(e) => setReportDetails(e.target.value)}
+              placeholder="具体的な内容を記載してください"
+              className="w-full p-2 border rounded-md"
+              rows={3}
+            />
+          </div>
+          
+          <div className="flex justify-end space-x-3">
+            <Button
+              variant="outline"
+              onClick={() => setShowReportModal(false)}
+              disabled={isReporting}
+            >
+              キャンセル
+            </Button>
+            <Button
+              onClick={handleReportPost}
+              disabled={isReporting || !reportReason.trim()}
+            >
+              {isReporting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  送信中...
+                </>
+              ) : (
+                <>
+                  <Flag className="h-4 w-4 mr-2" />
+                  通報する
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
+      </CustomModal>
+
+      {/* 🔥 更新：共有モーダル（通報機能追加） */}
+      <CustomModal
+        isOpen={showShareDialog}
+        onClose={() => setShowShareDialog(false)}
+        title="投稿を共有"
+        description="このお得情報を友達に知らせよう！"
+      >
+        <div className="space-y-3">
+          <Button
+            variant="outline"
+            className="w-full justify-start text-left py-3 h-auto text-base"
+            onClick={() => {
+                copyToClipboard(`${window.location.origin}/post/${post.id}`, "リンクをコピーしました！");
+            }}
+          >
+            <LinkIcon className="mr-2.5 h-5 w-5" />
+            リンクをコピー
+          </Button>
+          <Button
+            className="w-full justify-start text-left py-3 h-auto text-base bg-[#1DA1F2] hover:bg-[#1a91da] text-white"
+            onClick={() => {
+                window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(`${post.store_name}の${post.category}がお得！ ${post.content}`)}&url=${encodeURIComponent(`${window.location.origin}/post/${post.id}`)}`, '_blank');
+                setShowShareDialog(false);
+            }}
+          >
+            <svg className="mr-2.5 h-5 w-5 fill-current" viewBox="0 0 24 24" aria-hidden="true"><g><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"></path></g></svg>
+            X (Twitter) で共有
+          </Button>
+          <Button
+            variant="outline"
+            className="w-full justify-start text-left py-3 h-auto text-base bg-[#E1306C] hover:bg-[#c92a5f] text-white"
+            onClick={handleInstagramShare}
+          >
+            <Instagram className="mr-2.5 h-5 w-5" />
+            Instagramで共有
+          </Button>
+          {navigator.share && typeof navigator.share === 'function' && (
             <Button
               variant="outline"
               className="w-full justify-start text-left py-3 h-auto text-base"
-              onClick={() => {
-                  copyToClipboard(`${window.location.origin}/post/${post.id}`, "リンクをコピーしました！");
-              }}
+              onClick={handleNativeShare}
             >
-              <LinkIcon className="mr-2.5 h-5 w-5" />
-              リンクをコピー
+              <ExternalLink className="mr-2.5 h-5 w-5" />
+              その他のアプリで共有
             </Button>
-            <Button
-              className="w-full justify-start text-left py-3 h-auto text-base bg-[#1DA1F2] hover:bg-[#1a91da] text-white"
-              onClick={() => {
-                  window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(`${post.store_name}の${post.category}がお得！ ${post.content}`)}&url=${encodeURIComponent(`${window.location.origin}/post/${post.id}`)}`, '_blank');
-                  setShowShareDialog(false);
-              }}
-            >
-              <svg className="mr-2.5 h-5 w-5 fill-current" viewBox="0 0 24 24" aria-hidden="true"><g><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"></path></g></svg>
-              X (Twitter) で共有
-            </Button>
-            <Button
-              variant="outline"
-              className="w-full justify-start text-left py-3 h-auto text-base bg-[#E1306C] hover:bg-[#c92a5f] text-white"
-              onClick={handleInstagramShare}
-            >
-              <Instagram className="mr-2.5 h-5 w-5" />
-              Instagramで共有
-            </Button>
-            {navigator.share && typeof navigator.share === 'function' && (
+          )}
+          
+          {/* 🔥 追加：通報ボタン */}
+          {!isMyPost && (
+            <>
+              <hr className="my-2" />
               <Button
                 variant="outline"
-                className="w-full justify-start text-left py-3 h-auto text-base"
-                onClick={handleNativeShare}
+                className="w-full justify-start text-left py-3 h-auto text-base text-red-600 hover:bg-red-50 hover:text-red-700"
+                onClick={() => {
+                  setShowShareDialog(false);
+                  setShowReportModal(true);
+                }}
               >
-                <ExternalLink className="mr-2.5 h-5 w-5" />
-                その他のアプリで共有
+                <Flag className="mr-2.5 h-5 w-5" />
+                この投稿を通報
               </Button>
-            )}
-          </div>
-          <div className="mt-6 flex justify-end">
-              <Button variant="ghost" onClick={() => setShowShareDialog(false)} className="text-base px-5 py-2.5 h-auto">閉じる</Button>
-          </div>
-        </CustomModal>
+            </>
+          )}
+        </div>
+        <div className="mt-6 flex justify-end">
+            <Button variant="ghost" onClick={() => setShowShareDialog(false)} className="text-base px-5 py-2.5 h-auto">閉じる</Button>
+        </div>
+      </CustomModal>
     </>
   );
 });

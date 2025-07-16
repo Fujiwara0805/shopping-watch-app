@@ -388,6 +388,7 @@ export default function PostPage() {
         return '不明';
       };
 
+      // 🔥 修正：投稿作成時にis_deletedフィールドを追加
       const postData: any = {
         app_profile_id: appProfileId,
         store_id: values.storeId && values.storeId.trim() !== '' ? values.storeId : null,
@@ -404,6 +405,7 @@ export default function PostPage() {
         likes_count: 0,
         views_count: 0,
         comments_count: 0,
+        is_deleted: false, // 🔥 追加：デフォルトでfalse
       };
 
       // 🔥 店舗の位置情報を設定
@@ -995,7 +997,7 @@ export default function PostPage() {
                         )}
                       </div>
                       <p className="text-sm text-red-600 mt-1 ml-7">
-                        【投稿内容に応じて詳細情報をご利用ください】
+                        投稿内容に応じて詳細情報をご利用ください
                       </p>
                     </div>
                     {showOptionalFields ? (
