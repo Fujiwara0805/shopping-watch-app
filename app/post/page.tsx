@@ -1021,60 +1021,84 @@ export default function PostPage() {
                       <div className="grid grid-cols-2 gap-2">
                         <Button
                           type="button"
-                          variant={optionalFieldsExpanded.location ? "default" : "outline"}
+                          variant="outline"
                           size="sm"
                           onClick={() => toggleOptionalField('location')}
-                          className="justify-start"
+                          className={`justify-start transition-all duration-200 ${
+                            optionalFieldsExpanded.location 
+                              ? 'bg-primary text-primary-foreground border-primary hover:bg-primary/90' 
+                              : 'bg-[#fafafa] text-[#73370c] border-gray-300 hover:bg-[#fafafa] hover:text-[#73370c]'
+                          }`}
                         >
                           <StoreIcon className="mr-2 h-4 w-4" />
                           場所
                         </Button>
                         <Button
                           type="button"
-                          variant={optionalFieldsExpanded.genre ? "default" : "outline"}
+                          variant="outline"
                           size="sm"
                           onClick={() => toggleOptionalField('genre')}
-                          className="justify-start"
+                          className={`justify-start transition-all duration-200 ${
+                            optionalFieldsExpanded.genre 
+                              ? 'bg-primary text-primary-foreground border-primary hover:bg-primary/90' 
+                              : 'bg-[#fafafa] text-[#73370c] border-gray-300 hover:bg-[#fafafa] hover:text-[#73370c]'
+                          }`}
                         >
                           <Layers className="mr-2 h-4 w-4" />
                           ジャンル
                         </Button>
                         <Button
                           type="button"
-                          variant={optionalFieldsExpanded.category ? "default" : "outline"}
+                          variant="outline"
                           size="sm"
                           onClick={() => toggleOptionalField('category')}
-                          className="justify-start"
+                          className={`justify-start transition-all duration-200 ${
+                            optionalFieldsExpanded.category 
+                              ? 'bg-primary text-primary-foreground border-primary hover:bg-primary/90' 
+                              : 'bg-[#fafafa] text-[#73370c] border-gray-300 hover:bg-[#fafafa] hover:text-[#73370c]'
+                          }`}
                         >
                           <LayoutGrid className="mr-2 h-4 w-4" />
                           カテゴリ
                         </Button>
                         <Button
                           type="button"
-                          variant={optionalFieldsExpanded.price ? "default" : "outline"}
+                          variant="outline"
                           size="sm"
                           onClick={() => toggleOptionalField('price')}
-                          className="justify-start"
+                          className={`justify-start transition-all duration-200 ${
+                            optionalFieldsExpanded.price 
+                              ? 'bg-primary text-primary-foreground border-primary hover:bg-primary/90' 
+                              : 'bg-[#fafafa] text-[#73370c] border-gray-300 hover:bg-[#fafafa] hover:text-[#73370c]'
+                          }`}
                         >
                           <Tag className="mr-2 h-4 w-4" />
                           価格
                         </Button>
                         <Button
                           type="button"
-                          variant={optionalFieldsExpanded.url ? "default" : "outline"}
+                          variant="outline"
                           size="sm"
                           onClick={() => toggleOptionalField('url')}
-                          className="justify-start"
+                          className={`justify-start transition-all duration-200 ${
+                            optionalFieldsExpanded.url 
+                              ? 'bg-primary text-primary-foreground border-primary hover:bg-primary/90' 
+                              : 'bg-[#fafafa] text-[#73370c] border-gray-300 hover:bg-[#fafafa] hover:text-[#73370c]'
+                          }`}
                         >
                           <LinkIcon className="mr-2 h-4 w-4" />
                           リンク
                         </Button>
                         <Button
                           type="button"
-                          variant={optionalFieldsExpanded.file ? "default" : "outline"}
+                          variant="outline"
                           size="sm"
                           onClick={() => toggleOptionalField('file')}
-                          className="justify-start"
+                          className={`justify-start transition-all duration-200 ${
+                            optionalFieldsExpanded.file 
+                              ? 'bg-primary text-primary-foreground border-primary hover:bg-primary/90' 
+                              : 'bg-[#fafafa] text-[#73370c] border-gray-300 hover:bg-[#fafafa] hover:text-[#73370c]'
+                          }`}
                         >
                           <FileText className="mr-2 h-4 w-4" />
                           ファイル
@@ -1307,7 +1331,7 @@ export default function PostPage() {
                           <FormItem>
                             <FormLabel className="text-lg font-semibold flex items-center">
                               <FileText className="mr-2 h-5 w-5" />
-                              ファイル (PDF・Word・Excel・最大3つ)
+                              ファイル (pdfなど、最大3つ)
                             </FormLabel>
                             <FormControl>
                               <div className="space-y-4">
