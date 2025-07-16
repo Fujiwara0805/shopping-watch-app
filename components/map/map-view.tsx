@@ -4,7 +4,7 @@ import { useRef, useEffect, useState, useCallback } from 'react';
 import { useGeolocation } from '@/lib/hooks/use-geolocation'; // Enhanced version
 import { useGoogleMapsApi } from '@/components/providers/GoogleMapsApiProvider';
 import { Button } from '@/components/ui/button';
-import { MapPin, AlertTriangle, Navigation, RefreshCw, Smartphone, Monitor, Globe, Clock } from 'lucide-react';
+import { MapPin, AlertTriangle, Navigation, RefreshCw, Smartphone, Monitor, Globe, Clock, Eye, EyeOff } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { MapSearchControl } from './MapSearchControl';
 import { CrossBrowserLocationGuide } from './CrossBrowserLocationGuide'; // Enhanced version
@@ -52,6 +52,9 @@ export function MapView() {
   const [distanceToSelectedPlace, setDistanceToSelectedPlace] = useState<string | null>(null);
   const [userLocationMarker, setUserLocationMarker] = useState<google.maps.Marker | null>(null);
   const [userLocationCircle, setUserLocationCircle] = useState<google.maps.Circle | null>(null);
+  
+  // 🔥 5km圏内の範囲表示・非表示の状態管理（デフォルト：非表示）
+  const [showRangeCircle, setShowRangeCircle] = useState(false);
 
   // 改良されたガイド表示制御（許可状態を考慮）
   useEffect(() => {
@@ -358,7 +361,7 @@ export function MapView() {
     }
   }, [googleMapsLoaded, latitude, longitude, containerDimensions, mapInitialized, initializeMap, browserInfo.name]);
 
-  // ユーザー位置マーカーの設置（変更なし）
+  // ユーザー位置マーカーの設置（修正版）
   useEffect(() => {
     if (map && latitude && longitude && mapInitialized && window.google?.maps) {
       console.log(`MapView ${browserInfo.name}: Setting user location marker`);
@@ -386,25 +389,33 @@ export function MapView() {
         }
       }
 
-      // 5km圏内の円を表示
-      if (userLocationCircle) {
-        userLocationCircle.setCenter(userPosition);
+      // 🔥 5km圏内の円を表示・非表示の制御
+      if (showRangeCircle) {
+        if (userLocationCircle) {
+          userLocationCircle.setCenter(userPosition);
+          userLocationCircle.setMap(map);
+        } else {
+          try {
+            const circle = new window.google.maps.Circle({
+              strokeColor: '#10b981', // 緑色のボーダー
+              strokeOpacity: 0.8,
+              strokeWeight: 2,
+              fillColor: '#effdf4', // 指定された緑色
+              fillOpacity: 0.35,
+              map: map,
+              center: userPosition,
+              radius: 5000, // 5km = 5000m
+            });
+            setUserLocationCircle(circle);
+            console.log(`MapView ${browserInfo.name}: User location circle created successfully`);
+          } catch (error) {
+            console.error(`MapView ${browserInfo.name}: Failed to create user location circle:`, error);
+          }
+        }
       } else {
-        try {
-          const circle = new window.google.maps.Circle({
-            strokeColor: '#10b981', // 緑色のボーダー
-            strokeOpacity: 0.8,
-            strokeWeight: 2,
-            fillColor: '#effdf4', // 指定された緑色
-            fillOpacity: 0.35,
-            map: map,
-            center: userPosition,
-            radius: 5000, // 5km = 5000m
-          });
-          setUserLocationCircle(circle);
-          console.log(`MapView ${browserInfo.name}: User location circle created successfully`);
-        } catch (error) {
-          console.error(`MapView ${browserInfo.name}: Failed to create user location circle:`, error);
+        // 範囲非表示の場合は円を地図から削除
+        if (userLocationCircle) {
+          userLocationCircle.setMap(null);
         }
       }
 
@@ -414,7 +425,12 @@ export function MapView() {
         map.setZoom(15);
       }
     }
-  }, [map, latitude, longitude, mapInitialized, userLocationMarker, userLocationCircle, browserInfo.name]);
+  }, [map, latitude, longitude, mapInitialized, userLocationMarker, userLocationCircle, browserInfo.name, showRangeCircle]);
+
+  // 🔥 範囲表示切り替えハンドラー
+  const toggleRangeCircle = () => {
+    setShowRangeCircle(!showRangeCircle);
+  };
 
   // 改良された再試行機能
   const handleRetry = () => {
@@ -714,16 +730,50 @@ export function MapView() {
         className="w-full h-full"
       />
 
-      {/* 許可状態インジケーター（左下に配置） */}
+      {/* 許可状態インジケーターと範囲表示切り替えボタン（左下に配置） */}
       {isPermissionGranted && permissionRemainingMinutes > 0 && map && mapInitialized && (
-        <div className="absolute bottom-20 left-2 z-30 bg-green-100 border border-green-300 rounded-lg px-3 py-2 text-sm text-green-800 shadow-lg">
-          <div className="flex items-center">
-            <Clock className="h-4 w-4 mr-2" />
-            位置情報有効（残り{permissionRemainingMinutes}分）
+        <div className="absolute bottom-20 left-2 z-30 space-y-2">
+          {/* 位置情報有効インジケーター */}
+          <div className="bg-green-100 border border-green-300 rounded-lg px-3 py-2 text-sm text-green-800 shadow-lg">
+            <div className="flex items-center">
+              <Clock className="h-4 w-4 mr-2" />
+              位置情報有効（残り{permissionRemainingMinutes}分）
+            </div>
           </div>
+          
+          {/* 🔥 範囲表示切り替えボタン */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <Button
+              onClick={toggleRangeCircle}
+              variant={showRangeCircle ? "default" : "outline"}
+              size="sm"
+              className={`shadow-lg ${
+                showRangeCircle 
+                  ? 'bg-green-600 hover:bg-green-700 text-white border-green-600 hover:border-green-700' 
+                  : 'bg-white hover:bg-gray-400 text-gray-800 border-gray-800 hover:border-gray-400'
+              }`}
+            >
+              {showRangeCircle ? (
+                <>
+                  <EyeOff className="h-4 w-4 mr-2" />
+                  範囲を非表示
+                </>
+              ) : (
+                <>
+                  <Eye className="h-4 w-4 mr-2" />
+                  5km圏内を表示
+                </>
+              )}
+            </Button>
+          </motion.div>
         </div>
       )}
 
+      {/* 検索コントロール */}
       {map && mapInitialized && (
         <div 
           className="absolute top-2 left-1/2 -translate-x-1/2 z-20 w-[calc(100%-1rem)] max-w-md sm:max-w-lg"
@@ -737,6 +787,7 @@ export function MapView() {
         </div>
       )}
 
+      {/* 選択された場所の情報表示 */}
       {selectedPlace && selectedPlace.geometry && map && mapInitialized && (
         <motion.div
           className="absolute bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-1.5rem)] sm:w-auto sm:max-w-md z-10 p-3 bg-background rounded-lg shadow-xl flex items-center justify-between"
