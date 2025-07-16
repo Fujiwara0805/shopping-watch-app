@@ -116,23 +116,17 @@ const genres = ['すべて', 'ショッピング', '飲食店', '観光', 'レ�
 const SEARCH_RADIUS_METERS = 5000; // 5km
 
 // コメントコンポーネント
-const CommentItem = ({ comment, onLike, onReply, onDelete, currentUserId, depth = 0 }: {
+const CommentItem = ({ comment, onLike, onDelete, currentUserId }: {
   comment: Comment;
   onLike: (commentId: string, isLiked: boolean) => Promise<void>;
-  onReply: (parentId: string, content: string) => Promise<void>;
-  onDelete: (commentId: string) => Promise<void>; // 🔥 追加：削除コールバック
+  onDelete: (commentId: string) => Promise<void>;
   currentUserId?: string;
-  depth?: number;
 }) => {
-  const [showReplyForm, setShowReplyForm] = useState(false);
-  const [replyContent, setReplyContent] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLiking, setIsLiking] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false); // 🔥 追加：削除モーダル
-  const [isDeleting, setIsDeleting] = useState(false); // 🔥 追加：削除処理中フラグ
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
 
-  // 🔥 修正：CommentItemコンポーネントの削除処理改善
   const handleDeleteComment = async () => {
     if (!currentUserId || !comment.isOwnComment) {
       console.error('削除権限がありません:', { currentUserId, isOwnComment: comment.isOwnComment });
@@ -150,7 +144,6 @@ const CommentItem = ({ comment, onLike, onReply, onDelete, currentUserId, depth 
     } catch (error: any) {
       console.error('コメント削除に失敗しました:', error);
       
-      // 🔥 追加：エラーの詳細に応じたメッセージ
       let errorMessage = "コメントの削除に失敗しました";
       if (error?.message?.includes('unauthorized') || error?.code === '42501') {
         errorMessage = "削除権限がありません";
@@ -168,39 +161,13 @@ const CommentItem = ({ comment, onLike, onReply, onDelete, currentUserId, depth 
     }
   };
 
-  const handleReplySubmit = async () => {
-    if (!replyContent.trim()) return;
-    
-    setIsSubmitting(true);
-    try {
-      await onReply(comment.id, replyContent);
-      setReplyContent('');
-      setShowReplyForm(false);
-      toast({
-        title: "返信を投稿しました",
-        duration: 1000, // 2000 → 1000に変更
-      });
-    } catch (error) {
-      console.error('返信の投稿に失敗しました:', error);
-      toast({
-        title: "エラーが発生しました",
-        description: "返信の投稿に失敗しました",
-        duration: 1000, // 3000 → 1000に変更
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  // いいねクリック処理を修正
   const handleLikeClick = async () => {
     if (isLiking) return;
     
-    // 自分のコメントかどうかをチェック
     if (comment.isOwnComment && currentUserId) {
       toast({
         title: "自分のコメントにはいいねできません",
-        duration: 1000, // 2000 → 1000に変更
+        duration: 1000,
       });
       return;
     }
@@ -209,7 +176,7 @@ const CommentItem = ({ comment, onLike, onReply, onDelete, currentUserId, depth 
       toast({
         title: "ログインが必要です",
         description: "いいねするにはログインしてください",
-        duration: 1000, // 3000 → 1000に変更
+        duration: 1000,
       });
       return;
     }
@@ -222,7 +189,7 @@ const CommentItem = ({ comment, onLike, onReply, onDelete, currentUserId, depth 
       toast({
         title: "エラーが発生しました",
         description: "いいね処理に失敗しました",
-        duration: 1000, // 3000 → 1000に変更
+        duration: 1000,
       });
     } finally {
       setIsLiking(false);
@@ -235,7 +202,7 @@ const CommentItem = ({ comment, onLike, onReply, onDelete, currentUserId, depth 
 
   return (
     <>
-      <div className={cn("space-y-2", depth > 0 && "ml-8 border-l-2 border-gray-200 pl-4")}>
+      <div className="space-y-2">
         <div className="flex items-start space-x-3">
           <Avatar className="h-8 w-8">
             <AvatarImage src={authorAvatarUrl || undefined} alt={comment.author?.display_name || 'コメント投稿者'} />
@@ -254,7 +221,6 @@ const CommentItem = ({ comment, onLike, onReply, onDelete, currentUserId, depth 
                 </span>
               </div>
               
-              {/* 🔥 追加：自分のコメントの場合は削除ボタン */}
               {comment.isOwnComment && currentUserId && (
                 <Button
                   variant="ghost"
@@ -295,111 +261,57 @@ const CommentItem = ({ comment, onLike, onReply, onDelete, currentUserId, depth 
                 )} />
                 <span>{comment.likes_count}</span>
               </button>
-              
-              {depth < 2 && currentUserId && (
-                <button
-                  onClick={() => setShowReplyForm(!showReplyForm)}
-                  className="text-gray-500 hover:text-blue-500 transition-colors"
-                >
-                  返信
-                </button>
-              )}
             </div>
-            
-            {showReplyForm && (
-              <div className="mt-2 space-y-2">
-                <Textarea
-                  value={replyContent}
-                  onChange={(e) => setReplyContent(e.target.value)}
-                  placeholder="返信を入力..."
-                  className="text-sm"
-                  rows={2}
-                  style={{ fontSize: '16px' }}
-                />
-                <div className="flex space-x-2">
-                  <Button
-                    size="sm"
-                    onClick={handleReplySubmit}
-                    disabled={!replyContent.trim() || isSubmitting}
-                  >
-                    {isSubmitting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
-                    返信
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => {
-                      setShowReplyForm(false);
-                      setReplyContent('');
-                    }}
-                  >
-                    キャンセル
-                  </Button>
-                </div>
-              </div>
-            )}
           </div>
         </div>
         
-        {comment.replies && comment.replies.map((reply) => (
-          <CommentItem
-            key={reply.id}
-            comment={reply}
-            onLike={onLike}
-            onReply={onReply}
-            onDelete={onDelete}
-            currentUserId={currentUserId}
-            depth={depth + 1}
-          />
-        ))}
-      </div>
-
-      {/* 🔥 追加：コメント削除確認モーダル */}
-      <CustomModal
-        isOpen={showDeleteModal}
-        onClose={() => setShowDeleteModal(false)}
-        title="コメントの削除"
-        description="このコメントを削除しますか？"
-      >
-        <div className="space-y-4">
-          <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-            <div className="flex items-center space-x-2">
-              <AlertTriangle className="h-5 w-5 text-red-600" />
-              <span className="text-red-800 font-medium">注意</span>
+        {/* コメント削除確認モーダル */}
+        <CustomModal
+          isOpen={showDeleteModal}
+          onClose={() => setShowDeleteModal(false)}
+          title="コメントの削除"
+          description="このコメントを削除しますか？"
+        >
+          <div className="space-y-4">
+            <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+              <div className="flex items-center space-x-2">
+                <AlertTriangle className="h-5 w-5 text-red-600" />
+                <span className="text-red-800 font-medium">注意</span>
+              </div>
+              <p className="text-red-700 text-sm mt-2">
+                削除したコメントは復元できません。本当に削除しますか？
+              </p>
             </div>
-            <p className="text-red-700 text-sm mt-2">
-              削除したコメントは復元できません。本当に削除しますか？
-            </p>
+            
+            <div className="flex justify-end space-x-3">
+              <Button
+                variant="outline"
+                onClick={() => setShowDeleteModal(false)}
+                disabled={isDeleting}
+              >
+                キャンセル
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleDeleteComment}
+                disabled={isDeleting}
+              >
+                {isDeleting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    削除中...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    削除する
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
-          
-          <div className="flex justify-end space-x-3">
-            <Button
-              variant="outline"
-              onClick={() => setShowDeleteModal(false)}
-              disabled={isDeleting}
-            >
-              キャンセル
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={handleDeleteComment}
-              disabled={isDeleting}
-            >
-              {isDeleting ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  削除中...
-                </>
-              ) : (
-                <>
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  削除する
-                </>
-              )}
-            </Button>
-          </div>
-        </div>
-      </CustomModal>
+        </CustomModal>
+      </div>
     </>
   );
 };
@@ -411,7 +323,7 @@ const CommentsModal = ({
   onClose, 
   currentUserId 
 }: {
-  post: ExtendedPostWithAuthor;
+  post: ExtendedPostWithAuthor | null;
   isOpen: boolean;
   onClose: () => void;
   currentUserId?: string;
@@ -422,7 +334,6 @@ const CommentsModal = ({
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
-  // 🔥 修正：コメント削除処理の改善
   const handleDeleteComment = async (commentId: string) => {
     if (!currentUserId) {
       console.error('ユーザーIDが見つかりません');
@@ -430,7 +341,6 @@ const CommentsModal = ({
     }
 
     try {
-      // 🔥 追加：現在のユーザープロフィールを取得して確認
       const { data: userProfile, error: profileError } = await supabase
         .from('app_profiles')
         .select('id, user_id')
@@ -442,9 +352,7 @@ const CommentsModal = ({
         throw new Error('ユーザープロフィールが見つかりません');
       }
 
-      // 🔥 追加：削除対象のコメントが自分のものかを確認
-      const targetComment = comments.find(c => c.id === commentId) || 
-                           comments.flatMap(c => c.replies || []).find(r => r.id === commentId);
+      const targetComment = comments.find(c => c.id === commentId);
       
       if (!targetComment) {
         throw new Error('削除対象のコメントが見つかりません');
@@ -454,7 +362,6 @@ const CommentsModal = ({
         throw new Error('他のユーザーのコメントは削除できません');
       }
 
-      // 🔥 修正：論理削除処理（updated_atも更新）
       const { error } = await supabase
         .from('post_comments')
         .update({ 
@@ -462,7 +369,7 @@ const CommentsModal = ({
           updated_at: new Date().toISOString()
         })
         .eq('id', commentId)
-        .eq('app_profile_id', userProfile.id); // 🔥 追加：安全性のため所有者チェック
+        .eq('app_profile_id', userProfile.id);
 
       if (error) {
         console.error('コメント削除エラー:', error);
@@ -470,26 +377,14 @@ const CommentsModal = ({
       }
 
       // UIからコメントを削除
-      const removeCommentFromTree = (comments: Comment[]): Comment[] => {
-        return comments.filter(comment => {
-          if (comment.id === commentId) {
-            return false;
-          }
-          if (comment.replies) {
-            comment.replies = removeCommentFromTree(comment.replies);
-          }
-          return true;
-        });
-      };
-
-      setComments(removeCommentFromTree(comments));
+      setComments(comments.filter(comment => comment.id !== commentId));
     } catch (error) {
       console.error('コメントの削除に失敗しました:', error);
       throw error;
     }
   };
 
-  // コメント取得
+  // 🔥 修正：コメント取得処理で階層構造を削除
   const fetchComments = useCallback(async () => {
     if (!isOpen) return;
     
@@ -513,8 +408,9 @@ const CommentsModal = ({
             avatar_url
           )
         `)
-        .eq('post_id', post.id)
-        .eq('is_deleted', false) // 🔥 復活：削除されていないコメントのみ取得
+        .eq('post_id', post?.id)
+        .eq('is_deleted', false)
+        .is('parent_comment_id', null) // 🔥 追加：親コメントのみ取得
         .order('created_at', { ascending: true });
 
       if (error) throw error;
@@ -540,43 +436,24 @@ const CommentsModal = ({
         }
       }
 
-      // コメントを階層構造に変換
-      const commentsMap = new Map<string, Comment>();
-      const rootComments: Comment[] = [];
-
-      data.forEach((comment: any) => {
+      // 🔥 修正：シンプルなコメント配列に変更（階層構造なし）
+      const processedComments = data.map((comment: any) => {
         const authorData = Array.isArray(comment.author) ? comment.author[0] : comment.author;
         const isLikedByCurrentUser = commentLikesData.some(like => like.comment_id === comment.id);
         
-        // 🔥 修正：より厳密な所有者チェック
         const isOwnComment = currentUserId && authorData?.user_id ? 
           authorData.user_id === currentUserId : false;
         
-        const commentWithAuthor: Comment = {
+        return {
           ...comment,
           author: authorData,
-          replies: [],
           likes_count: 0,
           isLikedByCurrentUser,
-          isOwnComment, // 🔥 修正：より厳密な判定
+          isOwnComment,
         };
-        commentsMap.set(comment.id, commentWithAuthor);
       });
 
-      data.forEach((comment: any) => {
-        const commentObj = commentsMap.get(comment.id)!;
-        if (comment.parent_comment_id) {
-          const parent = commentsMap.get(comment.parent_comment_id);
-          if (parent) {
-            parent.replies = parent.replies || [];
-            parent.replies.push(commentObj);
-          }
-        } else {
-          rootComments.push(commentObj);
-        }
-      });
-
-      setComments(rootComments);
+      setComments(processedComments);
     } catch (error) {
       console.error('コメントの取得に失敗しました:', error);
       toast({
@@ -587,19 +464,17 @@ const CommentsModal = ({
     } finally {
       setLoading(false);
     }
-  }, [isOpen, post.id, toast, currentUserId]);
+  }, [isOpen, post?.id, toast, currentUserId]);
 
   useEffect(() => {
     fetchComments();
   }, [fetchComments]);
 
-  // 新しいコメント投稿
   const handleSubmitComment = async () => {
     if (!newComment.trim() || !currentUserId) return;
 
     setIsSubmitting(true);
     try {
-      // ユーザープロフィール取得
       const { data: userProfile, error: profileError } = await supabase
         .from('app_profiles')
         .select('id')
@@ -611,16 +486,16 @@ const CommentsModal = ({
         throw new Error('ユーザープロフィールが見つかりません');
       }
 
-      // コメント投稿
       const { error } = await supabase
         .from('post_comments')
         .insert({
-          post_id: post.id,
+          post_id: post?.id,
           app_profile_id: userProfile.id,
           content: newComment.trim(),
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
-          is_deleted: false // 🔥 復活
+          is_deleted: false,
+          // 🔥 削除：parent_comment_idを削除（返信機能なし）
         });
 
       if (error) {
@@ -648,47 +523,7 @@ const CommentsModal = ({
     }
   };
 
-  // 返信投稿
-  const handleReply = async (parentId: string, content: string) => {
-    if (!currentUserId) return;
-
-    try {
-      const { data: userProfile, error: profileError } = await supabase
-        .from('app_profiles')
-        .select('id')
-        .eq('user_id', currentUserId)
-        .single();
-
-      if (profileError || !userProfile) {
-        console.error('プロフィールエラー:', profileError);
-        throw new Error('ユーザープロフィールが見つかりません');
-      }
-
-      const { error } = await supabase
-        .from('post_comments')
-        .insert({
-          post_id: post.id,
-          app_profile_id: userProfile.id,
-          parent_comment_id: parentId,
-          content: content.trim(),
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          is_deleted: false // 🔥 復活
-        });
-
-      if (error) {
-        console.error('返信投稿エラー:', error);
-        throw error;
-      }
-
-      await fetchComments();
-    } catch (error) {
-      console.error('返信の投稿に失敗しました:', error);
-      throw error;
-    }
-  };
-
-  // コメントいいね
+  // 🔥 修正：コメントいいね処理を簡素化
   const handleCommentLike = async (commentId: string, isLiked: boolean) => {
     if (!currentUserId) return;
 
@@ -703,12 +538,11 @@ const CommentsModal = ({
         throw new Error('ユーザープロフィールが見つかりません');
       }
 
-      // 自分のコメントかどうかをチェック
-      const targetComment = findCommentById(comments, commentId);
+      const targetComment = comments.find(c => c.id === commentId);
       if (targetComment && targetComment.author?.user_id === currentUserId) {
         toast({
           title: "自分のコメントにはいいねできません",
-          duration: 1000, // 2000 → 1000に変更
+          duration: 1000,
         });
         return;
       }
@@ -732,49 +566,24 @@ const CommentsModal = ({
         if (error) throw error;
       }
 
-      // UIを楽観的に更新
-      const updateCommentLikes = (comments: Comment[]): Comment[] => {
-        return comments.map(comment => {
-          if (comment.id === commentId) {
-            return {
+      // 🔥 修正：シンプルなコメント更新
+      setComments(comments.map(comment => 
+        comment.id === commentId 
+          ? {
               ...comment,
               isLikedByCurrentUser: isLiked,
               likes_count: isLiked ? comment.likes_count + 1 : Math.max(0, comment.likes_count - 1),
-            };
-          }
-          if (comment.replies) {
-            return {
-              ...comment,
-              replies: updateCommentLikes(comment.replies),
-            };
-          }
-          return comment;
-        });
-      };
-
-      setComments(updateCommentLikes(comments));
+            }
+          : comment
+      ));
     } catch (error) {
       console.error('コメントいいねに失敗しました:', error);
       toast({
         title: "エラーが発生しました",
         description: "いいね処理に失敗しました",
-        duration: 1000, // 3000 → 1000に変更
+        duration: 1000,
       });
     }
-  };
-
-  // ヘルパー関数を追加
-  const findCommentById = (comments: Comment[], commentId: string): Comment | null => {
-    for (const comment of comments) {
-      if (comment.id === commentId) {
-        return comment;
-      }
-      if (comment.replies) {
-        const found = findCommentById(comment.replies, commentId);
-        if (found) return found;
-      }
-    }
-    return null;
   };
 
   return (
@@ -782,87 +591,63 @@ const CommentsModal = ({
       isOpen={isOpen}
       onClose={onClose}
       title="コメント"
-      description={`${post.store_name}の投稿へのコメント`}
+      description={`${post?.store_name}の投稿へのコメント`}
       className="sm:max-w-2xl"
     >
       <div className="space-y-4">
         {/* 投稿内容の表示 */}
         <div className="bg-gray-50 p-4 rounded-lg">
-          <p className="text-sm text-gray-700">{post.content}</p>
+          <p className="text-sm text-gray-700">{post?.content}</p>
           <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500">
             <span className="flex items-center space-x-1">
               <Heart className="h-3 w-3" />
-              <span>{post.likes_count}</span>
+              <span>{post?.likes_count}</span>
             </span>
             <span className="flex items-center space-x-1">
               <Eye className="h-3 w-3" />
-              <span>{post.views_count}</span>
+              <span>{post?.views_count}</span>
             </span>
             <span className="flex items-center space-x-1">
               <MessageSquare className="h-3 w-3" />
-              <span>{post.comments_count}</span>
+              <span>{post?.comments_count}</span>
             </span>
           </div>
         </div>
 
-        {/* 🔥 更新：コメント一覧（スクロール機能追加） */}
-        <div className="max-h-96 overflow-y-auto space-y-4 custom-scrollbar">
-          {loading ? (
-            <div className="space-y-4">
-              {[...Array(3)].map((_, i) => (
-                <div key={i} className="flex items-start space-x-3">
-                  <Skeleton className="h-8 w-8 rounded-full" />
-                  <div className="flex-1 space-y-2">
-                    <Skeleton className="h-4 w-24" />
-                    <Skeleton className="h-12 w-full" />
+        {/* コメント一覧 */}
+        <div className="h-[300px] overflow-y-auto custom-scrollbar border rounded-lg bg-gray-50">
+          <div className="p-4 space-y-4">
+            {loading ? (
+              <div className="space-y-4">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="flex items-start space-x-3">
+                    <Skeleton className="h-8 w-8 rounded-full" />
+                    <div className="flex-1 space-y-2">
+                      <Skeleton className="h-4 w-24" />
+                      <Skeleton className="h-12 w-full" />
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          ) : comments.length === 0 ? (
-            <div className="text-center py-8">
-              <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500">まだコメントがありません</p>
-              <p className="text-sm text-gray-400">最初のコメントを投稿してみましょう</p>
-            </div>
-          ) : (
-            <>
-              {/* 🔥 追加：最初の3件を表示 */}
-              {comments.slice(0, 3).map((comment) => (
+                ))}
+              </div>
+            ) : comments.length === 0 ? (
+              <div className="text-center py-8">
+                <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-500">まだコメントがありません</p>
+                <p className="text-sm text-gray-400">最初のコメントを投稿してみましょう</p>
+              </div>
+            ) : (
+              // 🔥 修正：コメント表示（固定高さ内でスクロール）
+              comments.map((comment) => (
                 <CommentItem
                   key={comment.id}
                   comment={comment}
                   onLike={handleCommentLike}
-                  onReply={handleReply}
                   onDelete={handleDeleteComment}
                   currentUserId={currentUserId}
                 />
-              ))}
-              
-              {/* 🔥 追加：4件目以降がある場合の表示 */}
-              {comments.length > 3 && (
-                <div className="border-t pt-4">
-                  <div className="text-center mb-4">
-                    <p className="text-sm text-gray-500">
-                      {comments.length - 3}件の追加コメント
-                    </p>
-                  </div>
-                  <div className="space-y-4">
-                    {comments.slice(3).map((comment) => (
-                      <CommentItem
-                        key={comment.id}
-                        comment={comment}
-                        onLike={handleCommentLike}
-                        onReply={handleReply}
-                        onDelete={handleDeleteComment}
-                        currentUserId={currentUserId}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
-            </>
-          )}
+              ))
+            )}
+          </div>
         </div>
 
         {/* 新しいコメント投稿フォーム */}
