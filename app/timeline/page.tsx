@@ -341,45 +341,75 @@ const CommentsModal = ({
     }
 
     try {
-      const { data: userProfile, error: profileError } = await supabase
+      console.log('🔥 コメント削除開始:', commentId);
+
+      // 🔥 削除前の状態を確認
+      const { data: beforeData } = await supabase
+        .from('post_comments')
+        .select('id, is_deleted, content, app_profile_id')
+        .eq('id', commentId)
+        .single();
+      
+      console.log('🔥 削除前の状態:', beforeData);
+
+      if (!beforeData) {
+        throw new Error('コメントが見つかりません');
+      }
+
+      // 🔥 権限チェック：現在のユーザーのapp_profile_idを取得
+      const { data: userProfile } = await supabase
         .from('app_profiles')
-        .select('id, user_id')
+        .select('id')
         .eq('user_id', currentUserId)
         .single();
 
-      if (profileError || !userProfile) {
-        console.error('ユーザープロフィールの取得に失敗:', profileError);
+      console.log('🔥 ユーザープロフィール:', userProfile);
+
+      if (!userProfile) {
         throw new Error('ユーザープロフィールが見つかりません');
       }
 
-      const targetComment = comments.find(c => c.id === commentId);
-      
-      if (!targetComment) {
-        throw new Error('削除対象のコメントが見つかりません');
+      // 🔥 権限チェック：コメントの所有者確認
+      if (beforeData.app_profile_id !== userProfile.id) {
+        throw new Error('このコメントを削除する権限がありません');
       }
 
-      if (targetComment.app_profile_id !== userProfile.id) {
-        throw new Error('他のユーザーのコメントは削除できません');
-      }
-
-      const { error } = await supabase
+      // 🔥 投稿削除と全く同じパターン：シンプルな論理削除
+      const { error, data } = await supabase
         .from('post_comments')
-        .update({ 
-          is_deleted: true,
-          updated_at: new Date().toISOString()
-        })
+        .update({ is_deleted: true })
         .eq('id', commentId)
-        .eq('app_profile_id', userProfile.id);
+        .eq('app_profile_id', userProfile.id) // 🔥 追加：二重チェック
+        .select();
+
+      console.log('🔥 削除処理結果:', { error, data });
 
       if (error) {
-        console.error('コメント削除エラー:', error);
+        console.error('🔥 コメント削除エラー:', error);
         throw error;
       }
 
-      // UIからコメントを削除
-      setComments(comments.filter(comment => comment.id !== commentId));
+      if (!data || data.length === 0) {
+        console.error('🔥 削除処理が実行されませんでした');
+        throw new Error('コメントの削除に失敗しました - 権限エラー');
+      }
+
+      // 🔥 削除後の状態を確認
+      const { data: afterData } = await supabase
+        .from('post_comments')
+        .select('id, is_deleted, content')
+        .eq('id', commentId)
+        .single();
+      
+      console.log('🔥 削除後の状態:', afterData);
+
+      console.log('🔥 コメント削除成功:', commentId);
+
+      // 🔥 重要：削除後にコメントを再取得
+      await fetchComments();
+
     } catch (error) {
-      console.error('コメントの削除に失敗しました:', error);
+      console.error('🔥 コメントの削除に失敗しました:', error);
       throw error;
     }
   };
@@ -390,6 +420,8 @@ const CommentsModal = ({
     
     setLoading(true);
     try {
+      console.log('🔥 コメント取得開始 - post_id:', post?.id);
+      
       const { data, error } = await supabase
         .from('post_comments')
         .select(`
@@ -410,14 +442,24 @@ const CommentsModal = ({
         `)
         .eq('post_id', post?.id)
         .eq('is_deleted', false)
-        .is('parent_comment_id', null) // 🔥 追加：親コメントのみ取得
+        .is('parent_comment_id', null)
         .order('created_at', { ascending: true });
 
-      if (error) throw error;
+      console.log('🔥 取得したコメント:', data);
+      console.log('🔥 フィルタ前のコメント数:', data?.length);
+
+      if (error) {
+        console.error('🔥 コメント取得エラー:', error);
+        throw error;
+      }
+
+      // 🔥 追加：削除されていないコメントのみを再確認
+      const validComments = data?.filter(comment => comment.is_deleted === false) || [];
+      console.log('🔥 フィルタ後のコメント数:', validComments.length);
 
       // コメントいいね情報も取得
       let commentLikesData: any[] = [];
-      if (currentUserId && data && data.length > 0) {
+      if (currentUserId && validComments && validComments.length > 0) {
         const { data: userProfile } = await supabase
           .from('app_profiles')
           .select('id')
@@ -425,7 +467,7 @@ const CommentsModal = ({
           .single();
 
         if (userProfile) {
-          const commentIds = data.map(comment => comment.id);
+          const commentIds = validComments.map(comment => comment.id);
           const { data: likesData } = await supabase
             .from('comment_likes')
             .select('comment_id')
@@ -436,8 +478,8 @@ const CommentsModal = ({
         }
       }
 
-      // 🔥 修正：シンプルなコメント配列に変更（階層構造なし）
-      const processedComments = data.map((comment: any) => {
+      // 🔥 修正：validCommentsを使用
+      const processedComments = validComments.map((comment: any) => {
         const authorData = Array.isArray(comment.author) ? comment.author[0] : comment.author;
         const isLikedByCurrentUser = commentLikesData.some(like => like.comment_id === comment.id);
         
@@ -453,6 +495,7 @@ const CommentsModal = ({
         };
       });
 
+      console.log('🔥 最終的なコメント:', processedComments);
       setComments(processedComments);
     } catch (error) {
       console.error('コメントの取得に失敗しました:', error);
@@ -486,6 +529,8 @@ const CommentsModal = ({
         throw new Error('ユーザープロフィールが見つかりません');
       }
 
+      console.log('コメント投稿開始:', post?.id);
+
       const { error } = await supabase
         .from('post_comments')
         .insert({
@@ -495,13 +540,15 @@ const CommentsModal = ({
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
           is_deleted: false,
-          // 🔥 削除：parent_comment_idを削除（返信機能なし）
+          parent_comment_id: null
         });
 
       if (error) {
         console.error('コメント投稿エラー:', error);
         throw error;
       }
+
+      console.log('コメント投稿成功');
 
       setNewComment('');
       await fetchComments();
