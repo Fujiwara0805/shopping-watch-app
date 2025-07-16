@@ -20,4 +20,8 @@ export interface ExtendedPostWithAuthor extends PostWithAuthor {
   // 端末（投稿者）の位置情報（新規追加）
   user_latitude?: number;
   user_longitude?: number;
+  
+  // 🔥 新しいフィールドを追加
+  url?: string | null;
+  file_urls?: string | null; // JSON文字列
 }

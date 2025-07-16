@@ -4,7 +4,7 @@ import { useState, useCallback, useRef, useEffect, memo } from 'react';
 import { motion } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
 import { ja } from 'date-fns/locale';
-import { Heart, Share2, Clock, Link as LinkIcon, ExternalLink, Instagram, Copy, Laugh, Smile, Meh, Frown, Angry, MapPin, Eye, MessageCircle, ChevronDown, Tag, DollarSign, UserPlus, Info, ChevronLeft, ChevronRight, ShoppingCart, Utensils, Camera, GamepadIcon, Wrench, Layers } from 'lucide-react';
+import { Heart, Share2, Clock, Link as LinkIcon, ExternalLink, Instagram, Copy, Laugh, Smile, Meh, Frown, Angry, MapPin, Eye, MessageCircle, ChevronDown, Tag, DollarSign, UserPlus, Info, ChevronLeft, ChevronRight, ShoppingCart, Utensils, Camera, GamepadIcon, Wrench, Layers, FileIcon, Calendar, Briefcase, ShoppingBag, Users, MessageSquareText } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -380,6 +380,41 @@ export const PostCard = memo(({
           textColor: 'text-indigo-800',
           borderColor: 'border-indigo-200'
         };
+      case 'イベント':
+        return {
+          icon: Calendar,
+          bgColor: 'bg-yellow-100',
+          textColor: 'text-yellow-800',
+          borderColor: 'border-yellow-200'
+        };
+      case '求人':
+        return {
+          icon: Briefcase,
+          bgColor: 'bg-blue-100',
+          textColor: 'text-blue-800',
+          borderColor: 'border-blue-200'
+        };
+      case '販売':
+        return {
+          icon: ShoppingBag,
+          bgColor: 'bg-green-100',
+          textColor: 'text-green-800',
+          borderColor: 'border-green-200'
+        };
+      case 'ボランティア':
+        return {
+          icon: Users,
+          bgColor: 'bg-emerald-100',
+          textColor: 'text-emerald-800',
+          borderColor: 'border-emerald-200'
+        };
+      case '相談':
+        return {
+          icon: MessageSquareText,
+          bgColor: 'bg-rose-100',
+          textColor: 'text-rose-800',
+          borderColor: 'border-rose-200'
+        };
       default:
         return {
           icon: Layers,
@@ -390,8 +425,13 @@ export const PostCard = memo(({
     }
   }, []);
 
+  // 🔥 修正1: getCategoryColor関数に「不明」を追加
   const getCategoryColor = useCallback((category: string) => {
     switch(category) {
+      // 不明カテゴリ
+      case '不明':
+        return 'bg-gray-100 text-gray-800 border-gray-200';
+      
       // ショッピング系
       case '惣菜':
         return 'bg-yellow-100 text-yellow-800 border-yellow-200';
@@ -462,6 +502,68 @@ export const PostCard = memo(({
       case '修理・メンテナンス':
         return 'bg-gray-100 text-gray-800 border-gray-200';
       
+      // イベント系
+      case 'コンサート・ライブ':
+        return 'bg-purple-100 text-purple-800 border-purple-200';
+      case 'フェスティバル':
+        return 'bg-orange-100 text-orange-800 border-orange-200';
+      case '展示会':
+        return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'セミナー・講座':
+        return 'bg-green-100 text-green-800 border-green-200';
+      case 'スポーツイベント':
+        return 'bg-red-100 text-red-800 border-red-200';
+      
+      // 求人系
+      case '正社員':
+        return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'アルバイト・パート':
+        return 'bg-green-100 text-green-800 border-green-200';
+      case '派遣・契約':
+        return 'bg-orange-100 text-orange-800 border-orange-200';
+      case 'インターン':
+        return 'bg-purple-100 text-purple-800 border-purple-200';
+      case 'フリーランス':
+        return 'bg-teal-100 text-teal-800 border-teal-200';
+      
+      // 販売系
+      case '新品':
+        return 'bg-blue-100 text-blue-800 border-blue-200';
+      case '中古品':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'ハンドメイド':
+        return 'bg-pink-100 text-pink-800 border-pink-200';
+      case 'デジタル商品':
+        return 'bg-purple-100 text-purple-800 border-purple-200';
+      case 'チケット':
+        return 'bg-red-100 text-red-800 border-red-200';
+      case '移動販売':
+        return 'bg-green-100 text-green-800 border-green-200';
+      
+      // ボランティア系
+      case '環境・自然':
+        return 'bg-green-100 text-green-800 border-green-200';
+      case '福祉・介護':
+        return 'bg-blue-100 text-blue-800 border-blue-200';
+      case '教育・子育て':
+        return 'bg-orange-100 text-orange-800 border-orange-200';
+      case '地域活動':
+        return 'bg-purple-100 text-purple-800 border-purple-200';
+      case '災害支援':
+        return 'bg-red-100 text-red-800 border-red-200';
+      
+      // 相談系
+      case '生活相談':
+        return 'bg-blue-100 text-blue-800 border-blue-200';
+      case '仕事・キャリア':
+        return 'bg-green-100 text-green-800 border-green-200';
+      case '恋愛・人間関係':
+        return 'bg-pink-100 text-pink-800 border-pink-200';
+      case '法律・お金':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case '健康・医療':
+        return 'bg-red-100 text-red-800 border-red-200';
+      
       // デフォルト
       default:
         return 'bg-gray-100 text-gray-800 border-gray-200';
@@ -473,7 +575,6 @@ export const PostCard = memo(({
     locale: ja
   }) : '日付不明';
 
-  const postImageUrl = post.image_url;
 
   const copyToClipboard = useCallback((text: string, message: string) => {
     navigator.clipboard.writeText(text).then(() => {
@@ -527,11 +628,42 @@ export const PostCard = memo(({
         return [];
       }
     }
-    // 旧形式の単一画像対応
-    return post.image_url ? [post.image_url] : [];
-  }, [post.image_urls, post.image_url]);
+    return [];
+  }, [post.image_urls]);
+
+  // ファイルURLの処理
+  const getFileUrls = useCallback(() => {
+    if (post.file_urls) {
+      try {
+        const urls = JSON.parse(post.file_urls);
+        return Array.isArray(urls) ? urls : [];
+      } catch (error) {
+        console.error('ファイルURLsの解析エラー:', error);
+        return [];
+      }
+    }
+    return [];
+  }, [post.file_urls]);
+
+  // ファイルアイコンの取得
+  const getFileIcon = useCallback((fileName: string) => {
+    const extension = fileName.split('.').pop()?.toLowerCase();
+    switch (extension) {
+      case 'pdf':
+        return '📄';
+      case 'doc':
+      case 'docx':
+        return '📝';
+      case 'xls':
+      case 'xlsx':
+        return '📊';
+      default:
+        return '📎';
+    }
+  }, []);
 
   const imageUrls = getImageUrls();
+  const fileUrls = getFileUrls();
 
   const genreIconAndColor = getGenreIconAndColor(post.genre || '');
   const GenreIcon = genreIconAndColor.icon;
@@ -606,94 +738,157 @@ export const PostCard = memo(({
                 <div className="bg-white">
                   <table className="w-full">
                     <tbody>
-                      {/* 1行目: 場所 */}
-                      <tr className="border-b border-gray-100">
-                        <td className="p-3 bg-gray-50 w-1/3 font-medium border-r border-gray-100">
-                          <div className="flex items-center space-x-2">
-                            <MapPin className="h-4 w-4 text-gray-500 flex-shrink-0" />
-                            <span className="text-base" style={{ color: '#73370c' }}>場所</span>
-                          </div>
-                        </td>
-                        <td className="p-3">
-                          <div className="flex items-center justify-between">
-                            <Button
-                              variant="ghost"
-                              className="p-0 h-auto font-normal hover:bg-transparent hover:text-primary flex-1"
-                              onClick={handleCopyStoreName}
-                              title="店舗名をコピー"
+                      {/* 1行目: 場所 - 店舗名が「店舗不明」以外の場合のみ表示 */}
+                      {post.store_name && post.store_name !== '店舗不明' && (
+                        <tr className="border-b border-gray-100">
+                          <td className="p-3 bg-gray-50 w-1/3 font-medium border-r border-gray-100">
+                            <div className="flex items-center space-x-2">
+                              <MapPin className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                              <span className="text-base" style={{ color: '#73370c' }}>場所</span>
+                            </div>
+                          </td>
+                          <td className="p-3">
+                            <div className="flex items-center justify-between">
+                              <Button
+                                variant="ghost"
+                                className="p-0 h-auto font-normal hover:bg-transparent hover:text-primary flex-1"
+                                onClick={handleCopyStoreName}
+                                title="店舗名をコピー"
+                              >
+                                <span className={cn(
+                                  "whitespace-normal break-words",
+                                  (post.store_name || '').length > 20 ? "text-sm" : "text-base"
+                                )} style={{ color: '#73370c' }}>
+                                  {post.store_name}
+                                </span>
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={handleCopyStoreName}
+                                className="p-1 h-auto hover:bg-gray-100"
+                                title="店舗名をコピー"
+                              >
+                                <Copy className="h-4 w-4 text-gray-400 hover:text-gray-600 flex-shrink-0" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                      
+                      {/* 2行目: ジャンル - ジャンルが設定されている場合のみ表示 */}
+                      {post.genre && (
+                        <tr className="border-b border-gray-100">
+                          <td className="p-3 bg-gray-50 w-1/3 font-medium border-r border-gray-100">
+                            <div className="flex items-center space-x-2">
+                              <GenreIcon className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                              <span className="text-base" style={{ color: '#73370c' }}>ジャンル</span>
+                            </div>
+                          </td>
+                          <td className="p-3">
+                            <div className={cn(
+                              "inline-flex items-center space-x-2 px-3 py-1 rounded-full text-base font-medium border",
+                              genreIconAndColor.bgColor,
+                              genreIconAndColor.textColor,
+                              genreIconAndColor.borderColor
+                            )}>
+                              <GenreIcon className="h-4 w-4 flex-shrink-0" />
+                              <span>{post.genre}</span>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                      
+                      {/* 3行目: カテゴリ - カテゴリが「不明」以外の場合のみ表示 */}
+                      {post.category && post.category !== '不明' && (
+                        <tr className="border-b border-gray-100">
+                          <td className="p-3 bg-gray-50 w-1/3 font-medium border-r border-gray-100">
+                            <div className="flex items-center space-x-2">
+                              <Tag className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                              <span className="text-base" style={{ color: '#73370c' }}>カテゴリ</span>
+                            </div>
+                          </td>
+                          <td className="p-3">
+                            <Badge className={cn("text-base", getCategoryColor(post.category))}>
+                              {post.category}
+                            </Badge>
+                          </td>
+                        </tr>
+                      )}
+                      
+                      {/* 4行目: 価格 - 価格が設定されている場合のみ表示 */}
+                      {post.price != null && (
+                        <tr className="border-b border-gray-100">
+                          <td className="p-3 bg-gray-50 w-1/3 font-medium border-r border-gray-100">
+                            <div className="flex items-center space-x-2">
+                              <DollarSign className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                              <span className="text-base" style={{ color: '#73370c' }}>価格</span>
+                            </div>
+                          </td>
+                          <td className="p-3">
+                            <span className="text-base font-medium" style={{ color: '#73370c' }}>
+                              {post.price.toLocaleString()}円〜
+                            </span>
+                          </td>
+                        </tr>
+                      )}
+                      
+                      {/* 8行目: リンク - 既に条件分岐済み */}
+                      {post.url && (
+                        <tr className="border-b border-gray-100">
+                          <td className="p-3 bg-gray-50 w-1/3 font-medium border-r border-gray-100">
+                            <div className="flex items-center space-x-2">
+                              <LinkIcon className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                              <span className="text-base" style={{ color: '#73370c' }}>リンク</span>
+                            </div>
+                          </td>
+                          <td className="p-3">
+                            <a
+                              href={post.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:text-blue-800 underline break-all"
+                              onClick={(e) => e.stopPropagation()}
                             >
-                              <span className={cn(
-                                "whitespace-normal break-words",
-                                (post.store_name || '').length > 20 ? "text-sm" : "text-base"
-                              )} style={{ color: '#73370c' }}>
-                                {post.store_name || '店舗不明'}
-                              </span>
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={handleCopyStoreName}
-                              className="p-1 h-auto hover:bg-gray-100"
-                              title="店舗名をコピー"
-                            >
-                              <Copy className="h-4 w-4 text-gray-400 hover:text-gray-600 flex-shrink-0" />
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
+                              {post.url}
+                            </a>
+                          </td>
+                        </tr>
+                      )}
                       
-                      {/* 2行目: ジャンル */}
-                      <tr className="border-b border-gray-100">
-                        <td className="p-3 bg-gray-50 w-1/3 font-medium border-r border-gray-100">
-                          <div className="flex items-center space-x-2">
-                            <GenreIcon className="h-4 w-4 text-gray-500 flex-shrink-0" />
-                            <span className="text-base" style={{ color: '#73370c' }}>ジャンル</span>
-                          </div>
-                        </td>
-                        <td className="p-3">
-                          <div className={cn(
-                            "inline-flex items-center space-x-2 px-3 py-1 rounded-full text-base font-medium border",
-                            genreIconAndColor.bgColor,
-                            genreIconAndColor.textColor,
-                            genreIconAndColor.borderColor
-                          )}>
-                            <GenreIcon className="h-4 w-4 flex-shrink-0" />
-                            <span>{post.genre || '不明'}</span>
-                          </div>
-                        </td>
-                      </tr>
+                      {/* 9行目: ファイル - 既に条件分岐済み */}
+                      {fileUrls.length > 0 && (
+                        <tr className="border-b border-gray-100">
+                          <td className="p-3 bg-gray-50 w-1/3 font-medium border-r border-gray-100">
+                            <div className="flex items-center space-x-2">
+                              <FileIcon className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                              <span className="text-base" style={{ color: '#73370c' }}>ファイル</span>
+                            </div>
+                          </td>
+                          <td className="p-3">
+                            <div className="space-y-2">
+                              {fileUrls.map((fileUrl, index) => {
+                                const fileName = fileUrl.split('/').pop() || `ファイル${index + 1}`;
+                                return (
+                                  <a
+                                    key={index}
+                                    href={fileUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center space-x-2 text-blue-600 hover:text-blue-800 underline"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <span className="text-lg">{getFileIcon(fileName)}</span>
+                                    <span className="break-all">{fileName}</span>
+                                  </a>
+                                );
+                              })}
+                            </div>
+                          </td>
+                        </tr>
+                      )}
                       
-                      {/* 3行目: カテゴリ */}
-                      <tr className="border-b border-gray-100">
-                        <td className="p-3 bg-gray-50 w-1/3 font-medium border-r border-gray-100">
-                          <div className="flex items-center space-x-2">
-                            <Tag className="h-4 w-4 text-gray-500 flex-shrink-0" />
-                            <span className="text-base" style={{ color: '#73370c' }}>カテゴリ</span>
-                          </div>
-                        </td>
-                        <td className="p-3">
-                          <Badge className={cn("text-base", getCategoryColor(post.category || ''))}>
-                            {post.category || '不明'}
-                          </Badge>
-                        </td>
-                      </tr>
-                      
-                      {/* 4行目: 価格 */}
-                      <tr className="border-b border-gray-100">
-                        <td className="p-3 bg-gray-50 w-1/3 font-medium border-r border-gray-100">
-                          <div className="flex items-center space-x-2">
-                            <DollarSign className="h-4 w-4 text-gray-500 flex-shrink-0" />
-                            <span className="text-base" style={{ color: '#73370c' }}>価格</span>
-                          </div>
-                        </td>
-                        <td className="p-3">
-                          <span className="text-base font-medium" style={{ color: '#73370c' }}>
-                            {post.price != null ? `${post.price.toLocaleString()}円〜` : '価格不明'}
-                          </span>
-                        </td>
-                      </tr>
-                      
-                      {/* 5行目: 視聴回数 */}
+                      {/* 視聴回数行 - 常に表示 */}
                       <tr className="border-b border-gray-100">
                         <td className="p-3 bg-gray-50 w-1/3 font-medium border-r border-gray-100">
                           <div className="flex items-center space-x-2">
@@ -708,7 +903,7 @@ export const PostCard = memo(({
                         </td>
                       </tr>
                       
-                      {/* 6行目: 残り時間 */}
+                      {/* 残り時間行 - 常に表示 */}
                       <tr className={cn(showDistance && post.distance !== undefined ? "border-b border-gray-100" : "")}>
                         <td className="p-3 bg-gray-50 w-1/3 font-medium border-r border-gray-100">
                           <div className="flex items-center space-x-2">

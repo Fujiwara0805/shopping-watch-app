@@ -3,11 +3,10 @@ export interface Post {
   app_profile_id: string;
   store_id: string | null;
   store_name: string | null;
-  genre: string | null; // 新規追加
+  genre: string | null;
   category: string | null;
   content: string;
-  image_url: string | null;
-  image_urls: string | null; // 新規追加（JSON文字列）
+  image_urls: string | null; // JSON文字列
   price: number | null;
   expiry_option: '1h' | '3h' | '6h' | '12h';
   created_at: string;
@@ -26,12 +25,15 @@ export interface Post {
   user_latitude?: number | null;
   user_longitude?: number | null;
   user_location_geom?: string | null;
+  
+  // 新規追加フィールド
+  url?: string | null;
+  file_urls?: string | null; // JSON文字列
 }
 
 export interface AuthorProfile {
   display_name: string | null;
-  avatar_url: string | null;     // これは app_profiles テーブルの実際のカラム名に合わせてください
-  // id?: string;
+  avatar_url: string | null;
 }
 
 // PostWithAuthor は Post の全プロパティを持ち、さらに author オブジェクトを持つ

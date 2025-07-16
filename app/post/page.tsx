@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { Camera, Upload, X, Store as StoreIcon, LayoutGrid, ClipboardList, Image as ImageIcon, CalendarClock, PackageIcon, ClockIcon, Tag, HelpCircle, MapPin, CheckCircle, Layers, ChevronDown, ChevronUp, Settings } from 'lucide-react';
+import { Camera, Upload, X, Store as StoreIcon, LayoutGrid, ClipboardList, Image as ImageIcon, CalendarClock, PackageIcon, ClockIcon, Tag, HelpCircle, MapPin, CheckCircle, Layers, ChevronDown, ChevronUp, Settings, Link as LinkIcon, FileText } from 'lucide-react';
 import AppLayout from '@/components/layout/app-layout';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -57,6 +57,7 @@ const postSchema = z.object({
      .min(1, { message: '価格は1以上で入力してください' })
      .optional() // 任意に変更
   ),
+  url: z.string().url({ message: '有効なURLを入力してください' }).optional().or(z.literal('')),
   expiryOption: z.enum(['1h', '3h', '6h', '12h'], { required_error: '掲載期間を選択してください' }), // 必須
   // 位置情報フィールド（任意）
   location_lat: z.number().optional(),
@@ -73,19 +74,24 @@ const libraries: ("places")[] = ["places"];
 
 // 🔥 新規追加：ジャンルとカテゴリーの定義
 const genreCategories = {
-  'ショッピング': ['惣菜', '弁当', '肉', '魚', '野菜', '果物', '米・パン類', 'デザート類', '日用品', '衣料品', 'その他'],
-  '飲食店': ['和食', '洋食', '中華', 'イタリアン', 'フレンチ', 'カフェ', 'ファストフード', 'その他'],
-  '観光': ['観光スポット', '宿泊施設', '温泉', '博物館・美術館', '公園', 'その他'],
-  'レジャー': ['アミューズメント', 'スポーツ', '映画・エンタメ', 'アウトドア', 'その他'],
-  'サービス': ['美容・健康', '教育', '医療', '修理・メンテナンス', 'その他'],
-  'その他': ['その他']
+  'ショッピング': ['不明', '惣菜', '弁当', '肉', '魚', '野菜', '果物', '米・パン類', 'デザート類', '日用品', '衣料品', 'その他'],
+  '飲食店': ['不明', '和食', '洋食', '中華', 'イタリアン', 'フレンチ', 'カフェ', 'ファストフード', 'その他'],
+  '観光': ['不明', '観光スポット', '宿泊施設', '温泉', '博物館・美術館', '公園', 'その他'],
+  'レジャー': ['不明', 'アミューズメント', 'スポーツ', '映画・エンタメ', 'アウトドア', 'その他'],
+  'サービス': ['不明', '美容・健康', '教育', '医療', '修理・メンテナンス', 'その他'],
+  'イベント': ['不明', 'コンサート・ライブ', 'フェスティバル', '展示会', 'セミナー・講座', 'スポーツイベント', 'その他'],
+  '求人': ['不明', '正社員', 'アルバイト・パート', '派遣・契約', 'インターン', 'フリーランス', 'その他'],
+  '販売': ['不明', '新品', '中古品', 'ハンドメイド', 'デジタル商品', 'チケット', '移動販売', 'その他'],
+  'ボランティア': ['不明', '環境・自然', '福祉・介護', '教育・子育て', '地域活動', '災害支援', 'その他'],
+  '相談': ['不明', '生活相談', '仕事・キャリア', '恋愛・人間関係', '法律・お金', '健康・医療', 'その他'],
+  'その他': ['不明', 'その他']
 };
 
 const expiryOptions = [
-  { value: '1h', label: '1時間後' },
-  { value: '3h', label: '3時間後' },
-  { value: '6h', label: '6時間後' },
-  { value: '12h', label: '12時間後' },
+  { value: '1h', label: '1時間' },
+  { value: '3h', label: '3時間' },
+  { value: '6h', label: '6時間' },
+  { value: '12h', label: '12時間' },
 ];
 
 export default function PostPage() {
@@ -101,6 +107,10 @@ export default function PostPage() {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [formDataToSubmit, setFormDataToSubmit] = useState<PostFormValues | null>(null);
   
+  // 🔥 複数ファイル対応を追加
+  const [fileFiles, setFileFiles] = useState<File[]>([]);
+  const [filePreviewUrls, setFilePreviewUrls] = useState<string[]>([]);
+
   const {
     latitude,
     longitude,
@@ -137,6 +147,7 @@ export default function PostPage() {
       category: '',
       content: '',
       price: undefined,
+      url: '',
       expiryOption: '3h',
       location_lat: undefined,
       location_lng: undefined,
@@ -185,6 +196,36 @@ export default function PostPage() {
     }
   }, [imageFiles]);
 
+  // 🔥 複数ファイルのクリーンアップ
+  useEffect(() => {
+    return () => {
+      filePreviewUrls.forEach(url => {
+        if (url.startsWith('blob:')) {
+          URL.revokeObjectURL(url);
+        }
+      });
+    };
+  }, [filePreviewUrls]);
+
+  // 🔥 複数ファイルのプレビュー処理
+  useEffect(() => {
+    if (fileFiles.length > 0) {
+      const newPreviewUrls: string[] = [];
+      fileFiles.forEach(file => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          newPreviewUrls.push(reader.result as string);
+          if (newPreviewUrls.length === fileFiles.length) {
+            setFilePreviewUrls(newPreviewUrls);
+          }
+        };
+        reader.readAsDataURL(file);
+      });
+    } else {
+      setFilePreviewUrls([]);
+    }
+  }, [fileFiles]);
+
   // 🔥 ジャンル変更時にカテゴリーをリセット
   useEffect(() => {
     if (selectedGenre) {
@@ -218,6 +259,7 @@ export default function PostPage() {
     setShowConfirmModal(false);
 
     let imageUrls: string[] = [];
+    let fileUrls: string[] = [];
     let createdPostId: string | null = null;
 
     try {
@@ -266,6 +308,39 @@ export default function PostPage() {
         console.log("PostPage: Multiple images uploaded to Supabase Storage. Public URLs:", imageUrls);
       }
 
+      // 🔥 複数ファイルのアップロード処理
+      if (fileFiles.length > 0) {
+        const uploadPromises = fileFiles.map(async (file, index) => {
+          const fileExt = file.name.split('.').pop();
+          const userFolder = session.user.id;
+          const uniqueFileName = `${uuidv4()}_${index}.${fileExt}`;
+          const objectPath = `${userFolder}/${uniqueFileName}`;
+
+          const { error: uploadError } = await supabase.storage
+            .from('files')
+            .upload(objectPath, file, {
+              cacheControl: '3600',
+              upsert: true,
+            });
+
+          if (uploadError) {
+            console.error("PostPage: Error uploading file to Supabase Storage:", uploadError);
+            throw new Error(`ファイルのアップロードに失敗しました: ${uploadError.message}`);
+          }
+          
+          const { data: publicUrlData } = supabase.storage
+            .from('files')
+            .getPublicUrl(objectPath);
+          
+          return publicUrlData?.publicUrl || null;
+        });
+
+        const uploadedUrls = await Promise.all(uploadPromises);
+        fileUrls = uploadedUrls.filter(url => url !== null) as string[];
+        
+        console.log("PostPage: Multiple files uploaded to Supabase Storage. Public URLs:", fileUrls);
+      }
+
       // 🔥 投稿データを準備（完全版）
       const getDefaultStoreName = () => {
         if (values.storeName && values.storeName.trim() !== '') {
@@ -292,19 +367,25 @@ export default function PostPage() {
           return values.category;
         }
         
-        // ジャンルに基づいたデフォルトカテゴリ
+        // ジャンルに基づいたデフォルトカテゴリ（不明に変更）
         if (values.genre) {
           const genreDefaults = {
-            'ショッピング': 'その他',
-            '飲食店': 'その他',
-            '観光': 'その他',
-            'レジャー': 'その他',
-            'サービス': 'その他'
+            'ショッピング': '不明',
+            '飲食店': '不明',
+            '観光': '不明',
+            'レジャー': '不明',
+            'サービス': '不明',
+            'イベント': '不明',
+            '求人': '不明',
+            '販売': '不明',
+            'ボランティア': '不明',
+            '相談': '不明',
+            'その他': '不明'
           };
-          return genreDefaults[values.genre as keyof typeof genreDefaults] || 'その他';
+          return genreDefaults[values.genre as keyof typeof genreDefaults] || '不明';
         }
         
-        return 'その他';
+        return '不明';
       };
 
       const postData: any = {
@@ -314,8 +395,9 @@ export default function PostPage() {
         genre: values.genre && values.genre.trim() !== '' ? values.genre : null,
         category: getDefaultCategory(), // 柔軟なデフォルト値
         content: values.content,
-        image_url: imageUrls.length > 0 ? imageUrls[0] : null,
         image_urls: imageUrls.length > 0 ? JSON.stringify(imageUrls) : null,
+        file_urls: fileUrls.length > 0 ? JSON.stringify(fileUrls) : null,
+        url: values.url && values.url.trim() !== '' ? values.url : null,
         price: values.price || null,
         expiry_option: values.expiryOption,
         expires_at: calculateExpiresAt(values.expiryOption).toISOString(),
@@ -390,6 +472,7 @@ export default function PostPage() {
         category: '',
         content: '',
         price: undefined,
+        url: '',
         expiryOption: '3h',
         location_lat: undefined,
         location_lng: undefined,
@@ -398,6 +481,8 @@ export default function PostPage() {
       });
       setImageFiles([]);
       setImagePreviewUrls([]);
+      setFileFiles([]);
+      setFilePreviewUrls([]);
       setSelectedPlace(null);
       setLocationStatus('none');
       router.push('/post/complete');
@@ -482,6 +567,60 @@ export default function PostPage() {
       }
       return newUrls;
     });
+  };
+
+  // 🔥 複数ファイルアップロード処理
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    // 既存のファイルと新しいファイルの合計が3つを超えないかチェック
+    if (fileFiles.length + files.length > 3) {
+      toast({
+        title: "⚠️ ファイル数の上限を超えています",
+        description: "ファイルは最大3つまで投稿できます。",
+        duration: 3000,
+      });
+      return;
+    }
+
+    // ファイルサイズと形式のチェック
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
+    
+    for (const file of files) {
+      if (file.size > maxSize) {
+        toast({
+          title: "⚠️ ファイルサイズが大きすぎます",
+          description: "各ファイルは10MB以下にしてください。",
+          duration: 3000,
+        });
+        return;
+      }
+      
+      if (!allowedTypes.includes(file.type)) {
+        toast({
+          title: "⚠️ サポートされていないファイル形式です",
+          description: "PDF、Word、Excelファイルのみ対応しています。",
+          duration: 3000,
+        });
+        return;
+      }
+    }
+
+    setSubmitError(null);
+    setFileFiles(prev => [...prev, ...files]);
+    
+    toast({
+      title: "✅ ファイルをアップロードしました",
+      description: `${files.length}個のファイルが追加されました`,
+      duration: 1000,
+    });
+  };
+
+  // 🔥 個別ファイル削除処理
+  const removeFile = (index: number) => {
+    setFileFiles(prev => prev.filter((_, i) => i !== index));
   };
 
   useEffect(() => {
@@ -661,21 +800,6 @@ export default function PostPage() {
     );
   };
 
-  // 🔥 カテゴリー選択後のフォーカス制御を削除
-  // const handleCategoryChange = (value: string) => {
-  //   form.setValue("category", value, { shouldValidate: true });
-  //   
-  //   setTimeout(() => {
-  //     if (contentTextareaRef.current) {
-  //       contentTextareaRef.current.focus();
-  //       contentTextareaRef.current.scrollIntoView({ 
-  //         behavior: 'smooth', 
-  //         block: 'center' 
-  //       });
-  //     }
-  //   }, 100);
-  // };
-
   const handleMoveToPriceCalculator = () => {
     setShowPriceInfoModal(false);
     window.open('https://discount-calculator-app.vercel.app/', '_blank');
@@ -687,7 +811,9 @@ export default function PostPage() {
     location: false,
     genre: false,
     category: false,
-    price: false
+    price: false,
+    url: false,
+    file: false
   });
 
   // 🔥 オプションフィールドの切り替え
@@ -701,7 +827,7 @@ export default function PostPage() {
   // 🔥 オプション項目の値が入力されているかチェック
   const hasOptionalValues = () => {
     const values = form.getValues();
-    return !!(values.storeId || values.genre || values.category || values.price);
+    return !!(values.storeId || values.genre || values.category || values.price || values.url || fileFiles.length > 0);
   };
 
   if (status === "loading") {
@@ -802,7 +928,7 @@ export default function PostPage() {
                     </FormLabel>
                     <FormControl>
                       <Textarea
-                        placeholder="みんなに知らせたい日常生活のちょっとしたおトク(得・徳)な情報やこんなおトクな情報が欲しいといった要望を記入してください（240文字以内）"
+                        placeholder="みんなに知らせたい日常生活のちょっとしたおトク(得・特・徳)な情報やこんなおトクな情報が欲しいといった要望を記入してください（240文字以内）"
                         className="resize-none"
                         style={{ fontSize: '16px', minHeight: '140px' }}
                         rows={7}
@@ -858,14 +984,19 @@ export default function PostPage() {
                   whileTap={{ scale: 0.98 }}
                 >
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <Settings className="mr-2 h-5 w-5 text-muted-foreground" />
-                      <span className="text-lg font-semibold">詳細情報 (任意)</span>
-                      {hasOptionalValues() && (
-                        <div className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
-                          入力済み
-                        </div>
-                      )}
+                    <div className="flex flex-col">
+                      <div className="flex items-center">
+                        <Settings className="mr-2 h-5 w-5 text-muted-foreground" />
+                        <span className="text-lg font-semibold">詳細情報 (任意)</span>
+                        {hasOptionalValues() && (
+                          <div className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                            入力済み
+                          </div>
+                        )}
+                      </div>
+                      <p className="text-sm text-red-600 mt-1 ml-7">
+                        【投稿内容に応じて詳細情報をご利用ください】
+                      </p>
                     </div>
                     {showOptionalFields ? (
                       <ChevronUp className="h-5 w-5 text-muted-foreground" />
@@ -925,6 +1056,26 @@ export default function PostPage() {
                         >
                           <Tag className="mr-2 h-4 w-4" />
                           価格
+                        </Button>
+                        <Button
+                          type="button"
+                          variant={optionalFieldsExpanded.url ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => toggleOptionalField('url')}
+                          className="justify-start"
+                        >
+                          <LinkIcon className="mr-2 h-4 w-4" />
+                          リンク
+                        </Button>
+                        <Button
+                          type="button"
+                          variant={optionalFieldsExpanded.file ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => toggleOptionalField('file')}
+                          className="justify-start"
+                        >
+                          <FileText className="mr-2 h-4 w-4" />
+                          ファイル
                         </Button>
                       </div>
 
@@ -1105,6 +1256,110 @@ export default function PostPage() {
                               </FormItem>
                             )}
                           />
+                        </motion.div>
+                      )}
+
+                      {/* リンク入力フィールド */}
+                      {optionalFieldsExpanded.url && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          <FormField
+                            control={form.control}
+                            name="url"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-lg font-semibold flex items-center">
+                                  <LinkIcon className="mr-2 h-5 w-5" />
+                                  リンク（URL）
+                                </FormLabel>
+                                <FormControl>
+                                  <Input
+                                    type="url"
+                                    placeholder="https://example.com"
+                                    {...field}
+                                    style={{ fontSize: '16px' }}
+                                    disabled={isUploading}
+                                    autoComplete="off"
+                                    autoCorrect="off"
+                                    autoCapitalize="off"
+                                    spellCheck="false"
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </motion.div>
+                      )}
+
+                      {/* ファイル入力フィールド */}
+                      {optionalFieldsExpanded.file && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          <FormItem>
+                            <FormLabel className="text-lg font-semibold flex items-center">
+                              <FileText className="mr-2 h-5 w-5" />
+                              ファイル (PDF・Word・Excel・最大3つ)
+                            </FormLabel>
+                            <FormControl>
+                              <div className="space-y-4">
+                                <div className="flex flex-col items-center space-y-3 p-6 border-2 border-dashed rounded-lg hover:border-primary transition-colors cursor-pointer bg-card">
+                                  <Input
+                                    id="file-upload"
+                                    type="file"
+                                    accept=".pdf,.doc,.docx,.xls,.xlsx"
+                                    multiple
+                                    onChange={handleFileUpload}
+                                    className="hidden"
+                                    disabled={isUploading || fileFiles.length >= 3}
+                                  />
+                                  
+                                  {fileFiles.length > 0 ? (
+                                    <div className="w-full">
+                                      <div className="space-y-2 mb-4">
+                                        {fileFiles.map((file, index) => (
+                                          <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                                            <div className="flex items-center space-x-2">
+                                              <FileText className="h-4 w-4 text-gray-500" />
+                                              <span className="text-sm truncate">{file.name}</span>
+                                            </div>
+                                            <Button
+                                              type="button"
+                                              variant="ghost"
+                                              size="sm"
+                                              onClick={() => removeFile(index)}
+                                              disabled={isUploading}
+                                            >
+                                              <X className="h-4 w-4" />
+                                            </Button>
+                                          </div>
+                                        ))}
+                                      </div>
+                                      
+                                      {fileFiles.length < 3 && (
+                                        <label htmlFor="file-upload" className="flex flex-col items-center space-y-2 cursor-pointer text-muted-foreground">
+                                          <Upload className="h-8 w-8" />
+                                          <p className="text-sm">ファイルを追加 ({fileFiles.length}/3)</p>
+                                        </label>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <label htmlFor="file-upload" className="flex flex-col items-center space-y-2 cursor-pointer text-muted-foreground">
+                                      <Upload className="h-12 w-12" />
+                                      <p className="text-lg">ファイルをアップロード</p>
+                                      <p className="text-xs">PDF, Word, Excel (最大10MB・最大3つ)</p>
+                                    </label>
+                                  )}
+                                </div>
+                              </div>
+                            </FormControl>
+                          </FormItem>
                         </motion.div>
                       )}
                     </div>
