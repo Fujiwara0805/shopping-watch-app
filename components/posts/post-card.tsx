@@ -1234,46 +1234,69 @@ export const PostCard = memo(({
         </div>
       </CustomModal>
 
-      {/* 🔥 追加：通報モーダル */}
+      {/* 🔥 改良：通報モーダル */}
       <CustomModal
         isOpen={showReportModal}
         onClose={() => setShowReportModal(false)}
         title="投稿を通報"
         description="不適切な投稿を報告してください"
+        className="sm:max-w-md"
       >
         <div className="space-y-4">
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+            <div className="flex items-center space-x-2">
+              <AlertTriangle className="h-4 w-4 text-amber-600" />
+              <span className="text-amber-800 font-medium text-sm">通報について</span>
+            </div>
+            <p className="text-amber-700 text-xs mt-1">
+              通報いただいた内容は運営チームのメールに送信され、適切に対応いたします。
+            </p>
+          </div>
+
           <div>
-            <label className="block text-sm font-medium mb-2">通報理由</label>
+            <label className="block text-sm font-medium mb-2 text-gray-700">通報理由 <span className="text-red-500">*</span></label>
             <select
               value={reportReason}
               onChange={(e) => setReportReason(e.target.value)}
-              className="w-full p-2 border rounded-md"
+              className="w-full p-3 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900"
             >
-              <option value="">選択してください</option>
-              <option value="spam">スパム・宣伝</option>
-              <option value="inappropriate">不適切な内容</option>
+              <option value="">理由を選択してください</option>
+              <option value="spam">スパム・過度な宣伝</option>
+              <option value="inappropriate">不適切な内容・画像</option>
               <option value="harassment">嫌がらせ・誹謗中傷</option>
-              <option value="fake">虚偽の情報</option>
+              <option value="fake">虚偽・誤解を招く情報</option>
+              <option value="violence">暴力的な内容</option>
+              <option value="adult">アダルト・性的な内容</option>
               <option value="copyright">著作権侵害</option>
+              <option value="privacy">個人情報の漏洩</option>
+              <option value="illegal">違法行為・危険行為</option>
               <option value="other">その他</option>
             </select>
           </div>
           
           <div>
-            <label className="block text-sm font-medium mb-2">詳細（任意）</label>
+            <label className="block text-sm font-medium mb-2 text-gray-700">詳細情報（任意）</label>
             <textarea
               value={reportDetails}
               onChange={(e) => setReportDetails(e.target.value)}
-              placeholder="具体的な内容を記載してください"
-              className="w-full p-2 border rounded-md"
-              rows={3}
+              placeholder="具体的な問題点や詳細があれば記載してください（500文字以内）"
+              className="w-full p-3 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900 placeholder-gray-500 resize-none"
+              rows={6}
+              maxLength={500}
+              style={{ fontSize: '16px' }}
             />
+            <div className="text-xs text-gray-500 mt-1">
+              {reportDetails.length}/500文字
+            </div>
           </div>
-          
           <div className="flex justify-end space-x-3">
             <Button
               variant="outline"
-              onClick={() => setShowReportModal(false)}
+              onClick={() => {
+                setShowReportModal(false);
+                setReportReason('');
+                setReportDetails('');
+              }}
               disabled={isReporting}
             >
               キャンセル
@@ -1281,6 +1304,7 @@ export const PostCard = memo(({
             <Button
               onClick={handleReportPost}
               disabled={isReporting || !reportReason.trim()}
+              className="bg-red-600 hover:bg-red-700"
             >
               {isReporting ? (
                 <>

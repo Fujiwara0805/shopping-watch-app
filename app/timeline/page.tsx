@@ -50,11 +50,13 @@ interface Comment {
   created_at: string;
   updated_at: string;
   is_deleted: boolean;
-  author: AuthorData;
-  replies?: Comment[];
-  likes_count: number;
-  isLikedByCurrentUser?: boolean;
-  isOwnComment?: boolean;
+  author: {
+    id: string;
+    user_id: string;
+    display_name: string;
+    avatar_url: string | null;
+  } | null;
+  isOwnComment: boolean;
 }
 
 interface PostFromDB {
@@ -116,9 +118,8 @@ const genres = ['すべて', 'ショッピング', '飲食店', '観光', 'レ�
 const SEARCH_RADIUS_METERS = 5000; // 5km
 
 // コメントコンポーネント
-const CommentItem = ({ comment, onLike, onDelete, currentUserId }: {
+const CommentItem = ({ comment, onDelete, currentUserId }: {
   comment: Comment;
-  onLike: (commentId: string, isLiked: boolean) => Promise<void>;
   onDelete: (commentId: string) => Promise<void>;
   currentUserId?: string;
 }) => {
@@ -158,41 +159,6 @@ const CommentItem = ({ comment, onLike, onDelete, currentUserId }: {
       });
     } finally {
       setIsDeleting(false);
-    }
-  };
-
-  const handleLikeClick = async () => {
-    if (isLiking) return;
-    
-    if (comment.isOwnComment && currentUserId) {
-      toast({
-        title: "自分のコメントにはいいねできません",
-        duration: 1000,
-      });
-      return;
-    }
-
-    if (!currentUserId) {
-      toast({
-        title: "ログインが必要です",
-        description: "いいねするにはログインしてください",
-        duration: 1000,
-      });
-      return;
-    }
-
-    setIsLiking(true);
-    try {
-      await onLike(comment.id, !comment.isLikedByCurrentUser);
-    } catch (error) {
-      console.error('コメントいいねに失敗しました:', error);
-      toast({
-        title: "エラーが発生しました",
-        description: "いいね処理に失敗しました",
-        duration: 1000,
-      });
-    } finally {
-      setIsLiking(false);
     }
   };
 
@@ -236,36 +202,9 @@ const CommentItem = ({ comment, onLike, onDelete, currentUserId }: {
             
             <p className="text-sm text-gray-700">{comment.content}</p>
             
-            <div className="flex items-center space-x-4 text-xs">
-              <button
-                onClick={handleLikeClick}
-                className={cn(
-                  "flex items-center space-x-1 hover:text-red-500 transition-colors",
-                  comment.isLikedByCurrentUser && "text-red-500",
-                  comment.isOwnComment && currentUserId && "opacity-50 cursor-not-allowed",
-                  isLiking && "opacity-50 cursor-not-allowed"
-                )}
-                disabled={!currentUserId || isLiking || (comment.isOwnComment && Boolean(currentUserId))}
-                title={
-                  comment.isOwnComment && currentUserId 
-                    ? "自分のコメントにはいいねできません" 
-                    : !currentUserId 
-                      ? "ログインが必要です"
-                      : "いいね"
-                }
-              >
-                <Heart className={cn(
-                  "h-3 w-3", 
-                  comment.isLikedByCurrentUser && "fill-current",
-                  isLiking && "animate-pulse"
-                )} />
-                <span>{comment.likes_count}</span>
-              </button>
-            </div>
           </div>
         </div>
         
-        {/* コメント削除確認モーダル */}
         <CustomModal
           isOpen={showDeleteModal}
           onClose={() => setShowDeleteModal(false)}
@@ -457,31 +396,9 @@ const CommentsModal = ({
       const validComments = data?.filter(comment => comment.is_deleted === false) || [];
       console.log('🔥 フィルタ後のコメント数:', validComments.length);
 
-      // コメントいいね情報も取得
-      let commentLikesData: any[] = [];
-      if (currentUserId && validComments && validComments.length > 0) {
-        const { data: userProfile } = await supabase
-          .from('app_profiles')
-          .select('id')
-          .eq('user_id', currentUserId)
-          .single();
-
-        if (userProfile) {
-          const commentIds = validComments.map(comment => comment.id);
-          const { data: likesData } = await supabase
-            .from('comment_likes')
-            .select('comment_id')
-            .eq('app_profile_id', userProfile.id)
-            .in('comment_id', commentIds);
-          
-          commentLikesData = likesData || [];
-        }
-      }
-
-      // 🔥 修正：validCommentsを使用
+      // 🔥 修正：いいね関連の処理を削除
       const processedComments = validComments.map((comment: any) => {
         const authorData = Array.isArray(comment.author) ? comment.author[0] : comment.author;
-        const isLikedByCurrentUser = commentLikesData.some(like => like.comment_id === comment.id);
         
         const isOwnComment = currentUserId && authorData?.user_id ? 
           authorData.user_id === currentUserId : false;
@@ -489,8 +406,6 @@ const CommentsModal = ({
         return {
           ...comment,
           author: authorData,
-          likes_count: 0,
-          isLikedByCurrentUser,
           isOwnComment,
         };
       });
@@ -570,69 +485,6 @@ const CommentsModal = ({
     }
   };
 
-  // 🔥 修正：コメントいいね処理を簡素化
-  const handleCommentLike = async (commentId: string, isLiked: boolean) => {
-    if (!currentUserId) return;
-
-    try {
-      const { data: userProfile, error: profileError } = await supabase
-        .from('app_profiles')
-        .select('id')
-        .eq('user_id', currentUserId)
-        .single();
-
-      if (profileError || !userProfile) {
-        throw new Error('ユーザープロフィールが見つかりません');
-      }
-
-      const targetComment = comments.find(c => c.id === commentId);
-      if (targetComment && targetComment.author?.user_id === currentUserId) {
-        toast({
-          title: "自分のコメントにはいいねできません",
-          duration: 1000,
-        });
-        return;
-      }
-
-      if (isLiked) {
-        const { error } = await supabase
-          .from('comment_likes')
-          .insert({
-            comment_id: commentId,
-            app_profile_id: userProfile.id,
-          });
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('comment_likes')
-          .delete()
-          .match({
-            comment_id: commentId,
-            app_profile_id: userProfile.id,
-          });
-        if (error) throw error;
-      }
-
-      // 🔥 修正：シンプルなコメント更新
-      setComments(comments.map(comment => 
-        comment.id === commentId 
-          ? {
-              ...comment,
-              isLikedByCurrentUser: isLiked,
-              likes_count: isLiked ? comment.likes_count + 1 : Math.max(0, comment.likes_count - 1),
-            }
-          : comment
-      ));
-    } catch (error) {
-      console.error('コメントいいねに失敗しました:', error);
-      toast({
-        title: "エラーが発生しました",
-        description: "いいね処理に失敗しました",
-        duration: 1000,
-      });
-    }
-  };
-
   return (
     <CustomModal
       isOpen={isOpen}
@@ -688,7 +540,6 @@ const CommentsModal = ({
                 <CommentItem
                   key={comment.id}
                   comment={comment}
-                  onLike={handleCommentLike}
                   onDelete={handleDeleteComment}
                   currentUserId={currentUserId}
                 />
