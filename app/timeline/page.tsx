@@ -638,7 +638,7 @@ const CommentsModal = ({
       isOpen={isOpen}
       onClose={onClose}
       title="コメント"
-      description={`${post?.store_name}の投稿へのコメント`}
+      description="※他者に配慮したコメントをお願いします。"
       className="sm:max-w-2xl"
     >
       <div className="space-y-4">
@@ -662,7 +662,7 @@ const CommentsModal = ({
         </div>
 
         {/* コメント一覧 */}
-        <div className="h-[300px] overflow-y-auto custom-scrollbar border rounded-lg bg-gray-50">
+        <div className="h-[250px] overflow-y-auto custom-scrollbar border rounded-lg bg-gray-50">
           <div className="p-4 space-y-4">
             {loading ? (
               <div className="space-y-4">
@@ -706,7 +706,7 @@ const CommentsModal = ({
               placeholder="コメントを入力..."
               className="resize-none"
               style={{ fontSize: '16px' }}
-              rows={3}
+              rows={2}
             />
             <div className="flex justify-end space-x-2">
               <Button
