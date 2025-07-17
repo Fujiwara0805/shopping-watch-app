@@ -280,3 +280,68 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: 'サーバーエラー' }, { status: 500 });
   }
 }
+
+// PATCH: グループ名を更新
+export async function PATCH(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'ログインが必要です' }, { status: 401 });
+    }
+
+    const { groupId, name } = await request.json();
+
+    if (!groupId) {
+      return NextResponse.json({ error: 'グループIDが必要です' }, { status: 400 });
+    }
+
+    if (!name || name.trim().length === 0) {
+      return NextResponse.json({ error: 'グループ名が必要です' }, { status: 400 });
+    }
+
+    if (name.length > 50) {
+      return NextResponse.json({ error: 'グループ名は50文字以内で入力してください' }, { status: 400 });
+    }
+
+    // グループの存在確認とオーナー権限チェック
+    const { data: membership, error: membershipError } = await supabase
+      .from('family_group_members')
+      .select('role')
+      .eq('group_id', groupId)
+      .eq('user_id', session.user.id)
+      .single();
+
+    if (membershipError || !membership) {
+      return NextResponse.json({ error: 'グループが見つからないか、権限がありません' }, { status: 403 });
+    }
+
+    if (membership.role !== 'owner') {
+      return NextResponse.json({ error: 'グループ名を変更する権限がありません' }, { status: 403 });
+    }
+
+    // グループ名を更新
+    const { data: updatedGroup, error: updateError } = await supabase
+      .from('family_groups')
+      .update({ 
+        name: name.trim(),
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', groupId)
+      .select()
+      .single();
+
+    if (updateError) {
+      console.error('Group name update error:', updateError);
+      return NextResponse.json({ error: 'グループ名の更新に失敗しました' }, { status: 500 });
+    }
+
+    return NextResponse.json({ 
+      group: updatedGroup,
+      message: 'グループ名を更新しました' 
+    });
+
+  } catch (error) {
+    console.error('API error:', error);
+    return NextResponse.json({ error: 'サーバーエラー' }, { status: 500 });
+  }
+}

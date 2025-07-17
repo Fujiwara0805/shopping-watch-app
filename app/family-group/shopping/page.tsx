@@ -497,7 +497,6 @@ export default function FamilyShoppingPage() {
             className="flex-1 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white"
             size="lg"
           >
-            <Plus className="h-5 w-5 mr-2" />
             メモを追加
           </Button>
           <Button

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { motion } from 'framer-motion';
-import { Plus, Users, Mail, Copy, UserPlus, List, Share2, Check, ChevronDown, ChevronRight, ArrowLeft, Sparkles, Trash2, LogOut, AlertTriangle, Loader2, X } from 'lucide-react';
+import { Plus, Users, Mail, Copy, UserPlus, List, Share2, Check, ChevronDown, ChevronRight, ArrowLeft, Sparkles, Trash2, LogOut, AlertTriangle, Loader2, X, Edit3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -52,6 +52,7 @@ export default function FamilyGroupPage() {
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const [deletingGroups, setDeletingGroups] = useState<Set<string>>(new Set());
   const [leavingGroups, setLeavingGroups] = useState<Set<string>>(new Set());
+  const [updatingGroups, setUpdatingGroups] = useState<Set<string>>(new Set());
   const [deleteConfirmModal, setDeleteConfirmModal] = useState<{
     isOpen: boolean;
     groupId: string;
@@ -70,6 +71,16 @@ export default function FamilyGroupPage() {
     isOpen: false,
     groupId: '',
     groupName: ''
+  });
+
+  const [editGroupModal, setEditGroupModal] = useState<{
+    isOpen: boolean;
+    groupId: string;
+    currentName: string;
+  }>({
+    isOpen: false,
+    groupId: '',
+    currentName: ''
   });
 
   // 未ログインの場合はリダイレクト
@@ -258,13 +269,13 @@ export default function FamilyGroupPage() {
       const data = await response.json();
       const message = `📋 ${data.groupName}のTODOグループに招待されました！
 
-家族や友人とTODOリストを共有して、効率的にタスクを管理しましょう✨
+家族や友達とTODOメモを共有して、効率的にタスクを管理しましょう✨
 買い物メモ、家事の分担、作業リストなど何でも管理できます！
 
 参加はこちらから：
 ${data.inviteLink}
 
-#TODOアプリ #家族グループ #トクドクアプリ`;
+#TODOメモ #家族グループ #トクドクアプリ`;
       
       setInviteLink(data.inviteLink);
       setInviteMessage(message);
@@ -427,6 +438,68 @@ ${data.inviteLink}
     }
   };
 
+  // グループ名変更
+  const handleUpdateGroupName = async (groupId: string, newName: string) => {
+    if (!newName.trim()) {
+      toast({
+        title: "エラー",
+        description: "グループ名を入力してください",
+        variant: "destructive",
+        duration: 1000,
+      });
+      return;
+    }
+
+    setUpdatingGroups(prev => new Set(prev).add(groupId));
+    
+    try {
+      const response = await fetch('/api/family-group', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          groupId: groupId,
+          name: newName.trim() 
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'グループ名の更新に失敗しました');
+      }
+
+      toast({
+        title: "✅ グループ名更新完了",
+        description: "グループ名を更新しました",
+        duration: 1000,
+      });
+
+      setEditGroupModal({ isOpen: false, groupId: '', currentName: '' });
+      await fetchGroups();
+    } catch (error: any) {
+      toast({
+        title: "エラー",
+        description: error.message,
+        variant: "destructive",
+        duration: 1000,
+      });
+    } finally {
+      setUpdatingGroups(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(groupId);
+        return newSet;
+      });
+    }
+  };
+
+  // グループ名編集モーダルを開く
+  const openEditGroupModal = (groupId: string, currentName: string) => {
+    setEditGroupModal({
+      isOpen: true,
+      groupId,
+      currentName
+    });
+  };
+
   // グループ削除確認モーダルを開く
   const openDeleteConfirmModal = (groupId: string, groupName: string) => {
     setDeleteConfirmModal({
@@ -448,7 +521,7 @@ ${data.inviteLink}
   if (status === 'loading' || loading) {
     return (
       <AppLayout>
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 p-4">
+        <div className="min-h-screen bg-[#f7f5f3] p-4">
           <div className="flex items-center justify-center h-64">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
           </div>
@@ -459,7 +532,7 @@ ${data.inviteLink}
 
   return (
     <AppLayout>
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 p-4">
+      <div className="min-h-screen bg-[#f7f5f3] p-4">
         <div className="max-w-4xl mx-auto space-y-6">
           {/* ヘッダー */}
           <motion.div
@@ -485,7 +558,7 @@ ${data.inviteLink}
                 <div className="space-y-2">
                   <p className="text-base text-blue-800 font-medium flex items-center justify-center space-x-1">
                     <Sparkles className="h-4 w-4 text-yellow-500" />
-                    <span>家族や友人とグループを作成して、<br />メモを共有しましょう！</span>
+                    <span>家族や友達とグループを<br />作成してメモを共有しよう！</span>
                     <Sparkles className="h-4 w-4 text-yellow-500" />
                   </p>
                 </div>
@@ -576,8 +649,12 @@ ${data.inviteLink}
                           {/* グループ名 */}
                           <div className="flex items-center justify-between">
                             <div className="flex items-center space-x-3">
-                              <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center">
-                                <Users className="h-5 w-5 text-white" />
+                              <div className="w-10 h-10 rounded-full flex items-center justify-center">
+                                <img 
+                                  src="https://res.cloudinary.com/dz9trbwma/image/upload/v1749098791/%E9%B3%A9_azif4f.png" 
+                                  alt="トクドク" 
+                                  className="h-9 w-9"
+                                />
                               </div>
                               <div>
                                 <h3 className="text-lg font-semibold text-blue-800">
@@ -614,25 +691,45 @@ ${data.inviteLink}
                           {/* グループ管理ボタン */}
                           <div className="pt-2 border-t border-blue-100">
                             {group.userRole === 'owner' ? (
-                              <Button
-                                variant="destructive"
-                                size="sm"
-                                className="w-full"
-                                disabled={deletingGroups.has(group.id)}
-                                onClick={() => openDeleteConfirmModal(group.id, group.name)}
-                              >
-                                {deletingGroups.has(group.id) ? (
-                                  <>
-                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                    削除中...
-                                  </>
-                                ) : (
-                                  <>
-                                    <Trash2 className="h-4 w-4 mr-2" />
-                                    グループを削除
-                                  </>
-                                )}
-                              </Button>
+                              <div className="grid grid-cols-2 gap-3">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="border-gray-300 text-gray-700 hover:bg-gray-50"
+                                  disabled={updatingGroups.has(group.id)}
+                                  onClick={() => openEditGroupModal(group.id, group.name)}
+                                >
+                                  {updatingGroups.has(group.id) ? (
+                                    <>
+                                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                      更新中...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Edit3 className="h-4 w-4 mr-2" />
+                                      名前変更
+                                    </>
+                                  )}
+                                </Button>
+                                <Button
+                                  variant="destructive"
+                                  size="sm"
+                                  disabled={deletingGroups.has(group.id)}
+                                  onClick={() => openDeleteConfirmModal(group.id, group.name)}
+                                >
+                                  {deletingGroups.has(group.id) ? (
+                                    <>
+                                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                      削除中...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Trash2 className="h-4 w-4 mr-2" />
+                                      削除
+                                    </>
+                                  )}
+                                </Button>
+                              </div>
                             ) : (
                               <Button
                                 variant="outline"
@@ -696,7 +793,11 @@ ${data.inviteLink}
                                           className="w-full h-full rounded-full object-cover"
                                         />
                                       ) : (
-                                        <Users className="h-4 w-4 text-white" />
+                                        <img 
+                                          src="https://res.cloudinary.com/dz9trbwma/image/upload/v1749098791/%E9%B3%A9_azif4f.png" 
+                                          alt="トクドク" 
+                                          className="h-4 w-4"
+                                        />
                                       )}
                                     </div>
                                     <div className="flex-1">
@@ -979,6 +1080,50 @@ ${data.inviteLink}
                 className="flex-1"
               >
                 退出する
+              </Button>
+            </div>
+          </div>
+        </CustomModal>
+
+        {/* グループ名編集モーダル */}
+        <CustomModal
+          isOpen={editGroupModal.isOpen}
+          onClose={() => setEditGroupModal({ isOpen: false, groupId: '', currentName: '' })}
+          title="グループ名を変更"
+          description="新しいグループ名を入力してください。"
+        >
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium text-gray-700">
+                新しいグループ名
+              </label>
+              <Input
+                value={editGroupModal.currentName}
+                onChange={(e) => setEditGroupModal(prev => ({ ...prev, currentName: e.target.value }))}
+                placeholder="例: 田中家の買い物"
+                maxLength={50}
+                className="mt-1"
+                style={{ fontSize: '16px' }}
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                {editGroupModal.currentName.length}/50文字
+              </p>
+            </div>
+            <div className="flex space-x-3 pt-4">
+              <Button
+                variant="outline"
+                onClick={() => setEditGroupModal({ isOpen: false, groupId: '', currentName: '' })}
+                className="flex-1"
+                disabled={updatingGroups.has(editGroupModal.groupId)}
+              >
+                キャンセル
+              </Button>
+              <Button
+                onClick={() => handleUpdateGroupName(editGroupModal.groupId, editGroupModal.currentName)}
+                disabled={!editGroupModal.currentName.trim() || updatingGroups.has(editGroupModal.groupId)}
+                className="flex-1"
+              >
+                {updatingGroups.has(editGroupModal.groupId) ? '更新中...' : '更新する'}
               </Button>
             </div>
           </div>
