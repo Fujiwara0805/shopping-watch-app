@@ -188,9 +188,11 @@ export default function HunterRankingPage() {
               </Avatar>
               
               <div className="flex-1 min-w-0">
-                <div className="flex items-center space-x-2">
-                  <h3 className="font-semibold text-base truncate">{user.display_name}</h3>
-                  {isCurrentUser && <Badge variant="secondary">あなた</Badge>}
+                <div className="flex items-center space-x-4">
+                  <h3 className={`font-semibold truncate ${user.display_name.length >= 6 ? 'text-sm' : 'text-base'}`}>
+                    {user.display_name}
+                  </h3>
+                  {isCurrentUser && <Badge variant="secondary" className="ml-1">あなた</Badge>}
                 </div>
                 
                 <div className="flex items-center space-x-2 mt-1">
@@ -294,7 +296,7 @@ export default function HunterRankingPage() {
               
               <div className="space-y-1">
                 <p className="text-base text-amber-800 font-medium">
-                  いいねをたくさん集めて
+                  あなたのおとく情報を投稿して
                 </p>
                 <p className="text-lg text-amber-900 font-bold flex items-center justify-center space-x-1">
                   <Sparkles className="h-5 w-5 text-yellow-500" />
@@ -305,19 +307,8 @@ export default function HunterRankingPage() {
               
               <div className="flex items-center justify-center space-x-2 text-sm text-amber-700">
                 <div className="w-8 h-0.5 bg-amber-300"></div>
-                <span className="font-medium">月間ランキングで腕試し、<br />総合ランキングで伝説に。</span>
+                <span className="font-medium">いいねをたくさんもらって<br />ランキング上位を目指そう！</span>
                 <div className="w-8 h-0.5 bg-amber-300"></div>
-              </div>
-
-              {/* 「称号システムとは？」をここに追加 */}
-              <div className="pt-2">
-                <button
-                  onClick={() => setShowTitleSystemModal(true)}
-                  className="inline-flex items-center space-x-1 text-base text-blue-600 hover:text-blue-800 hover:underline"
-                >
-                  <Info className="h-5 w-5" />
-                  <span>称号システムとは？</span>
-                </button>
               </div>
             </div>
           </div>
@@ -379,7 +370,9 @@ export default function HunterRankingPage() {
                   </Avatar>
                   
                   <div>
-                    <h3 className="text-xl font-bold">{currentUserRanking.display_name}</h3>
+                    <h3 className={`font-bold ${currentUserRanking.display_name.length >= 6 ? 'text-lg' : 'text-xl'}`}>
+                      {currentUserRanking.display_name}
+                    </h3>
                     <div className="flex items-center space-x-2 mt-1">
                       {(() => {
                         const level = getHunterLevel(currentUserRanking.total_likes);
@@ -391,6 +384,16 @@ export default function HunterRankingPage() {
                           </Badge>
                         );
                       })()}
+                    </div>
+                    {/* 称号システムとは？ボタンを称号の下に移動 */}
+                    <div className="mt-2">
+                      <button
+                        onClick={() => setShowTitleSystemModal(true)}
+                        className="inline-flex items-center space-x-1 text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                      >
+                        <Info className="h-4 w-4" />
+                        <span>称号システムとは？</span>
+                      </button>
                     </div>
                   </div>
                 </div>
