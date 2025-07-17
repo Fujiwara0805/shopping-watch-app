@@ -1431,7 +1431,7 @@ export default function PostPage() {
           >
             <div className="pt-2">
               <p className="text-sm text-destructive mb-4">
-                投稿した記事は後から削除や編集を行うことはできません。
+                投稿した記事は後から編集を行うことはできません。
                 内容をよくご確認の上、本当に投稿しますか？
               </p>
               <div className="mt-6 flex justify-end space-x-3">

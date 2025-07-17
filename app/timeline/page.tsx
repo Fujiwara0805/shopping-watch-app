@@ -699,14 +699,6 @@ const HamburgerMenu = ({ currentUser }: { currentUser: any }) => {
       }
     },
     {
-      icon: Calculator,
-      label: '割引表',
-      onClick: () => {
-        window.open('https://discount-calculator-app.vercel.app', '_blank');
-        setIsOpen(false);
-      }
-    },
-    {
       icon: HelpCircle,
       label: 'お問い合わせ',
       onClick: () => {
@@ -1536,14 +1528,15 @@ export default function Timeline() {
   // すべてクリア機能
   const handleClearAllFilters = useCallback(() => {
     setActiveFilter('all');
-    setActiveGenreFilter('all'); // 追加
+    setActiveGenreFilter('all');
     setSearchMode('all');
     setSortBy('created_at_desc');
     setGeneralSearchTerm('');
-    setUserLocation(null);
+    // 🔥 修正：位置情報はクリアしない（5km圏内表示を維持）
+    // setUserLocation(null); // この行を削除
     
     setTempActiveFilter('all');
-    setTempActiveGenreFilter('all'); // 追加
+    setTempActiveGenreFilter('all');
     setTempSearchMode('all');
     setTempSortBy('created_at_desc');
     
@@ -1804,6 +1797,16 @@ export default function Timeline() {
               setActiveFilter('all');
               setActiveGenreFilter('all');
               setSortBy('created_at_desc');
+              // 🔥 修正：位置情報はクリアしない
+              // 検索語のみクリア
+              setGeneralSearchTerm('');
+              
+              // 即座にフィルターを適用
+              setTimeout(() => {
+                if (fetchPostsRef.current) {
+                  fetchPostsRef.current(0, true);
+                }
+              }, 100);
             }}>
               すべてクリア
             </Button>
@@ -1837,7 +1840,7 @@ export default function Timeline() {
               }
             }}
             variant="outline"
-            className="flex-1"
+            className="flex-1 "
           >
             <RefreshCw className="h-4 w-4 mr-2" />
             更新
@@ -2047,7 +2050,7 @@ export default function Timeline() {
         isOpen={showInviteModal}
         onClose={() => setShowInviteModal(false)}
         title="トクドクに友達を招待"
-        description="お得な情報を友達と共有しましょう！"
+        description="おトクな情報を友達と共有しましょう！"
         className="sm:max-w-md"
       >
         <div className="space-y-4">
@@ -2056,7 +2059,7 @@ export default function Timeline() {
             <h3 className="font-semibold text-sm mb-2" style={{ color: '#73370c' }}>招待メッセージ</h3>
             <div className="bg-white p-3 rounded border">
               <p className="text-sm text-gray-700 mb-3">
-                お得な情報がたくさん見つかる「トクドク」に参加しませんか？
+                おトクな情報がたくさん見つかる「トクドク」に参加しませんか？
               </p>
               <p className="text-sm text-blue-600 font-medium">
                 https://tokudoku.com/
