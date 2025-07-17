@@ -506,7 +506,10 @@ function ProfilePageContent() {
                   <Trophy className="h-6 w-6 text-yellow-700" />
                 </div>
                 <p className="font-bold text-gray-800">ランキングを確認</p>
-                <p className="text-xs text-gray-600 mt-1">称号と順位を見る</p>
+                <div className="flex items-center justify-center space-x-1 mt-1">
+                  <p className="text-xs text-gray-600">称号と順位を見る</p>
+                  <ExternalLink className="h-3 w-3 text-gray-500" />
+                </div>
               </button>
             </motion.div>
           </div>
