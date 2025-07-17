@@ -60,7 +60,7 @@ const onboardingSlides = [
       <span>
         現在地から5km圏内の投稿に限定して表示される掲示板です。
         日常生活のおとく（得・特・徳など）情報を気軽に投稿してみよう！
-        (投稿範囲はお店を探す画面で確認できます)
+        (※投稿は最長12時間で自動削除されます)
       </span>
     ),
     icon: <MessageSquare className="w-16 h-16 sm:w-20 sm:h-20 text-[#9C27B0]" />,
