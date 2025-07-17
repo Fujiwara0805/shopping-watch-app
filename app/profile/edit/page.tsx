@@ -16,7 +16,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
-import { Loader2, User as UserIcon, Info, Image as ImageIcon, X, Upload, Store, Baby, MapPin, Briefcase, ShoppingCart, Check, Save } from 'lucide-react';
+import { Loader2, User as UserIcon, Info, Image as ImageIcon, X, Upload, Store, Baby, MapPin, Briefcase, ShoppingCart, Check, Save, Trash2 } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { v4 as uuidv4 } from 'uuid';
 import FavoriteStoreInput from '@/components/profile/FavoriteStoreInput';
@@ -44,6 +44,8 @@ export default function ProfileEditPage() {
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
   const [currentAvatarUrl, setCurrentAvatarUrl] = useState<string | null>(null);
+  const [currentAvatarPath, setCurrentAvatarPath] = useState<string | null>(null); // 追加：現在のアバターのパス
+  const [isAvatarMarkedForDeletion, setIsAvatarMarkedForDeletion] = useState(false); // 追加：削除フラグ
 
   // データ利活用項目の状態
   const [ageGroup, setAgeGroup] = useState('');
@@ -134,6 +136,7 @@ export default function ProfileEditPage() {
 
             // アバター
             if (profile.avatar_url) {
+              setCurrentAvatarPath(profile.avatar_url); // 追加：パスを保存
               const { data: { publicUrl } } = supabase.storage
                 .from('avatars')
                 .getPublicUrl(profile.avatar_url);
@@ -184,14 +187,69 @@ export default function ProfileEditPage() {
       };
       reader.readAsDataURL(file);
       setSubmitError(null);
+      setIsAvatarMarkedForDeletion(false); // 新しい画像を選択したら削除フラグをリセット
     }
   };
 
+  // 修正：アバター削除処理を改善
   const removeAvatar = () => {
     setAvatarFile(null);
     setAvatarPreviewUrl(null);
     const fileInput = document.getElementById('avatar-upload') as HTMLInputElement;
     if (fileInput) fileInput.value = '';
+    
+    // 既存のアバターがある場合は削除マークを付ける
+    if (currentAvatarUrl) {
+      setIsAvatarMarkedForDeletion(true);
+    }
+  };
+
+  // 追加：完全なアバター削除処理
+  const deleteCurrentAvatar = async () => {
+    if (!currentAvatarPath) return;
+
+    try {
+      // Supabaseストレージから削除
+      const { error: deleteError } = await supabase.storage
+        .from('avatars')
+        .remove([currentAvatarPath]);
+
+      if (deleteError) {
+        console.error('アバター削除エラー:', deleteError);
+        // エラーがあっても処理を続行（ファイルが存在しない場合など）
+      }
+
+      // データベースのavatar_urlをnullに更新
+      const { error: updateError } = await supabase
+        .from('app_profiles')
+        .update({ avatar_url: null, updated_at: new Date().toISOString() })
+        .eq('user_id', session?.user?.id);
+
+      if (updateError) {
+        throw new Error(`アバターの削除に失敗しました: ${updateError.message}`);
+      }
+
+      // 状態をリセット
+      setCurrentAvatarUrl(null);
+      setCurrentAvatarPath(null);
+      setIsAvatarMarkedForDeletion(false);
+      setAvatarFile(null);
+      setAvatarPreviewUrl(null);
+
+      toast({
+        title: "✅ アバターを削除しました",
+        description: "プロフィール画像が削除されました",
+        duration: 1000,
+      });
+
+    } catch (error: any) {
+      console.error('アバター削除エラー:', error);
+      toast({
+        title: "❌ エラー",
+        description: error.message || "アバターの削除に失敗しました",
+        duration: 3000,
+      });
+    }
   };
 
   const onSubmit = async (values: ProfileFormValues) => {
@@ -211,10 +269,38 @@ export default function ProfileEditPage() {
     showLoading();
 
     let uploadedAvatarPath: string | null = null;
+    let shouldUpdateAvatar = false;
 
     try {
-      // アバターのアップロード
-      if (avatarFile) {
+      // アバター処理
+      if (isAvatarMarkedForDeletion) {
+        // 既存のアバターを削除
+        if (currentAvatarPath) {
+          const { error: deleteError } = await supabase.storage
+            .from('avatars')
+            .remove([currentAvatarPath]);
+          
+          if (deleteError) {
+            console.error('既存アバター削除エラー:', deleteError);
+            // エラーがあっても処理を続行
+          }
+        }
+        uploadedAvatarPath = null;
+        shouldUpdateAvatar = true;
+      } else if (avatarFile) {
+        // 新しいアバターをアップロード
+        // 既存のアバターがある場合は先に削除
+        if (currentAvatarPath) {
+          const { error: deleteError } = await supabase.storage
+            .from('avatars')
+            .remove([currentAvatarPath]);
+          
+          if (deleteError) {
+            console.error('既存アバター削除エラー:', deleteError);
+            // エラーがあっても処理を続行
+          }
+        }
+
         const fileExt = avatarFile.name.split('.').pop();
         const userFolder = session.user.id;
         const uniqueFileName = `${uuidv4()}.${fileExt}`;
@@ -231,6 +317,7 @@ export default function ProfileEditPage() {
           throw new Error(`アバター画像のアップロードに失敗しました: ${uploadError.message}`);
         }
         uploadedAvatarPath = objectPath;
+        shouldUpdateAvatar = true;
       }
 
       // プロフィールデータの更新（bioを除外）
@@ -258,7 +345,7 @@ export default function ProfileEditPage() {
         average_spending: averageSpending || null,
         shopping_style: shoppingStyle || null,
         data_consent: dataConsent,
-        ...(uploadedAvatarPath && { avatar_url: uploadedAvatarPath }),
+        ...(shouldUpdateAvatar && { avatar_url: uploadedAvatarPath }),
       };
 
       const { error: updateError } = await supabase
@@ -394,7 +481,7 @@ export default function ProfileEditPage() {
                         className="hidden"
                         disabled={isSaving}
                       />
-                      {avatarPreviewUrl || currentAvatarUrl ? (
+                      {(avatarPreviewUrl || (currentAvatarUrl && !isAvatarMarkedForDeletion)) ? (
                         <div className="relative group">
                           <img 
                             src={avatarPreviewUrl || currentAvatarUrl || ''} 
@@ -418,6 +505,37 @@ export default function ProfileEditPage() {
                           <p className="text-lg">画像をアップロード</p>
                           <p className="text-sm">PNG, JPG, WEBP (最大5MB)</p>
                         </label>
+                      )}
+                      
+                      {/* 追加：完全削除ボタン */}
+                      {currentAvatarUrl && !isAvatarMarkedForDeletion && !avatarPreviewUrl && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={deleteCurrentAvatar}
+                          disabled={isSaving}
+                          className="flex items-center space-x-2 text-red-600 hover:text-red-700 border-red-200 hover:border-red-300"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          <span>画像を削除</span>
+                        </Button>
+                      )}
+                      
+                      {/* 追加：削除予定の表示 */}
+                      {isAvatarMarkedForDeletion && (
+                        <div className="text-center text-red-600 text-sm">
+                          <p>画像は更新時に削除されます</p>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setIsAvatarMarkedForDeletion(false)}
+                            className="text-blue-600 hover:text-blue-700"
+                          >
+                            削除をキャンセル
+                          </Button>
+                        </div>
                       )}
                     </div>
                   </FormControl>
