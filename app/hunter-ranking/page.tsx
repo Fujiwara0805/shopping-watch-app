@@ -189,7 +189,7 @@ export default function HunterRankingPage() {
               
               <div className="flex-1 min-w-0">
                 <div className="flex items-center space-x-4">
-                  <h3 className={`font-semibold truncate ${user.display_name.length >= 6 ? 'text-sm' : 'text-base'}`}>
+                  <h3 className={`font-semibold truncate ${user.display_name.length >= 6 ? 'text-sm' : 'text-sm'}`}>
                     {user.display_name}
                   </h3>
                   {isCurrentUser && <Badge variant="secondary" className="ml-1">あなた</Badge>}
