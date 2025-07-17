@@ -911,6 +911,7 @@ export default function PostPage() {
                           <Upload className="h-12 w-12" />
                           <p className="text-lg">画像をアップロード</p>
                           <p className="text-xs">PNG, JPG, WEBP (最大5MB・最大5枚)</p>
+                          <p className="text-xs">※画像は350px × 350pxの固定サイズで表示されます</p>
                         </label>
                       )}
                     </div>
