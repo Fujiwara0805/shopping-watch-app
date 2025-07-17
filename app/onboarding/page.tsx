@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, MapPin, Bell, Users, Tag, Smartphone, ShoppingCart, MessageSquare, Share, Plus, StickyNote } from 'lucide-react';
+import { ChevronLeft, ChevronRight, MapPin, Bell, Users, Tag, Smartphone, ShoppingCart, MessageSquare, Share, Plus, StickyNote, MoreVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/common/logo';
 
@@ -30,13 +30,14 @@ const onboardingSlides = [
     title: "アプリ登録をしよう！",
     description: (
       <span>
-        使用しているブラウザ（例：Google）において、共有ボタン
-        <Share className="inline w-5 h-5 mx-1 text-gray-600" />
-        から「ホーム画面に追加」
+        共有ボタン(
+        <Share className="inline w-5 h-5 mx-1 text-gray-600" />or
+        <MoreVertical className="inline w-5 h-5 mx-1 text-gray-600" />)
+        から「ホーム画面に追加」(
         <span className="inline-flex items-center justify-center w-5 h-5 mx-1 bg-gray-600 rounded-sm">
           <Plus className="w-3 h-3 text-white" />
-        </span>
-        を選択すると、スマホアプリとして利用できます。
+        </span>)
+        を選択して、スマホアプリとして利用できます。
       </span>
     ),
     icon: <Smartphone className="w-16 h-16 sm:w-20 sm:h-20 text-[#FF9800]" />,
@@ -44,19 +45,34 @@ const onboardingSlides = [
   },
   {
     title: "買い物メモを使ってみよう！",
-    description: "シンプルで使いやすい買い物メモです。「よく買うもの」を登録できるほか、家族や友人たちとグループを作成してメモを共有することが可能です（ログイン必須）",
+    description: (
+      <span>
+        シンプルで使いやすい買い物メモです。<br />
+        「よく買うもの」を登録でき、家族や友達とグループを作成して、メモを共有しよう<br />（ログイン必須）
+      </span>
+    ),
     icon: <StickyNote className="w-16 h-16 sm:w-20 sm:h-20 text-[#4CAF50]" />,
     color: "bg-[#4CAF50]/10"
   },
   {
     title: "おとく板に投稿してみよう！",
-    description: "日常生活のおトク（得・特・徳など）した情報やこんなおトクな情報が欲しいといったことを気軽に投稿してみよう。現在地から5km圏内の投稿に限定して表示されるのでコスパ・タイパ抜群です。（※5kmの範囲はお店を探す画面で確認できます）",
+    description: (
+      <span>
+        現在地から5km圏内の投稿に限定して表示される掲示板です。
+        日常生活のおとく（得・特・徳など）情報を気軽に投稿してみよう！
+        (投稿範囲はお店を探す画面で確認できます)
+      </span>
+    ),
     icon: <MessageSquare className="w-16 h-16 sm:w-20 sm:h-20 text-[#9C27B0]" />,
     color: "bg-[#9C27B0]/10"
   },
   {
     title: "通知でお知らせ",
-    description: "お気に入り店舗のお得な情報が投稿されると、すぐに通知でお知らせします。",
+    description: (
+      <span>
+        マイページからお気に入りのお店を登録しておくと、そのお店の情報が投稿される度に、すぐに通知でお知らせします。
+      </span>
+    ),
     icon: <Bell className="w-16 h-16 sm:w-20 sm:h-20 text-[#009688]" />,
     color: "bg-[#009688]/10"
   },
