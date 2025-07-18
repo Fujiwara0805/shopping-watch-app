@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Heart, Share2, Zap, Gift, Star } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Heart, Share2, Zap, UserRoundPlus, ListTodo, MessageSquare, Star, Gift } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface OnboardingModalProps {
@@ -11,89 +11,70 @@ interface OnboardingModalProps {
 const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onClose }) => {
   const [currentStep, setCurrentStep] = useState(0);
   
-  const steps = [
+  const onboardingSteps = [
     {
       id: 1,
-      title: "お気に入り店舗を登録",
+      title: "プロフィール情報を登録しよう",
       subtitle: (
         <span>
-          プロフィール画面にてお気に入りの店舗を登録しよう。
-            <span className="text-[#73370c] font-semibold">最大３つまで</span>登録できます ❤️
+          お気に入りのお店を登録すると、そのお店の情報が投稿される度に、通知を受け取れます。
         </span>
       ),
-      icon: Heart,
+      icon: UserRoundPlus, // Heart から変更
       color: "bg-[#73370c]",
       illustration: (
         <div className="relative w-36 h-36 mx-auto mb-6">
           <div className="absolute inset-0 bg-gradient-to-br from-[#73370c]/20 to-[#73370c]/30 rounded-full"></div>
           <div className="absolute inset-8 bg-white rounded-full shadow-lg flex items-center justify-center">
-            <Heart className="w-12 h-12 text-[#73370c]" />
+            <UserRoundPlus className="w-12 h-12 text-[#73370c]" /> {/* Heart から変更 */}
           </div>
-          <div className="absolute -top-2 -right-2 w-3 h-3 bg-amber-400 rounded-full flex items-center justify-center">
-            <Star className="w-3 h-3 text-white" />
-          </div>
-          <div className="absolute -bottom-2 -left-2 w-6 h-6 bg-emerald-400 rounded-full"></div>
         </div>
       )
     },
     {
       id: 2,
-      title: "投稿してシェア",
+      title: "買い物メモを使ってみよう",
       subtitle: (
         <span>
-          お得な情報をシェアしよう！
-          １投稿ごとに<span className="text-[#73370c] font-semibold ">最大５ポイント</span>付与します 🎉
-          <span className="block mt-1 text-xs">
-            溜まったポイントは<span className="text-amber-600 font-semibold">Amazonギフト券</span>と交換<br />
-            <span className="text-sm font-semibold text-muted-foreground/80">※近日公開予定</span>
-          </span>
+          シンプルで使いやすいメモ機能です。グループを作成して、家族や友達とメモを共有することができます。
+          買い物メモの共有や家事の分担、イベントの作業リストなどをTODO管理に役立ちます。
         </span>
       ),
-      icon: Share2,
+      icon: ListTodo, // Share2 から変更
       color: "bg-[#73370c]",
       illustration: (
         <div className="relative w-36 h-36 mx-auto mb-6">
           <div className="absolute inset-0 bg-gradient-to-br from-emerald-100 to-emerald-200 rounded-full"></div>
           <div className="absolute inset-8 bg-white rounded-full shadow-lg flex items-center justify-center">
-            <Share2 className="w-12 h-12 text-emerald-600" />
-          </div>
-          <div className="absolute -top-1 -right-1 w-8 h-8 bg-orange-400 rounded-full flex items-center justify-center">
-            <Gift className="w-4 h-4 text-white" />
-          </div>
-          <div className="absolute -bottom-3 -left-1 w-6 h-6 bg-[#73370c] rounded-full flex items-center justify-center">
-            <span className="text-white text-xs font-bold">5P</span>
+            <ListTodo className="w-12 h-12 text-emerald-600" /> {/* Share2 から変更 */}
           </div>
         </div>
       )
     },
     {
       id: 3,
-      title: "早速使ってみよう！",
+      title: "おとく板に投稿しよう",
       subtitle: (
         <span className="text-lg">
-          お気に入りの店舗の
-          <span className="text-[#73370c] font-semibold">お得な情報</span>を<br/>
-          <span className="text-purple-600 font-bold">いち早く</span>お知らせするよ ⚡️
+          地域のコミュニティ掲示板です。
+          日常生活でみつけたおとくな情報や、こんなおとくがあったらいいなといった要望を気軽に投稿してみよう。
         </span>
       ),
-      icon: Zap,
+      icon: MessageSquare, // Zap から変更
       color: "bg-[#73370c]",
       illustration: (
         <div className="relative w-36 h-36 mx-auto mb-6">
           <div className="absolute inset-0 bg-gradient-to-br from-purple-100 to-purple-200 rounded-full"></div>
           <div className="absolute inset-8 bg-white rounded-full shadow-lg flex items-center justify-center">
-            <Zap className="w-12 h-12 text-purple-600" />
+            <MessageSquare className="w-12 h-12 text-purple-600" /> {/* Zap から変更 */}
           </div>
-          <div className="absolute -top-1 -right-3 w-4 h-4 bg-amber-400 rounded-full animate-bounce"></div>
-          <div className="absolute top-8 -left-2 w-3 h-3 bg-pink-400 rounded-full animate-pulse"></div>
-          <div className="absolute -bottom-1 right-8 w-4 h-4 bg-[#73370c] rounded-full animate-bounce" style={{ animationDelay: '0.5s' }}></div>
         </div>
       )
     }
   ];
 
   const nextStep = () => {
-    if (currentStep < steps.length - 1) {
+    if (currentStep < onboardingSteps.length - 1) {
       setCurrentStep(currentStep + 1);
     }
   };
@@ -111,7 +92,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onClose }) =>
 
   if (!isOpen) return null;
 
-  const currentStepData = steps[currentStep];
+  const currentStepData = onboardingSteps[currentStep];
 
   return (
     <AnimatePresence>
@@ -144,7 +125,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onClose }) =>
             <div className="relative px-6 py-5 border-b border-border">
               {/* Progress Indicator */}
               <div className="flex justify-center space-x-2">
-                {steps.map((_, index) => (
+                {onboardingSteps.map((_, index) => (
                   <div
                     key={index}
                     className={`h-2 rounded-full transition-all duration-300 ${
@@ -184,9 +165,9 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onClose }) =>
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2, duration: 0.3 }}
-                    className="text-xl font-semibold text-foreground mb-4 leading-tight"
+                    className="text-lg font-semibold text-foreground mb-4 leading-tight"
                   >
-                    手順{currentStepData.id}：{currentStepData.title}
+                    {currentStepData.title}
                   </motion.h2>
 
                   {/* Subtitle */}
@@ -220,7 +201,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onClose }) =>
                 )}
 
                 {/* Next/Complete Button */}
-                {currentStep === steps.length - 1 ? (
+                {currentStep === onboardingSteps.length - 1 ? (
                   <Button
                     onClick={handleClose}
                     className="bg-[#73370c] hover:bg-[#73370c]/90 text-white px-8 shadow-lg"
