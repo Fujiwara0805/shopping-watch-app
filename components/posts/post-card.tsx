@@ -1083,7 +1083,7 @@ export const PostCard = memo(({
           {/* 画像表示エリア（複数画像対応） */}
           {imageUrls.length > 0 && (
             <div className="flex justify-center w-full mb-3">
-              <div className="relative rounded-md overflow-hidden" style={{ width: '350px', height: '350px' }}>
+              <div className="relative rounded-md overflow-hidden">
                 {imageUrls.length === 1 ? (
                   // 単一画像の場合
                   <OptimizedImage
