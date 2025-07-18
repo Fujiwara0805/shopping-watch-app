@@ -37,7 +37,7 @@ const onboardingSlides = [
         <span className="inline-flex items-center justify-center w-5 h-5 mx-1 bg-gray-600 rounded-sm">
           <Plus className="w-3 h-3 text-white" />
         </span>)
-        を選択して、スマホアプリとして利用できます。
+        を選択して、アプリを登録しよう
       </span>
     ),
     icon: <Smartphone className="w-16 h-16 sm:w-20 sm:h-20 text-[#FF9800]" />,
@@ -48,7 +48,7 @@ const onboardingSlides = [
     description: (
       <span>
         シンプルで使いやすい買い物メモです。<br />
-        「よく買うもの」を登録でき、家族や友達とグループを作成して、メモを共有しよう<br />（ログイン必須）
+        「よく買うもの」を登録でき、家族や友達とグループを作成して、メモを共有しよう
       </span>
     ),
     icon: <StickyNote className="w-16 h-16 sm:w-20 sm:h-20 text-[#4CAF50]" />,
@@ -60,7 +60,6 @@ const onboardingSlides = [
       <span>
         現在地から5km圏内の投稿に限定して表示される掲示板です。
         日常生活のおとく（得・特・徳など）情報を気軽に投稿してみよう！
-        (※投稿は最長12時間で自動削除されます)
       </span>
     ),
     icon: <MessageSquare className="w-16 h-16 sm:w-20 sm:h-20 text-[#9C27B0]" />,
@@ -70,7 +69,8 @@ const onboardingSlides = [
     title: "通知でお知らせ",
     description: (
       <span>
-        マイページからお気に入りのお店を登録しておくと、そのお店の情報が投稿される度に、すぐに通知でお知らせします。
+        マイページにお気に入りのお店を登録しておくと、そのお店の情報が投稿される度に、
+        すぐに通知でお知らせします。
       </span>
     ),
     icon: <Bell className="w-16 h-16 sm:w-20 sm:h-20 text-[#009688]" />,
