@@ -491,7 +491,13 @@ const SwipeLP = ({ goToOnboarding, mobileMenuOpen, setMobileMenuOpen }: { goToOn
           transition={{ duration: 0.8, delay: 0.4 }}
           className="text-3xl md:text-5xl font-bold mb-8"
         >
-          {feature.title}
+          {/* タイトルも改行できるように修正 */}
+          {feature.title.split('\n').map((line: string, i: number) => (
+            <span key={i}>
+              {line}
+              {i < feature.title.split('\n').length - 1 && <br />}
+            </span>
+          ))}
         </motion.h2>
         
         <motion.p
