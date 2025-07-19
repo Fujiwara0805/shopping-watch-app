@@ -4,7 +4,7 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence, PanInfo } from 'framer-motion';
-import { ArrowRight, ShoppingCart, MapPin, Bell, Users, Menu, X, Leaf, ChevronDown, Circle } from 'lucide-react';
+import { ArrowRight, ShoppingCart, MapPin, Bell, Users, Menu, X, Leaf, ChevronDown, Circle, ListTodo, Newspaper } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 // タブ切り替えのコンポーネント
@@ -130,7 +130,7 @@ const NormalLP = ({ goToOnboarding, mobileMenuOpen, setMobileMenuOpen, scrollPos
                 <br className="sm:hidden" />
                 <br className="sm:hidden" />
                 <span className="text-primary block sm:inline">
-                  あなたの街のお得情報を、<br className="sm:hidden" />みんなでシェアして、<br className="sm:hidden" />おトクな毎日を送ろう！！！
+                  あなたの街のおとく情報を、<br className="sm:hidden" />みんなでシェアして、<br className="sm:hidden" />おトクな毎日を送ろう！！！
                 </span>
               </h1>
               <p className="text-xl sm:text-2xl text-muted-foreground mb-6 md:mb-8 max-w-2xl mx-auto px-2">
@@ -158,37 +158,37 @@ const NormalLP = ({ goToOnboarding, mobileMenuOpen, setMobileMenuOpen, scrollPos
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8">
               {[
                 {
-                  icon: MapPin,
-                  title: "近所の「おトク」を発見",
-                  description: "お気に入りのお店を登録。\nお店のお得な情報をいち早くキャッチ！",
+                  icon: ListTodo,
+                  title: "買い忘れ、買い過ぎを防ぐ",
+                  description: "シンプルで使いやすい買い物メモ\n家族や友達とも共有できるよ！",
                   color: "bg-primary/10",
                   textColor: "text-primary"
                 },
                 {
+                  icon: Newspaper,
+                  title: "「欲しい」が見つかる",
+                  description: "地域のコミュニティ掲示板から、\nあなただけのおとくを見つけよう！",
+                  color: "bg-destructive/10",
+                  textColor: "text-destructive"
+                },
+                {
                   icon: Users,
-                  title: "みんなで「お得」をシェア",
-                  description: "見つけたお得な情報を簡単に投稿。\n感動を分かち合おう！",
+                  title: "みんなでおとくをシェア",
+                  description: "見つけたおとくな情報を簡単に投稿。\n感動を分かち合おう！",
                   color: "bg-secondary/10",
                   textColor: "text-secondary"
                 },
                 {
                   icon: Bell,
-                  title: "「見逃さない」お得情報",
-                  description: "お気に入り店舗のお得な情報が\n投稿されると、すぐに通知がとドク！",
+                  title: "「見逃さない」おとく情報",
+                  description: "お気に入りのお店のおトクな情報が\n投稿されると、すぐに通知がとドク！",
                   color: "bg-accent/10",
                   textColor: "text-accent"
                 },
                 {
-                  icon: ShoppingCart,
-                  title: "「欲しい」が見つかる",
-                  description: "タイムラインのみんなの投稿から、\nあなただけのおトクを見つけよう！",
-                  color: "bg-destructive/10",
-                  textColor: "text-destructive"
-                },
-                {
                   icon: Leaf,
-                  title: "フードロス削減に貢献",
-                  description: "お得な情報共有がお店の廃棄削減や、\nあなたのお財布にも優しい選択に。",
+                  title: "目の届く人から幸せを広げたい",
+                  description: "情報を必要とする人に、\n必要な情報が届く社会を作る。",
                   color: "bg-green-500/10",
                   textColor: "text-green-500"
                 }
@@ -292,41 +292,41 @@ const SwipeLP = ({ goToOnboarding, mobileMenuOpen, setMobileMenuOpen }: { goToOn
   
   const features = [
     {
-      icon: MapPin,
-      title: "近所の「おトク」を発見",
-      description: "お気に入りのお店を登録。\nお店のお得な情報をいち早くキャッチ！",
+      icon: ListTodo,
+      title: "買い忘れ、買い過ぎを防ぐ",
+      description: "シンプルで使いやすい買い物メモ\n家族や友達とも共有できるよ！",
       color: "bg-primary/10",
       textColor: "text-primary",
       bgGradient: "from-primary/5 to-primary/20"
     },
     {
+      icon: Newspaper,
+      title: "「欲しい」が見つかる",
+      description: "地域のコミュニティ掲示板から、\nあなただけのおとくを見つけよう！",
+      color: "bg-destructive/10",
+      textColor: "text-destructive",
+      bgGradient: "from-destructive/5 to-destructive/20"
+    },
+    {
       icon: Users,
-      title: "みんなで「お得」をシェア",
-      description: "見つけたお得な情報を簡単に投稿。\n感動を分かち合おう！",
+      title: "みんなでおとくをシェア",
+      description: "見つけたおとくな情報を簡単に投稿。\n感動を分かち合おう！",
       color: "bg-secondary/10",
       textColor: "text-secondary",
       bgGradient: "from-secondary/5 to-secondary/20"
     },
     {
       icon: Bell,
-      title: "「見逃さない」お得情報",
-      description: "お気に入り店舗の新商品やお得な情報が投稿されると、すぐに通知がとドク！",
+      title: "「見逃さない」おとく情報",
+      description: "お気に入りのお店のおトクな情報が投稿されると、すぐに通知がとドク！",
       color: "bg-accent/10",
       textColor: "text-accent",
       bgGradient: "from-accent/5 to-accent/20"
     },
     {
-      icon: ShoppingCart,
-      title: "「欲しい」が見つかる",
-      description: "タイムラインのみんなの投稿から、\nあなただけのおトクを見つけよう！",
-      color: "bg-destructive/10",
-      textColor: "text-destructive",
-      bgGradient: "from-destructive/5 to-destructive/20"
-    },
-    {
       icon: Leaf,
-      title: "フードロス削減に貢献",
-      description: "お得な情報共有が、お店の廃棄削減や、\nあなたのお財布にも優しい選択に。",
+      title: "目の届く人から幸せを広げたい",
+      description: "情報を必要とする人に、\n必要な情報が届く社会を作る。",
       color: "bg-green-500/10",
       textColor: "text-green-500",
       bgGradient: "from-green-500/5 to-green-500/20"
@@ -430,7 +430,7 @@ const SwipeLP = ({ goToOnboarding, mobileMenuOpen, setMobileMenuOpen }: { goToOn
           transition={{ duration: 0.8, delay: 0.7 }}
           className="text-xl md:text-3xl text-muted-foreground mb-12 leading-relaxed"
         >
-          あなたの街のお得情報を、<br />
+          あなたの街のおとく情報を、<br />
           みんなでシェアして、<br />
           おトクな毎日を送ろう！
         </motion.p>
@@ -537,7 +537,7 @@ const SwipeLP = ({ goToOnboarding, mobileMenuOpen, setMobileMenuOpen }: { goToOn
           className="text-2xl sm:text-3xl md:text-4xl font-bold mb-6"
         >
           あなたも「トクドク」で<br />
-          お得な情報を入手しよう！
+          おとくな情報を入手しよう！
         </motion.h2>
         
         <motion.p
