@@ -228,7 +228,7 @@ const NormalLP = ({ goToOnboarding, mobileMenuOpen, setMobileMenuOpen, scrollPos
               viewport={{ once: true }}
             >
               <h2 className="text-2xl sm:text-3xl font-bold mb-4 md:mb-6">
-                あなたも「トクドク」で<br className="sm:hidden" />お得な情報を入手しよう！
+                あなたも「トクドク」で<br className="sm:hidden" />おとくな情報を入手しよう！
               </h2>
               <p className="text-xl sm:text-2xl text-muted-foreground mb-6 md:mb-8 max-w-2xl mx-auto px-2">
                 毎日のお買い物を、<br className="sm:hidden" />もっと賢く、もっと楽しく。<br />
@@ -325,7 +325,7 @@ const SwipeLP = ({ goToOnboarding, mobileMenuOpen, setMobileMenuOpen }: { goToOn
     },
     {
       icon: Leaf,
-      title: "目の届く人から幸せを広げたい",
+      title: "目の届く人から\n幸せを広げたい",
       description: "情報を必要とする人に、\n必要な情報が届く社会を作る。",
       color: "bg-green-500/10",
       textColor: "text-green-500",
