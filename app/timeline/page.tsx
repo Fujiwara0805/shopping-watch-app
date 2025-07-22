@@ -803,7 +803,7 @@ const HamburgerMenu = ({ currentUser }: { currentUser: any }) => {
 
 export default function Timeline() {
   const router = useRouter();
-  const { toast } = useToast(); // この行を追加
+  const { toast } = useToast();
   
   const [posts, setPosts] = useState<ExtendedPostWithAuthor[]>([]);
   const [loading, setLoading] = useState(true);
@@ -812,18 +812,34 @@ export default function Timeline() {
   const [isSearching, setIsSearching] = useState(false);
   
   const [activeFilter, setActiveFilter] = useState<string>('all');
-  const [activeGenreFilter, setActiveGenreFilter] = useState<string>('all'); // 追加
+  const [activeGenreFilter, setActiveGenreFilter] = useState<string>('all');
   const [searchMode, setSearchMode] = useState<SearchMode>('all');
   const [sortBy, setSortBy] = useState<SortOption>('created_at_desc');
   
   const [tempActiveFilter, setTempActiveFilter] = useState<string>('all');
-  const [tempActiveGenreFilter, setTempActiveGenreFilter] = useState<string>('all'); // 追加
+  const [tempActiveGenreFilter, setTempActiveGenreFilter] = useState<string>('all');
   const [tempSearchMode, setTempSearchMode] = useState<SearchMode>('all');
   const [tempSortBy, setTempSortBy] = useState<SortOption>('created_at_desc');
   
   const [hasMore, setHasMore] = useState(true);
   const { data: session } = useSession();
   const currentUserId = session?.user?.id;
+  const currentUserRole = session?.user?.role;
+
+  // 管理者権限のログ出力
+  useEffect(() => {
+    if (currentUserRole) {
+      console.log(`現在のユーザーロール: ${currentUserRole}`);
+      if (currentUserRole === 'admin') {
+        console.log('管理者アカウントでログインしています。');
+      } else {
+        console.log('一般ユーザーアカウントでログインしています。');
+      }
+    } else {
+      console.log('ユーザーはログインしていません。');
+    }
+  }, [currentUserRole]);
+
   const searchParams = useSearchParams();
   const [highlightPostId, setHighlightPostId] = useState<string | null>(null);
 
@@ -1012,6 +1028,7 @@ export default function Timeline() {
     const currentFavoriteStoreIds = favoriteStoreIdsRef.current;
     const currentLikedPostIds = likedPostIdsRef.current;
     const currentSortBy = sortByRef.current;
+    const isAdmin = currentUserRole === 'admin'; // 管理者かどうかを判定
 
     // 距離計算関数
     const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
@@ -1073,7 +1090,7 @@ export default function Timeline() {
             created_at
           )
         `)
-        .eq('is_deleted', false) // �� 追加：削除されていない投稿のみ取得
+        .eq('is_deleted', false) // 🔥 追加：削除されていない投稿のみ取得
         .gt('expires_at', now);
 
       // カテゴリフィルタ
@@ -1218,16 +1235,16 @@ export default function Timeline() {
           return aIndex - bIndex;
         });
       }
-
-      // �� 5km圏内フィルタリング機能を追加
-      if (currentUserLocation) {
+      
+      // 5km圏内フィルタリング機能を追加（管理者でない場合のみ適用）
+      if (currentUserLocation && !isAdmin) { // 管理者ユーザーの場合、距離フィルタリングをスキップ
         processedPosts = processedPosts.filter(post => {
           return post.distance !== undefined && post.distance <= SEARCH_RADIUS_METERS;
         });
       }
 
       // 距離によるソート
-      if (currentSortBy === 'distance_asc' && currentUserLocation) {
+      if (currentSortBy === 'distance_asc' && currentUserLocation && !isAdmin) { // 管理者でない場合のみ適用
         processedPosts = processedPosts
           .filter(post => post.distance !== undefined)
           .sort((a, b) => (a.distance || 0) - (b.distance || 0));
@@ -1240,7 +1257,8 @@ export default function Timeline() {
       }
 
       // 5km圏内フィルタリング適用時はhasMoreをfalseに設定
-      setHasMore(data.length === 20 && !currentUserLocation);
+      // 管理者の場合はhasMoreをtrueに維持し、全件取得を可能にする
+      setHasMore(data.length === 20 && (!currentUserLocation || isAdmin));
     } catch (e: any) {
       console.error("投稿の取得に失敗しました:", e);
       setError("投稿の読み込みに失敗しました。しばらくしてから再度お試しください。");
@@ -1249,7 +1267,7 @@ export default function Timeline() {
       setLoadingMore(false);
       setIsSearching(false);
     }
-  }, []);
+  }, [currentUserRole]); // currentUserRoleを依存配列に追加
 
   // ビュー数増加処理
   const handleView = useCallback(async (postId: string) => {
@@ -1865,7 +1883,7 @@ export default function Timeline() {
                     検索をクリア
                   </Button>
                 </div>
-              ) : !userLocation ? (
+              ) : !userLocation && currentUserRole !== 'admin' ? ( // 管理者の場合は位置情報待ちメッセージを表示しない
                 <div>
                   <p className="text-xl text-muted-foreground mb-2">
                     位置情報を取得中...
@@ -1877,7 +1895,7 @@ export default function Timeline() {
               ) : (
                 <div>
                   <p className="text-xl text-muted-foreground mb-2">
-                    現在地から5km圏内に投稿がありません
+                    {currentUserRole === 'admin' ? '投稿がありません' : '現在地から5km圏内に投稿がありません'}
                   </p>
                   <p className="text-sm text-gray-500 mb-4">
                     別の場所に移動するか、時間をおいて再度確認してください
@@ -1914,7 +1932,7 @@ export default function Timeline() {
                       showDistance={
                         process.env.NODE_ENV === 'development' 
                           ? post.distance !== undefined
-                          : !!userLocation && post.distance !== undefined
+                          : !!userLocation && post.distance !== undefined && currentUserRole !== 'admin' // 管理者の場合は距離表示を無効化
                       }
                       isOwnPost={post.author_user_id === currentUserId}
                       enableComments={true}
@@ -2070,7 +2088,7 @@ export default function Timeline() {
           {/* コピーボタン */}
           <Button
             onClick={() => {
-              const message = `お得な情報がたくさん見つかる「トクドク」に参加しませんか？\n\nhttps://tokudoku.com/`;
+              const message = `お得な情報がたくさん見つかる「トクドク」に参加しませんか？\\n\\nhttps://tokudoku.com/`;
               navigator.clipboard.writeText(message);
               toast({
                 title: "招待メッセージをコピーしました！",

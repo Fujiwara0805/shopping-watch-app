@@ -98,7 +98,7 @@ export const authOptions: AuthOptions = {
           try {
             const { data: userByProviderId, error: errorByProviderId } = await supabase
               .from('app_users')
-              .select('id, email, google_id, line_id, password_hash')
+              .select('id, email, google_id, line_id, password_hash, role') // Select 'role' column
               .eq(providerColumn, profile.sub)
               .single();
 
@@ -115,7 +115,7 @@ export const authOptions: AuthOptions = {
               if (profile.email) {
                 const { data: userByEmail, error: errorByEmail } = await supabase
                   .from('app_users')
-                  .select('id, email, google_id, line_id, password_hash')
+                  .select('id, email, google_id, line_id, password_hash, role') // Select 'role' column
                   .eq('email', profile.email)
                   .single();
 
@@ -140,7 +140,7 @@ export const authOptions: AuthOptions = {
                       .from('app_users')
                       .update(updatePayload)
                       .eq('id', userByEmail.id)
-                      .select('id, email, google_id, line_id, password_hash')
+                      .select('id, email, google_id, line_id, password_hash, role') // Select 'role' column
                       .single();
 
                     if (updateError) {
@@ -171,7 +171,7 @@ export const authOptions: AuthOptions = {
                   const { data: newSupabaseUser, error: insertError } = await supabase
                     .from('app_users')
                     .insert(newUserPayload)
-                    .select('id, email, password_hash')
+                    .select('id, email, password_hash, role') // Select 'role' column
                     .single();
 
                   if (insertError) {
@@ -201,6 +201,7 @@ export const authOptions: AuthOptions = {
               token.email = userRecord.email;
               token.name = profile.name;
               token.picture = profile.image;
+              token.role = userRecord.role; // Add role to token
             } else {
               console.error("JWT Callback: User record could not be determined.");
               token.error = "UserRecordUndetermined";
@@ -218,9 +219,44 @@ export const authOptions: AuthOptions = {
           token.email = user.email;
           token.name = user.name;
           token.picture = user.image;
+          // For credentials provider, user object directly contains ID. Fetch role from DB.
+          try {
+            const { data: userRecord, error: fetchError } = await supabase
+              .from('app_users')
+              .select('role') // Fetch only role
+              .eq('id', user.id)
+              .single();
+
+            if (fetchError) {
+              console.error("JWT Callback: Error fetching role for credentials user:", fetchError);
+              token.error = "RoleFetchError";
+            } else if (userRecord) {
+              token.role = userRecord.role;
+            }
+          } catch (e: any) {
+            console.error("JWT Callback: Error in credentials role fetch:", e.message, e.stack);
+            token.error = "RoleFetchException";
+          }
         }
       } else if (token.userId && token.provider) {
         console.log("JWT Callback: Existing token - session refresh (app_users context).", { userId: token.userId });
+        // If refreshing session, ensure role is in token if userRecord exists.
+        if (!token.role && token.userId) {
+          try {
+            const { data: userRecord, error: fetchError } = await supabase
+              .from('app_users')
+              .select('role')
+              .eq('id', token.userId)
+              .single();
+            if (fetchError) {
+              console.error("JWT Callback: Error refetching role for existing token:", fetchError);
+            } else if (userRecord) {
+              token.role = userRecord.role;
+            }
+          } catch (e: any) {
+            console.error("JWT Callback: Exception refetching role for existing token:", e.message, e.stack);
+          }
+        }
       } else {
         console.log("JWT Callback: Account, User, or Profile missing (app_users context).");
       }
@@ -237,10 +273,13 @@ export const authOptions: AuthOptions = {
         session.user.email = token.email as string;
       }
       if (token.name) {
-        session.user.name = token.name as string;
+        session.user.name = token.name;
       }
       if (token.picture) {
-        session.user.image = token.picture as string;
+        session.user.image = token.picture;
+      }
+      if (token.role) {
+        session.user.role = token.role as string; // Add role to session
       }
 
       if (token.error) {
@@ -271,5 +310,6 @@ declare module 'next-auth/jwt' {
     userId?: string;
     providerAccountId?: string;
     provider?: string;
+    role?: string; // Add role to JWT
   }
 }
