@@ -1,15 +1,41 @@
 # トクドク β版 🛒
 
-みんなでお得な情報を共有するリアルタイム情報共有アプリです。近所のスーパーのお惣菜やタイムセール情報をユーザー同士で共有し、お得な買い物をサポートします。
+『トクドク』は、日常の買い物体験を入口に、人と情報と地域をゆるやかにつなぐ地域密着型コミュニティアプリです。
+買い物メモ機能では、シンプルで使いやすいUIであることはもちろん、リストを家族や友人とワンタップで共有でき、買い忘れを防ぎながら時間とコストを削減します。
+さらに、”おとく板”と呼ばれる掲示板サービスでは、商品情報の共有（例：この商品どこで売っていますか?）や、イベントの開催、求人、商品の販売や映画の口コミまで、さまざまなジャンル・カテゴリーの投稿ができます。また、コミュニティ・地域に密着したサービスであることから、ユーザーの利用しているモバイルデバイスの現在地を取得し、現在地から5キロ圏内の投稿のみが表示される仕様となっており、また、最大12時間で投稿が自動削除されるといった仕様を備え、常に「今」必要な情報と出会えるのが特徴です。
+トクドクが目指すのは、情報を必要とする人に必要な情報が届く、温かい地域社会の実現です。
+買い物という身近な行動を通じて、ご近所同士が助け合い、支え合う。そんな新しいコミュニティの形を、私たちと一緒に作っていきませんか。
 
 ## 📱 アプリの特徴
 
-- **リアルタイム投稿**: スーパーのお得情報を写真付きで投稿
-- **位置情報連携**: 現在地から近い店舗の情報を優先表示
-- **LINE通知**: お気に入り店舗の新着情報をLINEで受信
-- **いいね機能**: 気になる投稿にいいねして後で確認
-- **検索・フィルター**: カテゴリ、店舗、期限などで絞り込み検索
-- **PWA対応**: スマートフォンにアプリとしてインストール可能
+トクドクは、地域のおとく情報を共有し、日常生活を豊かにする機能が満載です。
+
+### 1. 最新情報が「とドク」！地域密着型タイムライン
+- **リアルタイム投稿**: スーパーのお得情報、地域のイベントなどを写真付きで手軽に投稿。
+- **場所とジャンルで探す**: 投稿者の位置情報から5km圏内の情報を優先表示。ショッピング、飲食店など多彩なジャンルと詳細なカテゴリーで効率的に検索。
+- **複数画像とカルーセル表示**: 最大5枚の画像を投稿でき、投稿カード内でスライド表示が可能。商品の魅力や店舗の雰囲気を詳細に伝えられます。
+- **いいね・コメント・共有**: 気になる投稿には「いいね」で応援。コメントで情報交換、SNSで手軽にシェアできます。
+- **お気に入り店舗通知**: 登録したお気に入り店舗に新しい投稿があると、アプリ内やLINEで通知が届き、お得情報を見逃しません。
+
+### 2. 買い物をスマートに！共有買い物メモ
+- **シンプルで使いやすい**: オフラインでも利用できる買い物リスト機能。
+- **家族や友人と共有**: グループを作成し、メンバー間で買い物メモをリアルタイムで共有。家事の分担やイベントの作業リストとしても活用できます。
+- **「よく買うもの」リスト**: よく購入するアイテムを登録・同期し、ワンタップでメモに追加。
+- **メモ機能の強化**: 共有リストのアイテムに詳細なメモを追加可能。
+
+### 3. みんなで楽しむ！称号＆ランキングシステム
+- **いいねで競い合う**: 投稿への「いいね」数で月間ランキングを競い、特別な称号を獲得！
+- **ランキングページ**: 最新の月間ランキングを専用ページでチェック。
+
+### 4. 地域を繋ぐコミュニティ掲示板「おとく板」
+- **生活の困りごとを解決**: 「この商品どこに売ってる？」「手伝ってくれる人いませんか？」など、地域内での情報交換や助け合いの場。
+- **多様な情報発信**: イベント情報、子育て相談、見た映画の感想など、幅広いトピックで地域コミュニティを活性化。
+
+### 5. その他の便利な機能
+- **プロフィール機能**: ニックネーム、アバター画像、お気に入り店舗の登録、プロフィールの完成度表示。
+- **データ利活用への同意**: アプリ改善のため、個人を特定しない統計データ（年齢層、性別、居住地域など）の収集にご同意いただけます。
+- **PWA対応**: スマートフォンにアプリとしてインストールし、ネイティブアプリのように利用可能。
+- **洗練されたUI/UX**: Framer Motionによるスムーズなアニメーションと統一されたデザイン。
 
 ## 🛠 技術スタック
 
@@ -23,7 +49,7 @@
 - **Zod** - スキーマバリデーション
 
 ### バックエンド・インフラ
-- **Supabase** - BaaS（データベース、認証、ストレージ）
+- **Supabase** - BaaS（データベース、認証、ストレージ、リアルタイム）
 - **PostgreSQL** - メインデータベース（PostGIS拡張）
 - **NextAuth.js** - 認証システム
 - **Google Maps API** - 地図・位置情報サービス
@@ -52,7 +78,7 @@
 ```
 
 #### `app_profiles`
-ユーザーのプロフィール情報
+ユーザーのプロフィール情報とデータ利活用情報
 ```sql
 - id (UUID, Primary Key)
 - user_id (UUID, Foreign Key → app_users.id)
@@ -65,6 +91,12 @@
 - favorite_store_2_name (String, nullable)
 - favorite_store_3_id (String, nullable)
 - favorite_store_3_name (String, nullable)
+- age_group (String, nullable) -- 例: '20s', '30s', '40s', '50s', '60s_over'
+- gender (String, nullable) -- 例: 'male', 'female', 'other', 'prefer_not_to_say'
+- residence_area (String, nullable) -- 都道府県名など
+- family_structure (String, nullable) -- 例: 'single', 'couple', 'family_with_children', 'other'
+- occupation_income (String, nullable) -- 例: 'student', 'company_employee', 'housewife', 'self_employed', 'other'
+- shopping_behavior (Text, nullable) -- 例: 'daily_shopping', 'weekly_bulk', 'online_shopping', 'occasionally'
 - created_at (Timestamp)
 - updated_at (Timestamp)
 ```
@@ -74,11 +106,12 @@
 ```sql
 - id (UUID, Primary Key)
 - app_profile_id (UUID, Foreign Key → app_profiles.id)
-- store_id (String)
-- store_name (String)
-- category (String)
+- store_id (String, nullable)
+- store_name (String, nullable)
+- category (String, nullable)
+- genre (String, nullable) -- 例: 'shopping', 'restaurant', 'tourism', 'leisure', 'service', 'other'
 - content (Text)
-- image_url (String, nullable)
+- image_urls (ARRAY of Text, nullable) -- 複数画像URLの配列
 - discount_rate (Integer, nullable)
 - price (Integer, nullable)
 - expiry_option (String) -- '1h', '3h', '6h', '12h'
@@ -88,6 +121,9 @@
 - store_latitude (Float, nullable)
 - store_longitude (Float, nullable)
 - location_geom (PostGIS POINT, nullable)
+- user_latitude (Float, nullable) -- 投稿者の緯度
+- user_longitude (Float, nullable) -- 投稿者の経度
+- user_location_geom (PostGIS POINT, nullable) -- 投稿者の位置情報GEOMETRY
 ```
 
 #### `post_likes`
@@ -110,6 +146,37 @@
 - reference_store_name (String, nullable)
 - is_read (Boolean, default: false)
 - created_at (Timestamp)
+```
+
+#### `family_groups`
+家族グループ情報
+```sql
+- id (UUID, Primary Key)
+- name (String)
+- owner_user_id (UUID, Foreign Key → app_users.id)
+- created_at (Timestamp)
+- updated_at (Timestamp)
+```
+
+#### `group_members`
+グループメンバー情報
+```sql
+- group_id (UUID, Foreign Key → family_groups.id)
+- user_id (UUID, Foreign Key → app_users.id)
+- role (String) -- 例: 'owner', 'member'
+- created_at (Timestamp)
+```
+
+#### `shared_memos`
+共有メモ情報
+```sql
+- id (UUID, Primary Key)
+- group_id (UUID, Foreign Key → family_groups.id)
+- created_by_user_id (UUID, Foreign Key → app_users.id)
+- content (Text)
+- is_completed (Boolean, default: false)
+- created_at (Timestamp)
+- updated_at (Timestamp)
 ```
 
 ## 🚀 セットアップ手順
