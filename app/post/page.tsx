@@ -7,6 +7,11 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { Camera, Upload, X, Store as StoreIcon, LayoutGrid, ClipboardList, Image as ImageIcon, CalendarClock, PackageIcon, ClockIcon, Tag, HelpCircle, MapPin, CheckCircle, Layers, ChevronDown, ChevronUp, Settings, Link as LinkIcon, FileText } from 'lucide-react';
+import { CalendarDays, Star as StarIcon } from 'lucide-react'; // CalendarDaysとStarIconを追加
+import { Calendar } from '@/components/ui/calendar'; // Calendarコンポーネントをインポート
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'; // Popoverコンポーネントをインポート
+import { format } from 'date-fns'; // date-fnsのformat関数をインポート
+import { ja } from 'date-fns/locale'; // 日本語ロケールをインポート
 import AppLayout from '@/components/layout/app-layout';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -64,6 +69,9 @@ const postSchema = z.object({
   location_lng: z.number().optional(),
   store_latitude: z.number().optional(),
   store_longitude: z.number().optional(),
+  rating: z.number().min(1, { message: '1以上5以下の値を入力してください' }).max(5, { message: '1以上5以下の値を入力してください' }).optional(), // 新規追加
+  start_date: z.date().optional(), // 新規追加
+  end_date: z.date().optional(), // 新規追加
 });
 
 type PostFormValues = z.infer<typeof postSchema>;
@@ -72,19 +80,23 @@ type DisplayStore = Pick<Store, 'name'> & { id: string };
 
 const libraries: ("places")[] = ["places"];
 
-// 🔥 新規追加：ジャンルとカテゴリーの定義
+// 🔥 新規追加：ジャンルとカテゴリーの定義を更新
 const genreCategories = {
-  'ショッピング': ['不明', '惣菜', '弁当', '肉', '魚', '野菜', '果物', '米・パン類', 'デザート類', '日用品', '衣料品', 'その他'],
-  '飲食店': ['不明', '和食', '洋食', '中華', 'イタリアン', 'フレンチ', 'カフェ', 'ファストフード', 'その他'],
-  '観光': ['不明', '観光スポット', '宿泊施設', '温泉', '博物館・美術館', '公園', 'その他'],
-  'レジャー': ['不明', 'アミューズメント', 'スポーツ', '映画・エンタメ', 'アウトドア', 'その他'],
-  'サービス': ['不明', '美容・健康', '教育', '医療', '修理・メンテナンス', 'その他'],
-  'イベント': ['不明', 'コンサート・ライブ', 'フェスティバル', '展示会', 'セミナー・講座', 'スポーツイベント', 'その他'],
-  '求人': ['不明', '正社員', 'アルバイト・パート', '派遣・契約', 'インターン', 'フリーランス', 'その他'],
-  '販売': ['不明', '新品', '中古品', 'ハンドメイド', 'デジタル商品', 'チケット', '移動販売', 'その他'],
-  'ボランティア': ['不明', '環境・自然', '福祉・介護', '教育・子育て', '地域活動', '災害支援', 'その他'],
-  '相談': ['不明', '生活相談', '仕事・キャリア', '恋愛・人間関係', '法律・お金', '健康・医療', 'その他'],
-  'その他': ['不明', 'その他']
+  'ショッピング': ['惣菜', '弁当', '肉', '魚', '野菜', '果物', '米・パン類', 'デザート類', '日用品', '衣料品', 'その他'],
+  '飲食店': ['和食', '洋食', '中華', 'イタリアン', 'フレンチ', 'カフェ', 'ファストフード', 'その他'],
+  '観光': ['観光スポット', '宿泊施設', '温泉', '博物館・美術館', '公園', 'その他'],
+  'エンタメ': ['アミューズメント', 'スポーツ', '映画・エンタメ', 'アウトドア', 'その他'], // レジャーから変更
+  'サービス': ['美容・健康', '教育', '医療', '修理・メンテナンス', 'その他'],
+  'イベント': ['コンサート・ライブ', 'フェスティバル', '展示会', 'セミナー・講座', 'スポーツイベント', 'その他'],
+  '求人': ['正社員', 'アルバイト・パート', '派遣・契約', 'インターン', 'フリーランス', 'その他'],
+  '販売': ['新品', '中古品', 'ハンドメイド', 'デジタル商品', 'チケット', '移動販売', 'その他'],
+  'ボランティア': ['環境・自然', '福祉・介護', '教育・子育て', '地域活動', '災害支援', 'その他'],
+  '相談': ['生活相談', '仕事・キャリア', '恋愛・人間関係', '法律・お金', '健康・医療', 'その他'],
+  'シェア': ['タクシー', 'ライドシェア', 'カーシェア', 'ホテル', '民泊', '旅館', 'コンドミニアム', 'その他'], // 新規追加
+  'コミュニティ': ['交流', 'イベント', '趣味', '学習', '地域', 'その他'], // 新規追加
+  '募集': ['メンバー募集', '助け合い', 'ボランティア', '参加者募集', 'その他'], // 新規追加
+  'デリバリー': ['フードデリバリー', '日用品デリバリー', '薬局デリバリー', 'その他'],
+  'その他': ['その他']
 };
 
 const expiryOptions = [
@@ -153,6 +165,9 @@ export default function PostPage() {
       location_lng: undefined,
       store_latitude: undefined,
       store_longitude: undefined,
+      rating: undefined, // 新規追加
+      start_date: undefined, // 新規追加
+      end_date: undefined, // 新規追加
     },
     mode: 'onChange',
   });
@@ -353,13 +368,17 @@ export default function PostPage() {
             'ショッピング': 'お店',
             '飲食店': 'レストラン',
             '観光': '観光地',
-            'レジャー': 'レジャー施設',
-            'サービス': 'サービス店'
+            'エンタメ': 'エンタメ施設', // レジャーから変更
+            'サービス': 'サービス店',
+            'シェア': 'シェアサービス', // 新規追加
+            'コミュニティ': 'コミュニティ', // 新規追加
+            '募集': '募集', // 新規追加
+            'デリバリー': 'デリバリーサービス',
           };
-          return genreDefaults[values.genre as keyof typeof genreDefaults] || '店舗不明';
+          return genreDefaults[values.genre as keyof typeof genreDefaults] || null;
         }
         
-        return '店舗不明';
+        return null;
       };
 
       const getDefaultCategory = () => {
@@ -367,25 +386,7 @@ export default function PostPage() {
           return values.category;
         }
         
-        // ジャンルに基づいたデフォルトカテゴリ（不明に変更）
-        if (values.genre) {
-          const genreDefaults = {
-            'ショッピング': '不明',
-            '飲食店': '不明',
-            '観光': '不明',
-            'レジャー': '不明',
-            'サービス': '不明',
-            'イベント': '不明',
-            '求人': '不明',
-            '販売': '不明',
-            'ボランティア': '不明',
-            '相談': '不明',
-            'その他': '不明'
-          };
-          return genreDefaults[values.genre as keyof typeof genreDefaults] || '不明';
-        }
-        
-        return '不明';
+        return null;
       };
 
       // 🔥 修正：投稿作成時にis_deletedフィールドを追加
@@ -406,6 +407,9 @@ export default function PostPage() {
         views_count: 0,
         comments_count: 0,
         is_deleted: false, // 🔥 追加：デフォルトでfalse
+        rating: values.rating || null, // 新規追加
+        start_date: values.start_date ? values.start_date.toISOString() : null, // 新規追加
+        end_date: values.end_date ? values.end_date.toISOString() : null, // 新規追加
       };
 
       // 🔥 店舗の位置情報を設定
@@ -480,6 +484,9 @@ export default function PostPage() {
         location_lng: undefined,
         store_latitude: undefined,
         store_longitude: undefined,
+        rating: undefined, // 新規追加
+        start_date: undefined, // 新規追加
+        end_date: undefined, // 新規追加
       });
       setImageFiles([]);
       setImagePreviewUrls([]);
@@ -815,7 +822,9 @@ export default function PostPage() {
     category: false,
     price: false,
     url: false,
-    file: false
+    file: false,
+    rating: false, // 新規追加
+    date: false, // 新規追加
   });
 
   // 🔥 オプションフィールドの切り替え
@@ -829,7 +838,7 @@ export default function PostPage() {
   // 🔥 オプション項目の値が入力されているかチェック
   const hasOptionalValues = () => {
     const values = form.getValues();
-    return !!(values.storeId || values.genre || values.category || values.price || values.url || fileFiles.length > 0);
+    return !!(values.storeId || values.genre || values.category || values.price || values.url || fileFiles.length > 0 || values.rating || values.start_date || values.end_date);
   };
 
   if (status === "loading") {
@@ -1103,6 +1112,34 @@ export default function PostPage() {
                         >
                           <FileText className="mr-2 h-4 w-4" />
                           ファイル
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => toggleOptionalField('rating')}
+                          className={`justify-start transition-all duration-200 ${
+                            optionalFieldsExpanded.rating 
+                              ? 'bg-primary text-primary-foreground border-primary hover:bg-primary/90' 
+                              : 'bg-[#fafafa] text-[#73370c] border-gray-300 hover:bg-[#fafafa] hover:text-[#73370c]'
+                          }`}
+                        >
+                          <StarIcon className="mr-2 h-4 w-4" />
+                          評価
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => toggleOptionalField('date')}
+                          className={`justify-start transition-all duration-200 ${
+                            optionalFieldsExpanded.date 
+                              ? 'bg-primary text-primary-foreground border-primary hover:bg-primary/90' 
+                              : 'bg-[#fafafa] text-[#73370c] border-gray-300 hover:bg-[#fafafa] hover:text-[#73370c]'
+                          }`}
+                        >
+                          <CalendarDays className="mr-2 h-4 w-4" />
+                          日時
                         </Button>
                       </div>
 
@@ -1386,6 +1423,249 @@ export default function PostPage() {
                                 </div>
                               </div>
                             </FormControl>
+                          </FormItem>
+                        </motion.div>
+                      )}
+
+                      {/* 🔥 評価入力フィールド (数値入力と部分的な星表示に対応) */}
+                      {optionalFieldsExpanded.rating && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          <FormField
+                            control={form.control}
+                            name="rating"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-lg flex font-semibold items-center">
+                                  <StarIcon className="mr-2 h-5 w-5" /> 評価 (0.0〜5.0)
+                                </FormLabel>
+                                <FormControl>
+                                  <div className="flex items-center space-x-2">
+                                    {/* 星の表示 */}
+                                    <div className="flex items-center">
+                                      {[1, 2, 3, 4, 5].map((starIndex) => {
+                                        const currentRating = field.value || 0;
+                                        const fullStars = Math.floor(currentRating);
+                                        const hasHalfStar = currentRating - fullStars >= 0.5;
+                                        const isFull = starIndex <= fullStars;
+                                        const isHalf = starIndex === fullStars + 1 && hasHalfStar;
+
+                                        return (
+                                          <div
+                                            key={starIndex}
+                                            className="relative"
+                                            onClick={() => field.onChange(starIndex)} // クリックで整数値設定も可能
+                                          >
+                                            <StarIcon
+                                              className={cn(
+                                                "h-8 w-8 cursor-pointer text-gray-300",
+                                                { "fill-yellow-400": isFull || isHalf }
+                                              )}
+                                            />
+                                            {isHalf && (
+                                              <div
+                                                className="absolute inset-0 overflow-hidden"
+                                                style={{ width: '50%' }} // 半分だけ色を塗る
+                                              >
+                                                <StarIcon className="h-8 w-8 text-yellow-400 fill-yellow-400" />
+                                              </div>
+                                            )}
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                    {/* 数値入力フィールド */}
+                                    <Input
+                                      type="number"
+                                      step="0.1" // 小数点第一位まで許可
+                                      min="0.0"
+                                      max="5.0"
+                                      placeholder="例: 3.5"
+                                      value={field.value === undefined ? '' : String(field.value)}
+                                      onChange={(e) => {
+                                        const value = e.target.value;
+                                        // 数値または空文字列、小数点第一位までの数値のみを許可
+                                        if (value === '' || /^(?:\d(?:\.\d)?|[0-4](?:\.\d)?|5(?:\.0)?)$/.test(value)) {
+                                          field.onChange(value === '' ? undefined : parseFloat(value));
+                                        }
+                                      }}
+                                      className="w-28 text-lg"
+                                      autoComplete="off"
+                                      autoCorrect="off"
+                                      autoCapitalize="off"
+                                      spellCheck="false"
+                                    />
+                                  </div>
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </motion.div>
+                      )}
+
+                      {/* 🔥 開始日・終了日入力フィールド (時間設定を追加) */}
+                      {optionalFieldsExpanded.date && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          <FormItem>
+                            <FormLabel className="text-lg flex font-semibold items-center">
+                              <CalendarDays className="mr-2 h-5 w-5" /> 日時設定
+                            </FormLabel>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <FormField
+                                control={form.control}
+                                name="start_date"
+                                render={({ field }) => (
+                                  <FormItem className="flex flex-col">
+                                    <FormLabel className="text-base">開始日</FormLabel>
+                                    <Popover>
+                                      <PopoverTrigger asChild>
+                                        <FormControl>
+                                          <Button
+                                            variant={"outline"}
+                                            className={cn(
+                                              "w-full pl-3 text-left font-normal",
+                                              !field.value && "text-muted-foreground",
+                                              "h-12 text-lg" // スタイル調整
+                                            )}
+                                          >
+                                            {field.value ? (
+                                              format(field.value, "PPP", { locale: ja })
+                                            ) : (
+                                              <span>日付を選択</span>
+                                            )}
+                                            <CalendarClock className="ml-auto h-5 w-5 opacity-50" />
+                                          </Button>
+                                        </FormControl>
+                                      </PopoverTrigger>
+                                      <PopoverContent className="w-auto p-0" align="start">
+                                        <Calendar
+                                          mode="single"
+                                          selected={field.value}
+                                          onSelect={(date) => {
+                                            if (date) {
+                                              const currentTime = field.value ? new Date(field.value) : new Date();
+                                              date.setHours(currentTime.getHours());
+                                              date.setMinutes(currentTime.getMinutes());
+                                              date.setSeconds(0);
+                                              date.setMilliseconds(0);
+                                              field.onChange(date);
+                                            } else {
+                                              field.onChange(undefined);
+                                            }
+                                          }}
+                                          disabled={(date) =>
+                                            date < new Date("1900-01-01")
+                                          }
+                                          initialFocus
+                                          locale={ja}
+                                        />
+                                      </PopoverContent>
+                                    </Popover>
+                                    <FormMessage />
+                                    {/* 時間入力フィールドを追加 */}
+                                    <div className="flex items-center space-x-2 mt-2">
+                                      <CalendarClock className="h-5 w-5 text-muted-foreground" /> {/* 時計アイコン */}
+                                      <Input
+                                        type="time"
+                                        value={field.value ? format(field.value, 'HH:mm') : ''}
+                                        onChange={(e) => {
+                                          const [hours, minutes] = e.target.value.split(':').map(Number);
+                                          const newDate = field.value ? new Date(field.value) : new Date();
+                                          newDate.setHours(hours);
+                                          newDate.setMinutes(minutes);
+                                          newDate.setSeconds(0);
+                                          newDate.setMilliseconds(0);
+                                          field.onChange(newDate);
+                                        }}
+                                        className="w-full text-lg"
+                                        step="300" // 5分刻み
+                                      />
+                                    </div>
+                                  </FormItem>
+                                )}
+                              />
+                              <FormField
+                                control={form.control}
+                                name="end_date"
+                                render={({ field }) => (
+                                  <FormItem className="flex flex-col">
+                                    <FormLabel className="text-base">終了日</FormLabel>
+                                    <Popover>
+                                      <PopoverTrigger asChild>
+                                        <FormControl>
+                                          <Button
+                                            variant={"outline"}
+                                            className={cn(
+                                              "w-full pl-3 text-left font-normal",
+                                              !field.value && "text-muted-foreground",
+                                              "h-12 text-lg" // スタイル調整
+                                            )}
+                                          >
+                                            {field.value ? (
+                                              format(field.value, "PPP", { locale: ja })
+                                            ) : (
+                                              <span>日付を選択</span>
+                                            )}
+                                            <CalendarClock className="ml-auto h-5 w-5 opacity-50" />
+                                          </Button>
+                                        </FormControl>
+                                      </PopoverTrigger>
+                                      <PopoverContent className="w-auto p-0" align="start">
+                                        <Calendar
+                                          mode="single"
+                                          selected={field.value}
+                                          onSelect={(date) => {
+                                            if (date) {
+                                              const currentTime = field.value ? new Date(field.value) : new Date();
+                                              date.setHours(currentTime.getHours());
+                                              date.setMinutes(currentTime.getMinutes());
+                                              date.setSeconds(0);
+                                              date.setMilliseconds(0);
+                                              field.onChange(date);
+                                            } else {
+                                              field.onChange(undefined);
+                                            }
+                                          }}
+                                          disabled={(date) =>
+                                            date < new Date("1900-01-01")
+                                          }
+                                          initialFocus
+                                          locale={ja}
+                                        />
+                                      </PopoverContent>
+                                    </Popover>
+                                    <FormMessage />
+                                    {/* 時間入力フィールドを追加 */}
+                                    <div className="flex items-center space-x-2 mt-2">
+                                      <CalendarClock className="h-5 w-5 text-muted-foreground" /> {/* 時計アイコン */}
+                                      <Input
+                                        type="time"
+                                        value={field.value ? format(field.value, 'HH:mm') : ''}
+                                        onChange={(e) => {
+                                          const [hours, minutes] = e.target.value.split(':').map(Number);
+                                          const newDate = field.value ? new Date(field.value) : new Date();
+                                          newDate.setHours(hours);
+                                          newDate.setMinutes(minutes);
+                                          newDate.setSeconds(0);
+                                          newDate.setMilliseconds(0);
+                                          field.onChange(newDate);
+                                        }}
+                                        className="w-full text-lg"
+                                        step="300" // 5分刻み
+                                      />
+                                    </div>
+                                  </FormItem>
+                                )}
+                              />
+                            </div>
                           </FormItem>
                         </motion.div>
                       )}

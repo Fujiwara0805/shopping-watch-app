@@ -2,9 +2,9 @@
 
 import { useState, useCallback, useRef, useEffect, memo } from 'react';
 import { motion } from 'framer-motion';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, format } from 'date-fns'; // formatをimportに追加
 import { ja } from 'date-fns/locale';
-import { Heart, Share2, Clock, Link as LinkIcon, ExternalLink, Instagram, Copy, Laugh, Smile, Meh, Frown, Angry, MapPin, Eye, MessageCircle, ChevronDown, Tag, DollarSign, UserPlus, Info, ChevronLeft, ChevronRight, ShoppingCart, Utensils, Camera, GamepadIcon, Wrench, Layers, FileIcon, Calendar, Briefcase, ShoppingBag, Users, MessageSquareText, Trash2, Flag, AlertTriangle, Loader2 } from 'lucide-react';
+import { Heart, Share2, Clock, Link as LinkIcon, ExternalLink, Instagram, Copy, Laugh, Smile, Meh, Frown, Angry, MapPin, Eye, MessageCircle, ChevronDown, Tag, DollarSign, UserPlus, Info, ChevronLeft, ChevronRight, ShoppingCart, Utensils, Camera, GamepadIcon, Wrench, Layers, FileIcon, Calendar, Briefcase, ShoppingBag, Users, MessageSquareText, Trash2, Flag, AlertTriangle, Loader2, Star, Car, Home, Package, Megaphone } from 'lucide-react'; // Star, Car, Home, Package, Megaphoneアイコンを追加
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -74,7 +74,7 @@ interface PostCardProps {
   onLike?: (postId: string, isLiked: boolean) => Promise<void>;
   onView?: (postId: string) => Promise<void>;
   onComment?: (post: ExtendedPostWithAuthor) => void;
-  onDelete?: (postId: string) => void; // 🔥 追加：投稿削除コールバック
+  onDelete?: (postId: string) => void;
   currentUserId?: string | null;
   showDistance?: boolean;
   isOwnPost?: boolean;
@@ -197,6 +197,45 @@ const DiscountBadge = memo(({ discountRate }: { discountRate: number | null | un
 
 DiscountBadge.displayName = 'DiscountBadge';
 
+// 新規追加：RatingDisplayコンポーネント (post-card.tsx内で使用するため修正)
+const RatingDisplay = memo(({ rating }: { rating: number | null | undefined }) => {
+  if (rating == null) return null;
+
+  const fullStars = Math.floor(rating);
+  const hasHalfStar = rating - fullStars >= 0.5;
+
+  return (
+    <div className="flex items-center space-x-0.5">
+      {[...Array(5)].map((_, i) => {
+        const isFull = i < fullStars;
+        const isHalf = i === fullStars && hasHalfStar;
+
+        return (
+          <div key={i} className="relative">
+            <Star
+              className={cn(
+                "h-4 w-4 text-gray-300",
+                { "fill-yellow-400": isFull || isHalf }
+              )}
+            />
+            {isHalf && (
+              <div
+                className="absolute inset-0 overflow-hidden"
+                style={{ width: '50%' }}
+              >
+                <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
+              </div>
+            )}
+          </div>
+        );
+      })}
+      <span className="text-sm font-medium ml-1" style={{ color: '#73370c' }}>({rating.toFixed(1)})</span>
+    </div>
+  );
+});
+
+RatingDisplay.displayName = 'RatingDisplay';
+
 const UserAvatar = memo(({ author }: { author: AuthorProfile | null }) => {
   const authorAvatarUrl = author?.avatar_url
     ? supabase.storage.from('avatars').getPublicUrl(author.avatar_url).data.publicUrl
@@ -217,7 +256,7 @@ export const PostCard = memo(({
   onLike, 
   onView,
   onComment,
-  onDelete, // 🔥 追加
+  onDelete,
   currentUserId, 
   showDistance = false, 
   isOwnPost, 
@@ -292,7 +331,7 @@ export const PostCard = memo(({
     if (isMyPost && currentUserId) {
       toast({
         title: "自分の投稿にはいいねできません",
-        duration: 1000, // 2000 → 1000に変更
+        duration: 1000,
       });
       return;
     }
@@ -327,7 +366,7 @@ export const PostCard = memo(({
         toast({
           title: "エラーが発生しました",
           description: "いいね処理に失敗しました。",
-          duration: 1000, // 3000 → 1000に変更
+          duration: 1000,
         });
       } finally {
         setIsLiking(false);
@@ -377,7 +416,7 @@ export const PostCard = memo(({
           textColor: 'text-teal-800',
           borderColor: 'border-teal-200'
         };
-      case 'レジャー':
+      case 'エンタメ': // レジャーから変更
         return {
           icon: GamepadIcon,
           bgColor: 'bg-pink-100',
@@ -426,6 +465,34 @@ export const PostCard = memo(({
           textColor: 'text-rose-800',
           borderColor: 'border-rose-200'
         };
+      case 'シェア': // 新規追加
+        return {
+          icon: Users, // 適切なアイコンを選択
+          bgColor: 'bg-orange-100',
+          textColor: 'text-orange-800',
+          borderColor: 'border-orange-200'
+        };
+      case 'コミュニティ': // 新規追加
+        return {
+          icon: MessageCircle, // 適切なアイコンを選択
+          bgColor: 'bg-purple-100',
+          textColor: 'text-purple-800',
+          borderColor: 'border-purple-200'
+        };
+      case '募集': // 新規追加
+        return {
+          icon: UserPlus, // 適切なアイコンを選択
+          bgColor: 'bg-cyan-100',
+          textColor: 'text-cyan-800',
+          borderColor: 'border-cyan-200'
+        };
+      case 'デリバリー':
+        return {
+          icon: Package,
+          bgColor: 'bg-green-100',
+          textColor: 'text-green-800',
+          borderColor: 'border-green-200'
+        };
       default:
         return {
           icon: Layers,
@@ -436,13 +503,9 @@ export const PostCard = memo(({
     }
   }, []);
 
-  // 🔥 修正1: getCategoryColor関数に「不明」を追加
+  // カテゴリカラーを取得する関数 (不明の定義を削除)
   const getCategoryColor = useCallback((category: string) => {
     switch(category) {
-      // 不明カテゴリ
-      case '不明':
-        return 'bg-gray-100 text-gray-800 border-gray-200';
-      
       // ショッピング系
       case '惣菜':
         return 'bg-yellow-100 text-yellow-800 border-yellow-200';
@@ -493,7 +556,7 @@ export const PostCard = memo(({
       case '公園':
         return 'bg-green-100 text-green-800 border-green-200';
       
-      // レジャー系
+      // エンタメ系 (旧レジャー)
       case 'アミューズメント':
         return 'bg-pink-100 text-pink-800 border-pink-200';
       case 'スポーツ':
@@ -522,7 +585,7 @@ export const PostCard = memo(({
         return 'bg-blue-100 text-blue-800 border-blue-200';
       case 'セミナー・講座':
         return 'bg-green-100 text-green-800 border-green-200';
-      case 'スポーツイベント':
+      case 'sportsイベント':
         return 'bg-red-100 text-red-800 border-red-200';
       
       // 求人系
@@ -574,9 +637,54 @@ export const PostCard = memo(({
         return 'bg-yellow-100 text-yellow-800 border-yellow-200';
       case '健康・医療':
         return 'bg-red-100 text-red-800 border-red-200';
+
+      // シェア系 (新規追加)
+      case 'タクシー':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'ライドシェア':
+        return 'bg-orange-100 text-orange-800 border-orange-200';
+      case 'カーシェア':
+        return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'ホテル':
+        return 'bg-blue-100 text-blue-800 border-blue-200';
+      case '民泊':
+        return 'bg-green-100 text-green-800 border-green-200';
+      case '旅館':
+        return 'bg-red-100 text-red-800 border-red-200';
+      case 'コンドミニアム':
+        return 'bg-purple-100 text-purple-800 border-purple-200';
+
+      // コミュニティ系 (新規追加)
+      case '交流':
+        return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'イベント':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case '趣味':
+        return 'bg-green-100 text-green-800 border-green-200';
+      case '学習':
+        return 'bg-purple-100 text-purple-800 border-purple-200';
+      case '地域':
+        return 'bg-teal-100 text-teal-800 border-teal-200';
+
+      // 募集系 (新規追加)
+      case 'メンバー募集':
+        return 'bg-orange-100 text-orange-800 border-orange-200';
+      case '助け合い':
+        return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'ボランティア':
+        return 'bg-green-100 text-green-800 border-green-200';
+      case '参加者募集':
+        return 'bg-red-100 text-red-800 border-red-200';
       
-      // デフォルト
-      default:
+      // デリバリー系
+      case 'フードデリバリー':
+        return 'bg-orange-100 text-orange-800 border-orange-200';
+      case '日用品デリバリー':
+        return 'bg-teal-100 text-teal-800 border-teal-200';
+      case '薬局デリバリー':
+        return 'bg-red-100 text-red-800 border-red-200';
+
+      default: // 未定義のカテゴリに対するフォールバック
         return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   }, []);
@@ -586,12 +694,15 @@ export const PostCard = memo(({
     locale: ja
   }) : '日付不明';
 
+  // 新規追加: 日付フォーマット
+  const formattedStartDate = post.start_date ? format(new Date(post.start_date), "yyyy年MM月dd日 HH:mm", { locale: ja }) : null;
+  const formattedEndDate = post.end_date ? format(new Date(post.end_date), "yyyy年MM月dd日 HH:mm", { locale: ja }) : null;
 
   const copyToClipboard = useCallback((text: string, message: string) => {
     navigator.clipboard.writeText(text).then(() => {
       toast({
         title: `✅ ${message}`,
-        duration: 1000, // 2000 → 1000に変更
+        duration: 1000,
       });
       setShowShareDialog(false);
     }).catch(err => console.error("コピー失敗:", err));
@@ -685,7 +796,7 @@ export const PostCard = memo(({
 
     setIsDeleting(true);
     try {
-      // 🔥 変更：物理削除から論理削除に変更
+      // 論理削除に変更
       const { error } = await supabase
         .from('posts')
         .update({ is_deleted: true })
@@ -804,6 +915,7 @@ export const PostCard = memo(({
                     {post.author?.display_name || '不明な投稿者'}
                   </p>
                   {isMyPost && <Badge variant="secondary" className="text-xs">自分の投稿</Badge>}
+                  {/* 評価表示は詳細情報セクションへ移動 */}
                 </div>
                 <div className="flex items-center space-x-2">
                   {post.author_posts_count && post.author_posts_count > 0 && (
@@ -868,8 +980,42 @@ export const PostCard = memo(({
                 <div className="bg-white">
                   <table className="w-full">
                     <tbody>
-                      {/* 1行目: 場所 - 店舗名が「店舗不明」以外の場合のみ表示 */}
-                      {post.store_name && post.store_name !== '店舗不明' && (
+                      {/* 評価表示 (新しい行として追加) */}
+                      {post.rating != null && (
+                        <tr className="border-b border-gray-100">
+                          <td className="p-3 bg-gray-50 w-1/3 font-medium border-r border-gray-100">
+                            <div className="flex items-center space-x-2">
+                              <Star className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                              <span className="text-base" style={{ color: '#73370c' }}>評価</span>
+                            </div>
+                          </td>
+                          <td className="p-3">
+                            <RatingDisplay rating={post.rating} />
+                          </td>
+                        </tr>
+                      )}
+
+                      {/* 期間表示 (開始日・終了日) */}
+                      {(post.start_date || post.end_date) && ( // どちらか一方でもあれば表示
+                        <tr className="border-b border-gray-100">
+                          <td className="p-3 bg-gray-50 w-1/3 font-medium border-r border-gray-100">
+                            <div className="flex items-center space-x-2">
+                              <Calendar className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                              <span className="text-base" style={{ color: '#73370c' }}>期間</span>
+                            </div>
+                          </td>
+                          <td className="p-3">
+                            <span className="text-base font-medium" style={{ color: '#73370c' }}>
+                              {post.start_date && format(new Date(post.start_date), "yyyy年MM月dd日 HH:mm", { locale: ja })}
+                              {post.start_date && post.end_date && " ~ "}
+                              {post.end_date && format(new Date(post.end_date), "yyyy年MM月dd日 HH:mm", { locale: ja })}
+                            </span>
+                          </td>
+                        </tr>
+                      )}
+                      
+                      {/* 1行目: 場所 - 店舗IDがあり、店舗名が「店舗不明」以外の場合のみ表示 */}
+                      {post.store_id && post.store_name && post.store_name !== '店舗不明' && (
                         <tr className="border-b border-gray-100">
                           <td className="p-3 bg-gray-50 w-1/3 font-medium border-r border-gray-100">
                             <div className="flex items-center space-x-2">
@@ -929,8 +1075,8 @@ export const PostCard = memo(({
                         </tr>
                       )}
                       
-                      {/* 3行目: カテゴリ - カテゴリが「不明」以外の場合のみ表示 */}
-                      {post.category && post.category !== '不明' && (
+                      {/* 3行目: カテゴリ - カテゴリがnullまたはundefinedではない場合のみ表示 */}
+                      {post.category && post.category !== '' && post.category !== null && (
                         <tr className="border-b border-gray-100">
                           <td className="p-3 bg-gray-50 w-1/3 font-medium border-r border-gray-100">
                             <div className="flex items-center space-x-2">

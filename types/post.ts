@@ -15,7 +15,9 @@ export interface Post {
   views_count: number;
   comments_count: number;
   post_likes?: Array<{ user_id: string }>;
-  
+  rating?: number | null;
+  start_date?: string | null;
+  end_date?: string | null;
   // 店舗の位置情報
   store_latitude?: number | null;
   store_longitude?: number | null;
@@ -29,6 +31,7 @@ export interface Post {
   // 新規追加フィールド
   url?: string | null;
   file_urls?: string | null; // JSON文字列
+
 }
 
 export interface AuthorProfile {
