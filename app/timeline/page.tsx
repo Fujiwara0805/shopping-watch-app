@@ -689,14 +689,14 @@ const HamburgerMenu = ({ currentUser }: { currentUser: any }) => {
         setIsOpen(false);
       }
     },
-    {
-      icon: FileText,
-      label: '広告・チラシ(未実装)',
-      onClick: () => {
-        router.push('/');
-        setIsOpen(false);
-      }
-    },
+    // {
+    //   icon: FileText,
+    //   label: '広告・チラシ(未実装)',
+    //   onClick: () => {
+    //     router.push('/');
+    //     setIsOpen(false);
+    //   }
+    // },
     {
       icon: NotebookText,
       label: '買い物メモ',
