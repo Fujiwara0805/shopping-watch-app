@@ -173,11 +173,11 @@ export default function FamilyShoppingPage() {
 
   // サーバーデータとローカルデータを同期
   const syncWithServer = (serverData: FamilyShoppingItem[]) => {
-    const serverItemIds = new Set(serverData.map(item => item.id));
+    console.log('Server data received:', serverData); // デバッグ用
     
-    // ローカルの未同期アイテムを保持し、サーバーデータを統合
     setLocalItems(prev => {
       const unsyncedItems = prev.filter(item => !item.synced);
+      console.log('Unsynced items:', unsyncedItems); // デバッグ用
       
       // サーバーデータをローカル形式に変換
       const serverAsLocal: LocalShoppingItem[] = serverData.map(item => ({
@@ -195,7 +195,13 @@ export default function FamilyShoppingPage() {
       }));
       
       // 未同期アイテムと同期済みアイテムを結合
-      const allItems = [...unsyncedItems, ...serverAsLocal];
+      // 重複を避けるため、サーバーに存在するアイテムは除外
+      const serverItemIds = new Set(serverData.map(item => item.id));
+      const filteredUnsyncedItems = unsyncedItems.filter(item => !serverItemIds.has(item.id));
+      
+      const allItems = [...filteredUnsyncedItems, ...serverAsLocal];
+      
+      console.log('Final items after sync:', allItems); // デバッグ用
       
       // 作成日時でソート（新しい順）
       return allItems.sort((a, b) => {
