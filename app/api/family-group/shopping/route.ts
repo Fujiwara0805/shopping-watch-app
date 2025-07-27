@@ -388,7 +388,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'アイテムIDが必要です' }, { status: 400 });
     }
 
-    // アイテムの存在確認とグループアクセス権限チェック
+    // アイテムの存在確認
     const { data: item, error: itemError } = await supabase
       .from('family_shopping_items')
       .select('id, group_id, user_id')
@@ -399,11 +399,14 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'アイテムが見つかりません' }, { status: 404 });
     }
 
-    // グループメンバーシップを確認
+    // グループIDが指定されている場合は、そのグループのメンバーシップを確認
+    const targetGroupId = groupId || item.group_id;
+    
+    // グループメンバーシップを確認（グループメンバーなら削除可能）
     const { data: membership } = await supabase
       .from('family_group_members')
       .select('group_id, role')
-      .eq('group_id', item.group_id)
+      .eq('group_id', targetGroupId)
       .eq('user_id', session.user.id)
       .single();
 
@@ -411,10 +414,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'このグループにアクセスする権限がありません' }, { status: 403 });
     }
 
-    // 作成者または管理者のみ削除可能
-    if (item.user_id !== session.user.id && membership.role !== 'owner') {
-      return NextResponse.json({ error: '削除する権限がありません' }, { status: 403 });
-    }
+    // グループメンバーなら削除可能（権限チェックを削除）
 
     // アイテムを削除
     const { error: deleteError } = await supabase

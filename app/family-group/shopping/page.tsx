@@ -366,6 +366,8 @@ export default function FamilyShoppingPage() {
     const item = localItems.find(item => item.id === id);
     if (!item) return;
 
+    // グループメンバーなら削除可能（権限チェックを削除）
+
     // ローカルから即座に削除
     setLocalItems(prev => prev.filter(item => item.id !== id));
 
@@ -387,16 +389,20 @@ export default function FamilyShoppingPage() {
         });
 
         if (!response.ok) {
-          throw new Error('削除に失敗しました');
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || '削除に失敗しました');
         }
       } catch (error) {
         console.error('Delete error:', error);
         toast({
           title: "エラー",
-          description: "サーバー削除に失敗しました",
+          description: error instanceof Error ? error.message : "サーバー削除に失敗しました",
           variant: "destructive",
           duration: 1000,
         });
+        
+        // エラーが発生した場合は、ローカルにアイテムを復元
+        setLocalItems(prev => [...prev, item]);
       }
     }
   };
@@ -421,6 +427,12 @@ export default function FamilyShoppingPage() {
       description: "最新のデータを取得しました",
       duration: 1000,
     });
+  };
+
+  // 削除ボタンの表示条件を確認する関数（グループメンバーなら削除可能）
+  const canDeleteItem = (item: LocalShoppingItem) => {
+    // グループに参加しているユーザーなら削除可能
+    return currentGroup !== null;
   };
 
   // ローディング状態
@@ -640,6 +652,7 @@ export default function FamilyShoppingPage() {
                       size="icon" 
                       onClick={() => handleDeleteItem(item.id)} 
                       className="text-muted-foreground hover:text-destructive"
+                      disabled={!canDeleteItem(item)}
                     >
                       <Trash2 size={18} />
                     </Button>
