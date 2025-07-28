@@ -69,43 +69,67 @@ export default function HunterRankingPage() {
     } else {
       // 集計期間外
       setIsRankingPeriodActive(false);
-      setLoading(false); // データ取得しないのでローディング終了
+      setRankingPeriod(null);
     }
   }, []);
   
   useEffect(() => {
-    if (isRankingPeriodActive && rankingPeriod) {
-      fetchRankings(rankingPeriod.start, rankingPeriod.end);
+    // 総合ランキングは常に取得する
+    if (session) {
+      fetchRankings();
     }
-  }, [session, isRankingPeriodActive, rankingPeriod]);
+  }, [session]);
 
-  const fetchRankings = async (startDate: Date, endDate: Date) => {
+  const fetchRankings = async (startDate?: Date, endDate?: Date) => {
     setLoading(true);
     try {
-      // 新しいデータベース関数を呼び出す
-      const { data, error } = await supabase.rpc('get_rankings', {
-        start_date: startDate.toISOString(),
-        end_date: endDate.toISOString()
-      });
+      let periodData: UserRanking[] = [];
+      
+      // 月間ランキングの取得（期間内の場合のみ）
+      if (isRankingPeriodActive && startDate && endDate) {
+        const { data: periodRankingData, error: periodError } = await supabase.rpc('get_rankings', {
+          start_date: startDate.toISOString(),
+          end_date: endDate.toISOString()
+        });
 
-      if (error) {
-        console.error('ランキング取得エラー:', error);
-        throw error;
+        if (periodError) {
+          console.error('月間ランキング取得エラー:', periodError);
+        } else {
+          periodData = periodRankingData as UserRanking[];
+        }
       }
 
-      const typedData = data as UserRanking[];
+      // 総合ランキングの取得（常に取得）
+      // 全期間のデータを取得するため、開始日をアプリ開始日（例：2024年1月1日）に設定
+      const appStartDate = new Date('2024-01-01');
+      const now = new Date();
+      
+      const { data: totalRankingData, error: totalError } = await supabase.rpc('get_rankings', {
+        start_date: appStartDate.toISOString(),
+        end_date: now.toISOString()
+      });
 
-      const periodSorted = [...typedData]
+      if (totalError) {
+        console.error('総合ランキング取得エラー:', totalError);
+        throw totalError;
+      }
+
+      const totalData = totalRankingData as UserRanking[];
+
+      // 月間ランキングの処理
+      const periodSorted = periodData
         .filter(user => user.period_likes > 0)
         .sort((a, b) => b.period_likes - a.period_likes);
         
-      const totalSorted = [...typedData]
+      // 総合ランキングの処理
+      const totalSorted = totalData
         .filter(user => user.total_likes > 0)
         .sort((a, b) => b.total_likes - a.total_likes);
 
       setPeriodRankings(periodSorted);
       setTotalRankings(totalSorted);
 
+      // 現在のユーザーのランキング情報を設定
       if (session?.user?.id) {
         const currentUserIndex = totalSorted.findIndex(u => u.user_id === session.user.id);
         if (currentUserIndex !== -1) {
@@ -131,25 +155,19 @@ export default function HunterRankingPage() {
 
   // 新しいボタン用のハンドラーを追加
   const handleRefresh = async () => {
+    setLoading(true);
     if (isRankingPeriodActive && rankingPeriod) {
-      setLoading(true);
       await fetchRankings(rankingPeriod.start, rankingPeriod.end);
-      const refreshToast = toast({
-        title: "更新しました",
-        description: "最新のランキング情報を取得しました。",
-      });
-      setTimeout(() => {
-        refreshToast.dismiss();
-      }, 1000);
     } else {
-      const offPeriodToast = toast({
-        title: "集計期間外です",
-        description: "現在、ランキングは集計期間外です。",
-      });
-      setTimeout(() => {
-        offPeriodToast.dismiss();
-      }, 1000);
+      await fetchRankings();
     }
+    const refreshToast = toast({
+      title: "更新しました",
+      description: "最新のランキング情報を取得しました。",
+    });
+    setTimeout(() => {
+      refreshToast.dismiss();
+    }, 1000);
   };
 
   const handleGoToProfile = () => {
