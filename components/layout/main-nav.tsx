@@ -39,10 +39,8 @@ export function MainNav() {
     setIsLoggedIn(localStorage.getItem('isLoggedIn') === 'true');
   }, []);
   
-  // 削除: handlePostClick関数は不要
-  
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-10 bg-background border-t border-border pb-safe">
+    <nav className="fixed bottom-0 left-0 right-0 z-10 bg-background border-t border-border pb-safe md:hidden">
       <div className="flex justify-around items-center h-16">
         {navItems.map((item) => {
           const isActive = pathname === item.href;

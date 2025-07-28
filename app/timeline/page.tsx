@@ -651,14 +651,35 @@ const useDebounce = (value: string, delay: number) => {
 // ハンバーガーメニューコンポーネント
 const HamburgerMenu = ({ currentUser }: { currentUser: any }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const router = useRouter();
+
+  // デバイス判定
+  useEffect(() => {
+    const checkDevice = () => {
+      const userAgent = navigator.userAgent.toLowerCase();
+      const isMobileUserAgent = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
+      const isMobileWidth = window.innerWidth <= 768;
+      const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+      
+      setIsMobile(isMobileUserAgent || (isMobileWidth && isTouchDevice));
+    };
+    
+    checkDevice();
+    window.addEventListener('resize', checkDevice);
+    
+    return () => {
+      window.removeEventListener('resize', checkDevice);
+    };
+  }, []);
 
   const handleSignOut = async () => {
     await signOut({ redirect: false });
     router.push('/login');
   };
 
-  const menuItems = [
+  // モバイル用メニュー項目
+  const mobileMenuItems = [
     {
       icon: User,
       label: 'マイページ',
@@ -691,14 +712,6 @@ const HamburgerMenu = ({ currentUser }: { currentUser: any }) => {
         setIsOpen(false);
       }
     },
-    // {
-    //   icon: FileText,
-    //   label: '広告・チラシ(未実装)',
-    //   onClick: () => {
-    //     router.push('/');
-    //     setIsOpen(false);
-    //   }
-    // },
     {
       icon: NotebookText,
       label: '買い物メモ',
@@ -732,6 +745,61 @@ const HamburgerMenu = ({ currentUser }: { currentUser: any }) => {
       }
     }
   ];
+
+  // PC用メニュー項目（指定された項目のみ）
+  const pcMenuItems = [
+    {
+      icon: Edit,
+      label: '投稿する',
+      onClick: () => {
+        router.push('/post');
+        setIsOpen(false);
+      }
+    },
+    {
+      icon: UserPlus,
+      label: '招待する',
+      onClick: () => {
+        // 招待モーダルを開く処理は親コンポーネントで管理
+        setIsOpen(false);
+      }
+    },
+    {
+      icon: Globe,
+      label: 'ランディングページ',
+      onClick: () => {
+        router.push('/');
+        setIsOpen(false);
+      }
+    },
+    {
+      icon: HelpCircle,
+      label: 'お問い合わせ',
+      onClick: () => {
+        router.push('/contact');
+        setIsOpen(false);
+      }
+    },
+    {
+      icon: FileText,
+      label: '規約・ポリシー',
+      onClick: () => {
+        router.push('/terms');
+        setIsOpen(false);
+      }
+    },
+    {
+      icon: Zap,
+      label: 'リリースノート',
+      onClick: () => {
+        router.push('/release-notes');
+        setIsOpen(false);
+      }
+    }
+  ];
+
+  // デバイスに応じてメニュー項目を選択
+  const menuItems = isMobile ? mobileMenuItems : pcMenuItems;
 
   return (
     <>
@@ -1624,6 +1692,28 @@ export default function Timeline() {
     setPosts(prevPosts => prevPosts.filter(post => post.id !== postId));
   }, []);
 
+  // デバイス判定の状態を追加
+  const [isMobile, setIsMobile] = useState(false);
+
+  // デバイス判定
+  useEffect(() => {
+    const checkDevice = () => {
+      const userAgent = navigator.userAgent.toLowerCase();
+      const isMobileUserAgent = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
+      const isMobileWidth = window.innerWidth <= 768;
+      const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+      
+      setIsMobile(isMobileUserAgent || (isMobileWidth && isTouchDevice));
+    };
+    
+    checkDevice();
+    window.addEventListener('resize', checkDevice);
+    
+    return () => {
+      window.removeEventListener('resize', checkDevice);
+    };
+  }, []);
+
   if (loading && posts.length === 0) {
     return (
       <AppLayout>
@@ -1844,8 +1934,8 @@ export default function Timeline() {
         </div>
       )}
 
-      {/* 投稿するボタンと更新ボタンの行 */}
-      <div className="px-4 py-3 bg-gray-50 border-b">
+      {/* 投稿するボタンと更新ボタンの行 - PC版では非表示 */}
+      <div className={`px-4 py-3 bg-gray-50 border-b ${!isMobile ? 'hidden' : ''}`}>
         <div className="flex space-x-2">
           <Button
             onClick={() => router.push('/post')}
