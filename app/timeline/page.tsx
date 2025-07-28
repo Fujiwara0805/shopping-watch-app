@@ -1714,6 +1714,42 @@ export default function Timeline() {
     };
   }, []);
 
+  // PC版でのサイドバー開閉状態
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
+  // PC版用のフィルター適用処理
+  const handleApplySidebarFilters = () => {
+    setActiveFilter(tempActiveFilter);
+    setActiveGenreFilter(tempActiveGenreFilter);
+    setSearchMode(tempSearchMode);
+    setSortBy(tempSortBy);
+    
+    setTimeout(() => {
+      if (fetchPostsRef.current) {
+        fetchPostsRef.current(0, true);
+      }
+    }, 100);
+  };
+
+  // PC版用のフィルタークリア処理
+  const handleClearSidebarFilters = () => {
+    setTempActiveFilter('all');
+    setTempActiveGenreFilter('all');
+    setTempSearchMode('all');
+    setTempSortBy('created_at_desc');
+    setActiveFilter('all');
+    setActiveGenreFilter('all');
+    setSearchMode('all');
+    setSortBy('created_at_desc');
+    setGeneralSearchTerm('');
+    
+    setTimeout(() => {
+      if (fetchPostsRef.current) {
+        fetchPostsRef.current(0, true);
+      }
+    }, 100);
+  };
+
   if (loading && posts.length === 0) {
     return (
       <AppLayout>
@@ -1808,262 +1844,562 @@ export default function Timeline() {
 
   return (
     <AppLayout>
-      <div className="sticky top-0 z-10 border-b bg-[#73370c]">
-        {/* 検索行 */}
-        <div className="p-4 flex items-center space-x-2">
-          <HamburgerMenu currentUser={currentUserProfile} />
-          <div className="relative flex-1">
-            <Input
-              type="text"
-              placeholder="店舗名やキーワードで検索"
-              value={generalSearchTerm}
-              onChange={(e) => setGeneralSearchTerm(e.target.value)}
-              className="pr-10 w-full text-base"
-              style={{ fontSize: '16px' }}
-              autoComplete="off"
-              autoCorrect="off"
-              autoCapitalize="off"
-              spellCheck="false"
-            />
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center">
-              {isSearching && generalSearchTerm ? (
-                <Loader2 className="h-4 w-4 text-muted-foreground animate-spin" />
-              ) : (
-                <Search className="h-4 w-4 text-muted-foreground" />
-              )}
-            </div>
-            
-            {/* 検索履歴のドロップダウン */}
-            {searchHistory.length > 0 && generalSearchTerm === '' && (
-              <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-md mt-1 shadow-lg z-20">
-                <div className="p-2 border-b bg-gray-50 flex justify-between items-center">
-                  <span className="text-sm text-gray-600">検索履歴</span>
-                  <Button variant="ghost" size="sm" onClick={clearHistory}>
-                    <X className="h-3 w-3" />
-                  </Button>
-                </div>
-                {searchHistory.slice(0, 5).map((term, index) => (
-                  <button
-                    key={index}
-                    className="w-full text-left p-2 hover:bg-gray-100 text-sm"
-                    onClick={() => {
-                      setGeneralSearchTerm(term);
-                      setTimeout(() => {
-                        if (fetchPostsRef.current) {
-                          fetchPostsRef.current(0, true, term);
-                        }
-                      }, 50);
-                    }}
+      {/* PC版でのレイアウト */}
+      {!isMobile ? (
+        <div className="flex h-screen">
+          {/* 左サイドバー - PC版のみ */}
+          <div className="w-80 bg-gray-50 border-r border-gray-200 overflow-y-auto">
+            <div className="p-6 space-y-6">
+              <div>
+                <h3 className="text-lg font-semibold mb-4 text-gray-800">フィルター</h3>
+                
+                {/* ジャンルフィルター */}
+                <div className="space-y-3">
+                  <label className="text-sm font-medium text-gray-700">ジャンル</label>
+                  <Select 
+                    onValueChange={handleGenreFilterChange} 
+                    value={tempActiveGenreFilter}
                   >
-                    {term}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-          
-          {/* フィルターボタン */}
-          <Button onClick={() => setShowFilterModal(true)} variant="outline" className="relative">
-            <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
-            {(activeFilter !== 'all' || activeGenreFilter !== 'all' || sortBy !== 'created_at_desc') && (
-              <Badge className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
-                {(activeFilter !== 'all' ? 1 : 0) + (activeGenreFilter !== 'all' ? 1 : 0) + (sortBy !== 'created_at_desc' ? 1 : 0)}
-              </Badge>
-            )}
-          </Button>
-        </div>
-      </div>
-
-      {/* リアルタイム検索中の表示 */}
-      {isSearching && generalSearchTerm && generalSearchTerm.length >= 2 && (
-        <div className="px-4 py-2 bg-blue-50 border-b">
-          <div className="flex items-center space-x-2">
-            <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
-            <span className="text-sm text-blue-700">「{generalSearchTerm}」を検索中...</span>
-          </div>
-        </div>
-      )}
-
-      {/* アクティブなフィルタの表示（searchModeを除外） */}
-      {(activeFilter !== 'all' || activeGenreFilter !== 'all' || sortBy !== 'created_at_desc') && (
-        <div className="px-4 py-2 bg-gray-50 border-b">
-          <div className="flex flex-wrap gap-2 items-center">
-            <span className="text-sm text-gray-600">アクティブなフィルタ:</span>
-            {activeFilter !== 'all' && (
-              <Badge variant="secondary" className="flex items-center gap-1">
-                カテゴリ: {activeFilter}
-                <button onClick={() => setActiveFilter('all')} className="ml-1">
-                  <X className="h-3 w-3" />
-                </button>
-              </Badge>
-            )}
-            {activeGenreFilter !== 'all' && (
-              <Badge variant="secondary" className="flex items-center gap-1">
-                ジャンル: {activeGenreFilter}
-                <button onClick={() => setActiveGenreFilter('all')} className="ml-1">
-                  <X className="h-3 w-3" />
-                </button>
-              </Badge>
-            )}
-            {sortBy !== 'created_at_desc' && (
-              <Badge variant="secondary" className="flex items-center gap-1">
-                並び順: {sortBy === 'likes_desc' ? 'いいね順' : sortBy === 'views_desc' ? '閲覧順' : sortBy === 'comments_desc' ? 'コメント順' : sortBy === 'expires_at_asc' ? '期限順' : sortBy === 'distance_asc' ? '距離順' : '新着順'}
-                <button onClick={() => setSortBy('created_at_desc')} className="ml-1">
-                  <X className="h-3 w-3" />
-                </button>
-              </Badge>
-            )}
-            <Button variant="ghost" size="sm" onClick={() => {
-              setActiveFilter('all');
-              setActiveGenreFilter('all');
-              setSortBy('created_at_desc');
-              // 🔥 修正：位置情報はクリアしない
-              // 検索語のみクリア
-              setGeneralSearchTerm('');
-              
-              // 即座にフィルターを適用
-              setTimeout(() => {
-                if (fetchPostsRef.current) {
-                  fetchPostsRef.current(0, true);
-                }
-              }, 100);
-            }}>
-              すべてクリア
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {/* 投稿するボタンと更新ボタンの行 - PC版では非表示 */}
-      <div className={`px-4 py-3 bg-gray-50 border-b ${!isMobile ? 'hidden' : ''}`}>
-        <div className="flex space-x-2">
-          <Button
-            onClick={() => router.push('/post')}
-            className="flex-1 text-white hover:opacity-90"
-            style={{ backgroundColor: '#f97415' }}
-          >
-            投稿する
-          </Button>
-          <Button
-            onClick={() => setShowInviteModal(true)}
-            variant="outline"
-            className="flex-1"
-            style={{ backgroundColor: '#eefdf6' }}
-          >
-            <UserPlus className="h-4 w-4 mr-2" />
-            招待する
-          </Button>
-          <Button
-            onClick={() => {
-              if (fetchPostsRef.current) {
-                fetchPostsRef.current(0, true, debouncedSearchTerm);
-              }
-            }}
-            variant="outline"
-            className="flex-1 "
-          >
-            <RefreshCw className="h-4 w-4 mr-2" />
-            更新
-          </Button>
-        </div>
-      </div>
-
-      <div className="timeline-scroll-container custom-scrollbar overscroll-none">
-        <div className="p-4" style={{ paddingBottom: '24px' }}>
-          {posts.length === 0 && !loading && !isSearching ? (
-            <div className="text-center py-10">
-              <LayoutGrid size={48} className="mx-auto text-muted-foreground mb-4" />
-              {generalSearchTerm ? (
-                <div>
-                  <p className="text-xl text-muted-foreground mb-2">
-                    「{generalSearchTerm}」の検索結果がありません
-                  </p>
-                  <p className="text-sm text-gray-500 mb-4">
-                    別のキーワードで検索してみてください
-                  </p>
-                  <Button onClick={() => setGeneralSearchTerm('')} className="mt-4">
-                    検索をクリア
-                  </Button>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="ジャンルを選択" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {genres.map((genre) => (
+                        <SelectItem 
+                          key={genre} 
+                          value={genre === 'すべて' ? 'all' : genre}
+                        >
+                          {genre}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-              ) : !userLocation && currentUserRole !== 'admin' ? ( // 管理者の場合は位置情報待ちメッセージを表示しない
-                <div>
-                  <p className="text-xl text-muted-foreground mb-2">
-                    位置情報を取得中...
-                  </p>
-                  <p className="text-sm text-gray-500 mb-4">
-                    5km圏内の投稿を表示するために位置情報を取得しています
-                  </p>
-                </div>
-              ) : (
-                <div>
-                  <p className="text-xl text-muted-foreground mb-2">
-                    {currentUserRole === 'admin' ? '投稿がありません' : '現在地から5km圏内に投稿がありません'}
-                  </p>
-                  <p className="text-sm text-gray-500 mb-4">
-                    別の場所に移動するか、時間をおいて再度確認してください
-                  </p>
-                </div>
-              )}
-            </div>
-          ) : (
-            <motion.div
-              layout
-              className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-            >
-              <AnimatePresence mode="popLayout">
-                {posts.map((post, index) => (
-                  <motion.div
-                    key={post.id}
-                    id={`post-${post.id}`}
-                    layout
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    transition={{ duration: 0.3, delay: index * 0.05 }}
-                    className={cn(
-                      post.id === highlightPostId && 'ring-4 ring-primary ring-offset-2 rounded-xl'
+
+                {/* カテゴリーフィルター */}
+                <div className="space-y-3">
+                  <label className="text-sm font-medium text-gray-700">
+                    カテゴリー
+                    {tempActiveGenreFilter !== 'all' && (
+                      <span className="text-xs text-gray-500 ml-2">
+                        ({tempActiveGenreFilter})
+                      </span>
                     )}
+                  </label>
+                  <Select 
+                    onValueChange={(value: string) => setTempActiveFilter(value)} 
+                    value={tempActiveFilter}
                   >
-                    <PostCard 
-                      post={post} 
-                      onLike={handleLike}
-                      onView={handleView}
-                      onComment={handleCommentClick}
-                      onDelete={handleDeletePost} // 🔥 追加：削除コールバック
-                      currentUserId={currentUserId}
-                      showDistance={
-                        process.env.NODE_ENV === 'development' 
-                          ? post.distance !== undefined
-                          : !!userLocation && post.distance !== undefined && currentUserRole !== 'admin' // 管理者の場合は距離表示を無効化
-                      }
-                      isOwnPost={post.author_user_id === currentUserId}
-                      enableComments={true}
-                    />
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="カテゴリを選択" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {getAvailableCategories().map((category) => (
+                        <SelectItem 
+                          key={category} 
+                          value={category === 'すべて' ? 'all' : category}
+                        >
+                          {category}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* 並び順 */}
+                <div className="space-y-3">
+                  <label className="text-sm font-medium text-gray-700">並び順</label>
+                  <Select onValueChange={(value: SortOption) => setTempSortBy(value)} value={tempSortBy}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="並び替え" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="created_at_desc">新着順</SelectItem>
+                      <SelectItem value="created_at_asc">古い順</SelectItem>
+                      <SelectItem value="expires_at_asc">期限が近い順</SelectItem>
+                      <SelectItem value="likes_desc">いいねが多い順</SelectItem>
+                      <SelectItem value="views_desc">表示回数が多い順</SelectItem>
+                      <SelectItem value="comments_desc">コメントが多い順</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* 検索ボックス */}
+                <div className="space-y-3">
+                  <label className="text-sm font-medium text-gray-700">キーワード検索</label>
+                  <Input
+                    type="text"
+                    placeholder="店舗名やキーワードで検索"
+                    value={generalSearchTerm}
+                    onChange={(e) => setGeneralSearchTerm(e.target.value)}
+                    className="w-full"
+                  />
+                </div>
+
+                {/* アクティブなフィルタ表示 */}
+                {(activeFilter !== 'all' || activeGenreFilter !== 'all' || sortBy !== 'created_at_desc') && (
+                  <div className="space-y-3">
+                    <label className="text-sm font-medium text-gray-700">アクティブなフィルタ</label>
+                    <div className="space-y-2">
+                      {activeFilter !== 'all' && (
+                        <Badge variant="secondary" className="flex items-center gap-1">
+                          カテゴリ: {activeFilter}
+                          <button onClick={() => {
+                            setActiveFilter('all');
+                            setTempActiveFilter('all');
+                            setTimeout(() => {
+                              if (fetchPostsRef.current) {
+                                fetchPostsRef.current(0, true);
+                              }
+                            }, 100);
+                          }} className="ml-1">
+                            <X className="h-3 w-3" />
+                          </button>
+                        </Badge>
+                      )}
+                      {activeGenreFilter !== 'all' && (
+                        <Badge variant="secondary" className="flex items-center gap-1">
+                          ジャンル: {activeGenreFilter}
+                          <button onClick={() => {
+                            setActiveGenreFilter('all');
+                            setTempActiveGenreFilter('all');
+                            setTimeout(() => {
+                              if (fetchPostsRef.current) {
+                                fetchPostsRef.current(0, true);
+                              }
+                            }, 100);
+                          }} className="ml-1">
+                            <X className="h-3 w-3" />
+                          </button>
+                        </Badge>
+                      )}
+                      {sortBy !== 'created_at_desc' && (
+                        <Badge variant="secondary" className="flex items-center gap-1">
+                          並び順: {sortBy === 'likes_desc' ? 'いいね順' : sortBy === 'views_desc' ? '閲覧順' : sortBy === 'comments_desc' ? 'コメント順' : sortBy === 'expires_at_asc' ? '期限順' : sortBy === 'distance_asc' ? '距離順' : '新着順'}
+                          <button onClick={() => {
+                            setSortBy('created_at_desc');
+                            setTempSortBy('created_at_desc');
+                            setTimeout(() => {
+                              if (fetchPostsRef.current) {
+                                fetchPostsRef.current(0, true);
+                              }
+                            }, 100);
+                          }} className="ml-1">
+                            <X className="h-3 w-3" />
+                          </button>
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* フィルター適用・クリアボタン */}
+                <div className="space-y-3 pt-4 border-t">
+                  <Button 
+                    onClick={handleApplySidebarFilters}
+                    className="w-full"
+                  >
+                    フィルターを適用
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={handleClearSidebarFilters}
+                    className="w-full"
+                  >
+                    すべてクリア
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* メインコンテンツエリア */}
+          <div className="flex-1 flex flex-col">
+            {/* ヘッダー部分 */}
+            <div className="sticky top-0 z-10 border-b bg-[#73370c]">
+              <div className="p-4 flex items-center space-x-2">
+                <HamburgerMenu currentUser={currentUserProfile} />
+                <div className="relative flex-1">
+                  <Input
+                    type="text"
+                    placeholder="店舗名やキーワードで検索"
+                    value={generalSearchTerm}
+                    onChange={(e) => setGeneralSearchTerm(e.target.value)}
+                    className="pr-10 w-full text-base"
+                    style={{ fontSize: '16px' }}
+                    autoComplete="off"
+                    autoCorrect="off"
+                    autoCapitalize="off"
+                    spellCheck="false"
+                  />
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center">
+                    {isSearching && generalSearchTerm ? (
+                      <Loader2 className="h-4 w-4 text-muted-foreground animate-spin" />
+                    ) : (
+                      <Search className="h-4 w-4 text-muted-foreground" />
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* コンテンツエリア */}
+            <div className="flex-1 overflow-y-auto">
+              <div className="p-6">
+                {posts.length === 0 && !loading && !isSearching ? (
+                  <div className="text-center py-10">
+                    <LayoutGrid size={48} className="mx-auto text-muted-foreground mb-4" />
+                    {generalSearchTerm ? (
+                      <div>
+                        <p className="text-xl text-muted-foreground mb-2">
+                          「{generalSearchTerm}」の検索結果がありません
+                        </p>
+                        <p className="text-sm text-gray-500 mb-4">
+                          別のキーワードで検索してみてください
+                        </p>
+                        <Button onClick={() => setGeneralSearchTerm('')} className="mt-4">
+                          検索をクリア
+                        </Button>
+                      </div>
+                    ) : !userLocation && currentUserRole !== 'admin' ? (
+                      <div>
+                        <p className="text-xl text-muted-foreground mb-2">
+                          位置情報を取得中...
+                        </p>
+                        <p className="text-sm text-gray-500 mb-4">
+                          5km圏内の投稿を表示するために位置情報を取得しています
+                        </p>
+                      </div>
+                    ) : (
+                      <div>
+                        <p className="text-xl text-muted-foreground mb-2">
+                          {currentUserRole === 'admin' ? '投稿がありません' : '現在地から5km圏内に投稿がありません'}
+                        </p>
+                        <p className="text-sm text-gray-500 mb-4">
+                          別の場所に移動するか、時間をおいて再度確認してください
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <motion.div
+                    layout
+                    className="grid gap-6 grid-cols-1 lg:grid-cols-2 xl:grid-cols-3"
+                  >
+                    <AnimatePresence mode="popLayout">
+                      {posts.map((post, index) => (
+                        <motion.div
+                          key={post.id}
+                          id={`post-${post.id}`}
+                          layout
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -20 }}
+                          transition={{ duration: 0.3, delay: index * 0.05 }}
+                          className={cn(
+                            post.id === highlightPostId && 'ring-4 ring-primary ring-offset-2 rounded-xl'
+                          )}
+                        >
+                          <PostCard 
+                            post={post} 
+                            onLike={handleLike}
+                            onView={handleView}
+                            onComment={handleCommentClick}
+                            onDelete={handleDeletePost}
+                            currentUserId={currentUserId}
+                            showDistance={
+                              process.env.NODE_ENV === 'development' 
+                                ? post.distance !== undefined
+                                : !!userLocation && post.distance !== undefined && currentUserRole !== 'admin'
+                            }
+                            isOwnPost={post.author_user_id === currentUserId}
+                            enableComments={true}
+                          />
+                        </motion.div>
+                      ))}
+                    </AnimatePresence>
                   </motion.div>
-                ))}
-              </AnimatePresence>
-            </motion.div>
-          )}
-          
-          {loadingMore && (
-            <div className="mt-6">
-              <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {[...Array(4)].map((_, i) => (
-                  <Skeleton key={`loading-${i}`} className="h-[400px] w-full rounded-xl" />
-                ))}
+                )}
+                
+                {loadingMore && (
+                  <div className="mt-6">
+                    <div className="grid gap-6 grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
+                      {[...Array(3)].map((_, i) => (
+                        <Skeleton key={`loading-${i}`} className="h-[400px] w-full rounded-xl" />
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {!hasMore && posts.length > 0 && (
+                  <div className="text-center py-8">
+                    <p className="text-muted-foreground">
+                      すべての投稿を表示しました
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : (
+        // モバイル版の既存レイアウト
+        <>
+          <div className="sticky top-0 z-10 border-b bg-[#73370c]">
+            {/* 検索行 */}
+            <div className="p-4 flex items-center space-x-2">
+              <HamburgerMenu currentUser={currentUserProfile} />
+              <div className="relative flex-1">
+                <Input
+                  type="text"
+                  placeholder="店舗名やキーワードで検索"
+                  value={generalSearchTerm}
+                  onChange={(e) => setGeneralSearchTerm(e.target.value)}
+                  className="pr-10 w-full text-base"
+                  style={{ fontSize: '16px' }}
+                  autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="off"
+                  spellCheck="false"
+                />
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center">
+                  {isSearching && generalSearchTerm ? (
+                    <Loader2 className="h-4 w-4 text-muted-foreground animate-spin" />
+                  ) : (
+                    <Search className="h-4 w-4 text-muted-foreground" />
+                  )}
+                </div>
+                
+                {/* 検索履歴のドロップダウン */}
+                {searchHistory.length > 0 && generalSearchTerm === '' && (
+                  <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-md mt-1 shadow-lg z-20">
+                    <div className="p-2 border-b bg-gray-50 flex justify-between items-center">
+                      <span className="text-sm text-gray-600">検索履歴</span>
+                      <Button variant="ghost" size="sm" onClick={clearHistory}>
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                    {searchHistory.slice(0, 5).map((term, index) => (
+                      <button
+                        key={index}
+                        className="w-full text-left p-2 hover:bg-gray-100 text-sm"
+                        onClick={() => {
+                          setGeneralSearchTerm(term);
+                          setTimeout(() => {
+                            if (fetchPostsRef.current) {
+                              fetchPostsRef.current(0, true, term);
+                            }
+                          }, 50);
+                        }}
+                      >
+                        {term}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              
+              {/* フィルターボタン */}
+              <Button onClick={() => setShowFilterModal(true)} variant="outline" className="relative">
+                <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
+                {(activeFilter !== 'all' || activeGenreFilter !== 'all' || sortBy !== 'created_at_desc') && (
+                  <Badge className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
+                    {(activeFilter !== 'all' ? 1 : 0) + (activeGenreFilter !== 'all' ? 1 : 0) + (sortBy !== 'created_at_desc' ? 1 : 0)}
+                  </Badge>
+                )}
+              </Button>
+            </div>
+          </div>
+
+          {/* リアルタイム検索中の表示 */}
+          {isSearching && generalSearchTerm && generalSearchTerm.length >= 2 && (
+            <div className="px-4 py-2 bg-blue-50 border-b">
+              <div className="flex items-center space-x-2">
+                <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                <span className="text-sm text-blue-700">「{generalSearchTerm}」を検索中...</span>
               </div>
             </div>
           )}
-          
-          {!hasMore && posts.length > 0 && (
-            <div className="text-center py-8" style={{ marginBottom: '16px' }}>
-              <p className="text-muted-foreground">
-                すべての投稿を表示しました
-              </p>
+
+          {/* アクティブなフィルタの表示（searchModeを除外） */}
+          {(activeFilter !== 'all' || activeGenreFilter !== 'all' || sortBy !== 'created_at_desc') && (
+            <div className="px-4 py-2 bg-gray-50 border-b">
+              <div className="flex flex-wrap gap-2 items-center">
+                <span className="text-sm text-gray-600">アクティブなフィルタ:</span>
+                {activeFilter !== 'all' && (
+                  <Badge variant="secondary" className="flex items-center gap-1">
+                    カテゴリ: {activeFilter}
+                    <button onClick={() => setActiveFilter('all')} className="ml-1">
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                )}
+                {activeGenreFilter !== 'all' && (
+                  <Badge variant="secondary" className="flex items-center gap-1">
+                    ジャンル: {activeGenreFilter}
+                    <button onClick={() => setActiveGenreFilter('all')} className="ml-1">
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                )}
+                {sortBy !== 'created_at_desc' && (
+                  <Badge variant="secondary" className="flex items-center gap-1">
+                    並び順: {sortBy === 'likes_desc' ? 'いいね順' : sortBy === 'views_desc' ? '閲覧順' : sortBy === 'comments_desc' ? 'コメント順' : sortBy === 'expires_at_asc' ? '期限順' : sortBy === 'distance_asc' ? '距離順' : '新着順'}
+                    <button onClick={() => setSortBy('created_at_desc')} className="ml-1">
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                )}
+                <Button variant="ghost" size="sm" onClick={() => {
+                  setActiveFilter('all');
+                  setActiveGenreFilter('all');
+                  setSortBy('created_at_desc');
+                  setGeneralSearchTerm('');
+                  
+                  setTimeout(() => {
+                    if (fetchPostsRef.current) {
+                      fetchPostsRef.current(0, true);
+                    }
+                  }, 100);
+                }}>
+                  すべてクリア
+                </Button>
+              </div>
             </div>
           )}
-        </div>
-      </div>
+
+          {/* 投稿するボタンと更新ボタンの行 - PC版では非表示 */}
+          <div className={`px-4 py-3 bg-gray-50 border-b ${!isMobile ? 'hidden' : ''}`}>
+            <div className="flex space-x-2">
+              <Button
+                onClick={() => router.push('/post')}
+                className="flex-1 text-white hover:opacity-90"
+                style={{ backgroundColor: '#f97415' }}
+              >
+                投稿する
+              </Button>
+              <Button
+                onClick={() => setShowInviteModal(true)}
+                variant="outline"
+                className="flex-1"
+                style={{ backgroundColor: '#eefdf6' }}
+              >
+                <UserPlus className="h-4 w-4 mr-2" />
+                招待する
+              </Button>
+              <Button
+                onClick={() => {
+                  if (fetchPostsRef.current) {
+                    fetchPostsRef.current(0, true, debouncedSearchTerm);
+                  }
+                }}
+                variant="outline"
+                className="flex-1 "
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                更新
+              </Button>
+            </div>
+          </div>
+
+          <div className="timeline-scroll-container custom-scrollbar overscroll-none">
+            <div className="p-4" style={{ paddingBottom: '24px' }}>
+              {posts.length === 0 && !loading && !isSearching ? (
+                <div className="text-center py-10">
+                  <LayoutGrid size={48} className="mx-auto text-muted-foreground mb-4" />
+                  {generalSearchTerm ? (
+                    <div>
+                      <p className="text-xl text-muted-foreground mb-2">
+                        「{generalSearchTerm}」の検索結果がありません
+                      </p>
+                      <p className="text-sm text-gray-500 mb-4">
+                        別のキーワードで検索してみてください
+                      </p>
+                      <Button onClick={() => setGeneralSearchTerm('')} className="mt-4">
+                        検索をクリア
+                      </Button>
+                    </div>
+                  ) : !userLocation && currentUserRole !== 'admin' ? (
+                    <div>
+                      <p className="text-xl text-muted-foreground mb-2">
+                        位置情報を取得中...
+                      </p>
+                      <p className="text-sm text-gray-500 mb-4">
+                        5km圏内の投稿を表示するために位置情報を取得しています
+                      </p>
+                    </div>
+                  ) : (
+                    <div>
+                      <p className="text-xl text-muted-foreground mb-2">
+                        {currentUserRole === 'admin' ? '投稿がありません' : '現在地から5km圏内に投稿がありません'}
+                      </p>
+                      <p className="text-sm text-gray-500 mb-4">
+                        別の場所に移動するか、時間をおいて再度確認してください
+                      </p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <motion.div
+                  layout
+                  className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+                >
+                  <AnimatePresence mode="popLayout">
+                    {posts.map((post, index) => (
+                      <motion.div
+                        key={post.id}
+                        id={`post-${post.id}`}
+                        layout
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        transition={{ duration: 0.3, delay: index * 0.05 }}
+                        className={cn(
+                          post.id === highlightPostId && 'ring-4 ring-primary ring-offset-2 rounded-xl'
+                        )}
+                      >
+                        <PostCard 
+                          post={post} 
+                          onLike={handleLike}
+                          onView={handleView}
+                          onComment={handleCommentClick}
+                          onDelete={handleDeletePost}
+                          currentUserId={currentUserId}
+                          showDistance={
+                            process.env.NODE_ENV === 'development' 
+                              ? post.distance !== undefined
+                              : !!userLocation && post.distance !== undefined && currentUserRole !== 'admin'
+                          }
+                          isOwnPost={post.author_user_id === currentUserId}
+                          enableComments={true}
+                        />
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
+                </motion.div>
+              )}
+              
+              {loadingMore && (
+                <div className="mt-6">
+                  <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                    {[...Array(4)].map((_, i) => (
+                      <Skeleton key={`loading-${i}`} className="h-[400px] w-full rounded-xl" />
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {!hasMore && posts.length > 0 && (
+                <div className="text-center py-8" style={{ marginBottom: '16px' }}>
+                  <p className="text-muted-foreground">
+                    すべての投稿を表示しました
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </>
+      )}
 
       {/* コメントモーダル */}
       {commentsModal.post && (
@@ -2075,6 +2411,7 @@ export default function Timeline() {
         />
       )}
 
+      {/* モバイル版フィルターモーダル */}
       <CustomModal
         isOpen={showFilterModal}
         onClose={handleCloseModal}

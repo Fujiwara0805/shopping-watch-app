@@ -8,16 +8,37 @@ import { Logo } from '@/components/common/logo';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { useNotification } from '@/contexts/NotificationContext';
+import { useEffect, useState } from 'react';
 
 export function AppHeader() {
   const pathname = usePathname();
   const { unreadCount, isLoading } = useNotification();
+  const [isMobile, setIsMobile] = useState(false);
+  
+  // デバイス判定
+  useEffect(() => {
+    const checkDevice = () => {
+      const userAgent = navigator.userAgent.toLowerCase();
+      const isMobileUserAgent = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
+      const isMobileWidth = window.innerWidth <= 768;
+      const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+      
+      setIsMobile(isMobileUserAgent || (isMobileWidth && isTouchDevice));
+    };
+    
+    checkDevice();
+    window.addEventListener('resize', checkDevice);
+    
+    return () => {
+      window.removeEventListener('resize', checkDevice);
+    };
+  }, []);
   
   // Get page title based on current path
   const getPageTitle = () => {
     switch (pathname) {
       case '/timeline':
-        return 'おとく板';
+        return isMobile ? 'おとく板' : 'トクドク掲示板サービス';
       case '/map':
         return 'お店を探す';
       case '/post':
@@ -83,8 +104,8 @@ export function AppHeader() {
           <h1 className="font-bold text-3xl text-center">{title}</h1>
         )}
         
-        <div className="absolute right-4 flex items-center space-x-2">
-          
+        {/* PC版では通知アイコンを非表示 */}
+        <div className={`absolute right-4 flex items-center space-x-2 ${!isMobile ? 'hidden' : ''}`}>
           <Button variant="ghost" size="icon" className="relative" asChild>
             <Link href="/notifications">
               <Bell className="h-8 w-8" />
