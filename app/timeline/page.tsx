@@ -872,7 +872,7 @@ const HamburgerMenu = ({ currentUser }: { currentUser: any }) => {
 
           <Button
             variant="ghost"
-            className="w-full justify-start text-left py-3 h-auto text-base text-red-600 hover:bg-red-100 hover:text-red-700 transition-colors duration-200"
+            className="w-full justify-start text-left py-3 h-auto text-base text-red-600 hover:bg-red-100 hover:text-red-700 transition-colors duration-200 bg-white"
             onClick={handleSignOut}
           >
             <LogOut className="mr-3 h-5 w-5" />
@@ -949,6 +949,9 @@ export default function Timeline() {
     isOpen: false,
     post: null,
   });
+
+  // 追加: QRコードモーダルの状態
+  const [showQrCodeModal, setShowQrCodeModal] = useState(false);
 
   // Refs for stable references
   const activeFilterRef = useRef(activeFilter);
@@ -1922,7 +1925,7 @@ export default function Timeline() {
                     <Button
                       variant="ghost"
                       className="w-full justify-start text-left py-3 h-auto text-base hover:bg-[#73370c]/10 hover:text-[#73370c] transition-colors duration-200 text-[#73370c] bg-white"
-                      onClick={() => router.push('/profile')}
+                      onClick={() => setShowQrCodeModal(true)} // マイページボタンのonClickを変更
                     >
                       <User className="mr-3 h-5 w-5" />
                       マイページ
@@ -2698,6 +2701,31 @@ export default function Timeline() {
 
         <div className="mt-6 flex justify-end">
           <Button variant="ghost" onClick={() => setShowInviteModal(false)} className="text-base px-5 py-2.5 h-auto">
+            閉じる
+          </Button>
+        </div>
+      </CustomModal>
+
+      {/* 追加: QRコードモーダル */}
+      <CustomModal
+        isOpen={showQrCodeModal}
+        onClose={() => setShowQrCodeModal(false)}
+        title="マイページにアクセス"
+        description="スマートフォンでQRコードを読み取って操作してください。"
+        className="sm:max-w-sm"
+      >
+        <div className="flex flex-col items-center justify-center p-4">
+          <img
+            src="https://res.cloudinary.com/dz9trbwma/image/upload/v1753769575/%E3%82%B9%E3%82%AF%E3%83%AA%E3%83%BC%E3%83%B3%E3%82%B7%E3%83%A7%E3%83%83%E3%83%88_2025-06-27_9.29.07_h7cyb8.png"
+            alt="QR Code for My Page"
+            className="w-48 h-48 sm:w-64 sm:h-64 object-contain mb-4"
+          />
+          <p className="text-sm text-gray-600 text-center">
+            QRコードをスキャンしてスマートフォンからマイページにアクセスし、より詳細な情報を確認・編集してください。
+          </p>
+        </div>
+        <div className="mt-6 flex justify-end">
+          <Button variant="ghost" onClick={() => setShowQrCodeModal(false)} className="text-base px-5 py-2.5 h-auto">
             閉じる
           </Button>
         </div>

@@ -126,11 +126,9 @@ const NormalLP = ({ goToOnboarding, mobileMenuOpen, setMobileMenuOpen, scrollPos
               className="text-center"
             >
               <h1 className="text-2xl sm:text-4xl md:text-6xl font-bold mb-4 md:mb-6">
-                毎日をもっと賢く、<br className="sm:hidden" />もっと楽しく。
-                <br className="sm:hidden" />
-                <br className="sm:hidden" />
+                毎日をもっと賢く、<br />もっと楽しく。<br />
                 <span className="text-primary block sm:inline">
-                  あなたの街のおとく情報を、<br className="sm:hidden" />みんなでシェアして、<br className="sm:hidden" />おトクな毎日を送ろう！！！
+                  あなたの街のおとく情報を、<br />みんなでシェアして、<br />おトクな毎日を送ろう！！！
                 </span>
               </h1>
               <p className="text-xl sm:text-2xl text-muted-foreground mb-6 md:mb-8 max-w-2xl mx-auto px-2">
@@ -155,39 +153,39 @@ const NormalLP = ({ goToOnboarding, mobileMenuOpen, setMobileMenuOpen, scrollPos
             <h2 className="text-2xl sm:text-3xl font-bold text-center mb-8 md:mb-12">
               毎日がちょっと特別になる、<br className="sm:hidden" />トクドクの便利な機能
             </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4 md:gap-8"> {/* lg:grid-cols-3 と xl:grid-cols-3 に変更 */}
               {[
                 {
                   icon: ListTodo,
-                  title: "買い忘れ、買い過ぎを防ぐ",
+                  title: "買い忘れ、\n買い過ぎを防ぐ", // 改行追加
                   description: "シンプルで使いやすい買い物メモ\n家族や友達とも共有できるよ！",
                   color: "bg-primary/10",
                   textColor: "text-primary"
                 },
                 {
                   icon: Newspaper,
-                  title: "「欲しい」が見つかる",
+                  title: "「欲しい」が\n見つかる", // 改行追加
                   description: "地域のコミュニティ掲示板から、\nあなただけのおとくを見つけよう！",
                   color: "bg-destructive/10",
                   textColor: "text-destructive"
                 },
                 {
                   icon: Users,
-                  title: "みんなでおとくをシェア",
+                  title: "みんなで\nおとくをシェア", // 改行追加
                   description: "見つけたおとくな情報を簡単に投稿。\n感動を分かち合おう！",
                   color: "bg-secondary/10",
                   textColor: "text-secondary"
                 },
                 {
                   icon: Bell,
-                  title: "「見逃さない」おとく情報",
+                  title: "「見逃さない」\nおとく情報", // 改行追加
                   description: "お気に入りのお店のおトクな情報が\n投稿されると、すぐに通知がとドク！",
                   color: "bg-accent/10",
                   textColor: "text-accent"
                 },
                 {
                   icon: Leaf,
-                  title: "目の届く人から幸せを広げたい",
+                  title: "目の届く人から\n幸せを広げたい", // 改行追加
                   description: "情報を必要とする人に、\n必要な情報が届く社会を作る。",
                   color: "bg-green-500/10",
                   textColor: "text-green-500"
@@ -204,7 +202,14 @@ const NormalLP = ({ goToOnboarding, mobileMenuOpen, setMobileMenuOpen, scrollPos
                   <div className={`${feature.color} p-3 rounded-full mb-3 md:mb-4`}>
                     <feature.icon className={`h-8 w-8 ${feature.textColor}`} />
                   </div>
-                  <h3 className="text-2xl font-semibold mb-2">{feature.title}</h3>
+                  <h3 className="text-2xl font-semibold mb-2">
+                    {feature.title.split('\n').map((line, i) => ( // titleも改行に対応
+                      <span key={i}>
+                        {line}
+                        {i < feature.title.split('\n').length - 1 && <br />}
+                      </span>
+                    ))}
+                  </h3>
                   <p className="text-lg md:text-xl text-muted-foreground">
                     {feature.description.split('\n').map((line, i) => (
                       <span key={i}>
@@ -630,7 +635,7 @@ const SwipeLP = ({ goToOnboarding, mobileMenuOpen, setMobileMenuOpen }: { goToOn
           </motion.div>
         )}
       </AnimatePresence>
-
+      
       <motion.div
         drag="y"
         dragConstraints={{ top: 0, bottom: 0 }}
@@ -661,7 +666,8 @@ export default function Home() {
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrollPosition, setScrollPosition] = useState(0);
-  const [activeTab, setActiveTab] = useState('swipe');
+  const [activeTab, setActiveTab] = useState('swipe'); // 初期値を'swipe'に戻す
+  const [isMobileScreen, setIsMobileScreen] = useState(false); // 新しいisMobileScreenの状態を追加
   
   useEffect(() => {
     // SafeAreaのための変数設定
@@ -672,51 +678,56 @@ export default function Home() {
       '--sab', `env(safe-area-inset-bottom, 0px)`
     );
     
-    // Check if user has seen onboarding
-    const hasSeenOnboarding = localStorage.getItem('hasSeenOnboarding') === 'true';
-    const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+    // 画面サイズ判定
+    const checkMobile = () => {
+      setIsMobileScreen(window.innerWidth < 768); // Tailwindのmdブレークポイントを使用
+    };
     
-    if (hasSeenOnboarding) {
-      if (isLoggedIn) {
-        router.push('/map');
-      }
-    } else {
-      router.push('/onboarding');
-    }
+    checkMobile(); // 初期チェック
+    window.addEventListener('resize', checkMobile); // リサイズ時に更新
+
+    // ここにあった初期リダイレクトロジックは削除します。
+    // ランディングページは常に表示されるようにし、オンボーディングは「さっそく始める」ボタンから遷移させます。
     
-    // スクロール位置の監視（通常版のみ）
+    // スクロール位置の監視（NormalLPの場合のみ）
     const handleScroll = () => {
       setScrollPosition(window.scrollY);
     };
     
-    if (activeTab === 'normal') {
+    // NormalLPがアクティブな場合のみスクロールイベントリスナーを設定
+    if (!isMobileScreen && activeTab === 'normal') { // PCの場合のみNormalLPが選択されるので、isMobileScreenも考慮
+      window.addEventListener('scroll', handleScroll);
+    } else if (isMobileScreen && activeTab === 'normal') { // モバイルでNormalLPが選択された場合
       window.addEventListener('scroll', handleScroll);
     }
     
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [router, activeTab]);
+    return () => {
+      window.removeEventListener('resize', checkMobile);
+      window.removeEventListener('scroll', handleScroll); // クリーンアップ関数を常に返す
+    };
+  }, [activeTab, isMobileScreen]); // activeTabとisMobileScreenを依存配列に追加
 
   // モバイルメニューを開いた時にスクロールを無効化
   useEffect(() => {
     if (mobileMenuOpen) {
       document.body.style.overflow = 'hidden';
     } else {
-      // モバイルメニューが閉じられた時は、アクティブタブに応じてoverflowを設定
-      if (activeTab === 'normal') {
-        document.body.style.overflow = 'auto';
+      // モバイルメニューが閉じられた時は、アクティブタブと画面サイズに応じてoverflowを設定
+      if (isMobileScreen && activeTab === 'swipe') {
+        document.body.style.overflow = 'hidden'; // SwipeLPはoverflow: hidden;を維持
       } else {
-        document.body.style.overflow = 'hidden';
+        document.body.style.overflow = 'auto'; // NormalLPまたはPCではoverflow: auto;
       }
     }
     return () => {
       document.body.style.overflow = '';
     };
-  }, [mobileMenuOpen, activeTab]);
+  }, [mobileMenuOpen, activeTab, isMobileScreen]);
 
-  // onboardingへ遷移する関数
+  // onboardingへ遷移する関数 - 元のオンボーディングフローに戻す
   const goToOnboarding = () => {
-    localStorage.removeItem('hasSeenOnboarding');
-    router.push('/onboarding');
+    localStorage.removeItem('hasSeenOnboarding'); // オンボーディングを再度表示するために削除
+    router.push('/onboarding'); // オンボーディングページへ遷移
   };
 
   return (
@@ -734,16 +745,17 @@ export default function Home() {
             </div>
           </div>
           
-          {/* モバイル版のタブ切り替えを中央に配置 */}
+          {/* モバイル版のタブ切り替えを中央に配置 (md以下で表示) */}
           <div className="flex-grow flex justify-center md:hidden">
             <LPTabs activeTab={activeTab} setActiveTab={setActiveTab} />
           </div>
 
           {/* デスクトップ用ナビゲーションとモバイル用メニューボタンを統合 */}
           <div className="flex items-center space-x-4">
-            {/* デスクトップ用ナビゲーション */}
+            {/* デスクトップ用ナビゲーション (md以上で表示) */}
             <div className="hidden md:flex items-center space-x-4">
-              <LPTabs activeTab={activeTab} setActiveTab={setActiveTab} />
+              {/* PC画面ではタブ切り替えを非表示にする */}
+              {/* <LPTabs activeTab={activeTab} setActiveTab={setActiveTab} /> */}
               <Button variant="ghost" asChild className="h-10 px-4 rounded-full">
                 <Link href="/login">ログイン</Link>
               </Button>
@@ -752,7 +764,7 @@ export default function Home() {
               </Button>
             </div>
             
-            {/* モバイル用メニューボタン */}
+            {/* モバイル用メニューボタン (md以下で表示) */}
             <Button 
               variant="ghost" 
               size="icon" 
@@ -765,22 +777,29 @@ export default function Home() {
         </div>
       </nav>
 
-      {/* コンテンツ */}
-      {activeTab === 'normal' ? (
-        <NormalLP 
-          goToOnboarding={goToOnboarding}
-          mobileMenuOpen={mobileMenuOpen}
-          setMobileMenuOpen={setMobileMenuOpen}
-          scrollPosition={scrollPosition}
-        />
-      ) : (
-        <div>
+      {/* コンテンツ - 画面サイズとアクティブなタブに基づいてレンダリングを条件付け */}
+      {isMobileScreen ? ( // モバイル画面の場合
+        activeTab === 'normal' ? (
+          <NormalLP 
+            goToOnboarding={goToOnboarding}
+            mobileMenuOpen={mobileMenuOpen}
+            setMobileMenuOpen={setMobileMenuOpen}
+            scrollPosition={scrollPosition}
+          />
+        ) : ( // activeTabが'swipe'の場合
           <SwipeLP 
             goToOnboarding={goToOnboarding} 
             mobileMenuOpen={mobileMenuOpen} 
             setMobileMenuOpen={setMobileMenuOpen} 
           />
-        </div>
+        )
+      ) : ( // PC画面の場合
+        <NormalLP // PCでは常にNormalLPを表示
+          goToOnboarding={goToOnboarding}
+          mobileMenuOpen={mobileMenuOpen}
+          setMobileMenuOpen={setMobileMenuOpen}
+          scrollPosition={scrollPosition}
+        />
       )}
     </main>
   );
