@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { LayoutGrid, Search, Star, MapPin, Loader2, SlidersHorizontal, Heart, Plus, X, AlertCircle, Menu, User, Edit, Store, HelpCircle, FileText, LogOut, Settings, Globe, NotebookText, Calculator, Zap, MessageSquare, Eye, Send, RefreshCw, UserPlus, Link as LinkIcon, ExternalLink, Instagram, Trash2, Flag, AlertTriangle } from 'lucide-react';
+import { LayoutGrid, Search, Star, MapPin, Loader2, SlidersHorizontal, Heart, Plus, X, AlertCircle, Menu, User, Edit, Store, HelpCircle, FileText, LogOut, Settings, Globe, NotebookText, Calculator, Zap, MessageSquare, Eye, Send, RefreshCw, UserPlus, Link as LinkIcon, ExternalLink, Instagram, Trash2, Flag, AlertTriangle, Compass } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { PostWithAuthor } from '@/types/post';
 import { useSession, signOut } from 'next-auth/react';
@@ -26,6 +26,12 @@ import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import { ExtendedPostWithAuthor } from '@/types/timeline';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion"; // Accordionコンポーネントのインポート
 
 // 型定義
 interface AuthorData {
@@ -1750,11 +1756,21 @@ export default function Timeline() {
     }, 100);
   };
 
+  // ログアウト処理をTimelineコンポーネントに移動
+  const handleSignOut = async () => {
+    await signOut({ redirect: false });
+    router.push('/login');
+  };
+
   if (loading && posts.length === 0) {
     return (
       <AppLayout>
         <div className="sticky top-0 z-10 border-b p-4 flex items-center space-x-2 bg-[#73370c]">
-          <HamburgerMenu currentUser={currentUserProfile} />
+          {/* PC版ではHamburgerMenuを非表示にし、その分のスペースを確保 */}
+          {!isMobile && (
+            <div className="w-96 flex-shrink-0"></div> 
+          )}
+          {isMobile && <HamburgerMenu currentUser={currentUserProfile} />}
           <div className="relative flex-1">
             <Input
               type="text"
@@ -1776,14 +1792,20 @@ export default function Timeline() {
               )}
             </div>
           </div>
-          <Button onClick={() => setShowFilterModal(true)} variant="outline" className="relative">
-            <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
-            {activeFiltersCount > 0 && (
-              <Badge className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
-                {activeFiltersCount}
-              </Badge>
-            )}
-          </Button>
+          {isMobile && (
+            <Button onClick={() => setShowFilterModal(true)} variant="outline" className="relative">
+              <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
+              {activeFiltersCount > 0 && (
+                <Badge className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
+                  {activeFiltersCount}
+                </Badge>
+              )}
+            </Button>
+          )}
+          {/* PC版では右サイドバーの幅を考慮 */}
+          {!isMobile && (
+            <div className="w-80 flex-shrink-0"></div>
+          )}
         </div>
         
         <div className="p-4">
@@ -1801,7 +1823,11 @@ export default function Timeline() {
     return (
       <AppLayout>
         <div className="sticky top-0 z-10 border-b p-4 flex items-center space-x-2 bg-[#73370c]">
-          <HamburgerMenu currentUser={currentUserProfile} />
+          {/* PC版ではHamburgerMenuを非表示にし、その分のスペースを確保 */}
+          {!isMobile && (
+            <div className="w-96 flex-shrink-0"></div> 
+          )}
+          {isMobile && <HamburgerMenu currentUser={currentUserProfile} />}
           <div className="relative flex-1">
             <Input
               type="text"
@@ -1823,14 +1849,20 @@ export default function Timeline() {
               )}
             </div>
           </div>
-          <Button onClick={() => setShowFilterModal(true)} variant="outline" className="relative">
-            <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
-            {activeFiltersCount > 0 && (
-              <Badge className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
-                {activeFiltersCount}
-              </Badge>
-            )}
-          </Button>
+          {isMobile && (
+            <Button onClick={() => setShowFilterModal(true)} variant="outline" className="relative">
+              <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
+              {activeFiltersCount > 0 && (
+                <Badge className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
+                  {activeFiltersCount}
+                </Badge>
+              )}
+            </Button>
+          )}
+          {/* PC版では右サイドバーの幅を考慮 */}
+          {!isMobile && (
+            <div className="w-80 flex-shrink-0"></div>
+          )}
         </div>
         <div className="p-4">
           <div className="text-center">
@@ -1846,180 +1878,287 @@ export default function Timeline() {
     <AppLayout>
       {/* PC版でのレイアウト */}
       {!isMobile ? (
-        <div className="flex h-screen">
+        <div className="flex h-screen w-full">
           {/* 左サイドバー - PC版のみ */}
-          <div className="w-80 bg-gray-50 border-r border-gray-200 overflow-y-auto">
+          <div className="w-96 bg-[#fbe3b5] border-r border-gray-200 overflow-y-auto">
             <div className="p-6 space-y-6">
-              <div>
-                <h3 className="text-lg font-semibold mb-4 text-gray-800">フィルター</h3>
-                
-                {/* ジャンルフィルター */}
-                <div className="space-y-3">
-                  <label className="text-sm font-medium text-gray-700">ジャンル</label>
-                  <Select 
-                    onValueChange={handleGenreFilterChange} 
-                    value={tempActiveGenreFilter}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="ジャンルを選択" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {genres.map((genre) => (
-                        <SelectItem 
-                          key={genre} 
-                          value={genre === 'すべて' ? 'all' : genre}
-                        >
-                          {genre}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* カテゴリーフィルター */}
-                <div className="space-y-3">
-                  <label className="text-sm font-medium text-gray-700">
-                    カテゴリー
-                    {tempActiveGenreFilter !== 'all' && (
-                      <span className="text-xs text-gray-500 ml-2">
-                        ({tempActiveGenreFilter})
-                      </span>
-                    )}
-                  </label>
-                  <Select 
-                    onValueChange={(value: string) => setTempActiveFilter(value)} 
-                    value={tempActiveFilter}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="カテゴリを選択" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {getAvailableCategories().map((category) => (
-                        <SelectItem 
-                          key={category} 
-                          value={category === 'すべて' ? 'all' : category}
-                        >
-                          {category}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* 並び順 */}
-                <div className="space-y-3">
-                  <label className="text-sm font-medium text-gray-700">並び順</label>
-                  <Select onValueChange={(value: SortOption) => setTempSortBy(value)} value={tempSortBy}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="並び替え" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="created_at_desc">新着順</SelectItem>
-                      <SelectItem value="created_at_asc">古い順</SelectItem>
-                      <SelectItem value="expires_at_asc">期限が近い順</SelectItem>
-                      <SelectItem value="likes_desc">いいねが多い順</SelectItem>
-                      <SelectItem value="views_desc">表示回数が多い順</SelectItem>
-                      <SelectItem value="comments_desc">コメントが多い順</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* 検索ボックス */}
-                <div className="space-y-3">
-                  <label className="text-sm font-medium text-gray-700">キーワード検索</label>
-                  <Input
-                    type="text"
-                    placeholder="店舗名やキーワードで検索"
-                    value={generalSearchTerm}
-                    onChange={(e) => setGeneralSearchTerm(e.target.value)}
-                    className="w-full"
-                  />
-                </div>
-
-                {/* アクティブなフィルタ表示 */}
-                {(activeFilter !== 'all' || activeGenreFilter !== 'all' || sortBy !== 'created_at_desc') && (
-                  <div className="space-y-3">
-                    <label className="text-sm font-medium text-gray-700">アクティブなフィルタ</label>
-                    <div className="space-y-2">
-                      {activeFilter !== 'all' && (
-                        <Badge variant="secondary" className="flex items-center gap-1">
-                          カテゴリ: {activeFilter}
-                          <button onClick={() => {
-                            setActiveFilter('all');
-                            setTempActiveFilter('all');
-                            setTimeout(() => {
-                              if (fetchPostsRef.current) {
-                                fetchPostsRef.current(0, true);
-                              }
-                            }, 100);
-                          }} className="ml-1">
-                            <X className="h-3 w-3" />
-                          </button>
-                        </Badge>
-                      )}
-                      {activeGenreFilter !== 'all' && (
-                        <Badge variant="secondary" className="flex items-center gap-1">
-                          ジャンル: {activeGenreFilter}
-                          <button onClick={() => {
-                            setActiveGenreFilter('all');
-                            setTempActiveGenreFilter('all');
-                            setTimeout(() => {
-                              if (fetchPostsRef.current) {
-                                fetchPostsRef.current(0, true);
-                              }
-                            }, 100);
-                          }} className="ml-1">
-                            <X className="h-3 w-3" />
-                          </button>
-                        </Badge>
-                      )}
-                      {sortBy !== 'created_at_desc' && (
-                        <Badge variant="secondary" className="flex items-center gap-1">
-                          並び順: {sortBy === 'likes_desc' ? 'いいね順' : sortBy === 'views_desc' ? '閲覧順' : sortBy === 'comments_desc' ? 'コメント順' : sortBy === 'expires_at_asc' ? '期限順' : sortBy === 'distance_asc' ? '距離順' : '新着順'}
-                          <button onClick={() => {
-                            setSortBy('created_at_desc');
-                            setTempSortBy('created_at_desc');
-                            setTimeout(() => {
-                              if (fetchPostsRef.current) {
-                                fetchPostsRef.current(0, true);
-                              }
-                            }, 100);
-                          }} className="ml-1">
-                            <X className="h-3 w-3" />
-                          </button>
-                        </Badge>
-                      )}
+              {/* ユーザープロフィール */}
+              {currentUserProfile && (
+                <>
+                  <div className="flex items-center space-x-3 p-3 bg-white rounded-lg shadow-sm">
+                    <Avatar className="h-12 w-12">
+                      <AvatarImage 
+                        src={currentUserProfile.avatar_url ? 
+                          supabase.storage.from('avatars').getPublicUrl(currentUserProfile.avatar_url).data.publicUrl : 
+                          undefined
+                        } 
+                        alt={currentUserProfile.display_name || 'ユーザー'} 
+                      />
+                      <AvatarFallback>
+                        {currentUserProfile.display_name?.charAt(0) || 'U'}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1">
+                      <p className="font-semibold text-lg text-[#73370c]">
+                        {currentUserProfile.display_name || 'ユーザー'}
+                      </p>
+                      <p className="text-sm text-[#73370c]/70">
+                        {currentUserProfile.email}
+                      </p>
                     </div>
                   </div>
-                )}
+                  <Separator />
+                </>
+              )}
 
-                {/* フィルター適用・クリアボタン */}
-                <div className="space-y-3 pt-4 border-t">
-                  <Button 
-                    onClick={handleApplySidebarFilters}
-                    className="w-full"
-                  >
-                    フィルターを適用
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    onClick={handleClearSidebarFilters}
-                    className="w-full"
-                  >
-                    すべてクリア
-                  </Button>
-                </div>
-              </div>
+              {/* ナビゲーションメニュー */}
+              <Accordion type="multiple" defaultValue={["navigation"]} className="w-full">
+                <AccordionItem value="navigation">
+                  <AccordionTrigger className="text-lg font-semibold text-[#73370c] flex items-center py-0 hover:no-underline">
+                    <Compass className="mr-2 h-5 w-5 text-[#73370c]" />
+                    ナビゲーション
+                  </AccordionTrigger>
+                  <AccordionContent className="pt-2 space-y-1">
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-start text-left py-3 h-auto text-base hover:bg-[#73370c]/10 hover:text-[#73370c] transition-colors duration-200 text-[#73370c] bg-white"
+                      onClick={() => router.push('/profile')}
+                    >
+                      <User className="mr-3 h-5 w-5" />
+                      マイページ
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-start text-left py-3 h-auto text-base hover:bg-[#73370c]/10 hover:text-[#73370c] transition-colors duration-200 text-[#73370c] bg-white"
+                      onClick={() => router.push('/post')}
+                    >
+                      <Edit className="mr-3 h-5 w-5" />
+                      投稿する
+                    </Button>
+
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-start text-left py-3 h-auto text-base hover:bg-[#73370c]/10 hover:text-[#73370c] transition-colors duration-200 text-[#73370c] bg-white"
+                      onClick={() => router.push('/contact')}
+                    >
+                      <HelpCircle className="mr-3 h-5 w-5" />
+                      お問い合わせ
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-start text-left py-3 h-auto text-base hover:bg-[#73370c]/10 hover:text-[#73370c] transition-colors duration-200 text-[#73370c] bg-white"
+                      onClick={() => router.push('/terms')}
+                    >
+                      <FileText className="mr-3 h-5 w-5" />
+                      規約・ポリシー
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-start text-left py-3 h-auto text-base hover:bg-[#73370c]/10 hover:text-[#73370c] transition-colors duration-200 text-[#73370c] bg-white"
+                      onClick={() => router.push('/release-notes')}
+                    >
+                      <Zap className="mr-3 h-5 w-5" />
+                      リリースノート
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-start text-left py-3 h-auto text-base hover:bg-[#73370c]/10 hover:text-[#73370c] transition-colors duration-200 text-[#73370c] bg-white"
+                      onClick={() => setShowInviteModal(true)}
+                    >
+                      <UserPlus className="mr-3 h-5 w-5" />
+                      招待する
+                    </Button>
+                    <Separator />
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-start text-left py-3 h-auto text-base text-red-600 hover:bg-red-100 hover:text-red-700 transition-colors duration-200 bg-white"
+                      onClick={handleSignOut}
+                    >
+                      <LogOut className="mr-3 h-5 w-5" />
+                      ログアウト
+                    </Button>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+
+              <Accordion type="multiple" defaultValue={["filters"]} className="w-full">
+                <AccordionItem value="filters">
+                  <AccordionTrigger className="text-lg font-semibold text-[#73370c] flex items-center py-0 hover:no-underline">
+                    <SlidersHorizontal className="mr-2 h-5 w-5 text-[#73370c]" />
+                    フィルター
+                  </AccordionTrigger>
+                  <AccordionContent className="pt-2 space-y-3">
+                    {/* ジャンルフィルター */}
+                    <div className="space-y-3">
+                      <label className="text-sm font-medium text-[#73370c]">ジャンル</label>
+                      <Select 
+                        onValueChange={handleGenreFilterChange} 
+                        value={tempActiveGenreFilter}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="ジャンルを選択" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {genres.map((genre) => (
+                            <SelectItem 
+                              key={genre} 
+                              value={genre === 'すべて' ? 'all' : genre}
+                            >
+                              {genre}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* カテゴリーフィルター */}
+                    <div className="space-y-3">
+                      <label className="text-sm font-medium text-[#73370c]">
+                        カテゴリー
+                        {tempActiveGenreFilter !== 'all' && (
+                          <span className="text-xs text-[#73370c]/70 ml-2">
+                            ({tempActiveGenreFilter})
+                          </span>
+                        )}
+                      </label>
+                      <Select 
+                        onValueChange={(value: string) => setTempActiveFilter(value)} 
+                        value={tempActiveFilter}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="カテゴリを選択" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {getAvailableCategories().map((category) => (
+                            <SelectItem 
+                              key={category} 
+                              value={category === 'すべて' ? 'all' : category}
+                            >
+                              {category}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* 並び順 */}
+                    <div className="space-y-3">
+                      <label className="text-sm font-medium text-[#73370c]">並び順</label>
+                      <Select onValueChange={(value: SortOption) => setTempSortBy(value)} value={tempSortBy}>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="並び替え" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="created_at_desc">新着順</SelectItem>
+                          <SelectItem value="created_at_asc">古い順</SelectItem>
+                          <SelectItem value="expires_at_asc">期限が近い順</SelectItem>
+                          <SelectItem value="likes_desc">いいねが多い順</SelectItem>
+                          <SelectItem value="views_desc">表示回数が多い順</SelectItem>
+                          <SelectItem value="comments_desc">コメントが多い順</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* 検索ボックス */}
+                    <div className="space-y-3">
+                      <label className="text-sm font-medium text-[#73370c]">キーワード検索</label>
+                      <Input
+                        type="text"
+                        placeholder="店舗名やキーワードで検索"
+                        value={generalSearchTerm}
+                        onChange={(e) => setGeneralSearchTerm(e.target.value)}
+                        className="w-full"
+                      />
+                    </div>
+
+                    {/* アクティブなフィルタ表示 */}
+                    {(activeFilter !== 'all' || activeGenreFilter !== 'all' || sortBy !== 'created_at_desc') && (
+                      <div className="space-y-3">
+                        <label className="text-sm font-medium text-[#73370c]">アクティブなフィルタ</label>
+                        <div className="space-y-2">
+                          {activeFilter !== 'all' && (
+                            <Badge variant="secondary" className="flex items-center gap-1">
+                              カテゴリ: {activeFilter}
+                              <button onClick={() => {
+                                setActiveFilter('all');
+                                setTempActiveFilter('all');
+                                setTimeout(() => {
+                                  if (fetchPostsRef.current) {
+                                    fetchPostsRef.current(0, true);
+                                  }
+                                }, 100);
+                              }} className="ml-1">
+                                <X className="h-3 w-3" />
+                              </button>
+                            </Badge>
+                          )}
+                          {activeGenreFilter !== 'all' && (
+                            <Badge variant="secondary" className="flex items-center gap-1">
+                              ジャンル: {activeGenreFilter}
+                              <button onClick={() => {
+                                setActiveGenreFilter('all');
+                                setTempActiveGenreFilter('all');
+                                setTimeout(() => {
+                                  if (fetchPostsRef.current) {
+                                    fetchPostsRef.current(0, true);
+                                  }
+                                }, 100);
+                              }} className="ml-1">
+                                <X className="h-3 w-3" />
+                              </button>
+                            </Badge>
+                          )}
+                          {sortBy !== 'created_at_desc' && (
+                            <Badge variant="secondary" className="flex items-center gap-1">
+                              並び順: {sortBy === 'likes_desc' ? 'いいね順' : sortBy === 'views_desc' ? '閲覧順' : sortBy === 'comments_desc' ? 'コメント順' : sortBy === 'expires_at_asc' ? '期限順' : sortBy === 'distance_asc' ? '距離順' : '新着順'}
+                              <button onClick={() => {
+                                setSortBy('created_at_desc');
+                                setTempSortBy('created_at_desc');
+                                setTimeout(() => {
+                                  if (fetchPostsRef.current) {
+                                    fetchPostsRef.current(0, true);
+                                  }
+                                }, 100);
+                              }} className="ml-1">
+                                <X className="h-3 w-3" />
+                              </button>
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* フィルター適用・クリアボタン */}
+                    <div className="space-y-3 pt-4 border-t">
+                      <Button 
+                        onClick={handleApplySidebarFilters}
+                        className="w-full"
+                      >
+                        フィルターを適用
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        onClick={handleClearSidebarFilters}
+                        className="w-full"
+                      >
+                        すべてクリア
+                      </Button>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
             </div>
           </div>
 
           {/* メインコンテンツエリア */}
           <div className="flex-1 flex flex-col">
-            {/* ヘッダー部分 */}
-            <div className="sticky top-0 z-10 border-b bg-[#73370c]">
-              <div className="p-4 flex items-center space-x-2">
-                <HamburgerMenu currentUser={currentUserProfile} />
-                <div className="relative flex-1">
+            {/* ヘッダー部分 - PC版では完全に非表示 */}
+            {/* <div className="sticky top-0 z-10 border-b"> {/* 背景色を削除 */}
+              {/* <div className="p-4 flex items-center space-x-2">  */}
+                {/* PC版ではハンバーガーメニューを非表示 */}
+                {/* <HamburgerMenu currentUser={currentUserProfile} /> */}
+                {/* PC版ではメインコンテンツの検索バーを非表示 */}
+                {/* <div className="relative flex-1">
                   <Input
                     type="text"
                     placeholder="店舗名やキーワードで検索"
@@ -2039,13 +2178,13 @@ export default function Timeline() {
                       <Search className="h-4 w-4 text-muted-foreground" />
                     )}
                   </div>
-                </div>
-              </div>
-            </div>
+                </div> */}
+              {/* </div>
+            </div> */}
 
             {/* コンテンツエリア */}
-            <div className="flex-1 overflow-y-auto">
-              <div className="p-6">
+            <div className="flex-1 overflow-y-auto timeline-scroll-container">
+              <div className="p-6 max-w-xl mx-auto"> {/* ここにmax-w-xl mx-autoを追加して中央寄せ */}
                 {posts.length === 0 && !loading && !isSearching ? (
                   <div className="text-center py-10">
                     <LayoutGrid size={48} className="mx-auto text-muted-foreground mb-4" />
@@ -2084,7 +2223,7 @@ export default function Timeline() {
                 ) : (
                   <motion.div
                     layout
-                    className="grid gap-6 grid-cols-1 lg:grid-cols-2 xl:grid-cols-3"
+                    className="grid gap-6 grid-cols-1" // ここを1列に変更
                   >
                     <AnimatePresence mode="popLayout">
                       {posts.map((post, index) => (
@@ -2123,7 +2262,7 @@ export default function Timeline() {
                 
                 {loadingMore && (
                   <div className="mt-6">
-                    <div className="grid gap-6 grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
+                    <div className="grid gap-6 grid-cols-1"> {/* ここも1列に変更 */}
                       {[...Array(3)].map((_, i) => (
                         <Skeleton key={`loading-${i}`} className="h-[400px] w-full rounded-xl" />
                       ))}
@@ -2138,6 +2277,21 @@ export default function Timeline() {
                     </p>
                   </div>
                 )}
+              </div>
+            </div>
+          </div>
+
+          {/* 右サイドバー - PC版のみ */}
+          <div className="w-80 bg-[#fbe3b5] border-l border-gray-200 overflow-y-auto hidden lg:block">
+            <div className="p-6 space-y-6">
+              <h3 className="text-lg font-semibold mb-4 text-[#73370c]">広告スペース</h3>
+              <div className="bg-white p-4 rounded-lg border border-gray-200 text-center text-[#73370c] shadow-sm">
+                <p>ここに広告が表示されます。</p>
+                <p className="text-sm mt-2">（開発中）</p>
+              </div>
+              <div className="bg-white p-4 rounded-lg border border-gray-200 text-center text-[#73370c] shadow-sm">
+                <p>さらに広告スペース</p>
+                <p className="text-sm mt-2">（開発中）</p>
               </div>
             </div>
           </div>
@@ -2527,7 +2681,7 @@ export default function Timeline() {
           {/* コピーボタン */}
           <Button
             onClick={() => {
-              const message = `お得な情報がたくさん見つかる「トクドク」に参加しませんか？\\n\\nhttps://tokudoku.com/`;
+              const message = `お得な情報がたくさん見つかる「トクドク」に参加しませんか？\n\nhttps://tokudoku.com/`;
               navigator.clipboard.writeText(message);
               toast({
                 title: "招待メッセージをコピーしました！",

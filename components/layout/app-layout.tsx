@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useEffect } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { usePathname } from 'next/navigation';
 import { MainNav } from '@/components/layout/main-nav';
@@ -18,6 +18,7 @@ export default function AppLayout({
   showNav = true 
 }: AppLayoutProps) {
   const pathname = usePathname();
+  const [isMobile, setIsMobile] = useState(false);
   
   // 地図ページかどうかを判定
   const isMapPage = pathname === '/map';
@@ -33,6 +34,18 @@ export default function AppLayout({
     
     return isMobileUserAgent || (isMobileWidth && isTouchDevice);
   };
+
+  // デバイス判定の更新
+  useEffect(() => {
+    const updateDeviceType = () => {
+      setIsMobile(getIsMobile());
+    };
+    
+    updateDeviceType();
+    window.addEventListener('resize', updateDeviceType);
+    
+    return () => window.removeEventListener('resize', updateDeviceType);
+  }, []);
 
   // bodyクラスの設定とviewport height の設定
   useEffect(() => {
@@ -163,7 +176,7 @@ export default function AppLayout({
             transition={{ duration: 0.3, type: 'tween' }}
             className="h-full flex flex-col"
             style={{
-              paddingBottom: showNav ? '64px' : '0px'
+              paddingBottom: showNav && isMobile ? '64px' : '0px'
             }}
           >
             <div 
@@ -179,7 +192,7 @@ export default function AppLayout({
         </main>
         
         {/* 固定フッター */}
-        {showNav && (
+        {showNav && isMobile && (
           <div className="flex-shrink-0 z-50">
             <MainNav />
           </div>
@@ -209,15 +222,15 @@ export default function AppLayout({
           transition={{ duration: 0.3, type: 'tween' }}
           className="min-h-full"
           style={{
-            paddingBottom: showNav ? '80px' : '16px'
+            paddingBottom: showNav && isMobile ? '80px' : '16px'
           }}
         >
           {children}
         </motion.div>
       </main>
       
-      {/* 固定フッター */}
-      {showNav && (
+      {/* 固定フッター - モバイルのみ表示 */}
+      {showNav && isMobile && (
         <div className="fixed bottom-0 left-0 right-0 z-50">
           <MainNav />
         </div>
