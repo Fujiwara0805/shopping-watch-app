@@ -132,9 +132,8 @@ const NormalLP = ({ goToOnboarding, mobileMenuOpen, setMobileMenuOpen, scrollPos
                 </span>
               </h1>
               <p className="text-xl sm:text-2xl text-muted-foreground mb-6 md:mb-8 max-w-2xl mx-auto px-2">
-              今日はどこのお店がお得かな？
-                <br className="sm:hidden" />
-                トクドクは、お<span className="text-primary">トク</span>な情報が<br className="sm:hidden" />あなたにと<span className="text-primary">ドク</span>サービスです。
+              今日はどこのお店がお得かな？<br /> {/* ここに改行を追加 */}
+                トクドクは、お<span className="text-primary">トク</span>な情報が<span className="sm:hidden" />あなたにと<span className="text-primary">ドク</span>サービスです。 {/* sm:hiddenを調整 */}
               </p>
               <Button 
                 size="lg" 
@@ -153,39 +152,39 @@ const NormalLP = ({ goToOnboarding, mobileMenuOpen, setMobileMenuOpen, scrollPos
             <h2 className="text-2xl sm:text-3xl font-bold text-center mb-8 md:mb-12">
               毎日がちょっと特別になる、<br className="sm:hidden" />トクドクの便利な機能
             </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4 md:gap-8"> {/* lg:grid-cols-3 と xl:grid-cols-3 に変更 */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4 md:gap-8">
               {[
                 {
                   icon: ListTodo,
-                  title: "買い忘れ、\n買い過ぎを防ぐ", // 改行追加
+                  title: "買い忘れ、\n買い過ぎを防ぐ",
                   description: "シンプルで使いやすい買い物メモ\n家族や友達とも共有できるよ！",
                   color: "bg-primary/10",
                   textColor: "text-primary"
                 },
                 {
                   icon: Newspaper,
-                  title: "「欲しい」が\n見つかる", // 改行追加
+                  title: "「欲しい」が\n見つかる",
                   description: "地域のコミュニティ掲示板から、\nあなただけのおとくを見つけよう！",
                   color: "bg-destructive/10",
                   textColor: "text-destructive"
                 },
                 {
                   icon: Users,
-                  title: "みんなで\nおとくをシェア", // 改行追加
-                  description: "見つけたおとくな情報を簡単に投稿。\n感動を分かち合おう！",
+                  title: "みんなで\nおとくをシェア",
+                  description: "見つけたおとくな情報を、\n感動を分かち合おう！", // 改行を調整
                   color: "bg-secondary/10",
                   textColor: "text-secondary"
                 },
                 {
                   icon: Bell,
-                  title: "「見逃さない」\nおとく情報", // 改行追加
-                  description: "お気に入りのお店のおトクな情報が\n投稿されると、すぐに通知がとドク！",
+                  title: "「見逃さない」\nおとく情報",
+                  description: "お気に入りのお店のおトクな情報が投稿されると、すぐに通知がとドク！", // 改行を削除
                   color: "bg-accent/10",
                   textColor: "text-accent"
                 },
                 {
                   icon: Leaf,
-                  title: "目の届く人から\n幸せを広げたい", // 改行追加
+                  title: "目の届く人から\n幸せを広げたい",
                   description: "情報を必要とする人に、\n必要な情報が届く社会を作る。",
                   color: "bg-green-500/10",
                   textColor: "text-green-500"
@@ -203,7 +202,7 @@ const NormalLP = ({ goToOnboarding, mobileMenuOpen, setMobileMenuOpen, scrollPos
                     <feature.icon className={`h-8 w-8 ${feature.textColor}`} />
                   </div>
                   <h3 className="text-2xl font-semibold mb-2">
-                    {feature.title.split('\n').map((line, i) => ( // titleも改行に対応
+                    {feature.title.split('\n').map((line, i) => (
                       <span key={i}>
                         {line}
                         {i < feature.title.split('\n').length - 1 && <br />}
@@ -666,8 +665,8 @@ export default function Home() {
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrollPosition, setScrollPosition] = useState(0);
-  const [activeTab, setActiveTab] = useState('swipe'); // 初期値を'swipe'に戻す
-  const [isMobileScreen, setIsMobileScreen] = useState(false); // 新しいisMobileScreenの状態を追加
+  const [activeTab, setActiveTab] = useState('swipe');
+  const [isMobileScreen, setIsMobileScreen] = useState(false);
   
   useEffect(() => {
     // SafeAreaのための変数設定
@@ -705,7 +704,7 @@ export default function Home() {
       window.removeEventListener('resize', checkMobile);
       window.removeEventListener('scroll', handleScroll); // クリーンアップ関数を常に返す
     };
-  }, [activeTab, isMobileScreen]); // activeTabとisMobileScreenを依存配列に追加
+  }, [activeTab, isMobileScreen]);
 
   // モバイルメニューを開いた時にスクロールを無効化
   useEffect(() => {
@@ -724,10 +723,10 @@ export default function Home() {
     };
   }, [mobileMenuOpen, activeTab, isMobileScreen]);
 
-  // onboardingへ遷移する関数 - 元のオンボーディングフローに戻す
+  // onboardingへ遷移する関数 - ここを/timelineへ変更
   const goToOnboarding = () => {
-    localStorage.removeItem('hasSeenOnboarding'); // オンボーディングを再度表示するために削除
-    router.push('/onboarding'); // オンボーディングページへ遷移
+    // localStorage.removeItem('hasSeenOnboarding'); // 必要であれば削除してください
+    router.push('/timeline'); // /timelineへ遷移
   };
 
   return (
