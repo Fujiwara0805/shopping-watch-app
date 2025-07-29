@@ -88,15 +88,15 @@ export default function HunterRankingPage() {
       // 月間ランキングの取得（期間内の場合のみ）
       if (isRankingPeriodActive && startDate && endDate) {
         const { data: periodRankingData, error: periodError } = await supabase.rpc('get_rankings', {
-          start_date: startDate.toISOString(),
-          end_date: endDate.toISOString()
-        });
+        start_date: startDate.toISOString(),
+        end_date: endDate.toISOString()
+      });
 
         if (periodError) {
           console.error('月間ランキング取得エラー:', periodError);
         } else {
           periodData = periodRankingData as UserRanking[];
-        }
+      }
       }
 
       // 総合ランキングの取得（常に取得）
@@ -161,13 +161,13 @@ export default function HunterRankingPage() {
     } else {
       await fetchRankings();
     }
-    const refreshToast = toast({
-      title: "更新しました",
-      description: "最新のランキング情報を取得しました。",
-    });
-    setTimeout(() => {
-      refreshToast.dismiss();
-    }, 1000);
+      const refreshToast = toast({
+        title: "更新しました",
+        description: "最新のランキング情報を取得しました。",
+      });
+      setTimeout(() => {
+        refreshToast.dismiss();
+      }, 1000);
   };
 
   const handleGoToProfile = () => {
