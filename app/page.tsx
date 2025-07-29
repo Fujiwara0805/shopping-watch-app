@@ -725,8 +725,14 @@ export default function Home() {
 
   // onboardingへ遷移する関数 - ここを/timelineへ変更
   const goToOnboarding = () => {
-    // localStorage.removeItem('hasSeenOnboarding'); // 必要であれば削除してください
-    router.push('/timeline'); // /timelineへ遷移
+    // isMobileScreen の状態に応じて遷移先を決定
+    if (isMobileScreen) {
+      localStorage.removeItem('hasSeenOnboarding'); // モバイルの場合のみオンボーディングを再度表示
+      router.push('/onboarding'); // オンボーディングページへ遷移
+    } else {
+      // PCの場合
+      router.push('/timeline'); // タイムラインへ遷移
+    }
   };
 
   return (
