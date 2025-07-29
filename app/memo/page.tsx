@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, Plus, Trash2, History, WifiOff, Loader2, Edit, LogIn, X, CheckSquare, Sparkles, PackageCheck, ShoppingBag, MessageSquare, Users } from 'lucide-react';
+import { Check, Plus, Trash2, History, WifiOff, Loader2, Edit, LogIn, X, CheckSquare, Sparkles, PackageCheck, ShoppingBag, MessageSquare, Users, TrainFront } from 'lucide-react';
 import AppLayout from '@/components/layout/app-layout';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,8 @@ import { supabase } from '@/lib/supabaseClient';
 import { useLocalStorage } from 'usehooks-ts';
 import { useRouter } from 'next/navigation';
 import { CustomModal } from '@/components/ui/custom-modal';
+import { useLocationPermission } from '@/components/providers/LocationPermissionProvider';
+import { isWithinOitaUniversityArea } from '@/lib/utils';
 
 // ローカルの買い物アイテム
 interface MemoItem {
@@ -29,6 +31,7 @@ interface FrequentItem {
 export default function MemoPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const { latitude, longitude, permissionState, requestLocation } = useLocationPermission();
   
   // オフライン対応の買い物リスト (localStorage) - 常に利用可能
   const [items, setItems] = useLocalStorage<MemoItem[]>('shoppingMemo', []);
@@ -208,6 +211,12 @@ export default function MemoPage() {
     }
   };
 
+  const handleGoToTrainSchedule = () => {
+    router.push('/train-schedule');
+  };
+
+  const showTrainScheduleButton = latitude !== null && longitude !== null && permissionState === 'granted' && isWithinOitaUniversityArea(latitude, longitude);
+
   return (
     <AppLayout>
       <div className="p-4 max-w-2xl mx-auto">
@@ -220,7 +229,24 @@ export default function MemoPage() {
               </div>
             )}
           </div>
-          
+          {/* 時刻表ボタン */}
+          {showTrainScheduleButton && (
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              <Button
+                variant="outline"
+                size="sm"
+                className="bg-blue-500 hover:bg-blue-600 text-white"
+                onClick={handleGoToTrainSchedule}
+              >
+                <TrainFront className="h-4 w-4 mr-2" />
+                時刻表
+              </Button>
+            </motion.div>
+          )}
         </header>
 
         <div className="flex gap-2 mb-4">

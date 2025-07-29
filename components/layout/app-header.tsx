@@ -63,6 +63,8 @@ export function AppHeader() {
         return '買い物メモ';
       case '/flyers':
         return 'チラシ・広告';
+      case '/train-schedule':
+        return '時刻表';
       case '/terms':
         return '利用規約一覧';
       case '/terms/terms-of-service':
