@@ -229,24 +229,14 @@ export default function MemoPage() {
               </div>
             )}
           </div>
-          {/* 時刻表ボタン */}
-          {showTrainScheduleButton && (
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2 }}
-            >
-              <Button
-                variant="outline"
-                size="sm"
-                className="bg-blue-500 hover:bg-blue-600 text-white"
-                onClick={handleGoToTrainSchedule}
-              >
-                <TrainFront className="h-4 w-4 mr-2" />
-                時刻表
-              </Button>
-            </motion.div>
-          )}
+          {/* 時刻表ボタンを削除 */}
+          {/* 削除: showTrainScheduleButton && ( ... ) */}
+          {/* 削除: <motion.div ... > */}
+          {/* 削除: <Button ... > */}
+          {/* 削除: <TrainFront ... /> */}
+          {/* 削除: 時刻表 */}
+          {/* 削除: </Button> */}
+          {/* 削除: </motion.div> */}
         </header>
 
         <div className="flex gap-2 mb-4">
@@ -405,6 +395,36 @@ export default function MemoPage() {
 
         {/* 画面下部の遷移ボタン */}
         <div className="mt-8 space-y-4">
+          {/* 時刻表への遷移ボタンをここに追加 */}
+          {showTrainScheduleButton && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="p-4 bg-gradient-to-r from-green-50 to-lime-50 border border-green-200 rounded-lg"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="bg-green-100 p-2 rounded-full">
+                    <TrainFront className="h-5 w-5 text-green-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-green-900">時刻表を確認</h3>
+                    <p className="text-xs text-green-700">
+                      旦野原キャンパス限定で大分駅までの<br />電車とバスの時刻表を確認できます。
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  onClick={handleGoToTrainSchedule}
+                  variant="outline"
+                  size="sm"
+                  className="border-green-300 text-green-700 hover:bg-green-200"
+                >
+                  時刻表へ
+                </Button>
+              </div>
+            </motion.div>
+          )}
           {/* 割引表への遷移ボタン */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}

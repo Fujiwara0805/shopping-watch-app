@@ -1221,8 +1221,8 @@ export const PostCard = memo(({
         <CardContent className="p-3 pt-1 flex flex-col h-full">
           {/* 投稿内容との間隔調整 */}
           <div className="flex-grow overflow-hidden mb-3 mt-1">
-            <p className="text-lg whitespace-pre-line line-clamp-6" style={{ color: '#73370c' }}>
-              {post.content || '内容がありません'}
+            <p className="text-lg whitespace-pre-line" style={{ color: '#73370c' }}>
+              {post.content ? (post.content.length > 240 ? post.content.substring(0, 240) + '...' : post.content) : '内容がありません'}
             </p>
           </div>
           

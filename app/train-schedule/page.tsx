@@ -97,7 +97,7 @@ export default function TrainSchedulePage() {
     { busStop: '大分大学前駅', system: 'F40 系統', times: ['12:09', '15:48', '19:15'], duration: '約30分程度' },
     { busStop: '大分大学前駅', system: 'F42 系統', times: ['07:37', '08:30', '10:08', '16:29', '17:20', '18:57'], duration: '約30分程度' },
     { busStop: '大分大学前駅', system: 'G41/G42/H40/H41 系統', times: ['06:54', '07:21', '07:59', '09:25', '10:48', '16:29', '17:24'], duration: '約26〜39分程度' },
-    { busStop: '大分大学入口', system: 'G73/H74 急行系統', times: ['07:28', '09:54', '14:41', '16:22'], duration: '約22〜23分程度', notes: '07:28(07:51着), 09:54(10:16着), 14:41(15:04着), 16:22(16:43着)' },
+    { busStop: '大分大学入口', system: 'G73/H74 急行系統', times: ['07:28', '09:54', '14:41', '16:22'], duration: '約22〜23分程度' }
     // 大学/正門 は大分大学前駅に準ずるため、個別のデータは不要
   ];
 
@@ -165,7 +165,6 @@ export default function TrainSchedulePage() {
               destination: '大分駅', // バスの目的地は画像から推測して固定
               type: 'バス', // 電車と区別するため
               duration: busStopData.duration,
-              notes: busStopData.notes,
               departureTime,
               remainingMinutes: diffMinutes,
             });
@@ -274,7 +273,7 @@ export default function TrainSchedulePage() {
             className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-800 shadow-md"
           >
             <p>※ これは{currentDayType}ダイヤの時刻表です。</p>
-            <p className="mt-1">この機能は、大分大学旦野原キャンパスから5km圏内にいるユーザーのみに表示されています。</p>
+            <p className="mt-1">この機能は、大分大学旦野原キャンパスから5km圏内にいるユーザーのみに表示されています。<br />※運行状況については、最新情報をご確認ください。</p>
             {currentDayType === '土日祝' && (
               <p className="mt-1 text-xs text-yellow-700">※ 07:26発の電車は特定日運行です。</p>
             )}
