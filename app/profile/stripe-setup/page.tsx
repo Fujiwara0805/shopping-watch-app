@@ -26,6 +26,9 @@ export default function StripeSetupPage() {
 
   useEffect(() => {
     if (success) {
+      // 🔥 Stripe設定完了時にデータベースを更新
+      updateOnboardingStatus();
+      
       toast({
         title: "✅ 設定完了",
         description: "収益受取の設定が完了しました！応援購入を受け取れるようになりました。",
@@ -35,6 +38,31 @@ export default function StripeSetupPage() {
       router.replace('/profile/stripe-setup');
     }
   }, [success, toast, router]);
+
+  // 🔥 オンボーディング完了状況をデータベースに更新
+  const updateOnboardingStatus = async () => {
+    if (!session?.user?.id) return;
+    
+    try {
+      const { error } = await supabase
+        .from('app_profiles')
+        .update({ 
+          stripe_onboarding_completed: true,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', session.user.id);
+
+      if (error) {
+        console.error('Failed to update onboarding status:', error);
+      } else {
+        // 状態を即座に更新
+        setOnboardingCompleted(true);
+        console.log('Onboarding status updated to true');
+      }
+    } catch (error) {
+      console.error('Error updating onboarding status:', error);
+    }
+  };
 
   useEffect(() => {
     // 既存のアカウント情報を確認
