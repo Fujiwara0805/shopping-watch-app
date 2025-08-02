@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
 
     console.log('Updating capabilities for account:', accountId);
 
-    // 既存アカウントのcapabilitiesを更新
+    // 🔥 修正：既存アカウントのcapabilitiesを更新（tos_acceptanceを削除）
     const updatedAccount = await stripe.accounts.update(accountId, {
       capabilities: {
         card_payments: { requested: true },
@@ -36,9 +36,10 @@ export async function POST(request: NextRequest) {
         product_description: '地域情報共有プラットフォームでの応援購入・支援機能',
         url: process.env.NEXTAUTH_URL || 'https://tokudoku.com',
       },
-      tos_acceptance: {
-        service_agreement: 'recipient',
-      },
+      // 🔥 削除：日本では tos_acceptance[service_agreement] はサポートされていない
+      // tos_acceptance: {
+      //   service_agreement: 'recipient',
+      // },
     });
 
     console.log('Account capabilities updated:', {
@@ -58,6 +59,15 @@ export async function POST(request: NextRequest) {
     console.error('Account capabilities update error:', error);
     
     if (error instanceof Error) {
+      // 🔥 追加：ToS関連のエラーハンドリング
+      if (error.message.includes('ToS') || error.message.includes('tos_acceptance')) {
+        return NextResponse.json({ 
+          error: 'Stripe利用規約の設定は日本では自動的に処理されます。オンボーディングを完了してください。',
+          code: 'TOS_ACCEPTANCE_NOT_NEEDED',
+          details: error.message
+        }, { status: 400 });
+      }
+      
       return NextResponse.json({ 
         error: 'アカウント機能の更新に失敗しました',
         details: error.message

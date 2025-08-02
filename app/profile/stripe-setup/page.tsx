@@ -155,6 +155,8 @@ export default function StripeSetupPage() {
     }
   };
 
+  // 既存のコードの createStripeAccount 関数を修正
+
   const createStripeAccount = async () => {
     if (!session?.user?.id) return;
     
@@ -181,14 +183,25 @@ export default function StripeSetupPage() {
           });
         }
       } else {
-        throw new Error(data.error || 'アカウント作成に失敗しました');
+        // 🔥 修正：エラーコードに応じた詳細なメッセージ
+        let errorMessage = data.error || 'アカウント作成に失敗しました';
+        
+        if (data.code === 'TOS_ACCEPTANCE_ERROR') {
+          errorMessage = 'Stripe設定に問題があります。しばらく時間をおいて再度お試しください。';
+        } else if (data.code === 'PLATFORM_PROFILE_INCOMPLETE') {
+          errorMessage = 'プラットフォーム設定が未完了です。管理者にお問い合わせください。';
+        } else if (data.code === 'CAPABILITIES_ERROR') {
+          errorMessage = 'アカウント機能の設定に問題があります。管理者にお問い合わせください。';
+        }
+        
+        throw new Error(errorMessage);
       }
     } catch (error: any) {
       console.error('Stripe account creation error:', error);
       toast({
         title: "エラー",
         description: error.message || "アカウント作成に失敗しました",
-        duration: 3000,
+        duration: 5000, // エラーメッセージは長めに表示
       });
     } finally {
       setLoading(false);

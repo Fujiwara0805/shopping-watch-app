@@ -16,51 +16,54 @@ export async function POST(request: NextRequest) {
 
     const { accountId } = await request.json();
 
-    // 🔥 accountIdの検証を追加
     if (!accountId) {
       return NextResponse.json({ 
-        error: 'アカウントIDが指定されていません' 
+        error: 'アカウントIDが必要です' 
       }, { status: 400 });
     }
 
-    // 🔥 日本向けオンボーディングリンク作成
-    // ライブモードではHTTPS必須のため、URLを強制的にHTTPSに変換
-    const baseUrl = process.env.NEXTAUTH_URL || '';
-    const httpsUrl = baseUrl.startsWith('http://') 
-      ? baseUrl.replace('http://', 'https://') 
-      : baseUrl;
-    
+    // 🔥 修正：日本向けオンボーディングリンク作成
     const accountLink = await stripe.accountLinks.create({
       account: accountId,
-      refresh_url: `${httpsUrl}/profile/stripe-setup?refresh=true`,
-      return_url: `${httpsUrl}/profile/stripe-setup?success=true`,
+      refresh_url: `${process.env.NEXTAUTH_URL}/profile/stripe-setup?refresh=true`,
+      return_url: `${process.env.NEXTAUTH_URL}/profile/stripe-setup?success=true`,
       type: 'account_onboarding',
+      // 🔥 追加：日本向けの設定
       collect: 'eventually_due', // 必要な情報を段階的に収集
     });
 
-    return NextResponse.json({ url: accountLink.url });
+    console.log('Onboarding link created:', {
+      accountId,
+      url: accountLink.url,
+      expires_at: accountLink.expires_at
+    });
+
+    return NextResponse.json({ 
+      url: accountLink.url,
+      expires_at: accountLink.expires_at
+    });
 
   } catch (error) {
     console.error('Onboarding link creation error:', error);
     
-    // より詳細なエラーハンドリング
     if (error instanceof Error) {
-      // HTTPS必須エラー
-      if (error.message.includes('HTTPS') || error.message.includes('redirected via HTTPS')) {
+      // 🔥 追加：日本特有のエラーハンドリング
+      if (error.message.includes('ToS') || error.message.includes('tos_acceptance')) {
         return NextResponse.json({ 
-          error: 'セキュリティ上の理由により、HTTPS接続が必要です。管理者にお問い合わせください。',
-          code: 'HTTPS_REQUIRED'
+          error: 'オンボーディング設定に問題があります。管理者にお問い合わせください。',
+          code: 'ONBOARDING_TOS_ERROR',
+          details: error.message
         }, { status: 400 });
       }
       
-      if (error.message.includes('account')) {
-        return NextResponse.json({ 
-          error: 'アカウント情報に問題があります。再度お試しください。',
-          code: 'INVALID_ACCOUNT'
-        }, { status: 400 });
-      }
+      return NextResponse.json({ 
+        error: 'オンボーディングリンクの作成に失敗しました',
+        details: error.message
+      }, { status: 500 });
     }
     
-    return NextResponse.json({ error: 'リンク生成に失敗しました' }, { status: 500 });
+    return NextResponse.json({ 
+      error: 'オンボーディングリンクの作成に失敗しました'
+    }, { status: 500 });
   }
 } 

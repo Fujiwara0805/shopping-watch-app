@@ -30,8 +30,8 @@ export async function POST(request: NextRequest) {
       }, { status: 404 });
     }
 
-    // Stripeアカウント情報を更新
-    const updatedAccount = await stripe.accounts.update(profile.stripe_account_id, {
+    // 🔥 修正：更新データからtos_acceptanceを除外
+    const updateParams: any = {
       // 基本情報の更新
       ...(updateData.email && { email: updateData.email }),
       
@@ -83,7 +83,13 @@ export async function POST(request: NextRequest) {
           updated_at: new Date().toISOString(),
         }
       }),
-    });
+    };
+
+    // 🔥 削除：日本では tos_acceptance は含めない
+    // tos_acceptance は日本のアカウントでは自動的に処理される
+
+    // Stripeアカウント情報を更新
+    const updatedAccount = await stripe.accounts.update(profile.stripe_account_id, updateParams);
 
     console.log('Stripe account updated:', {
       accountId: updatedAccount.id,
@@ -101,6 +107,15 @@ export async function POST(request: NextRequest) {
     console.error('Stripe account update error:', error);
     
     if (error instanceof Error) {
+      // 🔥 追加：ToS関連のエラーハンドリング
+      if (error.message.includes('ToS') || error.message.includes('tos_acceptance')) {
+        return NextResponse.json({ 
+          error: 'Stripe利用規約の設定は日本では自動的に処理されます。',
+          code: 'TOS_ACCEPTANCE_NOT_NEEDED',
+          details: error.message
+        }, { status: 400 });
+      }
+      
       return NextResponse.json({ 
         error: 'アカウント情報の更新に失敗しました',
         details: error.message

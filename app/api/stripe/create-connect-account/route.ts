@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // 🔥 修正：Stripe Express Connectアカウント作成（capabilities設定を改善）
+    // 🔥 修正：日本向けStripe Express Connectアカウント作成（tos_acceptanceを削除）
     const account = await stripe.accounts.create({
       type: 'express',
       country: 'JP',
@@ -45,14 +45,14 @@ export async function POST(request: NextRequest) {
         transfers: { requested: true }, // 転送機能を明示的に要求
       },
       business_profile: {
-        mcc: '5734', // 🔥 修正：Computer Software Stores（コンピューターソフトウェア販売）に変更
+        mcc: '5734', // Computer Software Stores（コンピューターソフトウェア販売）
         product_description: '地域情報共有プラットフォームでの応援購入・支援機能',
         url: process.env.NEXTAUTH_URL || 'https://tokudoku.com',
       },
-      // 🔥 追加：tos_acceptance設定
-      tos_acceptance: {
-        service_agreement: 'recipient',
-      },
+      // 🔥 削除：日本では tos_acceptance[service_agreement] はサポートされていない
+      // tos_acceptance: {
+      //   service_agreement: 'recipient',
+      // },
       metadata: {
         user_id: session.user.id,
         profile_id: profile.id,
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
       .update({ 
         stripe_account_id: account.id,
         stripe_onboarding_completed: false,
-        payout_enabled: false, // 🔥 追加：初期値を明示的に設定
+        payout_enabled: false, // 初期値を明示的に設定
         updated_at: new Date().toISOString()
       })
       .eq('user_id', session.user.id);
@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ 
       accountId: account.id,
       onboardingCompleted: false,
-      capabilities: account.capabilities // 🔥 追加：capabilities情報を返す
+      capabilities: account.capabilities // capabilities情報を返す
     });
 
   } catch (error) {
@@ -111,7 +111,16 @@ export async function POST(request: NextRequest) {
         }, { status: 503 });
       }
 
-      // 🔥 追加：capabilities関連のエラー
+      // 🔥 追加：ToS関連のエラー
+      if (error.message.includes('ToS') || error.message.includes('tos_acceptance')) {
+        return NextResponse.json({ 
+          error: 'Stripe利用規約の設定に問題があります。管理者にお問い合わせください。',
+          code: 'TOS_ACCEPTANCE_ERROR',
+          details: error.message
+        }, { status: 503 });
+      }
+
+      // capabilities関連のエラー
       if (error.message.includes('capabilities') || error.message.includes('transfers')) {
         return NextResponse.json({ 
           error: 'Stripe Connectの機能設定に問題があります。管理者にお問い合わせください。',
