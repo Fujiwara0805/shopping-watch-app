@@ -1,13 +1,11 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { motion } from 'framer-motion';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { CheckCircle, CreditCard, AlertCircle, Loader2 } from 'lucide-react';
-// import AppLayout from '@/components/layout/app-layout';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabaseClient';
 
@@ -17,29 +15,27 @@ export default function StripeSetupPage() {
   const searchParams = useSearchParams();
   const { toast } = useToast();
   
+  const [loading, setLoading] = useState(false);
   const [stripeAccountId, setStripeAccountId] = useState<string | null>(null);
   const [onboardingCompleted, setOnboardingCompleted] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [accountStatus, setAccountStatus] = useState<any>(null);
+  const [isUpdatingCapabilities, setIsUpdatingCapabilities] = useState(false);
 
   const success = searchParams.get('success');
-  const refresh = searchParams.get('refresh');
 
   useEffect(() => {
-    if (success) {
-      // 🔥 Stripe設定完了時にデータベースを更新
+    if (success === 'true') {
       updateOnboardingStatus();
-      
       toast({
         title: "✅ 設定完了",
-        description: "収益受取の設定が完了しました！応援購入を受け取れるようになりました。",
-        duration: 5000,
+        description: "応援購入機能が利用可能になりました！",
+        duration: 3000,
       });
-      // URLパラメータをクリア
       router.replace('/profile/stripe-setup');
     }
   }, [success, toast, router]);
 
-  // 🔥 オンボーディング完了状況をデータベースに更新
+  // 🔥 修正：オンボーディング完了状況をデータベースに更新
   const updateOnboardingStatus = async () => {
     if (!session?.user?.id || !stripeAccountId) return;
     
@@ -82,59 +78,117 @@ export default function StripeSetupPage() {
   }, []);
 
   const checkExistingAccount = async () => {
+    if (!session?.user?.id) return;
+    
     try {
-      const response = await fetch('/api/stripe/create-connect-account', {
-        method: 'POST',
-      });
-      
-      const data = await response.json();
-      
-      if (response.ok) {
-        setStripeAccountId(data.accountId);
-        setOnboardingCompleted(data.onboardingCompleted);
-      } else if (data.code === 'PLATFORM_PROFILE_INCOMPLETE') {
-        // プラットフォーム設定未完了の場合は静かに処理
-        console.warn('Stripe platform profile incomplete');
+      const { data: profile } = await supabase
+        .from('app_profiles')
+        .select('stripe_account_id, stripe_onboarding_completed, payout_enabled')
+        .eq('user_id', session.user.id)
+        .single();
+
+      if (profile?.stripe_account_id) {
+        setStripeAccountId(profile.stripe_account_id);
+        setOnboardingCompleted(profile.stripe_onboarding_completed || false);
+        
+        // 🔥 追加：アカウント状態を詳細チェック
+        await checkDetailedAccountStatus(profile.stripe_account_id);
       }
     } catch (error) {
-      console.error('Failed to check existing account:', error);
+      console.error('Error checking existing account:', error);
+    }
+  };
+
+  // 🔥 新規追加：詳細なアカウント状態チェック
+  const checkDetailedAccountStatus = async (accountId: string) => {
+    try {
+      const response = await fetch('/api/stripe/check-account-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accountId }),
+      });
+      
+      const status = await response.json();
+      setAccountStatus(status);
+      
+      console.log('Detailed account status:', status);
+    } catch (error) {
+      console.error('Error checking detailed account status:', error);
+    }
+  };
+
+  // 🔥 新規追加：既存アカウントのcapabilities更新
+  const updateAccountCapabilities = async () => {
+    if (!stripeAccountId) return;
+    
+    setIsUpdatingCapabilities(true);
+    try {
+      const response = await fetch('/api/stripe/update-account-capabilities', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accountId: stripeAccountId }),
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        toast({
+          title: "✅ アカウント機能を更新しました",
+          description: "オンボーディングを再度完了してください",
+          duration: 3000,
+        });
+        
+        // オンボーディングを開始
+        await startOnboarding(stripeAccountId);
+      } else {
+        throw new Error(result.error || 'アカウント機能の更新に失敗しました');
+      }
+    } catch (error) {
+      console.error('Error updating account capabilities:', error);
+      toast({
+        title: "エラー",
+        description: "アカウント機能の更新に失敗しました",
+        duration: 3000,
+      });
+    } finally {
+      setIsUpdatingCapabilities(false);
     }
   };
 
   const createStripeAccount = async () => {
+    if (!session?.user?.id) return;
+    
     setLoading(true);
     try {
       const response = await fetch('/api/stripe/create-connect-account', {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
       });
       
       const data = await response.json();
       
-      if (!response.ok) {
-        // 特定のエラーコードに応じたハンドリング
-        if (data.code === 'PLATFORM_PROFILE_INCOMPLETE') {
-          toast({
-            title: "⚠️ 設定未完了",
-            description: "管理者がStripe Connectの設定を完了する必要があります。しばらくお待ちください。",
-            duration: 8000,
-          });
-          return;
-        }
+      if (data.accountId) {
+        setStripeAccountId(data.accountId);
         
+        if (!data.onboardingCompleted) {
+          await startOnboarding(data.accountId);
+        } else {
+          setOnboardingCompleted(true);
+          toast({
+            title: "✅ アカウント設定完了",
+            description: "応援購入機能が利用可能です！",
+            duration: 3000,
+          });
+        }
+      } else {
         throw new Error(data.error || 'アカウント作成に失敗しました');
       }
-      
-      setStripeAccountId(data.accountId);
-      setOnboardingCompleted(data.onboardingCompleted);
-      
-      if (!data.onboardingCompleted) {
-        startOnboarding(data.accountId);
-      }
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Stripe account creation error:', error);
       toast({
         title: "エラー",
-        description: error instanceof Error ? error.message : "アカウント作成に失敗しました",
-        duration: 5000,
+        description: error.message || "アカウント作成に失敗しました",
+        duration: 3000,
       });
     } finally {
       setLoading(false);
@@ -195,86 +249,108 @@ export default function StripeSetupPage() {
     }
   };
 
+  // 🔥 新規追加：capabilities状態の表示
+  const renderCapabilitiesStatus = () => {
+    if (!accountStatus?.capabilities) return null;
+
+    const { capabilities } = accountStatus;
+    
+    return (
+      <div className="space-y-2">
+        <h4 className="font-medium text-sm">アカウント機能状態:</h4>
+        <div className="flex flex-wrap gap-2">
+          <Badge variant={capabilities.card_payments === 'active' ? 'default' : 'secondary'}>
+            カード決済: {capabilities.card_payments || 'inactive'}
+          </Badge>
+          <Badge variant={capabilities.transfers === 'active' ? 'default' : 'secondary'}>
+            転送機能: {capabilities.transfers || 'inactive'}
+          </Badge>
+        </div>
+      </div>
+    );
+  };
+
   return (
-      <div className="container mx-auto max-w-2xl p-4">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <CreditCard className="h-6 w-6" />
-                <span>応援購入 収益受取設定</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {onboardingCompleted ? (
-                <div className="text-center space-y-4">
-                  <CheckCircle className="h-16 w-16 text-green-500 mx-auto" />
-                  <div>
-                    <h3 className="text-xl font-semibold">設定完了！</h3>
-                    <p className="text-gray-600">
-                      応援購入の収益を受け取る準備ができました✨
-                    </p>
-                  </div>
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                    <p className="text-sm text-green-700">
-                      💰 これで投稿に応援購入ボタンを設置できます！<br/>
-                      収益は自動的にあなたの銀行口座に振り込まれます。
-                    </p>
-                  </div>
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3, delay: 0.2 }}
-                    className="space-y-3"
-                  >
-                    <Button
-                      onClick={() => router.push('/post?from_stripe_setup=true')}
-                      className="w-full"
-                      size="lg"
-                    >
-                      新規投稿画面へ戻る
-                    </Button>
-                  </motion.div>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <div className="flex items-center space-x-2">
-                      <AlertCircle className="h-5 w-5 text-blue-600" />
-                      <span className="font-medium text-blue-800">応援購入の収益受取について</span>
-                    </div>
-                    <ul className="mt-2 text-sm text-blue-700 space-y-1">
-                      <li>• 応援購入の収益を受け取るには銀行口座の登録が必要です</li>
-                      <li>• 購入があるたびに自動的にご指定の口座に振り込まれます</li>
-                      <li>• プラットフォーム手数料5%を差し引いた金額が入金されます</li>
-                      <li>• 設定は数分で完了します</li>
+    <div className="container mx-auto max-w-2xl p-4">
+      <Card>
+        <CardHeader>
+          <CardTitle>応援購入機能の設定</CardTitle>
+          <CardDescription>
+            投稿に応援購入ボタンを設置して、支援を受け取るための設定を行います
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {!stripeAccountId ? (
+            <div className="space-y-4">
+              <p className="text-sm text-gray-600">
+                応援購入機能を利用するには、収益受取のためのアカウント設定が必要です。
+              </p>
+              <Button 
+                onClick={createStripeAccount} 
+                disabled={loading}
+                className="w-full"
+              >
+                {loading ? "設定中..." : "収益受取設定を開始"}
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <p className="text-sm font-medium">アカウントID: {stripeAccountId}</p>
+                <p className="text-sm text-gray-600 mt-1">
+                  設定状況: {onboardingCompleted ? "✅ 完了" : "⏳ 未完了"}
+                </p>
+                
+                {/* 🔥 追加：capabilities状態表示 */}
+                {renderCapabilitiesStatus()}
+                
+                {/* 🔥 追加：要件が不足している場合の警告 */}
+                {accountStatus?.requirementsNeeded?.length > 0 && (
+                  <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded">
+                    <p className="text-sm font-medium text-yellow-800">追加設定が必要です:</p>
+                    <ul className="text-xs text-yellow-700 mt-1 list-disc list-inside">
+                      {accountStatus.requirementsNeeded.map((req: string, index: number) => (
+                        <li key={index}>{req}</li>
+                      ))}
                     </ul>
                   </div>
+                )}
+              </div>
 
-                  <Button
-                    onClick={createStripeAccount}
-                    disabled={loading}
+              <div className="space-y-3">
+                {!onboardingCompleted && (
+                  <Button 
+                    onClick={() => startOnboarding(stripeAccountId)} 
                     className="w-full"
-                    size="lg"
                   >
-                    {loading ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                        設定中...
-                      </>
-                    ) : (
-                      "収益受取設定を開始"
-                    )}
+                    設定を完了する
                   </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </motion.div>
-      </div>
+                )}
+                
+                {/* 🔥 新規追加：既存アカウントの機能更新ボタン */}
+                {accountStatus?.capabilities?.transfers !== 'active' && (
+                  <Button 
+                    onClick={updateAccountCapabilities}
+                    disabled={isUpdatingCapabilities}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    {isUpdatingCapabilities ? "更新中..." : "アカウント機能を更新"}
+                  </Button>
+                )}
+                
+                <Button 
+                  onClick={() => checkAccountStatus(stripeAccountId)} 
+                  variant="outline"
+                  className="w-full"
+                >
+                  設定状況を確認
+                </Button>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 } 

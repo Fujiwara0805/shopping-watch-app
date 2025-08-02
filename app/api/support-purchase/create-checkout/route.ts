@@ -126,21 +126,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '自分の投稿には応援購入できません' }, { status: 400 });
     }
 
-    // 🔥 修正：Stripe設定確認を改善（transfers機能チェックを追加）
-    if (!profile.stripe_account_id) {
-      console.error('Seller Stripe account not found:', {
-        profileId: post.app_profile_id,
-        displayName: profile.display_name
-      });
-      
-      return NextResponse.json({ 
-        error: `${profile.display_name || '投稿者'}さんはまだ応援購入の受取設定を完了していません。`,
-        errorCode: 'SELLER_STRIPE_ACCOUNT_NOT_FOUND',
-        sellerName: profile.display_name
-      }, { status: 400 });
-    }
-
-    // 🔥 追加：Stripeアカウントのcapabilities確認
+    // 🔥 修正：Stripeアカウントのcapabilities確認と自動修復
     try {
       const account = await stripe.accounts.retrieve(profile.stripe_account_id);
       const transfersEnabled = account.capabilities?.transfers === 'active';
@@ -155,27 +141,72 @@ export async function POST(request: NextRequest) {
         payouts_enabled: account.payouts_enabled
       });
 
-      if (!transfersEnabled) {
-        return NextResponse.json({ 
-          error: `${profile.display_name || '投稿者'}さんの応援購入設定で転送機能が有効になっていません。設定を完了してください。`,
-          errorCode: 'SELLER_TRANSFERS_NOT_ENABLED',
-          sellerName: profile.display_name
-        }, { status: 400 });
-      }
+      // 🔥 新規追加：capabilities不足の場合は自動修復を試行
+      if (!transfersEnabled || !cardPaymentsEnabled) {
+        console.log('Attempting to update account capabilities...');
+        
+        try {
+          const updatedAccount = await stripe.accounts.update(profile.stripe_account_id, {
+            capabilities: {
+              card_payments: { requested: true },
+              transfers: { requested: true },
+            },
+            business_profile: {
+              mcc: '5734',
+              product_description: '地域情報共有プラットフォームでの応援購入・支援機能',
+              url: process.env.NEXTAUTH_URL || 'https://tokudoku.com',
+            },
+            tos_acceptance: {
+              service_agreement: 'recipient',
+            },
+          });
+          
+          console.log('Account capabilities updated automatically:', {
+            accountId: updatedAccount.id,
+            capabilities: updatedAccount.capabilities
+          });
+          
+          // 更新後の状態をチェック
+          const newTransfersEnabled = updatedAccount.capabilities?.transfers === 'active' || 
+                                     updatedAccount.capabilities?.transfers === 'pending';
+          const newCardPaymentsEnabled = updatedAccount.capabilities?.card_payments === 'active' || 
+                                        updatedAccount.capabilities?.card_payments === 'pending';
+          
+          if (!newTransfersEnabled) {
+            return NextResponse.json({ 
+              error: `${profile.display_name || '投稿者'}さんの応援購入設定で転送機能が有効になっていません。Stripe設定ページで再設定を完了してください。`,
+              errorCode: 'SELLER_TRANSFERS_NOT_ENABLED',
+              sellerName: profile.display_name,
+              needsOnboarding: true
+            }, { status: 400 });
+          }
 
-      if (!cardPaymentsEnabled) {
-        return NextResponse.json({ 
-          error: `${profile.display_name || '投稿者'}さんの応援購入設定でカード決済機能が有効になっていません。`,
-          errorCode: 'SELLER_CARD_PAYMENTS_NOT_ENABLED',
-          sellerName: profile.display_name
-        }, { status: 400 });
+          if (!newCardPaymentsEnabled) {
+            return NextResponse.json({ 
+              error: `${profile.display_name || '投稿者'}さんの応援購入設定でカード決済機能が有効になっていません。Stripe設定ページで再設定を完了してください。`,
+              errorCode: 'SELLER_CARD_PAYMENTS_NOT_ENABLED',
+              sellerName: profile.display_name,
+              needsOnboarding: true
+            }, { status: 400 });
+          }
+          
+        } catch (updateError) {
+          console.error('Failed to update account capabilities:', updateError);
+          return NextResponse.json({ 
+            error: `${profile.display_name || '投稿者'}さんの応援購入設定に問題があります。設定を再度完了してください。`,
+            errorCode: 'SELLER_CAPABILITIES_UPDATE_FAILED',
+            sellerName: profile.display_name,
+            needsOnboarding: true
+          }, { status: 400 });
+        }
       }
 
       if (!account.charges_enabled) {
         return NextResponse.json({ 
-          error: `${profile.display_name || '投稿者'}さんの応援購入設定が未完了のため、決済を受け付けできません。`,
+          error: `${profile.display_name || '投稿者'}さんの応援購入設定が未完了のため、決済を受け付けできません。Stripe設定を完了してください。`,
           errorCode: 'SELLER_CHARGES_NOT_ENABLED',
-          sellerName: profile.display_name
+          sellerName: profile.display_name,
+          needsOnboarding: true
         }, { status: 400 });
       }
 
