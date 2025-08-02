@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bell, LogOut, Settings, Edit, MapPin, Heart, Store as StoreIcon, Calendar, TrendingUp, Award, Star, User, Sparkles, ShoppingBag, Info, X, Trash2, NotebookText, CheckCircle, ExternalLink, ArrowRight, Trophy } from 'lucide-react';
+import { Bell, LogOut, Settings, Edit, MapPin, Heart, Store as StoreIcon, Calendar, TrendingUp, Award, Star, User, Sparkles, ShoppingBag, Info, X, Trash2, NotebookText, CheckCircle, ExternalLink, ArrowRight, Trophy, CreditCard } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -16,6 +16,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { getHunterLevel, HUNTER_LEVELS } from '@/lib/hunter-level';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface AppProfile {
   id: string;
@@ -30,6 +31,9 @@ interface AppProfile {
   favorite_store_2_name?: string | null;
   favorite_store_3_id?: string | null;
   favorite_store_3_name?: string | null;
+  stripe_account_id?: string | null;
+  stripe_onboarding_completed?: boolean;
+  payout_enabled?: boolean;
 }
 
 // 統計カードのコンポーネント - よりコンパクトに
@@ -261,7 +265,7 @@ function ProfilePageContent() {
         const { data: appProfileData, error: profileError } = await supabase
           .from('app_profiles')
           .select(
-            '*, favorite_store_1_id, favorite_store_1_name, favorite_store_2_id, favorite_store_2_name, favorite_store_3_id, favorite_store_3_name'
+            '*, favorite_store_1_id, favorite_store_1_name, favorite_store_2_id, favorite_store_2_name, favorite_store_3_id, favorite_store_3_name, stripe_account_id, stripe_onboarding_completed, payout_enabled'
           )
           .eq('user_id', session.user.id)
           .single();
@@ -678,6 +682,43 @@ function ProfilePageContent() {
                     <div className="h-10" />
                   </div>
                 </motion.div>
+
+                {/* Stripe設定セクション */}
+                {profile?.stripe_account_id && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center space-x-2">
+                        <CreditCard className="h-5 w-5" />
+                        <span>応援購入設定</span>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span>Stripeアカウント</span>
+                        <Badge variant={profile.stripe_onboarding_completed ? 'default' : 'secondary'}>
+                          {profile.stripe_onboarding_completed ? '設定完了' : '設定中'}
+                        </Badge>
+                      </div>
+                      
+                      <div className="flex space-x-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => router.push('/profile/stripe-setup')}
+                        >
+                          設定確認
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => router.push('/profile/stripe-account-management')}
+                        >
+                          アカウント管理
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
               </div>
             </TabsContent>
           </div>
