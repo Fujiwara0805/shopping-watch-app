@@ -90,6 +90,8 @@ interface PostFromDB {
   rating?: number | null;
   start_date?: string | null;
   end_date?: string | null;
+  support_purchase_enabled?: boolean;
+  support_purchase_options?: string | null;
   // 🔥 追加: authorプロパティを定義
   author: AuthorData | AuthorData[] | null;
   post_likes: PostLike[] | null;
@@ -1167,6 +1169,8 @@ export default function Timeline() {
           rating,
           start_date,
           end_date,
+          support_purchase_enabled,
+          support_purchase_options,
           author:app_profiles!posts_app_profile_id_fkey (
             id,
             user_id,

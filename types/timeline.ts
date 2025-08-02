@@ -26,4 +26,6 @@ export interface ExtendedPostWithAuthor extends PostWithAuthor {
   // 🔥 新しいフィールドを追加
   url?: string | null;
   file_urls?: string | null; // JSON文字列
+  support_purchase_enabled?: boolean;
+  support_purchase_options?: string | null; // JSON文字列
 }

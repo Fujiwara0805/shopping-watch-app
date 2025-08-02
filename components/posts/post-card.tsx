@@ -4,7 +4,7 @@ import { useState, useCallback, useRef, useEffect, memo } from 'react';
 import { motion } from 'framer-motion';
 import { formatDistanceToNow, format } from 'date-fns'; // formatをimportに追加
 import { ja } from 'date-fns/locale';
-import { Heart, Share2, Clock, Link as LinkIcon, ExternalLink, Instagram, Copy, Laugh, Smile, Meh, Frown, Angry, MapPin, Eye, MessageCircle, ChevronDown, Tag, DollarSign, UserPlus, Info, ChevronLeft, ChevronRight, ShoppingCart, Utensils, Camera, GamepadIcon, Wrench, Layers, FileIcon, Calendar, Briefcase, ShoppingBag, Users, MessageSquareText, Trash2, Flag, AlertTriangle, Loader2, Star, Car, Home, Package, Megaphone } from 'lucide-react'; // Star, Car, Home, Package, Megaphoneアイコンを追加
+import { Heart, Share2, Clock, Link as LinkIcon, ExternalLink, Instagram, Copy, Laugh, Smile, Meh, Frown, Angry, MapPin, Eye, MessageCircle, ChevronDown, Tag, DollarSign, UserPlus, Info, ChevronLeft, ChevronRight, ShoppingCart, Utensils, Camera, GamepadIcon, Wrench, Layers, FileIcon, Calendar, Briefcase, ShoppingBag, Users, MessageSquareText, Trash2, Flag, AlertTriangle, Loader2, Star, Car, Home, Package, Megaphone, HandCoins } from 'lucide-react'; // Star, Car, Home, Package, Megaphoneアイコンを追加
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -893,6 +893,45 @@ export const PostCard = memo(({
     }
   };
 
+  // 🔥 応援購入ハンドラーを追加
+  const handleSupportPurchase = useCallback(async (postId: string, amount: number) => {
+    if (!currentUserId) {
+      toast({
+        title: "ログインが必要です",
+        description: "応援購入するにはログインしてください",
+        duration: 3000,
+      });
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/support-purchase/create-checkout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          postId,
+          amount,
+        }),
+      });
+
+      const data = await response.json();
+      
+      if (data.checkoutUrl) {
+        window.location.href = data.checkoutUrl;
+      } else {
+        throw new Error(data.error || '決済URLの取得に失敗しました');
+      }
+    } catch (error) {
+      toast({
+        title: "エラーが発生しました",
+        description: "決済処理の開始に失敗しました",
+        duration: 3000,
+      });
+    }
+  }, [currentUserId, toast]);
+
   return (
     <>
       <Card 
@@ -1210,6 +1249,42 @@ export const PostCard = memo(({
                           </td>
                         </tr>
                       )} */}
+
+                      {/* 🔥 応援購入表示を詳細情報テーブルに追加（残り時間の前） */}
+                      {post.support_purchase_enabled && post.support_purchase_options && (
+                        <tr className="border-b border-gray-100">
+                          <td className="p-3 bg-gray-50 w-1/3 font-medium border-r border-gray-100">
+                            <div className="flex items-center space-x-2">
+                              <Heart className="h-4 w-4 text-pink-500 flex-shrink-0" />
+                              <span className="text-base" style={{ color: '#73370c' }}>応援購入</span>
+                            </div>
+                          </td>
+                          <td className="p-3">
+                            <div className="flex flex-wrap gap-2">
+                              {JSON.parse(post.support_purchase_options).map((amount: number, index: number) => (
+                                <Button
+                                  key={index}
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleSupportPurchase(post.id, amount);
+                                  }}
+                                  className="bg-[#fafafa] text-[#73370c] border-gray-300 hover:bg-[#fafafa] hover:text-[#73370c] font-semibold transition-all duration-200"
+                                  disabled={isMyPost}
+                                  title={isMyPost ? "自分の投稿には応援購入できません" : `¥${amount.toLocaleString()}で応援する`}
+                                >
+                                  <HandCoins className="h-3 w-3 mr-1" />
+                                  ¥{amount.toLocaleString()}
+                                </Button>
+                              ))}
+                            </div>
+                            {isMyPost && (
+                              <p className="text-xs text-gray-500 mt-1">※自分の投稿には応援購入できません</p>
+                            )}
+                          </td>
+                        </tr>
+                      )}
                     </tbody>
                   </table>
                 </div>

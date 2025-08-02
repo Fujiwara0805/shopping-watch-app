@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { Camera, Upload, X, Store as StoreIcon, LayoutGrid, ClipboardList, Image as ImageIcon, CalendarClock, PackageIcon, ClockIcon, Tag, HelpCircle, MapPin, CheckCircle, Layers, ChevronDown, ChevronUp, Settings, Link as LinkIcon, FileText } from 'lucide-react';
+import { Camera, Upload, X, Store as StoreIcon, LayoutGrid, ClipboardList, Image as ImageIcon, CalendarClock, PackageIcon, ClockIcon, Tag, HelpCircle, MapPin, CheckCircle, Layers, ChevronDown, ChevronUp, Settings, Link as LinkIcon, FileText, HandCoins } from 'lucide-react';
 import { CalendarDays, Star as StarIcon } from 'lucide-react'; // CalendarDaysとStarIconを追加
 import { Calendar } from '@/components/ui/calendar'; // Calendarコンポーネントをインポート
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'; // Popoverコンポーネントをインポート
@@ -34,6 +34,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useLoadScript, Autocomplete, GoogleMap } from "@react-google-maps/api";
 import { useLoading } from '@/contexts/loading-context';
 import { useGoogleMapsApi } from '@/components/providers/GoogleMapsApiProvider';
+import { Heart, Plus } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 
 declare global {
   interface Window {
@@ -72,6 +74,8 @@ const postSchema = z.object({
   rating: z.number().min(1, { message: '1以上5以下の値を入力してください' }).max(5, { message: '1以上5以下の値を入力してください' }).optional(), // 新規追加
   start_date: z.date().optional(), // 新規追加
   end_date: z.date().optional(), // 新規追加
+  supportPurchaseEnabled: z.boolean().default(false),
+  supportPurchaseOptions: z.array(z.number().min(100).max(100000)).max(3).optional(),
 });
 
 type PostFormValues = z.infer<typeof postSchema>;
@@ -170,6 +174,8 @@ export default function PostPage() {
       rating: undefined, // 新規追加
       start_date: undefined, // 新規追加
       end_date: undefined, // 新規追加
+      supportPurchaseEnabled: false,
+      supportPurchaseOptions: [],
     },
     mode: 'onChange',
   });
@@ -412,6 +418,10 @@ export default function PostPage() {
         rating: values.rating || null, // 新規追加
         start_date: values.start_date ? values.start_date.toISOString() : null, // 新規追加
         end_date: values.end_date ? values.end_date.toISOString() : null, // 新規追加
+        support_purchase_enabled: values.supportPurchaseEnabled,
+        support_purchase_options: values.supportPurchaseEnabled && (values.supportPurchaseOptions?.length ?? 0) > 0 
+          ? JSON.stringify(values.supportPurchaseOptions) 
+          : null,
       };
 
       // 🔥 店舗の位置情報を設定
@@ -489,6 +499,8 @@ export default function PostPage() {
         rating: undefined, // 新規追加
         start_date: undefined, // 新規追加
         end_date: undefined, // 新規追加
+        supportPurchaseEnabled: false,
+        supportPurchaseOptions: [],
       });
       setImageFiles([]);
       setImagePreviewUrls([]);
@@ -827,6 +839,7 @@ export default function PostPage() {
     file: false,
     rating: false, // 新規追加
     date: false, // 新規追加
+    supportPurchase: false, // 追加
   });
 
   // 🔥 オプションフィールドの切り替え
@@ -840,7 +853,7 @@ export default function PostPage() {
   // 🔥 オプション項目の値が入力されているかチェック
   const hasOptionalValues = () => {
     const values = form.getValues();
-    return !!(values.storeId || values.genre || values.category || values.price || values.url || fileFiles.length > 0 || values.rating || values.start_date || values.end_date);
+    return !!(values.storeId || values.genre || values.category || values.price || values.url || fileFiles.length > 0 || values.rating || values.start_date || values.end_date || optionalFieldsExpanded.supportPurchase);
   };
 
   if (status === "loading") {
@@ -1142,6 +1155,20 @@ export default function PostPage() {
                         >
                           <CalendarDays className="mr-2 h-4 w-4" />
                           日時
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => toggleOptionalField('supportPurchase')}
+                          className={`justify-start transition-all duration-200 ${
+                            optionalFieldsExpanded.supportPurchase 
+                              ? 'bg-primary text-primary-foreground border-primary hover:bg-primary/90' 
+                              : 'bg-[#fafafa] text-[#73370c] border-gray-300 hover:bg-[#fafafa] hover:text-[#73370c]'
+                          }`}
+                        >
+                          <Heart className="mr-2 h-4 w-4" />
+                          応援購入
                         </Button>
                       </div>
 
@@ -1669,6 +1696,130 @@ export default function PostPage() {
                               />
                             </div>
                           </FormItem>
+                        </motion.div>
+                      )}
+
+                      {optionalFieldsExpanded.supportPurchase && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="space-y-4"
+                        >
+                          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <div className="flex items-start space-x-3">
+                              <Heart className="h-5 w-5 text-pink-500 mt-0.5 flex-shrink-0" />
+                              <div className="flex-1">
+                                <h3 className="text-lg font-semibold text-blue-800 mb-2">応援購入について</h3>
+                                <p className="text-sm text-blue-700 leading-relaxed">
+                                  応援購入を有効にすると、この投稿を見た人があなたを応援できます！
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border">
+                            <div className="flex items-center space-x-2">
+                              <div>
+                                <Label className="text-lg font-semibold">応援購入を有効にする</Label>
+                                <p className="text-sm text-gray-600">投稿に応援購入ボタンを表示します</p>
+                              </div>
+                            </div>
+                            <Switch
+                              checked={form.getValues("supportPurchaseEnabled")}
+                              onCheckedChange={(checked) => form.setValue("supportPurchaseEnabled", checked)}
+                            />
+                          </div>
+
+                          {form.getValues("supportPurchaseEnabled") && (
+                            <motion.div
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: 'auto' }}
+                              exit={{ opacity: 0, height: 0 }}
+                              transition={{ duration: 0.3 }}
+                              className="space-y-4"
+                            >                              
+                              <div className="space-y-3">
+                                <Label className="text-base font-medium">応援購入の金額を選択（最大3つ）</Label>
+                                
+                                {/* 選択された金額の表示 */}
+                                {(form.getValues("supportPurchaseOptions") || []).length > 0 && (
+                                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                                    <div className="flex items-center space-x-2 mb-2">
+                                      <HandCoins className="h-4 w-4 text-amber-500" />
+                                      <span className="text-sm font-medium text-amber-800">選択済み:</span>
+                                    </div>
+                                    <div className="flex flex-wrap gap-2">
+                                      {(form.getValues("supportPurchaseOptions") || []).map((amount, index) => (
+                                        <div key={index} className="flex items-center space-x-1 bg-white px-3 py-1 rounded-full border">
+                                          <span className="text-sm font-medium">¥{amount.toLocaleString()}</span>
+                                          <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => {
+                                              const currentOptions = form.getValues("supportPurchaseOptions") || [];
+                                              form.setValue("supportPurchaseOptions", currentOptions.filter((_, i) => i !== index));
+                                            }}
+                                            className="h-4 w-4 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                          >
+                                            <X className="h-3 w-3" />
+                                          </Button>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                                
+                                {/* 金額選択ボタン */}
+                                <div className="grid grid-cols-3 gap-3">
+                                  {[300, 500, 1000, 3000, 5000, 10000].map((presetAmount) => {
+                                    const isSelected = (form.getValues("supportPurchaseOptions") || []).includes(presetAmount);
+                                    const isMaxSelected = (form.getValues("supportPurchaseOptions") || []).length >= 3;
+                                    
+                                    return (
+                                      <Button
+                                        key={presetAmount}
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => {
+                                          const currentOptions = form.getValues("supportPurchaseOptions") || [];
+                                          if (isSelected) {
+                                            // 選択を解除
+                                            form.setValue("supportPurchaseOptions", currentOptions.filter(amount => amount !== presetAmount));
+                                          } else if (currentOptions.length < 3) {
+                                            // 新しく選択
+                                            form.setValue("supportPurchaseOptions", [...currentOptions, presetAmount].sort((a, b) => a - b));
+                                          }
+                                        }}
+                                        disabled={!isSelected && isMaxSelected}
+                                        className={`justify-center transition-all duration-200 h-12 ${
+                                          isSelected 
+                                            ? 'bg-primary text-primary-foreground border-primary hover:bg-primary/90' 
+                                            : 'bg-[#fafafa] text-[#73370c] border-gray-300 hover:bg-[#fafafa] hover:text-[#73370c]'
+                                        } ${!isSelected && isMaxSelected ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                      >
+                                        <div className="flex items-center space-x-2">
+                                          {isSelected && <HandCoins className="h-4 w-4" />}
+                                          <span className="font-medium">¥{presetAmount.toLocaleString()}</span>
+                                        </div>
+                                      </Button>
+                                    );
+                                  })}
+                                </div>
+                                
+                                {/* 選択状況の表示 */}
+                                <div className="text-center">
+                                  {(form.getValues("supportPurchaseOptions") || []).length >= 3 && (
+                                    <p className="text-xs text-amber-600 mt-1">
+                                      変更する場合は選択済みの金額を解除してください。
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            </motion.div>
+                          )}
                         </motion.div>
                       )}
                     </div>
