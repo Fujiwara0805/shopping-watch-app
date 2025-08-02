@@ -54,9 +54,22 @@ export async function POST(request: NextRequest) {
       }, { status: 500 });
     }
 
+    // 認証チェックを緩和（匿名ユーザーも許可）
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'ログインが必要です' }, { status: 401 });
+    let buyerProfileId = null;
+    
+    if (session?.user?.id) {
+      // 認証ユーザーの場合、プロフィールを取得
+      const { data: buyerProfile } = await supabase
+        .from('app_profiles')
+        .select('id')
+        .eq('user_id', session.user.id)
+        .single();
+      
+      buyerProfileId = buyerProfile?.id;
+    } else {
+      // 匿名ユーザーの場合、一時的なIDを生成
+      buyerProfileId = `anonymous_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     }
 
     const { postId, amount } = await request.json();
@@ -68,19 +81,7 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // 購入者のプロフィール取得
-    const { data: buyerProfile, error: buyerError } = await supabase
-      .from('app_profiles')
-      .select('id')
-      .eq('user_id', session.user.id)
-      .single();
-
-    if (buyerError || !buyerProfile) {
-      console.error('Buyer profile error:', buyerError);
-      return NextResponse.json({ error: 'プロフィールが見つかりません' }, { status: 404 });
-    }
-
-    // 投稿と投稿者情報を取得
+    // 投稿情報の取得（匿名アクセス可能）
     const { data: post, error: postError } = await supabase
       .from('posts')
       .select(`
@@ -106,7 +107,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 自分の投稿チェック
-    if (post.app_profile_id === buyerProfile.id) {
+    if (post.app_profile_id === buyerProfileId) {
       return NextResponse.json({ error: '自分の投稿には応援購入できません' }, { status: 400 });
     }
 
@@ -163,7 +164,7 @@ export async function POST(request: NextRequest) {
         },
         metadata: {
           post_id: postId,
-          buyer_profile_id: buyerProfile.id,
+          buyer_profile_id: buyerProfileId,
           seller_profile_id: post.app_profile_id,
           amount: amount.toString(),
           platform_fee: platformFeeAmount.toString(),
@@ -174,7 +175,7 @@ export async function POST(request: NextRequest) {
       
       metadata: {
         post_id: postId,
-        buyer_profile_id: buyerProfile.id,
+        buyer_profile_id: buyerProfileId,
         seller_profile_id: post.app_profile_id,
         amount: amount.toString(),
         platform_fee: platformFeeAmount.toString(),
