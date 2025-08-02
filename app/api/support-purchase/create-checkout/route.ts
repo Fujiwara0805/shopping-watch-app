@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
       .from('posts')
       .select(`
         id, content, app_profile_id, support_purchase_enabled, support_purchase_options,
-        app_profiles(
+        app_profiles!posts_app_profile_id_fkey(
           display_name, stripe_account_id, 
           stripe_onboarding_completed, payout_enabled
         )
