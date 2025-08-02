@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -115,6 +115,7 @@ const expiryOptions = [
 export default function PostPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
   
   // 🔥 複数画像対応
@@ -957,6 +958,67 @@ export default function PostPage() {
       checkStripeSetup();
     }
   }, [session?.user?.id]);
+
+  // 🔥 Stripe設定完了後の自動有効化
+  useEffect(() => {
+    const fromStripeSetup = searchParams.get('from_stripe_setup');
+    if (fromStripeSetup === 'true' && session?.user?.id) {
+      // Stripe設定状況を確認してから応援購入を有効化
+      checkStripeSetupAndEnable();
+    }
+  }, [session?.user?.id, searchParams]);
+
+  // 🔥 Stripe設定確認と応援購入自動有効化
+  const checkStripeSetupAndEnable = async () => {
+    if (!session?.user?.id) return; // この行を追加
+    
+    setStripeSetupStatus(prev => ({ ...prev, loading: true }));
+    
+    try {
+      const { data: profile, error } = await supabase
+        .from('app_profiles')
+        .select('stripe_account_id, stripe_onboarding_completed')
+        .eq('user_id', session.user.id)
+        .single();
+
+      if (error) {
+        console.error('Profile fetch error:', error);
+        setStripeSetupStatus({
+          hasAccount: false,
+          onboardingCompleted: false,
+          loading: false
+        });
+        return;
+      }
+
+      const hasAccount = !!profile?.stripe_account_id;
+      const onboardingCompleted = !!profile?.stripe_onboarding_completed;
+      
+      setStripeSetupStatus({
+        hasAccount,
+        onboardingCompleted,
+        loading: false
+      });
+
+      // 設定が完了している場合、応援購入を自動有効化
+      if (hasAccount && onboardingCompleted) {
+        form.setValue("supportPurchaseEnabled", true);
+        
+        toast({
+          title: "✅ 応援購入機能を有効化しました",
+          description: "金額を選択して投稿してください",
+          duration: 4000,
+        });
+        
+        // URLパラメータをクリア
+        router.replace('/post');
+      }
+
+    } catch (error) {
+      console.error('Stripe setup check error:', error);
+      setStripeSetupStatus(prev => ({ ...prev, loading: false }));
+    }
+  };
 
   if (status === "loading") {
     return (

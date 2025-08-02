@@ -185,12 +185,19 @@ export default function StripeSetupPage() {
                       収益は自動的にあなたの銀行口座に振り込まれます。
                     </p>
                   </div>
-                  <Button
-                    onClick={() => router.push('/post')}
-                    className="w-full"
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: 0.2 }}
                   >
-                    応援購入付きの投稿を作成する
-                  </Button>
+                    <Button
+                      onClick={() => router.push('/post?from_stripe_setup=true')}
+                      className="w-full"
+                      size="lg"
+                    >
+                      新規投稿画面へ戻る
+                    </Button>
+                  </motion.div>
                 </div>
               ) : (
                 <div className="space-y-4">
