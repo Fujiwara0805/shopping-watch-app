@@ -278,6 +278,9 @@ export const PostCard = memo(({
   const [reportDetails, setReportDetails] = useState('');
   const [isReporting, setIsReporting] = useState(false);
   
+  // 🔥 追加：応援購入のローディング状態管理
+  const [supportPurchaseLoading, setSupportPurchaseLoading] = useState<{ [key: string]: boolean }>({});
+  
   const { toast } = useToast();
   const cardRef = useRef<HTMLDivElement>(null);
 
@@ -893,17 +896,12 @@ export const PostCard = memo(({
     }
   };
 
-  // 🔥 応援購入ハンドラーを修正（896行目付近）
+  // 🔥 応援購入ハンドラーを修正（ローディング状態追加）
   const handleSupportPurchase = useCallback(async (postId: string, amount: number) => {
-    // 🔥 修正：匿名ユーザーでも購入可能にする
-    // if (!currentUserId) {
-    //   toast({
-    //     title: "ログインが必要です",
-    //     description: "応援購入するにはログインしてください",
-    //     duration: 3000,
-    //   });
-    //   return;
-    // }
+    const loadingKey = `${postId}-${amount}`;
+    
+    // ローディング開始
+    setSupportPurchaseLoading(prev => ({ ...prev, [loadingKey]: true }));
 
     try {
       const response = await fetch('/api/support-purchase/create-checkout', {
@@ -951,8 +949,11 @@ export const PostCard = memo(({
         description: "決済処理の開始に失敗しました。しばらく時間をおいて再度お試しください。",
         duration: 3000,
       });
+    } finally {
+      // ローディング終了
+      setSupportPurchaseLoading(prev => ({ ...prev, [loadingKey]: false }));
     }
-  }, [toast]); // currentUserIdの依存関係を削除
+  }, [toast]);
 
   return (
     <>
@@ -1283,23 +1284,49 @@ export const PostCard = memo(({
                           </td>
                           <td className="p-3">
                             <div className="flex flex-wrap gap-2">
-                              {JSON.parse(post.support_purchase_options).map((amount: number, index: number) => (
-                                <Button
-                                  key={index}
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleSupportPurchase(post.id, amount);
-                                  }}
-                                  className="bg-[#fafafa] text-[#73370c] border-gray-300 hover:bg-[#fafafa] hover:text-[#73370c] font-semibold transition-all duration-200"
-                                  disabled={isMyPost}
-                                  title={isMyPost ? "自分の投稿には応援購入できません" : `¥${amount.toLocaleString()}で応援する`}
-                                >
-                                  <HandCoins className="h-3 w-3 mr-1" />
-                                  ¥{amount.toLocaleString()}
-                                </Button>
-                              ))}
+                              {JSON.parse(post.support_purchase_options).map((amount: number, index: number) => {
+                                const loadingKey = `${post.id}-${amount}`;
+                                const isLoading = supportPurchaseLoading[loadingKey];
+                                
+                                return (
+                                  <Button
+                                    key={index}
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleSupportPurchase(post.id, amount);
+                                    }}
+                                    className={cn(
+                                      "bg-gradient-to-r from-orange-50 to-red-50 text-[#73370c] border-orange-200 font-semibold transition-all duration-300 transform",
+                                      "hover:from-orange-100 hover:to-red-100 hover:border-orange-300 hover:shadow-md hover:scale-105",
+                                      "active:scale-95 active:shadow-sm",
+                                      isLoading && "opacity-75 cursor-not-allowed",
+                                      isMyPost && "opacity-50 cursor-not-allowed hover:scale-100"
+                                    )}
+                                    disabled={isMyPost || isLoading}
+                                    title={isMyPost ? "自分の投稿には応援購入できません" : `¥${amount.toLocaleString()}で応援する`}
+                                  >
+                                    {isLoading ? (
+                                      <>
+                                        <motion.div
+                                          animate={{ rotate: 360 }}
+                                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                                          className="h-3 w-3 mr-1"
+                                        >
+                                          <Loader2 className="h-3 w-3 text-[#73370c]" />
+                                        </motion.div>
+                                        処理中...
+                                      </>
+                                    ) : (
+                                      <>
+                                        <HandCoins className="h-3 w-3 mr-1" />
+                                        ¥{amount.toLocaleString()}
+                                      </>
+                                    )}
+                                  </Button>
+                                );
+                              })}
                             </div>
                             {isMyPost && (
                               <p className="text-xs text-gray-500 mt-1">※自分の投稿には応援購入できません</p>
