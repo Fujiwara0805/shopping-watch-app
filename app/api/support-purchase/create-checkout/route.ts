@@ -4,43 +4,84 @@ import { authOptions } from '@/lib/auth';
 import { supabase } from '@/lib/supabaseClient';
 import Stripe from 'stripe';
 
-// 環境変数の存在確認
-if (!process.env.STRIPE_SECRET_KEY) {
-  console.error('STRIPE_SECRET_KEY environment variable is not set');
+// より安全なStripe初期化
+function createStripeInstance() {
+  const secretKey = process.env.STRIPE_SECRET_KEY;
+  if (!secretKey) {
+    console.error('STRIPE_SECRET_KEY is not set');
+    return null;
+  }
+  
+  try {
+    return new Stripe(secretKey, {
+      apiVersion: '2025-07-30.basil',
+    });
+  } catch (error) {
+    console.error('Failed to create Stripe instance:', error);
+    return null;
+  }
 }
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-07-30.basil',
-});
-
+// 診断用GETエンドポイント
 export async function GET() {
+  console.log('GET endpoint accessed at:', new Date().toISOString());
+  
+  const stripe = createStripeInstance();
+  
   return NextResponse.json({
     status: 'API Route is accessible',
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV,
     hasStripeKey: !!process.env.STRIPE_SECRET_KEY,
     stripeKeyLength: process.env.STRIPE_SECRET_KEY?.length || 0,
+    stripeInitialized: !!stripe,
+    hasNextAuthUrl: !!process.env.NEXTAUTH_URL,
+    nextAuthUrl: process.env.NEXTAUTH_URL
   });
 }
 
 export async function POST(request: NextRequest) {
+  console.log('=== POST request received ===');
+  console.log('Timestamp:', new Date().toISOString());
+  console.log('Environment:', process.env.NODE_ENV);
+  
   try {
-    // 環境変数チェックを追加
-    if (!process.env.STRIPE_SECRET_KEY) {
-      console.error('Missing STRIPE_SECRET_KEY in production');
+    // Stripe初期化をPOST内で行う
+    const stripe = createStripeInstance();
+    if (!stripe) {
+      console.error('Stripe initialization failed in POST');
       return NextResponse.json({ 
-        error: 'サーバー設定エラーが発生しました' 
+        error: 'Stripe設定エラーが発生しました',
+        details: 'Stripe initialization failed'
       }, { status: 500 });
     }
+    
+    console.log('Stripe initialized successfully');
 
+    // セッション取得
+    console.log('Getting server session...');
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
+      console.log('No valid session found');
       return NextResponse.json({ error: 'ログインが必要です' }, { status: 401 });
     }
+    
+    console.log('Session found for user:', session.user.id);
 
+    // リクエストボディの解析
+    console.log('Parsing request body...');
     const { postId, amount } = await request.json();
+    console.log('Request data:', { postId, amount });
+
+    if (!postId || !amount) {
+      console.error('Missing required parameters:', { postId, amount });
+      return NextResponse.json({ 
+        error: '必要なパラメータが不足しています' 
+      }, { status: 400 });
+    }
 
     // 購入者のプロフィール取得
+    console.log('Fetching buyer profile...');
     const { data: buyerProfile, error: buyerError } = await supabase
       .from('app_profiles')
       .select('id')
@@ -48,10 +89,13 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (buyerError || !buyerProfile) {
+      console.error('Buyer profile error:', buyerError);
       return NextResponse.json({ error: 'プロフィールが見つかりません' }, { status: 404 });
     }
+    console.log('Buyer profile found:', buyerProfile.id);
 
     // 投稿と投稿者情報を取得
+    console.log('Fetching post data...');
     const { data: post, error: postError } = await supabase
       .from('posts')
       .select(`
@@ -66,17 +110,21 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (postError || !post) {
+      console.error('Post fetch error:', postError);
       return NextResponse.json({ error: '投稿が見つかりません' }, { status: 404 });
     }
+    console.log('Post found:', post.id);
 
     // 金額が設定されたオプションに含まれているかチェック
     const validAmounts = JSON.parse(post.support_purchase_options || '[]');
     if (!validAmounts.includes(amount)) {
+      console.error('Invalid amount:', { amount, validAmounts });
       return NextResponse.json({ error: '無効な金額です' }, { status: 400 });
     }
 
     // 自分の投稿への応援購入を防ぐ
     if (post.app_profile_id === buyerProfile.id) {
+      console.error('Self-purchase attempt');
       return NextResponse.json({ error: '自分の投稿には応援購入できません' }, { status: 400 });
     }
 
@@ -85,6 +133,10 @@ export async function POST(request: NextRequest) {
 
     // 投稿者のStripe設定確認
     if (!profile?.stripe_account_id || !profile?.stripe_onboarding_completed) {
+      console.error('Seller Stripe setup incomplete:', {
+        hasStripeAccount: !!profile?.stripe_account_id,
+        onboardingCompleted: profile?.stripe_onboarding_completed
+      });
       return NextResponse.json({ 
         error: '投稿者の収益受取設定が完了していません' 
       }, { status: 400 });
@@ -93,6 +145,9 @@ export async function POST(request: NextRequest) {
     // プラットフォーム手数料計算（5%）
     const platformFeeAmount = Math.floor(amount * 0.05);
     const sellerAmount = amount - platformFeeAmount;
+    
+    console.log('Creating Stripe checkout session...');
+    console.log('Amounts:', { amount, platformFeeAmount, sellerAmount });
 
     // Stripe Checkout Session作成（Connect対応）
     const checkoutSession = await stripe.checkout.sessions.create({
@@ -129,12 +184,21 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    console.log('Checkout session created successfully:', checkoutSession.id);
+
     return NextResponse.json({ 
       checkoutUrl: checkoutSession.url 
     });
 
   } catch (error) {
-    console.error('Checkout session creation error:', error);
-    return NextResponse.json({ error: '決済処理でエラーが発生しました' }, { status: 500 });
+    console.error('=== POST Error ===');
+    console.error('Error type:', error?.constructor?.name);
+    console.error('Error message:', (error as Error)?.message);
+    console.error('Error stack:', (error as Error)?.stack);
+    
+    return NextResponse.json({ 
+      error: '決済処理でエラーが発生しました',
+      details: process.env.NODE_ENV === 'development' ? (error as Error)?.message : undefined
+    }, { status: 500 });
   }
 } 
