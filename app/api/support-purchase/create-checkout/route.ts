@@ -126,7 +126,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '自分の投稿には応援購入できません' }, { status: 400 });
     }
 
-    // 🔥 修正：Stripe設定確認を改善
+    // 🔥 修正：Stripe設定確認を改善（transfers機能チェックを追加）
     if (!profile.stripe_account_id) {
       console.error('Seller Stripe account not found:', {
         profileId: post.app_profile_id,
@@ -136,6 +136,54 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ 
         error: `${profile.display_name || '投稿者'}さんはまだ応援購入の受取設定を完了していません。`,
         errorCode: 'SELLER_STRIPE_ACCOUNT_NOT_FOUND',
+        sellerName: profile.display_name
+      }, { status: 400 });
+    }
+
+    // 🔥 追加：Stripeアカウントのcapabilities確認
+    try {
+      const account = await stripe.accounts.retrieve(profile.stripe_account_id);
+      const transfersEnabled = account.capabilities?.transfers === 'active';
+      const cardPaymentsEnabled = account.capabilities?.card_payments === 'active';
+      
+      console.log('Stripe account capabilities check:', {
+        accountId: profile.stripe_account_id,
+        transfers: account.capabilities?.transfers,
+        card_payments: account.capabilities?.card_payments,
+        charges_enabled: account.charges_enabled,
+        details_submitted: account.details_submitted,
+        payouts_enabled: account.payouts_enabled
+      });
+
+      if (!transfersEnabled) {
+        return NextResponse.json({ 
+          error: `${profile.display_name || '投稿者'}さんの応援購入設定で転送機能が有効になっていません。設定を完了してください。`,
+          errorCode: 'SELLER_TRANSFERS_NOT_ENABLED',
+          sellerName: profile.display_name
+        }, { status: 400 });
+      }
+
+      if (!cardPaymentsEnabled) {
+        return NextResponse.json({ 
+          error: `${profile.display_name || '投稿者'}さんの応援購入設定でカード決済機能が有効になっていません。`,
+          errorCode: 'SELLER_CARD_PAYMENTS_NOT_ENABLED',
+          sellerName: profile.display_name
+        }, { status: 400 });
+      }
+
+      if (!account.charges_enabled) {
+        return NextResponse.json({ 
+          error: `${profile.display_name || '投稿者'}さんの応援購入設定が未完了のため、決済を受け付けできません。`,
+          errorCode: 'SELLER_CHARGES_NOT_ENABLED',
+          sellerName: profile.display_name
+        }, { status: 400 });
+      }
+
+    } catch (stripeError) {
+      console.error('Stripe account verification error:', stripeError);
+      return NextResponse.json({ 
+        error: `${profile.display_name || '投稿者'}さんの応援購入設定の確認に失敗しました。`,
+        errorCode: 'SELLER_STRIPE_VERIFICATION_FAILED',
         sellerName: profile.display_name
       }, { status: 400 });
     }

@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // 🔥 Stripe Express Connectアカウント作成（日本向け最適化）
+    // 🔥 修正：Stripe Express Connectアカウント作成（capabilities設定を改善）
     const account = await stripe.accounts.create({
       type: 'express',
       country: 'JP',
@@ -42,18 +42,30 @@ export async function POST(request: NextRequest) {
       business_type: 'individual', // 個人アカウントとして作成
       capabilities: {
         card_payments: { requested: true },
-        transfers: { requested: true },
+        transfers: { requested: true }, // 転送機能を明示的に要求
       },
       business_profile: {
-        mcc: '8398', // Political Organizations（政治組織）
-        product_description: '地域情報共有プラットフォームでの応援購入機能',
+        mcc: '5734', // 🔥 修正：Computer Software Stores（コンピューターソフトウェア販売）に変更
+        product_description: '地域情報共有プラットフォームでの応援購入・支援機能',
+        url: process.env.NEXTAUTH_URL || 'https://tokudoku.com',
+      },
+      // 🔥 追加：tos_acceptance設定
+      tos_acceptance: {
+        service_agreement: 'recipient',
       },
       metadata: {
         user_id: session.user.id,
         profile_id: profile.id,
         platform: 'tokudoku',
         account_type: 'support_purchase',
+        created_at: new Date().toISOString(),
       },
+    });
+
+    console.log('Stripe account created:', {
+      accountId: account.id,
+      capabilities: account.capabilities,
+      requirements: account.requirements
     });
 
     // データベースに保存
@@ -62,9 +74,10 @@ export async function POST(request: NextRequest) {
       .update({ 
         stripe_account_id: account.id,
         stripe_onboarding_completed: false,
+        payout_enabled: false, // 🔥 追加：初期値を明示的に設定
         updated_at: new Date().toISOString()
       })
-      .eq('id', profile.id);
+      .eq('user_id', session.user.id);
 
     if (updateError) {
       console.error('Database update error:', updateError);
@@ -73,7 +86,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ 
       accountId: account.id,
-      onboardingCompleted: false 
+      onboardingCompleted: false,
+      capabilities: account.capabilities // 🔥 追加：capabilities情報を返す
     });
 
   } catch (error) {
@@ -96,8 +110,20 @@ export async function POST(request: NextRequest) {
           code: 'CONNECT_NOT_ENABLED'
         }, { status: 503 });
       }
+
+      // 🔥 追加：capabilities関連のエラー
+      if (error.message.includes('capabilities') || error.message.includes('transfers')) {
+        return NextResponse.json({ 
+          error: 'Stripe Connectの機能設定に問題があります。管理者にお問い合わせください。',
+          code: 'CAPABILITIES_ERROR',
+          details: error.message
+        }, { status: 503 });
+      }
     }
     
-    return NextResponse.json({ error: 'アカウント作成に失敗しました' }, { status: 500 });
+    return NextResponse.json({ 
+      error: 'アカウント作成に失敗しました',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 });
   }
 }
