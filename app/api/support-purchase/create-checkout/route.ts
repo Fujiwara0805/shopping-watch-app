@@ -112,11 +112,12 @@ export async function POST(request: NextRequest) {
 
     const profile = post.app_profiles?.[0];
 
-    // Stripe設定確認
-    if (!profile?.stripe_account_id || !profile?.stripe_onboarding_completed) {
+    // Stripe設定確認を強化
+    if (!profile?.stripe_account_id || !profile?.stripe_onboarding_completed || !profile?.payout_enabled) {
       console.error('Seller Stripe setup incomplete:', {
         hasStripeAccount: !!profile?.stripe_account_id,
         onboardingCompleted: profile?.stripe_onboarding_completed,
+        payoutEnabled: profile?.payout_enabled,
         displayName: profile?.display_name
       });
       

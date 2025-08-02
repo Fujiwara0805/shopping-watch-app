@@ -41,13 +41,23 @@ export default function StripeSetupPage() {
 
   // 🔥 オンボーディング完了状況をデータベースに更新
   const updateOnboardingStatus = async () => {
-    if (!session?.user?.id) return;
+    if (!session?.user?.id || !stripeAccountId) return;
     
     try {
+      // 🔥 Stripeアカウントの最新状態を確認
+      const response = await fetch('/api/stripe/check-account-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accountId: stripeAccountId }),
+      });
+      
+      const accountStatus = await response.json();
+      
       const { error } = await supabase
         .from('app_profiles')
         .update({ 
-          stripe_onboarding_completed: true,
+          stripe_onboarding_completed: accountStatus.onboardingCompleted || true,
+          payout_enabled: accountStatus.payoutsEnabled || false,
           updated_at: new Date().toISOString()
         })
         .eq('user_id', session.user.id);
@@ -55,9 +65,11 @@ export default function StripeSetupPage() {
       if (error) {
         console.error('Failed to update onboarding status:', error);
       } else {
-        // 状態を即座に更新
         setOnboardingCompleted(true);
-        console.log('Onboarding status updated to true');
+        console.log('Onboarding status updated:', {
+          onboarding: accountStatus.onboardingCompleted,
+          payouts: accountStatus.payoutsEnabled
+        });
       }
     } catch (error) {
       console.error('Error updating onboarding status:', error);
