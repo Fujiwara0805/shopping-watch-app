@@ -7,7 +7,7 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CheckCircle, CreditCard, AlertCircle, Loader2 } from 'lucide-react';
-import AppLayout from '@/components/layout/app-layout';
+// import AppLayout from '@/components/layout/app-layout';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabaseClient';
 
@@ -156,7 +156,6 @@ export default function StripeSetupPage() {
   };
 
   return (
-    <AppLayout>
       <div className="container mx-auto max-w-2xl p-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -229,6 +228,5 @@ export default function StripeSetupPage() {
           </Card>
         </motion.div>
       </div>
-    </AppLayout>
   );
 } 
