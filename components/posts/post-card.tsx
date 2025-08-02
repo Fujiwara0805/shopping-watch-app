@@ -933,7 +933,7 @@ export const PostCard = memo(({
         toast({
           title: errorTitle,
           description: errorDescription,
-          duration: 5000, // 重要なメッセージなので表示時間を長く
+          duration: 3000, // 重要なメッセージなので表示時間を長く
         });
       }
     } catch (error) {
