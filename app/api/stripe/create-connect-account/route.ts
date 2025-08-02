@@ -81,6 +81,15 @@ export async function POST(request: NextRequest) {
     
     // より詳細なエラーハンドリング
     if (error instanceof Error) {
+      // プラットフォームプロフィール未完了エラー
+      if (error.message.includes('complete your platform profile')) {
+        return NextResponse.json({ 
+          error: 'Stripe Connectの設定が未完了です。管理者がStripeダッシュボードでプラットフォームプロフィールを完了する必要があります。',
+          code: 'PLATFORM_PROFILE_INCOMPLETE',
+          dashboardUrl: 'https://dashboard.stripe.com/connect/accounts/overview'
+        }, { status: 503 });
+      }
+      
       if (error.message.includes('Connect')) {
         return NextResponse.json({ 
           error: 'Stripe Connect設定に問題があります。管理者にお問い合わせください。',

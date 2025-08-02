@@ -48,9 +48,13 @@ export default function StripeSetupPage() {
       });
       
       const data = await response.json();
+      
       if (response.ok) {
         setStripeAccountId(data.accountId);
         setOnboardingCompleted(data.onboardingCompleted);
+      } else if (data.code === 'PLATFORM_PROFILE_INCOMPLETE') {
+        // プラットフォーム設定未完了の場合は静かに処理
+        console.warn('Stripe platform profile incomplete');
       }
     } catch (error) {
       console.error('Failed to check existing account:', error);
@@ -65,6 +69,21 @@ export default function StripeSetupPage() {
       });
       
       const data = await response.json();
+      
+      if (!response.ok) {
+        // 特定のエラーコードに応じたハンドリング
+        if (data.code === 'PLATFORM_PROFILE_INCOMPLETE') {
+          toast({
+            title: "⚠️ 設定未完了",
+            description: "管理者がStripe Connectの設定を完了する必要があります。しばらくお待ちください。",
+            duration: 8000,
+          });
+          return;
+        }
+        
+        throw new Error(data.error || 'アカウント作成に失敗しました');
+      }
+      
       setStripeAccountId(data.accountId);
       setOnboardingCompleted(data.onboardingCompleted);
       
@@ -74,8 +93,8 @@ export default function StripeSetupPage() {
     } catch (error) {
       toast({
         title: "エラー",
-        description: "アカウント作成に失敗しました",
-        duration: 3000,
+        description: error instanceof Error ? error.message : "アカウント作成に失敗しました",
+        duration: 5000,
       });
     } finally {
       setLoading(false);
