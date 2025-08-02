@@ -189,6 +189,20 @@ export default function PostPage() {
   // 価格計算モーダルの状態
   const [showPriceInfoModal, setShowPriceInfoModal] = useState(false);
 
+  // 🔥 Stripe設定状態を管理
+  const [stripeSetupStatus, setStripeSetupStatus] = useState<{
+    hasAccount: boolean;
+    onboardingCompleted: boolean;
+    loading: boolean;
+  }>({
+    hasAccount: false,
+    onboardingCompleted: false,
+    loading: false
+  });
+
+  // 🔥 Stripe設定確認モーダルの状態
+  const [showStripeSetupModal, setShowStripeSetupModal] = useState(false);
+
   // 🔥 複数画像のクリーンアップ
   useEffect(() => {
     return () => {
@@ -854,6 +868,63 @@ export default function PostPage() {
   const hasOptionalValues = () => {
     const values = form.getValues();
     return !!(values.storeId || values.genre || values.category || values.price || values.url || fileFiles.length > 0 || values.rating || values.start_date || values.end_date || optionalFieldsExpanded.supportPurchase);
+  };
+
+  // 🔥 応援購入有効化時のチェック処理
+  const handleSupportPurchaseToggle = async (checked: boolean) => {
+    if (!checked) {
+      // 無効化する場合はそのまま設定
+      form.setValue("supportPurchaseEnabled", false);
+      form.setValue("supportPurchaseOptions", []);
+      return;
+    }
+
+    // 有効化する場合はStripe設定をチェック
+    await checkStripeSetup();
+    
+    if (!stripeSetupStatus.hasAccount || !stripeSetupStatus.onboardingCompleted) {
+      // Stripe設定が未完了の場合はモーダルを表示
+      setShowStripeSetupModal(true);
+      return;
+    }
+
+    // Stripe設定が完了している場合は有効化
+    form.setValue("supportPurchaseEnabled", true);
+  };
+
+  // 🔥 Stripe設定画面への遷移
+  const handleNavigateToStripeSetup = () => {
+    setShowStripeSetupModal(false);
+    router.push('/profile/stripe-setup');
+  };
+
+  // 🔥 Stripe設定状況を確認する関数
+  const checkStripeSetup = async () => {
+    if (!session?.user?.id) return;
+    
+    setStripeSetupStatus(prev => ({ ...prev, loading: true }));
+    
+    try {
+      const { data: profile, error } = await supabase
+        .from('app_profiles')
+        .select('stripe_account_id, stripe_onboarding_completed')
+        .eq('user_id', session.user.id)
+        .single();
+
+      if (error) {
+        console.error('Profile fetch error:', error);
+        return;
+      }
+
+      setStripeSetupStatus({
+        hasAccount: !!profile?.stripe_account_id,
+        onboardingCompleted: !!profile?.stripe_onboarding_completed,
+        loading: false
+      });
+    } catch (error) {
+      console.error('Stripe setup check error:', error);
+      setStripeSetupStatus(prev => ({ ...prev, loading: false }));
+    }
   };
 
   if (status === "loading") {
@@ -1713,6 +1784,8 @@ export default function PostPage() {
                                 <h3 className="text-lg font-semibold text-blue-800 mb-2">応援購入について</h3>
                                 <p className="text-sm text-blue-700 leading-relaxed">
                                   応援購入を有効にすると、この投稿を見た人があなたを応援できます！
+                                  <br />
+                                  <span className="font-medium text-blue-800">※収益を受け取るにはStripe設定が必要です</span>
                                 </p>
                               </div>
                             </div>
@@ -1723,11 +1796,23 @@ export default function PostPage() {
                               <div>
                                 <Label className="text-lg font-semibold">応援購入を有効にする</Label>
                                 <p className="text-sm text-gray-600">投稿に応援購入ボタンを表示します</p>
+                                {stripeSetupStatus.loading && (
+                                  <p className="text-xs text-blue-600 flex items-center mt-1">
+                                    <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                                    設定状況を確認中...
+                                  </p>
+                                )}
+                                {!stripeSetupStatus.hasAccount && !stripeSetupStatus.loading && (
+                                  <p className="text-xs text-amber-600 mt-1">
+                                    ⚠️ Stripe設定が必要です
+                                  </p>
+                                )}
                               </div>
                             </div>
                             <Switch
                               checked={form.getValues("supportPurchaseEnabled")}
-                              onCheckedChange={(checked) => form.setValue("supportPurchaseEnabled", checked)}
+                              onCheckedChange={handleSupportPurchaseToggle}
+                              disabled={stripeSetupStatus.loading}
                             />
                           </div>
 
@@ -1738,11 +1823,11 @@ export default function PostPage() {
                               exit={{ opacity: 0, height: 0 }}
                               transition={{ duration: 0.3 }}
                               className="space-y-4"
-                            >                              
+                            >
                               <div className="space-y-3">
                                 <Label className="text-base font-medium">応援購入の金額を選択（最大3つ）</Label>
                                 
-                                {/* 選択された金額の表示 */}
+                                {/* 既存の金額選択コードをそのまま維持 */}
                                 {(form.getValues("supportPurchaseOptions") || []).length > 0 && (
                                   <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
                                     <div className="flex items-center space-x-2 mb-2">
@@ -1771,7 +1856,7 @@ export default function PostPage() {
                                   </div>
                                 )}
                                 
-                                {/* 金額選択ボタン */}
+                                {/* 既存の金額選択ボタン */}
                                 <div className="grid grid-cols-3 gap-3">
                                   {[300, 500, 1000, 3000, 5000, 10000].map((presetAmount) => {
                                     const isSelected = (form.getValues("supportPurchaseOptions") || []).includes(presetAmount);
@@ -1786,10 +1871,8 @@ export default function PostPage() {
                                         onClick={() => {
                                           const currentOptions = form.getValues("supportPurchaseOptions") || [];
                                           if (isSelected) {
-                                            // 選択を解除
                                             form.setValue("supportPurchaseOptions", currentOptions.filter(amount => amount !== presetAmount));
                                           } else if (currentOptions.length < 3) {
-                                            // 新しく選択
                                             form.setValue("supportPurchaseOptions", [...currentOptions, presetAmount].sort((a, b) => a - b));
                                           }
                                         }}
@@ -1809,14 +1892,11 @@ export default function PostPage() {
                                   })}
                                 </div>
                                 
-                                {/* 選択状況の表示 */}
-                                <div className="text-center">
-                                  {(form.getValues("supportPurchaseOptions") || []).length >= 3 && (
-                                    <p className="text-xs text-amber-600 mt-1">
-                                      変更する場合は選択済みの金額を解除してください。
-                                    </p>
-                                  )}
-                                </div>
+                                {(form.getValues("supportPurchaseOptions") || []).length >= 3 && (
+                                  <p className="text-xs text-amber-600 mt-1 text-center">
+                                    変更する場合は選択済みの金額を解除してください。
+                                  </p>
+                                )}
                               </div>
                             </motion.div>
                           )}
@@ -1916,6 +1996,93 @@ export default function PostPage() {
                   onClick={handleMoveToPriceCalculator}
                 >
                   割引計算ツールを開く
+                </Button>
+              </div>
+            </div>
+          </CustomModal>
+
+          {/* 🔥 Stripe設定確認モーダル */}
+          <CustomModal
+            isOpen={showStripeSetupModal}
+            onClose={handleNavigateToStripeSetup}
+            title="Stripe設定の確認"
+          >
+            <div className="pt-2">
+              <p className="mb-4 text-center">
+                Stripe設定が完了していません。Stripe設定を完了させてください。
+              </p>
+              <div className="mt-6 flex justify-center">
+                <Button
+                  onClick={handleNavigateToStripeSetup}
+                >
+                  Stripe設定画面へ移動
+                </Button>
+              </div>
+            </div>
+          </CustomModal>
+
+          {/* 🔥 Stripe設定促進モーダル */}
+          <CustomModal
+            isOpen={showStripeSetupModal}
+            onClose={() => setShowStripeSetupModal(false)}
+            title="収益受取設定が必要です"
+          >
+            <div className="pt-2">
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
+                <div className="flex items-start space-x-3">
+                  <HandCoins className="h-5 w-5 text-amber-500 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-amber-800 mb-2">応援購入を受け取るには</h3>
+                    <p className="text-sm text-amber-700 leading-relaxed">
+                      応援購入で得た収益を受け取るために、Stripe（決済サービス）の設定が必要です。
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-3 mb-6">
+                <div className="flex items-center space-x-3 p-3 bg-blue-50 rounded-lg">
+                  <div className="flex-shrink-0 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold">
+                    1
+                  </div>
+                  <div>
+                    <p className="font-medium text-blue-800">Stripeアカウント作成</p>
+                    <p className="text-sm text-blue-600">決済処理を行うアカウントを作成</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center space-x-3 p-3 bg-green-50 rounded-lg">
+                  <div className="flex-shrink-0 w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-bold">
+                    2
+                  </div>
+                  <div>
+                    <p className="font-medium text-green-800">本人確認・銀行口座登録</p>
+                    <p className="text-sm text-green-600">収益を受け取るための情報を登録</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-gray-50 border rounded-lg p-3 mb-6">
+                <p className="text-xs text-gray-600 leading-relaxed">
+                  ※設定は5-10分程度で完了します。設定完了後、すぐに応援購入機能をご利用いただけます。
+                </p>
+              </div>
+
+              <div className="flex flex-col space-y-3">
+                <Button 
+                  onClick={handleNavigateToStripeSetup}
+                  className="w-full"
+                >
+                  <HandCoins className="mr-2 h-4 w-4" />
+                  収益受取設定を開始する
+                </Button>
+                
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowStripeSetupModal(false)}
+                  className="w-full"
+                >
+                  後で設定する
                 </Button>
               </div>
             </div>
