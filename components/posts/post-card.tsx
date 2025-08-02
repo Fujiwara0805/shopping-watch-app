@@ -893,16 +893,17 @@ export const PostCard = memo(({
     }
   };
 
-  // 🔥 応援購入ハンドラーを追加
+  // 🔥 応援購入ハンドラーを修正（896行目付近）
   const handleSupportPurchase = useCallback(async (postId: string, amount: number) => {
-    if (!currentUserId) {
-      toast({
-        title: "ログインが必要です",
-        description: "応援購入するにはログインしてください",
-        duration: 3000,
-      });
-      return;
-    }
+    // 🔥 修正：匿名ユーザーでも購入可能にする
+    // if (!currentUserId) {
+    //   toast({
+    //     title: "ログインが必要です",
+    //     description: "応援購入するにはログインしてください",
+    //     duration: 3000,
+    //   });
+    //   return;
+    // }
 
     try {
       const response = await fetch('/api/support-purchase/create-checkout', {
@@ -922,28 +923,36 @@ export const PostCard = memo(({
         window.location.href = data.checkoutUrl;
       } else {
         // より具体的なエラーメッセージを表示
-        let errorTitle = "エラーが発生しました";
+        let errorTitle = "応援購入できません";
         let errorDescription = data.error || '決済URLの取得に失敗しました';
         
-        if (data.errorCode === 'SELLER_STRIPE_SETUP_INCOMPLETE') {
-          errorTitle = "応援購入できません";
+        // 🔥 修正：エラーコードに応じた詳細メッセージ
+        if (data.errorCode === 'SELLER_STRIPE_ACCOUNT_NOT_FOUND') {
+          errorTitle = "応援購入設定未完了";
+          errorDescription = data.error;
+        } else if (data.errorCode === 'SELLER_STRIPE_SETUP_INCOMPLETE') {
+          errorTitle = "応援購入設定未完了";
+          errorDescription = data.error;
+        } else if (data.errorCode === 'SELLER_PAYOUT_NOT_ENABLED') {
+          errorTitle = "支払い受取設定未完了";
           errorDescription = data.error;
         }
         
         toast({
           title: errorTitle,
           description: errorDescription,
-          duration: 3000, // 重要なメッセージなので表示時間を長く
+          duration: 5000, // エラーメッセージは長めに表示
         });
       }
     } catch (error) {
+      console.error('Support purchase error:', error);
       toast({
         title: "エラーが発生しました",
-        description: "決済処理の開始に失敗しました",
+        description: "決済処理の開始に失敗しました。しばらく時間をおいて再度お試しください。",
         duration: 3000,
       });
     }
-  }, [currentUserId, toast]);
+  }, [toast]); // currentUserIdの依存関係を削除
 
   return (
     <>

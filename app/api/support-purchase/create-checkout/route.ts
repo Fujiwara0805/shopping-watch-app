@@ -54,7 +54,6 @@ export async function POST(request: NextRequest) {
       }, { status: 500 });
     }
 
-    // 認証チェックを緩和（匿名ユーザーも許可）
     const session = await getServerSession(authOptions);
     let buyerProfileId = null;
     
@@ -81,16 +80,10 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // 投稿情報の取得（匿名アクセス可能）
+    // 🔥 修正：投稿情報の取得方法を改善
     const { data: post, error: postError } = await supabase
       .from('posts')
-      .select(`
-        id, content, app_profile_id, support_purchase_enabled, support_purchase_options,
-        app_profiles!posts_app_profile_id_fkey(
-          display_name, stripe_account_id, 
-          stripe_onboarding_completed, payout_enabled
-        )
-      `)
+      .select('id, content, app_profile_id, support_purchase_enabled, support_purchase_options')
       .eq('id', postId)
       .eq('support_purchase_enabled', true)
       .single();
@@ -99,6 +92,28 @@ export async function POST(request: NextRequest) {
       console.error('Post fetch error:', postError);
       return NextResponse.json({ error: '投稿が見つかりません' }, { status: 404 });
     }
+
+    // 🔥 修正：投稿者のプロフィール情報を別途取得
+    const { data: profile, error: profileError } = await supabase
+      .from('app_profiles')
+      .select('display_name, stripe_account_id, stripe_onboarding_completed, payout_enabled')
+      .eq('id', post.app_profile_id)
+      .single();
+
+    if (profileError || !profile) {
+      console.error('Profile fetch error:', profileError);
+      return NextResponse.json({ 
+        error: '投稿者の情報が見つかりません',
+        details: profileError?.message 
+      }, { status: 404 });
+    }
+
+    console.log('Profile data:', {
+      hasStripeAccount: !!profile.stripe_account_id,
+      onboardingCompleted: profile.stripe_onboarding_completed,
+      payoutEnabled: profile.payout_enabled,
+      displayName: profile.display_name
+    });
 
     // 金額検証
     const validAmounts = JSON.parse(post.support_purchase_options || '[]');
@@ -111,21 +126,46 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '自分の投稿には応援購入できません' }, { status: 400 });
     }
 
-    const profile = post.app_profiles?.[0];
-
-    // Stripe設定確認を強化
-    if (!profile?.stripe_account_id || !profile?.stripe_onboarding_completed || !profile?.payout_enabled) {
-      console.error('Seller Stripe setup incomplete:', {
-        hasStripeAccount: !!profile?.stripe_account_id,
-        onboardingCompleted: profile?.stripe_onboarding_completed,
-        payoutEnabled: profile?.payout_enabled,
-        displayName: profile?.display_name
+    // 🔥 修正：Stripe設定確認を改善
+    if (!profile.stripe_account_id) {
+      console.error('Seller Stripe account not found:', {
+        profileId: post.app_profile_id,
+        displayName: profile.display_name
       });
       
       return NextResponse.json({ 
-        error: `${profile?.display_name || '投稿者'}さんの収益受取設定が未完了のため、応援購入できません。`,
+        error: `${profile.display_name || '投稿者'}さんはまだ応援購入の受取設定を完了していません。`,
+        errorCode: 'SELLER_STRIPE_ACCOUNT_NOT_FOUND',
+        sellerName: profile.display_name
+      }, { status: 400 });
+    }
+
+    if (!profile.stripe_onboarding_completed) {
+      console.error('Seller Stripe onboarding incomplete:', {
+        hasStripeAccount: !!profile.stripe_account_id,
+        onboardingCompleted: profile.stripe_onboarding_completed,
+        displayName: profile.display_name
+      });
+      
+      return NextResponse.json({ 
+        error: `${profile.display_name || '投稿者'}さんの収益受取設定が未完了のため、応援購入できません。`,
         errorCode: 'SELLER_STRIPE_SETUP_INCOMPLETE',
-        sellerName: profile?.display_name
+        sellerName: profile.display_name
+      }, { status: 400 });
+    }
+
+    if (!profile.payout_enabled) {
+      console.error('Seller payout not enabled:', {
+        hasStripeAccount: !!profile.stripe_account_id,
+        onboardingCompleted: profile.stripe_onboarding_completed,
+        payoutEnabled: profile.payout_enabled,
+        displayName: profile.display_name
+      });
+      
+      return NextResponse.json({ 
+        error: `${profile.display_name || '投稿者'}さんの支払い受取設定が有効になっていないため、応援購入できません。`,
+        errorCode: 'SELLER_PAYOUT_NOT_ENABLED',
+        sellerName: profile.display_name
       }, { status: 400 });
     }
 
@@ -133,7 +173,6 @@ export async function POST(request: NextRequest) {
     const platformFeeAmount = Math.floor(amount * 0.05);
     const sellerAmount = amount - platformFeeAmount;
     
-    console.log('Creating Stripe checkout session...');
     console.log('Amounts:', { amount, platformFeeAmount, sellerAmount });
 
     // 🔥 Direct Charge with Application Fee（推奨設定）
@@ -144,7 +183,7 @@ export async function POST(request: NextRequest) {
           price_data: {
             currency: 'jpy',
             product_data: {
-              name: `応援購入 - ${profile?.display_name}さんの投稿`,
+              name: `応援購入 - ${profile.display_name}さんの投稿`,
               description: post.content.substring(0, 100) + (post.content.length > 100 ? '...' : ''),
             },
             unit_amount: amount,
@@ -160,7 +199,7 @@ export async function POST(request: NextRequest) {
       payment_intent_data: {
         application_fee_amount: platformFeeAmount,
         transfer_data: {
-          destination: profile?.stripe_account_id,
+          destination: profile.stripe_account_id,
         },
         metadata: {
           post_id: postId,
@@ -192,13 +231,12 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('=== Support Purchase Error ===');
-    console.error('Error type:', error?.constructor?.name);
-    console.error('Error message:', (error as Error)?.message);
-    console.error('Error stack:', (error as Error)?.stack);
+    console.error('Error details:', error);
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
     
     return NextResponse.json({ 
-      error: '決済処理でエラーが発生しました',
-      details: process.env.NODE_ENV === 'development' ? (error as Error)?.message : undefined
+      error: '決済処理の初期化に失敗しました',
+      details: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 });
   }
 } 
