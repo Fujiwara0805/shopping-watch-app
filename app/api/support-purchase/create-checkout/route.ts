@@ -135,10 +135,14 @@ export async function POST(request: NextRequest) {
     if (!profile?.stripe_account_id || !profile?.stripe_onboarding_completed) {
       console.error('Seller Stripe setup incomplete:', {
         hasStripeAccount: !!profile?.stripe_account_id,
-        onboardingCompleted: profile?.stripe_onboarding_completed
+        onboardingCompleted: profile?.stripe_onboarding_completed,
+        displayName: profile?.display_name
       });
+      
       return NextResponse.json({ 
-        error: '投稿者の収益受取設定が完了していません' 
+        error: `${profile?.display_name || '投稿者'}さんの収益受取設定が未完了のため、応援購入できません。投稿者にStripe設定の完了を依頼してください。`,
+        errorCode: 'SELLER_STRIPE_SETUP_INCOMPLETE',
+        sellerName: profile?.display_name
       }, { status: 400 });
     }
 

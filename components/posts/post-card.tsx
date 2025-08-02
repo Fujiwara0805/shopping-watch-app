@@ -921,7 +921,20 @@ export const PostCard = memo(({
       if (data.checkoutUrl) {
         window.location.href = data.checkoutUrl;
       } else {
-        throw new Error(data.error || '決済URLの取得に失敗しました');
+        // より具体的なエラーメッセージを表示
+        let errorTitle = "エラーが発生しました";
+        let errorDescription = data.error || '決済URLの取得に失敗しました';
+        
+        if (data.errorCode === 'SELLER_STRIPE_SETUP_INCOMPLETE') {
+          errorTitle = "応援購入できません";
+          errorDescription = data.error;
+        }
+        
+        toast({
+          title: errorTitle,
+          description: errorDescription,
+          duration: 5000, // 重要なメッセージなので表示時間を長く
+        });
       }
     } catch (error) {
       toast({
