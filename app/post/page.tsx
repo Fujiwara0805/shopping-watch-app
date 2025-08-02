@@ -896,11 +896,22 @@ export default function PostPage() {
         return;
       }
 
+      const hasAccount = !!profile?.stripe_account_id;
+      const onboardingCompleted = !!profile?.stripe_onboarding_completed;
+      
       setStripeSetupStatus({
-        hasAccount: !!profile?.stripe_account_id,
-        onboardingCompleted: !!profile?.stripe_onboarding_completed,
+        hasAccount,
+        onboardingCompleted,
         loading: false
       });
+
+      // デバッグログ追加
+      console.log('Stripe Setup Status:', {
+        hasAccount,
+        onboardingCompleted,
+        stripe_account_id: profile?.stripe_account_id
+      });
+
     } catch (error) {
       console.error('Stripe setup check error:', error);
       setStripeSetupStatus(prev => ({ ...prev, loading: false }));
@@ -915,15 +926,23 @@ export default function PostPage() {
       return;
     }
 
-    // Stripe設定状況をチェック
+    // 最新のStripe設定状況をチェック
     await checkStripeSetup();
     
-    if (!stripeSetupStatus.hasAccount || !stripeSetupStatus.onboardingCompleted) {
-      setShowStripeSetupModal(true);
-      return;
-    }
+    // 少し待ってから状態を確認（非同期処理の完了を待つ）
+    setTimeout(() => {
+      if (!stripeSetupStatus.hasAccount || !stripeSetupStatus.onboardingCompleted) {
+        setShowStripeSetupModal(true);
+        return;
+      }
 
-    form.setValue("supportPurchaseEnabled", true);
+      form.setValue("supportPurchaseEnabled", true);
+      toast({
+        title: "✅ 応援購入機能を有効化しました",
+        description: "金額を選択して投稿してください",
+        duration: 3000,
+      });
+    }, 500);
   };
 
   // 🔥 Stripe設定画面への遷移
@@ -931,6 +950,13 @@ export default function PostPage() {
     setShowStripeSetupModal(false);
     router.push('/profile/stripe-setup');
   };
+
+  // 🔥 初期ロード時にStripe設定状態を確認
+  useEffect(() => {
+    if (session?.user?.id && STRIPE_CONNECT_ENABLED) {
+      checkStripeSetup();
+    }
+  }, [session?.user?.id]);
 
   if (status === "loading") {
     return (
@@ -1810,6 +1836,16 @@ export default function PostPage() {
                                 {!stripeSetupStatus.hasAccount && !stripeSetupStatus.loading && (
                                   <p className="text-xs text-amber-600 mt-1">
                                     ⚠️ Stripe設定が必要です
+                                  </p>
+                                )}
+                                {stripeSetupStatus.hasAccount && stripeSetupStatus.onboardingCompleted && !stripeSetupStatus.loading && (
+                                  <p className="text-xs text-green-600 mt-1">
+                                    ✅ 設定完了済み
+                                  </p>
+                                )}
+                                {stripeSetupStatus.hasAccount && !stripeSetupStatus.onboardingCompleted && !stripeSetupStatus.loading && (
+                                  <p className="text-xs text-amber-600 mt-1">
+                                    ⚠️ 本人確認が未完了です
                                   </p>
                                 )}
                               </div>
