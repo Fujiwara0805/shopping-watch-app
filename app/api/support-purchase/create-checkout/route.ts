@@ -13,6 +13,16 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2025-07-30.basil',
 });
 
+export async function GET() {
+  return NextResponse.json({
+    status: 'API Route is accessible',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV,
+    hasStripeKey: !!process.env.STRIPE_SECRET_KEY,
+    stripeKeyLength: process.env.STRIPE_SECRET_KEY?.length || 0,
+  });
+}
+
 export async function POST(request: NextRequest) {
   try {
     // 環境変数チェックを追加
