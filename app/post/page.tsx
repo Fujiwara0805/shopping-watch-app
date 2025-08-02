@@ -870,35 +870,10 @@ export default function PostPage() {
     return !!(values.storeId || values.genre || values.category || values.price || values.url || fileFiles.length > 0 || values.rating || values.start_date || values.end_date || optionalFieldsExpanded.supportPurchase);
   };
 
-  // 🔥 応援購入有効化時のチェック処理
-  const handleSupportPurchaseToggle = async (checked: boolean) => {
-    if (!checked) {
-      // 無効化する場合はそのまま設定
-      form.setValue("supportPurchaseEnabled", false);
-      form.setValue("supportPurchaseOptions", []);
-      return;
-    }
+  // 🔥 Stripe Connect機能を有効化
+  const STRIPE_CONNECT_ENABLED = true; // falseから変更
 
-    // 有効化する場合はStripe設定をチェック
-    await checkStripeSetup();
-    
-    if (!stripeSetupStatus.hasAccount || !stripeSetupStatus.onboardingCompleted) {
-      // Stripe設定が未完了の場合はモーダルを表示
-      setShowStripeSetupModal(true);
-      return;
-    }
-
-    // Stripe設定が完了している場合は有効化
-    form.setValue("supportPurchaseEnabled", true);
-  };
-
-  // 🔥 Stripe設定画面への遷移
-  const handleNavigateToStripeSetup = () => {
-    setShowStripeSetupModal(false);
-    router.push('/profile/stripe-setup');
-  };
-
-  // 🔥 Stripe設定状況を確認する関数
+  // 🔥 Stripe設定確認を有効化
   const checkStripeSetup = async () => {
     if (!session?.user?.id) return;
     
@@ -913,6 +888,11 @@ export default function PostPage() {
 
       if (error) {
         console.error('Profile fetch error:', error);
+        setStripeSetupStatus({
+          hasAccount: false,
+          onboardingCompleted: false,
+          loading: false
+        });
         return;
       }
 
@@ -925,6 +905,31 @@ export default function PostPage() {
       console.error('Stripe setup check error:', error);
       setStripeSetupStatus(prev => ({ ...prev, loading: false }));
     }
+  };
+
+  // 🔥 応援購入有効化時のチェック処理を修正
+  const handleSupportPurchaseToggle = async (checked: boolean) => {
+    if (!checked) {
+      form.setValue("supportPurchaseEnabled", false);
+      form.setValue("supportPurchaseOptions", []);
+      return;
+    }
+
+    // Stripe設定状況をチェック
+    await checkStripeSetup();
+    
+    if (!stripeSetupStatus.hasAccount || !stripeSetupStatus.onboardingCompleted) {
+      setShowStripeSetupModal(true);
+      return;
+    }
+
+    form.setValue("supportPurchaseEnabled", true);
+  };
+
+  // 🔥 Stripe設定画面への遷移
+  const handleNavigateToStripeSetup = () => {
+    setShowStripeSetupModal(false);
+    router.push('/profile/stripe-setup');
   };
 
   if (status === "loading") {

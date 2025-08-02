@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CheckCircle, CreditCard, AlertCircle, Loader2 } from 'lucide-react';
 import AppLayout from '@/components/layout/app-layout';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/lib/supabaseClient';
 
 export default function StripeSetupPage() {
   const { data: session } = useSession();
@@ -97,6 +98,41 @@ export default function StripeSetupPage() {
         description: "設定画面の表示に失敗しました",
         duration: 3000,
       });
+    }
+  };
+
+  // 🔥 設定完了確認の改善
+  const checkAccountStatus = async (accountId: string) => {
+    try {
+      const response = await fetch('/api/stripe/check-account-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accountId }),
+      });
+      
+      const data = await response.json();
+      
+      if (data.onboardingCompleted) {
+        // データベース更新
+        await supabase
+          .from('app_profiles')
+          .update({ 
+            stripe_onboarding_completed: true,
+            payout_enabled: data.payoutsEnabled || false,
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', session?.user?.id);
+          
+        toast({
+          title: "✅ 設定完了",
+          description: "応援購入機能が利用可能になりました！",
+          duration: 3000,
+        });
+        
+        router.push('/profile?stripe_setup=success');
+      }
+    } catch (error) {
+      console.error('Account status check error:', error);
     }
   };
 
