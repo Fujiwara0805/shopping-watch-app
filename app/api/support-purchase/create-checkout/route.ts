@@ -4,12 +4,25 @@ import { authOptions } from '@/lib/auth';
 import { supabase } from '@/lib/supabaseClient';
 import Stripe from 'stripe';
 
+// 環境変数の存在確認
+if (!process.env.STRIPE_SECRET_KEY) {
+  console.error('STRIPE_SECRET_KEY environment variable is not set');
+}
+
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2025-07-30.basil',
 });
 
 export async function POST(request: NextRequest) {
   try {
+    // 環境変数チェックを追加
+    if (!process.env.STRIPE_SECRET_KEY) {
+      console.error('Missing STRIPE_SECRET_KEY in production');
+      return NextResponse.json({ 
+        error: 'サーバー設定エラーが発生しました' 
+      }, { status: 500 });
+    }
+
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'ログインが必要です' }, { status: 401 });
