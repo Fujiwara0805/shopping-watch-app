@@ -51,6 +51,8 @@ export function AppHeader() {
         return 'プロフィール作成';
       case '/profile/stripe-setup':
         return '収益受取設定';
+      case '/profile/stripe-account-management':
+        return 'アカウント管理';
       case '/notifications':
         return '通知';
       case '/contact':

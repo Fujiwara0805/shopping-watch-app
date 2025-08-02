@@ -11,8 +11,9 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
+import { ArrowLeft, Info, Edit, CreditCard, AlertTriangle } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 export default function StripeAccountManagementPage() {
   const { data: session } = useSession();
@@ -23,6 +24,7 @@ export default function StripeAccountManagementPage() {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [activeTab, setActiveTab] = useState('info'); // タブ状態を管理
   
   // フォームデータ
   const [updateForm, setUpdateForm] = useState({
@@ -105,7 +107,7 @@ export default function StripeAccountManagementPage() {
         toast({
           title: "✅ 更新完了",
           description: "アカウント情報を更新しました",
-          duration: 3000,
+          duration: 1000,
         });
         await fetchAccountInfo(); // 情報を再取得
       } else {
@@ -138,7 +140,7 @@ export default function StripeAccountManagementPage() {
         toast({
           title: "✅ 削除完了",
           description: "Stripeアカウントを削除しました",
-          duration: 3000,
+          duration: 1000,
         });
         router.push('/profile');
       } else {
@@ -169,25 +171,67 @@ export default function StripeAccountManagementPage() {
     );
   }
 
+  // タブボタンコンポーネント
+  const TabButton = ({ 
+    value, 
+    icon: Icon, 
+    children, 
+    colorClass 
+  }: { 
+    value: string; 
+    icon: any; 
+    children: React.ReactNode; 
+    colorClass: string;
+  }) => (
+    <button
+      onClick={() => setActiveTab(value)}
+      className={cn(
+        "flex items-center justify-center p-3 text-sm font-medium rounded-lg border border-gray-200 bg-white hover:bg-gray-50 transition-all duration-200",
+        activeTab === value ? colorClass : ""
+      )}
+    >
+      <Icon className="h-4 w-4 mr-2" />
+      {children}
+    </button>
+  );
+
   return (
-    <div className="container mx-auto max-w-4xl p-4 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Stripeアカウント管理</h1>
-        <Button variant="outline" onClick={() => router.back()}>
-          戻る
-        </Button>
-      </div>
+    <div className="container mx-auto max-w-4xl p-4 pb-20 space-y-6">
+      <div className="space-y-4">
+        {/* カスタムタブナビゲーション */}
+        <div className="grid grid-cols-2 gap-2">
+          <TabButton 
+            value="info" 
+            icon={Info} 
+            colorClass="bg-blue-50 border-blue-200 text-blue-700"
+          >
+            アカウント情報
+          </TabButton>
+          <TabButton 
+            value="update" 
+            icon={Edit} 
+            colorClass="bg-green-50 border-green-200 text-green-700"
+          >
+            情報更新
+          </TabButton>
+          <TabButton 
+            value="balance" 
+            icon={CreditCard} 
+            colorClass="bg-purple-50 border-purple-200 text-purple-700"
+          >
+            残高・支払い
+          </TabButton>
+          <TabButton 
+            value="danger" 
+            icon={AlertTriangle} 
+            colorClass="bg-red-50 border-red-200 text-red-700"
+          >
+            危険な操作
+          </TabButton>
+        </div>
 
-      <Tabs defaultValue="info" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="info">アカウント情報</TabsTrigger>
-          <TabsTrigger value="update">情報更新</TabsTrigger>
-          <TabsTrigger value="balance">残高・支払い</TabsTrigger>
-          <TabsTrigger value="danger">危険な操作</TabsTrigger>
-        </TabsList>
-
-        {/* アカウント情報表示 */}
-        <TabsContent value="info">
+        {/* タブコンテンツ */}
+        {activeTab === 'info' && (
           <Card>
             <CardHeader>
               <CardTitle>現在のアカウント情報</CardTitle>
@@ -247,10 +291,9 @@ export default function StripeAccountManagementPage() {
               )}
             </CardContent>
           </Card>
-        </TabsContent>
+        )}
 
-        {/* 情報更新 */}
-        <TabsContent value="update">
+        {activeTab === 'update' && (
           <Card>
             <CardHeader>
               <CardTitle>アカウント情報の更新</CardTitle>
@@ -346,10 +389,9 @@ export default function StripeAccountManagementPage() {
               </Button>
             </CardContent>
           </Card>
-        </TabsContent>
+        )}
 
-        {/* 残高・支払い */}
-        <TabsContent value="balance">
+        {activeTab === 'balance' && (
           <Card>
             <CardHeader>
               <CardTitle>残高・支払い履歴</CardTitle>
@@ -406,10 +448,9 @@ export default function StripeAccountManagementPage() {
               )}
             </CardContent>
           </Card>
-        </TabsContent>
+        )}
 
-        {/* 危険な操作 */}
-        <TabsContent value="danger">
+        {activeTab === 'danger' && (
           <Card className="border-red-200">
             <CardHeader>
               <CardTitle className="text-red-600">危険な操作</CardTitle>
@@ -453,8 +494,9 @@ export default function StripeAccountManagementPage() {
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
-      </Tabs>
+        )}
+      </div>
+
     </div>
   );
 } 

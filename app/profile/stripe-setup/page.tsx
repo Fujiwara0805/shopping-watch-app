@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabaseClient';
+import { ArrowLeft } from 'lucide-react';
 
 export default function StripeSetupPage() {
   const { data: session } = useSession();
@@ -29,7 +30,7 @@ export default function StripeSetupPage() {
       toast({
         title: "✅ 設定完了",
         description: "応援購入機能が利用可能になりました！",
-        duration: 3000,
+        duration: 1000,
       });
       router.replace('/profile/stripe-setup');
     }
@@ -135,7 +136,7 @@ export default function StripeSetupPage() {
         toast({
           title: "✅ アカウント機能を更新しました",
           description: "オンボーディングを再度完了してください",
-          duration: 3000,
+          duration: 1000,
         });
         
         // オンボーディングを開始
@@ -179,7 +180,7 @@ export default function StripeSetupPage() {
           toast({
             title: "✅ アカウント設定完了",
             description: "応援購入機能が利用可能です！",
-            duration: 3000,
+            duration: 1000,
           });
         }
       } else {
@@ -252,7 +253,7 @@ export default function StripeSetupPage() {
         toast({
           title: "✅ 設定完了",
           description: "応援購入機能が利用可能になりました！",
-          duration: 3000,
+          duration: 1000,
         });
         
         router.push('/profile?stripe_setup=success');
@@ -284,7 +285,7 @@ export default function StripeSetupPage() {
   };
 
   return (
-    <div className="container mx-auto max-w-2xl p-4">
+    <div className="container mx-auto max-w-2xl p-4 pb-20">
       <Card>
         <CardHeader>
           <CardTitle>応援購入機能の設定</CardTitle>
@@ -364,6 +365,7 @@ export default function StripeSetupPage() {
           )}
         </CardContent>
       </Card>
+      
     </div>
   );
 } 

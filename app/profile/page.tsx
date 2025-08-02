@@ -627,30 +627,28 @@ function ProfilePageContent() {
             
             {/* 設定タブ */}
             <TabsContent value="settings" className="m-0 h-full">
-              <div className="h-full overflow-y-auto p-4 space-y-6 custom-scrollbar">
+              <div className="h-full overflow-y-auto p-4 space-y-4 custom-scrollbar">
                 {/* 通知設定セクション */}
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.1 }}
-                  className="space-y-3"
+                  className="space-y-2"
                 >
-                  <h3 className="text-lg font-bold text-gray-900 flex items-center">
+                  <h3 className="text-base font-bold text-gray-900 flex items-center mb-2">
                     <Bell className="h-4 w-4 mr-2 text-orange-600" />
                     通知設定
                   </h3>
                   
-                  <div className="space-y-3">
-                    <LineNotificationSettings
-                      isConnected={isLineConnected}
-                      loading={checkingLineConnection}
-                      onNavigateToLineConnect={handleNavigateToLineConnect}
-                      onRefreshConnection={() => checkLineConnection(true)}
-                    />
-                  </div>
+                  <LineNotificationSettings
+                    isConnected={isLineConnected}
+                    loading={checkingLineConnection}
+                    onNavigateToLineConnect={handleNavigateToLineConnect}
+                    onRefreshConnection={() => checkLineConnection(true)}
+                  />
                 </motion.div>
                 
-                <Separator className="my-4" />
+                <Separator className="my-3" />
                 
                 {/* アカウント設定セクション */}
                 <motion.div
@@ -659,7 +657,7 @@ function ProfilePageContent() {
                   transition={{ delay: 0.2 }}
                   className="space-y-2"
                 >
-                  <h3 className="text-lg font-bold text-gray-900 flex items-center">
+                  <h3 className="text-base font-bold text-gray-900 flex items-center mb-2">
                     <User className="h-4 w-4 mr-2 text-amber-600" />
                     アカウント
                   </h3>
@@ -679,46 +677,91 @@ function ProfilePageContent() {
                       action={handleLogout}
                       variant="danger"
                     />
-                    <div className="h-10" />
                   </div>
                 </motion.div>
 
-                {/* Stripe設定セクション */}
+                {/* 応援購入設定セクション */}
                 {profile?.stripe_account_id && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center space-x-2">
-                        <CreditCard className="h-5 w-5" />
-                        <span>応援購入設定</span>
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span>Stripeアカウント</span>
-                        <Badge variant={profile.stripe_onboarding_completed ? 'default' : 'secondary'}>
-                          {profile.stripe_onboarding_completed ? '設定完了' : '設定中'}
-                        </Badge>
-                      </div>
+                  <>
+                    <Separator className="my-3" />
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.3 }}
+                      className="space-y-2 "
+                    >
+                      <h3 className="text-base font-bold text-gray-900 flex items-center mb-2">
+                        <CreditCard className="h-4 w-4 mr-2 text-green-600" />
+                        応援購入設定
+                      </h3>
                       
-                      <div className="flex space-x-2">
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => router.push('/profile/stripe-setup')}
-                        >
-                          設定確認
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => router.push('/profile/stripe-account-management')}
-                        >
-                          アカウント管理
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
+                      <motion.div
+                        whileHover={{ scale: 1.01 }}
+                        className="p-3 bg-white rounded-lg border border-gray-100 shadow-sm"
+                      >
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <div className="space-y-0.5 flex-1 min-w-0">
+                              <div className="flex items-center space-x-2">
+                                <Label className="text-sm font-medium">Stripeアカウント</Label>
+                                <Badge 
+                                  variant="secondary" 
+                                  className={cn(
+                                    "text-xs",
+                                    profile.stripe_onboarding_completed 
+                                      ? "bg-green-100 text-green-800" 
+                                      : "bg-yellow-100 text-yellow-800"
+                                  )}
+                                >
+                                  {profile.stripe_onboarding_completed ? (
+                                    <>
+                                      <CheckCircle className="h-3 w-3 mr-1" />
+                                      設定完了
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Info className="h-3 w-3 mr-1" />
+                                      設定中
+                                    </>
+                                  )}
+                                </Badge>
+                              </div>
+                              <p className="text-xs text-gray-500">
+                                {profile.stripe_onboarding_completed 
+                                  ? "応援購入の受け取り設定が完了しています" 
+                                  : "応援購入の受け取り設定を完了してください"
+                                }
+                              </p>
+                            </div>
+                          </div>
+                          
+                          <div className="flex space-x-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => router.push('/profile/stripe-setup')}
+                              className="text-green-600 border-green-200 hover:bg-green-50 text-xs px-3 py-1 flex-1"
+                            >
+                              <Settings className="h-3 w-3 mr-1" />
+                              設定確認
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => router.push('/profile/stripe-account-management')}
+                              className="text-blue-600 border-blue-200 hover:bg-blue-50 text-xs px-3 py-1 flex-1"
+                            >
+                              <User className="h-3 w-3 mr-1" />
+                              アカウント管理
+                            </Button>
+                          </div>
+                        </div>
+                      </motion.div>
+                    </motion.div>
+                  </>
                 )}
+                
+                <div className="h-6" />
               </div>
             </TabsContent>
           </div>
