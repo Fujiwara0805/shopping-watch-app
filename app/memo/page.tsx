@@ -229,22 +229,12 @@ export default function MemoPage() {
               </div>
             )}
           </div>
-          {/* 時刻表ボタンを削除 */}
-          {/* 削除: showTrainScheduleButton && ( ... ) */}
-          {/* 削除: <motion.div ... > */}
-          {/* 削除: <Button ... > */}
-          {/* 削除: <TrainFront ... /> */}
-          {/* 削除: 時刻表 */}
-          {/* 削除: </Button> */}
-          {/* 削除: </motion.div> */}
         </header>
 
         <div className="flex gap-2 mb-4">
           <Input type="text" value={newItemName} onChange={e => setNewItemName(e.target.value)} placeholder="アイテム名を入力 (例: 牛乳)" className="text-base" />
           <Button onClick={handleAddItemFromInput} size="icon" className="shrink-0" disabled={newItemName.trim() === ''}><Plus size={20} /></Button>
         </div>
-
-        {/* 割引表への案内カードを削除 */}
 
         {showUsageGuide && (
           <AnimatePresence>
@@ -425,7 +415,7 @@ export default function MemoPage() {
               </div>
             </motion.div>
           )}
-          {/* 割引表への遷移ボタン */}
+          {/* 割引表への遷移ボタン
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -450,7 +440,7 @@ export default function MemoPage() {
                 割引表へ
               </Button>
             </div>
-          </motion.div>
+          </motion.div> */}
 
           {/* グループ管理への遷移ボタン（ブルー配色に変更） */}
           <motion.div
