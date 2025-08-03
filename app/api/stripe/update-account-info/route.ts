@@ -30,70 +30,46 @@ export async function POST(request: NextRequest) {
       }, { status: 404 });
     }
 
-    // 🔥 修正：更新データからtos_acceptanceを除外
-    const updateParams: any = {
-      // 基本情報の更新
-      ...(updateData.email && { email: updateData.email }),
-      
-      // ビジネスプロフィールの更新
-      business_profile: {
-        ...(updateData.businessName && { name: updateData.businessName }),
-        ...(updateData.productDescription && { 
-          product_description: updateData.productDescription 
-        }),
-        ...(updateData.website && { url: updateData.website }),
-        ...(updateData.supportPhone && { support_phone: updateData.supportPhone }),
-        ...(updateData.supportEmail && { support_email: updateData.supportEmail }),
-        ...(updateData.mcc && { mcc: updateData.mcc }),
-      },
+    // 🔥 修正：プラットフォームが編集可能なフィールドのみに制限
+    const updateParams: any = {};
 
-      // 個人情報の更新（個人アカウントの場合）
-      ...(updateData.individual && {
-        individual: {
-          ...(updateData.individual.firstName && { 
-            first_name: updateData.individual.firstName 
-          }),
-          ...(updateData.individual.lastName && { 
-            last_name: updateData.individual.lastName 
-          }),
-          ...(updateData.individual.phone && { 
-            phone: updateData.individual.phone 
-          }),
-          ...(updateData.individual.email && { 
-            email: updateData.individual.email 
-          }),
-          // 住所情報
-          ...(updateData.individual.address && {
-            address: {
-              line1: updateData.individual.address.line1,
-              line2: updateData.individual.address.line2,
-              city: updateData.individual.address.city,
-              state: updateData.individual.address.state,
-              postal_code: updateData.individual.address.postal_code,
-              country: 'JP',
-            }
-          }),
-        }
-      }),
+    // ビジネスプロフィールの更新（これらは通常編集可能）
+    const businessProfile: any = {};
+    if (updateData.businessName) businessProfile.name = updateData.businessName;
+    if (updateData.productDescription) businessProfile.product_description = updateData.productDescription;
+    if (updateData.website) businessProfile.url = updateData.website;
+    if (updateData.supportPhone) businessProfile.support_phone = updateData.supportPhone;
+    if (updateData.supportEmail) businessProfile.support_email = updateData.supportEmail;
+    if (updateData.mcc) businessProfile.mcc = updateData.mcc;
 
-      // メタデータの更新
-      ...(updateData.metadata && {
-        metadata: {
-          ...updateData.metadata,
-          updated_at: new Date().toISOString(),
-        }
-      }),
-    };
+    if (Object.keys(businessProfile).length > 0) {
+      updateParams.business_profile = businessProfile;
+    }
 
-    // 🔥 削除：日本では tos_acceptance は含めない
-    // tos_acceptance は日本のアカウントでは自動的に処理される
+    // 🔥 削除：email と individual フィールドを除外
+    // これらのフィールドはStripe Connectアカウントの所有者のみが編集可能
+
+    // メタデータの更新（これは通常編集可能）
+    if (updateData.metadata) {
+      updateParams.metadata = {
+        ...updateData.metadata,
+        updated_at: new Date().toISOString(),
+      };
+    }
+
+    // 🔥 新規追加：更新するフィールドがない場合のチェック
+    if (Object.keys(updateParams).length === 0) {
+      return NextResponse.json({
+        success: true,
+        message: '更新可能なフィールドがありませんでした。メールアドレスや個人情報はStripeダッシュボードから直接更新してください。'
+      });
+    }
 
     // Stripeアカウント情報を更新
     const updatedAccount = await stripe.accounts.update(profile.stripe_account_id, updateParams);
 
     console.log('Stripe account updated:', {
       accountId: updatedAccount.id,
-      email: updatedAccount.email,
       businessProfile: updatedAccount.business_profile
     });
 
@@ -107,7 +83,15 @@ export async function POST(request: NextRequest) {
     console.error('Stripe account update error:', error);
     
     if (error instanceof Error) {
-      // 🔥 追加：ToS関連のエラーハンドリング
+      // 🔥 追加：権限エラーのハンドリング
+      if (error.message.includes('not authorized to edit')) {
+        return NextResponse.json({ 
+          error: '一部の情報はStripeダッシュボードから直接更新する必要があります。',
+          code: 'PERMISSION_ERROR',
+          details: error.message
+        }, { status: 403 });
+      }
+      
       if (error.message.includes('ToS') || error.message.includes('tos_acceptance')) {
         return NextResponse.json({ 
           error: 'Stripe利用規約の設定は日本では自動的に処理されます。',
