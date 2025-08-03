@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -10,9 +11,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { CustomModal } from '@/components/ui/custom-modal';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, Info, Edit, CreditCard, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Info, Edit, CreditCard, AlertTriangle, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export default function StripeAccountManagementPage() {
@@ -24,7 +25,10 @@ export default function StripeAccountManagementPage() {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [activeTab, setActiveTab] = useState('info'); // タブ状態を管理
+  const [activeTab, setActiveTab] = useState('info');
+  
+  // 🔥 新規追加: 削除確認モーダルの状態
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   
   // フォームデータ
   const [updateForm, setUpdateForm] = useState({
@@ -125,6 +129,7 @@ export default function StripeAccountManagementPage() {
     }
   };
 
+  // 🔥 更新された削除ハンドラー
   const handleDeleteAccount = async () => {
     setDeleting(true);
     try {
@@ -142,6 +147,7 @@ export default function StripeAccountManagementPage() {
           description: "Stripeアカウントを削除しました",
           duration: 1000,
         });
+        setShowDeleteModal(false);
         router.push('/profile');
       } else {
         throw new Error(data.error || 'アカウントの削除に失敗しました');
@@ -466,37 +472,151 @@ export default function StripeAccountManagementPage() {
                   未処理の支払いがある場合は削除できません。
                 </p>
                 
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="destructive" disabled={deleting}>
-                      {deleting ? "削除中..." : "アカウントを削除"}
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Stripeアカウントの削除</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        本当にStripeアカウントを削除しますか？この操作は元に戻すことができません。
-                        削除後は応援購入機能が利用できなくなります。
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>キャンセル</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={handleDeleteAccount}
-                        className="bg-red-600 hover:bg-red-700"
+                <Button 
+                  variant="destructive" 
+                  disabled={deleting}
+                  onClick={() => setShowDeleteModal(true)}
+                >
+                  {deleting ? (
+                    <motion.div
+                      className="flex items-center justify-center"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{
+                          duration: 1,
+                          repeat: Infinity,
+                          ease: "linear"
+                        }}
+                        className="mr-2"
                       >
-                        削除する
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+                        <Loader2 className="h-4 w-4" />
+                      </motion.div>
+                      <motion.span
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.3, delay: 0.1 }}
+                      >
+                        削除中...
+                      </motion.span>
+                    </motion.div>
+                  ) : (
+                    "アカウントを削除"
+                  )}
+                </Button>
               </div>
             </CardContent>
           </Card>
         )}
       </div>
 
+      {/* 🔥 新規追加: CustomModalを使用した削除確認モーダル */}
+      <CustomModal
+        isOpen={showDeleteModal}
+        onClose={() => !deleting && setShowDeleteModal(false)}
+        title="Stripeアカウントの削除"
+        description="本当にStripeアカウントを削除しますか？この操作は元に戻すことができません。"
+        className="max-w-lg"
+      >
+        <div className="space-y-4">
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+            className="p-4 bg-red-50 border border-red-200 rounded-lg"
+          >
+            <div className="flex items-start space-x-3">
+              <AlertTriangle className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-red-800">
+                  削除後は以下の機能が利用できなくなります：
+                </p>
+                <ul className="text-sm text-red-700 space-y-1 list-disc list-inside ml-2">
+                  <li>応援購入機能の提供</li>
+                  <li>支払いの受け取り</li>
+                  <li>残高の確認・引き出し</li>
+                  <li>取引履歴の閲覧</li>
+                </ul>
+              </div>
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: 0.1 }}
+            className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg"
+          >
+            <div className="flex items-start space-x-3">
+              <Info className="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-yellow-800 mb-1">
+                  削除前の確認事項
+                </p>
+                <p className="text-sm text-yellow-700">
+                  未処理の支払いや保留中の残高がないことを確認してください。
+                  削除後は復旧できません。
+                </p>
+              </div>
+            </div>
+          </motion.div>
+
+          <motion.div 
+            className="flex justify-end space-x-3 pt-4"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: 0.2 }}
+          >
+            <Button 
+              variant="outline" 
+              onClick={() => setShowDeleteModal(false)}
+              disabled={deleting}
+              className="min-w-[100px]"
+            >
+              キャンセル
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteAccount}
+              disabled={deleting}
+              className="min-w-[120px] bg-red-600 hover:bg-red-700"
+            >
+              {deleting ? (
+                <motion.div
+                  className="flex items-center justify-center"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{
+                      duration: 1,
+                      repeat: Infinity,
+                      ease: "linear"
+                    }}
+                    className="mr-2"
+                  >
+                    <Loader2 className="h-4 w-4" />
+                  </motion.div>
+                  <motion.span
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.3, delay: 0.1 }}
+                  >
+                    削除中...
+                  </motion.span>
+                </motion.div>
+              ) : (
+                "削除する"
+              )}
+            </Button>
+          </motion.div>
+        </div>
+      </CustomModal>
     </div>
   );
 } 
