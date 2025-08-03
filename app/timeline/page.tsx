@@ -941,7 +941,10 @@ export default function Timeline() {
 
   const [currentUserProfile, setCurrentUserProfile] = useState<any>(null);
 
-  const debouncedSearchTerm = useDebounce(generalSearchTerm, 800); // 150ms → 800msに変更
+  // 🔥 新規追加: 投稿ボタンのローディング状態
+  const [isNavigatingToPost, setIsNavigatingToPost] = useState(false);
+
+  const debouncedSearchTerm = useDebounce(generalSearchTerm, 800);
 
   // コメントモーダル関連
   const [commentsModal, setCommentsModal] = useState<{
@@ -1769,6 +1772,21 @@ export default function Timeline() {
     router.push('/login');
   };
 
+  // 🔥 新規追加: 投稿ページへの遷移ハンドラー
+  const handleNavigateToPost = async () => {
+    setIsNavigatingToPost(true);
+    try {
+      await router.push('/post');
+    } catch (error) {
+      console.error('投稿ページへの遷移に失敗しました:', error);
+    } finally {
+      // 少し遅延を入れてアニメーションを見せる
+      setTimeout(() => {
+        setIsNavigatingToPost(false);
+      }, 500);
+    }
+  };
+
   if (loading && posts.length === 0) {
     return (
       <AppLayout>
@@ -2433,11 +2451,49 @@ export default function Timeline() {
           <div className={`px-4 py-3 bg-gray-50 border-b ${!isMobile ? 'hidden' : ''}`}>
             <div className="flex space-x-2">
               <Button
-                onClick={() => router.push('/post')}
-                className="flex-1 text-white hover:opacity-90"
+                onClick={handleNavigateToPost}
+                disabled={isNavigatingToPost}
+                className={cn(
+                  "flex-1 text-white hover:opacity-90 relative overflow-hidden",
+                  isNavigatingToPost && "cursor-not-allowed"
+                )}
                 style={{ backgroundColor: '#f97415' }}
               >
-                投稿する
+                {isNavigatingToPost ? (
+                  <motion.div
+                    className="flex items-center justify-center"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{
+                        duration: 1,
+                        repeat: Infinity,
+                        ease: "linear"
+                      }}
+                      className="mr-2"
+                    >
+                      <Loader2 className="h-4 w-4" />
+                    </motion.div>
+                    <motion.span
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.3, delay: 0.1 }}
+                    >
+                      移動中...
+                    </motion.span>
+                  </motion.div>
+                ) : (
+                  <motion.span
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    投稿する
+                  </motion.span>
+                )}
               </Button>
               <Button
                 onClick={() => setShowInviteModal(true)}
