@@ -1876,7 +1876,7 @@ export default function PostPage() {
                               <div className="flex-1">
                                 <h3 className="text-lg font-semibold text-blue-800 mb-2">応援購入について</h3>
                                 <p className="text-sm text-blue-700 leading-relaxed">
-                                  応援購入を有効にすると、この投稿を見た人があなたを応援できます！(手数料は5%+stripe決済手数料3.6%)
+                                  応援購入を有効にすると、この投稿を見た人があなたを応援できます！(手数料は5%+決済手数料3.6%)
                                   <br />
                                   <span className="font-medium text-blue-800">※収益を受け取るにはStripe設定が必要です</span>
                                 </p>
