@@ -106,12 +106,97 @@ const getReleaseTypeBadge = (type: ReleaseType) => {
 // サンプルリリースノートデータ
 const releaseNotes: ReleaseNote[] = [
   {
+    version: '1.0.9',
+    date: '2025-08-03',
+    type: 'major',
+    title: '応援購入機能の実装 - 投稿者を直接応援できる新システム',
+    description: 'トクドクに待望の「応援購入機能」が登場しました！おとくな情報を投稿してくれる方を直接応援できる画期的な機能です。Stripe決済システムを導入し、安全で便利な応援の仕組みを実現しました。',
+    isLatest: true,
+    changes: [
+      {
+        type: 'new',
+        title: '応援購入システムの実装',
+        description: '投稿に「応援購入」ボタンを追加し、投稿者を応援できるようになりました。Stripe決済システムにより、安全で確実な決済処理を実現しています。'
+      },
+      {
+        type: 'new',
+        title: 'Stripe Connect統合',
+        description: 'Stripe Connectを活用したマーケットプレイス型決済システムを構築。投稿者は個別のStripeアカウントを作成し、応援購入の収益を直接受け取ることができます。'
+      },
+      {
+        type: 'new',
+        title: 'Stripeアカウント管理機能',
+        description: 'プロフィール画面にStripeアカウントの設定・管理機能を追加。アカウント作成、本人確認、残高確認、支払い履歴の閲覧が可能です。タブ形式の直感的なUIで操作できます。'
+      },
+      {
+        type: 'new',
+        title: '応援購入設定機能',
+        description: '投稿作成時に応援購入機能のON/OFF設定と金額選択機能を追加。投稿者は自分の投稿に応援購入ボタンを表示するかどうかを選択できます。'
+      },
+      {
+        type: 'new',
+        title: 'リアルタイム決済処理',
+        description: 'Stripe Checkoutを使用したセキュアな決済画面への遷移機能を実装。決済完了後はWebhookによるリアルタイム処理で、応援購入履歴を自動記録します。'
+      },
+      {
+        type: 'new',
+        title: '手数料システムの導入',
+        description: 'プラットフォーム手数料5%を設定(+stripe決済手数料3.6%)。業界最安水準の手数料率で、投稿者により多くの収益を還元します。手数料は決済時に自動計算・徴収されます。'
+      },
+      {
+        type: 'new',
+        title: '応援購入履歴管理',
+        description: '応援購入の取引履歴を詳細に記録・管理する機能を実装。購入者、投稿者、金額、手数料、決済IDなどの情報を安全に保存します。'
+      },
+      {
+        type: 'new',
+        title: 'ローディングアニメーション強化',
+        description: '投稿ボタンやタイムライン画面の投稿ボタンに、Framer Motionを活用したスムーズなローディングアニメーションを追加。ユーザー体験を大幅に向上させました。'
+      },
+      {
+        type: 'improvement',
+        title: '投稿カードUIの拡張',
+        description: '応援購入機能に対応するため、投稿カードに応援購入ボタンとローディング状態表示を追加。エラーハンドリングも強化し、より安定した操作が可能になりました。'
+      },
+      {
+        type: 'improvement',
+        title: 'セキュリティ強化',
+        description: 'Stripe Connectの厳格なセキュリティ基準に準拠し、決済情報の暗号化、不正利用防止、マネーロンダリング対策を実装。ユーザーの資金と個人情報を最高レベルで保護します。'
+      },
+      {
+        type: 'improvement',
+        title: 'エラーハンドリングの改善',
+        description: '決済エラー、アカウント設定エラー、ネットワークエラーなど、様々なエラーケースに対応した詳細なエラーメッセージとユーザーガイダンスを実装しました。'
+      },
+      {
+        type: 'improvement',
+        title: 'データベース構造の拡張',
+        description: '応援購入機能に対応するため、support_purchasesテーブルの新設、app_profilesテーブルへのStripe関連カラム追加、postsテーブルへの応援購入設定カラム追加を実施しました。'
+      },
+      {
+        type: 'improvement',
+        title: 'API体系の整備',
+        description: 'Stripe関連の包括的なAPI群を新設。アカウント作成、情報更新、残高確認、決済処理、Webhook処理など、応援購入機能に必要なすべてのAPIを整備しました。'
+      },
+      {
+        type: 'security',
+        title: '決済セキュリティの実装',
+        description: 'PCI DSS準拠のStripe決済システムを導入し、クレジットカード情報の安全な処理を実現。すべての決済データは暗号化され、トクドクのサーバーには保存されません。'
+      },
+      {
+        type: 'new',
+        title: 'カスタムモーダルの活用',
+        description: 'Stripeアカウント削除確認などの重要な操作に、統一されたカスタムモーダルUIを導入。Framer Motionによる段階的アニメーションで、ユーザーに適切な注意喚起を行います。'
+      }
+    ]
+  },
+  {
     version: '1.0.8',
     date: '2025-07-15',
     type: 'minor',
     title: 'タイムライン機能の大幅改善と投稿機能の拡張',
     description: '地域密着型SNSとしての機能を強化するため、タイムライン機能を大幅に改善しました。また、投稿機能にジャンル分類と複数画像投稿機能を追加し、より詳細で魅力的な投稿が可能になりました。',
-    isLatest: true,
+    isLatest: false,
     changes: [
       {
         type: 'new',
@@ -657,7 +742,7 @@ export default function ReleaseNotesPage() {
         >
           <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 text-center border border-blue-200">
             <Smartphone className="h-6 w-6 mx-auto text-blue-600 mb-2" />
-            <p className="text-lg font-bold text-blue-900">v1.0.7</p>
+            <p className="text-lg font-bold text-blue-900">v1.0.9</p>
             <p className="text-xs text-blue-700">現在のバージョン</p>
           </div>
           <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4 text-center border border-green-200">
