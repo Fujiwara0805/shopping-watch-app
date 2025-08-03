@@ -31,7 +31,7 @@ export interface Post {
   // 新規追加フィールド
   url?: string | null;
   file_urls?: string | null; // JSON文字列
-
+  target_audience?: string | null; // 🔥 新規追加：対象者フィールド
 }
 
 export interface AuthorProfile {

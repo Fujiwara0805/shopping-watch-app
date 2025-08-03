@@ -69,6 +69,35 @@ function formatCommentCount(count: number): string {
   }
 }
 
+// 🔥 対象者のラベルを取得する関数
+function getTargetAudienceLabel(targetAudience?: string | null): string | null {
+  if (!targetAudience) return null;
+  
+  const targetAudienceOptions = [
+    { value: 'すべての人', label: 'すべての人' },
+    { value: '10代', label: '10代' },
+    { value: '20代', label: '20代' },
+    { value: '30代', label: '30代' },
+    { value: '40代', label: '40代' },
+    { value: '50代', label: '50代' },
+    { value: '60代以上', label: '60代以上' },
+    { value: '学生', label: '学生' },
+    { value: 'business_person', label: 'ビジネスマン・OL' },
+    { value: '主婦・主夫', label: '主婦・主夫' },
+    { value: '子育て世代', label: '子育て世代' },
+    { value: '一人暮らし', label: '一人暮らし' },
+    { value: 'ファミリー', label: 'ファミリー' },
+    { value: '高齢者', label: '高齢者' },
+    { value: 'フリーランス', label: 'フリーランス' },
+    { value: '起業家・経営者', label: '起業家・経営者' },
+    { value: '観光客・旅行者', label: '観光客・旅行者' },
+    { value: '地域住民', label: '地域住民' },
+  ];
+  
+  const option = targetAudienceOptions.find(opt => opt.value === targetAudience);
+  return option ? option.label : null;
+}
+
 interface PostCardProps {
   post: ExtendedPostWithAuthor;
   onLike?: (postId: string, isLiked: boolean) => Promise<void>;
@@ -1222,6 +1251,23 @@ export const PostCard = memo(({
                                 );
                               })}
                             </div>
+                          </td>
+                        </tr>
+                      )}
+                      
+                      {/* 🔥 対象者情報の表示（ファイルの後、視聴回数の前に追加） */}
+                      {post.target_audience && (
+                        <tr className="border-b border-gray-100">
+                          <td className="p-3 bg-gray-50 w-1/3 font-medium border-r border-gray-100">
+                            <div className="flex items-center space-x-2">
+                              <Users className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                              <span className="text-base" style={{ color: '#73370c' }}>対象者</span>
+                            </div>
+                          </td>
+                          <td className="p-3">
+                            <Badge className="bg-blue-100 text-blue-800 border-blue-200 text-base">
+                              {getTargetAudienceLabel(post.target_audience)}
+                            </Badge>
                           </td>
                         </tr>
                       )}

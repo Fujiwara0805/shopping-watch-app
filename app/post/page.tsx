@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { Camera, Upload, X, Store as StoreIcon, LayoutGrid, ClipboardList, Image as ImageIcon, CalendarClock, PackageIcon, ClockIcon, Tag, HelpCircle, MapPin, CheckCircle, Layers, ChevronDown, ChevronUp, Settings, Link as LinkIcon, FileText, HandCoins } from 'lucide-react';
+import { Camera, Upload, X, Store as StoreIcon, LayoutGrid, ClipboardList, Image as ImageIcon, CalendarClock, PackageIcon, ClockIcon, Tag, HelpCircle, MapPin, CheckCircle, Layers, ChevronDown, ChevronUp, Settings, Link as LinkIcon, FileText, HandCoins, Users } from 'lucide-react';
 import { CalendarDays, Star as StarIcon } from 'lucide-react'; // CalendarDaysとStarIconを追加
 import { Calendar } from '@/components/ui/calendar'; // Calendarコンポーネントをインポート
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'; // Popoverコンポーネントをインポート
@@ -76,6 +76,7 @@ const postSchema = z.object({
   end_date: z.date().optional(), // 新規追加
   supportPurchaseEnabled: z.boolean().default(false),
   supportPurchaseOptions: z.array(z.number().min(100).max(100000)).max(3).optional(),
+  targetAudience: z.string().optional(), // 🔥 新規追加：対象者フィールド
 });
 
 type PostFormValues = z.infer<typeof postSchema>;
@@ -110,6 +111,28 @@ const expiryOptions = [
   { value: '3h', label: '3時間' },
   { value: '6h', label: '6時間' },
   { value: '12h', label: '12時間' },
+];
+
+// 🔥 新規追加：対象者の選択肢を定義
+const targetAudienceOptions = [
+  { value: 'すべての人', label: 'すべての人' },
+  { value: '10代', label: '10代' },
+  { value: '20代', label: '20代' },
+  { value: '30代', label: '30代' },
+  { value: '40代', label: '40代' },
+  { value: '50代', label: '50代' },
+  { value: '60代以上', label: '60代以上' },
+  { value: '学生', label: '学生' },
+  { value: 'ビジネスマン・OL', label: 'ビジネスマン・OL' },
+  { value: '主婦・主夫', label: '主婦・主夫' },
+  { value: '子育て世代', label: '子育て世代' },
+  { value: '一人暮らし', label: '一人暮らし' },
+  { value: 'ファミリー', label: 'ファミリー' },
+  { value: '高齢者', label: '高齢者' },
+  { value: 'フリーランス', label: 'フリーランス' },
+  { value: '起業家・経営者', label: '起業家・経営者' },
+  { value: '観光客・旅行者', label: '観光客・旅行者' },
+  { value: '地域住民', label: '地域住民' },
 ];
 
 export default function PostPage() {
@@ -177,6 +200,7 @@ export default function PostPage() {
       end_date: undefined, // 新規追加
       supportPurchaseEnabled: false,
       supportPurchaseOptions: [],
+      targetAudience: '', // 🔥 新規追加
     },
     mode: 'onChange',
   });
@@ -437,6 +461,7 @@ export default function PostPage() {
         support_purchase_options: values.supportPurchaseEnabled && (values.supportPurchaseOptions?.length ?? 0) > 0 
           ? JSON.stringify(values.supportPurchaseOptions) 
           : null,
+        target_audience: values.targetAudience && values.targetAudience.trim() !== '' ? values.targetAudience : null, // 🔥 新規追加
       };
 
       // 🔥 店舗の位置情報を設定
@@ -516,6 +541,7 @@ export default function PostPage() {
         end_date: undefined, // 新規追加
         supportPurchaseEnabled: false,
         supportPurchaseOptions: [],
+        targetAudience: '', // 🔥 新規追加
       });
       setImageFiles([]);
       setImagePreviewUrls([]);
@@ -855,6 +881,7 @@ export default function PostPage() {
     rating: false, // 新規追加
     date: false, // 新規追加
     supportPurchase: false, // 追加
+    targetAudience: false, // 🔥 新規追加：対象者フィールド
   });
 
   // 🔥 オプションフィールドの切り替え
@@ -868,7 +895,7 @@ export default function PostPage() {
   // 🔥 オプション項目の値が入力されているかチェック
   const hasOptionalValues = () => {
     const values = form.getValues();
-    return !!(values.storeId || values.genre || values.category || values.price || values.url || fileFiles.length > 0 || values.rating || values.start_date || values.end_date || optionalFieldsExpanded.supportPurchase);
+    return !!(values.storeId || values.genre || values.category || values.price || values.url || fileFiles.length > 0 || values.rating || values.start_date || values.end_date || optionalFieldsExpanded.supportPurchase || values.targetAudience);
   };
 
   // 🔥 Stripe Connect機能を有効化
@@ -1254,6 +1281,20 @@ export default function PostPage() {
                           type="button"
                           variant="outline"
                           size="sm"
+                          onClick={() => toggleOptionalField('targetAudience')}
+                          className={`justify-start transition-all duration-200 ${
+                            optionalFieldsExpanded.targetAudience 
+                              ? 'bg-primary text-primary-foreground border-primary hover:bg-primary/90' 
+                              : 'bg-[#fafafa] text-[#73370c] border-gray-300 hover:bg-[#fafafa] hover:text-[#73370c]'
+                          }`}
+                        >
+                          <Users className="mr-2 h-4 w-4" />
+                          対象者
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
                           onClick={() => toggleOptionalField('price')}
                           className={`justify-start transition-all duration-200 ${
                             optionalFieldsExpanded.price 
@@ -1455,6 +1496,42 @@ export default function PostPage() {
                                     {selectedGenre && genreCategories[selectedGenre as keyof typeof genreCategories]?.map((category) => (
                                       <SelectItem key={category} value={category} className="text-lg py-3">
                                         {category}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </motion.div>
+                      )}
+
+                      {/* 🔥 対象者選択フィールド */}
+                      {optionalFieldsExpanded.targetAudience && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          <FormField
+                            control={form.control}
+                            name="targetAudience"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-lg flex font-semibold items-center">
+                                  <Users className="mr-2 h-5 w-5" /> 対象者
+                                </FormLabel>
+                                <Select onValueChange={field.onChange} value={field.value || ""}>
+                                  <FormControl>
+                                    <SelectTrigger className="w-full text-lg py-6">
+                                      <SelectValue placeholder="対象者を選択してください" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent className="max-h-[200px]">
+                                    {targetAudienceOptions.map((option) => (
+                                      <SelectItem key={option.value} value={option.value} className="text-lg py-3">
+                                        {option.label}
                                       </SelectItem>
                                     ))}
                                   </SelectContent>

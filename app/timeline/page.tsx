@@ -95,6 +95,7 @@ interface PostFromDB {
   // 🔥 追加: authorプロパティを定義
   author: AuthorData | AuthorData[] | null;
   post_likes: PostLike[] | null;
+  target_audience?: string | null; // 🔥 新規追加：対象者フィールド
 }
 
 type SortOption = 'created_at_desc' | 'created_at_asc' | 'expires_at_asc' | 'distance_asc' | 'likes_desc' | 'views_desc' | 'comments_desc';
@@ -120,6 +121,26 @@ const genreCategories = {
   '募集': ['メンバー募集', '助け合い', '里親（ペット）', 'その他'], // 新規追加
   'その他': ['不用品の廃棄']
 };
+const targetAudienceOptions = [
+  { value: 'すべての人', label: 'すべての人' },
+  { value: '10代', label: '10代' },
+  { value: '20代', label: '20代' },
+  { value: '30代', label: '30代' },
+  { value: '40代', label: '40代' },
+  { value: '50代', label: '50代' },
+  { value: '60代以上', label: '60代以上' },
+  { value: '学生', label: '学生' },
+  { value: 'ビジネスマン・OL', label: 'ビジネスマン・OL' },
+  { value: '主婦・主夫', label: '主婦・主夫' },
+  { value: '子育て世代', label: '子育て世代' },
+  { value: '一人暮らし', label: '一人暮らし' },
+  { value: 'ファミリー', label: 'ファミリー' },
+  { value: '高齢者', label: '高齢者' },
+  { value: 'フリーランス', label: 'フリーランス' },
+  { value: '起業家・経営者', label: '起業家・経営者' },
+  { value: '観光客・旅行者', label: '観光客・旅行者' },
+  { value: '地域住民', label: '地域住民' },
+];
 
 // 🔥 全カテゴリーを取得する関数
 const getAllCategories = () => {
@@ -1174,6 +1195,7 @@ export default function Timeline() {
           end_date,
           support_purchase_enabled,
           support_purchase_options,
+          target_audience,
           author:app_profiles!posts_app_profile_id_fkey (
             id,
             user_id,

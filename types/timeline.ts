@@ -28,4 +28,5 @@ export interface ExtendedPostWithAuthor extends PostWithAuthor {
   file_urls?: string | null; // JSON文字列
   support_purchase_enabled?: boolean;
   support_purchase_options?: string | null; // JSON文字列
+  target_audience?: string | null; // 🔥 新規追加：対象者フィールド
 }
