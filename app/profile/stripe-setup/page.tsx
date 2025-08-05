@@ -29,7 +29,7 @@ export default function StripeSetupPage() {
       updateOnboardingStatus();
       toast({
         title: "✅ 設定完了",
-        description: "応援購入機能が利用可能になりました！",
+        description: "おすそわけ機能が利用可能になりました！",
         duration: 1000,
       });
       router.replace('/profile/stripe-setup');
@@ -179,7 +179,7 @@ export default function StripeSetupPage() {
           setOnboardingCompleted(true);
           toast({
             title: "✅ アカウント設定完了",
-            description: "応援購入機能が利用可能です！",
+            description: "おすそわけ機能が利用可能です！",
             duration: 1000,
           });
         }
@@ -252,7 +252,7 @@ export default function StripeSetupPage() {
           
         toast({
           title: "✅ 設定完了",
-          description: "応援購入機能が利用可能になりました！",
+          description: "おすそわけ機能が利用可能になりました！",
           duration: 1000,
         });
         
@@ -288,16 +288,16 @@ export default function StripeSetupPage() {
     <div className="container mx-auto max-w-2xl p-4 pb-20">
       <Card>
         <CardHeader>
-          <CardTitle>応援購入機能の設定</CardTitle>
+          <CardTitle>おすそわけ機能の設定</CardTitle>
           <CardDescription>
-            投稿に応援購入ボタンを設置して、支援を受け取るための設定を行います
+            投稿におすそわけボタンを設置して、支援を受け取るための設定を行います
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {!stripeAccountId ? (
             <div className="space-y-4">
               <p className="text-sm text-gray-600">
-                応援購入機能を利用するには、収益受取のためのアカウント設定が必要です。
+                おすそわけ機能を利用するには、収益受取のためのアカウント設定が必要です。
               </p>
               <Button 
                 onClick={createStripeAccount} 

@@ -109,19 +109,19 @@ const releaseNotes: ReleaseNote[] = [
     version: '1.0.9',
     date: '2025-08-03',
     type: 'major',
-    title: '応援購入機能の実装 - 投稿者を直接応援できる新システム',
-    description: 'トクドクに待望の「応援購入機能」が登場しました！おとくな情報を投稿してくれる方を直接応援できる画期的な機能です。Stripe決済システムを導入し、安全で便利な応援の仕組みを実現しました。',
+    title: 'おすそわけ機能の実装 - 投稿者を直接応援できる新システム',
+    description: 'トクドクに待望の「おすそわけ機能」が登場しました！おとくな情報を投稿してくれる方におすそわけ（応援購入）できる画期的な機能です。Stripe決済システムを導入し、安全で便利なおすそわけの仕組みを実現しました。',
     isLatest: true,
     changes: [
       {
         type: 'new',
-        title: '応援購入システムの実装',
-        description: '投稿に「応援購入」ボタンを追加し、投稿者を応援できるようになりました。Stripe決済システムにより、安全で確実な決済処理を実現しています。'
+        title: 'おすそわけシステムの実装',
+        description: '投稿に「おすそわけ」ボタンを追加し、投稿者におすそわけできるようになりました。Stripe決済システムにより、安全で確実な決済処理を実現しています。'
       },
       {
         type: 'new',
         title: 'Stripe Connect統合',
-        description: 'Stripe Connectを活用したマーケットプレイス型決済システムを構築。投稿者は個別のStripeアカウントを作成し、応援購入の収益を直接受け取ることができます。'
+        description: 'Stripe Connectを活用したマーケットプレイス型決済システムを構築。投稿者は個別のStripeアカウントを作成し、おすそわけの収益を直接受け取ることができます。'
       },
       {
         type: 'new',
@@ -130,13 +130,13 @@ const releaseNotes: ReleaseNote[] = [
       },
       {
         type: 'new',
-        title: '応援購入設定機能',
-        description: '投稿作成時に応援購入機能のON/OFF設定と金額選択機能を追加。投稿者は自分の投稿に応援購入ボタンを表示するかどうかを選択できます。'
+        title: 'おすそわけ設定機能',
+        description: '投稿作成時におすそわけ機能のON/OFF設定と金額選択機能を追加。投稿者は自分の投稿におすそわけボタンを表示するかどうかを選択できます。'
       },
       {
         type: 'new',
         title: 'リアルタイム決済処理',
-        description: 'Stripe Checkoutを使用したセキュアな決済画面への遷移機能を実装。決済完了後はWebhookによるリアルタイム処理で、応援購入履歴を自動記録します。'
+        description: 'Stripe Checkoutを使用したセキュアな決済画面への遷移機能を実装。決済完了後はWebhookによるリアルタイム処理で、おすそわけ履歴を自動記録します。'
       },
       {
         type: 'new',
@@ -145,8 +145,8 @@ const releaseNotes: ReleaseNote[] = [
       },
       {
         type: 'new',
-        title: '応援購入履歴管理',
-        description: '応援購入の取引履歴を詳細に記録・管理する機能を実装。購入者、投稿者、金額、手数料、決済IDなどの情報を安全に保存します。'
+        title: 'おすそわけ履歴管理',
+        description: 'おすそわけの取引履歴を詳細に記録・管理する機能を実装。購入者、投稿者、金額、手数料、決済IDなどの情報を安全に保存します。'
       },
       {
         type: 'new',
@@ -156,7 +156,7 @@ const releaseNotes: ReleaseNote[] = [
       {
         type: 'improvement',
         title: '投稿カードUIの拡張',
-        description: '応援購入機能に対応するため、投稿カードに応援購入ボタンとローディング状態表示を追加。エラーハンドリングも強化し、より安定した操作が可能になりました。'
+        description: 'おすそわけ機能に対応するため、投稿カードにおすそわけボタンとローディング状態表示を追加。エラーハンドリングも強化し、より安定した操作が可能になりました。'
       },
       {
         type: 'improvement',
@@ -171,12 +171,12 @@ const releaseNotes: ReleaseNote[] = [
       {
         type: 'improvement',
         title: 'データベース構造の拡張',
-        description: '応援購入機能に対応するため、support_purchasesテーブルの新設、app_profilesテーブルへのStripe関連カラム追加、postsテーブルへの応援購入設定カラム追加を実施しました。'
+        description: 'おすそわけ機能に対応するため、support_purchasesテーブルの新設、app_profilesテーブルへのStripe関連カラム追加、postsテーブルへのおすそわけ設定カラム追加を実施しました。'
       },
       {
         type: 'improvement',
         title: 'API体系の整備',
-        description: 'Stripe関連の包括的なAPI群を新設。アカウント作成、情報更新、残高確認、決済処理、Webhook処理など、応援購入機能に必要なすべてのAPIを整備しました。'
+        description: 'Stripe関連の包括的なAPI群を新設。アカウント作成、情報更新、残高確認、決済処理、Webhook処理など、おすそわけ機能に必要なすべてのAPIを整備しました。'
       },
       {
         type: 'security',

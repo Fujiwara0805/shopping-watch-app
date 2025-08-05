@@ -680,7 +680,7 @@ function ProfilePageContent() {
                   </div>
                 </motion.div>
 
-                {/* 応援購入設定セクション */}
+                {/* おすそわけ設定セクション */}
                 {profile?.stripe_account_id && (
                   <>
                     <Separator className="my-3" />
@@ -692,7 +692,7 @@ function ProfilePageContent() {
                     >
                       <h3 className="text-base font-bold text-gray-900 flex items-center mb-2">
                         <CreditCard className="h-4 w-4 mr-2 text-green-600" />
-                        応援購入設定
+                        おすそわけ設定
                       </h3>
                       
                       <motion.div
@@ -728,8 +728,8 @@ function ProfilePageContent() {
                               </div>
                               <p className="text-xs text-gray-500">
                                 {profile.stripe_onboarding_completed 
-                                  ? "応援購入の受け取り設定が完了しています" 
-                                  : "応援購入の受け取り設定を完了してください"
+                                  ? "おすそわけの受け取り設定が完了しています" 
+                                  : "おすそわけの受け取り設定を完了してください"
                                 }
                               </p>
                             </div>

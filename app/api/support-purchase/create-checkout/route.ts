@@ -123,7 +123,7 @@ export async function POST(request: NextRequest) {
 
     // 自分の投稿チェック
     if (post.app_profile_id === buyerProfileId) {
-      return NextResponse.json({ error: '自分の投稿には応援購入できません' }, { status: 400 });
+      return NextResponse.json({ error: '自分の投稿にはおすそわけできません' }, { status: 400 });
     }
 
     // 🔥 修正：Stripeアカウントのcapabilities確認と自動修復
@@ -174,7 +174,7 @@ export async function POST(request: NextRequest) {
           
           if (!newTransfersEnabled) {
             return NextResponse.json({ 
-              error: `${profile.display_name || '投稿者'}さんの応援購入設定で転送機能が有効になっていません。Stripe設定ページで再設定を完了してください。`,
+              error: `${profile.display_name || '投稿者'}さんのおすそわけ設定で転送機能が有効になっていません。Stripe設定ページで再設定を完了してください。`,
               errorCode: 'SELLER_TRANSFERS_NOT_ENABLED',
               sellerName: profile.display_name,
               needsOnboarding: true
@@ -183,7 +183,7 @@ export async function POST(request: NextRequest) {
 
           if (!newCardPaymentsEnabled) {
             return NextResponse.json({ 
-              error: `${profile.display_name || '投稿者'}さんの応援購入設定でカード決済機能が有効になっていません。Stripe設定ページで再設定を完了してください。`,
+              error: `${profile.display_name || '投稿者'}さんのおすそわけ設定でカード決済機能が有効になっていません。Stripe設定ページで再設定を完了してください。`,
               errorCode: 'SELLER_CARD_PAYMENTS_NOT_ENABLED',
               sellerName: profile.display_name,
               needsOnboarding: true
@@ -193,7 +193,7 @@ export async function POST(request: NextRequest) {
         } catch (updateError) {
           console.error('Failed to update account capabilities:', updateError);
           return NextResponse.json({ 
-            error: `${profile.display_name || '投稿者'}さんの応援購入設定に問題があります。設定を再度完了してください。`,
+            error: `${profile.display_name || '投稿者'}さんのおすそわけ設定に問題があります。設定を再度完了してください。`,
             errorCode: 'SELLER_CAPABILITIES_UPDATE_FAILED',
             sellerName: profile.display_name,
             needsOnboarding: true
@@ -203,7 +203,7 @@ export async function POST(request: NextRequest) {
 
       if (!account.charges_enabled) {
         return NextResponse.json({ 
-          error: `${profile.display_name || '投稿者'}さんの応援購入設定が未完了のため、決済を受け付けできません。Stripe設定を完了してください。`,
+          error: `${profile.display_name || '投稿者'}さんのおすそわけ設定が未完了のため、決済を受け付けできません。Stripe設定を完了してください。`,
           errorCode: 'SELLER_CHARGES_NOT_ENABLED',
           sellerName: profile.display_name,
           needsOnboarding: true
@@ -213,7 +213,7 @@ export async function POST(request: NextRequest) {
     } catch (stripeError) {
       console.error('Stripe account verification error:', stripeError);
       return NextResponse.json({ 
-        error: `${profile.display_name || '投稿者'}さんの応援購入設定の確認に失敗しました。`,
+        error: `${profile.display_name || '投稿者'}さんのおすそわけ設定の確認に失敗しました。`,
         errorCode: 'SELLER_STRIPE_VERIFICATION_FAILED',
         sellerName: profile.display_name
       }, { status: 400 });
@@ -227,7 +227,7 @@ export async function POST(request: NextRequest) {
       });
       
       return NextResponse.json({ 
-        error: `${profile.display_name || '投稿者'}さんの収益受取設定が未完了のため、応援購入できません。`,
+        error: `${profile.display_name || '投稿者'}さんの収益受取設定が未完了のため、おすそわけできません。`,
         errorCode: 'SELLER_STRIPE_SETUP_INCOMPLETE',
         sellerName: profile.display_name
       }, { status: 400 });
@@ -242,7 +242,7 @@ export async function POST(request: NextRequest) {
       });
       
       return NextResponse.json({ 
-        error: `${profile.display_name || '投稿者'}さんの支払い受取設定が有効になっていないため、応援購入できません。`,
+        error: `${profile.display_name || '投稿者'}さんの支払い受取設定が有効になっていないため、おすそわけできません。`,
         errorCode: 'SELLER_PAYOUT_NOT_ENABLED',
         sellerName: profile.display_name
       }, { status: 400 });
@@ -262,7 +262,7 @@ export async function POST(request: NextRequest) {
           price_data: {
             currency: 'jpy',
             product_data: {
-              name: `応援購入 - ${profile.display_name}さんの投稿`,
+              name: `おすそわけ - ${profile.display_name}さんの投稿`,
               description: post.content.substring(0, 100) + (post.content.length > 100 ? '...' : ''),
             },
             unit_amount: amount,

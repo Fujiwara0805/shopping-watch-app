@@ -307,7 +307,7 @@ export const PostCard = memo(({
   const [reportDetails, setReportDetails] = useState('');
   const [isReporting, setIsReporting] = useState(false);
   
-  // 🔥 追加：応援購入のローディング状態管理
+  // 🔥 追加：おすそわけのローディング状態管理
   const [supportPurchaseLoading, setSupportPurchaseLoading] = useState<{ [key: string]: boolean }>({});
   
   const { toast } = useToast();
@@ -925,7 +925,7 @@ export const PostCard = memo(({
     }
   };
 
-  // 🔥 応援購入ハンドラーを修正（ローディング状態追加）
+  // 🔥 おすそわけハンドラーを修正（ローディング状態追加）
   const handleSupportPurchase = useCallback(async (postId: string, amount: number) => {
     const loadingKey = `${postId}-${amount}`;
     
@@ -950,15 +950,15 @@ export const PostCard = memo(({
         window.location.href = data.checkoutUrl;
       } else {
         // より具体的なエラーメッセージを表示
-        let errorTitle = "応援購入できません";
+        let errorTitle = "おすそわけできません";
         let errorDescription = data.error || '決済URLの取得に失敗しました';
         
         // 🔥 修正：エラーコードに応じた詳細メッセージ
         if (data.errorCode === 'SELLER_STRIPE_ACCOUNT_NOT_FOUND') {
-          errorTitle = "応援購入設定未完了";
+          errorTitle = "おすそわけ設定未完了";
           errorDescription = data.error;
         } else if (data.errorCode === 'SELLER_STRIPE_SETUP_INCOMPLETE') {
-          errorTitle = "応援購入設定未完了";
+          errorTitle = "おすそわけ設定未完了";
           errorDescription = data.error;
         } else if (data.errorCode === 'SELLER_PAYOUT_NOT_ENABLED') {
           errorTitle = "支払い受取設定未完了";
@@ -1319,13 +1319,13 @@ export const PostCard = memo(({
                         </tr>
                       )} */}
 
-                      {/* 🔥 応援購入表示を詳細情報テーブルに追加（残り時間の前） */}
+                      {/* 🔥 おすそわけ表示を詳細情報テーブルに追加（残り時間の前） */}
                       {post.support_purchase_enabled && post.support_purchase_options && (
                         <tr className="border-b border-gray-100">
                           <td className="p-3 bg-gray-50 w-1/3 font-medium border-r border-gray-100">
                             <div className="flex items-center space-x-2">
                               <Heart className="h-4 w-4 text-pink-500 flex-shrink-0" />
-                              <span className="text-base" style={{ color: '#73370c' }}>応援購入</span>
+                              <span className="text-base" style={{ color: '#73370c' }}>お裾分け</span>
                             </div>
                           </td>
                           <td className="p-3">
@@ -1351,7 +1351,7 @@ export const PostCard = memo(({
                                       isMyPost && "opacity-50 cursor-not-allowed hover:scale-100"
                                     )}
                                     disabled={isMyPost || isLoading}
-                                    title={isMyPost ? "自分の投稿には応援購入できません" : `¥${amount.toLocaleString()}で応援する`}
+                                    title={isMyPost ? "自分の投稿にはおすそわけできません" : `¥${amount.toLocaleString()}でおすそわけする`}
                                   >
                                     {isLoading ? (
                                       <>
@@ -1375,7 +1375,7 @@ export const PostCard = memo(({
                               })}
                             </div>
                             {isMyPost && (
-                              <p className="text-xs text-gray-500 mt-1">※自分の投稿には応援購入できません</p>
+                              <p className="text-xs text-gray-500 mt-1">※自分の投稿にはおすそわけできません</p>
                             )}
                           </td>
                         </tr>

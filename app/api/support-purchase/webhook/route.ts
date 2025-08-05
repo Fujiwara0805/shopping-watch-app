@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object as Stripe.Checkout.Session;
     
-    // 応援購入記録を作成
+    // おすそわけ記録を作成
     const { error } = await supabase
       .from('support_purchases')
       .insert({

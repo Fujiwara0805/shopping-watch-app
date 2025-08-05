@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
       },
       business_profile: {
         mcc: '5734', // Computer Software Stores（コンピューターソフトウェア販売）
-        product_description: '地域情報共有プラットフォームでの応援購入・支援機能',
+        product_description: '地域情報共有プラットフォームでのおすそわけ・支援機能',
         url: process.env.NEXTAUTH_URL || 'https://tokudoku.com',
       },
       // 🔥 削除：日本では tos_acceptance[service_agreement] はサポートされていない

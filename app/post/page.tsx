@@ -946,7 +946,7 @@ export default function PostPage() {
     }
   };
 
-  // 🔥 応援購入有効化時のチェック処理を修正
+  // 🔥 おすそわけ有効化時のチェック処理を修正
   const handleSupportPurchaseToggle = async (checked: boolean) => {
     if (!checked) {
       form.setValue("supportPurchaseEnabled", false);
@@ -966,7 +966,7 @@ export default function PostPage() {
 
       form.setValue("supportPurchaseEnabled", true);
       toast({
-        title: "✅ 応援購入機能を有効化しました",
+        title: "✅ おすそわけ機能を有効化しました",
         description: "金額を選択して投稿してください",
         duration: 3000,
       });
@@ -990,12 +990,12 @@ export default function PostPage() {
   useEffect(() => {
     const fromStripeSetup = searchParams.get('from_stripe_setup');
     if (fromStripeSetup === 'true' && session?.user?.id) {
-      // Stripe設定状況を確認してから応援購入を有効化
+      // Stripe設定状況を確認してからおすそわけを有効化
       checkStripeSetupAndEnable();
     }
   }, [session?.user?.id, searchParams]);
 
-  // 🔥 Stripe設定確認と応援購入自動有効化
+  // 🔥 Stripe設定確認とおすそわけ自動有効化
   const checkStripeSetupAndEnable = async () => {
     if (!session?.user?.id) return; // この行を追加
     
@@ -1027,12 +1027,12 @@ export default function PostPage() {
         loading: false
       });
 
-      // 設定が完了している場合、応援購入を自動有効化
+      // 設定が完了している場合、おすそわけを自動有効化
       if (hasAccount && onboardingCompleted) {
         form.setValue("supportPurchaseEnabled", true);
         
         toast({
-          title: "✅ 応援購入機能を有効化しました",
+          title: "✅ おすそわけ機能を有効化しました",
           description: "金額を選択して投稿してください",
           duration: 4000,
         });
@@ -1373,7 +1373,7 @@ export default function PostPage() {
                           }`}
                         >
                           <Heart className="mr-2 h-4 w-4" />
-                          応援購入
+                          おすそわけ
                         </Button>
                       </div>
 
@@ -1951,9 +1951,9 @@ export default function PostPage() {
                             <div className="flex items-start space-x-3">
                               <Heart className="h-5 w-5 text-pink-500 mt-0.5 flex-shrink-0" />
                               <div className="flex-1">
-                                <h3 className="text-lg font-semibold text-blue-800 mb-2">応援購入について</h3>
+                                <h3 className="text-lg font-semibold text-blue-800 mb-2">おすそわけについて</h3>
                                 <p className="text-sm text-blue-700 leading-relaxed">
-                                  応援購入を有効にすると、この投稿を見た人があなたを応援できます！(手数料は5%+決済手数料3.6%)
+                                  おすそわけを有効にすると、この投稿を見た人があなたにおすそわけできます！(手数料は5%+決済手数料3.6%)
                                   <br />
                                   <span className="font-medium text-blue-800">※収益を受け取るにはStripe設定が必要です</span>
                                 </p>
@@ -1964,8 +1964,8 @@ export default function PostPage() {
                           <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border">
                             <div className="flex items-center space-x-2">
                               <div>
-                                <Label className="text-lg font-semibold">応援購入を有効にする</Label>
-                                <p className="text-sm text-gray-600">投稿に応援購入ボタンを表示します</p>
+                                <Label className="text-lg font-semibold">おすそわけを有効にする</Label>
+                                <p className="text-sm text-gray-600">投稿におすそわけボタンを表示します</p>
                                 {stripeSetupStatus.loading && (
                                   <p className="text-xs text-blue-600 flex items-center mt-1">
                                     <Loader2 className="h-3 w-3 animate-spin mr-1" />
@@ -2005,7 +2005,7 @@ export default function PostPage() {
                               className="space-y-4"
                             >
                               <div className="space-y-3">
-                                <Label className="text-base font-medium">応援購入の金額を選択（最大3つ）</Label>
+                                <Label className="text-base font-medium">おすそわけの金額を選択（最大3つ）</Label>
                                 
                                 {/* 既存の金額選択コードをそのまま維持 */}
                                 {(form.getValues("supportPurchaseOptions") || []).length > 0 && (
@@ -2212,9 +2212,9 @@ export default function PostPage() {
                 <div className="flex items-start space-x-3">
                   <HandCoins className="h-5 w-5 text-amber-500 mt-0.5 flex-shrink-0" />
                   <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-amber-800 mb-2">応援購入を受け取るには</h3>
+                    <h3 className="text-lg font-semibold text-amber-800 mb-2">おすそわけを受け取るには</h3>
                     <p className="text-sm text-amber-700 leading-relaxed">
-                      応援購入で得た収益を受け取るために、Stripe（決済サービス）の設定が必要です。
+                      おすそわけで得た収益を受け取るために、Stripe（決済サービス）の設定が必要です。
                     </p>
                   </div>
                 </div>
@@ -2244,7 +2244,7 @@ export default function PostPage() {
 
               <div className="bg-gray-50 border rounded-lg p-3 mb-6">
                 <p className="text-xs text-gray-600 leading-relaxed">
-                  ※設定は5-10分程度で完了します。設定完了後、すぐに応援購入機能をご利用いただけます。
+                  ※設定は5-10分程度で完了します。設定完了後、すぐにおすそわけ機能をご利用いただけます。
                 </p>
               </div>
 

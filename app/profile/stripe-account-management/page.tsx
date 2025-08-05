@@ -468,7 +468,7 @@ export default function StripeAccountManagementPage() {
               <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
                 <h3 className="font-medium text-red-800 mb-2">Stripeアカウントの削除</h3>
                 <p className="text-sm text-red-700 mb-4">
-                  アカウントを削除すると、すべての応援購入機能が利用できなくなります。
+                  アカウントを削除すると、すべてのおすそわけ機能が利用できなくなります。
                   未処理の支払いがある場合は削除できません。
                 </p>
                 
@@ -535,7 +535,7 @@ export default function StripeAccountManagementPage() {
                   削除後は以下の機能が利用できなくなります：
                 </p>
                 <ul className="text-sm text-red-700 space-y-1 list-disc list-inside ml-2">
-                  <li>応援購入機能の提供</li>
+                  <li>おすそわけ機能の提供</li>
                   <li>支払いの受け取り</li>
                   <li>残高の確認・引き出し</li>
                   <li>取引履歴の閲覧</li>
