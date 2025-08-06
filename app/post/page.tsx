@@ -71,7 +71,7 @@ const postSchema = z.object({
   location_lng: z.number().optional(),
   store_latitude: z.number().optional(),
   store_longitude: z.number().optional(),
-  rating: z.number().min(1, { message: '1以上5以下の値を入力してください' }).max(5, { message: '1以上5以下の値を入力してください' }).optional(), // 新規追加
+  rating: z.number().min(0).max(5, { message: '0以上5以下の値を入力してください' }).optional(), // 新規追加
   start_date: z.date().optional(), // 新規追加
   end_date: z.date().optional(), // 新規追加
   supportPurchaseEnabled: z.boolean().default(false),
@@ -836,7 +836,7 @@ export default function PostPage() {
         <div className="flex items-center space-x-2 p-2 bg-green-50 border border-green-200 rounded-md">
           <CheckCircle className="h-5 w-5 text-green-600" />
           <span className="text-sm text-green-800">
-            位置情報取得完了 (緯度: {lat.toFixed(6)}, 経度: {lng.toFixed(6)})
+            位置情報取得完了 (緯度: {lat.toFixed(6)}, 経度: ${lng.toFixed(6)})
           </span>
         </div>
       );
@@ -884,18 +884,69 @@ export default function PostPage() {
     targetAudience: false, // 🔥 新規追加：対象者フィールド
   });
 
-  // 🔥 オプションフィールドの切り替え
+  // 🔥 オプションフィールドの切り替えと値のリセット
   const toggleOptionalField = (field: keyof typeof optionalFieldsExpanded) => {
-    setOptionalFieldsExpanded(prev => ({
-      ...prev,
-      [field]: !prev[field]
-    }));
+    setOptionalFieldsExpanded(prev => {
+      const newState = {
+        ...prev,
+        [field]: !prev[field]
+      };
+
+      // フィールドが閉じられるときに値をクリア
+      if (!newState[field]) { // newState[field]がfalseになる、つまり閉じられる時
+        switch (field) {
+          case 'location':
+            form.setValue('storeId', '', { shouldValidate: true });
+            form.setValue('storeName', '', { shouldValidate: true });
+            form.setValue('store_latitude', undefined, { shouldValidate: true });
+            form.setValue('store_longitude', undefined, { shouldValidate: true });
+            setLocationStatus('none');
+            setSelectedPlace(null);
+            break;
+          case 'genre':
+            form.setValue('genre', '', { shouldValidate: true });
+            // ジャンルがクリアされたらカテゴリもクリア
+            form.setValue('category', '', { shouldValidate: true });
+            break;
+          case 'category':
+            form.setValue('category', '', { shouldValidate: true });
+            break;
+          case 'targetAudience':
+            form.setValue('targetAudience', '', { shouldValidate: true });
+            break;
+          case 'price':
+            form.setValue('price', undefined, { shouldValidate: true });
+            break;
+          case 'url':
+            form.setValue('url', '', { shouldValidate: true });
+            break;
+          case 'file':
+            setFileFiles([]);
+            setFilePreviewUrls([]);
+            break;
+          case 'rating':
+            form.setValue('rating', undefined, { shouldValidate: true });
+            break;
+          case 'date':
+            form.setValue('start_date', undefined, { shouldValidate: true });
+            form.setValue('end_date', undefined, { shouldValidate: true });
+            break;
+          case 'supportPurchase':
+            form.setValue('supportPurchaseEnabled', false);
+            form.setValue('supportPurchaseOptions', []);
+            break;
+          default:
+            break;
+        }
+      }
+      return newState;
+    });
   };
 
   // 🔥 オプション項目の値が入力されているかチェック
   const hasOptionalValues = () => {
     const values = form.getValues();
-    return !!(values.storeId || values.genre || values.category || values.price || values.url || fileFiles.length > 0 || values.rating || values.start_date || values.end_date || optionalFieldsExpanded.supportPurchase || values.targetAudience);
+    return !!(values.storeId || values.genre || values.category || values.price || values.url || fileFiles.length > 0 || values.rating || values.start_date || values.end_date || values.supportPurchaseEnabled || values.targetAudience);
   };
 
   // 🔥 Stripe Connect機能を有効化
