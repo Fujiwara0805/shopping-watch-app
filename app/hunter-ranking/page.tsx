@@ -66,12 +66,22 @@ export default function HunterRankingPage() {
       const endDate = new Date(currentYear, currentMonth, 25, 23, 59, 59);
       setRankingPeriod({ start: startDate, end: endDate });
       setIsRankingPeriodActive(true);
+      
+      // 期間内の場合は即座にランキングを取得
+      if (session) {
+        fetchRankings(startDate, endDate);
+      }
     } else {
       // 集計期間外
       setIsRankingPeriodActive(false);
       setRankingPeriod(null);
+      
+      // 期間外の場合は総合ランキングのみ取得
+      if (session) {
+        fetchRankings();
+      }
     }
-  }, []);
+  }, [session]); // sessionを依存配列に追加
   
   useEffect(() => {
     // 総合ランキングは常に取得する
