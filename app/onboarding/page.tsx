@@ -88,9 +88,9 @@ export default function Onboarding() {
     if (currentSlide < onboardingSlides.length - 1) {
       setCurrentSlide(prev => prev + 1);
     } else {
-      // マップページに遷移するよう変更
+      // おとく板ページに遷移するよう変更
       localStorage.setItem('hasSeenOnboarding', 'true');
-      router.push('/map');
+      router.push('/timeline');
     }
   };
 
@@ -102,7 +102,7 @@ export default function Onboarding() {
 
   const skipOnboarding = () => {
     localStorage.setItem('hasSeenOnboarding', 'true');
-    router.push('/map');
+    router.push('/timeline');
   };
 
   // スワイプ操作のハンドラ
@@ -216,7 +216,7 @@ export default function Onboarding() {
               onClick={nextSlide}
               className="flex-1 h-12 rounded-xl bg-primary"
             >
-              {currentSlide === onboardingSlides.length - 1 ? '地図を表示' : '次へ'}
+              {currentSlide === onboardingSlides.length - 1 ? 'おとく板を表示' : '次へ'}
               <ChevronRight className="ml-1 h-5 w-5" />
             </Button>
           </div>
