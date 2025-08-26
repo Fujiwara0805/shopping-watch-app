@@ -17,7 +17,7 @@ export function LocationPermissionDialog({
   isOpen,
   onAllow,
   onDeny,
-  appName = "このアプリ",
+  appName = "トクドク",
   permissionState
 }: LocationPermissionDialogProps) {
   if (!isOpen) return null;
@@ -32,11 +32,11 @@ export function LocationPermissionDialog({
 
   if (permissionState === 'denied') {
     dialogTitle = "位置情報が無効です";
-    dialogMessage = `サービスをより便利にご利用いただくには、位置情報をオンにする必要があります。現在地近くのお得な情報を見つけるために使用します。お客様の位置情報は厳重に管理されますのでご安心ください。ブラウザまたは端末のOS設定で位置情報のアクセスを許可してください。`;
+    dialogMessage = `近くのおとくな情報を見つけるためには位置情報が必要です。ブラウザ並びに端末の設定で位置情報を許可してください。`;
     iconComponent = Info;
   } else {
-    dialogTitle = `「${appName}」に位置情報の使用を許可しますか？`;
-    dialogMessage = `マップでの現在地表示、現在地近くのお店や情報の表示に使用します。プライバシーに配慮し、取得した位置情報は安全に管理されますのでご安心ください。`;
+    dialogTitle = `位置情報の使用を許可しますか？`;
+    dialogMessage = `近くのおとくな情報を表示するために使用します。`;
     iconComponent = MapPin;
   }
 
@@ -65,7 +65,7 @@ export function LocationPermissionDialog({
           <h2 className="text-lg font-semibold mb-2">
             {dialogTitle}
           </h2>
-          <p className="text-sm text-muted-foreground mb-6">
+          <p className="text-sm text-muted-foreground mb-6 whitespace-pre-line">
             {dialogMessage}
           </p>
           <div className="flex flex-col space-y-3">

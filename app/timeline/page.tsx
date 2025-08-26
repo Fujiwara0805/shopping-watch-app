@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { LayoutGrid, Search, Star, MapPin, Loader2, SlidersHorizontal, Heart, Plus, X, AlertCircle, Menu, User, Edit, Store, HelpCircle, FileText, LogOut, Settings, Globe, NotebookText, Calculator, Zap, MessageSquare, Eye, Send, RefreshCw, UserPlus, Link as LinkIcon, ExternalLink, Instagram, Trash2, Flag, AlertTriangle, Compass } from 'lucide-react';
+import { LayoutGrid, Search, Star, MapPin, Loader2, SlidersHorizontal, Heart, Plus, X, AlertCircle, Menu, User, Edit, Store, HelpCircle, FileText, LogOut, Settings, Globe, NotebookText, Calculator, Zap, MessageSquare, Eye, Send, RefreshCw, UserPlus, Link as LinkIcon, ExternalLink, Instagram, Trash2, Flag, AlertTriangle, Compass, Navigation } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { PostWithAuthor } from '@/types/post';
 import { useSession, signOut } from 'next-auth/react';
@@ -31,7 +31,9 @@ import {
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from "@/components/ui/accordion"; // Accordionコンポーネントのインポート
+} from "@/components/ui/accordion";
+// 🔥 位置情報関連のコンポーネントをインポート
+import { LocationPermissionDialog } from '@/components/common/LocationPermissionDialog';
 
 // 型定義
 interface AuthorData {
@@ -932,6 +934,13 @@ export default function Timeline() {
   const currentUserId = session?.user?.id;
   const currentUserRole = session?.user?.role;
 
+  // 🔥 位置情報関連の状態を追加
+  const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [showLocationModal, setShowLocationModal] = useState(false);
+  const [locationPermissionState, setLocationPermissionState] = useState<'prompt' | 'granted' | 'denied' | 'unavailable' | 'pending'>('prompt');
+  const [locationError, setLocationError] = useState<string | null>(null);
+  const [isRequestingLocation, setIsRequestingLocation] = useState(false);
+
   // 管理者権限のログ出力
   useEffect(() => {
     if (currentUserRole) {
@@ -950,7 +959,6 @@ export default function Timeline() {
   const [highlightPostId, setHighlightPostId] = useState<string | null>(null);
 
   const [generalSearchTerm, setGeneralSearchTerm] = useState<string>('');
-  const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [favoriteStoreIds, setFavoriteStoreIds] = useState<string[]>([]);
   const [favoriteStoreNames, setFavoriteStoreNames] = useState<string[]>([]);
   const [likedPostIds, setLikedPostIds] = useState<string[]>([]);
@@ -1604,37 +1612,117 @@ export default function Timeline() {
     ));
   };
 
-  // 位置情報を初期化時に取得（自動取得）
-  useEffect(() => {
-    const getCurrentLocation = () => {
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            setUserLocation({
-              latitude: position.coords.latitude,
-              longitude: position.coords.longitude,
-            });
-            
-            // 位置情報取得後に投稿を取得
-            setTimeout(() => {
-              if (fetchPostsRef.current) {
-                fetchPostsRef.current(0, true);
-              }
-            }, 100);
-          },
-          (error) => {
-            console.error('位置情報の取得に失敗しました:', error);
-            setError('位置情報の取得に失敗しました。ブラウザの設定で位置情報を許可してください。');
-          },
-          { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 } // 5分間キャッシュ
-        );
-      } else {
-        setError('お使いのブラウザは位置情報に対応していません。');
-      }
-    };
+  // 🔥 位置情報取得の関数を修正
+  const getCurrentLocation = useCallback(() => {
+    setIsRequestingLocation(true);
+    setLocationError(null);
+    
+    if (!navigator.geolocation) {
+      setLocationError('位置情報が利用できません');
+      setLocationPermissionState('unavailable');
+      setIsRequestingLocation(false);
+      return;
+    }
 
-    getCurrentLocation();
+    // まず現在の許可状態をチェック
+    navigator.permissions.query({ name: 'geolocation' }).then((result) => {
+      setLocationPermissionState(result.state as any);
+      
+      if (result.state === 'denied') {
+        setShowLocationModal(true);
+        setIsRequestingLocation(false);
+        return;
+      }
+
+      // 位置情報を取得
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+          });
+          setLocationPermissionState('granted');
+          setShowLocationModal(false);
+          setIsRequestingLocation(false);
+          
+          // 位置情報取得後に投稿を取得
+          setTimeout(() => {
+            if (fetchPostsRef.current) {
+              fetchPostsRef.current(0, true);
+            }
+          }, 100);
+        },
+        (error) => {
+          console.error('位置情報の取得に失敗しました:', error);
+          setLocationError('現在地を取得できませんでした');
+          setLocationPermissionState('denied');
+          setShowLocationModal(true);
+          setIsRequestingLocation(false);
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
+      );
+    }).catch(() => {
+      // permissions API が使用できない場合は直接位置情報を取得
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+          });
+          setLocationPermissionState('granted');
+          setShowLocationModal(false);
+          setIsRequestingLocation(false);
+          
+          setTimeout(() => {
+            if (fetchPostsRef.current) {
+              fetchPostsRef.current(0, true);
+            }
+          }, 100);
+        },
+        (error) => {
+          console.error('位置情報の取得に失敗しました:', error);
+          setLocationError('現在地を取得できませんでした');
+          setLocationPermissionState('denied');
+          setShowLocationModal(true);
+          setIsRequestingLocation(false);
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
+      );
+    });
   }, []);
+
+  // 🔥 位置情報を初期化時に取得（修正版）
+  useEffect(() => {
+    getCurrentLocation();
+  }, [getCurrentLocation]);
+
+  // 🔥 位置情報許可モーダルのハンドラー
+  const handleAllowLocation = () => {
+    setShowLocationModal(false);
+    getCurrentLocation();
+  };
+
+  const handleDenyLocation = () => {
+    setShowLocationModal(false);
+    setLocationPermissionState('denied');
+    // 管理者でない場合はエラー状態を設定
+    if (currentUserRole !== 'admin') {
+      setError('近くの投稿を表示するには位置情報が必要です');
+    } else {
+      // 管理者の場合は位置情報なしで投稿を取得
+      setTimeout(() => {
+        if (fetchPostsRef.current) {
+          fetchPostsRef.current(0, true);
+        }
+      }, 100);
+    }
+  };
+
+  // 🔥 再試行ボタンのハンドラーを修正
+  const handleRetry = () => {
+    setError(null);
+    getCurrentLocation();
+  };
 
   // フィルターを適用する処理
   const handleApplyFilters = () => {
@@ -1862,6 +1950,15 @@ export default function Timeline() {
             ))}
           </div>
         </div>
+
+        {/* 🔥 位置情報許可モーダル */}
+        <LocationPermissionDialog
+          isOpen={showLocationModal}
+          onAllow={handleAllowLocation}
+          onDeny={handleDenyLocation}
+          appName="トクドク"
+          permissionState={locationPermissionState}
+        />
       </AppLayout>
     );
   }
@@ -1913,10 +2010,39 @@ export default function Timeline() {
         </div>
         <div className="p-4">
           <div className="text-center">
-            <p className="text-destructive text-lg">{error}</p>
-            <Button onClick={() => fetchPostsRef.current && fetchPostsRef.current(0, true)} className="mt-4">再試行</Button>
+            <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md mx-auto">
+              <AlertTriangle className="h-12 w-12 text-red-600 mx-auto mb-4" />
+              <p className="text-red-800 text-lg mb-4">{error}</p>
+              
+              {/* 🔥 位置情報エラーの場合は位置情報許可ボタンを表示 */}
+              {locationPermissionState === 'denied' ? (
+                <div className="space-y-3">
+                  <Button onClick={handleRetry} className="w-full">
+                    <Navigation className="h-4 w-4 mr-2" />
+                    位置情報を許可する
+                  </Button>
+                  <p className="text-sm text-red-600">
+                    設定で位置情報を許可してください
+                  </p>
+                </div>
+              ) : (
+                <Button onClick={handleRetry} className="w-full">
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  再試行
+                </Button>
+              )}
+            </div>
           </div>
         </div>
+
+        {/* 🔥 位置情報許可モーダル */}
+        <LocationPermissionDialog
+          isOpen={showLocationModal}
+          onAllow={handleAllowLocation}
+          onDeny={handleDenyLocation}
+          appName="トクドク"
+          permissionState={locationPermissionState}
+        />
       </AppLayout>
     );
   }
@@ -2250,16 +2376,16 @@ export default function Timeline() {
                     ) : !userLocation && currentUserRole !== 'admin' ? (
                       <div>
                         <p className="text-xl text-muted-foreground mb-2">
-                          位置情報を取得中...
+                          現在地を取得しています...
                         </p>
                         <p className="text-sm text-gray-500 mb-4">
-                          5km圏内の投稿を表示するために位置情報を取得しています
+                          近くの投稿を表示するために位置情報を取得中です
                         </p>
                       </div>
                     ) : (
                       <div>
                         <p className="text-xl text-muted-foreground mb-2">
-                          {currentUserRole === 'admin' ? '投稿がありません' : '現在地から5km圏内に投稿がありません'}
+                          {currentUserRole === 'admin' ? '投稿がありません' : '近くに投稿がありません'}
                         </p>
                         <p className="text-sm text-gray-500 mb-4">
                           別の場所に移動するか、時間をおいて再度確認してください
@@ -2561,16 +2687,16 @@ export default function Timeline() {
                   ) : !userLocation && currentUserRole !== 'admin' ? (
                     <div>
                       <p className="text-xl text-muted-foreground mb-2">
-                        位置情報を取得中...
+                        現在地を取得しています...
                       </p>
                       <p className="text-sm text-gray-500 mb-4">
-                        5km圏内の投稿を表示するために位置情報を取得しています
+                        近くの投稿を表示するために位置情報を取得中です
                       </p>
                     </div>
                   ) : (
                     <div>
                       <p className="text-xl text-muted-foreground mb-2">
-                        {currentUserRole === 'admin' ? '投稿がありません' : '現在地から5km圏内に投稿がありません'}
+                        {currentUserRole === 'admin' ? '投稿がありません' : '近くに投稿がありません'}
                       </p>
                       <p className="text-sm text-gray-500 mb-4">
                         別の場所に移動するか、時間をおいて再度確認してください
@@ -2812,6 +2938,15 @@ export default function Timeline() {
           </Button>
         </div>
       </CustomModal>
+
+      {/* 🔥 位置情報許可モーダルをメインレンダリング部分にも追加 */}
+      <LocationPermissionDialog
+        isOpen={showLocationModal}
+        onAllow={handleAllowLocation}
+        onDeny={handleDenyLocation}
+        appName="トクドク"
+        permissionState={locationPermissionState}
+      />
     </AppLayout>
   );
 }
