@@ -1707,7 +1707,7 @@ export default function Timeline() {
     setLocationPermissionState('denied');
     // 管理者でない場合はエラー状態を設定
     if (currentUserRole !== 'admin') {
-      setError('近くの投稿を表示するには位置情報が必要です');
+      setError('近くの投稿を表示するには、\n位置情報が必要です。');
     } else {
       // 管理者の場合は位置情報なしで投稿を取得
       setTimeout(() => {
