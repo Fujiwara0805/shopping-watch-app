@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { CustomModal } from '@/components/ui/custom-modal';
 import { 
@@ -10,7 +11,10 @@ import {
   AlertTriangle, 
   RefreshCw,
   Clock,
-  CheckCircle
+  CheckCircle,
+  Settings,
+  ArrowLeft,
+  HelpCircle
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { LocationPermissionManager } from '@/lib/hooks/LocationPermissionManager';
@@ -25,7 +29,6 @@ interface CrossBrowserLocationGuideProps {
   permissionState: string;
   onRequestLocation: () => void;
   onClose?: () => void;
-  // 新しく追加されたプロパティ（オプション）
   isPermissionGranted?: boolean;
   permissionRemainingMinutes?: number;
 }
@@ -40,6 +43,8 @@ export function CrossBrowserLocationGuide({
   permissionRemainingMinutes = 0
 }: CrossBrowserLocationGuideProps) {
   const router = useRouter();
+  const [showWhyNeeded, setShowWhyNeeded] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
 
   if (!isVisible) return null;
 
@@ -54,6 +59,7 @@ export function CrossBrowserLocationGuide({
       default: return 'ブラウザ';
     }
   };
+
 
   // 許可状態が有効な場合の表示
   if (isPermissionGranted && permissionRemainingMinutes > 0) {
@@ -168,22 +174,19 @@ export function CrossBrowserLocationGuide({
 
   const browserName = getBrowserDisplayName();
 
-  // 通常の許可要求モーダル
+  // 🔥 通常の許可要求モーダル（修正版）
   return (
     <CustomModal
       isOpen={isVisible}
       onClose={onClose || (() => {})}
-      title="位置情報を許可してください"
-      description="お近くのお店を探すために現在地が必要です"
+      title="なぜ、位置情報が必要なのか？"
+      description="位置情報を許可すると、あなたの周りのお店を表示することができます。"
       className="max-w-md"
       showCloseButton={!!onClose}
     >
       <div className="text-center">
-        <div className="bg-blue-50 rounded-full p-4 w-20 h-20 mx-auto mb-6 flex items-center justify-center">
-          <MapPin className="h-10 w-10 text-blue-600" />
-        </div>
-
         <div className="space-y-4 mb-6">
+          {/* 🔥 「なぜ、位置情報が必要なのか？」の説明 */}
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <h3 className="font-semibold text-blue-800 mb-2">
               位置情報の利用について
@@ -204,43 +207,6 @@ export function CrossBrowserLocationGuide({
               一度許可すると、約1時間は自動的に位置情報を利用できます。他のページに移動しても再度許可は不要です。
             </p>
           </div>
-
-          {permissionState === 'denied' && (
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-              <h3 className="font-semibold text-amber-800 mb-2">
-                位置情報が拒否されています
-              </h3>
-              <p className="text-sm text-amber-700 leading-relaxed">
-                {browserName}で位置情報を許可するには、アドレスバーの🔒アイコンをクリックして設定を変更してください。
-              </p>
-            </div>
-          )}
-        </div>
-
-        <div className="space-y-3">
-          <Button 
-            onClick={() => {
-              console.log('CrossBrowserLocationGuide: Location request triggered');
-              onRequestLocation();
-            }}
-            className="w-full bg-blue-600 hover:bg-blue-700"
-            size="lg"
-          >
-            <MapPin className="h-5 w-5 mr-2" />
-            位置情報を許可する（1時間有効）
-          </Button>
-          
-          {onClose && (
-            <Button 
-              variant="outline" 
-              onClick={() => {
-                router.push('/');
-              }} 
-              className="w-full"
-            >
-              戻る
-            </Button>
-          )}
         </div>
       </div>
     </CustomModal>

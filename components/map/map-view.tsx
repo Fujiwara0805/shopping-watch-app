@@ -4,7 +4,7 @@ import { useRef, useEffect, useState, useCallback } from 'react';
 import { useGeolocation } from '@/lib/hooks/use-geolocation'; // Enhanced version
 import { useGoogleMapsApi } from '@/components/providers/GoogleMapsApiProvider';
 import { Button } from '@/components/ui/button';
-import { MapPin, AlertTriangle, Navigation, RefreshCw, Smartphone, Monitor, Globe, Clock, Eye, EyeOff } from 'lucide-react';
+import { MapPin, AlertTriangle, Navigation, RefreshCw, Smartphone, Monitor, Globe, Clock, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { MapSearchControl } from './MapSearchControl';
 import { CrossBrowserLocationGuide } from './CrossBrowserLocationGuide'; // Enhanced version
@@ -42,6 +42,8 @@ export function MapView() {
   const [mapInitialized, setMapInitialized] = useState(false);
   const [initializationError, setInitializationError] = useState<string | null>(null);
   const [showLocationGuide, setShowLocationGuide] = useState(false);
+  // 🔥 設定方法表示用の状態を追加
+  const [showSettingsGuide, setShowSettingsGuide] = useState(false);
   const [containerDimensions, setContainerDimensions] = useState({
     width: 0,
     height: 0
@@ -64,25 +66,10 @@ export function MapView() {
       return;
     }
 
-    const shouldShowGuide = (
-      (permissionState === 'prompt' || permissionState === 'denied') && 
-      !latitude && 
-      !longitude &&
-      browserInfo.name !== 'unknown' &&
-      !isPermissionGranted
-    );
 
-    if (shouldShowGuide) {
-      // ブラウザ別の表示タイミング調整
-      const delay = browserInfo.name === 'safari' ? 2000 : 1500;
-      const timer = setTimeout(() => {
-        setShowLocationGuide(true);
-      }, delay);
-      
-      return () => clearTimeout(timer);
-    } else {
-      setShowLocationGuide(false);
-    }
+
+    // 🔥 常にfalseに設定して自動表示を防ぐ
+    setShowLocationGuide(false);
   }, [browserInfo.name, permissionState, latitude, longitude, isPermissionGranted, permissionRemainingMinutes]);
 
   // デバッグ情報の出力（許可状態情報も含む）
@@ -177,7 +164,6 @@ export function MapView() {
 
   // 改良された位置情報要求ハンドラー
   const handleLocationRequest = () => {
-    console.log(`MapView: ${browserInfo.name} location request triggered`);
     setShowLocationGuide(false);
     requestLocation(); // Enhanced hook will handle permission saving
   };
@@ -471,16 +457,8 @@ export function MapView() {
     }, 100);
   };
 
-  // ブラウザアイコンの取得（変更なし）
-  const getBrowserIcon = (browserName: string) => {
-    switch (browserName) {
-      case 'safari': return Smartphone;
-      case 'firefox': return Globe;
-      case 'chrome': return Monitor; // Chromeアイコンが存在しないためMonitorを使用
-      case 'edge': return Monitor;
-      default: return MapPin;
-    }
-  };
+  // ブラウザアイコンを統一（MapPinに統一）
+  const getBrowserIcon = () => MapPin;
 
   // メッセージカードコンポーネント（変更なし）
   const MessageCard = ({ icon: Icon, title, message, children, variant = 'default' }: {
@@ -548,7 +526,7 @@ export function MapView() {
 
   // 改良されたクロスブラウザ位置情報ガイドの表示判定
   if (showLocationGuide && !isPermissionGranted) {
-    const BrowserIcon = getBrowserIcon(browserInfo.name);
+    const BrowserIcon = getBrowserIcon();
     
     return (
       <>
@@ -615,51 +593,91 @@ export function MapView() {
     );
   }
 
-  // 改良された位置情報エラー処理
+  // 統一された位置情報エラー処理
   if ((permissionState === 'denied' || locationError) && !isPermissionGranted) {
-    const getBrowserLocationMessage = () => {
+    const getLocationMessage = () => {
       if (locationError) return locationError;
-      
-      switch (browserInfo.name) {
-        case 'safari':
-          return "Safari で位置情報の許可が必要です。アドレスバーの🔒アイコンから設定を変更してください。";
-        case 'chrome':
-          return "Chrome で位置情報の許可が必要です。アドレスバー左の🔒アイコンから設定を変更してください。";
-        case 'firefox':
-          return "Firefox で位置情報の許可が必要です。アドレスバー左の🔒アイコンから設定を変更してください。";
-        case 'edge':
-          return "Edge で位置情報の許可が必要です。アドレスバー左の🔒アイコンから設定を変更してください。";
-        default:
-          return "地図を表示するために位置情報の許可が必要です。";
-      }
+      return "地図を表示するために位置情報の許可が必要です。アドレスバーの🔒アイコンから設定を変更してください。";
     };
 
-    const BrowserIcon = getBrowserIcon(browserInfo.name);
-
     return (
-      <MessageCard 
-        title="位置情報が必要です" 
-        message={getBrowserLocationMessage()}
-        variant="warning" 
-        icon={BrowserIcon}
-      >
-        <div className="space-y-3">
-          <Button onClick={handleLocationRequest} className="w-full">
-            位置情報を許可する
-          </Button>
-          <Button 
-            variant="outline" 
-            onClick={() => setShowLocationGuide(true)}
-            className="w-full"
-          >
-            設定方法を見る
-          </Button>
-        </div>
-      </MessageCard>
+      <>
+        <MessageCard 
+          title="位置情報が必要です" 
+          message={getLocationMessage()}
+          variant="warning" 
+          icon={MapPin}
+        >
+          <div className="space-y-3">
+            {/* オレンジボタン：「なぜ、位置情報が必要なのか？」 */}
+            <Button 
+              onClick={() => setShowLocationGuide(true)}
+              className="w-full"
+            >
+              なぜ、位置情報が必要なのか？
+            </Button>
+            {/* 白ボタン：設定方法の説明を表示 */}
+            <Button 
+              variant="outline"
+              onClick={() => setShowSettingsGuide(true)}
+              className="w-full"
+            >
+              設定方法を見る
+            </Button>
+          </div>
+        </MessageCard>
+
+        {/* 設定方法表示用のモーダル */}
+        {showSettingsGuide && (
+          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
+              <div className="p-6 text-center">
+                <div className="bg-amber-50 rounded-full p-4 w-20 h-20 mx-auto mb-6 flex items-center justify-center">
+                  <AlertTriangle className="h-10 w-10 text-amber-600" />
+                </div>
+                
+                <h2 className="text-lg font-semibold mb-2">
+                  位置情報の設定方法
+                </h2>
+                <p className="text-sm text-gray-600 mb-6">
+                  位置情報を許可する手順
+                </p>
+
+                <div className="space-y-4 mb-6">
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <h3 className="font-semibold text-red-800 mb-3">
+                      <AlertTriangle className="h-4 w-4 inline mr-2" />
+                      位置情報の利用がブロックされています
+                    </h3>
+                    
+                    <div className="bg-white rounded p-3 border">
+                      <h4 className="font-semibold text-gray-500 mb-2">【設定方法】</h4>
+                      <div className="text-sm text-gray-500 space-y-1">
+                        <p><strong>1.</strong> 各種(iphone等)端末の設定 → プライバシーとセキュリティ → 位置情報サービス→各種ブラウザ(chrome,safari等)の設定を「使用中のみ」に設定を変更してください</p>
+                        <p><strong>2.</strong> 各種ブラウザ(chrome,safari等)における設定 → プライバシーとセキュリティから位置情報を許可orアドレスバーの🔒アイコンから設定を変更してください</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <Button 
+                    onClick={() => setShowSettingsGuide(false)}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    戻る
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </>
     );
   }
 
-  // 改良されたローディング状態（許可状態を考慮）
+  // 統一されたローディング状態
   if (googleMapsLoading || 
       !googleMapsLoaded || 
       containerDimensions.height === 0 || 
@@ -672,18 +690,10 @@ export function MapView() {
     else if (!googleMapsLoaded) loadingMessage = "Google Maps APIを待機中...";
     else if (containerDimensions.height === 0) loadingMessage = "画面サイズを調整中...";
     else if (locationLoading) {
-      if (isPermissionGranted) {
-        loadingMessage = "保存された設定で位置情報を取得中...";
-      } else {
-        loadingMessage = "現在位置を取得中...";
-      }
+      loadingMessage = isPermissionGranted ? "保存された設定で位置情報を取得中..." : "現在位置を取得中...";
     }
-    else if (!latitude || !longitude) {
-      loadingMessage = "位置情報を待機中...";
-    }
+    else if (!latitude || !longitude) loadingMessage = "位置情報を待機中...";
     else if (!mapInitialized) loadingMessage = "地図を作成中...";
-    
-    const BrowserIcon = getBrowserIcon(browserInfo.name);
     
     return (
       <div className="w-full h-full bg-gray-50 relative">
@@ -705,16 +715,19 @@ export function MapView() {
             </div>
           )}
           
-          {/* ブラウザ別の位置情報ヘルプボタン */}
+          {/* 位置情報ヘルプボタン */}
           {(permissionState === 'prompt' || (!latitude && !isPermissionGranted)) && (
             <Button 
               variant="outline" 
               size="sm"
-              onClick={() => setShowLocationGuide(true)}
+              onClick={() => {
+                // 🔥 モーダルを表示せず、直接位置情報を要求
+                requestLocation();
+              }}
               className="mb-4"
             >
-              <BrowserIcon className="h-4 w-4 mr-2" />
-              ブラウザで位置情報を許可
+              <MapPin className="h-4 w-4 mr-2" />
+              位置情報を許可する
             </Button>
           )}
         </div>
