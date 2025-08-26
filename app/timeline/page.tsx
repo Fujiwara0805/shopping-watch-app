@@ -1612,7 +1612,7 @@ export default function Timeline() {
     ));
   };
 
-  // 🔥 位置情報取得の関数を修正
+  // 🔥 位置情報取得の関数を修正（サービス全体で保持）
   const getCurrentLocation = useCallback(() => {
     setIsRequestingLocation(true);
     setLocationError(null);
@@ -1637,13 +1637,29 @@ export default function Timeline() {
       // 位置情報を取得
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          setUserLocation({
+          const locationData = {
             latitude: position.coords.latitude,
             longitude: position.coords.longitude,
-          });
+          };
+          
+          // 🔥 ローカル状態を更新
+          setUserLocation(locationData);
           setLocationPermissionState('granted');
           setShowLocationModal(false);
           setIsRequestingLocation(false);
+          
+          // 🔥 サービス全体で位置情報を保持（localStorage）
+          try {
+            localStorage.setItem('userLocation', JSON.stringify({
+              ...locationData,
+              timestamp: Date.now(),
+              // 5分間有効
+              expiresAt: Date.now() + (5 * 60 * 1000)
+            }));
+            console.log('位置情報をlocalStorageに保存しました:', locationData);
+          } catch (error) {
+            console.warn('位置情報の保存に失敗しました:', error);
+          }
           
           // 位置情報取得後に投稿を取得
           setTimeout(() => {
@@ -1665,13 +1681,29 @@ export default function Timeline() {
       // permissions API が使用できない場合は直接位置情報を取得
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          setUserLocation({
+          const locationData = {
             latitude: position.coords.latitude,
             longitude: position.coords.longitude,
-          });
+          };
+          
+          // 🔥 ローカル状態を更新
+          setUserLocation(locationData);
           setLocationPermissionState('granted');
           setShowLocationModal(false);
           setIsRequestingLocation(false);
+          
+          // 🔥 サービス全体で位置情報を保持（localStorage）
+          try {
+            localStorage.setItem('userLocation', JSON.stringify({
+              ...locationData,
+              timestamp: Date.now(),
+              // 5分間有効
+              expiresAt: Date.now() + (5 * 60 * 1000)
+            }));
+            console.log('位置情報をlocalStorageに保存しました:', locationData);
+          } catch (error) {
+            console.warn('位置情報の保存に失敗しました:', error);
+          }
           
           setTimeout(() => {
             if (fetchPostsRef.current) {
@@ -1691,10 +1723,51 @@ export default function Timeline() {
     });
   }, []);
 
+  // 🔥 保存された位置情報を読み込む関数を追加
+  const loadSavedLocation = useCallback(() => {
+    try {
+      const savedLocationStr = localStorage.getItem('userLocation');
+      if (savedLocationStr) {
+        const savedLocation = JSON.parse(savedLocationStr);
+        
+        // 有効期限をチェック
+        if (savedLocation.expiresAt && Date.now() < savedLocation.expiresAt) {
+          console.log('保存された位置情報を使用します:', savedLocation);
+          setUserLocation({
+            latitude: savedLocation.latitude,
+            longitude: savedLocation.longitude,
+          });
+          setLocationPermissionState('granted');
+          return true; // 保存された位置情報を使用
+        } else {
+          console.log('保存された位置情報の有効期限が切れています');
+          localStorage.removeItem('userLocation');
+        }
+      }
+    } catch (error) {
+      console.warn('保存された位置情報の読み込みに失敗しました:', error);
+      localStorage.removeItem('userLocation');
+    }
+    return false; // 保存された位置情報が使用できない
+  }, []);
+
   // 🔥 位置情報を初期化時に取得（修正版）
   useEffect(() => {
-    getCurrentLocation();
-  }, [getCurrentLocation]);
+    // まず保存された位置情報を試行
+    const hasSavedLocation = loadSavedLocation();
+    
+    // 保存された位置情報がない場合のみ新規取得
+    if (!hasSavedLocation) {
+      getCurrentLocation();
+    } else {
+      // 保存された位置情報がある場合は投稿を取得
+      setTimeout(() => {
+        if (fetchPostsRef.current) {
+          fetchPostsRef.current(0, true);
+        }
+      }, 100);
+    }
+  }, [getCurrentLocation, loadSavedLocation]);
 
   // 🔥 位置情報許可モーダルのハンドラー
   const handleAllowLocation = () => {
@@ -1896,6 +1969,21 @@ export default function Timeline() {
       }, 500);
     }
   };
+
+  // 🔥 更新ボタンのハンドラーを修正（位置情報も再取得）
+  const handleRefresh = useCallback(() => {
+    console.log('更新ボタンが押されました - 位置情報も再取得します');
+    
+    // 位置情報を再取得
+    getCurrentLocation();
+    
+    // 少し遅延を入れて投稿も再取得（位置情報取得完了を待つため）
+    setTimeout(() => {
+      if (fetchPostsRef.current) {
+        fetchPostsRef.current(0, true, debouncedSearchTerm);
+      }
+    }, 1000);
+  }, [getCurrentLocation, debouncedSearchTerm]);
 
   if (loading && posts.length === 0) {
     return (
@@ -2325,35 +2413,6 @@ export default function Timeline() {
 
           {/* メインコンテンツエリア */}
           <div className="flex-1 flex flex-col">
-            {/* ヘッダー部分 - PC版では完全に非表示 */}
-            {/* <div className="sticky top-0 z-10 border-b"> {/* 背景色を削除 */}
-              {/* <div className="p-4 flex items-center space-x-2">  */}
-                {/* PC版ではハンバーガーメニューを非表示 */}
-                {/* <HamburgerMenu currentUser={currentUserProfile} /> */}
-                {/* PC版ではメインコンテンツの検索バーを非表示 */}
-                {/* <div className="relative flex-1">
-                  <Input
-                    type="text"
-                    placeholder="店舗名やキーワードで検索"
-                    value={generalSearchTerm}
-                    onChange={(e) => setGeneralSearchTerm(e.target.value)}
-                    className="pr-10 w-full text-base"
-                    style={{ fontSize: '16px' }}
-                    autoComplete="off"
-                    autoCorrect="off"
-                    autoCapitalize="off"
-                    spellCheck="false"
-                  />
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center">
-                    {isSearching && generalSearchTerm ? (
-                      <Loader2 className="h-4 w-4 text-muted-foreground animate-spin" />
-                    ) : (
-                      <Search className="h-4 w-4 text-muted-foreground" />
-                    )}
-                  </div>
-                </div> */}
-              {/* </div>
-            </div> */}
 
             {/* コンテンツエリア */}
             <div className="flex-1 overflow-y-auto timeline-scroll-container">
@@ -2653,13 +2712,9 @@ export default function Timeline() {
                 招待する
               </Button>
               <Button
-                onClick={() => {
-                  if (fetchPostsRef.current) {
-                    fetchPostsRef.current(0, true, debouncedSearchTerm);
-                  }
-                }}
+                onClick={handleRefresh}
                 variant="outline"
-                className="flex-1 "
+                className="flex-1"
               >
                 <RefreshCw className="h-4 w-4 mr-2" />
                 更新
