@@ -28,10 +28,21 @@ interface FrequentItem {
   item_name: string;
 }
 
+// 🔥 ローカルストレージの位置情報の型定義
+interface StoredLocationData {
+  latitude: number;
+  longitude: number;
+  timestamp: number;
+  expiresAt: number;
+}
+
 export default function MemoPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const { latitude, longitude, permissionState, requestLocation } = useLocationPermission();
+  
+  // 🔥 ローカルストレージから取得した位置情報の状態を追加
+  const [storedLocation, setStoredLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   
   // オフライン対応の買い物リスト (localStorage) - 常に利用可能
   const [items, setItems] = useLocalStorage<MemoItem[]>('shoppingMemo', []);
@@ -50,6 +61,40 @@ export default function MemoPage() {
   const [isOnline, setIsOnline] = useState(true);
   const [showFrequentItemModal, setShowFrequentItemModal] = useState(false);
   const [newFrequentItemName, setNewFrequentItemName] = useState('');
+
+  // 🔥 ローカルストレージから位置情報を取得する関数
+  const loadStoredLocation = useCallback(() => {
+    try {
+      const storedLocationStr = localStorage.getItem('userLocation');
+      if (storedLocationStr) {
+        const storedLocationData: StoredLocationData = JSON.parse(storedLocationStr);
+        
+        // 有効期限をチェック
+        if (storedLocationData.expiresAt && Date.now() < storedLocationData.expiresAt) {
+          console.log('買い物メモ: 保存された位置情報を使用します:', storedLocationData);
+          setStoredLocation({
+            latitude: storedLocationData.latitude,
+            longitude: storedLocationData.longitude,
+          });
+          return true; // 保存された位置情報を使用
+        } else {
+          console.log('買い物メモ: 保存された位置情報の有効期限が切れています');
+          localStorage.removeItem('userLocation');
+          setStoredLocation(null);
+        }
+      }
+    } catch (error) {
+      console.warn('買い物メモ: 保存された位置情報の読み込みに失敗しました:', error);
+      localStorage.removeItem('userLocation');
+      setStoredLocation(null);
+    }
+    return false; // 保存された位置情報が使用できない
+  }, []);
+
+  // 🔥 初期化時にローカルストレージから位置情報を取得
+  useEffect(() => {
+    loadStoredLocation();
+  }, [loadStoredLocation]);
 
   // ログイン状態に応じてプロフィールと「よく買うもの」リストを管理
   useEffect(() => {
@@ -215,7 +260,29 @@ export default function MemoPage() {
     router.push('/train-schedule');
   };
 
-  const showTrainScheduleButton = latitude !== null && longitude !== null && permissionState === 'granted' && isWithinOitaUniversityArea(latitude, longitude);
+  // 🔥 位置情報の判定ロジックを修正：ローカルストレージの位置情報も考慮
+  const effectiveLatitude = latitude || storedLocation?.latitude;
+  const effectiveLongitude = longitude || storedLocation?.longitude;
+  const hasValidLocation = effectiveLatitude !== null && effectiveLongitude !== null;
+  
+  const showTrainScheduleButton = hasValidLocation && isWithinOitaUniversityArea(effectiveLatitude!, effectiveLongitude!);
+
+  // 🔥 デバッグ用ログ（開発時のみ）
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('買い物メモ - 位置情報状態:', {
+        providerLatitude: latitude,
+        providerLongitude: longitude,
+        storedLatitude: storedLocation?.latitude,
+        storedLongitude: storedLocation?.longitude,
+        effectiveLatitude,
+        effectiveLongitude,
+        hasValidLocation,
+        showTrainScheduleButton,
+        permissionState
+      });
+    }
+  }, [latitude, longitude, storedLocation, effectiveLatitude, effectiveLongitude, hasValidLocation, showTrainScheduleButton, permissionState]);
 
   return (
     <AppLayout>
@@ -383,9 +450,19 @@ export default function MemoPage() {
           )}
         </div>
 
+        {/* 🔥 位置情報の表示状態をデバッグ表示（開発環境のみ） */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="mt-4 p-2 bg-gray-100 rounded text-xs">
+            <div>Provider位置: {latitude ? `${latitude.toFixed(4)}, ${longitude?.toFixed(4)}` : 'なし'}</div>
+            <div>Stored位置: {storedLocation ? `${storedLocation.latitude.toFixed(4)}, ${storedLocation.longitude.toFixed(4)}` : 'なし'}</div>
+            <div>有効な位置: {hasValidLocation ? `${effectiveLatitude?.toFixed(4)}, ${effectiveLongitude?.toFixed(4)}` : 'なし'}</div>
+            <div>時刻表ボタン: {showTrainScheduleButton ? '表示' : '非表示'}</div>
+          </div>
+        )}
+
         {/* 画面下部の遷移ボタン */}
         <div className="mt-8 space-y-4">
-          {/* 時刻表への遷移ボタンをここに追加 */}
+          {/* 🔥 修正：ローカルストレージの位置情報も考慮した時刻表ボタン */}
           {showTrainScheduleButton && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -401,6 +478,11 @@ export default function MemoPage() {
                     <h3 className="font-semibold text-green-900">時刻表を確認</h3>
                     <p className="text-xs text-green-700">
                       旦野原キャンパス限定で大分駅までの<br />電車とバスの時刻表を確認できます。
+                      {storedLocation && !latitude && (
+                        <span className="block text-green-600 font-medium mt-1">
+                          ※保存された位置情報を使用中
+                        </span>
+                      )}
                     </p>
                   </div>
                 </div>
