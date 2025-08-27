@@ -280,6 +280,55 @@ const UserAvatar = memo(({ author }: { author: AuthorProfile | null }) => {
 
 UserAvatar.displayName = 'UserAvatar';
 
+// 🔥 ジャンルのカラーリング関数を修正
+const getGenreColor = (genre: string) => {
+  const colors: Record<string, string> = {
+    'ショッピング': 'bg-blue-100 text-blue-800 border-blue-200',
+    'グルメ': 'bg-red-100 text-red-800 border-red-200',
+    '観光': 'bg-green-100 text-green-800 border-green-200',
+    'エンタメ': 'bg-purple-100 text-purple-800 border-purple-200',
+    'サービス': 'bg-yellow-100 text-yellow-800 border-yellow-200',
+    'イベント': 'bg-pink-100 text-pink-800 border-pink-200',
+    '求人': 'bg-indigo-100 text-indigo-800 border-indigo-200',
+    '販売': 'bg-orange-100 text-orange-800 border-orange-200',
+    '貸し出し': 'bg-cyan-100 text-cyan-800 border-cyan-200',
+    '宿泊': 'bg-teal-100 text-teal-800 border-teal-200',
+    'ボランティア': 'bg-lime-100 text-lime-800 border-lime-200',
+    '相談': 'bg-amber-100 text-amber-800 border-amber-200',
+    'ニュース': 'bg-slate-100 text-slate-800 border-slate-200',
+    'コミュニティ': 'bg-rose-100 text-rose-800 border-rose-200',
+    '寄付': 'bg-emerald-100 text-emerald-800 border-emerald-200',
+    '募集': 'bg-violet-100 text-violet-800 border-violet-200',
+    'その他': 'bg-gray-100 text-gray-800 border-gray-200'
+  };
+  return colors[genre] || 'bg-gray-100 text-gray-800 border-gray-200';
+};
+
+// 🔥 対象者のカラーリング関数を修正
+const getTargetAudienceColor = (audience: string) => {
+  const colors: Record<string, string> = {
+    'すべての人': 'bg-gray-100 text-gray-800 border-gray-300',
+    '10代': 'bg-pink-100 text-pink-800 border-pink-300',
+    '20代': 'bg-blue-100 text-blue-800 border-blue-300',
+    '30代': 'bg-green-100 text-green-800 border-green-300',
+    '40代': 'bg-yellow-100 text-yellow-800 border-yellow-300',
+    '50代': 'bg-orange-100 text-orange-800 border-orange-300',
+    '60代以上': 'bg-purple-100 text-purple-800 border-purple-300',
+    '学生': 'bg-indigo-100 text-indigo-800 border-indigo-300',
+    'ビジネスマン・OL': 'bg-slate-100 text-slate-800 border-slate-300',
+    '主婦・主夫': 'bg-rose-100 text-rose-800 border-rose-300',
+    '子育て世代': 'bg-emerald-100 text-emerald-800 border-emerald-300',
+    '一人暮らし': 'bg-cyan-100 text-cyan-800 border-cyan-300',
+    'ファミリー': 'bg-lime-100 text-lime-800 border-lime-300',
+    '高齢者': 'bg-amber-100 text-amber-800 border-amber-300',
+    'フリーランス': 'bg-violet-100 text-violet-800 border-violet-300',
+    '起業家・経営者': 'bg-red-100 text-red-800 border-red-300',
+    '観光客・旅行者': 'bg-teal-100 text-teal-800 border-teal-300',
+    '地域住民': 'bg-green-100 text-green-800 border-green-300'
+  };
+  return colors[audience] || 'bg-gray-100 text-gray-800 border-gray-300';
+};
+
 export const PostCard = memo(({ 
   post, 
   onLike, 
@@ -1153,15 +1202,10 @@ export const PostCard = memo(({
                             </div>
                           </td>
                           <td className="p-3">
-                            <div className={cn(
-                              "inline-flex items-center space-x-2 px-3 py-1 rounded-full text-base font-medium border",
-                              genreIconAndColor.bgColor,
-                              genreIconAndColor.textColor,
-                              genreIconAndColor.borderColor
-                            )}>
-                              <GenreIcon className="h-4 w-4 flex-shrink-0" />
-                              <span>{post.genre}</span>
-                            </div>
+                            <Badge className={cn("text-base", getGenreColor(post.genre))}>
+                              <GenreIcon className="h-4 w-4 mr-2 flex-shrink-0" />
+                              {post.genre}
+                            </Badge>
                           </td>
                         </tr>
                       )}
@@ -1265,7 +1309,7 @@ export const PostCard = memo(({
                             </div>
                           </td>
                           <td className="p-3">
-                            <Badge className="bg-blue-100 text-blue-800 border-blue-200 text-base">
+                            <Badge className={cn("text-base", getTargetAudienceColor(post.target_audience))}>
                               {getTargetAudienceLabel(post.target_audience)}
                             </Badge>
                           </td>

@@ -972,6 +972,8 @@ export default function Timeline() {
 
   // 🔥 新規追加: 投稿ボタンのローディング状態
   const [isNavigatingToPost, setIsNavigatingToPost] = useState(false);
+  // 🔥 追加: 更新ボタンのローディング状態
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const debouncedSearchTerm = useDebounce(generalSearchTerm, 800);
 
@@ -1612,8 +1614,8 @@ export default function Timeline() {
     ));
   };
 
-  // 🔥 位置情報取得の関数を修正（サービス全体で保持）
-  const getCurrentLocation = useCallback(() => {
+  // 🔥 位置情報取得の関数を修正（自動投稿取得を制御可能に）
+  const getCurrentLocation = useCallback((autoFetch = true) => {
     setIsRequestingLocation(true);
     setLocationError(null);
     
@@ -1621,105 +1623,121 @@ export default function Timeline() {
       setLocationError('位置情報が利用できません');
       setLocationPermissionState('unavailable');
       setIsRequestingLocation(false);
-      return;
+      return Promise.reject(new Error('位置情報が利用できません'));
     }
 
-    // まず現在の許可状態をチェック
-    navigator.permissions.query({ name: 'geolocation' }).then((result) => {
-      setLocationPermissionState(result.state as any);
-      
-      if (result.state === 'denied') {
-        setShowLocationModal(true);
-        setIsRequestingLocation(false);
-        return;
-      }
+    return new Promise<{ latitude: number; longitude: number }>((resolve, reject) => {
+      // まず現在の許可状態をチェック
+      navigator.permissions.query({ name: 'geolocation' }).then((result) => {
+        setLocationPermissionState(result.state as any);
+        
+        if (result.state === 'denied') {
+          setShowLocationModal(true);
+          setIsRequestingLocation(false);
+          reject(new Error('位置情報が拒否されています'));
+          return;
+        }
 
-      // 位置情報を取得
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const locationData = {
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-          };
-          
-          // 🔥 ローカル状態を更新
-          setUserLocation(locationData);
-          setLocationPermissionState('granted');
-          setShowLocationModal(false);
-          setIsRequestingLocation(false);
-          
-          // 🔥 サービス全体で位置情報を保持（localStorage）
-          try {
-            localStorage.setItem('userLocation', JSON.stringify({
-              ...locationData,
-              timestamp: Date.now(),
-              // 5分間有効
-              expiresAt: Date.now() + (5 * 60 * 1000)
-            }));
-            console.log('位置情報をlocalStorageに保存しました:', locationData);
-          } catch (error) {
-            console.warn('位置情報の保存に失敗しました:', error);
-          }
-          
-          // 位置情報取得後に投稿を取得
-          setTimeout(() => {
-            if (fetchPostsRef.current) {
-              fetchPostsRef.current(0, true);
+        // 位置情報を取得
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const locationData = {
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude,
+            };
+            
+            // 🔥 ローカル状態を更新
+            setUserLocation(locationData);
+            setLocationPermissionState('granted');
+            setShowLocationModal(false);
+            setIsRequestingLocation(false);
+            
+            // 🔥 ローカルストレージの既存データを削除してから新しいデータを保存
+            try {
+              localStorage.removeItem('userLocation'); // 既存データを削除
+              localStorage.setItem('userLocation', JSON.stringify({
+                ...locationData,
+                timestamp: Date.now(),
+                // 5分間有効
+                expiresAt: Date.now() + (5 * 60 * 1000)
+              }));
+              console.log('位置情報をlocalStorageに保存しました:', locationData);
+            } catch (error) {
+              console.warn('位置情報の保存に失敗しました:', error);
             }
-          }, 100);
-        },
-        (error) => {
-          console.error('位置情報の取得に失敗しました:', error);
-          setLocationError('現在地を取得できませんでした');
-          setLocationPermissionState('denied');
-          setShowLocationModal(true);
-          setIsRequestingLocation(false);
-        },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
-      );
-    }).catch(() => {
-      // permissions API が使用できない場合は直接位置情報を取得
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const locationData = {
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-          };
-          
-          // 🔥 ローカル状態を更新
-          setUserLocation(locationData);
-          setLocationPermissionState('granted');
-          setShowLocationModal(false);
-          setIsRequestingLocation(false);
-          
-          // 🔥 サービス全体で位置情報を保持（localStorage）
-          try {
-            localStorage.setItem('userLocation', JSON.stringify({
-              ...locationData,
-              timestamp: Date.now(),
-              // 5分間有効
-              expiresAt: Date.now() + (5 * 60 * 1000)
-            }));
-            console.log('位置情報をlocalStorageに保存しました:', locationData);
-          } catch (error) {
-            console.warn('位置情報の保存に失敗しました:', error);
-          }
-          
-          setTimeout(() => {
-            if (fetchPostsRef.current) {
-              fetchPostsRef.current(0, true);
+            
+            // 🔥 自動投稿取得の制御
+            if (autoFetch) {
+              setTimeout(() => {
+                if (fetchPostsRef.current) {
+                  fetchPostsRef.current(0, true);
+                }
+              }, 100);
             }
-          }, 100);
-        },
-        (error) => {
-          console.error('位置情報の取得に失敗しました:', error);
-          setLocationError('現在地を取得できませんでした');
-          setLocationPermissionState('denied');
-          setShowLocationModal(true);
-          setIsRequestingLocation(false);
-        },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
-      );
+            
+            resolve(locationData);
+          },
+          (error) => {
+            console.error('位置情報の取得に失敗しました:', error);
+            setLocationError('現在地を取得できませんでした');
+            setLocationPermissionState('denied');
+            setShowLocationModal(true);
+            setIsRequestingLocation(false);
+            reject(error);
+          },
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
+        );
+      }).catch(() => {
+        // permissions API が使用できない場合は直接位置情報を取得
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const locationData = {
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude,
+            };
+            
+            // 🔥 ローカル状態を更新
+            setUserLocation(locationData);
+            setLocationPermissionState('granted');
+            setShowLocationModal(false);
+            setIsRequestingLocation(false);
+            
+            // 🔥 ローカルストレージの既存データを削除してから新しいデータを保存
+            try {
+              localStorage.removeItem('userLocation'); // 既存データを削除
+              localStorage.setItem('userLocation', JSON.stringify({
+                ...locationData,
+                timestamp: Date.now(),
+                // 5分間有効
+                expiresAt: Date.now() + (5 * 60 * 1000)
+              }));
+              console.log('位置情報をlocalStorageに保存しました:', locationData);
+            } catch (error) {
+              console.warn('位置情報の保存に失敗しました:', error);
+            }
+            
+            // 🔥 自動投稿取得の制御
+            if (autoFetch) {
+              setTimeout(() => {
+                if (fetchPostsRef.current) {
+                  fetchPostsRef.current(0, true);
+                }
+              }, 100);
+            }
+            
+            resolve(locationData);
+          },
+          (error) => {
+            console.error('位置情報の取得に失敗しました:', error);
+            setLocationError('現在地を取得できませんでした');
+            setLocationPermissionState('denied');
+            setShowLocationModal(true);
+            setIsRequestingLocation(false);
+            reject(error);
+          },
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
+        );
+      });
     });
   }, []);
 
@@ -1758,7 +1776,7 @@ export default function Timeline() {
     
     // 保存された位置情報がない場合のみ新規取得
     if (!hasSavedLocation) {
-      getCurrentLocation();
+      getCurrentLocation(true); // 初回は自動投稿取得を有効に
     } else {
       // 保存された位置情報がある場合は投稿を取得
       setTimeout(() => {
@@ -1772,7 +1790,7 @@ export default function Timeline() {
   // 🔥 位置情報許可モーダルのハンドラー
   const handleAllowLocation = () => {
     setShowLocationModal(false);
-    getCurrentLocation();
+    getCurrentLocation(true); // 許可時は自動投稿取得を有効に
   };
 
   const handleDenyLocation = () => {
@@ -1970,20 +1988,130 @@ export default function Timeline() {
     }
   };
 
-  // 🔥 更新ボタンのハンドラーを修正（位置情報も再取得）
-  const handleRefresh = useCallback(() => {
-    console.log('更新ボタンが押されました - 位置情報も再取得します');
+  // 🔥 更新ボタンのハンドラーを修正（ローディング状態を追加）
+  const handleRefresh = useCallback(async () => {
+    console.log('更新ボタンが押されました - 位置情報のリセットと再取得、投稿の更新を実行します');
     
-    // 位置情報を再取得
-    getCurrentLocation();
+    setIsRefreshing(true); // ローディング開始
     
-    // 少し遅延を入れて投稿も再取得（位置情報取得完了を待つため）
-    setTimeout(() => {
+    try {
+      // 🔥 ローカルストレージから位置情報を削除
+      localStorage.removeItem('userLocation');
+      console.log('ローカルストレージの位置情報をリセットしました');
+      
+      // 🔥 位置情報を再取得（自動投稿取得は無効にして手動制御）
+      await getCurrentLocation(false);
+      
+      // 🔥 位置情報取得完了後に投稿を再取得
       if (fetchPostsRef.current) {
         fetchPostsRef.current(0, true, debouncedSearchTerm);
       }
-    }, 1000);
+      
+      console.log('更新処理が完了しました');
+    } catch (error) {
+      console.error('更新処理中にエラーが発生しました:', error);
+      
+      // エラーが発生した場合でも投稿の再取得は実行
+      if (fetchPostsRef.current) {
+        fetchPostsRef.current(0, true, debouncedSearchTerm);
+      }
+    } finally {
+      // 少し遅延を入れてローディング終了（ユーザー体験向上のため）
+      setTimeout(() => {
+        setIsRefreshing(false);
+      }, 800);
+    }
   }, [getCurrentLocation, debouncedSearchTerm]);
+
+  // 🔥 ジャンル・カテゴリ・対象者のカラーパレット
+  const getGenreColor = (genre: string) => {
+    const colors: Record<string, string> = {
+      'ショッピング': 'bg-blue-100 text-blue-800 border-blue-200',
+      'グルメ': 'bg-red-100 text-red-800 border-red-200',
+      '観光': 'bg-green-100 text-green-800 border-green-200',
+      'エンタメ': 'bg-purple-100 text-purple-800 border-purple-200',
+      'サービス': 'bg-yellow-100 text-yellow-800 border-yellow-200',
+      'イベント': 'bg-pink-100 text-pink-800 border-pink-200',
+      '求人': 'bg-indigo-100 text-indigo-800 border-indigo-200',
+      '販売': 'bg-orange-100 text-orange-800 border-orange-200',
+      '貸し出し': 'bg-cyan-100 text-cyan-800 border-cyan-200',
+      '宿泊': 'bg-teal-100 text-teal-800 border-teal-200',
+      'ボランティア': 'bg-lime-100 text-lime-800 border-lime-200',
+      '相談': 'bg-amber-100 text-amber-800 border-amber-200',
+      'ニュース': 'bg-slate-100 text-slate-800 border-slate-200',
+      'コミュニティ': 'bg-rose-100 text-rose-800 border-rose-200',
+      '寄付': 'bg-emerald-100 text-emerald-800 border-emerald-200',
+      '募集': 'bg-violet-100 text-violet-800 border-violet-200',
+      'その他': 'bg-gray-100 text-gray-800 border-gray-200'
+    };
+    return colors[genre] || 'bg-gray-100 text-gray-800 border-gray-200';
+  };
+
+  const getCategoryColor = (category: string) => {
+    const colors: Record<string, string> = {
+      // ショッピング系
+      '惣菜': 'bg-orange-50 text-orange-700 border-orange-200',
+      '弁当': 'bg-red-50 text-red-700 border-red-200',
+      '肉': 'bg-red-100 text-red-800 border-red-300',
+      '魚': 'bg-blue-50 text-blue-700 border-blue-200',
+      '野菜': 'bg-green-50 text-green-700 border-green-200',
+      '果物': 'bg-yellow-50 text-yellow-700 border-yellow-200',
+      '米・パン類': 'bg-amber-50 text-amber-700 border-amber-200',
+      'デザート類': 'bg-pink-50 text-pink-700 border-pink-200',
+      '日用品': 'bg-gray-50 text-gray-700 border-gray-200',
+      '衣料品': 'bg-purple-50 text-purple-700 border-purple-200',
+      
+      // グルメ系
+      '和食': 'bg-green-50 text-green-700 border-green-200',
+      '洋食': 'bg-blue-50 text-blue-700 border-blue-200',
+      '中華': 'bg-red-50 text-red-700 border-red-200',
+      'イタリアン': 'bg-green-100 text-green-800 border-green-300',
+      'フレンチ': 'bg-blue-100 text-blue-800 border-blue-300',
+      'レストラン': 'bg-purple-50 text-purple-700 border-purple-200',
+      'カフェ': 'bg-amber-50 text-amber-700 border-amber-200',
+      'ファストフード': 'bg-orange-50 text-orange-700 border-orange-200',
+      '居酒屋': 'bg-yellow-50 text-yellow-700 border-yellow-200',
+      
+      // 観光系
+      '観光ツアー': 'bg-cyan-50 text-cyan-700 border-cyan-200',
+      '観光スポット': 'bg-teal-50 text-teal-700 border-teal-200',
+      '宿泊施設': 'bg-indigo-50 text-indigo-700 border-indigo-200',
+      '自然景観': 'bg-green-100 text-green-800 border-green-300',
+      '温泉': 'bg-blue-100 text-blue-800 border-blue-300',
+      '博物館・美術館': 'bg-purple-100 text-purple-800 border-purple-300',
+      '公園': 'bg-lime-50 text-lime-700 border-lime-200',
+      '水族館': 'bg-cyan-100 text-cyan-800 border-cyan-300',
+      'アミューズメントパーク': 'bg-pink-100 text-pink-800 border-pink-300',
+      
+      // その他のカテゴリーもここに追加
+      'その他': 'bg-gray-50 text-gray-700 border-gray-200'
+    };
+    return colors[category] || 'bg-gray-50 text-gray-700 border-gray-200';
+  };
+
+  const getTargetAudienceColor = (audience: string) => {
+    const colors: Record<string, string> = {
+      'すべての人': 'bg-gray-100 text-gray-800 border-gray-300',
+      '10代': 'bg-pink-100 text-pink-800 border-pink-300',
+      '20代': 'bg-blue-100 text-blue-800 border-blue-300',
+      '30代': 'bg-green-100 text-green-800 border-green-300',
+      '40代': 'bg-yellow-100 text-yellow-800 border-yellow-300',
+      '50代': 'bg-orange-100 text-orange-800 border-orange-300',
+      '60代以上': 'bg-purple-100 text-purple-800 border-purple-300',
+      '学生': 'bg-indigo-100 text-indigo-800 border-indigo-300',
+      'ビジネスマン・OL': 'bg-slate-100 text-slate-800 border-slate-300',
+      '主婦・主夫': 'bg-rose-100 text-rose-800 border-rose-300',
+      '子育て世代': 'bg-emerald-100 text-emerald-800 border-emerald-300',
+      '一人暮らし': 'bg-cyan-100 text-cyan-800 border-cyan-300',
+      'ファミリー': 'bg-lime-100 text-lime-800 border-lime-300',
+      '高齢者': 'bg-amber-100 text-amber-800 border-amber-300',
+      'フリーランス': 'bg-violet-100 text-violet-800 border-violet-300',
+      '起業家・経営者': 'bg-red-100 text-red-800 border-red-300',
+      '観光客・旅行者': 'bg-teal-100 text-teal-800 border-teal-300',
+      '地域住民': 'bg-green-100 text-green-800 border-green-300'
+    };
+    return colors[audience] || 'bg-gray-100 text-gray-800 border-gray-300';
+  };
 
   if (loading && posts.length === 0) {
     return (
@@ -2713,11 +2841,50 @@ export default function Timeline() {
               </Button>
               <Button
                 onClick={handleRefresh}
+                disabled={isRefreshing}
                 variant="outline"
-                className="flex-1"
+                className={cn(
+                  "flex-1 relative overflow-hidden",
+                  isRefreshing && "cursor-not-allowed"
+                )}
               >
-                <RefreshCw className="h-4 w-4 mr-2" />
-                更新
+                {isRefreshing ? (
+                  <motion.div
+                    className="flex items-center justify-center"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{
+                        duration: 1,
+                        repeat: Infinity,
+                        ease: "linear"
+                      }}
+                      className="mr-2"
+                    >
+                      <RefreshCw className="h-4 w-4" />
+                    </motion.div>
+                    <motion.span
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.3, delay: 0.1 }}
+                    >
+                      更新中...
+                    </motion.span>
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    className="flex items-center justify-center"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    <span>更新</span>
+                  </motion.div>
+                )}
               </Button>
             </div>
           </div>
