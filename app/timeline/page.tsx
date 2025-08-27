@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { LayoutGrid, Search, Star, MapPin, Loader2, SlidersHorizontal, Heart, Plus, X, AlertCircle, Menu, User, Edit, Store, HelpCircle, FileText, LogOut, Settings, Globe, NotebookText, Calculator, Zap, MessageSquare, Eye, Send, RefreshCw, UserPlus, Link as LinkIcon, ExternalLink, Instagram, Trash2, Flag, AlertTriangle, Compass, Navigation } from 'lucide-react';
+import { LayoutGrid, Search, Star, MapPin, Loader2, SlidersHorizontal, Heart, Plus, X, AlertCircle, Menu, User, Edit, Store, HelpCircle, FileText, LogOut, Settings, Globe, NotebookText, Calculator, Zap, MessageSquare, Eye, Send, RefreshCw, UserPlus, Link as LinkIcon, ExternalLink, Instagram, Trash2, Flag, AlertTriangle, Compass,  Info } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { PostWithAuthor } from '@/types/post';
 import { useSession, signOut } from 'next-auth/react';
@@ -1798,7 +1798,7 @@ export default function Timeline() {
     setLocationPermissionState('denied');
     // 管理者でない場合はエラー状態を設定
     if (currentUserRole !== 'admin') {
-      setError('近くの投稿を表示するには位置情報が必要です');
+      setError('投稿を表示するには位置情報が必要です');
     } else {
       // 管理者の場合は位置情報なしで投稿を取得
       setTimeout(() => {
@@ -2234,8 +2234,8 @@ export default function Timeline() {
               {locationPermissionState === 'denied' ? (
                 <div className="space-y-3">
                   <Button onClick={handleRetry} className="w-full">
-                    <Navigation className="h-4 w-4 mr-2" />
-                    位置情報を許可する
+                    <Info className="h-4 w-4 mr-2" />
+                    設定方法を見る
                   </Button>
                   <p className="text-sm text-red-600">
                     設定で位置情報を許可してください

@@ -4,17 +4,8 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { CustomModal } from '@/components/ui/custom-modal';
 import { 
-  MapPin, 
-  Smartphone, 
-  Monitor, 
-  Globe, 
-  AlertTriangle, 
-  RefreshCw,
   Clock,
   CheckCircle,
-  Settings,
-  ArrowLeft,
-  HelpCircle
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { LocationPermissionManager } from '@/lib/hooks/LocationPermissionManager';
@@ -122,47 +113,6 @@ export function CrossBrowserLocationGuide({
                 onClick={onClose} 
                 className="w-full"
               >
-                閉じる
-              </Button>
-            )}
-          </div>
-        </div>
-      </CustomModal>
-    );
-  }
-
-  // プライベートモードの場合
-  if (browserInfo.isPrivateMode) {
-    const browserName = getBrowserDisplayName();
-    
-    return (
-      <CustomModal
-        isOpen={isVisible}
-        onClose={onClose || (() => {})}
-        title="プライベートブラウジング中"
-        description={`${browserName}のプライベートブラウジングモードでは位置情報を取得できません。`}
-        className="max-w-md"
-      >
-        <div className="text-center">
-          <AlertTriangle className="h-16 w-16 text-amber-500 mx-auto mb-4" />
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
-            <h3 className="font-semibold text-amber-800 mb-2">
-              プライベートモードの制限
-            </h3>
-            <p className="text-sm text-amber-700 leading-relaxed">
-              プライベートブラウジングモードでは、位置情報の保存と取得に制限があります。通常のウィンドウでアクセスしてください。
-            </p>
-          </div>
-          <div className="space-y-3">
-            <Button 
-              onClick={() => window.location.reload()} 
-              className="w-full bg-blue-600 hover:bg-blue-700"
-            >
-              <RefreshCw className="h-4 w-4 mr-2" />
-              ページを再読み込み
-            </Button>
-            {onClose && (
-              <Button variant="outline" onClick={onClose} className="w-full">
                 閉じる
               </Button>
             )}

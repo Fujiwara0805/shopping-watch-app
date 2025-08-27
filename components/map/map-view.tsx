@@ -632,22 +632,11 @@ export function MapView() {
           <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
             <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
               <div className="p-6 text-center">
-                <div className="bg-amber-50 rounded-full p-4 w-20 h-20 mx-auto mb-6 flex items-center justify-center">
-                  <AlertTriangle className="h-10 w-10 text-amber-600" />
-                </div>
-                
-                <h2 className="text-lg font-semibold mb-2">
-                  位置情報の設定方法
-                </h2>
-                <p className="text-sm text-gray-600 mb-6">
-                  位置情報を許可する手順
-                </p>
-
                 <div className="space-y-4 mb-6">
                   <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                     <h3 className="font-semibold text-red-800 mb-3">
                       <AlertTriangle className="h-4 w-4 inline mr-2" />
-                      位置情報の利用がブロックされています
+                      位置情報の利用が許可が必要です
                     </h3>
                     
                     <div className="bg-white rounded p-3 border">
