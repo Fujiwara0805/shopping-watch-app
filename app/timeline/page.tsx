@@ -98,6 +98,7 @@ interface PostFromDB {
   author: AuthorData | AuthorData[] | null;
   post_likes: PostLike[] | null;
   target_audience?: string | null; // 🔥 新規追加：対象者フィールド
+  author_role?: string; // 追加: author_roleフィールド
 }
 
 type SortOption = 'created_at_desc' | 'created_at_asc' | 'expires_at_asc' | 'distance_asc' | 'likes_desc' | 'views_desc' | 'comments_desc';
@@ -1206,6 +1207,7 @@ export default function Timeline() {
           support_purchase_enabled,
           support_purchase_options,
           target_audience,
+          author_role,
           author:app_profiles!posts_app_profile_id_fkey (
             id,
             user_id,
@@ -1367,6 +1369,11 @@ export default function Timeline() {
       // 5km圏内フィルタリング機能を追加（管理者でない場合のみ適用）
       if (currentUserLocation && !isAdmin) { // 管理者ユーザーの場合、距離フィルタリングをスキップ
         processedPosts = processedPosts.filter(post => {
+          // 🔥 投稿者が管理者の場合は距離フィルタリングをスキップ
+          if (post.author_role === 'admin') {
+            return true;
+          }
+          
           return post.distance !== undefined && post.distance <= SEARCH_RADIUS_METERS;
         });
       }

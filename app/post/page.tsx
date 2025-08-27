@@ -462,6 +462,8 @@ export default function PostPage() {
           ? JSON.stringify(values.supportPurchaseOptions) 
           : null,
         target_audience: values.targetAudience && values.targetAudience.trim() !== '' ? values.targetAudience : null, // 🔥 新規追加
+        // 🔥 新規追加: author_roleを設定
+        author_role: session?.user?.role === 'admin' ? 'admin' : 'user',
       };
 
       // 🔥 店舗の位置情報を設定
