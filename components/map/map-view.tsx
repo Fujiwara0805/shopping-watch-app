@@ -747,7 +747,7 @@ export function MapView() {
                 <span className="text-xs font-medium">現在地</span>
               </div>
               <div className="text-xs text-gray-600">
-              半径5km圏内＝緑色のエリア
+              緑色のエリア＝投稿閲覧範囲
               </div>
             </div>
           </div>
