@@ -55,8 +55,8 @@ export function MapView() {
   const [userLocationMarker, setUserLocationMarker] = useState<google.maps.Marker | null>(null);
   const [userLocationCircle, setUserLocationCircle] = useState<google.maps.Circle | null>(null);
   
-  // 🔥 5km圏内の範囲表示・非表示の状態管理（デフォルト：非表示）
-  const [showRangeCircle, setShowRangeCircle] = useState(false);
+  // 🔥 5km圏内の範囲表示・非表示の状態管理（デフォルト：表示）
+  const [showRangeCircle, setShowRangeCircle] = useState(true);
 
   // 改良されたガイド表示制御（許可状態を考慮）
   useEffect(() => {
@@ -231,7 +231,7 @@ export function MapView() {
           case 'safari':
             return {
               ...baseOptions,
-              zoom: 14,
+              zoom: 15,
               gestureHandling: 'cooperative'
             };
           
@@ -283,9 +283,9 @@ export function MapView() {
             
             // ブラウザ別のズーム調整
             if (browserInfo.name === 'safari') {
-              newMap.setZoom(15);
+              newMap.setZoom(13);
             } else if (browserInfo.name === 'firefox') {
-              newMap.setZoom(15);
+              newMap.setZoom(13);
             }
           }
         }, resizeDelay);
@@ -407,8 +407,8 @@ export function MapView() {
 
       map.panTo(userPosition);
       const currentZoom = map.getZoom();
-      if (currentZoom !== undefined && currentZoom < 15) {
-        map.setZoom(15);
+      if (currentZoom !== undefined && currentZoom < 13) {
+        map.setZoom(13);
       }
     }
   }, [map, latitude, longitude, mapInitialized, userLocationMarker, userLocationCircle, browserInfo.name, showRangeCircle]);
@@ -732,16 +732,35 @@ export function MapView() {
         className="w-full h-full"
       />
 
-      {/* 許可状態インジケーターと範囲表示切り替えボタン（左下に配置） */}
-      {isPermissionGranted && permissionRemainingMinutes > 0 && map && mapInitialized && (
-        <div className="absolute bottom-20 left-2 z-30 space-y-2">
-          {/* 位置情報有効インジケーター */}
-          <div className="bg-green-100 border border-green-300 rounded-lg px-3 py-2 text-sm text-green-800 shadow-lg">
-            <div className="flex items-center">
-              <Clock className="h-4 w-4 mr-2" />
-              位置情報有効（残り{permissionRemainingMinutes}分）
+      {/* 説明テキストと範囲表示切り替えボタン（左下に配置） */}
+      {map && mapInitialized && (
+        <div className="absolute bottom-8 left-2 z-30 space-y-2">
+          {/* 現在地と範囲の説明テキスト */}
+          <div className="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-800 shadow-lg max-w-xs">
+            <div className="space-y-1">
+              <div className="flex items-center">
+                <img 
+                  src="https://res.cloudinary.com/dz9trbwma/image/upload/v1749098791/%E9%B3%A9_azif4f.png" 
+                  alt="現在地" 
+                  className="h-4 w-4 mr-2" 
+                />
+                <span className="text-xs font-medium">現在地</span>
+              </div>
+              <div className="text-xs text-gray-600">
+              半径5km圏内＝緑色のエリア
+              </div>
             </div>
           </div>
+          
+          {/* 位置情報有効インジケーター */}
+          {/* {isPermissionGranted && permissionRemainingMinutes > 0 && (
+            <div className="bg-green-100 border border-green-300 rounded-lg px-3 py-2 text-sm text-green-800 shadow-lg">
+              <div className="flex items-center">
+                <Clock className="h-4 w-4 mr-2" />
+                位置情報有効（残り{permissionRemainingMinutes}分）
+              </div>
+            </div>
+          )} */}
           
           {/* 🔥 範囲表示切り替えボタン */}
           <motion.div
