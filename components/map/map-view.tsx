@@ -283,9 +283,9 @@ export function MapView() {
             
             // ブラウザ別のズーム調整
             if (browserInfo.name === 'safari') {
-              newMap.setZoom(13);
+              newMap.setZoom(12.5);
             } else if (browserInfo.name === 'firefox') {
-              newMap.setZoom(13);
+              newMap.setZoom(12.5);
             }
           }
         }, resizeDelay);
