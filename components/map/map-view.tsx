@@ -231,14 +231,14 @@ export function MapView() {
           case 'safari':
             return {
               ...baseOptions,
-              zoom: 15,
+              zoom: 13,
               gestureHandling: 'cooperative'
             };
           
           case 'firefox':
             return {
               ...baseOptions,
-              zoom: 15,
+              zoom: 13,
               gestureHandling: 'greedy',
               // Firefox では追加の最適化
               draggableCursor: 'default'
@@ -248,14 +248,14 @@ export function MapView() {
           case 'edge':
             return {
               ...baseOptions,
-              zoom: 15,
+              zoom: 13,
               gestureHandling: 'greedy'
             };
           
           default:
             return {
               ...baseOptions,
-              zoom: 15,
+              zoom: 13,
               gestureHandling: 'greedy'
             };
         }
