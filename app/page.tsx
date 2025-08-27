@@ -7,35 +7,96 @@ import { motion, AnimatePresence, PanInfo } from 'framer-motion';
 import { ArrowRight, ShoppingCart, MapPin, Bell, Users, Menu, X, Leaf, ChevronDown, Circle, ListTodo, Newspaper } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-// タブ切り替えのコンポーネント
-const LPTabs = ({ activeTab, setActiveTab }: { activeTab: string; setActiveTab: (tab: string) => void }) => (
-  <div className="flex items-center justify-center mt-4">
-    <div className="bg-background/80 backdrop-blur-sm border rounded-full p-1">
-      <button
-        onClick={() => setActiveTab('normal')}
-        className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-          activeTab === 'normal' 
-            ? 'bg-primary text-primary-foreground shadow-sm' 
-            : 'text-muted-foreground hover:text-foreground'
-        }`}
+// スプラッシュ画面コンポーネント
+const SplashScreen = () => (
+  <motion.div 
+    className="fixed inset-0 z-50 bg-background flex items-center justify-center"
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    exit={{ opacity: 0 }}
+    transition={{ duration: 0.5 }}
+  >
+    <motion.div
+      initial={{ scale: 0.5, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      transition={{ 
+        duration: 0.8, 
+        ease: "easeOut",
+        delay: 0.2 
+      }}
+      className="flex flex-col items-center"
+    >
+      <motion.img 
+        src="https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png" 
+        alt="トクドク" 
+        className="h-32 w-32 drop-shadow-lg"
+        animate={{ 
+          rotate: [0, 5, -5, 0],
+          scale: [1, 1.05, 1]
+        }}
+        transition={{ 
+          duration: 2,
+          repeat: Infinity,
+          repeatType: "reverse",
+          ease: "easeInOut"
+        }}
+      />
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.8, duration: 0.5 }}
+        className="mt-8"
       >
-        通常版
-      </button>
-      <button
-        onClick={() => setActiveTab('swipe')}
-        className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-          activeTab === 'swipe' 
-            ? 'bg-primary text-primary-foreground shadow-sm' 
-            : 'text-muted-foreground hover:text-foreground'
-        }`}
-      >
-        スワイプ版
-      </button>
-    </div>
-  </div>
+        <div className="flex space-x-1">
+          {[0, 1, 2].map((i) => (
+            <motion.div
+              key={i}
+              className="w-2 h-2 bg-primary rounded-full"
+              animate={{ opacity: [0.3, 1, 0.3] }}
+              transition={{
+                duration: 1.5,
+                repeat: Infinity,
+                delay: i * 0.2,
+                ease: "easeInOut"
+              }}
+            />
+          ))}
+        </div>
+      </motion.div>
+    </motion.div>
+  </motion.div>
 );
 
+// タブ切り替えのコンポーネント
+// const LPTabs = ({ activeTab, setActiveTab }: { activeTab: string; setActiveTab: (tab: string) => void }) => (
+//   <div className="flex items-center justify-center mt-4">
+//     <div className="bg-background/80 backdrop-blur-sm border rounded-full p-1">
+//       <button
+//         onClick={() => setActiveTab('normal')}
+//         className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+//           activeTab === 'normal' 
+//             ? 'bg-primary text-primary-foreground shadow-sm' 
+//             : 'text-muted-foreground hover:text-foreground'
+//         }`}
+//       >
+//         通常版
+//       </button>
+//       <button
+//         onClick={() => setActiveTab('swipe')}
+//         className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+//           activeTab === 'swipe' 
+//             ? 'bg-primary text-primary-foreground shadow-sm' 
+//             : 'text-muted-foreground hover:text-foreground'
+//         }`}
+//       >
+//         スワイプ版
+//       </button>
+//     </div>
+//   </div>
+// );
+
 // スワイプインジケーターコンポーネント
+
 const SwipeIndicator = ({ currentSection, totalSections, onSectionClick }: { currentSection: number; totalSections: number; onSectionClick: (index: number) => void }) => (
   <div className="fixed right-4 top-1/2 transform -translate-y-1/2 z-50 flex flex-col space-y-3">
     {Array.from({ length: totalSections }).map((_, index) => (
@@ -665,8 +726,9 @@ export default function Home() {
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrollPosition, setScrollPosition] = useState(0);
-  const [activeTab, setActiveTab] = useState('swipe');
+  const [activeTab, setActiveTab] = useState('normal');
   const [isMobileScreen, setIsMobileScreen] = useState(false);
+  const [showSplash, setShowSplash] = useState(false);
   
   useEffect(() => {
     // SafeAreaのための変数設定
@@ -679,88 +741,88 @@ export default function Home() {
     
     // 画面サイズ判定
     const checkMobile = () => {
-      setIsMobileScreen(window.innerWidth < 768); // Tailwindのmdブレークポイントを使用
+      const isMobile = window.innerWidth < 768;
+      setIsMobileScreen(isMobile);
+      
+      // モバイルの場合はスプラッシュ画面を表示
+      if (isMobile) {
+        setShowSplash(true);
+        // 2秒後にオンボーディング画面に遷移
+        setTimeout(() => {
+          localStorage.removeItem('hasSeenOnboarding');
+          router.push('/onboarding');
+        }, 2000);
+      }
     };
     
     checkMobile(); // 初期チェック
     window.addEventListener('resize', checkMobile); // リサイズ時に更新
-
-    // ここにあった初期リダイレクトロジックは削除します。
-    // ランディングページは常に表示されるようにし、オンボーディングは「さっそく始める」ボタンから遷移させます。
     
     // スクロール位置の監視（NormalLPの場合のみ）
     const handleScroll = () => {
       setScrollPosition(window.scrollY);
     };
     
-    // NormalLPがアクティブな場合のみスクロールイベントリスナーを設定
-    if (!isMobileScreen && activeTab === 'normal') { // PCの場合のみNormalLPが選択されるので、isMobileScreenも考慮
-      window.addEventListener('scroll', handleScroll);
-    } else if (isMobileScreen && activeTab === 'normal') { // モバイルでNormalLPが選択された場合
+    // PCの場合のみスクロールイベントリスナーを設定
+    if (!isMobileScreen) {
       window.addEventListener('scroll', handleScroll);
     }
     
     return () => {
       window.removeEventListener('resize', checkMobile);
-      window.removeEventListener('scroll', handleScroll); // クリーンアップ関数を常に返す
+      window.removeEventListener('scroll', handleScroll);
     };
-  }, [activeTab, isMobileScreen]);
+  }, [router, isMobileScreen]);
 
   // モバイルメニューを開いた時にスクロールを無効化
   useEffect(() => {
     if (mobileMenuOpen) {
       document.body.style.overflow = 'hidden';
     } else {
-      // モバイルメニューが閉じられた時は、アクティブタブと画面サイズに応じてoverflowを設定
-      if (isMobileScreen && activeTab === 'swipe') {
-        document.body.style.overflow = 'hidden'; // SwipeLPはoverflow: hidden;を維持
-      } else {
-        document.body.style.overflow = 'auto'; // NormalLPまたはPCではoverflow: auto;
-      }
+      document.body.style.overflow = 'auto';
     }
     return () => {
       document.body.style.overflow = '';
     };
-  }, [mobileMenuOpen, activeTab, isMobileScreen]);
+  }, [mobileMenuOpen]);
 
-  // onboardingへ遷移する関数 - ここを/timelineへ変更
+  // onboardingへ遷移する関数
   const goToOnboarding = () => {
-    // isMobileScreen の状態に応じて遷移先を決定
     if (isMobileScreen) {
-      localStorage.removeItem('hasSeenOnboarding'); // モバイルの場合のみオンボーディングを再度表示
-      router.push('/onboarding'); // オンボーディングページへ遷移
+      localStorage.removeItem('hasSeenOnboarding');
+      router.push('/onboarding');
     } else {
-      // PCの場合
-      router.push('/timeline'); // タイムラインへ遷移
+      router.push('/timeline');
     }
   };
 
+  // モバイルでスプラッシュ画面を表示中の場合
+  if (isMobileScreen && showSplash) {
+    return (
+      <AnimatePresence>
+        <SplashScreen />
+      </AnimatePresence>
+    );
+  }
+
   return (
     <main className="min-h-screen bg-background">
-      {/* ヘッダー */}
-      <nav 
-        className={`fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-sm border-b transition-all duration-300 pt-[var(--sat)] ${
-          scrollPosition > 10 ? 'shadow-sm' : ''
-        }`}
-      >
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <div className="rounded-full p-2">
-              <img src="https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png" alt="App Icon" className="h-12 w-12 object-contain" />
+      {/* ヘッダー - PCのみ表示 */}
+      {!isMobileScreen && (
+        <nav 
+          className={`fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-sm border-b transition-all duration-300 pt-[var(--sat)] ${
+            scrollPosition > 10 ? 'shadow-sm' : ''
+          }`}
+        >
+          <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <div className="rounded-full p-2">
+                <img src="https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png" alt="App Icon" className="h-12 w-12 object-contain" />
+              </div>
             </div>
-          </div>
-          
-          {/* モバイル版のタブ切り替えを中央に配置 (md以下で表示) */}
-          <div className="flex-grow flex justify-center md:hidden">
-            <LPTabs activeTab={activeTab} setActiveTab={setActiveTab} />
-          </div>
 
-          {/* デスクトップ用ナビゲーションとモバイル用メニューボタンを統合 */}
-          <div className="flex items-center space-x-4">
-            {/* デスクトップ用ナビゲーション (md以上で表示) */}
-            <div className="hidden md:flex items-center space-x-4">
-              {/* PC画面ではタブ切り替えを非表示にする */}
-              {/* <LPTabs activeTab={activeTab} setActiveTab={setActiveTab} /> */}
+            {/* デスクトップ用ナビゲーション */}
+            <div className="flex items-center space-x-4">
               <Button variant="ghost" asChild className="h-10 px-4 rounded-full">
                 <Link href="/login">ログイン</Link>
               </Button>
@@ -768,38 +830,13 @@ export default function Home() {
                 <Link href="/register">新規登録</Link>
               </Button>
             </div>
-            
-            {/* モバイル用メニューボタン (md以下で表示) */}
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="rounded-full md:hidden"
-            >
-              <Menu className="h-6 w-6" />
-            </Button>
           </div>
-        </div>
-      </nav>
+        </nav>
+      )}
 
-      {/* コンテンツ - 画面サイズとアクティブなタブに基づいてレンダリングを条件付け */}
-      {isMobileScreen ? ( // モバイル画面の場合
-        activeTab === 'normal' ? (
-          <NormalLP 
-            goToOnboarding={goToOnboarding}
-            mobileMenuOpen={mobileMenuOpen}
-            setMobileMenuOpen={setMobileMenuOpen}
-            scrollPosition={scrollPosition}
-          />
-        ) : ( // activeTabが'swipe'の場合
-          <SwipeLP 
-            goToOnboarding={goToOnboarding} 
-            mobileMenuOpen={mobileMenuOpen} 
-            setMobileMenuOpen={setMobileMenuOpen} 
-          />
-        )
-      ) : ( // PC画面の場合
-        <NormalLP // PCでは常にNormalLPを表示
+      {/* コンテンツ - PCの場合のみNormalLPを表示 */}
+      {!isMobileScreen && (
+        <NormalLP 
           goToOnboarding={goToOnboarding}
           mobileMenuOpen={mobileMenuOpen}
           setMobileMenuOpen={setMobileMenuOpen}
