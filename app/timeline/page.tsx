@@ -1622,9 +1622,15 @@ export default function Timeline() {
   };
 
   // 🔥 位置情報取得の関数を修正（自動投稿取得を制御可能に）
-  const getCurrentLocation = useCallback((autoFetch = true) => {
+  const getCurrentLocation = useCallback((autoFetch = true, forceRefresh = false) => {
     setIsRequestingLocation(true);
     setLocationError(null);
+    
+    // 🔥 強制更新の場合は保存された位置情報を削除
+    if (forceRefresh) {
+      localStorage.removeItem('userLocation');
+      console.log('位置情報を強制リセットしました');
+    }
     
     if (!navigator.geolocation) {
       setLocationError('位置情報が利用できません');
@@ -1645,7 +1651,7 @@ export default function Timeline() {
           return;
         }
 
-        // 位置情報を取得
+        // 位置情報を取得（強制更新の場合はmaxAgeを0に設定）
         navigator.geolocation.getCurrentPosition(
           (position) => {
             const locationData = {
@@ -1653,22 +1659,23 @@ export default function Timeline() {
               longitude: position.coords.longitude,
             };
             
+            console.log('新しい位置情報を取得しました:', locationData);
+            
             // 🔥 ローカル状態を更新
             setUserLocation(locationData);
             setLocationPermissionState('granted');
             setShowLocationModal(false);
             setIsRequestingLocation(false);
             
-            // 🔥 ローカルストレージの既存データを削除してから新しいデータを保存
+            // 🔥 新しい位置情報をローカルストレージに保存
             try {
-              localStorage.removeItem('userLocation'); // 既存データを削除
               localStorage.setItem('userLocation', JSON.stringify({
                 ...locationData,
                 timestamp: Date.now(),
                 // 5分間有効
                 expiresAt: Date.now() + (5 * 60 * 1000)
               }));
-              console.log('位置情報をlocalStorageに保存しました:', locationData);
+              console.log('新しい位置情報をlocalStorageに保存しました:', locationData);
             } catch (error) {
               console.warn('位置情報の保存に失敗しました:', error);
             }
@@ -1692,7 +1699,11 @@ export default function Timeline() {
             setIsRequestingLocation(false);
             reject(error);
           },
-          { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
+          { 
+            enableHighAccuracy: true, 
+            timeout: 15000, // タイムアウトを15秒に延長
+            maximumAge: forceRefresh ? 0 : 300000 // 🔥 強制更新の場合はキャッシュを使用しない
+          }
         );
       }).catch(() => {
         // permissions API が使用できない場合は直接位置情報を取得
@@ -1703,22 +1714,23 @@ export default function Timeline() {
               longitude: position.coords.longitude,
             };
             
+            console.log('新しい位置情報を取得しました:', locationData);
+            
             // 🔥 ローカル状態を更新
             setUserLocation(locationData);
             setLocationPermissionState('granted');
             setShowLocationModal(false);
             setIsRequestingLocation(false);
             
-            // 🔥 ローカルストレージの既存データを削除してから新しいデータを保存
+            // 🔥 新しい位置情報をローカルストレージに保存
             try {
-              localStorage.removeItem('userLocation'); // 既存データを削除
               localStorage.setItem('userLocation', JSON.stringify({
                 ...locationData,
                 timestamp: Date.now(),
                 // 5分間有効
                 expiresAt: Date.now() + (5 * 60 * 1000)
               }));
-              console.log('位置情報をlocalStorageに保存しました:', locationData);
+              console.log('新しい位置情報をlocalStorageに保存しました:', locationData);
             } catch (error) {
               console.warn('位置情報の保存に失敗しました:', error);
             }
@@ -1742,7 +1754,11 @@ export default function Timeline() {
             setIsRequestingLocation(false);
             reject(error);
           },
-          { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
+          { 
+            enableHighAccuracy: true, 
+            timeout: 15000, // タイムアウトを15秒に延長
+            maximumAge: forceRefresh ? 0 : 300000 // 🔥 強制更新の場合はキャッシュを使用しない
+          }
         );
       });
     });
@@ -1997,7 +2013,7 @@ export default function Timeline() {
 
   // 🔥 更新ボタンのハンドラーを修正（ローディング状態を追加）
   const handleRefresh = useCallback(async () => {
-    console.log('更新ボタンが押されました - 位置情報のリセットと再取得、投稿の更新を実行します');
+    console.log('更新ボタンが押されました - 位置情報の強制リセットと再取得、投稿の更新を実行します');
     
     setIsRefreshing(true); // ローディング開始
     
@@ -2006,13 +2022,8 @@ export default function Timeline() {
       localStorage.removeItem('userLocation');
       console.log('ローカルストレージの位置情報をリセットしました');
       
-      // 🔥 位置情報を再取得（自動投稿取得は無効にして手動制御）
-      await getCurrentLocation(false);
-      
-      // 🔥 位置情報取得完了後に投稿を再取得
-      if (fetchPostsRef.current) {
-        fetchPostsRef.current(0, true, debouncedSearchTerm);
-      }
+      // 🔥 位置情報を強制再取得（キャッシュを使用しない）
+      await getCurrentLocation(true, true); // forceRefresh = true
       
       console.log('更新処理が完了しました');
     } catch (error) {
@@ -2120,7 +2131,41 @@ export default function Timeline() {
     return colors[audience] || 'bg-gray-100 text-gray-800 border-gray-300';
   };
 
-  if (loading && posts.length === 0) {
+  // 🔥 新規追加: 初回ローディング状態を管理
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+
+  // �� 修正: 位置情報を初期化時に必ずリセットして取得
+  useEffect(() => {
+    // 🔥 画面遷移時には必ずローディング状態にして位置情報をリセット
+    console.log('おとく板画面に遷移しました - 位置情報をリセットして再取得します');
+    
+    setIsInitialLoading(true);
+    setLoading(true);
+    setPosts([]);
+    setError(null);
+    
+    // 🔥 保存された位置情報を強制的に削除
+    localStorage.removeItem('userLocation');
+    console.log('保存された位置情報をクリアしました');
+    
+    // 🔥 位置情報を必ず新規取得（キャッシュを使用しない）
+    getCurrentLocation(true)
+      .then(() => {
+        console.log('位置情報の取得が完了しました');
+      })
+      .catch((error) => {
+        console.error('位置情報の取得に失敗しました:', error);
+        // 管理者でない場合のみエラー表示
+        if (currentUserRole !== 'admin') {
+          setError('投稿を表示するには位置情報が必要です');
+        }
+      })
+      .finally(() => {
+        setIsInitialLoading(false);
+      });
+  }, []); // �� 依存配列を空にして、画面遷移時のみ実行
+
+  if ((loading && posts.length === 0) || isInitialLoading) {
     return (
       <AppLayout>
         <div className="sticky top-0 z-10 border-b p-4 flex items-center space-x-2 bg-[#73370c]">
@@ -2141,17 +2186,19 @@ export default function Timeline() {
               autoCorrect="off"
               autoCapitalize="off"
               spellCheck="false"
+              disabled={isInitialLoading} // 🔥 初回ローディング中は無効化
             />
             <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center">
-              {isSearching && generalSearchTerm ? (
-                <Loader2 className="h-4 w-4 text-muted-foreground animate-spin" />
-              ) : (
-                <Search className="h-4 w-4 text-muted-foreground" />
-              )}
+              <Loader2 className="h-4 w-4 text-muted-foreground animate-spin" />
             </div>
           </div>
           {isMobile && (
-            <Button onClick={() => setShowFilterModal(true)} variant="outline" className="relative">
+            <Button 
+              onClick={() => setShowFilterModal(true)} 
+              variant="outline" 
+              className="relative"
+              disabled={isInitialLoading} // 🔥 初回ローディング中は無効化
+            >
               <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
               {activeFiltersCount > 0 && (
                 <Badge className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
@@ -2166,10 +2213,46 @@ export default function Timeline() {
           )}
         </div>
         
+        {/* 🔥 初回ローディング時の専用メッセージ */}
         <div className="p-4">
-          <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="text-center py-10">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 max-w-md mx-auto">
+              <Compass className="h-12 w-12 text-blue-600 mx-auto mb-4" />
+              <p className="text-blue-800 text-lg mb-2">現在地を取得しています</p>
+              <p className="text-blue-600 text-sm">
+                5km圏内のおトクな投稿を表示するために<br />
+                位置情報を取得中です...
+              </p>
+              <div className="mt-4">
+                <motion.div
+                  className="h-2 bg-blue-200 rounded-full overflow-hidden"
+                  initial={{ width: 0 }}
+                >
+                  <motion.div
+                    className="h-full bg-blue-600"
+                    animate={{ x: ['-100%', '100%'] }}
+                    transition={{
+                      duration: 1.5,
+                      repeat: Infinity,
+                      ease: "easeInOut"
+                    }}
+                  />
+                </motion.div>
+              </div>
+            </div>
+          </div>
+          
+          {/* スケルトンローディング */}
+          <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 mt-8">
             {[...Array(8)].map((_, i) => (
-              <Skeleton key={i} className="h-[400px] w-full rounded-xl" />
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: i * 0.1 }}
+              >
+                <Skeleton className="h-[400px] w-full rounded-xl" />
+              </motion.div>
             ))}
           </div>
         </div>
