@@ -24,8 +24,12 @@ import Link from "next/link";
 // フォームのバリデーションスキーマを定義
 const registerFormSchema = z.object({
   email: z.string().email({ message: "有効なメールアドレスを入力してください。" }),
-  password: z.string().min(6, { message: "パスワードは6文字以上で入力してください。" }),
-  confirmPassword: z.string().min(6, { message: "パスワード確認は6文字以上で入力してください。" }),
+  password: z.string()
+    .min(6, { message: "パスワードは6文字以上で入力してください。" })
+    .regex(/^[a-zA-Z0-9]+$/, { message: "パスワードは半角英数字のみ使用できます。" }),
+  confirmPassword: z.string()
+    .min(6, { message: "パスワード確認は6文字以上で入力してください。" })
+    .regex(/^[a-zA-Z0-9]+$/, { message: "パスワード確認は半角英数字のみ使用できます。" }),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "パスワードが一致しません。",
   path: ["confirmPassword"], // エラーをconfirmPasswordフィールドに表示

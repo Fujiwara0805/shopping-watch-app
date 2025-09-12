@@ -26,7 +26,9 @@ import Link from "next/link";
 
 const loginFormSchema = z.object({
   email: z.string().email({ message: "有効なメールアドレスを入力してください。" }),
-  password: z.string().min(6, { message: "パスワードは6文字以上で入力してください。" }),
+  password: z.string()
+    .min(6, { message: "パスワードは6文字以上で入力してください。" })
+    .regex(/^[a-zA-Z0-9]+$/, { message: "パスワードは半角英数字のみ使用できます。" }),
 });
 
 export default function LoginPage() {
@@ -194,7 +196,7 @@ export default function LoginPage() {
                         <div className="relative">
                           <Input
                             type={showPassword ? "text" : "password"}
-                            placeholder="6文字以上のパスワード"
+                            placeholder="半角英数字6文字以上"
                             {...field}
                             className="pr-10 text-[#73370c] border-[#73370c]/20 focus-visible:ring-[#73370c]"
                           />
