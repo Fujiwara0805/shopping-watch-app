@@ -1214,7 +1214,7 @@ export default function PostPage() {
                     </FormLabel>
                     <FormControl>
                       <Textarea
-                        placeholder="みんなに知らせたい日常生活のちょっとしたおトク(得・特・徳)な情報やこんなおトクな情報が欲しいといった要望を記入してください（240文字以内）"
+                        placeholder="日常生活のちょっとしたおとく情報を投稿してみよう！（240文字以内）"
                         className="resize-none"
                         style={{ fontSize: '16px', minHeight: '140px' }}
                         rows={7}
