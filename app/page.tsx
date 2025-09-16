@@ -331,7 +331,6 @@ export default function Home() {
         // 2秒後にオンボーディング画面判定処理
         setTimeout(() => {
           // 🔥 修正：永続的スキップフラグをチェック
-          const hasSeenOnboarding = localStorage.getItem('hasSeenOnboarding');
           const skipPermanently = localStorage.getItem('skipOnboardingPermanently');
           
           // 永続的にスキップするフラグがある場合は直接タイムラインに遷移
@@ -340,14 +339,8 @@ export default function Home() {
             return;
           }
           
-          // 通常のスキップフラグがない場合はオンボーディングを表示
-          if (hasSeenOnboarding !== 'true') {
-            localStorage.removeItem('hasSeenOnboarding'); // 念のためリセット
-            router.push('/onboarding');
-          } else {
-            // 既に見たことがある場合はタイムラインに遷移
-            router.push('/timeline');
-          }
+          // 🔥 修正：初回ユーザーまたは永続スキップしていないユーザーはオンボーディングを表示
+          router.push('/onboarding');
         }, 2000);
       }
     };

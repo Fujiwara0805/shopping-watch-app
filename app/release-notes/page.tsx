@@ -106,12 +106,102 @@ const getReleaseTypeBadge = (type: ReleaseType) => {
 // サンプルリリースノートデータ
 const releaseNotes: ReleaseNote[] = [
   {
+    version: '1.1.0',
+    date: '2025-09-16',
+    type: 'major',
+    title: '投稿システムの大幅刷新 - カテゴリ統合とクーポン機能の実装',
+    description: 'トクドクの投稿システムを大幅に改善しました。カテゴリとジャンルを統合し、より直感的な分類システムを実現。さらに、クーポン配布機能や来客状況の表示など、店舗と利用者をつなぐ新機能を多数追加しました。',
+    isLatest: true,
+    changes: [
+      {
+        type: 'new',
+        title: 'カテゴリシステムの統合',
+        description: 'ジャンルとカテゴリを統合し、「飲食店」「小売店」「イベント集客」「応援」「受け渡し」「雑談」の6つのカテゴリに再編。より分かりやすい投稿分類を実現しました。'
+      },
+      {
+        type: 'new',
+        title: '掲載期間の分単位設定',
+        description: '従来の時間単位から分単位に変更し、15分、30分、45分、60分の選択肢を追加。カスタム設定では最大12時間まで1分単位で設定可能になりました。'
+      },
+      {
+        type: 'new',
+        title: 'クーポン配布機能',
+        description: '投稿時にクーポン番号を設定でき、飲食店カテゴリで条件を満たした投稿には「クーポン配布中」バッジが表示されます。クーポンモーダルから画像として保存も可能です。'
+      },
+      {
+        type: 'new',
+        title: '残り枠数表示機能',
+        description: '投稿に残り枠数を設定可能。飲食店では「席」、小売店では「個」の単位で表示され、「残りわずか」のテキストで緊急性を演出します。'
+      },
+      {
+        type: 'new',
+        title: '来客状況表示機能',
+        description: '飲食店の投稿で現在の来客状況（男女別人数）を表示可能。男性は青、女性はピンクのアイコンで視覚的に分かりやすく表示されます。'
+      },
+      {
+        type: 'new',
+        title: 'PC版ランディングページのQR対応',
+        description: 'PC版でのボタンクリック時にQRコードモーダルを表示し、スマートフォンでのアクセスを促進する仕組みを実装しました。'
+      },
+      {
+        type: 'improvement',
+        title: '「いいね」ボタンの変更',
+        description: 'ハートアイコンを足跡アイコンに変更し、テキストを「行くよ」に変更。より親しみやすい表現になりました。'
+      },
+      {
+        type: 'improvement',
+        title: '投稿時間表示の改善',
+        description: '「○時間前」の表示を「17時30分投稿」のような具体的な時刻表示に変更し、より正確な情報を提供するようになりました。'
+      },
+      {
+        type: 'improvement',
+        title: '詳細情報の表示改善',
+        description: '詳細情報をデフォルトで展開表示に変更。「店舗情報」グループを削除し、各項目を独立したボタン形式で配置しました。'
+      },
+      {
+        type: 'improvement',
+        title: 'オンボーディング画面の改善',
+        description: '「スキップ」ボタンを「次回以降表示しない」に変更し、永続的にスキップできる機能を追加しました。'
+      },
+      {
+        type: 'improvement',
+        title: 'タイムライン画面の統一',
+        description: 'PC版とモバイル版のレイアウトを統一し、シンプルで一貫したユーザー体験を提供するようになりました。'
+      },
+      {
+        type: 'improvement',
+        title: 'カスタム時間設定モーダル',
+        description: 'カスタム掲載時間の設定を専用モーダルで行えるようになり、時間と分を直感的に選択できるUIを実装しました。'
+      },
+      {
+        type: 'improvement',
+        title: 'データベース構造の最適化',
+        description: 'postsテーブルに新しいフィールド（remaining_slots、coupon_code、customer_situation、custom_expiry_minutes）を追加し、新機能に対応しました。'
+      },
+      {
+        type: 'fix',
+        title: '投稿期間オプションの修正',
+        description: '既存の投稿期間データを新しい分単位システムに適応させるためのデータ移行処理を実装し、エラーを解消しました。'
+      },
+      {
+        type: 'fix',
+        title: 'カテゴリ制約エラーの解消',
+        description: '新しいカテゴリシステムに対応するため、データベース制約を更新し、既存データとの互換性問題を解決しました。'
+      },
+      {
+        type: 'breaking',
+        title: 'ジャンル機能の廃止',
+        description: 'ジャンルとカテゴリの統合により、従来のジャンル機能を廃止しました。既存の投稿は新しいカテゴリシステムに自動移行されます。'
+      }
+    ]
+  },
+  {
     version: '1.0.9',
     date: '2025-08-03',
     type: 'major',
     title: 'おすそわけ機能の実装 - 投稿者を直接応援できる新システム',
     description: 'トクドクに待望の「おすそわけ機能」が登場しました！おとくな情報を投稿してくれる方におすそわけ（応援購入）できる画期的な機能です。Stripe決済システムを導入し、安全で便利なおすそわけの仕組みを実現しました。',
-    isLatest: true,
+    isLatest: false, // 🔥 変更: false に設定
     changes: [
       {
         type: 'new',
@@ -742,7 +832,7 @@ export default function ReleaseNotesPage() {
         >
           <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 text-center border border-blue-200">
             <Smartphone className="h-6 w-6 mx-auto text-blue-600 mb-2" />
-            <p className="text-lg font-bold text-blue-900">v1.0.9</p>
+            <p className="text-lg font-bold text-blue-900">v1.1.0</p>
             <p className="text-xs text-blue-700">現在のバージョン</p>
           </div>
           <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4 text-center border border-green-200">
