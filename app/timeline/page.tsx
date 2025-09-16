@@ -2533,9 +2533,13 @@ export default function Timeline() {
               )}
             </div>
           </div>
-
-      {/* 以下のモーダル部分は変更なし */}
-      {/* ... 既存のモーダルコード ... */}
+      {/* 🔥 追加：コメントモーダル */}
+      <CommentsModal
+        post={commentsModal.post}
+        isOpen={commentsModal.isOpen}
+        onClose={handleCloseCommentsModal}
+        currentUserId={currentUserId}
+      />
     </AppLayout>
   );
 }
