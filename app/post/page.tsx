@@ -1515,7 +1515,7 @@ export default function PostPage() {
                                                       description: `${place.name} (緯度: ${lat.toFixed(6)}, 経度: ${lng.toFixed(6)})`,
                                                       duration: 1000,
                                                     });
-                                                  } else {
+                                          } else {
                                                     console.warn("PostPage: Failed to get place details:", status);
                                                     setLocationStatus('error');
                                                     toast({
@@ -2154,7 +2154,7 @@ export default function PostPage() {
                       ))}
                     </SelectContent>
                   </Select>
-                </div>
+              </div>
                 
                 <div>
                   <Label className="text-sm font-medium">分</Label>
@@ -2173,8 +2173,8 @@ export default function PostPage() {
                       ))}
                     </SelectContent>
                   </Select>
-                </div>
               </div>
+            </div>
               
               <div className="bg-blue-50 border border-blue-200 rounded p-3">
                 <p className="text-sm text-blue-800">
@@ -2184,7 +2184,7 @@ export default function PostPage() {
                   )}
                 </p>
               </div>
-              
+
               <div className="flex justify-end space-x-3 pt-4">
                 <Button 
                   variant="outline" 

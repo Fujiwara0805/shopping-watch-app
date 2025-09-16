@@ -3,29 +3,11 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, MapPin, Bell, Users, Tag, Smartphone, ShoppingCart, MessageSquare, Share, Plus, StickyNote, MoreVertical } from 'lucide-react';
+import { ChevronLeft, ChevronRight, MapPin, Bell, Users, Tag, Smartphone, ShoppingCart, MessageSquare, Share, Plus, StickyNote, MoreVertical, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/common/logo';
 
 const onboardingSlides = [
-  // {
-  //   title: "お気に入りの店舗を登録",
-  //   description: "よく行くスーパーや近所のお店を登録できます。お気に入りに追加すると、お得な情報をいち早くゲットできます。",
-  //   icon: <MapPin className="w-16 h-16 sm:w-20 sm:h-20 text-primary" />,
-  //   color: "bg-primary/10"
-  // },
-  // {
-  //   title: "お得な情報をシェア",
-  //   description: "あなたが見つけたお得な商品をみんなと共有しましょう。写真、価格、お店の情報を簡単に投稿できます。",
-  //   icon: <Tag className="w-16 h-16 sm:w-20 sm:h-20 text-[#FFEB3B]" />,
-  //   color: "bg-[#FFEB3B]/10"
-  // },
-  // {
-  //   title: "タイムラインで確認",
-  //   description: "他のユーザーが投稿した近所のお得な情報をタイムラインでチェック。カテゴリやお店で絞り込みも可能です。",
-  //   icon: <Users className="w-16 h-16 sm:w-20 sm:h-20 text-[#E53935]" />,
-  //   color: "bg-[#E53935]/10"
-  // },
   {
     title: "アプリ登録をしよう！",
     description: (
@@ -59,7 +41,7 @@ const onboardingSlides = [
     description: (
       <span>
         現在地から5km圏内の投稿に限定して表示される掲示板です。
-        日常生活のおとく（得・特・徳など）情報を気軽に投稿してみよう！
+        日常生活のおとく情報を気軽に投稿してみよう！
       </span>
     ),
     icon: <MessageSquare className="w-16 h-16 sm:w-20 sm:h-20 text-[#9C27B0]" />,
@@ -100,8 +82,10 @@ export default function Onboarding() {
     }
   };
 
-  const skipOnboarding = () => {
+  // 🔥 修正：次回以降表示しない処理
+  const skipOnboardingPermanently = () => {
     localStorage.setItem('hasSeenOnboarding', 'true');
+    localStorage.setItem('skipOnboardingPermanently', 'true'); // 🔥 追加：永続的にスキップするフラグ
     router.push('/timeline');
   };
 
@@ -152,12 +136,16 @@ export default function Onboarding() {
           </div>
           {/* <span className="font-bold text-xl tracking-wider">トクドク</span> */}
         </div>
+        {/* 🔥 修正：スキップボタンを「次回以降表示しない」に変更 */}
         <Button 
           variant="ghost" 
-          onClick={skipOnboarding}
-          className="text-muted-foreground text-lg"
+          onClick={skipOnboardingPermanently}
+          className="text-muted-foreground text-sm px-2 py-1 h-auto flex items-center space-x-1"
+          title="次回以降このオンボーディング画面を表示しません"
         >
-          スキップ
+          <X className="h-4 w-4" />
+          <span className="hidden sm:inline">次回以降表示しない</span>
+          <span className="sm:hidden">非表示</span>
         </Button>
       </header>
       
