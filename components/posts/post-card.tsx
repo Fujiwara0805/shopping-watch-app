@@ -288,42 +288,39 @@ const getCategoryColor = (category: string) => {
   }
 };
 
-// 🔥 新規追加：来客状況を解析して表示するコンポーネント
+// 🔥 修正：来客状況を解析して表示するコンポーネント
 const CustomerSituationDisplay = memo(({ customerSituation }: { customerSituation: string }) => {
-  // 来客状況の文字列から人数を抽出
+  // 来客状況の文字列から人数を抽出（総人数なし）
   const parseCustomerSituation = (situation: string) => {
-    // "総人数: 10名, 男性: 4名, 女性: 6名" の形式から抽出
-    const totalMatch = situation.match(/総人数:\s*(\d+)/);
+    // "男性: 4人, 女性: 6人" の形式から抽出
     const maleMatch = situation.match(/男性:\s*(\d+)/);
     const femaleMatch = situation.match(/女性:\s*(\d+)/);
     
     return {
-      total: totalMatch ? parseInt(totalMatch[1]) : 0,
       male: maleMatch ? parseInt(maleMatch[1]) : 0,
       female: femaleMatch ? parseInt(femaleMatch[1]) : 0
     };
   };
 
-  const { total, male, female } = parseCustomerSituation(customerSituation);
+  const { male, female } = parseCustomerSituation(customerSituation);
 
   return (
     <div className="flex items-center space-x-3">
-      <div className="flex items-center space-x-1 bg-gray-100 px-3 py-1.5 rounded-md">
-        <Users className="h-4 w-4 text-gray-600" />
-        <span className="text-sm font-medium text-gray-700">{total}</span>
-      </div>
-      
       {/* 男性の人数 */}
-      <div className="flex items-center space-x-1 bg-blue-100 px-3 py-1.5 rounded-md">
-        <User className="h-4 w-4 text-blue-600" />
-        <span className="text-sm font-medium text-blue-700">{male}</span>
-      </div>
+      {male > 0 && (
+        <div className="flex items-center space-x-1 bg-blue-100 px-3 py-1.5 rounded-md">
+          <User className="h-4 w-4 text-blue-600" />
+          <span className="text-sm font-medium text-blue-700">{male}</span>
+        </div>
+      )}
       
       {/* 女性の人数 */}
-      <div className="flex items-center space-x-1 bg-pink-100 px-3 py-1.5 rounded-md">
-        <UserCheck className="h-4 w-4 text-pink-600" />
-        <span className="text-sm font-medium text-pink-700">{female}</span>
-      </div>
+      {female > 0 && (
+        <div className="flex items-center space-x-1 bg-pink-100 px-3 py-1.5 rounded-md">
+          <UserCheck className="h-4 w-4 text-pink-600" />
+          <span className="text-sm font-medium text-pink-700">{female}</span>
+        </div>
+      )}
     </div>
   );
 });

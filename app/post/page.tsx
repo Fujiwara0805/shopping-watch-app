@@ -12,7 +12,6 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { cn } from '@/lib/utils';
@@ -871,7 +870,6 @@ export default function PostPage() {
             break;
           case 'customerSituation':
             form.setValue('customerSituation', '', { shouldValidate: true });
-            setTotalCustomers(undefined);
             setMaleCustomers(undefined);
             setFemaleCustomers(undefined);
             break;
@@ -1068,32 +1066,34 @@ export default function PostPage() {
     }
   };
 
-  // 🔥 来客状況の更新処理
+  // 🔥 来客状況の更新処理を修正（男性・女性の両方を確実に保存）
   const updateCustomerSituation = () => {
     let situation = '';
     
-    if (totalCustomers !== undefined && totalCustomers > 0) {
-      situation += `総人数: ${totalCustomers}人`;
+    // 男性・女性の人数が入力されている場合のみ処理
+    if (maleCustomers !== undefined || femaleCustomers !== undefined) {
+      const parts = [];
       
-      // 男性・女性の人数が入力されている場合は必ず含める（0でも表示）
-      if (maleCustomers !== undefined || femaleCustomers !== undefined) {
-        const parts = [];
-        
-        // 男性の人数（0でも表示）
-        if (maleCustomers !== undefined) {
-          parts.push(`男性: ${maleCustomers}人`);
-        }
-        
-        // 女性の人数（0でも表示）
-        if (femaleCustomers !== undefined) {
-          parts.push(`女性: ${femaleCustomers}人`);
-        }
-        
-        if (parts.length > 0) {
-          situation += ` (${parts.join(', ')})`;
-        }
+      // 男性の人数（0でも表示）
+      if (maleCustomers !== undefined) {
+        parts.push(`男性: ${maleCustomers}人`);
+      }
+      
+      // 女性の人数（0でも表示）
+      if (femaleCustomers !== undefined) {
+        parts.push(`女性: ${femaleCustomers}人`);
+      }
+      
+      if (parts.length > 0) {
+        situation = parts.join(', ');
       }
     }
+    
+    console.log('updateCustomerSituation:', { 
+      maleCustomers, 
+      femaleCustomers, 
+      situation 
+    }); // デバッグログ追加
     
     form.setValue('customerSituation', situation);
   };
@@ -1101,53 +1101,25 @@ export default function PostPage() {
   // 🔥 男性数変更時の処理を修正
   const handleMaleCustomersChange = (value: string) => {
     const num = value === '' ? undefined : parseInt(value, 10);
+    console.log('handleMaleCustomersChange:', { value, num }); // デバッグログ追加
     setMaleCustomers(num);
-    
-    // 総人数が設定されていて、男性数が入力された場合、女性数を自動計算
-    if (totalCustomers !== undefined && num !== undefined && num <= totalCustomers) {
-      const calculatedFemale = totalCustomers - num;
-      setFemaleCustomers(calculatedFemale >= 0 ? calculatedFemale : 0);
-    }
-    
-    setTimeout(updateCustomerSituation, 0);
+    // 即座に更新するためsetTimeoutを削除
+    updateCustomerSituation();
   };
 
   // 🔥 女性数変更時の処理を修正
   const handleFemaleCustomersChange = (value: string) => {
     const num = value === '' ? undefined : parseInt(value, 10);
+    console.log('handleFemaleCustomersChange:', { value, num }); // デバッグログ追加
     setFemaleCustomers(num);
-    
-    // 総人数が設定されていて、女性数が入力された場合、男性数を自動計算
-    if (totalCustomers !== undefined && num !== undefined && num <= totalCustomers) {
-      const calculatedMale = totalCustomers - num;
-      setMaleCustomers(calculatedMale >= 0 ? calculatedMale : 0);
-    }
-    
-    setTimeout(updateCustomerSituation, 0);
+    // 即座に更新するためsetTimeoutを削除
+    updateCustomerSituation();
   };
 
-  // 🔥 総人数変更時の処理を修正
-  const handleTotalCustomersChange = (value: string) => {
-    const num = value === '' ? undefined : parseInt(value, 10);
-    setTotalCustomers(num);
-    
-    // 総人数が変更された場合、男性・女性数をリセット
-    if (num === undefined) {
-      setMaleCustomers(undefined);
-      setFemaleCustomers(undefined);
-    } else {
-      // 既存の男性・女性数が総人数を超える場合はリセット
-      if (maleCustomers !== undefined && maleCustomers > num) {
-        setMaleCustomers(undefined);
-        setFemaleCustomers(undefined);
-      } else if (femaleCustomers !== undefined && femaleCustomers > num) {
-        setMaleCustomers(undefined);
-        setFemaleCustomers(undefined);
-      }
-    }
-    
-    setTimeout(updateCustomerSituation, 0);
-  };
+  // 🔥 useEffectで状態変更時に確実に更新
+  useEffect(() => {
+    updateCustomerSituation();
+  }, [maleCustomers, femaleCustomers]);
 
   if (status === "loading") {
     return (
@@ -1806,42 +1778,21 @@ export default function PostPage() {
                                   来客状況
                                 </FormLabel>
                                 <div className="space-y-3">
-                                  {/* 総人数入力 */}
-                                  <div>
-                                    <Label className="text-sm">総人数</Label>
-                                    <Input
-                                      type="number"
-                                      min="0"
-                                      max="999"
-                                      placeholder="例: 15"
-                                      value={totalCustomers === undefined ? '' : String(totalCustomers)}
-                                      onChange={(e) => {
-                                        handleTotalCustomersChange(e.target.value);
-                                      }}
-                                      style={{ fontSize: '16px' }}
-                                      disabled={isUploading}
-                                      autoComplete="off"
-                                      autoCorrect="off"
-                                      autoCapitalize="off"
-                                      spellCheck="false"
-                                    />
-                                  </div>
-                                  
-                                  {/* 男女内訳 */}
+                                  {/* 男女内訳のみ */}
                                   <div className="grid grid-cols-2 gap-3">
                                     <div>
                                       <Label className="text-sm">男性</Label>
                                       <Input
                                         type="number"
                                         min="0"
-                                        max={totalCustomers || 999}
+                                        max="999"
                                         placeholder="例: 8"
                                         value={maleCustomers === undefined ? '' : String(maleCustomers)}
                                         onChange={(e) => {
                                           handleMaleCustomersChange(e.target.value);
                                         }}
                                         style={{ fontSize: '16px' }}
-                                        disabled={isUploading || totalCustomers === undefined}
+                                        disabled={isUploading}
                                         autoComplete="off"
                                         autoCorrect="off"
                                         autoCapitalize="off"
@@ -1853,14 +1804,14 @@ export default function PostPage() {
                                       <Input
                                         type="number"
                                         min="0"
-                                        max={totalCustomers || 999}
+                                        max="999"
                                         placeholder="例: 7"
                                         value={femaleCustomers === undefined ? '' : String(femaleCustomers)}
                                         onChange={(e) => {
                                           handleFemaleCustomersChange(e.target.value);
                                         }}
                                         style={{ fontSize: '16px' }}
-                                        disabled={isUploading || totalCustomers === undefined}
+                                        disabled={isUploading}
                                         autoComplete="off"
                                         autoCorrect="off"
                                         autoCapitalize="off"
@@ -1869,13 +1820,14 @@ export default function PostPage() {
                                     </div>
                                   </div>
                                   
-                                  {/* 計算結果の表示 */}
-                                  {totalCustomers !== undefined && (maleCustomers !== undefined || femaleCustomers !== undefined) && (
+                                  {/* プレビュー表示を修正 */}
+                                  {(maleCustomers !== undefined || femaleCustomers !== undefined) && (
                                     <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded">
                                       <p className="text-sm text-blue-800">
-                                        プレビュー: 総人数{totalCustomers}人
-                                        {maleCustomers !== undefined && ` (男性: ${maleCustomers}人`}
-                                        {femaleCustomers !== undefined && `, 女性: ${femaleCustomers}人)`}
+                                        プレビュー: 
+                                        {maleCustomers !== undefined && `男性: ${maleCustomers}人`}
+                                        {maleCustomers !== undefined && femaleCustomers !== undefined && ', '}
+                                        {femaleCustomers !== undefined && `女性: ${femaleCustomers}人`}
                                       </p>
                                     </div>
                                   )}
