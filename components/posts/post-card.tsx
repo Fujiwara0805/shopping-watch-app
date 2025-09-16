@@ -1136,7 +1136,7 @@ export const PostCard = memo(({
                                       isMyPost && "opacity-50 cursor-not-allowed hover:scale-100"
                                     )}
                                     disabled={isMyPost || isLoading}
-                                    title={isMyPost ? "自分の投稿にはおすそわけできません" : `¥${amount.toLocaleString()}でおすそわけする`}
+                                    title={isMyPost ? "自分の投稿にはお裾分けできません" : `¥${amount.toLocaleString()}でおすそわけする`}
                                   >
                                     {isLoading ? (
                                       <>
