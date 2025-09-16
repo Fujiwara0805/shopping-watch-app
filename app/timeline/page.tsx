@@ -103,17 +103,18 @@ interface PostFromDB {
 type SortOption = 'created_at_desc' | 'created_at_asc' | 'expires_at_asc' | 'distance_asc' | 'likes_desc' | 'views_desc' | 'comments_desc';
 type SearchMode = 'all' | 'category' | 'favorite_store' | 'liked_posts' | 'hybrid';
 
-// 🔥 更新されたカテゴリ分類（5つのカテゴリに変更）
+// 🔥 更新されたカテゴリ分類（6つのカテゴリに変更）
 const categoryOptions = [
   { value: '飲食店', label: '飲食店' },
   { value: '小売店', label: '小売店' },
   { value: 'イベント集客', label: 'イベント集客' },
   { value: '応援', label: '応援' },
   { value: '受け渡し', label: '受け渡し' },
+  { value: '雑談', label: '雑談' }, // 🔥 追加
 ];
 
 // 🔥 従来のgenreCategoriesを削除し、新しいカテゴリに対応
-const categories = ['すべて', '飲食店', '小売店', 'イベント集客', '応援', '受け渡し'];
+const categories = ['すべて', '飲食店', '小売店', 'イベント集客', '応援', '受け渡し', '雑談']; // 🔥 雑談を追加
 
 
 const SEARCH_RADIUS_METERS = 5000; // 5km
