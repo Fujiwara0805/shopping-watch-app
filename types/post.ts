@@ -3,7 +3,7 @@ export interface Post {
   app_profile_id: string;
   store_id: string | null;
   store_name: string | null;
-  category: string | null; // 🔥 カテゴリフィールド（飲食店、小売店、イベント集客、応援、受け渡し）
+  category: string | null; 
   content: string;
   image_urls: string | null; // JSON文字列
   rating?: number | null;

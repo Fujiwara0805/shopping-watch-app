@@ -5,21 +5,22 @@ import { useRef, useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
+import { Utensils, ShoppingBag, Calendar, Heart, HandCoins, MessageSquareText } from 'lucide-react';
 
 interface PostFilterProps {
   activeFilter: string;
   setActiveFilter: (filter: string) => void;
 }
 
+// 🔥 新しいカテゴリ定義（6つのカテゴリ）
 const categories = [
-  { id: 'all', name: 'すべて' },
-  { id: '惣菜', name: '惣菜' },
-  { id: '弁当', name: '弁当' },
-  { id: '肉', name: '肉' },
-  { id: '魚', name: '魚' },
-  { id: '野菜', name: '野菜' },
-  { id: '果物', name: '果物' },
-  { id: 'その他', name: 'その他' },
+  { id: 'all', name: 'すべて', icon: null },
+  { id: '飲食店', name: '飲食店', icon: Utensils },
+  { id: '小売店', name: '小売店', icon: ShoppingBag },
+  { id: 'イベント集客', name: 'イベント', icon: Calendar },
+  { id: '応援', name: '応援', icon: Heart },
+  { id: '受け渡し', name: '受け渡し', icon: HandCoins },
+  { id: '雑談', name: '雑談', icon: MessageSquareText },
 ];
 
 export function PostFilter({ activeFilter, setActiveFilter }: PostFilterProps) {
@@ -48,26 +49,30 @@ export function PostFilter({ activeFilter, setActiveFilter }: PostFilterProps) {
       
       <ScrollArea className="w-full" ref={scrollRef}>
         <div className="flex space-x-2 p-1">
-          {categories.map(category => (
-            <motion.div
-              key={category.id}
-              whileTap={{ scale: 0.95 }}
-            >
-              <Button
-                variant="outline"
-                size="sm"
-                className={cn(
-                  "relative rounded-full whitespace-nowrap",
-                  activeFilter === category.id 
-                    ? "bg-primary text-primary-foreground" 
-                    : "bg-background hover:bg-muted"
-                )}
-                onClick={() => setActiveFilter(category.id)}
+          {categories.map(category => {
+            const IconComponent = category.icon;
+            return (
+              <motion.div
+                key={category.id}
+                whileTap={{ scale: 0.95 }}
               >
-                {category.name}
-              </Button>
-            </motion.div>
-          ))}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className={cn(
+                    "relative rounded-full whitespace-nowrap flex items-center space-x-1 px-3 py-2",
+                    activeFilter === category.id 
+                      ? "bg-primary text-primary-foreground border-primary" 
+                      : "bg-background hover:bg-muted border-gray-300"
+                  )}
+                  onClick={() => setActiveFilter(category.id)}
+                >
+                  {IconComponent && <IconComponent className="h-3 w-3" />}
+                  <span className="text-sm">{category.name}</span>
+                </Button>
+              </motion.div>
+            );
+          })}
         </div>
         <ScrollBar orientation="horizontal" className="h-1.5" />
       </ScrollArea>

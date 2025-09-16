@@ -4,9 +4,8 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { LayoutGrid, Search, Star, MapPin, Loader2, SlidersHorizontal, Heart, Plus, X, AlertCircle, Menu, User, Edit, Store, HelpCircle, FileText, LogOut, Settings, Globe, NotebookText, Calculator, Zap, MessageSquare, Eye, Send, RefreshCw, UserPlus, Link as LinkIcon, ExternalLink, Instagram, Trash2, Flag, AlertTriangle, Compass,  Info } from 'lucide-react';
+import { LayoutGrid, Search,  Loader2, SlidersHorizontal,  X,  Menu, User, Edit, Store, HelpCircle, FileText, LogOut,  Globe, NotebookText,  Zap, MessageSquare, Eye, Send, RefreshCw, UserPlus, Link as LinkIcon,  Trash2,  AlertTriangle, Compass, Info, Footprints } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
-import { PostWithAuthor } from '@/types/post';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import AppLayout from '@/components/layout/app-layout';
@@ -185,7 +184,12 @@ const CommentItem = ({ comment, onDelete, currentUserId }: {
                   <Badge variant="secondary" className="text-xs">自分</Badge>
                 )}
                 <span className="text-xs text-gray-500">
-                  {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true, locale: ja })}
+                  {(() => {
+                    const date = new Date(comment.created_at);
+                    const hours = date.getHours();
+                    const minutes = date.getMinutes();
+                    return `${hours}時${minutes.toString().padStart(2, '0')}分投稿`;
+                  })()}
                 </span>
               </div>
               
@@ -501,7 +505,7 @@ const CommentsModal = ({
           <p className="text-sm text-gray-700">{post?.content}</p>
           <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500">
             <span className="flex items-center space-x-1">
-              <Heart className="h-3 w-3" />
+              <Footprints className="h-3 w-3" />
               <span>{post?.likes_count}</span>
             </span>
             <span className="flex items-center space-x-1">
@@ -1846,20 +1850,19 @@ export default function Timeline() {
   // 招待モーダルの状態を追加
   const [showInviteModal, setShowInviteModal] = useState(false);
 
-  // 🔥 ジャンル変更時にカテゴリーフィルターをリセットする機能を削除
-
-  // 🔥 選択されたジャンルに基づいて利用可能なカテゴリーを取得する関数を削除
 
   // 🔥 カテゴリのカラーリング関数を修正
   const getCategoryColor = (category: string) => {
-    const colors: Record<string, string> = {
-      '飲食店': 'bg-orange-100 text-orange-800 border-orange-200',
-      '小売店': 'bg-blue-100 text-blue-800 border-blue-200',
-      'イベント集客': 'bg-purple-100 text-purple-800 border-purple-200',
-      '応援': 'bg-pink-100 text-pink-800 border-pink-200',
-      '受け渡し': 'bg-green-100 text-green-800 border-green-200',
+    const colorMap: { [key: string]: string } = {
+      '飲食店': '#ea580c',      // orange-600
+      '小売店': '#2563eb',      // blue-600
+      'イベント集客': '#9333ea', // purple-600
+      '応援': '#dc2626',        // red-600
+      '受け渡し': '#16a34a',    // green-600
+      '雑談': '#4b5563',        // gray-600 🔥 追加
     };
-    return colors[category] || 'bg-gray-100 text-gray-800 border-gray-200';
+    
+    return colorMap[category] || '#6b7280'; // gray-500 as default
   };
 
   // デバイス判定の状態を追加
@@ -2935,7 +2938,7 @@ export default function Timeline() {
                 <SelectItem value="created_at_desc" className="text-lg py-3">新着順</SelectItem>
                 <SelectItem value="created_at_asc" className="text-lg py-3">古い順</SelectItem>
                 <SelectItem value="expires_at_asc" className="text-lg py-3">期限が近い順</SelectItem>
-                <SelectItem value="likes_desc" className="text-lg py-3">いいねが多い順</SelectItem>
+                <SelectItem value="likes_desc" className="text-lg py-3">行くよが多い順</SelectItem>
                 <SelectItem value="views_desc" className="text-lg py-3">表示回数が多い順</SelectItem>
                 <SelectItem value="comments_desc" className="text-lg py-3">コメントが多い順</SelectItem>
               </SelectContent>

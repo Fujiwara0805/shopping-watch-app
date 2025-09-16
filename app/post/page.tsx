@@ -41,7 +41,7 @@ declare global {
 const postSchema = z.object({
   storeId: z.string().optional(),
   storeName: z.string().optional(),
-  category: z.enum(['飲食店', '小売店', 'イベント集客', '応援', '受け渡し']).optional(), // 🔥 ジャンルからカテゴリに変更
+  category: z.enum(['飲食店', '小売店', 'イベント集客', '応援', '受け渡し', '雑談']).optional(), // 🔥 雑談を追加
   content: z.string().min(5, { message: '5文字以上入力してください' }).max(240, { message: '240文字以内で入力してください' }),
   url: z.string().url({ message: '有効なURLを入力してください' }).optional().or(z.literal('')),
   // 🔥 新しい掲載期間スキーマ
@@ -67,13 +67,14 @@ type DisplayStore = Pick<Store, 'name'> & { id: string };
 
 const libraries: ("places")[] = ["places"];
 
-// 🔥 カテゴリ定義（ジャンルから変更）
+// 🔥 カテゴリ定義（雑談を追加）
 const categoryOptions = [
   { value: '飲食店', label: '飲食店' },
   { value: '小売店', label: '小売店' },
   { value: 'イベント集客', label: 'イベント集客' },
   { value: '応援', label: '応援' },
   { value: '受け渡し', label: '受け渡し' },
+  { value: '雑談', label: '雑談' }, // 🔥 追加
 ];
 
 // 🔥 新しい掲載期間オプション
@@ -1761,7 +1762,7 @@ export default function PostPage() {
                         </motion.div>
                       )}
 
-                      {/* 来客状況フィールド */}
+                      {/* 来客状況フィールド - プレビュー削除版 */}
                       {optionalFieldsExpanded.customerSituation && (
                         <motion.div
                           initial={{ opacity: 0, y: -10 }}
@@ -1820,17 +1821,7 @@ export default function PostPage() {
                                     </div>
                                   </div>
                                   
-                                  {/* プレビュー表示を修正 */}
-                                  {(maleCustomers !== undefined || femaleCustomers !== undefined) && (
-                                    <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded">
-                                      <p className="text-sm text-blue-800">
-                                        プレビュー: 
-                                        {maleCustomers !== undefined && `男性: ${maleCustomers}人`}
-                                        {maleCustomers !== undefined && femaleCustomers !== undefined && ', '}
-                                        {femaleCustomers !== undefined && `女性: ${femaleCustomers}人`}
-                                      </p>
-                                    </div>
-                                  )}
+                                  {/* 🔥 プレビュー表示を削除 */}
                                 </div>
                                 <FormMessage />
                               </FormItem>

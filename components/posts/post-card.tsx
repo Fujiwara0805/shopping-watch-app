@@ -4,7 +4,7 @@ import { useState, useCallback, useRef, useEffect, memo } from 'react';
 import { motion } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
 import { ja } from 'date-fns/locale';
-import { Heart, Share2, Clock, Link as LinkIcon, ExternalLink, Instagram, Copy, MapPin, Eye, MessageCircle, ChevronDown, Tag, UserPlus, Info, ShoppingCart, Utensils, Camera, GamepadIcon, Wrench, Layers, FileIcon, Calendar, Briefcase, ShoppingBag, Users, MessageSquareText, Trash2, Flag, AlertTriangle, Loader2, Star, Package, HandCoins, User, UserCheck } from 'lucide-react';
+import { Heart, Share2, Clock, Link as LinkIcon, ExternalLink, Instagram, Copy, MapPin, Eye, MessageCircle, ChevronDown, Tag, UserPlus, Info, ShoppingCart, Utensils, Camera, GamepadIcon, Wrench, Layers, FileIcon, Calendar, Briefcase, ShoppingBag, Users, MessageSquareText, Trash2, Flag, AlertTriangle, Loader2, Star, Package, HandCoins, User, UserCheck, PersonStanding, Footprints } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -260,6 +260,13 @@ const getCategoryIconAndColor = (category: string) => {
         textColor: 'text-green-800',
         borderColor: 'border-green-200'
       };
+    case '雑談': // 🔥 追加
+      return {
+        icon: MessageSquareText,
+        bgColor: 'bg-gray-100',
+        textColor: 'text-gray-800',
+        borderColor: 'border-gray-200'
+      };
     default:
       return {
         icon: Layers,
@@ -283,6 +290,8 @@ const getCategoryColor = (category: string) => {
       return 'bg-pink-100 text-pink-800 border-pink-200';
     case '受け渡し':
       return 'bg-green-100 text-green-800 border-green-200';
+    case '雑談': // 🔥 追加
+      return 'bg-gray-100 text-gray-800 border-gray-200';
     default:
       return 'bg-gray-100 text-gray-800 border-gray-200';
   }
@@ -486,10 +495,13 @@ export const PostCard = memo(({
   const categoryIconAndColor = getCategoryIconAndColor(post.category || '');
   const CategoryIcon = categoryIconAndColor.icon;
 
-  const formattedDate = post.created_at ? formatDistanceToNow(new Date(post.created_at), { 
-    addSuffix: true,
-    locale: ja
-  }) : '日付不明';
+  // 🔥 修正：投稿時間のフォーマット関数を変更（489行目付近）
+  const formattedDate = post.created_at ? (() => {
+    const date = new Date(post.created_at);
+    const hours = date.getHours();
+    const minutes = date.getMinutes();
+    return `${hours}時${minutes.toString().padStart(2, '0')}分投稿`;
+  })() : '時間不明';
 
   const copyToClipboard = useCallback((text: string, message: string) => {
     navigator.clipboard.writeText(text).then(() => {
@@ -766,14 +778,7 @@ export const PostCard = memo(({
                   {isMyPost && <Badge variant="secondary" className="text-xs">自分の投稿</Badge>}
                 </div>
                 <div className="flex items-center space-x-2">
-                  {post.author_posts_count && post.author_posts_count > 0 && (
-                    <>
-                      <p className="text-xs" style={{ color: '#73370c' }}>
-                        投稿数: {post.author_posts_count}
-                      </p>
-                      <span className="text-xs" style={{ color: '#73370c' }}>•</span>
-                    </>
-                  )}
+                  {/* 🔥 投稿数の表示を削除 */}
                   <p className="text-xs" style={{ color: '#73370c' }}>
                     {formattedDate}
                   </p>
@@ -960,12 +965,12 @@ export const PostCard = memo(({
                           <td className="p-3 bg-gray-50 w-1/3 font-medium border-r border-gray-100">
                             <div className="flex items-center space-x-2">
                               <Package className="h-4 w-4 text-gray-500 flex-shrink-0" />
-                              <span className="text-base" style={{ color: '#73370c' }}>残りの数</span>
+                              <span className="text-sm" style={{ color: '#73370c' }}>残りわずか</span>
                             </div>
                           </td>
                           <td className="p-3">
                             <div className="flex items-center justify-center">
-                              <span className="text-2xl font-bold text-center" style={{ color: '#dd3730' }}>
+                              <span className="text-xl font-bold text-center" style={{ color: '#dd3730' }}>
                                 {post.remaining_slots}{getRemainingUnit(post.category)}
                               </span>
                             </div>
@@ -1091,7 +1096,7 @@ export const PostCard = memo(({
                           </div>
                         </td>
                         <td className="p-3">
-                          <span className="text-base" style={{ color: '#73370c' }}>
+                          <span className="text-base" style={{ color: '#dd3730' }}>
                             {post.expires_at ? formatRemainingTime(new Date(post.expires_at).getTime()) : '期限なし'}
                           </span>
                         </td>
@@ -1168,7 +1173,6 @@ export const PostCard = memo(({
           {/* 新しい統計・アクション行（横幅重視のレイアウト） */}
           <div className="bg-gray-50 rounded-lg p-2 mt-2">
             <div className="grid grid-cols-3 gap-1 h-6">
-              {/* いいね */}
               <button
                 onClick={handleLikeClick}
                 className={cn(
@@ -1179,15 +1183,15 @@ export const PostCard = memo(({
                 )}
                 style={{ backgroundColor: '#fcebeb' }}
                 disabled={isLiking || (isMyPost && Boolean(currentUserId))}
-                title={isMyPost && currentUserId ? "自分の投稿にはいいねできません" : "いいね"}
+                title={isMyPost && currentUserId ? "自分の投稿には行くよできません" : "行くよ"}
               >
-                <Heart className={cn(
+                <Footprints className={cn(
                   "h-4 w-4 transition-all duration-200 flex-shrink-0",
                   isLiked ? "text-red-500 fill-red-500" : "text-gray-600 hover:text-red-500",
                   isLiking && "animate-pulse"
                 )} />
                 <span className="text-base font-medium truncate">{post.likes_count}</span>
-                <span className="text-base text-gray-500 truncate">いいね</span>
+                <span className="text-base text-gray-500 truncate">行くよ</span>
               </button>
 
               {/* コメント数 */}
