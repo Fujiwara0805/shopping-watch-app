@@ -2,9 +2,9 @@
 
 import { useState, useCallback, useRef, useEffect, memo } from 'react';
 import { motion } from 'framer-motion';
-import { formatDistanceToNow, format } from 'date-fns'; // formatをimportに追加
+import { formatDistanceToNow } from 'date-fns';
 import { ja } from 'date-fns/locale';
-import { Heart, Share2, Clock, Link as LinkIcon, ExternalLink, Instagram, Copy, Laugh, Smile, Meh, Frown, Angry, MapPin, Eye, MessageCircle, ChevronDown, Tag, DollarSign, UserPlus, Info, ChevronLeft, ChevronRight, ShoppingCart, Utensils, Camera, GamepadIcon, Wrench, Layers, FileIcon, Calendar, Briefcase, ShoppingBag, Users, MessageSquareText, Trash2, Flag, AlertTriangle, Loader2, Star, Car, Home, Package, Megaphone, HandCoins } from 'lucide-react'; // Star, Car, Home, Package, Megaphoneアイコンを追加
+import { Heart, Share2, Clock, Link as LinkIcon, ExternalLink, Instagram, Copy, MapPin, Eye, MessageCircle, ChevronDown, Tag, UserPlus, Info, ShoppingCart, Utensils, Camera, GamepadIcon, Wrench, Layers, FileIcon, Calendar, Briefcase, ShoppingBag, Users, MessageSquareText, Trash2, Flag, AlertTriangle, Loader2, Star, Package, HandCoins, User, UserCheck } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -17,14 +17,6 @@ import { CustomModal } from '@/components/ui/custom-modal';
 import { useToast } from '@/hooks/use-toast';
 import React from 'react';
 import { ExtendedPostWithAuthor } from '@/types/timeline';
-
-const discountIcons = [
-  { value: 0, Icon: Angry, label: "0%" },
-  { value: 20, Icon: Frown, label: "20~40%" },
-  { value: 40, Icon: Meh, label: "40~60%" },
-  { value: 60, Icon: Smile, label: "60~80%" },
-  { value: 80, Icon: Laugh, label: "80~100%" },
-];
 
 function formatRemainingTime(expiresAt: number): string {
   const now = Date.now();
@@ -67,35 +59,6 @@ function formatCommentCount(count: number): string {
   } else {
     return `${Math.floor(count / 1000)}k`;
   }
-}
-
-// 🔥 対象者のラベルを取得する関数
-function getTargetAudienceLabel(targetAudience?: string | null): string | null {
-  if (!targetAudience) return null;
-  
-  const targetAudienceOptions = [
-    { value: 'すべての人', label: 'すべての人' },
-    { value: '10代', label: '10代' },
-    { value: '20代', label: '20代' },
-    { value: '30代', label: '30代' },
-    { value: '40代', label: '40代' },
-    { value: '50代', label: '50代' },
-    { value: '60代以上', label: '60代以上' },
-    { value: '学生', label: '学生' },
-    { value: 'business_person', label: 'ビジネスマン・OL' },
-    { value: '主婦・主夫', label: '主婦・主夫' },
-    { value: '子育て世代', label: '子育て世代' },
-    { value: '一人暮らし', label: '一人暮らし' },
-    { value: 'ファミリー', label: 'ファミリー' },
-    { value: '高齢者', label: '高齢者' },
-    { value: 'フリーランス', label: 'フリーランス' },
-    { value: '起業家・経営者', label: '起業家・経営者' },
-    { value: '観光客・旅行者', label: '観光客・旅行者' },
-    { value: '地域住民', label: '地域住民' },
-  ];
-  
-  const option = targetAudienceOptions.find(opt => opt.value === targetAudience);
-  return option ? option.label : null;
 }
 
 interface PostCardProps {
@@ -205,27 +168,6 @@ const OptimizedImage = memo(({
 
 OptimizedImage.displayName = 'OptimizedImage';
 
-const DiscountBadge = memo(({ discountRate }: { discountRate: number | null | undefined }) => {
-  if (discountRate == null) return null;
-
-  const selectedOption = discountIcons.find(option => option.value === discountRate);
-  const displayIcon = selectedOption ? selectedOption.Icon : Angry;
-
-  return (
-    <motion.div
-      initial={{ scale: 0.8, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      transition={{ delay: 0.2, duration: 0.3 }}
-    >
-      <Badge className="bg-primary text-primary-foreground font-bold text-xl px-2 py-1 shadow-sm flex items-center">
-        {React.createElement(displayIcon, { className: "h-6 w-6" })}
-      </Badge>
-    </motion.div>
-  );
-});
-
-DiscountBadge.displayName = 'DiscountBadge';
-
 // 新規追加：RatingDisplayコンポーネント (post-card.tsx内で使用するため修正)
 const RatingDisplay = memo(({ rating }: { rating: number | null | undefined }) => {
   if (rating == null) return null;
@@ -280,53 +222,124 @@ const UserAvatar = memo(({ author }: { author: AuthorProfile | null }) => {
 
 UserAvatar.displayName = 'UserAvatar';
 
-// 🔥 ジャンルのカラーリング関数を修正
-const getGenreColor = (genre: string) => {
-  const colors: Record<string, string> = {
-    'ショッピング': 'bg-blue-100 text-blue-800 border-blue-200',
-    'グルメ': 'bg-red-100 text-red-800 border-red-200',
-    '観光': 'bg-green-100 text-green-800 border-green-200',
-    'エンタメ': 'bg-purple-100 text-purple-800 border-purple-200',
-    'サービス': 'bg-yellow-100 text-yellow-800 border-yellow-200',
-    'イベント': 'bg-pink-100 text-pink-800 border-pink-200',
-    '求人': 'bg-indigo-100 text-indigo-800 border-indigo-200',
-    '販売': 'bg-orange-100 text-orange-800 border-orange-200',
-    '貸し出し': 'bg-cyan-100 text-cyan-800 border-cyan-200',
-    '宿泊': 'bg-teal-100 text-teal-800 border-teal-200',
-    'ボランティア': 'bg-lime-100 text-lime-800 border-lime-200',
-    '相談': 'bg-amber-100 text-amber-800 border-amber-200',
-    'ニュース': 'bg-slate-100 text-slate-800 border-slate-200',
-    'コミュニティ': 'bg-rose-100 text-rose-800 border-rose-200',
-    '寄付': 'bg-emerald-100 text-emerald-800 border-emerald-200',
-    '募集': 'bg-violet-100 text-violet-800 border-violet-200',
-    'その他': 'bg-gray-100 text-gray-800 border-gray-200'
-  };
-  return colors[genre] || 'bg-gray-100 text-gray-800 border-gray-200';
+// 🔥 ジャンルのアイコンとカラーを取得する関数を修正（カテゴリ用に変更）
+const getCategoryIconAndColor = (category: string) => {
+  switch(category) {
+    case '飲食店':
+      return {
+        icon: Utensils,
+        bgColor: 'bg-orange-100',
+        textColor: 'text-orange-800',
+        borderColor: 'border-orange-200'
+      };
+    case '小売店':
+      return {
+        icon: ShoppingBag,
+        bgColor: 'bg-blue-100',
+        textColor: 'text-blue-800',
+        borderColor: 'border-blue-200'
+      };
+    case 'イベント集客':
+      return {
+        icon: Calendar,
+        bgColor: 'bg-purple-100',
+        textColor: 'text-purple-800',
+        borderColor: 'border-purple-200'
+      };
+    case '応援':
+      return {
+        icon: Heart,
+        bgColor: 'bg-pink-100',
+        textColor: 'text-pink-800',
+        borderColor: 'border-pink-200'
+      };
+    case '受け渡し':
+      return {
+        icon: Package,
+        bgColor: 'bg-green-100',
+        textColor: 'text-green-800',
+        borderColor: 'border-green-200'
+      };
+    default:
+      return {
+        icon: Layers,
+        bgColor: 'bg-slate-100',
+        textColor: 'text-slate-800',
+        borderColor: 'border-slate-200'
+      };
+  }
 };
 
-// 🔥 対象者のカラーリング関数を修正
-const getTargetAudienceColor = (audience: string) => {
-  const colors: Record<string, string> = {
-    'すべての人': 'bg-gray-100 text-gray-800 border-gray-300',
-    '10代': 'bg-pink-100 text-pink-800 border-pink-300',
-    '20代': 'bg-blue-100 text-blue-800 border-blue-300',
-    '30代': 'bg-green-100 text-green-800 border-green-300',
-    '40代': 'bg-yellow-100 text-yellow-800 border-yellow-300',
-    '50代': 'bg-orange-100 text-orange-800 border-orange-300',
-    '60代以上': 'bg-purple-100 text-purple-800 border-purple-300',
-    '学生': 'bg-indigo-100 text-indigo-800 border-indigo-300',
-    'ビジネスマン・OL': 'bg-slate-100 text-slate-800 border-slate-300',
-    '主婦・主夫': 'bg-rose-100 text-rose-800 border-rose-300',
-    '子育て世代': 'bg-emerald-100 text-emerald-800 border-emerald-300',
-    '一人暮らし': 'bg-cyan-100 text-cyan-800 border-cyan-300',
-    'ファミリー': 'bg-lime-100 text-lime-800 border-lime-300',
-    '高齢者': 'bg-amber-100 text-amber-800 border-amber-300',
-    'フリーランス': 'bg-violet-100 text-violet-800 border-violet-300',
-    '起業家・経営者': 'bg-red-100 text-red-800 border-red-300',
-    '観光客・旅行者': 'bg-teal-100 text-teal-800 border-teal-300',
-    '地域住民': 'bg-green-100 text-green-800 border-green-300'
+// カテゴリカラーを取得する関数
+const getCategoryColor = (category: string) => {
+  switch(category) {
+    case '飲食店':
+      return 'bg-orange-100 text-orange-800 border-orange-200';
+    case '小売店':
+      return 'bg-blue-100 text-blue-800 border-blue-200';
+    case 'イベント集客':
+      return 'bg-purple-100 text-purple-800 border-purple-200';
+    case '応援':
+      return 'bg-pink-100 text-pink-800 border-pink-200';
+    case '受け渡し':
+      return 'bg-green-100 text-green-800 border-green-200';
+    default:
+      return 'bg-gray-100 text-gray-800 border-gray-200';
+  }
+};
+
+// 🔥 新規追加：来客状況を解析して表示するコンポーネント
+const CustomerSituationDisplay = memo(({ customerSituation }: { customerSituation: string }) => {
+  // 来客状況の文字列から人数を抽出
+  const parseCustomerSituation = (situation: string) => {
+    // "総人数: 10名, 男性: 4名, 女性: 6名" の形式から抽出
+    const totalMatch = situation.match(/総人数:\s*(\d+)/);
+    const maleMatch = situation.match(/男性:\s*(\d+)/);
+    const femaleMatch = situation.match(/女性:\s*(\d+)/);
+    
+    return {
+      total: totalMatch ? parseInt(totalMatch[1]) : 0,
+      male: maleMatch ? parseInt(maleMatch[1]) : 0,
+      female: femaleMatch ? parseInt(femaleMatch[1]) : 0
+    };
   };
-  return colors[audience] || 'bg-gray-100 text-gray-800 border-gray-300';
+
+  const { total, male, female } = parseCustomerSituation(customerSituation);
+
+  return (
+    <div className="flex items-center space-x-3">
+      <div className="flex items-center space-x-1 bg-gray-100 px-3 py-1.5 rounded-md">
+        <Users className="h-4 w-4 text-gray-600" />
+        <span className="text-sm font-medium text-gray-700">{total}</span>
+      </div>
+      
+      {/* 男性の人数 */}
+      <div className="flex items-center space-x-1 bg-blue-100 px-3 py-1.5 rounded-md">
+        <User className="h-4 w-4 text-blue-600" />
+        <span className="text-sm font-medium text-blue-700">{male}</span>
+      </div>
+      
+      {/* 女性の人数 */}
+      <div className="flex items-center space-x-1 bg-pink-100 px-3 py-1.5 rounded-md">
+        <UserCheck className="h-4 w-4 text-pink-600" />
+        <span className="text-sm font-medium text-pink-700">{female}</span>
+      </div>
+    </div>
+  );
+});
+
+CustomerSituationDisplay.displayName = 'CustomerSituationDisplay';
+
+// 🔥 新規追加：残り数の単位を取得する関数
+const getRemainingUnit = (category: string | null) => {
+  switch(category) {
+    case '飲食店':
+      return '席';
+    case '小売店':
+      return '個';
+    default:
+      return '件';
+  }
 };
 
 export const PostCard = memo(({ 
@@ -472,312 +485,14 @@ export const PostCard = memo(({
       onClick(post.id);
     }
   }, [disableClick, onClick, post.id]);
-  
-  // ジャンルのアイコンとカラーを取得する関数
-  const getGenreIconAndColor = useCallback((genre: string) => {
-    switch(genre) {
-      case 'ショッピング':
-        return {
-          icon: ShoppingCart,
-          bgColor: 'bg-purple-100',
-          textColor: 'text-purple-800',
-          borderColor: 'border-purple-200'
-        };
-      case '飲食店':
-        return {
-          icon: Utensils,
-          bgColor: 'bg-orange-100',
-          textColor: 'text-orange-800',
-          borderColor: 'border-orange-200'
-        };
-      case '観光':
-        return {
-          icon: Camera,
-          bgColor: 'bg-teal-100',
-          textColor: 'text-teal-800',
-          borderColor: 'border-teal-200'
-        };
-      case 'エンタメ': // レジャーから変更
-        return {
-          icon: GamepadIcon,
-          bgColor: 'bg-pink-100',
-          textColor: 'text-pink-800',
-          borderColor: 'border-pink-200'
-        };
-      case 'サービス':
-        return {
-          icon: Wrench,
-          bgColor: 'bg-indigo-100',
-          textColor: 'text-indigo-800',
-          borderColor: 'border-indigo-200'
-        };
-      case 'イベント':
-        return {
-          icon: Calendar,
-          bgColor: 'bg-yellow-100',
-          textColor: 'text-yellow-800',
-          borderColor: 'border-yellow-200'
-        };
-      case '求人':
-        return {
-          icon: Briefcase,
-          bgColor: 'bg-blue-100',
-          textColor: 'text-blue-800',
-          borderColor: 'border-blue-200'
-        };
-      case '販売':
-        return {
-          icon: ShoppingBag,
-          bgColor: 'bg-green-100',
-          textColor: 'text-green-800',
-          borderColor: 'border-green-200'
-        };
-      case 'ボランティア':
-        return {
-          icon: Users,
-          bgColor: 'bg-emerald-100',
-          textColor: 'text-emerald-800',
-          borderColor: 'border-emerald-200'
-        };
-      case '相談':
-        return {
-          icon: MessageSquareText,
-          bgColor: 'bg-rose-100',
-          textColor: 'text-rose-800',
-          borderColor: 'border-rose-200'
-        };
-      case 'シェア': // 新規追加
-        return {
-          icon: Users, // 適切なアイコンを選択
-          bgColor: 'bg-orange-100',
-          textColor: 'text-orange-800',
-          borderColor: 'border-orange-200'
-        };
-      case 'コミュニティ': // 新規追加
-        return {
-          icon: MessageCircle, // 適切なアイコンを選択
-          bgColor: 'bg-purple-100',
-          textColor: 'text-purple-800',
-          borderColor: 'border-purple-200'
-        };
-      case '募集': // 新規追加
-        return {
-          icon: UserPlus, // 適切なアイコンを選択
-          bgColor: 'bg-cyan-100',
-          textColor: 'text-cyan-800',
-          borderColor: 'border-cyan-200'
-        };
-      case 'デリバリー':
-        return {
-          icon: Package,
-          bgColor: 'bg-green-100',
-          textColor: 'text-green-800',
-          borderColor: 'border-green-200'
-        };
-      default:
-        return {
-          icon: Layers,
-          bgColor: 'bg-slate-100',
-          textColor: 'text-slate-800',
-          borderColor: 'border-slate-200'
-        };
-    }
-  }, []);
 
-  // カテゴリカラーを取得する関数 (不明の定義を削除)
-  const getCategoryColor = useCallback((category: string) => {
-    switch(category) {
-      // ショッピング系
-      case '惣菜':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case '弁当':
-        return 'bg-green-100 text-green-800 border-green-200';
-      case '肉':
-        return 'bg-red-100 text-red-800 border-red-200';
-      case '魚':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
-      case '野菜':
-        return 'bg-emerald-100 text-emerald-800 border-emerald-200';
-      case '果物':
-        return 'bg-orange-100 text-orange-800 border-orange-200';
-      case '米・パン類':
-        return 'bg-amber-100 text-amber-800 border-amber-200';
-      case 'デザート類':
-        return 'bg-pink-100 text-pink-800 border-pink-200';
-      case '日用品':
-        return 'bg-cyan-100 text-cyan-800 border-cyan-200';
-      case '衣料品':
-        return 'bg-violet-100 text-violet-800 border-violet-200';
-      
-      // 飲食店系
-      case '和食':
-        return 'bg-red-100 text-red-800 border-red-200';
-      case '洋食':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
-      case '中華':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'イタリアン':
-        return 'bg-green-100 text-green-800 border-green-200';
-      case 'フレンチ':
-        return 'bg-purple-100 text-purple-800 border-purple-200';
-      case 'カフェ':
-        return 'bg-amber-100 text-amber-800 border-amber-200';
-      case 'ファストフード':
-        return 'bg-orange-100 text-orange-800 border-orange-200';
-      
-      // 観光系
-      case '観光スポット':
-        return 'bg-teal-100 text-teal-800 border-teal-200';
-      case '宿泊施設':
-        return 'bg-indigo-100 text-indigo-800 border-indigo-200';
-      case '温泉':
-        return 'bg-rose-100 text-rose-800 border-rose-200';
-      case '博物館・美術館':
-        return 'bg-purple-100 text-purple-800 border-purple-200';
-      case '公園':
-        return 'bg-green-100 text-green-800 border-green-200';
-      
-      // エンタメ系 (旧レジャー)
-      case 'アミューズメント':
-        return 'bg-pink-100 text-pink-800 border-pink-200';
-      case 'スポーツ':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
-      case '映画・エンタメ':
-        return 'bg-purple-100 text-purple-800 border-purple-200';
-      case 'アウトドア':
-        return 'bg-green-100 text-green-800 border-green-200';
-      
-      // サービス系
-      case '美容・健康':
-        return 'bg-pink-100 text-pink-800 border-pink-200';
-      case '教育':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
-      case '医療':
-        return 'bg-red-100 text-red-800 border-red-200';
-      case '修理・メンテナンス':
-        return 'bg-gray-100 text-gray-800 border-gray-200';
-      
-      // イベント系
-      case 'コンサート・ライブ':
-        return 'bg-purple-100 text-purple-800 border-purple-200';
-      case 'フェスティバル':
-        return 'bg-orange-100 text-orange-800 border-orange-200';
-      case '展示会':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'セミナー・講座':
-        return 'bg-green-100 text-green-800 border-green-200';
-      case 'sportsイベント':
-        return 'bg-red-100 text-red-800 border-red-200';
-      
-      // 求人系
-      case '正社員':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'アルバイト・パート':
-        return 'bg-green-100 text-green-800 border-green-200';
-      case '派遣・契約':
-        return 'bg-orange-100 text-orange-800 border-orange-200';
-      case 'インターン':
-        return 'bg-purple-100 text-purple-800 border-purple-200';
-      case 'フリーランス':
-        return 'bg-teal-100 text-teal-800 border-teal-200';
-      
-      // 販売系
-      case '新品':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
-      case '中古品':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'ハンドメイド':
-        return 'bg-pink-100 text-pink-800 border-pink-200';
-      case 'デジタル商品':
-        return 'bg-purple-100 text-purple-800 border-purple-200';
-      case 'チケット':
-        return 'bg-red-100 text-red-800 border-red-200';
-      case '移動販売':
-        return 'bg-green-100 text-green-800 border-green-200';
-      
-      // ボランティア系
-      case '環境・自然':
-        return 'bg-green-100 text-green-800 border-green-200';
-      case '福祉・介護':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
-      case '教育・子育て':
-        return 'bg-orange-100 text-orange-800 border-orange-200';
-      case '地域活動':
-        return 'bg-purple-100 text-purple-800 border-purple-200';
-      case '災害支援':
-        return 'bg-red-100 text-red-800 border-red-200';
-      
-      // 相談系
-      case '生活相談':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
-      case '仕事・キャリア':
-        return 'bg-green-100 text-green-800 border-green-200';
-      case '恋愛・人間関係':
-        return 'bg-pink-100 text-pink-800 border-pink-200';
-      case '法律・お金':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case '健康・医療':
-        return 'bg-red-100 text-red-800 border-red-200';
+  const categoryIconAndColor = getCategoryIconAndColor(post.category || '');
+  const CategoryIcon = categoryIconAndColor.icon;
 
-      // シェア系 (新規追加)
-      case 'タクシー':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'ライドシェア':
-        return 'bg-orange-100 text-orange-800 border-orange-200';
-      case 'カーシェア':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'ホテル':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
-      case '民泊':
-        return 'bg-green-100 text-green-800 border-green-200';
-      case '旅館':
-        return 'bg-red-100 text-red-800 border-red-200';
-      case 'コンドミニアム':
-        return 'bg-purple-100 text-purple-800 border-purple-200';
-
-      // コミュニティ系 (新規追加)
-      case '交流':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'イベント':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case '趣味':
-        return 'bg-green-100 text-green-800 border-green-200';
-      case '学習':
-        return 'bg-purple-100 text-purple-800 border-purple-200';
-      case '地域':
-        return 'bg-teal-100 text-teal-800 border-teal-200';
-
-      // 募集系 (新規追加)
-      case 'メンバー募集':
-        return 'bg-orange-100 text-orange-800 border-orange-200';
-      case '助け合い':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'ボランティア':
-        return 'bg-green-100 text-green-800 border-green-200';
-      case '参加者募集':
-        return 'bg-red-100 text-red-800 border-red-200';
-      
-      // デリバリー系
-      case 'フードデリバリー':
-        return 'bg-orange-100 text-orange-800 border-orange-200';
-      case '日用品デリバリー':
-        return 'bg-teal-100 text-teal-800 border-teal-200';
-      case '薬局デリバリー':
-        return 'bg-red-100 text-red-800 border-red-200';
-
-      default: // 未定義のカテゴリに対するフォールバック
-        return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
-  }, []);
-  
   const formattedDate = post.created_at ? formatDistanceToNow(new Date(post.created_at), { 
     addSuffix: true,
     locale: ja
   }) : '日付不明';
-
-  // 新規追加: 日付フォーマット
-  const formattedStartDate = post.start_date ? format(new Date(post.start_date), "yyyy年MM月dd日 HH:mm", { locale: ja }) : null;
-  const formattedEndDate = post.end_date ? format(new Date(post.end_date), "yyyy年MM月dd日 HH:mm", { locale: ja }) : null;
 
   const copyToClipboard = useCallback((text: string, message: string) => {
     navigator.clipboard.writeText(text).then(() => {
@@ -867,9 +582,6 @@ export const PostCard = memo(({
 
   const imageUrls = getImageUrls();
   const fileUrls = getFileUrls();
-
-  const genreIconAndColor = getGenreIconAndColor(post.genre || '');
-  const GenreIcon = genreIconAndColor.icon;
 
   // 🔥 追加：投稿削除処理
   const handleDeletePost = async () => {
@@ -1055,7 +767,6 @@ export const PostCard = memo(({
                     {post.author?.display_name || '不明な投稿者'}
                   </p>
                   {isMyPost && <Badge variant="secondary" className="text-xs">自分の投稿</Badge>}
-                  {/* 評価表示は詳細情報セクションへ移動 */}
                 </div>
                 <div className="flex items-center space-x-2">
                   {post.author_posts_count && post.author_posts_count > 0 && (
@@ -1120,7 +831,7 @@ export const PostCard = memo(({
                 <div className="bg-white">
                   <table className="w-full">
                     <tbody>
-                      {/* 評価表示 (新しい行として追加) */}
+                      {/* 評価表示 */}
                       {post.rating != null && (
                         <tr className="border-b border-gray-100">
                           <td className="p-3 bg-gray-50 w-1/3 font-medium border-r border-gray-100">
@@ -1135,26 +846,7 @@ export const PostCard = memo(({
                         </tr>
                       )}
 
-                      {/* 期間表示 (開始日・終了日) */}
-                      {(post.start_date || post.end_date) && ( // どちらか一方でもあれば表示
-                        <tr className="border-b border-gray-100">
-                          <td className="p-3 bg-gray-50 w-1/3 font-medium border-r border-gray-100">
-                            <div className="flex items-center space-x-2">
-                              <Calendar className="h-4 w-4 text-gray-500 flex-shrink-0" />
-                              <span className="text-base" style={{ color: '#73370c' }}>期間</span>
-                            </div>
-                          </td>
-                          <td className="p-3">
-                            <span className="text-base font-medium" style={{ color: '#73370c' }}>
-                              {post.start_date && format(new Date(post.start_date), "yyyy年MM月dd日 HH:mm", { locale: ja })}
-                              {post.start_date && post.end_date && " ~ "}
-                              {post.end_date && format(new Date(post.end_date), "yyyy年MM月dd日 HH:mm", { locale: ja })}
-                            </span>
-                          </td>
-                        </tr>
-                      )}
-                      
-                      {/* 1行目: 場所 - 店舗IDがあり、店舗名が「店舗不明」以外の場合のみ表示 */}
+                      {/* 場所 */}
                       {post.store_id && post.store_name && post.store_name !== '店舗不明' && (
                         <tr className="border-b border-gray-100">
                           <td className="p-3 bg-gray-50 w-1/3 font-medium border-r border-gray-100">
@@ -1192,59 +884,25 @@ export const PostCard = memo(({
                         </tr>
                       )}
                       
-                      {/* 2行目: ジャンル - ジャンルが設定されている場合のみ表示 */}
-                      {post.genre && (
-                        <tr className="border-b border-gray-100">
-                          <td className="p-3 bg-gray-50 w-1/3 font-medium border-r border-gray-100">
-                            <div className="flex items-center space-x-2">
-                              <GenreIcon className="h-4 w-4 text-gray-500 flex-shrink-0" />
-                              <span className="text-base" style={{ color: '#73370c' }}>ジャンル</span>
-                            </div>
-                          </td>
-                          <td className="p-3">
-                            <Badge className={cn("text-base", getGenreColor(post.genre))}>
-                              <GenreIcon className="h-4 w-4 mr-2 flex-shrink-0" />
-                              {post.genre}
-                            </Badge>
-                          </td>
-                        </tr>
-                      )}
-                      
-                      {/* 3行目: カテゴリ - カテゴリがnullまたはundefinedではない場合のみ表示 */}
+                      {/* カテゴリ */}
                       {post.category && post.category !== '' && post.category !== null && (
                         <tr className="border-b border-gray-100">
                           <td className="p-3 bg-gray-50 w-1/3 font-medium border-r border-gray-100">
                             <div className="flex items-center space-x-2">
-                              <Tag className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                              <CategoryIcon className="h-4 w-4 text-gray-500 flex-shrink-0" />
                               <span className="text-base" style={{ color: '#73370c' }}>カテゴリ</span>
                             </div>
                           </td>
                           <td className="p-3">
                             <Badge className={cn("text-base", getCategoryColor(post.category))}>
+                              <CategoryIcon className="h-4 w-4 mr-2 flex-shrink-0" />
                               {post.category}
                             </Badge>
                           </td>
                         </tr>
                       )}
                       
-                      {/* 4行目: 価格 - 価格が設定されている場合のみ表示 */}
-                      {post.price != null && (
-                        <tr className="border-b border-gray-100">
-                          <td className="p-3 bg-gray-50 w-1/3 font-medium border-r border-gray-100">
-                            <div className="flex items-center space-x-2">
-                              <DollarSign className="h-4 w-4 text-gray-500 flex-shrink-0" />
-                              <span className="text-base" style={{ color: '#73370c' }}>価格</span>
-                            </div>
-                          </td>
-                          <td className="p-3">
-                            <span className="text-base font-medium" style={{ color: '#73370c' }}>
-                              {post.price.toLocaleString()}円〜
-                            </span>
-                          </td>
-                        </tr>
-                      )}
-                      
-                      {/* 8行目: リンク - 既に条件分岐済み */}
+                      {/* リンク */}
                       {post.url && (
                         <tr className="border-b border-gray-100">
                           <td className="p-3 bg-gray-50 w-1/3 font-medium border-r border-gray-100">
@@ -1267,7 +925,7 @@ export const PostCard = memo(({
                         </tr>
                       )}
                       
-                      {/* 9行目: ファイル - 既に条件分岐済み */}
+                      {/* ファイル */}
                       {fileUrls.length > 0 && (
                         <tr className="border-b border-gray-100">
                           <td className="p-3 bg-gray-50 w-1/3 font-medium border-r border-gray-100">
@@ -1299,71 +957,58 @@ export const PostCard = memo(({
                         </tr>
                       )}
                       
-                      {/* 🔥 対象者情報の表示（ファイルの後、視聴回数の前に追加） */}
-                      {post.target_audience && (
+                      {/* 🔥 修正：残り枠数の表示 */}
+                      {post.remaining_slots != null && (
+                        <tr className="border-b border-gray-100">
+                          <td className="p-3 bg-gray-50 w-1/3 font-medium border-r border-gray-100">
+                            <div className="flex items-center space-x-2">
+                              <Package className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                              <span className="text-base" style={{ color: '#73370c' }}>残りの数</span>
+                            </div>
+                          </td>
+                          <td className="p-3">
+                            <div className="flex items-center justify-center">
+                              <span className="text-2xl font-bold text-center" style={{ color: '#dd3730' }}>
+                                {post.remaining_slots}{getRemainingUnit(post.category)}
+                              </span>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+
+                      {/* 🔥 修正：来客状況の表示 */}
+                      {post.customer_situation && post.customer_situation.trim() !== '' && (
                         <tr className="border-b border-gray-100">
                           <td className="p-3 bg-gray-50 w-1/3 font-medium border-r border-gray-100">
                             <div className="flex items-center space-x-2">
                               <Users className="h-4 w-4 text-gray-500 flex-shrink-0" />
-                              <span className="text-base" style={{ color: '#73370c' }}>対象者</span>
+                              <span className="text-base" style={{ color: '#73370c' }}>来客状況</span>
                             </div>
                           </td>
                           <td className="p-3">
-                            <Badge className={cn("text-base", getTargetAudienceColor(post.target_audience))}>
-                              {getTargetAudienceLabel(post.target_audience)}
+                            <CustomerSituationDisplay customerSituation={post.customer_situation} />
+                          </td>
+                        </tr>
+                      )}
+
+                      {/* 🔥 新規追加：クーポンの表示 */}
+                      {post.coupon_code && post.coupon_code.trim() !== '' && (
+                        <tr className="border-b border-gray-100">
+                          <td className="p-3 bg-gray-50 w-1/3 font-medium border-r border-gray-100">
+                            <div className="flex items-center space-x-2">
+                              <Tag className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                              <span className="text-base" style={{ color: '#73370c' }}>クーポン</span>
+                            </div>
+                          </td>
+                          <td className="p-3">
+                            <Badge className="text-base bg-yellow-100 text-yellow-800 border-yellow-200">
+                              {post.coupon_code}
                             </Badge>
                           </td>
                         </tr>
                       )}
-                      
-                      {/* 視聴回数行 - 常に表示 */}
-                      <tr className="border-b border-gray-100">
-                        <td className="p-3 bg-gray-50 w-1/3 font-medium border-r border-gray-100">
-                          <div className="flex items-center space-x-2">
-                            <Eye className="h-4 w-4 text-gray-500 flex-shrink-0" />
-                            <span className="text-base" style={{ color: '#73370c' }}>視聴回数</span>
-                          </div>
-                        </td>
-                        <td className="p-3">
-                          <span className="text-base" style={{ color: '#73370c' }}>
-                            {formatViewCount(post.views_count)}
-                          </span>
-                        </td>
-                      </tr>
-                      
-                      {/* 残り時間行 - 常に表示 */}
-                      <tr className={cn(showDistance && post.distance !== undefined ? "border-b border-gray-100" : "")}>
-                        <td className="p-3 bg-gray-50 w-1/3 font-medium border-r border-gray-100">
-                          <div className="flex items-center space-x-2">
-                            <Clock className="h-4 w-4 text-gray-500 flex-shrink-0" />
-                            <span className="text-base" style={{ color: '#73370c' }}>残り時間</span>
-                          </div>
-                        </td>
-                        <td className="p-3">
-                          <span className="text-base" style={{ color: '#73370c' }}>
-                            {post.expires_at ? formatRemainingTime(new Date(post.expires_at).getTime()) : '期限なし'}
-                          </span>
-                        </td>
-                      </tr>
-                      
-                      {/* 7行目: 距離（開発環境でのみ表示）
-                      {showDistance && post.distance !== undefined && (
-                        <tr>
-                          <td className="p-3 bg-gray-50 w-1/3 font-medium border-r border-gray-100">
-                            <div className="flex items-center space-x-2">
-                              <MapPin className="h-4 w-4 text-gray-500 flex-shrink-0" />
-                              <span className="text-base" style={{ color: '#73370c' }}>距離</span>
-                            </div>
-                          </td>
-                          <td className="p-3">
-                            <span className="text-base font-medium text-blue-600">
-                              {formatDistance(post.distance)}
-                            </span>
-                          </td>
-                        </tr>
-                      )} */}
 
-                      {/* 🔥 おすそわけ表示を詳細情報テーブルに追加（残り時間の前） */}
+                      {/* おすそわけ表示 */}
                       {post.support_purchase_enabled && post.support_purchase_options && (
                         <tr className="border-b border-gray-100">
                           <td className="p-3 bg-gray-50 w-1/3 font-medium border-r border-gray-100">
@@ -1424,6 +1069,36 @@ export const PostCard = memo(({
                           </td>
                         </tr>
                       )}
+                      
+                      {/* 視聴回数行 - 常に表示 */}
+                      <tr className="border-b border-gray-100">
+                        <td className="p-3 bg-gray-50 w-1/3 font-medium border-r border-gray-100">
+                          <div className="flex items-center space-x-2">
+                            <Eye className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                            <span className="text-base" style={{ color: '#73370c' }}>視聴回数</span>
+                          </div>
+                        </td>
+                        <td className="p-3">
+                          <span className="text-base" style={{ color: '#73370c' }}>
+                            {formatViewCount(post.views_count)}
+                          </span>
+                        </td>
+                      </tr>
+                      
+                      {/* 残り時間行 - 常に表示 */}
+                      <tr className={cn(showDistance && post.distance !== undefined ? "border-b border-gray-100" : "")}>
+                        <td className="p-3 bg-gray-50 w-1/3 font-medium border-r border-gray-100">
+                          <div className="flex items-center space-x-2">
+                            <Clock className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                            <span className="text-base" style={{ color: '#73370c' }}>残り時間</span>
+                          </div>
+                        </td>
+                        <td className="p-3">
+                          <span className="text-base" style={{ color: '#73370c' }}>
+                            {post.expires_at ? formatRemainingTime(new Date(post.expires_at).getTime()) : '期限なし'}
+                          </span>
+                        </td>
+                      </tr>
                     </tbody>
                   </table>
                 </div>

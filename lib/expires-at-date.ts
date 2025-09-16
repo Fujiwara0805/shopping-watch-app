@@ -1,26 +1,36 @@
-export const calculateExpiresAt = (expiryOption: '1h' | '3h' | '6h' | '12h'): Date => {
+export const calculateExpiresAt = (
+  expiryOption: '15m' | '30m' | '45m' | '60m' | 'custom',
+  customMinutes?: number
+): Date => {
   const now = new Date();
-  let hoursToAdd = 0;
+  let minutesToAdd = 0;
 
   switch (expiryOption) {
-    case '1h':
-      hoursToAdd = 1;
+    case '15m':
+      minutesToAdd = 15;
       break;
-    case '3h':
-      hoursToAdd = 3;
+    case '30m':
+      minutesToAdd = 30;
       break;
-    case '6h':
-      hoursToAdd = 6;
+    case '45m':
+      minutesToAdd = 45;
       break;
-    case '12h':
-      hoursToAdd = 12;
+    case '60m':
+      minutesToAdd = 60;
+      break;
+    case 'custom':
+      if (customMinutes && customMinutes > 0 && customMinutes <= 720) {
+        minutesToAdd = customMinutes;
+      } else {
+        console.warn(`無効なカスタム掲載時間: ${customMinutes}。デフォルトで30分を設定します。`);
+        minutesToAdd = 30;
+      }
       break;
     default:
-      // Zodスキーマにより通常ここには到達しませんが、フォールバックとして設定
-      console.warn(`無効な掲載期間: ${expiryOption}。デフォルトで3時間を設定します。`);
-      hoursToAdd = 3;
+      console.warn(`無効な掲載期間: ${expiryOption}。デフォルトで30分を設定します。`);
+      minutesToAdd = 30;
   }
 
-  now.setHours(now.getHours() + hoursToAdd);
+  now.setMinutes(now.getMinutes() + minutesToAdd);
   return now;
 };

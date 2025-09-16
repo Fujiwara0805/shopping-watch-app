@@ -6,12 +6,7 @@ import { motion } from 'framer-motion';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { Camera, Upload, X, Store as StoreIcon, LayoutGrid, ClipboardList, Image as ImageIcon, CalendarClock, PackageIcon, ClockIcon, Tag, HelpCircle, MapPin, CheckCircle, Layers, ChevronDown, ChevronUp, Settings, Link as LinkIcon, FileText, HandCoins, Users } from 'lucide-react';
-import { CalendarDays, Star as StarIcon } from 'lucide-react'; // CalendarDaysとStarIconを追加
-import { Calendar } from '@/components/ui/calendar'; // Calendarコンポーネントをインポート
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'; // Popoverコンポーネントをインポート
-import { format } from 'date-fns'; // date-fnsのformat関数をインポート
-import { ja } from 'date-fns/locale'; // 日本語ロケールをインポート
+import { Camera, Upload, X, Store as StoreIcon, LayoutGrid, ClipboardList, Image as ImageIcon, ClockIcon, PackageIcon, Tag, HelpCircle, MapPin, CheckCircle, Layers, ChevronDown, ChevronUp, Settings, Link as LinkIcon, FileText, HandCoins, Users, Hash, BarChart3, Star as StarIcon } from 'lucide-react';
 import AppLayout from '@/components/layout/app-layout';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -45,38 +40,26 @@ declare global {
 
 // 🔥 更新されたバリデーションスキーマ
 const postSchema = z.object({
-  storeId: z.string().optional(), // 任意に変更
-  storeName: z.string().optional(), // 任意に変更
-  genre: z.string().optional(), // 新規追加（任意）
-  category: z.string().optional(), // 任意に変更
-  content: z.string().min(5, { message: '5文字以上入力してください' }).max(240, { message: '240文字以内で入力してください' }), // 必須
-  price: z.preprocess(
-    (val) => {
-      if (typeof val === 'string' && val === '') return undefined;
-      if (typeof val === 'string') {
-        const num = parseInt(val.replace(/,/g, ''), 10);
-        return isNaN(num) ? undefined : num;
-      }
-      return val;
-    },
-    z.number({ invalid_type_error: '有効な数値を入力してください' })
-     .positive({ message: '価格は0より大きい値を入力してください' })
-     .min(1, { message: '価格は1以上で入力してください' })
-     .optional() // 任意に変更
-  ),
+  storeId: z.string().optional(),
+  storeName: z.string().optional(),
+  category: z.enum(['飲食店', '小売店', 'イベント集客', '応援', '受け渡し']).optional(), // 🔥 ジャンルからカテゴリに変更
+  content: z.string().min(5, { message: '5文字以上入力してください' }).max(240, { message: '240文字以内で入力してください' }),
   url: z.string().url({ message: '有効なURLを入力してください' }).optional().or(z.literal('')),
-  expiryOption: z.enum(['1h', '3h', '6h', '12h'], { required_error: '掲載期間を選択してください' }), // 必須
+  // 🔥 新しい掲載期間スキーマ
+  expiryOption: z.enum(['15m', '30m', '45m', '60m', 'custom'], { required_error: '掲載期間を選択してください' }),
+  customExpiryMinutes: z.number().min(1).max(720).optional(),
   // 位置情報フィールド（任意）
   location_lat: z.number().optional(),
   location_lng: z.number().optional(),
   store_latitude: z.number().optional(),
   store_longitude: z.number().optional(),
-  rating: z.number().min(0).max(5, { message: '0以上5以下の値を入力してください' }).optional(), // 新規追加
-  start_date: z.date().optional(), // 新規追加
-  end_date: z.date().optional(), // 新規追加
+  rating: z.number().min(0).max(5, { message: '0以上5以下の値を入力してください' }).optional(),
   supportPurchaseEnabled: z.boolean().default(false),
   supportPurchaseOptions: z.array(z.number().min(100).max(100000)).max(3).optional(),
-  targetAudience: z.string().optional(), // 🔥 新規追加：対象者フィールド
+  // 🔥 独立した項目として分離
+  remainingSlots: z.number().min(0).max(9999).optional(), // 残りの数（席、在庫）
+  customerSituation: z.string().optional(), // 来客状況
+  couponCode: z.string().max(50).optional(), // クーポン
 });
 
 type PostFormValues = z.infer<typeof postSchema>;
@@ -85,54 +68,22 @@ type DisplayStore = Pick<Store, 'name'> & { id: string };
 
 const libraries: ("places")[] = ["places"];
 
-// 🔥 新規追加：ジャンルとカテゴリーの定義を更新
-const genreCategories = {
-  'ショッピング': ['惣菜', '弁当', '肉', '魚', '野菜', '果物', '米・パン類', 'デザート類', '日用品', '衣料品', 'その他'],
-  'グルメ': ['和食', '洋食', '中華', 'イタリアン', 'フレンチ','レストラン', 'カフェ', 'ファストフード','居酒屋', 'その他'],
-  '観光': ['観光ツアー','観光スポット', '宿泊施設','自然景観', '温泉', '博物館・美術館', '公園','水族館','アミューズメントパーク', 'その他'],
-  'エンタメ': ['スポーツ', '映画・ドラマ','アイドル','アニメ','漫画', 'ゲーム', 'アウトドア', 'その他'],
-  'サービス': ['家事代行', 'モノの保管', '手料理を振る舞う','デリバリー', 'ハウスクリーニング','買取','コーチング','引越し', 'その他'],
-  'イベント': ['コンサート・ライブ', 'フェスティバル', '展示会', 'セミナー・講座', 'スポーツイベント', 'その他'],
-  '求人': ['単発','ギグワーク', 'アルバイト・パート','インターン', 'フリーランス', 'その他'],
-  '販売': ['古着', '中古品','農作物','特産品', 'ハンドメイド', 'デジタル商品', 'チケット', '移動販売', 'その他'],
-  '貸し出し': ['漫画', 'ゲーム', '教科書・参考書','スペース(コワーキング・会議室)','家電','ゴルフ用品','キャンプ用品','車', '自転車', '傘', 'その他'], // 新規追加
-  '宿泊': ['ホテル', '旅館', '民泊', '部屋の貸し出し', 'その他'], // 新規追加
-  'ボランティア': ['環境・自然', '福祉・介護', '教育・子育て', '地域活動', '災害支援', 'その他'],
-  '相談': ['生活相談', '仕事・キャリア', '恋愛・人間関係', '法律・お金', '健康・医療','起業相談','経営相談', 'その他'],
-  'ニュース': ['地域ニュース','ゴシップ','災害情報', 'スポーツ', 'お役立ち情報','エンタメ','お知らせ', 'その他'], 
-  'コミュニティ': ['塾・習い事','地域交流', 'イベント','起業家', '趣味','サークル','料理教室', '学習', '地域', 'その他'],
-  '寄付': ['寄付','募金', 'その他'],
-  '募集': ['メンバー募集', '助け合い', '里親（ペット）', 'その他'], // 新規追加
-  'その他': ['不用品の廃棄']
-};
-
-const expiryOptions = [
-  { value: '1h', label: '1時間' },
-  { value: '3h', label: '3時間' },
-  { value: '6h', label: '6時間' },
-  { value: '12h', label: '12時間' },
+// 🔥 カテゴリ定義（ジャンルから変更）
+const categoryOptions = [
+  { value: '飲食店', label: '飲食店' },
+  { value: '小売店', label: '小売店' },
+  { value: 'イベント集客', label: 'イベント集客' },
+  { value: '応援', label: '応援' },
+  { value: '受け渡し', label: '受け渡し' },
 ];
 
-// 🔥 新規追加：対象者の選択肢を定義
-const targetAudienceOptions = [
-  { value: 'すべての人', label: 'すべての人' },
-  { value: '10代', label: '10代' },
-  { value: '20代', label: '20代' },
-  { value: '30代', label: '30代' },
-  { value: '40代', label: '40代' },
-  { value: '50代', label: '50代' },
-  { value: '60代以上', label: '60代以上' },
-  { value: '学生', label: '学生' },
-  { value: 'ビジネスマン・OL', label: 'ビジネスマン・OL' },
-  { value: '主婦・主夫', label: '主婦・主夫' },
-  { value: '子育て世代', label: '子育て世代' },
-  { value: '一人暮らし', label: '一人暮らし' },
-  { value: 'ファミリー', label: 'ファミリー' },
-  { value: '高齢者', label: '高齢者' },
-  { value: 'フリーランス', label: 'フリーランス' },
-  { value: '起業家・経営者', label: '起業家・経営者' },
-  { value: '観光客・旅行者', label: '観光客・旅行者' },
-  { value: '地域住民', label: '地域住民' },
+// 🔥 新しい掲載期間オプション
+const expiryOptions = [
+  { value: '15m', label: '15分' },
+  { value: '30m', label: '30分' },
+  { value: '45m', label: '45分' },
+  { value: '60m', label: '60分' },
+  { value: 'custom', label: 'カスタム設定（最大12時間）' },
 ];
 
 export default function PostPage() {
@@ -185,34 +136,30 @@ export default function PostPage() {
     defaultValues: {
       storeId: '',
       storeName: '',
-      genre: '',
-      category: '',
+      category: undefined, // カテゴリに変更
       content: '',
-      price: undefined,
       url: '',
-      expiryOption: '3h',
+      expiryOption: '30m',
+      customExpiryMinutes: undefined,
       location_lat: undefined,
       location_lng: undefined,
       store_latitude: undefined,
       store_longitude: undefined,
-      rating: undefined, // 新規追加
-      start_date: undefined, // 新規追加
-      end_date: undefined, // 新規追加
+      rating: undefined,
       supportPurchaseEnabled: false,
       supportPurchaseOptions: [],
-      targetAudience: '', // 🔥 新規追加
+      remainingSlots: undefined,
+      customerSituation: '',
+      couponCode: '',
     },
     mode: 'onChange',
   });
   
   const { formState: { isValid, isSubmitting } } = form;
   
-  const selectedGenre = form.watch('genre');
-  const selectedCategory = form.watch('category');
+  const selectedCategory = form.watch('category'); // ジャンルからカテゴリに変更
+  const selectedExpiryOption = form.watch('expiryOption');
   const watchedFormValues = form.watch();
-
-  // 価格計算モーダルの状態
-  const [showPriceInfoModal, setShowPriceInfoModal] = useState(false);
 
   // 🔥 Stripe設定状態を管理
   const [stripeSetupStatus, setStripeSetupStatus] = useState<{
@@ -289,11 +236,11 @@ export default function PostPage() {
   }, [fileFiles]);
 
   // 🔥 ジャンル変更時にカテゴリーをリセット
-  useEffect(() => {
-    if (selectedGenre) {
-      form.setValue('category', '');
-    }
-  }, [selectedGenre, form]);
+  // useEffect(() => {
+  //   if (selectedCategory) {
+  //     form.setValue('category', undefined);
+  //   }
+  // }, [selectedCategory, form]);
   
   // 🔥 更新された投稿処理
   const handleActualSubmit = async (values: PostFormValues) => {
@@ -311,6 +258,12 @@ export default function PostPage() {
 
     if (!values.expiryOption) {
       setSubmitError("掲載期間を選択してください。");
+      return;
+    }
+
+    // カスタム掲載期間の検証
+    if (values.expiryOption === 'custom' && (!values.customExpiryMinutes || values.customExpiryMinutes < 1 || values.customExpiryMinutes > 720)) {
+      setSubmitError("カスタム掲載期間は1分〜720分（12時間）の範囲で設定してください。");
       return;
     }
 
@@ -405,24 +358,23 @@ export default function PostPage() {
 
       // 🔥 投稿データを準備（完全版）
       const getDefaultStoreName = () => {
-        if (values.storeName && values.storeName.trim() !== '') {
-          return values.storeName;
+        // 🔥 実際に入力された店舗名がある場合はそれを使用
+        const actualStoreName = form.getValues("storeName");
+        if (actualStoreName && actualStoreName.trim() !== '') {
+          return actualStoreName;
         }
         
-        // ジャンルに基づいたデフォルト値
-        if (values.genre) {
-          const genreDefaults = {
-            'ショッピング': 'お店',
+        // 🔥 店舗名が入力されていない場合のみ、カテゴリベースのデフォルト値を使用
+        const selectedCategory = form.getValues("category");
+        if (selectedCategory) {
+          const categoryDefaults = {
             '飲食店': 'レストラン',
-            '観光': '観光地',
-            'エンタメ': 'エンタメ施設', // レジャーから変更
-            'サービス': 'サービス店',
-            'シェア': 'シェアサービス', // 新規追加
-            'コミュニティ': 'コミュニティ', // 新規追加
-            '募集': '募集', // 新規追加
-            'デリバリー': 'デリバリーサービス',
+            '小売店': 'お店',
+            'イベント集客': 'イベント会場',
+            '応援': '応援先',
+            '受け渡し': '受け渡し場所',
           };
-          return genreDefaults[values.genre as keyof typeof genreDefaults] || null;
+          return categoryDefaults[selectedCategory as keyof typeof categoryDefaults] || null;
         }
         
         return null;
@@ -440,37 +392,43 @@ export default function PostPage() {
       const postData: any = {
         app_profile_id: appProfileId,
         store_id: values.storeId && values.storeId.trim() !== '' ? values.storeId : null,
-        store_name: getDefaultStoreName(), // 柔軟なデフォルト値
-        genre: values.genre && values.genre.trim() !== '' ? values.genre : null,
-        category: getDefaultCategory(), // 柔軟なデフォルト値
+        store_name: getDefaultStoreName(),
+        category: values.category || null, // 🔥 カテゴリは明示的に選択された場合のみ保存
         content: values.content,
         image_urls: imageUrls.length > 0 ? JSON.stringify(imageUrls) : null,
         file_urls: fileUrls.length > 0 ? JSON.stringify(fileUrls) : null,
         url: values.url && values.url.trim() !== '' ? values.url : null,
-        price: values.price || null,
         expiry_option: values.expiryOption,
-        expires_at: calculateExpiresAt(values.expiryOption).toISOString(),
+        custom_expiry_minutes: values.expiryOption === 'custom' ? values.customExpiryMinutes : null,
+        expires_at: calculateExpiresAt(values.expiryOption, values.customExpiryMinutes).toISOString(),
         likes_count: 0,
         views_count: 0,
         comments_count: 0,
-        is_deleted: false, // 🔥 追加：デフォルトでfalse
-        rating: values.rating || null, // 新規追加
-        start_date: values.start_date ? values.start_date.toISOString() : null, // 新規追加
-        end_date: values.end_date ? values.end_date.toISOString() : null, // 新規追加
+        is_deleted: false,
+        rating: values.rating || null,
         support_purchase_enabled: values.supportPurchaseEnabled,
         support_purchase_options: values.supportPurchaseEnabled && (values.supportPurchaseOptions?.length ?? 0) > 0 
           ? JSON.stringify(values.supportPurchaseOptions) 
           : null,
-        target_audience: values.targetAudience && values.targetAudience.trim() !== '' ? values.targetAudience : null, // 🔥 新規追加
-        // 🔥 新規追加: author_roleを設定
+        // 🔥 独立したフィールドとして追加
+        remaining_slots: values.remainingSlots || null,
+        customer_situation: values.customerSituation && values.customerSituation.trim() !== '' ? values.customerSituation : null,
+        coupon_code: values.couponCode && values.couponCode.trim() !== '' ? values.couponCode : null,
         author_role: session?.user?.role === 'admin' ? 'admin' : 'user',
       };
 
-      // 🔥 店舗の位置情報を設定
-      if (values.store_latitude && values.store_longitude) {
-        postData.store_latitude = Number(values.store_latitude);
-        postData.store_longitude = Number(values.store_longitude);
-        postData.location_geom = `POINT(${values.store_longitude} ${values.store_latitude})`;
+      // 🔥 店舗の位置情報を設定（場所が選択された場合のみ）
+      const storeLatitude = form.getValues("store_latitude");
+      const storeLongitude = form.getValues("store_longitude");
+      if (storeLatitude && storeLongitude) {
+        postData.store_latitude = Number(storeLatitude);
+        postData.store_longitude = Number(storeLongitude);
+        postData.location_geom = `POINT(${storeLongitude} ${storeLatitude})`;
+        console.log("PostPage: Setting store location data:", {
+          store_latitude: postData.store_latitude,
+          store_longitude: postData.store_longitude,
+          location_geom: postData.location_geom
+        });
       }
 
       // 🔥 端末の位置情報を設定
@@ -528,22 +486,21 @@ export default function PostPage() {
       form.reset({
         storeId: '',
         storeName: '',
-        genre: '',
-        category: '',
+        category: undefined,
         content: '',
-        price: undefined,
         url: '',
-        expiryOption: '3h',
+        expiryOption: '30m',
+        customExpiryMinutes: undefined,
         location_lat: undefined,
         location_lng: undefined,
         store_latitude: undefined,
         store_longitude: undefined,
-        rating: undefined, // 新規追加
-        start_date: undefined, // 新規追加
-        end_date: undefined, // 新規追加
+        rating: undefined,
         supportPurchaseEnabled: false,
         supportPurchaseOptions: [],
-        targetAudience: '', // 🔥 新規追加
+        remainingSlots: undefined,
+        customerSituation: '',
+        couponCode: '',
       });
       setImageFiles([]);
       setImagePreviewUrls([]);
@@ -866,24 +823,19 @@ export default function PostPage() {
     );
   };
 
-  const handleMoveToPriceCalculator = () => {
-    setShowPriceInfoModal(false);
-    window.open('https://discount-calculator-app.vercel.app/', '_blank');
-  };
 
-  // 🔥 オプション項目の表示状態管理
+  // 🔥 オプション項目の表示状態管理（9項目に更新）
   const [showOptionalFields, setShowOptionalFields] = useState(false);
   const [optionalFieldsExpanded, setOptionalFieldsExpanded] = useState({
     location: false,
-    genre: false,
-    category: false,
-    price: false,
+    category: false, // ジャンルからカテゴリに変更
+    rating: false,
     url: false,
+    remainingSlots: false, // 残りの数（席、在庫）
+    customerSituation: false, // 来客状況
+    coupon: false, // クーポン
     file: false,
-    rating: false, // 新規追加
-    date: false, // 新規追加
-    supportPurchase: false, // 追加
-    targetAudience: false, // 🔥 新規追加：対象者フィールド
+    supportPurchase: false,
   });
 
   // 🔥 オプションフィールドの切り替えと値のリセット
@@ -895,7 +847,7 @@ export default function PostPage() {
       };
 
       // フィールドが閉じられるときに値をクリア
-      if (!newState[field]) { // newState[field]がfalseになる、つまり閉じられる時
+      if (!newState[field]) {
         switch (field) {
           case 'location':
             form.setValue('storeId', '', { shouldValidate: true });
@@ -905,33 +857,30 @@ export default function PostPage() {
             setLocationStatus('none');
             setSelectedPlace(null);
             break;
-          case 'genre':
-            form.setValue('genre', '', { shouldValidate: true });
-            // ジャンルがクリアされたらカテゴリもクリア
-            form.setValue('category', '', { shouldValidate: true });
-            break;
           case 'category':
-            form.setValue('category', '', { shouldValidate: true });
-            break;
-          case 'targetAudience':
-            form.setValue('targetAudience', '', { shouldValidate: true });
-            break;
-          case 'price':
-            form.setValue('price', undefined, { shouldValidate: true });
-            break;
-          case 'url':
-            form.setValue('url', '', { shouldValidate: true });
-            break;
-          case 'file':
-            setFileFiles([]);
-            setFilePreviewUrls([]);
+            form.setValue('category', undefined, { shouldValidate: true }); // 🔥 '' から undefined に変更
             break;
           case 'rating':
             form.setValue('rating', undefined, { shouldValidate: true });
             break;
-          case 'date':
-            form.setValue('start_date', undefined, { shouldValidate: true });
-            form.setValue('end_date', undefined, { shouldValidate: true });
+          case 'url':
+            form.setValue('url', '', { shouldValidate: true });
+            break;
+          case 'remainingSlots':
+            form.setValue('remainingSlots', undefined, { shouldValidate: true });
+            break;
+          case 'customerSituation':
+            form.setValue('customerSituation', '', { shouldValidate: true });
+            setTotalCustomers(undefined);
+            setMaleCustomers(undefined);
+            setFemaleCustomers(undefined);
+            break;
+          case 'coupon':
+            form.setValue('couponCode', '', { shouldValidate: true });
+            break;
+          case 'file':
+            setFileFiles([]);
+            setFilePreviewUrls([]);
             break;
           case 'supportPurchase':
             form.setValue('supportPurchaseEnabled', false);
@@ -948,7 +897,7 @@ export default function PostPage() {
   // 🔥 オプション項目の値が入力されているかチェック
   const hasOptionalValues = () => {
     const values = form.getValues();
-    return !!(values.storeId || values.genre || values.category || values.price || values.url || fileFiles.length > 0 || values.rating || values.start_date || values.end_date || values.supportPurchaseEnabled || values.targetAudience);
+    return !!(values.storeId || values.category || values.rating || values.url || values.remainingSlots || values.customerSituation || values.couponCode || fileFiles.length > 0 || values.supportPurchaseEnabled);
   };
 
   // 🔥 Stripe Connect機能を有効化
@@ -1100,6 +1049,106 @@ export default function PostPage() {
     }
   };
 
+  // 🔥 モーダル状態を追加
+  const [showCustomTimeModal, setShowCustomTimeModal] = useState(false);
+  const [customHours, setCustomHours] = useState(0);
+  const [customMinutes, setCustomMinutes] = useState(30);
+
+  // 🔥 来客状況の状態を追加
+  const [totalCustomers, setTotalCustomers] = useState<number | undefined>(undefined);
+  const [maleCustomers, setMaleCustomers] = useState<number | undefined>(undefined);
+  const [femaleCustomers, setFemaleCustomers] = useState<number | undefined>(undefined);
+
+  // 🔥 カスタム時間設定の処理
+  const handleCustomTimeSet = () => {
+    const totalMinutes = customHours * 60 + customMinutes;
+    if (totalMinutes > 0 && totalMinutes <= 720) {
+      form.setValue('customExpiryMinutes', totalMinutes);
+      setShowCustomTimeModal(false);
+    }
+  };
+
+  // 🔥 来客状況の更新処理
+  const updateCustomerSituation = () => {
+    let situation = '';
+    
+    if (totalCustomers !== undefined && totalCustomers > 0) {
+      situation += `総人数: ${totalCustomers}人`;
+      
+      // 男性・女性の人数が入力されている場合は必ず含める（0でも表示）
+      if (maleCustomers !== undefined || femaleCustomers !== undefined) {
+        const parts = [];
+        
+        // 男性の人数（0でも表示）
+        if (maleCustomers !== undefined) {
+          parts.push(`男性: ${maleCustomers}人`);
+        }
+        
+        // 女性の人数（0でも表示）
+        if (femaleCustomers !== undefined) {
+          parts.push(`女性: ${femaleCustomers}人`);
+        }
+        
+        if (parts.length > 0) {
+          situation += ` (${parts.join(', ')})`;
+        }
+      }
+    }
+    
+    form.setValue('customerSituation', situation);
+  };
+
+  // 🔥 男性数変更時の処理を修正
+  const handleMaleCustomersChange = (value: string) => {
+    const num = value === '' ? undefined : parseInt(value, 10);
+    setMaleCustomers(num);
+    
+    // 総人数が設定されていて、男性数が入力された場合、女性数を自動計算
+    if (totalCustomers !== undefined && num !== undefined && num <= totalCustomers) {
+      const calculatedFemale = totalCustomers - num;
+      setFemaleCustomers(calculatedFemale >= 0 ? calculatedFemale : 0);
+    }
+    
+    setTimeout(updateCustomerSituation, 0);
+  };
+
+  // 🔥 女性数変更時の処理を修正
+  const handleFemaleCustomersChange = (value: string) => {
+    const num = value === '' ? undefined : parseInt(value, 10);
+    setFemaleCustomers(num);
+    
+    // 総人数が設定されていて、女性数が入力された場合、男性数を自動計算
+    if (totalCustomers !== undefined && num !== undefined && num <= totalCustomers) {
+      const calculatedMale = totalCustomers - num;
+      setMaleCustomers(calculatedMale >= 0 ? calculatedMale : 0);
+    }
+    
+    setTimeout(updateCustomerSituation, 0);
+  };
+
+  // 🔥 総人数変更時の処理を修正
+  const handleTotalCustomersChange = (value: string) => {
+    const num = value === '' ? undefined : parseInt(value, 10);
+    setTotalCustomers(num);
+    
+    // 総人数が変更された場合、男性・女性数をリセット
+    if (num === undefined) {
+      setMaleCustomers(undefined);
+      setFemaleCustomers(undefined);
+    } else {
+      // 既存の男性・女性数が総人数を超える場合はリセット
+      if (maleCustomers !== undefined && maleCustomers > num) {
+        setMaleCustomers(undefined);
+        setFemaleCustomers(undefined);
+      } else if (femaleCustomers !== undefined && femaleCustomers > num) {
+        setMaleCustomers(undefined);
+        setFemaleCustomers(undefined);
+      }
+    }
+    
+    setTimeout(updateCustomerSituation, 0);
+  };
+
   if (status === "loading") {
     return (
       <AppLayout>
@@ -1179,7 +1228,6 @@ export default function PostPage() {
                           <Upload className="h-12 w-12" />
                           <p className="text-lg">画像をアップロード</p>
                           <p className="text-xs">PNG, JPG, WEBP (最大5MB・最大5枚)</p>
-                          {/* <p className="text-xs">※画像は350px × 350pxの固定サイズで表示されます</p> */}
                         </label>
                       )}
                     </div>
@@ -1219,7 +1267,7 @@ export default function PostPage() {
                 )}
               />
 
-              {/* 🔥 3. 掲載期間（必須） */}
+              {/* 🔥 3. 掲載期間（必須）- 修正版 */}
               <FormField
                 control={form.control}
                 name="expiryOption"
@@ -1228,7 +1276,12 @@ export default function PostPage() {
                     <FormLabel className="text-xl flex font-semibold items-center">
                       <ClockIcon className="mr-2 h-6 w-6" /> 掲載期間<span className="text-destructive ml-1">※</span>
                     </FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value || ""}>
+                    <Select onValueChange={(value) => {
+                      field.onChange(value);
+                      if (value === 'custom') {
+                        setShowCustomTimeModal(true);
+                      }
+                    }} value={field.value || ""}>
                       <FormControl>
                         <SelectTrigger className="w-full text-lg py-6">
                           <SelectValue placeholder="掲載期間を選択してください" />
@@ -1243,9 +1296,30 @@ export default function PostPage() {
                       </SelectContent>
                     </Select>
                     <FormMessage />
+                    
+                    {/* カスタム時間が設定されている場合の表示 */}
+                    {selectedExpiryOption === 'custom' && form.getValues('customExpiryMinutes') && (
+                      <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-blue-800">
+                            設定時間: {Math.floor(form.getValues('customExpiryMinutes')! / 60)}時間{form.getValues('customExpiryMinutes')! % 60}分
+                          </span>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setShowCustomTimeModal(true)}
+                          >
+                            変更
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </FormItem>
                 )}
               />
+
+              {/* 🔥 カスタム掲載期間入力フィールドを削除 */}
 
               {/* 🔥 4. オプション項目バー */}
               <div className="border rounded-lg bg-card">
@@ -1286,8 +1360,8 @@ export default function PostPage() {
                     className="border-t"
                   >
                     <div className="p-4 space-y-4">
-                      {/* オプション項目のトグルボタン */}
-                      <div className="grid grid-cols-2 gap-2">
+                      {/* オプション項目のトグルボタン - 9項目 */}
+                      <div className="grid grid-cols-3 gap-2">
                         <Button
                           type="button"
                           variant="outline"
@@ -1306,20 +1380,6 @@ export default function PostPage() {
                           type="button"
                           variant="outline"
                           size="sm"
-                          onClick={() => toggleOptionalField('genre')}
-                          className={`justify-start transition-all duration-200 ${
-                            optionalFieldsExpanded.genre 
-                              ? 'bg-primary text-primary-foreground border-primary hover:bg-primary/90' 
-                              : 'bg-[#fafafa] text-[#73370c] border-gray-300 hover:bg-[#fafafa] hover:text-[#73370c]'
-                          }`}
-                        >
-                          <Layers className="mr-2 h-4 w-4" />
-                          ジャンル
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
                           onClick={() => toggleOptionalField('category')}
                           className={`justify-start transition-all duration-200 ${
                             optionalFieldsExpanded.category 
@@ -1327,64 +1387,8 @@ export default function PostPage() {
                               : 'bg-[#fafafa] text-[#73370c] border-gray-300 hover:bg-[#fafafa] hover:text-[#73370c]'
                           }`}
                         >
-                          <LayoutGrid className="mr-2 h-4 w-4" />
+                          <Layers className="mr-2 h-4 w-4" />
                           カテゴリ
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => toggleOptionalField('targetAudience')}
-                          className={`justify-start transition-all duration-200 ${
-                            optionalFieldsExpanded.targetAudience 
-                              ? 'bg-primary text-primary-foreground border-primary hover:bg-primary/90' 
-                              : 'bg-[#fafafa] text-[#73370c] border-gray-300 hover:bg-[#fafafa] hover:text-[#73370c]'
-                          }`}
-                        >
-                          <Users className="mr-2 h-4 w-4" />
-                          対象者
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => toggleOptionalField('price')}
-                          className={`justify-start transition-all duration-200 ${
-                            optionalFieldsExpanded.price 
-                              ? 'bg-primary text-primary-foreground border-primary hover:bg-primary/90' 
-                              : 'bg-[#fafafa] text-[#73370c] border-gray-300 hover:bg-[#fafafa] hover:text-[#73370c]'
-                          }`}
-                        >
-                          <Tag className="mr-2 h-4 w-4" />
-                          価格
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => toggleOptionalField('url')}
-                          className={`justify-start transition-all duration-200 ${
-                            optionalFieldsExpanded.url 
-                              ? 'bg-primary text-primary-foreground border-primary hover:bg-primary/90' 
-                              : 'bg-[#fafafa] text-[#73370c] border-gray-300 hover:bg-[#fafafa] hover:text-[#73370c]'
-                          }`}
-                        >
-                          <LinkIcon className="mr-2 h-4 w-4" />
-                          リンク
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => toggleOptionalField('file')}
-                          className={`justify-start transition-all duration-200 ${
-                            optionalFieldsExpanded.file 
-                              ? 'bg-primary text-primary-foreground border-primary hover:bg-primary/90' 
-                              : 'bg-[#fafafa] text-[#73370c] border-gray-300 hover:bg-[#fafafa] hover:text-[#73370c]'
-                          }`}
-                        >
-                          <FileText className="mr-2 h-4 w-4" />
-                          ファイル
                         </Button>
                         <Button
                           type="button"
@@ -1404,15 +1408,71 @@ export default function PostPage() {
                           type="button"
                           variant="outline"
                           size="sm"
-                          onClick={() => toggleOptionalField('date')}
+                          onClick={() => toggleOptionalField('url')}
                           className={`justify-start transition-all duration-200 ${
-                            optionalFieldsExpanded.date 
+                            optionalFieldsExpanded.url 
                               ? 'bg-primary text-primary-foreground border-primary hover:bg-primary/90' 
                               : 'bg-[#fafafa] text-[#73370c] border-gray-300 hover:bg-[#fafafa] hover:text-[#73370c]'
                           }`}
                         >
-                          <CalendarDays className="mr-2 h-4 w-4" />
-                          日時
+                          <LinkIcon className="mr-2 h-4 w-4" />
+                          リンク
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => toggleOptionalField('remainingSlots')}
+                          className={`justify-start transition-all duration-200 ${
+                            optionalFieldsExpanded.remainingSlots 
+                              ? 'bg-primary text-primary-foreground border-primary hover:bg-primary/90' 
+                              : 'bg-[#fafafa] text-[#73370c] border-gray-300 hover:bg-[#fafafa] hover:text-[#73370c]'
+                          }`}
+                        >
+                          <PackageIcon className="mr-2 h-4 w-4" />
+                          残りの数
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => toggleOptionalField('customerSituation')}
+                          className={`justify-start transition-all duration-200 ${
+                            optionalFieldsExpanded.customerSituation 
+                              ? 'bg-primary text-primary-foreground border-primary hover:bg-primary/90' 
+                              : 'bg-[#fafafa] text-[#73370c] border-gray-300 hover:bg-[#fafafa] hover:text-[#73370c]'
+                          }`}
+                        >
+                          <Users className="mr-2 h-4 w-4" />
+                          来客状況
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => toggleOptionalField('coupon')}
+                          className={`justify-start transition-all duration-200 ${
+                            optionalFieldsExpanded.coupon 
+                              ? 'bg-primary text-primary-foreground border-primary hover:bg-primary/90' 
+                              : 'bg-[#fafafa] text-[#73370c] border-gray-300 hover:bg-[#fafafa] hover:text-[#73370c]'
+                          }`}
+                        >
+                          <Tag className="mr-2 h-4 w-4" />
+                          クーポン
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => toggleOptionalField('file')}
+                          className={`justify-start transition-all duration-200 ${
+                            optionalFieldsExpanded.file 
+                              ? 'bg-primary text-primary-foreground border-primary hover:bg-primary/90' 
+                              : 'bg-[#fafafa] text-[#73370c] border-gray-300 hover:bg-[#fafafa] hover:text-[#73370c]'
+                          }`}
+                        >
+                          <FileText className="mr-2 h-4 w-4" />
+                          ファイル
                         </Button>
                         <Button
                           type="button"
@@ -1460,11 +1520,63 @@ export default function PostPage() {
                                         value={{ id: field.value, name: form.getValues("storeName") }}
                                         onChange={async (store) => {
                                           if (store) {
+                                            // �� 場所選択時にすべての位置情報を設定
+                                            console.log("PostPage: Store selected from FavoriteStoreInput:", store);
                                             form.setValue("storeId", store.id, { shouldValidate: true });
                                             form.setValue("storeName", store.name, { shouldValidate: true });
+                                            
+                                            // 🔥 Google Places APIから詳細情報を取得
+                                            if (window.google && window.google.maps && window.google.maps.places) {
+                                              const service = new window.google.maps.places.PlacesService(document.createElement('div'));
+                                              
+                                              service.getDetails(
+                                                {
+                                                  placeId: store.id,
+                                                  fields: ['geometry', 'name', 'formatted_address']
+                                                },
+                                                (place: google.maps.places.PlaceResult | null, status: google.maps.places.PlacesServiceStatus) => {
+                                                  if (status === window.google.maps.places.PlacesServiceStatus.OK && place && place.geometry && place.geometry.location) {
+                                                    const lat = place.geometry.location.lat();
+                                                    const lng = place.geometry.location.lng();
+                                                    
+                                                    console.log("PostPage: Setting location data from Places Details:", { lat, lng, name: place.name });
+                                                    
+                                                    // 🔥 位置情報を確実に設定
+                                                    form.setValue("location_lat", lat, { shouldValidate: true });
+                                                    form.setValue("location_lng", lng, { shouldValidate: true });
+                                                    form.setValue("store_latitude", lat, { shouldValidate: true });
+                                                    form.setValue("store_longitude", lng, { shouldValidate: true });
+                                                    
+                                                    setLocationStatus('success');
+                                                    setSelectedPlace(place);
+                                                    
+                                                    toast({
+                                                      title: "✅ 店舗の位置情報を取得しました",
+                                                      description: `${place.name} (緯度: ${lat.toFixed(6)}, 経度: ${lng.toFixed(6)})`,
+                                                      duration: 1000,
+                                                    });
+                                                  } else {
+                                                    console.warn("PostPage: Failed to get place details:", status);
+                                                    setLocationStatus('error');
+                                                    toast({
+                                                      title: "⚠️ 位置情報を取得できませんでした",
+                                                      description: "別の店舗を選択してください",
+                                                      duration: 3000,
+                                                    });
+                                                  }
+                                                }
+                                              );
+                                            }
                                           } else {
+                                            // 🔥 場所をクリアした時はすべての位置情報をリセット
                                             form.setValue("storeId", "", { shouldValidate: true });
                                             form.setValue("storeName", "", { shouldValidate: true });
+                                            form.setValue("location_lat", undefined, { shouldValidate: true });
+                                            form.setValue("location_lng", undefined, { shouldValidate: true });
+                                            form.setValue("store_latitude", undefined, { shouldValidate: true });
+                                            form.setValue("store_longitude", undefined, { shouldValidate: true });
+                                            setLocationStatus('none');
+                                            setSelectedPlace(null);
                                           }
                                         }}
                                         placeholder="お店を検索または選択してください"
@@ -1480,43 +1592,7 @@ export default function PostPage() {
                         </motion.div>
                       )}
 
-                      {/* ジャンル選択フィールド */}
-                      {optionalFieldsExpanded.genre && (
-                        <motion.div
-                          initial={{ opacity: 0, y: -10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ duration: 0.2 }}
-                        >
-                          <FormField
-                            control={form.control}
-                            name="genre"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel className="text-lg flex font-semibold items-center">
-                                  <Layers className="mr-2 h-5 w-5" /> ジャンル
-                                </FormLabel>
-                                <Select onValueChange={field.onChange} value={field.value || ""}>
-                                  <FormControl>
-                                    <SelectTrigger className="w-full text-lg py-6">
-                                      <SelectValue placeholder="ジャンルを選択してください" />
-                                    </SelectTrigger>
-                                  </FormControl>
-                                  <SelectContent className="max-h-[200px]">
-                                    {Object.keys(genreCategories).map((genre) => (
-                                      <SelectItem key={genre} value={genre} className="text-lg py-3">
-                                        {genre}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </motion.div>
-                      )}
-
-                      {/* カテゴリー選択フィールド */}
+                      {/* カテゴリ選択フィールド */}
                       {optionalFieldsExpanded.category && (
                         <motion.div
                           initial={{ opacity: 0, y: -10 }}
@@ -1529,60 +1605,16 @@ export default function PostPage() {
                             render={({ field }) => (
                               <FormItem>
                                 <FormLabel className="text-lg flex font-semibold items-center">
-                                  <LayoutGrid className="mr-2 h-5 w-5" /> カテゴリ
-                                </FormLabel>
-                                <Select 
-                                  onValueChange={field.onChange} 
-                                  value={field.value || ""}
-                                  disabled={!selectedGenre}
-                                >
-                                  <FormControl>
-                                    <SelectTrigger className="w-full text-lg py-6">
-                                      <SelectValue placeholder={
-                                        selectedGenre 
-                                          ? "カテゴリを選択してください" 
-                                          : "まずジャンルを選択してください"
-                                      } />
-                                    </SelectTrigger>
-                                  </FormControl>
-                                  <SelectContent className="max-h-[200px]">
-                                    {selectedGenre && genreCategories[selectedGenre as keyof typeof genreCategories]?.map((category) => (
-                                      <SelectItem key={category} value={category} className="text-lg py-3">
-                                        {category}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </motion.div>
-                      )}
-
-                      {/* 🔥 対象者選択フィールド */}
-                      {optionalFieldsExpanded.targetAudience && (
-                        <motion.div
-                          initial={{ opacity: 0, y: -10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ duration: 0.2 }}
-                        >
-                          <FormField
-                            control={form.control}
-                            name="targetAudience"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel className="text-lg flex font-semibold items-center">
-                                  <Users className="mr-2 h-5 w-5" /> 対象者
+                                  <Layers className="mr-2 h-5 w-5" /> カテゴリ
                                 </FormLabel>
                                 <Select onValueChange={field.onChange} value={field.value || ""}>
                                   <FormControl>
                                     <SelectTrigger className="w-full text-lg py-6">
-                                      <SelectValue placeholder="対象者を選択してください" />
+                                      <SelectValue placeholder="カテゴリを選択してください" />
                                     </SelectTrigger>
                                   </FormControl>
                                   <SelectContent className="max-h-[200px]">
-                                    {targetAudienceOptions.map((option) => (
+                                    {categoryOptions.map((option) => (
                                       <SelectItem key={option.value} value={option.value} className="text-lg py-3">
                                         {option.label}
                                       </SelectItem>
@@ -1596,8 +1628,8 @@ export default function PostPage() {
                         </motion.div>
                       )}
 
-                      {/* 価格入力フィールド */}
-                      {optionalFieldsExpanded.price && (
+                      {/* 🔥 評価入力フィールド (数値入力と部分的な星表示に対応) */}
+                      {optionalFieldsExpanded.rating && (
                         <motion.div
                           initial={{ opacity: 0, y: -10 }}
                           animate={{ opacity: 1, y: 0 }}
@@ -1605,40 +1637,70 @@ export default function PostPage() {
                         >
                           <FormField
                             control={form.control}
-                            name="price"
+                            name="rating"
                             render={({ field }) => (
                               <FormItem>
                                 <FormLabel className="text-lg flex font-semibold items-center">
-                                  <Tag className="mr-2 h-5 w-5" />
-                                  価格 (税込)
-                                  {/* <span
-                                    className="ml-2 flex items-center text-sm text-blue-600 cursor-pointer hover:underline"
-                                    onClick={() => setShowPriceInfoModal(true)}
-                                  >
-                                    <HelpCircle className="h-4 w-4 mr-1" />
-                                    何％割引っていくら？
-                                  </span> */}
+                                  <StarIcon className="mr-2 h-5 w-5" /> 評価 (0.0〜5.0)
                                 </FormLabel>
-                                <FormControl>
-                                  <Input
-                                    type="number"
-                                    placeholder="例: 500"
-                                    {...field}
-                                    value={field.value === undefined ? '' : String(field.value)}
-                                    onChange={(e) => {
-                                      const value = e.target.value;
-                                      if (value === '' || /^[0-9]+$/.test(value)) {
-                                         field.onChange(value === '' ? undefined : parseInt(value, 10));
-                                      }
-                                    }}
-                                    style={{ fontSize: '16px' }}
-                                    disabled={isUploading}
-                                    autoComplete="off"
-                                    autoCorrect="off"
-                                    autoCapitalize="off"
-                                    spellCheck="false"
-                                  />
-                                </FormControl>
+                                  <FormControl>
+                                  <div className="flex items-center space-x-2">
+                                    {/* 星の表示 */}
+                                    <div className="flex items-center">
+                                      {[1, 2, 3, 4, 5].map((starIndex) => {
+                                        const currentRating = field.value || 0;
+                                        const fullStars = Math.floor(currentRating);
+                                        const hasHalfStar = currentRating - fullStars >= 0.5;
+                                        const isFull = starIndex <= fullStars;
+                                        const isHalf = starIndex === fullStars + 1 && hasHalfStar;
+
+                                        return (
+                                          <div
+                                            key={starIndex}
+                                            className="relative"
+                                            onClick={() => field.onChange(starIndex)} // クリックで整数値設定も可能
+                                          >
+                                            <StarIcon
+                                              className={cn(
+                                                "h-8 w-8 cursor-pointer text-gray-300",
+                                                { "fill-yellow-400": isFull || isHalf }
+                                              )}
+                                            />
+                                            {isHalf && (
+                                              <div
+                                                className="absolute inset-0 overflow-hidden"
+                                                style={{ width: '50%' }} // 半分だけ色を塗る
+                                              >
+                                                <StarIcon className="h-8 w-8 text-yellow-400 fill-yellow-400" />
+                                              </div>
+                                            )}
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                    {/* 数値入力フィールド */}
+                                    <Input
+                                      type="number"
+                                      step="0.1" // 小数点第一位まで許可
+                                      min="0.0"
+                                      max="5.0"
+                                      placeholder="例: 3.5"
+                                      value={field.value === undefined ? '' : String(field.value)}
+                                      onChange={(e) => {
+                                        const value = e.target.value;
+                                        // 数値または空文字列、小数点第一位までの数値のみを許可
+                                        if (value === '' || /^(?:\d(?:\.\d)?|[0-4](?:\.\d)?|5(?:\.0)?)$/.test(value)) {
+                                          field.onChange(value === '' ? undefined : parseFloat(value));
+                                        }
+                                      }}
+                                      className="w-28 text-lg"
+                                      autoComplete="off"
+                                      autoCorrect="off"
+                                      autoCapitalize="off"
+                                      spellCheck="false"
+                                    />
+                                  </div>
+                                  </FormControl>
                                 <FormMessage />
                               </FormItem>
                             )}
@@ -1666,6 +1728,186 @@ export default function PostPage() {
                                   <Input
                                     type="url"
                                     placeholder="https://example.com"
+                                    {...field}
+                                    style={{ fontSize: '16px' }}
+                                    disabled={isUploading}
+                                    autoComplete="off"
+                                    autoCorrect="off"
+                                    autoCapitalize="off"
+                                    spellCheck="false"
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </motion.div>
+                      )}
+
+                      {/* 残りの数（席、在庫）フィールド */}
+                      {optionalFieldsExpanded.remainingSlots && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          <FormField
+                            control={form.control}
+                            name="remainingSlots"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-lg font-semibold flex items-center">
+                                  <PackageIcon className="mr-2 h-5 w-5" />
+                                  残りの数（座席数、在庫数など）
+                                </FormLabel>
+                                <FormControl>
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    max="9999"
+                                    placeholder="例: 5"
+                                    {...field}
+                                    value={field.value === undefined ? '' : String(field.value)}
+                                    onChange={(e) => {
+                                      const value = e.target.value;
+                                      if (value === '' || /^[0-9]+$/.test(value)) {
+                                         field.onChange(value === '' ? undefined : parseInt(value, 10));
+                                      }
+                                    }}
+                                    style={{ fontSize: '16px' }}
+                                    disabled={isUploading}
+                                    autoComplete="off"
+                                    autoCorrect="off"
+                                    autoCapitalize="off"
+                                    spellCheck="false"
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </motion.div>
+                      )}
+
+                      {/* 来客状況フィールド */}
+                      {optionalFieldsExpanded.customerSituation && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          <FormField
+                            control={form.control}
+                            name="customerSituation"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-lg font-semibold flex items-center">
+                                  <Users className="mr-2 h-5 w-5" />
+                                  来客状況
+                                </FormLabel>
+                                <div className="space-y-3">
+                                  {/* 総人数入力 */}
+                                  <div>
+                                    <Label className="text-sm">総人数</Label>
+                                    <Input
+                                      type="number"
+                                      min="0"
+                                      max="999"
+                                      placeholder="例: 15"
+                                      value={totalCustomers === undefined ? '' : String(totalCustomers)}
+                                      onChange={(e) => {
+                                        handleTotalCustomersChange(e.target.value);
+                                      }}
+                                      style={{ fontSize: '16px' }}
+                                      disabled={isUploading}
+                                      autoComplete="off"
+                                      autoCorrect="off"
+                                      autoCapitalize="off"
+                                      spellCheck="false"
+                                    />
+                                  </div>
+                                  
+                                  {/* 男女内訳 */}
+                                  <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                      <Label className="text-sm">男性</Label>
+                                      <Input
+                                        type="number"
+                                        min="0"
+                                        max={totalCustomers || 999}
+                                        placeholder="例: 8"
+                                        value={maleCustomers === undefined ? '' : String(maleCustomers)}
+                                        onChange={(e) => {
+                                          handleMaleCustomersChange(e.target.value);
+                                        }}
+                                        style={{ fontSize: '16px' }}
+                                        disabled={isUploading || totalCustomers === undefined}
+                                        autoComplete="off"
+                                        autoCorrect="off"
+                                        autoCapitalize="off"
+                                        spellCheck="false"
+                                      />
+                                    </div>
+                                    <div>
+                                      <Label className="text-sm">女性</Label>
+                                      <Input
+                                        type="number"
+                                        min="0"
+                                        max={totalCustomers || 999}
+                                        placeholder="例: 7"
+                                        value={femaleCustomers === undefined ? '' : String(femaleCustomers)}
+                                        onChange={(e) => {
+                                          handleFemaleCustomersChange(e.target.value);
+                                        }}
+                                        style={{ fontSize: '16px' }}
+                                        disabled={isUploading || totalCustomers === undefined}
+                                        autoComplete="off"
+                                        autoCorrect="off"
+                                        autoCapitalize="off"
+                                        spellCheck="false"
+                                      />
+                                    </div>
+                                  </div>
+                                  
+                                  {/* 計算結果の表示 */}
+                                  {totalCustomers !== undefined && (maleCustomers !== undefined || femaleCustomers !== undefined) && (
+                                    <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded">
+                                      <p className="text-sm text-blue-800">
+                                        プレビュー: 総人数{totalCustomers}人
+                                        {maleCustomers !== undefined && ` (男性: ${maleCustomers}人`}
+                                        {femaleCustomers !== undefined && `, 女性: ${femaleCustomers}人)`}
+                                      </p>
+                                    </div>
+                                  )}
+                                </div>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </motion.div>
+                      )}
+
+                      {/* クーポンフィールド */}
+                      {optionalFieldsExpanded.coupon && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          <FormField
+                            control={form.control}
+                            name="couponCode"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-lg font-semibold flex items-center">
+                                  <Tag className="mr-2 h-5 w-5" />
+                                  クーポン
+                                </FormLabel>
+                                <FormControl>
+                                  <Input
+                                    type="text"
+                                    maxLength={50}
+                                    placeholder="例: 会計から100円引き、ドリンク1杯無料"
                                     {...field}
                                     style={{ fontSize: '16px' }}
                                     disabled={isUploading}
@@ -1750,249 +1992,7 @@ export default function PostPage() {
                         </motion.div>
                       )}
 
-                      {/* 🔥 評価入力フィールド (数値入力と部分的な星表示に対応) */}
-                      {optionalFieldsExpanded.rating && (
-                        <motion.div
-                          initial={{ opacity: 0, y: -10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ duration: 0.2 }}
-                        >
-                          <FormField
-                            control={form.control}
-                            name="rating"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel className="text-lg flex font-semibold items-center">
-                                  <StarIcon className="mr-2 h-5 w-5" /> 評価 (0.0〜5.0)
-                                </FormLabel>
-                                <FormControl>
-                                  <div className="flex items-center space-x-2">
-                                    {/* 星の表示 */}
-                                    <div className="flex items-center">
-                                      {[1, 2, 3, 4, 5].map((starIndex) => {
-                                        const currentRating = field.value || 0;
-                                        const fullStars = Math.floor(currentRating);
-                                        const hasHalfStar = currentRating - fullStars >= 0.5;
-                                        const isFull = starIndex <= fullStars;
-                                        const isHalf = starIndex === fullStars + 1 && hasHalfStar;
-
-                                        return (
-                                          <div
-                                            key={starIndex}
-                                            className="relative"
-                                            onClick={() => field.onChange(starIndex)} // クリックで整数値設定も可能
-                                          >
-                                            <StarIcon
-                                              className={cn(
-                                                "h-8 w-8 cursor-pointer text-gray-300",
-                                                { "fill-yellow-400": isFull || isHalf }
-                                              )}
-                                            />
-                                            {isHalf && (
-                                              <div
-                                                className="absolute inset-0 overflow-hidden"
-                                                style={{ width: '50%' }} // 半分だけ色を塗る
-                                              >
-                                                <StarIcon className="h-8 w-8 text-yellow-400 fill-yellow-400" />
-                                              </div>
-                                            )}
-                                          </div>
-                                        );
-                                      })}
-                                    </div>
-                                    {/* 数値入力フィールド */}
-                                    <Input
-                                      type="number"
-                                      step="0.1" // 小数点第一位まで許可
-                                      min="0.0"
-                                      max="5.0"
-                                      placeholder="例: 3.5"
-                                      value={field.value === undefined ? '' : String(field.value)}
-                                      onChange={(e) => {
-                                        const value = e.target.value;
-                                        // 数値または空文字列、小数点第一位までの数値のみを許可
-                                        if (value === '' || /^(?:\d(?:\.\d)?|[0-4](?:\.\d)?|5(?:\.0)?)$/.test(value)) {
-                                          field.onChange(value === '' ? undefined : parseFloat(value));
-                                        }
-                                      }}
-                                      className="w-28 text-lg"
-                                      autoComplete="off"
-                                      autoCorrect="off"
-                                      autoCapitalize="off"
-                                      spellCheck="false"
-                                    />
-                                  </div>
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </motion.div>
-                      )}
-
-                      {/* 🔥 開始日・終了日入力フィールド (時間設定を追加) */}
-                      {optionalFieldsExpanded.date && (
-                        <motion.div
-                          initial={{ opacity: 0, y: -10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ duration: 0.2 }}
-                        >
-                          <FormItem>
-                            <FormLabel className="text-lg flex font-semibold items-center">
-                              <CalendarDays className="mr-2 h-5 w-5" /> 日時設定
-                            </FormLabel>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              <FormField
-                                control={form.control}
-                                name="start_date"
-                                render={({ field }) => (
-                                  <FormItem className="flex flex-col">
-                                    <FormLabel className="text-base">開始日</FormLabel>
-                                    <Popover>
-                                      <PopoverTrigger asChild>
-                                        <FormControl>
-                                          <Button
-                                            variant={"outline"}
-                                            className={cn(
-                                              "w-full pl-3 text-left font-normal",
-                                              !field.value && "text-muted-foreground",
-                                              "h-12 text-lg" // スタイル調整
-                                            )}
-                                          >
-                                            {field.value ? (
-                                              format(field.value, "PPP", { locale: ja })
-                                            ) : (
-                                              <span>日付を選択</span>
-                                            )}
-                                            <CalendarClock className="ml-auto h-5 w-5 opacity-50" />
-                                          </Button>
-                                        </FormControl>
-                                      </PopoverTrigger>
-                                      <PopoverContent className="w-auto p-0" align="start">
-                                        <Calendar
-                                          mode="single"
-                                          selected={field.value}
-                                          onSelect={(date) => {
-                                            if (date) {
-                                              const currentTime = field.value ? new Date(field.value) : new Date();
-                                              date.setHours(currentTime.getHours());
-                                              date.setMinutes(currentTime.getMinutes());
-                                              date.setSeconds(0);
-                                              date.setMilliseconds(0);
-                                              field.onChange(date);
-                                            } else {
-                                              field.onChange(undefined);
-                                            }
-                                          }}
-                                          disabled={(date) =>
-                                            date < new Date("1900-01-01")
-                                          }
-                                          initialFocus
-                                          locale={ja}
-                                        />
-                                      </PopoverContent>
-                                    </Popover>
-                                    <FormMessage />
-                                    {/* 時間入力フィールドを追加 */}
-                                    <div className="flex items-center space-x-2 mt-2">
-                                      <CalendarClock className="h-5 w-5 text-muted-foreground" /> {/* 時計アイコン */}
-                                      <Input
-                                        type="time"
-                                        value={field.value ? format(field.value, 'HH:mm') : ''}
-                                        onChange={(e) => {
-                                          const [hours, minutes] = e.target.value.split(':').map(Number);
-                                          const newDate = field.value ? new Date(field.value) : new Date();
-                                          newDate.setHours(hours);
-                                          newDate.setMinutes(minutes);
-                                          newDate.setSeconds(0);
-                                          newDate.setMilliseconds(0);
-                                          field.onChange(newDate);
-                                        }}
-                                        className="w-full text-lg"
-                                        step="300" // 5分刻み
-                                      />
-                                    </div>
-                                  </FormItem>
-                                )}
-                              />
-                              <FormField
-                                control={form.control}
-                                name="end_date"
-                                render={({ field }) => (
-                                  <FormItem className="flex flex-col">
-                                    <FormLabel className="text-base">終了日</FormLabel>
-                                    <Popover>
-                                      <PopoverTrigger asChild>
-                                        <FormControl>
-                                          <Button
-                                            variant={"outline"}
-                                            className={cn(
-                                              "w-full pl-3 text-left font-normal",
-                                              !field.value && "text-muted-foreground",
-                                              "h-12 text-lg" // スタイル調整
-                                            )}
-                                          >
-                                            {field.value ? (
-                                              format(field.value, "PPP", { locale: ja })
-                                            ) : (
-                                              <span>日付を選択</span>
-                                            )}
-                                            <CalendarClock className="ml-auto h-5 w-5 opacity-50" />
-                                          </Button>
-                                        </FormControl>
-                                      </PopoverTrigger>
-                                      <PopoverContent className="w-auto p-0" align="start">
-                                        <Calendar
-                                          mode="single"
-                                          selected={field.value}
-                                          onSelect={(date) => {
-                                            if (date) {
-                                              const currentTime = field.value ? new Date(field.value) : new Date();
-                                              date.setHours(currentTime.getHours());
-                                              date.setMinutes(currentTime.getMinutes());
-                                              date.setSeconds(0);
-                                              date.setMilliseconds(0);
-                                              field.onChange(date);
-                                            } else {
-                                              field.onChange(undefined);
-                                            }
-                                          }}
-                                          disabled={(date) =>
-                                            date < new Date("1900-01-01")
-                                          }
-                                          initialFocus
-                                          locale={ja}
-                                        />
-                                      </PopoverContent>
-                                    </Popover>
-                                    <FormMessage />
-                                    {/* 時間入力フィールドを追加 */}
-                                    <div className="flex items-center space-x-2 mt-2">
-                                      <CalendarClock className="h-5 w-5 text-muted-foreground" /> {/* 時計アイコン */}
-                                      <Input
-                                        type="time"
-                                        value={field.value ? format(field.value, 'HH:mm') : ''}
-                                        onChange={(e) => {
-                                          const [hours, minutes] = e.target.value.split(':').map(Number);
-                                          const newDate = field.value ? new Date(field.value) : new Date();
-                                          newDate.setHours(hours);
-                                          newDate.setMinutes(minutes);
-                                          newDate.setSeconds(0);
-                                          newDate.setMilliseconds(0);
-                                          field.onChange(newDate);
-                                        }}
-                                        className="w-full text-lg"
-                                        step="300" // 5分刻み
-                                      />
-                                    </div>
-                                  </FormItem>
-                                )}
-                              />
-                            </div>
-                          </FormItem>
-                        </motion.div>
-                      )}
-
+                      {/* おすそわけフィールド - 既存のコードをそのまま維持 */}
                       {optionalFieldsExpanded.supportPurchase && (
                         <motion.div
                           initial={{ opacity: 0, y: -10 }}
@@ -2215,46 +2215,7 @@ export default function PostPage() {
             </div>
           </CustomModal>
 
-          <CustomModal
-            isOpen={showPriceInfoModal}
-            onClose={() => setShowPriceInfoModal(false)}
-            title="価格計算について"
-          >
-            <div className="pt-2">
-              <p className="mb-4 text-center">
-                割引率から価格を計算したい場合は、専用の計算ツールをご利用ください。
-              </p>
-              <div className="mt-6 flex justify-center">
-                <Button
-                  onClick={handleMoveToPriceCalculator}
-                >
-                  割引計算ツールを開く
-                </Button>
-              </div>
-            </div>
-          </CustomModal>
-
-          {/* 🔥 Stripe設定確認モーダル */}
-          <CustomModal
-            isOpen={showStripeSetupModal}
-            onClose={handleNavigateToStripeSetup}
-            title="Stripe設定の確認"
-          >
-            <div className="pt-2">
-              <p className="mb-4 text-center">
-                Stripe設定が完了していません。Stripe設定を完了させてください。
-              </p>
-              <div className="mt-6 flex justify-center">
-                <Button
-                  onClick={handleNavigateToStripeSetup}
-                >
-                  Stripe設定画面へ移動
-                </Button>
-              </div>
-            </div>
-          </CustomModal>
-
-          {/* 🔥 Stripe設定促進モーダル */}
+          {/* 🔥 Stripe設定確認モーダル - 既存のコードを維持 */}
           <CustomModal
             isOpen={showStripeSetupModal}
             onClose={() => setShowStripeSetupModal(false)}
@@ -2316,6 +2277,83 @@ export default function PostPage() {
                   className="w-full"
                 >
                   後で設定する
+                </Button>
+              </div>
+            </div>
+          </CustomModal>
+
+          {/* 🔥 カスタム時間設定モーダル */}
+          <CustomModal
+            isOpen={showCustomTimeModal}
+            onClose={() => setShowCustomTimeModal(false)}
+            title="カスタム掲載時間の設定"
+          >
+            <div className="pt-2 space-y-4">
+              <p className="text-sm text-gray-600">
+                掲載時間を設定してください（最大12時間）
+              </p>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium">時間</Label>
+                  <Select 
+                    value={String(customHours)} 
+                    onValueChange={(value) => setCustomHours(parseInt(value))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from({ length: 13 }, (_, i) => (
+                        <SelectItem key={i} value={String(i)}>
+                          {i}時間
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div>
+                  <Label className="text-sm font-medium">分</Label>
+                  <Select 
+                    value={String(customMinutes)} 
+                    onValueChange={(value) => setCustomMinutes(parseInt(value))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {[0, 15, 30, 45].map((minute) => (
+                        <SelectItem key={minute} value={String(minute)}>
+                          {minute}分
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              
+              <div className="bg-blue-50 border border-blue-200 rounded p-3">
+                <p className="text-sm text-blue-800">
+                  設定時間: {customHours}時間{customMinutes}分
+                  {customHours * 60 + customMinutes > 720 && (
+                    <span className="text-red-600 block">※12時間を超えています</span>
+                  )}
+                </p>
+              </div>
+              
+              <div className="flex justify-end space-x-3 pt-4">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowCustomTimeModal(false)}
+                >
+                  キャンセル
+                </Button>
+                <Button 
+                  onClick={handleCustomTimeSet}
+                  disabled={customHours * 60 + customMinutes > 720 || customHours * 60 + customMinutes === 0}
+                >
+                  設定
                 </Button>
               </div>
             </div>

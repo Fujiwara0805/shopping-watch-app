@@ -3,21 +3,19 @@ export interface Post {
   app_profile_id: string;
   store_id: string | null;
   store_name: string | null;
-  genre: string | null;
-  category: string | null;
+  category: string | null; // 🔥 カテゴリフィールド（飲食店、小売店、イベント集客、応援、受け渡し）
   content: string;
   image_urls: string | null; // JSON文字列
-  price: number | null;
-  expiry_option: '1h' | '3h' | '6h' | '12h';
+  rating?: number | null;
+  expiry_option: '15m' | '30m' | '45m' | '60m' | 'custom';
+  custom_expiry_minutes?: number | null;
   created_at: string;
   expires_at?: string;
   likes_count: number;
   views_count: number;
   comments_count: number;
   post_likes?: Array<{ user_id: string }>;
-  rating?: number | null;
-  start_date?: string | null;
-  end_date?: string | null;
+  
   // 店舗の位置情報
   store_latitude?: number | null;
   store_longitude?: number | null;
@@ -28,10 +26,18 @@ export interface Post {
   user_longitude?: number | null;
   user_location_geom?: string | null;
   
-  // 新規追加フィールド
+  // 既存フィールド
   url?: string | null;
   file_urls?: string | null; // JSON文字列
-  target_audience?: string | null; // 🔥 新規追加：対象者フィールド
+  is_deleted?: boolean;
+  support_purchase_enabled?: boolean;
+  support_purchase_options?: string | null; // JSON文字列
+  author_role?: string;
+  
+  // 🔥 新規追加フィールド
+  remaining_slots?: number | null; // 残りの数（席、在庫）
+  coupon_code?: string | null; // クーポン
+  customer_situation?: string | null; // 来客状況
 }
 
 export interface AuthorProfile {

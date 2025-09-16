@@ -72,17 +72,16 @@ interface PostFromDB {
   app_profile_id: string;
   store_id: string;
   store_name: string;
-  genre: string | null;
-  category: string;
+  category: string; // 🔥 カテゴリフィールド
   content: string;
   image_urls: string | null;
   url: string | null;
   file_urls: string | null;
   expiry_option: string;
+  custom_expiry_minutes?: number | null; // 🔥 追加
   likes_count: number;
   views_count: number;
   comments_count: number;
-  price: number | null;
   created_at: string;
   expires_at: string;
   store_latitude?: number;
@@ -90,72 +89,34 @@ interface PostFromDB {
   user_latitude?: number;
   user_longitude?: number;
   rating?: number | null;
-  start_date?: string | null;
-  end_date?: string | null;
   support_purchase_enabled?: boolean;
   support_purchase_options?: string | null;
   // 🔥 追加: authorプロパティを定義
   author: AuthorData | AuthorData[] | null;
   post_likes: PostLike[] | null;
-  target_audience?: string | null; // 🔥 新規追加：対象者フィールド
-  author_role?: string; // 追加: author_roleフィールド
+  author_role?: string;
+  // 🔥 新規追加フィールド
+  remaining_slots?: number | null;
+  coupon_code?: string | null;
+  customer_situation?: string | null;
 }
 
 type SortOption = 'created_at_desc' | 'created_at_asc' | 'expires_at_asc' | 'distance_asc' | 'likes_desc' | 'views_desc' | 'comments_desc';
 type SearchMode = 'all' | 'category' | 'favorite_store' | 'liked_posts' | 'hybrid';
 
-// 🔥 更新されたカテゴリー分類
-const genreCategories = {
-  'ショッピング': ['惣菜', '弁当', '肉', '魚', '野菜', '果物', '米・パン類', 'デザート類', '日用品', '衣料品', 'その他'],
-  'グルメ': ['和食', '洋食', '中華', 'イタリアン', 'フレンチ','レストラン', 'カフェ', 'ファストフード','居酒屋', 'その他'],
-  '観光': ['観光ツアー','観光スポット', '宿泊施設','自然景観', '温泉', '博物館・美術館', '公園','水族館','アミューズメントパーク', 'その他'],
-  'エンタメ': ['スポーツ', '映画・ドラマ','アイドル','アニメ','漫画', 'ゲーム', 'アウトドア', 'その他'],
-  'サービス': ['家事代行', 'モノの保管', '手料理を振る舞う','デリバリー', 'ハウスクリーニング','買取','コーチング','引越し', 'その他'],
-  'イベント': ['コンサート・ライブ', 'フェスティバル', '展示会', 'セミナー・講座', 'スポーツイベント', 'その他'],
-  '求人': ['単発','ギグワーク', 'アルバイト・パート','インターン', 'フリーランス', 'その他'],
-  '販売': ['古着', '中古品','農作物','特産品', 'ハンドメイド', 'デジタル商品', 'チケット', '移動販売', 'その他'],
-  '貸し出し': ['漫画', 'ゲーム', '教科書・参考書','スペース(コワーキング・会議室)','家電','ゴルフ用品','キャンプ用品','車', '自転車', '傘', 'その他'], // 新規追加
-  '宿泊': ['ホテル', '旅館', '民泊', '部屋の貸し出し', 'その他'], // 新規追加
-  'ボランティア': ['環境・自然', '福祉・介護', '教育・子育て', '地域活動', '災害支援', 'その他'],
-  '相談': ['生活相談', '仕事・キャリア', '恋愛・人間関係', '法律・お金', '健康・医療','起業相談','経営相談', 'その他'],
-  'ニュース': ['地域ニュース','ゴシップ','災害情報', 'スポーツ', 'お役立ち情報','エンタメ','お知らせ', 'その他'], 
-  'コミュニティ': ['塾・習い事','地域交流', 'イベント','起業家', '趣味','サークル','料理教室', '学習', '地域', 'その他'],
-  '寄付': ['寄付','募金', 'その他'],
-  '募集': ['メンバー募集', '助け合い', '里親（ペット）', 'その他'], // 新規追加
-  'その他': ['不用品の廃棄']
-};
-const targetAudienceOptions = [
-  { value: 'すべての人', label: 'すべての人' },
-  { value: '10代', label: '10代' },
-  { value: '20代', label: '20代' },
-  { value: '30代', label: '30代' },
-  { value: '40代', label: '40代' },
-  { value: '50代', label: '50代' },
-  { value: '60代以上', label: '60代以上' },
-  { value: '学生', label: '学生' },
-  { value: 'ビジネスマン・OL', label: 'ビジネスマン・OL' },
-  { value: '主婦・主夫', label: '主婦・主夫' },
-  { value: '子育て世代', label: '子育て世代' },
-  { value: '一人暮らし', label: '一人暮らし' },
-  { value: 'ファミリー', label: 'ファミリー' },
-  { value: '高齢者', label: '高齢者' },
-  { value: 'フリーランス', label: 'フリーランス' },
-  { value: '起業家・経営者', label: '起業家・経営者' },
-  { value: '観光客・旅行者', label: '観光客・旅行者' },
-  { value: '地域住民', label: '地域住民' },
+// 🔥 更新されたカテゴリ分類（5つのカテゴリに変更）
+const categoryOptions = [
+  { value: '飲食店', label: '飲食店' },
+  { value: '小売店', label: '小売店' },
+  { value: 'イベント集客', label: 'イベント集客' },
+  { value: '応援', label: '応援' },
+  { value: '受け渡し', label: '受け渡し' },
 ];
 
-// 🔥 全カテゴリーを取得する関数
-const getAllCategories = () => {
-  const allCategories = new Set<string>();
-  Object.values(genreCategories).forEach(categories => {
-    categories.forEach(category => allCategories.add(category));
-  });
-  return ['すべて', ...Array.from(allCategories).sort()];
-};
+// 🔥 従来のgenreCategoriesを削除し、新しいカテゴリに対応
+const categories = ['すべて', '飲食店', '小売店', 'イベント集客', '応援', '受け渡し'];
 
-const categories = getAllCategories();
-const genres = ['すべて', 'ショッピング', 'グルメ', '観光', 'エンタメ', 'サービス', 'イベント', '求人', '販売', '貸し出し', '宿泊', 'ボランティア', '相談', 'ニュース', 'コミュニティ', '寄付', '募集', 'その他'];
+
 const SEARCH_RADIUS_METERS = 5000; // 5km
 
 // コメントコンポーネント
@@ -921,12 +882,14 @@ export default function Timeline() {
   const [isSearching, setIsSearching] = useState(false);
   
   const [activeFilter, setActiveFilter] = useState<string>('all');
-  const [activeGenreFilter, setActiveGenreFilter] = useState<string>('all');
+  // 🔥 ジャンルフィルターを削除
+  // const [activeGenreFilter, setActiveGenreFilter] = useState<string>('all');
   const [searchMode, setSearchMode] = useState<SearchMode>('all');
   const [sortBy, setSortBy] = useState<SortOption>('created_at_desc');
   
   const [tempActiveFilter, setTempActiveFilter] = useState<string>('all');
-  const [tempActiveGenreFilter, setTempActiveGenreFilter] = useState<string>('all');
+  // 🔥 ジャンルフィルターを削除
+  // const [tempActiveGenreFilter, setTempActiveGenreFilter] = useState<string>('all');
   const [tempSearchMode, setTempSearchMode] = useState<SearchMode>('all');
   const [tempSortBy, setTempSortBy] = useState<SortOption>('created_at_desc');
   
@@ -992,7 +955,6 @@ export default function Timeline() {
 
   // Refs for stable references
   const activeFilterRef = useRef(activeFilter);
-  const activeGenreFilterRef = useRef(activeGenreFilter); // 追加
   const searchModeRef = useRef(searchMode);
   const userLocationRef = useRef(userLocation);
   const favoriteStoreIdsRef = useRef(favoriteStoreIds);
@@ -1002,7 +964,6 @@ export default function Timeline() {
 
   // Update refs
   useEffect(() => { activeFilterRef.current = activeFilter; }, [activeFilter]);
-  useEffect(() => { activeGenreFilterRef.current = activeGenreFilter; }, [activeGenreFilter]); // 追加
   useEffect(() => { searchModeRef.current = searchMode; }, [searchMode]);
   useEffect(() => { userLocationRef.current = userLocation; }, [userLocation]);
   useEffect(() => { favoriteStoreIdsRef.current = favoriteStoreIds; }, [favoriteStoreIds]);
@@ -1012,10 +973,9 @@ export default function Timeline() {
 
   useEffect(() => {
     setTempActiveFilter(activeFilter);
-    setTempActiveGenreFilter(activeGenreFilter); // 追加
     setTempSearchMode(searchMode);
     setTempSortBy(sortBy);
-  }, [activeFilter, activeGenreFilter, searchMode, sortBy]); // activeGenreFilter追加
+  }, [activeFilter, searchMode, sortBy]);
 
   useEffect(() => {
     const id = searchParams.get('highlightPostId');
@@ -1145,13 +1105,12 @@ export default function Timeline() {
   // 投稿データの取得
   const fetchPosts = useCallback(async (offset = 0, isInitial = false, searchTerm = '') => {
     const currentActiveFilter = activeFilterRef.current;
-    const currentActiveGenreFilter = activeGenreFilterRef.current; // 追加
     const currentSearchMode = searchModeRef.current;
     const currentUserLocation = userLocationRef.current;
     const currentFavoriteStoreIds = favoriteStoreIdsRef.current;
     const currentLikedPostIds = likedPostIdsRef.current;
     const currentSortBy = sortByRef.current;
-    const isAdmin = currentUserRole === 'admin'; // 管理者かどうかを判定
+    const isAdmin = currentUserRole === 'admin';
 
     // 距離計算関数
     const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
@@ -1184,17 +1143,16 @@ export default function Timeline() {
           app_profile_id,
           store_id,
           store_name,
-          genre,
           category,
           content,
           image_urls,
           url,
           file_urls,
           expiry_option,
+          custom_expiry_minutes,
           likes_count,
           views_count,
           comments_count,
-          price,
           created_at,
           expires_at,
           store_latitude,
@@ -1202,12 +1160,12 @@ export default function Timeline() {
           user_latitude,
           user_longitude,
           rating,
-          start_date,
-          end_date,
           support_purchase_enabled,
           support_purchase_options,
-          target_audience,
           author_role,
+          remaining_slots,
+          coupon_code,
+          customer_situation,
           author:app_profiles!posts_app_profile_id_fkey (
             id,
             user_id,
@@ -1220,7 +1178,7 @@ export default function Timeline() {
             created_at
           )
         `)
-        .eq('is_deleted', false) // 🔥 追加：削除されていない投稿のみ取得
+        .eq('is_deleted', false)
         .gt('expires_at', now);
 
       // カテゴリフィルタ
@@ -1228,16 +1186,13 @@ export default function Timeline() {
         query = query.eq('category', currentActiveFilter);
       }
 
-      // ジャンルフィルタ（追加）
-      if (currentActiveGenreFilter !== 'all') {
-        query = query.eq('genre', currentActiveGenreFilter);
-      }
+      // 🔥 ジャンルフィルタを削除
 
-      // 検索語による絞り込み（genreも検索対象に追加）
+      // 検索語による絞り込み（categoryも検索対象に追加）
       const effectiveSearchTerm = searchTerm;
       if (effectiveSearchTerm && effectiveSearchTerm.trim()) {
         const searchTermLower = effectiveSearchTerm.toLowerCase();
-        query = query.or(`store_name.ilike.%${searchTermLower}%,genre.ilike.%${searchTermLower}%,category.ilike.%${searchTermLower}%,content.ilike.%${searchTermLower}%`);
+        query = query.or(`store_name.ilike.%${searchTermLower}%,category.ilike.%${searchTermLower}%,content.ilike.%${searchTermLower}%`);
       }
 
       // 特別な検索モード
@@ -1402,7 +1357,7 @@ export default function Timeline() {
       setLoadingMore(false);
       setIsSearching(false);
     }
-  }, [currentUserRole]); // currentUserRoleを依存配列に追加
+  }, [currentUserRole]);
 
   // ビュー数増加処理
   const handleView = useCallback(async (postId: string) => {
@@ -1838,10 +1793,9 @@ export default function Timeline() {
     getCurrentLocation();
   };
 
-  // フィルターを適用する処理
+  // フィルターを適用する処理を修正
   const handleApplyFilters = () => {
     setActiveFilter(tempActiveFilter);
-    setActiveGenreFilter(tempActiveGenreFilter); // 追加
     setSearchMode(tempSearchMode);
     setSortBy(tempSortBy);
     
@@ -1854,27 +1808,22 @@ export default function Timeline() {
     }, 100);
   };
 
-  // モーダルを閉じる処理
+  // モーダルを閉じる処理を修正
   const handleCloseModal = () => {
     setTempActiveFilter(activeFilter);
-    setTempActiveGenreFilter(activeGenreFilter); // 追加
     setTempSearchMode(searchMode);
     setTempSortBy(sortBy);
     setShowFilterModal(false);
   };
 
-  // すべてクリア機能
+  // すべてクリア機能を修正
   const handleClearAllFilters = useCallback(() => {
     setActiveFilter('all');
-    setActiveGenreFilter('all');
     setSearchMode('all');
     setSortBy('created_at_desc');
     setGeneralSearchTerm('');
-    // 🔥 修正：位置情報はクリアしない（5km圏内表示を維持）
-    // setUserLocation(null); // この行を削除
     
     setTempActiveFilter('all');
-    setTempActiveGenreFilter('all');
     setTempSearchMode('all');
     setTempSortBy('created_at_desc');
     
@@ -1885,52 +1834,33 @@ export default function Timeline() {
     }, 100);
   }, []);
 
-  // アクティブなフィルタ数を計算
+  // アクティブなフィルタ数を計算を修正
   const activeFiltersCount = useMemo(() => {
     let count = 0;
     if (activeFilter !== 'all') count++;
-    if (activeGenreFilter !== 'all') count++; // 追加
     if (searchMode !== 'all') count++;
     if (sortBy !== 'created_at_desc') count++;
     return count;
-  }, [activeFilter, activeGenreFilter, searchMode, sortBy]); // activeGenreFilter追加
+  }, [activeFilter, searchMode, sortBy]);
 
   // 招待モーダルの状態を追加
   const [showInviteModal, setShowInviteModal] = useState(false);
 
-  // 🔥 ジャンル変更時にカテゴリーフィルターをリセットする機能
-  const handleGenreFilterChange = (genre: string) => {
-    setTempActiveGenreFilter(genre);
-    
-    // ジャンルが変更された場合、カテゴリーフィルターをリセット
-    if (genre !== 'all' && tempActiveFilter !== 'all') {
-      const selectedGenreCategories = genreCategories[genre as keyof typeof genreCategories];
-      if (selectedGenreCategories && !selectedGenreCategories.includes(tempActiveFilter)) {
-        setTempActiveFilter('all');
-      }
-    }
-  };
+  // 🔥 ジャンル変更時にカテゴリーフィルターをリセットする機能を削除
 
-  // 🔥 選択されたジャンルに基づいて利用可能なカテゴリーを取得
-  const getAvailableCategories = () => {
-    if (tempActiveGenreFilter === 'all') {
-      return categories;
-    }
-    
-    const genreCategories_typed = genreCategories as Record<string, string[]>;
-    const selectedGenreCategories = genreCategories_typed[tempActiveGenreFilter];
-    
-    if (selectedGenreCategories) {
-      return ['すべて', ...selectedGenreCategories];
-    }
-    
-    return categories;
-  };
+  // 🔥 選択されたジャンルに基づいて利用可能なカテゴリーを取得する関数を削除
 
-  // 🔥 追加：投稿削除処理
-  const handleDeletePost = useCallback((postId: string) => {
-    setPosts(prevPosts => prevPosts.filter(post => post.id !== postId));
-  }, []);
+  // 🔥 カテゴリのカラーリング関数を修正
+  const getCategoryColor = (category: string) => {
+    const colors: Record<string, string> = {
+      '飲食店': 'bg-orange-100 text-orange-800 border-orange-200',
+      '小売店': 'bg-blue-100 text-blue-800 border-blue-200',
+      'イベント集客': 'bg-purple-100 text-purple-800 border-purple-200',
+      '応援': 'bg-pink-100 text-pink-800 border-pink-200',
+      '受け渡し': 'bg-green-100 text-green-800 border-green-200',
+    };
+    return colors[category] || 'bg-gray-100 text-gray-800 border-gray-200';
+  };
 
   // デバイス判定の状態を追加
   const [isMobile, setIsMobile] = useState(false);
@@ -1957,10 +1887,9 @@ export default function Timeline() {
   // PC版でのサイドバー開閉状態
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
-  // PC版用のフィルター適用処理
+  // PC版用のフィルター適用処理を修正
   const handleApplySidebarFilters = () => {
     setActiveFilter(tempActiveFilter);
-    setActiveGenreFilter(tempActiveGenreFilter);
     setSearchMode(tempSearchMode);
     setSortBy(tempSortBy);
     
@@ -1971,14 +1900,12 @@ export default function Timeline() {
     }, 100);
   };
 
-  // PC版用のフィルタークリア処理
+  // PC版用のフィルタークリア処理を修正
   const handleClearSidebarFilters = () => {
     setTempActiveFilter('all');
-    setTempActiveGenreFilter('all');
     setTempSearchMode('all');
     setTempSortBy('created_at_desc');
     setActiveFilter('all');
-    setActiveGenreFilter('all');
     setSearchMode('all');
     setSortBy('created_at_desc');
     setGeneralSearchTerm('');
@@ -2041,96 +1968,6 @@ export default function Timeline() {
     }
   }, [getCurrentLocation, debouncedSearchTerm]);
 
-  // 🔥 ジャンル・カテゴリ・対象者のカラーパレット
-  const getGenreColor = (genre: string) => {
-    const colors: Record<string, string> = {
-      'ショッピング': 'bg-blue-100 text-blue-800 border-blue-200',
-      'グルメ': 'bg-red-100 text-red-800 border-red-200',
-      '観光': 'bg-green-100 text-green-800 border-green-200',
-      'エンタメ': 'bg-purple-100 text-purple-800 border-purple-200',
-      'サービス': 'bg-yellow-100 text-yellow-800 border-yellow-200',
-      'イベント': 'bg-pink-100 text-pink-800 border-pink-200',
-      '求人': 'bg-indigo-100 text-indigo-800 border-indigo-200',
-      '販売': 'bg-orange-100 text-orange-800 border-orange-200',
-      '貸し出し': 'bg-cyan-100 text-cyan-800 border-cyan-200',
-      '宿泊': 'bg-teal-100 text-teal-800 border-teal-200',
-      'ボランティア': 'bg-lime-100 text-lime-800 border-lime-200',
-      '相談': 'bg-amber-100 text-amber-800 border-amber-200',
-      'ニュース': 'bg-slate-100 text-slate-800 border-slate-200',
-      'コミュニティ': 'bg-rose-100 text-rose-800 border-rose-200',
-      '寄付': 'bg-emerald-100 text-emerald-800 border-emerald-200',
-      '募集': 'bg-violet-100 text-violet-800 border-violet-200',
-      'その他': 'bg-gray-100 text-gray-800 border-gray-200'
-    };
-    return colors[genre] || 'bg-gray-100 text-gray-800 border-gray-200';
-  };
-
-  const getCategoryColor = (category: string) => {
-    const colors: Record<string, string> = {
-      // ショッピング系
-      '惣菜': 'bg-orange-50 text-orange-700 border-orange-200',
-      '弁当': 'bg-red-50 text-red-700 border-red-200',
-      '肉': 'bg-red-100 text-red-800 border-red-300',
-      '魚': 'bg-blue-50 text-blue-700 border-blue-200',
-      '野菜': 'bg-green-50 text-green-700 border-green-200',
-      '果物': 'bg-yellow-50 text-yellow-700 border-yellow-200',
-      '米・パン類': 'bg-amber-50 text-amber-700 border-amber-200',
-      'デザート類': 'bg-pink-50 text-pink-700 border-pink-200',
-      '日用品': 'bg-gray-50 text-gray-700 border-gray-200',
-      '衣料品': 'bg-purple-50 text-purple-700 border-purple-200',
-      
-      // グルメ系
-      '和食': 'bg-green-50 text-green-700 border-green-200',
-      '洋食': 'bg-blue-50 text-blue-700 border-blue-200',
-      '中華': 'bg-red-50 text-red-700 border-red-200',
-      'イタリアン': 'bg-green-100 text-green-800 border-green-300',
-      'フレンチ': 'bg-blue-100 text-blue-800 border-blue-300',
-      'レストラン': 'bg-purple-50 text-purple-700 border-purple-200',
-      'カフェ': 'bg-amber-50 text-amber-700 border-amber-200',
-      'ファストフード': 'bg-orange-50 text-orange-700 border-orange-200',
-      '居酒屋': 'bg-yellow-50 text-yellow-700 border-yellow-200',
-      
-      // 観光系
-      '観光ツアー': 'bg-cyan-50 text-cyan-700 border-cyan-200',
-      '観光スポット': 'bg-teal-50 text-teal-700 border-teal-200',
-      '宿泊施設': 'bg-indigo-50 text-indigo-700 border-indigo-200',
-      '自然景観': 'bg-green-100 text-green-800 border-green-300',
-      '温泉': 'bg-blue-100 text-blue-800 border-blue-300',
-      '博物館・美術館': 'bg-purple-100 text-purple-800 border-purple-300',
-      '公園': 'bg-lime-50 text-lime-700 border-lime-200',
-      '水族館': 'bg-cyan-100 text-cyan-800 border-cyan-300',
-      'アミューズメントパーク': 'bg-pink-100 text-pink-800 border-pink-300',
-      
-      // その他のカテゴリーもここに追加
-      'その他': 'bg-gray-50 text-gray-700 border-gray-200'
-    };
-    return colors[category] || 'bg-gray-50 text-gray-700 border-gray-200';
-  };
-
-  const getTargetAudienceColor = (audience: string) => {
-    const colors: Record<string, string> = {
-      'すべての人': 'bg-gray-100 text-gray-800 border-gray-300',
-      '10代': 'bg-pink-100 text-pink-800 border-pink-300',
-      '20代': 'bg-blue-100 text-blue-800 border-blue-300',
-      '30代': 'bg-green-100 text-green-800 border-green-300',
-      '40代': 'bg-yellow-100 text-yellow-800 border-yellow-300',
-      '50代': 'bg-orange-100 text-orange-800 border-orange-300',
-      '60代以上': 'bg-purple-100 text-purple-800 border-purple-300',
-      '学生': 'bg-indigo-100 text-indigo-800 border-indigo-300',
-      'ビジネスマン・OL': 'bg-slate-100 text-slate-800 border-slate-300',
-      '主婦・主夫': 'bg-rose-100 text-rose-800 border-rose-300',
-      '子育て世代': 'bg-emerald-100 text-emerald-800 border-emerald-300',
-      '一人暮らし': 'bg-cyan-100 text-cyan-800 border-cyan-300',
-      'ファミリー': 'bg-lime-100 text-lime-800 border-lime-300',
-      '高齢者': 'bg-amber-100 text-amber-800 border-amber-300',
-      'フリーランス': 'bg-violet-100 text-violet-800 border-violet-300',
-      '起業家・経営者': 'bg-red-100 text-red-800 border-red-300',
-      '観光客・旅行者': 'bg-teal-100 text-teal-800 border-teal-300',
-      '地域住民': 'bg-green-100 text-green-800 border-green-300'
-    };
-    return colors[audience] || 'bg-gray-100 text-gray-800 border-gray-300';
-  };
-
   // 🔥 新規追加: 初回ローディング状態を管理
   const [isInitialLoading, setIsInitialLoading] = useState(true);
 
@@ -2164,6 +2001,25 @@ export default function Timeline() {
         setIsInitialLoading(false);
       });
   }, []); // �� 依存配列を空にして、画面遷移時のみ実行
+
+  // handleAnonymousLike関数の後に追加
+  const handleDeletePost = useCallback(async (postId: string) => {
+    try {
+      // UIから投稿を即座に削除
+      setPosts(prevPosts => prevPosts.filter(p => p.id !== postId));
+      
+      toast({
+        title: "投稿を削除しました",
+        duration: 1000,
+      });
+    } catch (error) {
+      console.error('投稿削除の処理でエラーが発生しました:', error);
+      // エラー時は投稿一覧を再取得
+      if (fetchPostsRef.current) {
+        fetchPostsRef.current(0, true);
+      }
+    }
+  }, [toast]);
 
   if ((loading && posts.length === 0) || isInitialLoading) {
     return (
@@ -2467,39 +2323,11 @@ export default function Timeline() {
                     フィルター
                   </AccordionTrigger>
                   <AccordionContent className="pt-2 space-y-3">
-                    {/* ジャンルフィルター */}
-                    <div className="space-y-3">
-                      <label className="text-sm font-medium text-[#73370c]">ジャンル</label>
-                      <Select 
-                        onValueChange={handleGenreFilterChange} 
-                        value={tempActiveGenreFilter}
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="ジャンルを選択" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {genres.map((genre) => (
-                            <SelectItem 
-                              key={genre} 
-                              value={genre === 'すべて' ? 'all' : genre}
-                            >
-                              {genre}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                    {/* 🔥 ジャンルフィルターを削除 */}
 
                     {/* カテゴリーフィルター */}
                     <div className="space-y-3">
-                      <label className="text-sm font-medium text-[#73370c]">
-                        カテゴリー
-                        {tempActiveGenreFilter !== 'all' && (
-                          <span className="text-xs text-[#73370c]/70 ml-2">
-                            ({tempActiveGenreFilter})
-                          </span>
-                        )}
-                      </label>
+                      <label className="text-sm font-medium text-[#73370c]">カテゴリー</label>
                       <Select 
                         onValueChange={(value: string) => setTempActiveFilter(value)} 
                         value={tempActiveFilter}
@@ -2508,7 +2336,7 @@ export default function Timeline() {
                           <SelectValue placeholder="カテゴリを選択" />
                         </SelectTrigger>
                         <SelectContent>
-                          {getAvailableCategories().map((category) => (
+                          {categories.map((category) => (
                             <SelectItem 
                               key={category} 
                               value={category === 'すべて' ? 'all' : category}
@@ -2550,8 +2378,8 @@ export default function Timeline() {
                       />
                     </div>
 
-                    {/* アクティブなフィルタ表示 */}
-                    {(activeFilter !== 'all' || activeGenreFilter !== 'all' || sortBy !== 'created_at_desc') && (
+                    {/* アクティブなフィルタ表示を修正 */}
+                    {(activeFilter !== 'all' || sortBy !== 'created_at_desc') && (
                       <div className="space-y-3">
                         <label className="text-sm font-medium text-[#73370c]">アクティブなフィルタ</label>
                         <div className="space-y-2">
@@ -2561,22 +2389,6 @@ export default function Timeline() {
                               <button onClick={() => {
                                 setActiveFilter('all');
                                 setTempActiveFilter('all');
-                                setTimeout(() => {
-                                  if (fetchPostsRef.current) {
-                                    fetchPostsRef.current(0, true);
-                                  }
-                                }, 100);
-                              }} className="ml-1">
-                                <X className="h-3 w-3" />
-                              </button>
-                            </Badge>
-                          )}
-                          {activeGenreFilter !== 'all' && (
-                            <Badge variant="secondary" className="flex items-center gap-1">
-                              ジャンル: {activeGenreFilter}
-                              <button onClick={() => {
-                                setActiveGenreFilter('all');
-                                setTempActiveGenreFilter('all');
                                 setTimeout(() => {
                                   if (fetchPostsRef.current) {
                                     fetchPostsRef.current(0, true);
@@ -2806,9 +2618,9 @@ export default function Timeline() {
               {/* フィルターボタン */}
               <Button onClick={() => setShowFilterModal(true)} variant="outline" className="relative">
                 <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
-                {(activeFilter !== 'all' || activeGenreFilter !== 'all' || sortBy !== 'created_at_desc') && (
+                {(activeFilter !== 'all' || sortBy !== 'created_at_desc') && (
                   <Badge className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
-                    {(activeFilter !== 'all' ? 1 : 0) + (activeGenreFilter !== 'all' ? 1 : 0) + (sortBy !== 'created_at_desc' ? 1 : 0)}
+                    {(activeFilter !== 'all' ? 1 : 0) + (sortBy !== 'created_at_desc' ? 1 : 0)}
                   </Badge>
                 )}
               </Button>
@@ -2825,8 +2637,8 @@ export default function Timeline() {
             </div>
           )}
 
-          {/* アクティブなフィルタの表示（searchModeを除外） */}
-          {(activeFilter !== 'all' || activeGenreFilter !== 'all' || sortBy !== 'created_at_desc') && (
+          {/* アクティブなフィルタの表示を修正 */}
+          {(activeFilter !== 'all' || sortBy !== 'created_at_desc') && (
             <div className="px-4 py-2 bg-gray-50 border-b">
               <div className="flex flex-wrap gap-2 items-center">
                 <span className="text-sm text-gray-600">アクティブなフィルタ:</span>
@@ -2834,14 +2646,6 @@ export default function Timeline() {
                   <Badge variant="secondary" className="flex items-center gap-1">
                     カテゴリ: {activeFilter}
                     <button onClick={() => setActiveFilter('all')} className="ml-1">
-                      <X className="h-3 w-3" />
-                    </button>
-                  </Badge>
-                )}
-                {activeGenreFilter !== 'all' && (
-                  <Badge variant="secondary" className="flex items-center gap-1">
-                    ジャンル: {activeGenreFilter}
-                    <button onClick={() => setActiveGenreFilter('all')} className="ml-1">
                       <X className="h-3 w-3" />
                     </button>
                   </Badge>
@@ -2856,7 +2660,6 @@ export default function Timeline() {
                 )}
                 <Button variant="ghost" size="sm" onClick={() => {
                   setActiveFilter('all');
-                  setActiveGenreFilter('all');
                   setSortBy('created_at_desc');
                   setGeneralSearchTerm('');
                   
@@ -3088,7 +2891,7 @@ export default function Timeline() {
         />
       )}
 
-      {/* モバイル版フィルターモーダル */}
+      {/* モバイル版フィルターモーダルを修正 */}
       <CustomModal
         isOpen={showFilterModal}
         onClose={handleCloseModal}
@@ -3096,38 +2899,10 @@ export default function Timeline() {
         description="検索条件と表示順を設定できます。"
       >
         <div className="space-y-6 max-h-[70vh] overflow-y-auto">
-          <div>
-            <h3 className="font-semibold text-lg mb-2">ジャンルで絞り込み</h3>
-            <Select 
-              onValueChange={handleGenreFilterChange} 
-              value={tempActiveGenreFilter}
-            >
-              <SelectTrigger className="w-full focus:ring-0 focus:ring-offset-0 focus:border-input">
-                <SelectValue placeholder="ジャンルを選択" />
-              </SelectTrigger>
-              <SelectContent className="max-h-[200px]">
-                {genres.map((genre) => (
-                  <SelectItem 
-                    key={genre} 
-                    value={genre === 'すべて' ? 'all' : genre}
-                    className="text-lg py-3"
-                  >
-                    {genre}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {/* 🔥 ジャンルフィルターを削除 */}
 
           <div>
-            <h3 className="font-semibold text-lg mb-2">
-              カテゴリーで絞り込み
-              {tempActiveGenreFilter !== 'all' && (
-                <span className="text-xs text-gray-500 ml-2">
-                  ({tempActiveGenreFilter})
-                </span>
-              )}
-            </h3>
+            <h3 className="font-semibold text-lg mb-2">カテゴリーで絞り込み</h3>
             <Select 
               onValueChange={(value: string) => setTempActiveFilter(value)} 
               value={tempActiveFilter}
@@ -3136,7 +2911,7 @@ export default function Timeline() {
                 <SelectValue placeholder="カテゴリを選択" />
               </SelectTrigger>
               <SelectContent className="max-h-[200px]">
-                {getAvailableCategories().map((category) => (
+                {categories.map((category) => (
                   <SelectItem 
                     key={category} 
                     value={category === 'すべて' ? 'all' : category}
@@ -3149,6 +2924,7 @@ export default function Timeline() {
             </Select>
           </div>
 
+          {/* 並び順 */}
           <div>
             <h3 className="font-semibold text-lg mb-2">表示順</h3>
             <Select onValueChange={(value: SortOption) => setTempSortBy(value)} value={tempSortBy}>
@@ -3170,7 +2946,6 @@ export default function Timeline() {
         <div className="mt-6 flex justify-between">
           <Button variant="outline" onClick={() => {
             setTempActiveFilter('all');
-            setTempActiveGenreFilter('all');
             setTempSortBy('created_at_desc');
           }}>
             すべてクリア

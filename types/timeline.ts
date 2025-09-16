@@ -11,22 +11,26 @@ export interface ExtendedPostWithAuthor extends PostWithAuthor {
   author_user_id?: string;
   author_posts_count?: number;
   app_profile_id: string;
-  expiry_option: "1h" | "3h" | "6h" | "12h";
+  expiry_option: "15m" | "30m" | "45m" | "60m" | "custom"; // 🔥 新しい掲載期間オプション
+  custom_expiry_minutes?: number | null; // 🔥 カスタム掲載時間
   rating?: number | null;
-  start_date?: string | null;
-  end_date?: string | null;
+  
   // 店舗の位置情報
   store_latitude?: number;
   store_longitude?: number;
   
-  // 端末（投稿者）の位置情報（新規追加）
+  // 端末（投稿者）の位置情報
   user_latitude?: number;
   user_longitude?: number;
   
-  // 🔥 新しいフィールドを追加
+  // 🔥 既存フィールド
   url?: string | null;
   file_urls?: string | null; // JSON文字列
   support_purchase_enabled?: boolean;
   support_purchase_options?: string | null; // JSON文字列
-  target_audience?: string | null; // 🔥 新規追加：対象者フィールド
+  
+  // 🔥 新規追加フィールド
+  remaining_slots?: number | null; // 残り枠数
+  coupon_code?: string | null; // クーポン番号
+  customer_situation?: string | null; // 来客状況
 }
