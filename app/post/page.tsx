@@ -118,7 +118,6 @@ export default function PostPage() {
   const storeInputRef = useRef<HTMLInputElement>(null);
   const [placeId, setPlaceId] = useState<string | null>(null);
   const [storeAddress, setStoreAddress] = useState<string>('');
-  const [showStoreSearchInfoModal, setShowStoreSearchInfoModal] = useState(false);
   const { showLoading, hideLoading } = useLoading();
   const [selectedPlace, setSelectedPlace] = useState<google.maps.places.PlaceResult | null>(null);
   
@@ -779,11 +778,6 @@ export default function PostPage() {
       setAutocomplete(newAutocomplete);
     }
   }, [isLoaded, form, toast]);
-
-  const handleMoveToMap = () => {
-    setShowStoreSearchInfoModal(false);
-    router.push('/map');
-  };
 
   // 位置情報状況表示コンポーネント
   const LocationStatusIndicator = () => {
@@ -1478,13 +1472,6 @@ export default function PostPage() {
                                 <FormLabel className="text-lg font-semibold flex items-center">
                                   <StoreIcon className="mr-2 h-5 w-5" />
                                   場所
-                                  <span
-                                    className="ml-2 flex items-center text-sm text-blue-600 cursor-pointer hover:underline"
-                                    onClick={() => setShowStoreSearchInfoModal(true)}
-                                  >
-                                    <HelpCircle className="h-4 w-4 mr-1" />
-                                    検索候補が表示されない時は...
-                                  </span>
                                 </FormLabel>
                                 <FormControl>
                                   <div className="space-y-2">
@@ -1493,7 +1480,7 @@ export default function PostPage() {
                                         value={{ id: field.value, name: form.getValues("storeName") }}
                                         onChange={async (store) => {
                                           if (store) {
-                                            // �� 場所選択時にすべての位置情報を設定
+                                            // 🔥 場所選択時にすべての位置情報を設定
                                             console.log("PostPage: Store selected from FavoriteStoreInput:", store);
                                             form.setValue("storeId", store.id, { shouldValidate: true });
                                             form.setValue("storeName", store.name, { shouldValidate: true });
@@ -1697,7 +1684,7 @@ export default function PostPage() {
                                   <LinkIcon className="mr-2 h-5 w-5" />
                                   リンク（URL）
                                 </FormLabel>
-                                <FormControl>
+                                  <FormControl>
                                   <Input
                                     type="url"
                                     placeholder="https://example.com"
@@ -1709,7 +1696,7 @@ export default function PostPage() {
                                     autoCapitalize="off"
                                     spellCheck="false"
                                   />
-                                </FormControl>
+                                  </FormControl>
                                 <FormMessage />
                               </FormItem>
                             )}
@@ -2133,93 +2120,6 @@ export default function PostPage() {
                 </Button>
                 <Button onClick={handleConfirmSubmit} disabled={isUploading}>
                   {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "OK"}
-                </Button>
-              </div>
-            </div>
-          </CustomModal>
-
-          {/* 既存の他のモーダル... */}
-          <CustomModal
-            isOpen={showStoreSearchInfoModal}
-            onClose={() => setShowStoreSearchInfoModal(false)}
-            title="場所の検索候補について"
-          >
-            <div className="pt-2">
-              <p className="mb-4 text-center">
-                検索候補が表示されない場合は、正確な場所情報を見つけるために、一度「場所を探す画面」へ移動してください。
-              </p>
-              <div className="mt-6 flex justify-center">
-                <Button
-                  onClick={handleMoveToMap}
-                >
-                  お店を探す画面へ移動
-                </Button>
-              </div>
-            </div>
-          </CustomModal>
-
-          {/* 🔥 Stripe設定確認モーダル - 既存のコードを維持 */}
-          <CustomModal
-            isOpen={showStripeSetupModal}
-            onClose={() => setShowStripeSetupModal(false)}
-            title="収益受取設定が必要です"
-          >
-            <div className="pt-2">
-              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
-                <div className="flex items-start space-x-3">
-                  <HandCoins className="h-5 w-5 text-amber-500 mt-0.5 flex-shrink-0" />
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-amber-800 mb-2">おすそわけを受け取るには</h3>
-                    <p className="text-sm text-amber-700 leading-relaxed">
-                      おすそわけで得た収益を受け取るために、Stripe（決済サービス）の設定が必要です。
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-3 mb-6">
-                <div className="flex items-center space-x-3 p-3 bg-blue-50 rounded-lg">
-                  <div className="flex-shrink-0 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold">
-                    1
-                  </div>
-                  <div>
-                    <p className="font-medium text-blue-800">Stripeアカウント作成</p>
-                    <p className="text-sm text-blue-600">決済処理を行うアカウントを作成</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-center space-x-3 p-3 bg-green-50 rounded-lg">
-                  <div className="flex-shrink-0 w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-bold">
-                    2
-                  </div>
-                  <div>
-                    <p className="font-medium text-green-800">本人確認・銀行口座登録</p>
-                    <p className="text-sm text-green-600">収益を受け取るための情報を登録</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-gray-50 border rounded-lg p-3 mb-6">
-                <p className="text-xs text-gray-600 leading-relaxed">
-                  ※設定は5-10分程度で完了します。設定完了後、すぐにおすそわけ機能をご利用いただけます。
-                </p>
-              </div>
-
-              <div className="flex flex-col space-y-3">
-                <Button 
-                  onClick={handleNavigateToStripeSetup}
-                  className="w-full"
-                >
-                  <HandCoins className="mr-2 h-4 w-4" />
-                  収益受取設定を開始する
-                </Button>
-                
-                <Button 
-                  variant="outline" 
-                  onClick={() => setShowStripeSetupModal(false)}
-                  className="w-full"
-                >
-                  後で設定する
                 </Button>
               </div>
             </div>

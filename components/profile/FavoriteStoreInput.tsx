@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState, useImperativeHandle } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { X, MapPin } from 'lucide-react';
+import { X } from 'lucide-react';
 import { useGoogleMapsApi } from '@/components/providers/GoogleMapsApiProvider';
 
 interface PlaceSuggestion {
@@ -32,38 +32,40 @@ const FavoriteStoreInput = React.forwardRef<HTMLInputElement, FavoriteStoreInput
     const dropdownObserverRef = useRef<MutationObserver | null>(null);
     const [inputValue, setInputValue] = useState(value?.name || '');
     const [userLocation, setUserLocation] = useState<google.maps.LatLng | null>(null);
-    const [locationError, setLocationError] = useState<string | null>(null);
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
     // forwardRefで渡されたrefとローカルのrefをマージ
     useImperativeHandle(ref, () => localInputRef.current as HTMLInputElement);
 
-    const getCurrentLocation = () => {
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
+    // 🔥 ローカルストレージから保存された位置情報を取得
+    const loadSavedLocation = () => {
+      try {
+        const savedLocationStr = localStorage.getItem('userLocation');
+        if (savedLocationStr) {
+          const savedLocation = JSON.parse(savedLocationStr);
+          
+          // 有効期限をチェック
+          if (savedLocation.expiresAt && Date.now() < savedLocation.expiresAt) {
+            console.log('FavoriteStoreInput: 保存された位置情報を使用します:', savedLocation);
             if (window.google && window.google.maps) {
               setUserLocation(
                 new google.maps.LatLng(
-                  position.coords.latitude,
-                  position.coords.longitude
+                  savedLocation.latitude,
+                  savedLocation.longitude
                 )
               );
-              setLocationError(null);
-            } else {
-              setLocationError("Google Maps APIがまだ準備できていません。");
             }
-          },
-          (error) => {
-            console.warn("Error getting user location:", error);
-            setLocationError("位置情報の取得に失敗しました。");
-            setUserLocation(null);
-          },
-          { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-        );
-      } else {
-        setLocationError("お使いのブラウザは位置情報取得に対応していません。");
+            return true;
+          } else {
+            console.log('FavoriteStoreInput: 保存された位置情報の有効期限が切れています');
+            localStorage.removeItem('userLocation');
+          }
+        }
+      } catch (error) {
+        console.warn('FavoriteStoreInput: 保存された位置情報の読み込みに失敗しました:', error);
+        localStorage.removeItem('userLocation');
       }
+      return false;
     };
 
     // Google Places ドロップダウンの監視と位置調整
@@ -188,6 +190,12 @@ const FavoriteStoreInput = React.forwardRef<HTMLInputElement, FavoriteStoreInput
         fields: ['place_id', 'name', 'formatted_address', 'geometry', 'types', 'business_status']
       };
 
+      // 🔥 自動的に保存された位置情報を使用
+      if (!userLocation) {
+        loadSavedLocation();
+      }
+
+      // 🔥 位置情報が利用可能な場合は検索範囲を制限
       if (userLocation) {
         const circle = new window.google.maps.Circle({
           center: userLocation,
@@ -333,23 +341,7 @@ const FavoriteStoreInput = React.forwardRef<HTMLInputElement, FavoriteStoreInput
           )}
         </div>
         {!isMapsApiLoaded && !mapsApiLoadError && <p className="text-xs text-muted-foreground">店舗検索を読み込み中...</p>}
-        {isMapsApiLoaded && (
-          <div className="flex items-center justify-between mt-1">
-              {locationError && <p className="text-xs text-destructive flex-grow">{locationError}</p>}
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={getCurrentLocation}
-                disabled={disabled || !isMapsApiLoaded}
-                className="text-xs py-1 px-2 h-auto"
-              >
-                <MapPin className="h-3 w-3 mr-1" />
-                {userLocation ? "現在地で再検索" : "現在地から検索精度を上げる"}
-              </Button>
-          </div>
-        )}
-        {userLocation && isMapsApiLoaded && <p className="text-xs text-muted-foreground mt-1">現在地情報で検索中</p>}
+        {/* 🔥 位置情報関連のボタンとメッセージを削除 */}
       </div>
     );
   }
