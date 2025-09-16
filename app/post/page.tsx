@@ -1214,7 +1214,7 @@ export default function PostPage() {
                     </FormLabel>
                     <FormControl>
                       <Textarea
-                        placeholder="日常生活のちょっとしたおとく情報を投稿してみよう！（240文字以内）"
+                        placeholder="日常生活のちょっとしたおとく情報を投稿してみよう。（240文字以内）"
                         className="resize-none"
                         style={{ fontSize: '16px', minHeight: '140px' }}
                         rows={7}
@@ -1397,7 +1397,7 @@ export default function PostPage() {
                           }`}
                         >
                           <PackageIcon className="mr-2 h-4 w-4" />
-                          残りの数
+                          残数
                         </Button>
                         <Button
                           type="button"
@@ -1718,7 +1718,7 @@ export default function PostPage() {
                               <FormItem>
                                 <FormLabel className="text-lg font-semibold flex items-center">
                                   <PackageIcon className="mr-2 h-5 w-5" />
-                                  残りの数（座席数、在庫数など）
+                                  残数（座席数、在庫数など）
                                 </FormLabel>
                                 <FormControl>
                                   <Input
