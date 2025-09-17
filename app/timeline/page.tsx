@@ -2533,12 +2533,133 @@ export default function Timeline() {
               )}
             </div>
           </div>
-      {/* 🔥 追加：コメントモーダル */}
-      <CommentsModal
-        post={commentsModal.post}
-        isOpen={commentsModal.isOpen}
-        onClose={handleCloseCommentsModal}
-        currentUserId={currentUserId}
+      {/* コメントモーダル */}
+      {commentsModal.post && (
+        <CommentsModal
+          post={commentsModal.post}
+          isOpen={commentsModal.isOpen}
+          onClose={handleCloseCommentsModal}
+          currentUserId={currentUserId}
+        />
+      )}
+
+      {/* モバイル版フィルターモーダルを修正 */}
+      <CustomModal
+        isOpen={showFilterModal}
+        onClose={handleCloseModal}
+        title="検索フィルター"
+        description="検索条件と表示順を設定できます。"
+      >
+        <div className="space-y-6 max-h-[70vh] overflow-y-auto">
+          {/* 🔥 ジャンルフィルターを削除 */}
+
+          <div>
+            <h3 className="font-semibold text-lg mb-2">カテゴリーで絞り込み</h3>
+            <Select 
+              onValueChange={(value: string) => setTempActiveFilter(value)} 
+              value={tempActiveFilter}
+            >
+              <SelectTrigger className="w-full focus:ring-0 focus:ring-offset-0 focus:border-input">
+                <SelectValue placeholder="カテゴリを選択" />
+              </SelectTrigger>
+              <SelectContent className="max-h-[200px]">
+                {categories.map((category) => (
+                  <SelectItem 
+                    key={category} 
+                    value={category === 'すべて' ? 'all' : category}
+                    className="text-lg py-3"
+                  >
+                    {category}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* 並び順 */}
+          <div>
+            <h3 className="font-semibold text-lg mb-2">表示順</h3>
+            <Select onValueChange={(value: SortOption) => setTempSortBy(value)} value={tempSortBy}>
+              <SelectTrigger className="w-full focus:ring-0 focus:ring-offset-0 focus:border-input">
+                <SelectValue placeholder="並び替え" />
+              </SelectTrigger>
+              <SelectContent className="max-h-[200px]">
+                <SelectItem value="created_at_desc" className="text-lg py-3">新着順</SelectItem>
+                <SelectItem value="created_at_asc" className="text-lg py-3">古い順</SelectItem>
+                <SelectItem value="expires_at_asc" className="text-lg py-3">期限が近い順</SelectItem>
+                <SelectItem value="likes_desc" className="text-lg py-3">行くよが多い順</SelectItem>
+                <SelectItem value="views_desc" className="text-lg py-3">表示回数が多い順</SelectItem>
+                <SelectItem value="comments_desc" className="text-lg py-3">コメントが多い順</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <div className="mt-6 flex justify-between">
+          <Button variant="outline" onClick={() => {
+            setTempActiveFilter('all');
+            setTempSortBy('created_at_desc');
+          }}>
+            すべてクリア
+          </Button>
+          <Button onClick={handleApplyFilters}>フィルターを適用</Button>
+        </div>
+      </CustomModal>
+
+      {/* 招待モーダル */}
+      <CustomModal
+        isOpen={showInviteModal}
+        onClose={() => setShowInviteModal(false)}
+        title="トクドクに友達を招待"
+        description="おトクな情報を友達と共有しましょう！"
+        className="sm:max-w-md"
+      >
+        <div className="space-y-4">
+          {/* 招待メッセージ */}
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <h3 className="font-semibold text-sm mb-2" style={{ color: '#73370c' }}>招待メッセージ</h3>
+            <div className="bg-white p-3 rounded border">
+              <p className="text-sm text-gray-700 mb-3">
+                おトクな情報がたくさん見つかる「トクドク」に参加しませんか？
+              </p>
+              <p className="text-sm text-blue-600 font-medium">
+                https://tokudoku.com/
+              </p>
+            </div>
+          </div>
+
+          {/* コピーボタン */}
+          <Button
+            onClick={() => {
+              const message = `お得な情報がたくさん見つかる「トクドク」に参加しませんか？\n\nhttps://tokudoku.com/`;
+              navigator.clipboard.writeText(message);
+              toast({
+                title: "招待メッセージをコピーしました！",
+                description: "SNSやメッセージアプリで友達に送ってください",
+                duration: 1000,
+              });
+            }}
+            className="w-full"
+          >
+            <LinkIcon className="h-4 w-4 mr-2" />
+            招待メッセージをコピー
+          </Button>
+        </div>
+
+        <div className="mt-6 flex justify-end">
+          <Button variant="ghost" onClick={() => setShowInviteModal(false)} className="text-base px-5 py-2.5 h-auto">
+            閉じる
+          </Button>
+        </div>
+      </CustomModal>
+
+      {/* 🔥 位置情報許可モーダルをメインレンダリング部分にも追加 */}
+      <LocationPermissionDialog
+        isOpen={showLocationModal}
+        onAllow={handleAllowLocation}
+        onDeny={handleDenyLocation}
+        appName="トクドク"
+        permissionState={locationPermissionState}
       />
     </AppLayout>
   );
