@@ -4,17 +4,70 @@ import { useRef, useEffect, useState, useCallback } from 'react';
 import { useGeolocation } from '@/lib/hooks/use-geolocation'; // Enhanced version
 import { useGoogleMapsApi } from '@/components/providers/GoogleMapsApiProvider';
 import { Button } from '@/components/ui/button';
-import { MapPin, AlertTriangle, Navigation, RefreshCw, Smartphone, Monitor, Globe, Clock, Eye, EyeOff, ArrowLeft } from 'lucide-react';
+import { MapPin, AlertTriangle, Navigation, RefreshCw, Smartphone, Monitor, Globe, Clock, Eye, EyeOff, ArrowLeft, Utensils, ShoppingBag, Calendar, Heart, Package, MessageSquareText, Layers, Store } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { MapSearchControl } from './MapSearchControl';
 import { CrossBrowserLocationGuide } from './CrossBrowserLocationGuide'; // Enhanced version
 import { LocationPermissionManager } from '@/lib/hooks/LocationPermissionManager';
+import { supabase } from '@/lib/supabaseClient';
+import { useRouter } from 'next/navigation';
 
 declare global {
   interface Window {
     google: any;
   }
 }
+
+// 🔥 投稿データの型定義を修正（store_latitude, store_longitudeを使用）
+interface PostMarkerData {
+  id: string;
+  category: string | null;
+  store_name: string;
+  content: string;
+  store_latitude: number;
+  store_longitude: number;
+  created_at: string;
+  expires_at: string;
+}
+
+
+// 🔥 カテゴリーカラーを取得する関数を追加（カテゴリー未入力対応）
+const getCategoryColor = (category: string | null) => {
+  if (!category) return '#6b7280'; // カテゴリーが未入力の場合はグレー
+  
+  switch(category) {
+    case '飲食店':
+      return '#ea580c'; // orange-600
+    case '小売店':
+      return '#2563eb'; // blue-600
+    case 'イベント集客':
+      return '#9333ea'; // purple-600
+    case '応援':
+      return '#dc2626'; // red-600
+    case '受け渡し':
+      return '#16a34a'; // green-600
+    case '雑談':
+      return '#4b5563'; // gray-600
+    default:
+      return '#6b7280'; // gray-500
+  }
+};
+
+// 🔥 手紙アイコンのSVGパスを使用（大きめサイズ）
+const getLetterIconSvg = (color: string) => {
+  return `
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- 手紙アイコン -->
+      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" fill="${color}"/>
+      <polyline points="22,6 12,13 2,6" stroke="white" stroke-width="2" fill="none"/>
+    </svg>
+  `;
+};
+
+// 🔥 SVGをData URLに変換する関数
+const createDataUrl = (svgString: string) => {
+  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svgString)}`;
+};
 
 export function MapView() {
   console.log("MapView: Component rendering START");
@@ -58,6 +111,12 @@ export function MapView() {
   // 🔥 5km圏内の範囲表示・非表示の状態管理（デフォルト：表示）
   const [showRangeCircle, setShowRangeCircle] = useState(true);
 
+  // 🔥 投稿データとマーカー関連の状態を追加
+  const [posts, setPosts] = useState<PostMarkerData[]>([]);
+  const [postMarkers, setPostMarkers] = useState<google.maps.Marker[]>([]);
+  const [loadingPosts, setLoadingPosts] = useState(false);
+  const router = useRouter();
+
   // 改良されたガイド表示制御（許可状態を考慮）
   useEffect(() => {
     // 既に許可されている場合はガイドを表示しない
@@ -65,8 +124,6 @@ export function MapView() {
       setShowLocationGuide(false);
       return;
     }
-
-
 
     // 🔥 常にfalseに設定して自動表示を防ぐ
     setShowLocationGuide(false);
@@ -167,6 +224,134 @@ export function MapView() {
     setShowLocationGuide(false);
     requestLocation(); // Enhanced hook will handle permission saving
   };
+
+  // 🔥 投稿データを取得する関数を修正（store_latitude, store_longitudeを使用）
+  const fetchPosts = useCallback(async () => {
+    if (!latitude || !longitude) {
+      console.log('MapView: 位置情報がないため投稿データの取得をスキップ');
+      return;
+    }
+
+    setLoadingPosts(true);
+    try {
+      console.log('MapView: 投稿データを取得中...');
+      
+      const now = new Date().toISOString();
+      
+      // 🔥 store_latitude, store_longitudeを使用して投稿を取得
+      const { data, error } = await supabase
+        .from('posts')
+        .select(`
+          id,
+          category,
+          store_name,
+          content,
+          store_latitude,
+          store_longitude,
+          created_at,
+          expires_at
+        `)
+        .eq('is_deleted', false)
+        .gt('expires_at', now)
+        .not('store_latitude', 'is', null)
+        .not('store_longitude', 'is', null)
+        .not('store_name', 'is', null);
+
+      if (error) {
+        console.error('MapView: 投稿データの取得に失敗:', error);
+        return;
+      }
+
+      if (!data) {
+        console.log('MapView: 投稿データがありません');
+        setPosts([]);
+        return;
+      }
+
+      // 5km圏内でフィルタリング
+      const filteredPosts = data.filter((post: any) => {
+        if (!post.store_latitude || !post.store_longitude) return false;
+        
+        // 距離計算（ハバーサイン公式）
+        const R = 6371; // 地球の半径（km）
+        const dLat = (post.store_latitude - latitude) * Math.PI / 180;
+        const dLon = (post.store_longitude - longitude) * Math.PI / 180;
+        const a = 
+          Math.sin(dLat/2) * Math.sin(dLat/2) +
+          Math.cos(latitude * Math.PI / 180) * Math.cos(post.store_latitude * Math.PI / 180) *
+          Math.sin(dLon/2) * Math.sin(dLon/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        const distance = R * c;
+        
+        return distance <= 5; // 5km以内
+      });
+
+      console.log(`MapView: ${filteredPosts.length}件の投稿を取得しました`);
+      setPosts(filteredPosts);
+      
+    } catch (error) {
+      console.error('MapView: 投稿データの取得中にエラー:', error);
+    } finally {
+      setLoadingPosts(false);
+    }
+  }, [latitude, longitude]);
+
+  // 🔥 投稿マーカーを作成する関数を修正（手紙アイコンを使用）
+  const createPostMarkers = useCallback(() => {
+    if (!map || !posts.length || !window.google?.maps) {
+      console.log('MapView: マーカー作成の条件が揃っていません');
+      return;
+    }
+
+    console.log(`MapView: ${posts.length}件の投稿マーカーを作成中...`);
+
+    // 既存のマーカーを削除
+    postMarkers.forEach(marker => {
+      if (marker && marker.setMap) {
+        marker.setMap(null);
+      }
+    });
+    
+    const newMarkers: google.maps.Marker[] = [];
+
+    posts.forEach((post) => {
+      if (!post.store_latitude || !post.store_longitude) return;
+
+      const position = new window.google.maps.LatLng(post.store_latitude, post.store_longitude);
+      const categoryColor = getCategoryColor(post.category);
+
+      // カテゴリー表示用のテキスト
+      const categoryText = post.category || '店舗';
+
+      // 🔥 手紙アイコンを使用（カテゴリごとに色分け）
+      const letterIconSvg = getLetterIconSvg(categoryColor);
+      const iconUrl = createDataUrl(letterIconSvg);
+
+      const marker = new window.google.maps.Marker({
+        position,
+        map,
+        title: `${post.store_name} - ${categoryText}`,
+        icon: {
+          url: iconUrl,
+          scaledSize: new window.google.maps.Size(32, 32), // 現在地アイコンより少し小さく
+          anchor: new window.google.maps.Point(16, 16),
+        },
+        animation: window.google.maps.Animation.DROP,
+      });
+
+      // マーカークリック時の処理
+      marker.addListener('click', () => {
+        console.log(`MapView: 投稿マーカーがクリックされました - ID: ${post.id}`);
+        // タイムラインページに遷移（該当投稿をハイライト）
+        router.push(`/timeline?highlightPostId=${post.id}`);
+      });
+
+      newMarkers.push(marker);
+    });
+
+    setPostMarkers(newMarkers);
+    console.log(`MapView: ${newMarkers.length}個のマーカーを作成しました`);
+  }, [map, posts, router]); // 🔥 postMarkersを依存配列から除去
 
   // 地図初期化のメイン処理（変更なし）
   const initializeMap = useCallback(() => {
@@ -347,6 +532,29 @@ export function MapView() {
     }
   }, [googleMapsLoaded, latitude, longitude, containerDimensions, mapInitialized, initializeMap, browserInfo.name]);
 
+  // 🔥 位置情報が取得できたら投稿データを取得
+  useEffect(() => {
+    if (latitude && longitude && mapInitialized) {
+      fetchPosts();
+    }
+  }, [latitude, longitude, mapInitialized, fetchPosts]);
+
+  // 🔥 投稿データが更新されたらマーカーを作成（修正版）
+  useEffect(() => {
+    if (posts.length > 0 && map && window.google?.maps) {
+      createPostMarkers();
+    }
+  }, [posts, map, createPostMarkers]);
+
+  // 🔥 投稿がある場合は範囲円を非表示にする
+  useEffect(() => {
+    if (posts.length > 0) {
+      setShowRangeCircle(false);
+    } else {
+      setShowRangeCircle(true);
+    }
+  }, [posts.length]);
+
   // ユーザー位置マーカーの設置（修正版）
   useEffect(() => {
     if (map && latitude && longitude && mapInitialized && window.google?.maps) {
@@ -441,6 +649,15 @@ export function MapView() {
       selectedPlaceMarker.setMap(null);
       setSelectedPlaceMarker(null);
     }
+    
+    // 🔥 投稿マーカーもクリーンアップ
+    postMarkers.forEach(marker => {
+      if (marker && marker.setMap) {
+        marker.setMap(null);
+      }
+    });
+    setPostMarkers([]);
+    setPosts([]);
     
     if (mapContainerRef.current) {
       mapContainerRef.current.innerHTML = '';
@@ -747,50 +964,51 @@ export function MapView() {
                 <span className="text-xs font-medium">現在地</span>
               </div>
               <div className="text-xs text-gray-600">
-              緑色のエリア＝投稿閲覧範囲
+                {posts.length > 0 
+                  ? (
+                    <>
+                      {`${posts.length}件の投稿を表示中`}
+                      <br />
+                      <span className="text-xs">📧 = カテゴリ別色分け</span>
+                    </>
+                  )
+                  : "緑色のエリア＝投稿閲覧範囲"
+                }
               </div>
             </div>
           </div>
           
-          {/* 位置情報有効インジケーター */}
-          {/* {isPermissionGranted && permissionRemainingMinutes > 0 && (
-            <div className="bg-green-100 border border-green-300 rounded-lg px-3 py-2 text-sm text-green-800 shadow-lg">
-              <div className="flex items-center">
-                <Clock className="h-4 w-4 mr-2" />
-                位置情報有効（残り{permissionRemainingMinutes}分）
-              </div>
-            </div>
-          )} */}
-          
-          {/* 🔥 範囲表示切り替えボタン */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-          >
-            <Button
-              onClick={toggleRangeCircle}
-              variant={showRangeCircle ? "default" : "outline"}
-              size="sm"
-              className={`shadow-lg ${
-                showRangeCircle 
-                  ? 'bg-green-600 hover:bg-green-700 text-white border-green-600 hover:border-green-700' 
-                  : 'bg-white hover:bg-gray-400 text-gray-800 border-gray-800 hover:border-gray-400'
-              }`}
+          {/* 🔥 範囲表示切り替えボタン（投稿がある場合のみ表示） */}
+          {posts.length === 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
             >
-              {showRangeCircle ? (
-                <>
-                  <EyeOff className="h-4 w-4 mr-2" />
-                  範囲を非表示
-                </>
-              ) : (
-                <>
-                  <Eye className="h-4 w-4 mr-2" />
-                  5km圏内を表示
-                </>
-              )}
-            </Button>
-          </motion.div>
+              <Button
+                onClick={toggleRangeCircle}
+                variant={showRangeCircle ? "default" : "outline"}
+                size="sm"
+                className={`shadow-lg ${
+                  showRangeCircle 
+                    ? 'bg-green-600 hover:bg-green-700 text-white border-green-600 hover:border-green-700' 
+                    : 'bg-white hover:bg-gray-400 text-gray-800 border-gray-800 hover:border-gray-400'
+                }`}
+              >
+                {showRangeCircle ? (
+                  <>
+                    <EyeOff className="h-4 w-4 mr-2" />
+                    範囲を非表示
+                  </>
+                ) : (
+                  <>
+                    <Eye className="h-4 w-4 mr-2" />
+                    5km圏内を表示
+                  </>
+                )}
+              </Button>
+            </motion.div>
+          )}
         </div>
       )}
 
