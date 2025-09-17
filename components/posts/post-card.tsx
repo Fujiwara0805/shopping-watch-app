@@ -1581,9 +1581,11 @@ export const PostCard = memo(({
           </div>
           
           {/* 注意事項 */}
-          <div className="text-left text-base text-gray-500 mb-6">
-            <p>※クーポン内容は、お店でご確認ください。</p>
-            <p className="text-base font-semibold text-red-600">※投稿は、設定した時間が過ぎると削除されます。必ず画像を保存して会計時にご提示ください。</p>
+          <div className="text-left text-sm text-gray-500 mb-6">
+            <p>※クーポン内容は、店舗でご確認ください。</p>
+            <p>※クーポンは、１会計につき１枚です。</p>
+            <p>※クーポンは、トクドク利用店舗のみご利用いただけます。</p>
+            <p className="text-sm font-semibold text-red-600">※投稿は、設定した時間が過ぎると自動削除されます。必ず画像を保存して会計時にご提示ください。</p>
           </div>
         </div>
         

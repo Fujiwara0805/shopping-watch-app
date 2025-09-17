@@ -17,20 +17,13 @@ import { CustomModal } from '@/components/ui/custom-modal';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { getAnonymousSessionId } from '@/lib/session';
 import { useToast } from '@/hooks/use-toast';
-import { formatDistanceToNow } from 'date-fns';
-import { ja } from 'date-fns/locale';
+
 import { ExtendedPostWithAuthor } from '@/types/timeline';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
+
 // 🔥 位置情報関連のコンポーネントをインポート
 import { LocationPermissionDialog } from '@/components/common/LocationPermissionDialog';
 
@@ -501,7 +494,8 @@ const CommentsModal = ({
       className="sm:max-w-2xl"
     >
       <div className="space-y-4">
-        {/* 投稿内容の表示 */}
+        {/* 投稿内容の表示 - 非表示にしました */}
+        {/*
         <div className="bg-gray-50 p-4 rounded-lg">
           <p className="text-sm text-gray-700">{post?.content}</p>
           <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500">
@@ -519,6 +513,7 @@ const CommentsModal = ({
             </span>
           </div>
         </div>
+        */}
 
         {/* コメント一覧 */}
         <div className="h-[250px] overflow-y-auto custom-scrollbar border rounded-lg bg-gray-50">
