@@ -955,7 +955,7 @@ export const PostCard = memo(({
                             <div className="flex items-center justify-between">
                               <Button
                                 variant="ghost"
-                                className="p-0 h-auto font-normal hover:bg-transparent hover:text-primary flex-1"
+                                className="p-0 h-auto font-normal hover:bg-transparent hover:text-primary flex-1 text-left"
                                 onClick={handleCopyStoreName}
                                 title="店舗名をコピー"
                               >
@@ -970,8 +970,8 @@ export const PostCard = memo(({
                                 variant="ghost"
                                 size="sm"
                                 onClick={handleCopyStoreName}
-                                className="p-1 h-auto hover:bg-gray-100"
-                                title="店舗名をコピー"
+                                className="p-1 h-auto hover:bg-gray-100 ml-2"
+                                title="店舗名「{post.store_name}」をコピー"
                               >
                                 <Copy className="h-4 w-4 text-gray-400 hover:text-gray-600 flex-shrink-0" />
                               </Button>
