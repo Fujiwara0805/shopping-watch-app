@@ -1,10 +1,11 @@
 "use client";
 
 import { useRef, useEffect, useState, useCallback } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useGeolocation } from '@/lib/hooks/use-geolocation'; // Enhanced version
 import { useGoogleMapsApi } from '@/components/providers/GoogleMapsApiProvider';
 import { Button } from '@/components/ui/button';
-import { MapPin, AlertTriangle, Navigation, RefreshCw, Smartphone, Monitor, Globe, Clock, Eye, EyeOff, ArrowLeft, Utensils, ShoppingBag, Calendar, Heart, Package, MessageSquareText, Layers, Store } from 'lucide-react';
+import { MapPin, AlertTriangle, Navigation, RefreshCw, Smartphone, Monitor, Globe, Clock, Eye, EyeOff, ArrowLeft, Utensils, ShoppingBag, Calendar, Heart, Package, MessageSquareText, Layers, Store, ExternalLink } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { MapSearchControl } from './MapSearchControl';
 import { CrossBrowserLocationGuide } from './CrossBrowserLocationGuide'; // Enhanced version
@@ -73,6 +74,7 @@ export function MapView() {
   console.log("MapView: Component rendering START");
   
   const { isLoaded: googleMapsLoaded, loadError: googleMapsLoadError, isLoading: googleMapsLoading } = useGoogleMapsApi();
+  const searchParams = useSearchParams();
   
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
@@ -116,6 +118,9 @@ export function MapView() {
   const [postMarkers, setPostMarkers] = useState<google.maps.Marker[]>([]);
   const [loadingPosts, setLoadingPosts] = useState(false);
   const router = useRouter();
+
+  // URLパラメータから初期検索値を取得
+  const initialSearchValue = searchParams.get('search') || '';
 
   // 改良されたガイド表示制御（許可状態を考慮）
   useEffect(() => {
@@ -1022,6 +1027,7 @@ export function MapView() {
             userLocation={latitude && longitude ? new google.maps.LatLng(latitude, longitude) : null}
             onPlaceSelected={handlePlaceSelected}
             onSearchError={handleSearchError}
+            initialValue={initialSearchValue} // 初期検索値を渡す
           />
         </div>
       )}
@@ -1029,32 +1035,34 @@ export function MapView() {
       {/* 選択された場所の情報表示 */}
       {selectedPlace && selectedPlace.geometry && map && mapInitialized && (
         <motion.div
-          className="absolute bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-1.5rem)] sm:w-auto sm:max-w-md z-10 p-3 bg-background rounded-lg shadow-xl flex items-center justify-between"
+          className="absolute bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-1.5rem)] sm:w-auto sm:max-w-md z-10 bg-background rounded-lg shadow-xl cursor-pointer hover:shadow-2xl transition-all duration-200"
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 20, opacity: 0 }}
           transition={{ duration: 0.3 }}
+          onClick={() => openGoogleMapsNavigation(selectedPlace)}
         >
-          <div className="overflow-hidden mr-2">
-            <h3 className="font-semibold text-sm sm:text-base truncate">{selectedPlace.name}</h3>
-            {distanceToSelectedPlace && (
-              <p className="text-xs sm:text-sm text-muted-foreground">
-                現在地からの距離: {distanceToSelectedPlace}
+          <div className="p-3 flex items-center justify-between">
+            <div className="overflow-hidden mr-2">
+              <h3 className="font-semibold text-sm sm:text-base truncate">{selectedPlace.name}</h3>
+              {distanceToSelectedPlace && (
+                <p className="text-xs sm:text-sm text-muted-foreground">
+                  現在地からの距離: {distanceToSelectedPlace}
+                </p>
+              )}
+              <p className="text-xs text-muted-foreground truncate max-w-[160px] xs:max-w-[180px] sm:max-w-xs">
+                {selectedPlace.formatted_address}
               </p>
-            )}
-            <p className="text-xs text-muted-foreground truncate max-w-[160px] xs:max-w-[180px] sm:max-w-xs">
-              {selectedPlace.formatted_address}
-            </p>
+              {/* クリックでGoogleマップに遷移することを示すテキスト */}
+              <p className="text-xs text-blue-600 font-medium mt-1 flex items-center">
+                <ExternalLink className="h-3 w-3 mr-1" />
+                タップしてGoogleマップで開く
+              </p>
+            </div>
+            <div className="flex-shrink-0 text-blue-600">
+              <ExternalLink className="h-5 w-5" />
+            </div>
           </div>
-          <Button
-            size="sm" 
-            onClick={() => openGoogleMapsNavigation(selectedPlace)}
-            className="flex-shrink-0 bg-primary hover:bg-primary/90 text-primary-foreground px-2 py-1 sm:px-3 sm:py-2"
-            aria-label="Googleマップで経路を表示"
-          >
-            <Navigation className="h-4 w-4 sm:h-5 sm:w-5 sm:mr-1" />
-            <span className="hidden sm:inline">経路</span>
-          </Button>
         </motion.div>
       )}
 

@@ -16,6 +16,7 @@ interface MapSearchControlProps {
   ) => void;
   onSearchError?: (error: string) => void;
   className?: string;
+  initialValue?: string;
 }
 
 export function MapSearchControl({
@@ -24,12 +25,25 @@ export function MapSearchControl({
   onPlaceSelected,
   onSearchError,
   className,
+  initialValue = '',
 }: MapSearchControlProps) {
   const { isLoaded: isMapsApiLoaded, loadError } = useGoogleMapsApi();
   const inputRef = useRef<HTMLInputElement>(null);
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
-  const [inputValue, setInputValue] = useState('');
+  const [inputValue, setInputValue] = useState(initialValue);
   const [isFocused, setIsFocused] = useState(false);
+  // 🔥 修正1: 初期検索の実行を追跡するフラグを追加
+  const initialSearchExecutedRef = useRef(false);
+
+  // 初期値が変更された時に入力値を更新
+  useEffect(() => {
+    setInputValue(initialValue);
+    if (inputRef.current) {
+      inputRef.current.value = initialValue;
+    }
+    // 🔥 修正2: 初期値が変更されたら検索フラグをリセット
+    initialSearchExecutedRef.current = false;
+  }, [initialValue]);
 
   useEffect(() => {
     // API読み込みエラーまたは地図が未初期化の場合はスキップ
@@ -139,7 +153,51 @@ export function MapSearchControl({
             google.maps.event.clearInstanceListeners(autocompleteRef.current);
         }
     };
-  }, [isMapsApiLoaded, map, userLocation, onPlaceSelected, onSearchError, loadError]);
+  }, [isMapsApiLoaded, map, userLocation, onPlaceSelected, onSearchError, loadError]); // 🔥 修正3: initialValueを依存配列から削除
+
+  // 🔥 修正4: 初期検索を別のuseEffectに分離
+  useEffect(() => {
+    // 初期値がある場合、自動検索を実行（一度だけ）
+    if (initialValue && 
+        initialValue.trim() && 
+        !initialSearchExecutedRef.current && 
+        isMapsApiLoaded && 
+        map && 
+        !loadError) {
+      
+      console.log("MapSearchControl: Triggering initial search for:", initialValue);
+      initialSearchExecutedRef.current = true; // 実行済みフラグを設定
+      
+      // Places APIのTextSearchを使用して初期検索を実行
+      const service = new google.maps.places.PlacesService(map);
+      const request = {
+        query: initialValue,
+        location: userLocation || undefined,
+        radius: userLocation ? 50000 : undefined,
+        type: 'establishment'
+      };
+      
+      service.textSearch(request, (results, status) => {
+        if (status === google.maps.places.PlacesServiceStatus.OK && results && results[0]) {
+          const place = results[0];
+          console.log("MapSearchControl: Initial search result:", place);
+          
+          let distanceText: string | null = null;
+          if (userLocation && place.geometry?.location) {
+            const distance = google.maps.geometry.spherical.computeDistanceBetween(
+              userLocation,
+              place.geometry.location
+            );
+            distanceText = (distance / 1000).toFixed(1) + ' km';
+          }
+          
+          onPlaceSelected(place, distanceText);
+        } else {
+          console.log("MapSearchControl: Initial search failed or no results");
+        }
+      });
+    }
+  }, [initialValue, isMapsApiLoaded, map, loadError, userLocation, onPlaceSelected]);
 
   const handleClearInput = () => {
     setInputValue('');
@@ -159,6 +217,7 @@ export function MapSearchControl({
     }
   };
 
+  // 🔥 修正5: タッチイベントの問題を解決するためにpassive optionを追加
   const handleFocus = () => setIsFocused(true);
   
   const handleBlur = () => {
@@ -261,6 +320,11 @@ export function MapSearchControl({
             autoCorrect="off"
             autoCapitalize="off"
             spellCheck="false"
+            // 🔥 修正6: タッチイベントの問題を解決するための属性を追加
+            onTouchStart={(e) => {
+              // タッチイベントをpassiveにして、スクロールを妨げないようにする
+              e.currentTarget.style.touchAction = 'manipulation';
+            }}
           />
 
           {/* クリアボタン */}
@@ -277,6 +341,10 @@ export function MapSearchControl({
                 size="icon"
                 className="absolute right-3 top-1/2 -translate-y-1/2 h-8 w-8 p-0 rounded-full bg-white/20 hover:bg-white/30 transition-all duration-200 backdrop-blur-sm"
                 onClick={handleClearInput}
+                // 🔥 修正7: タッチイベントの問題を解決
+                onTouchStart={(e) => {
+                  e.currentTarget.style.touchAction = 'manipulation';
+                }}
               >
                 <X className="h-4 w-4 text-white" />
               </Button>

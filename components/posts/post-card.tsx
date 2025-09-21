@@ -15,6 +15,7 @@ import { CustomModal } from '@/components/ui/custom-modal';
 import { useToast } from '@/hooks/use-toast';
 import React from 'react';
 import { ExtendedPostWithAuthor } from '@/types/timeline';
+import { useRouter } from 'next/navigation';
 
 function formatRemainingTime(expiresAt: number): string {
   const now = Date.now();
@@ -380,6 +381,7 @@ export const PostCard = memo(({
   
   const { toast } = useToast();
   const cardRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
   const isMyPost = isOwnPost || (post.author_user_id === currentUserId);
 
@@ -754,6 +756,15 @@ export const PostCard = memo(({
     }
   }, [toast]);
 
+  // 店舗名クリック時に地図ページに遷移する処理
+  const handleStoreNameClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (post.store_name && post.store_name !== '店舗不明') {
+      // 地図ページに遷移して店舗を検索
+      router.push(`/map?search=${encodeURIComponent(post.store_name)}`);
+    }
+  }, [post.store_name, router]);
+
   return (
     <>
       <Card 
@@ -860,30 +871,22 @@ export const PostCard = memo(({
                             </div>
                           </td>
                           <td className="p-3">
-                            <div className="flex items-center justify-between">
-                              <Button
-                                variant="ghost"
-                                className="p-0 h-auto font-normal hover:bg-transparent hover:text-primary flex-1 text-left"
-                                onClick={handleCopyStoreName}
-                                title="店舗名をコピー"
-                              >
+                            <Button
+                              variant="ghost"
+                              className="p-0 h-auto font-normal hover:bg-transparent hover:text-blue-600 w-full text-left"
+                              onClick={handleStoreNameClick}
+                              title="地図でお店を探す"
+                            >
+                              <div className="flex items-center justify-between w-full">
                                 <span className={cn(
                                   "whitespace-normal break-words",
                                   (post.store_name || '').length > 20 ? "text-sm" : "text-base"
                                 )} style={{ color: '#73370c' }}>
                                   {post.store_name}
                                 </span>
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={handleCopyStoreName}
-                                className="p-1 h-auto hover:bg-gray-100 ml-2"
-                                title="店舗名「{post.store_name}」をコピー"
-                              >
-                                <Copy className="h-4 w-4 text-gray-400 hover:text-gray-600 flex-shrink-0" />
-                              </Button>
-                            </div>
+                                <MapPin className="h-4 w-4 text-blue-500 flex-shrink-0 ml-2" />
+                              </div>
+                            </Button>
                           </td>
                         </tr>
                       )}
