@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect, memo } from 'react';
 import { motion } from 'framer-motion';
-import { Heart, Share2, Clock, Link as LinkIcon, ExternalLink, Instagram, Copy, MapPin, Eye, MessageCircle, ChevronDown, Tag, UserPlus, Info, ShoppingCart, Utensils, Camera, GamepadIcon, Wrench, Layers, FileIcon, Calendar, Briefcase, ShoppingBag, Users, MessageSquareText, Trash2, Flag, AlertTriangle, Loader2, Star, Package, HandCoins, User, UserCheck, PersonStanding, Footprints } from 'lucide-react';
+import { Heart, Share2, Clock, Link as LinkIcon, ExternalLink, Instagram, Copy, MapPin, Eye, MessageCircle, ChevronDown, Tag, UserPlus, Info, ShoppingCart, Utensils, GamepadIcon, Wrench, Layers, FileIcon, Calendar, Briefcase, ShoppingBag, Users, MessageSquareText, Trash2, Flag, AlertTriangle, Loader2, Star, Package, HandCoins, User, UserCheck, PersonStanding, Footprints } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -377,11 +377,6 @@ export const PostCard = memo(({
   
   // 🔥 追加：おすそわけのローディング状態管理
   const [supportPurchaseLoading, setSupportPurchaseLoading] = useState<{ [key: string]: boolean }>({});
-  
-  // 🔥 新規追加：クーポンモーダル関連
-  const [showCouponModal, setShowCouponModal] = useState(false);
-  const [isDownloadingCoupon, setIsDownloadingCoupon] = useState(false);
-  const couponModalRef = useRef<HTMLDivElement>(null);
   
   const { toast } = useToast();
   const cardRef = useRef<HTMLDivElement>(null);
@@ -759,70 +754,6 @@ export const PostCard = memo(({
     }
   }, [toast]);
 
-  // 🔥 新規追加：クーポンボタンクリック処理
-  const handleCouponClick = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    setShowCouponModal(true);
-  }, []);
-
-  // 🔥 新規追加：クーポン有効期限の計算
-  const getCouponExpiryTime = useCallback(() => {
-    if (!post.created_at) return '時間不明';
-    
-    const createdDate = new Date(post.created_at);
-    const expiryDate = new Date(createdDate.getTime() + (3 * 60 * 60 * 1000)); // 3時間後
-    
-    const hours = expiryDate.getHours();
-    const minutes = expiryDate.getMinutes();
-    const month = expiryDate.getMonth() + 1;
-    const day = expiryDate.getDate();
-    
-    return `${month}月${day}日 ${hours}時${minutes.toString().padStart(2, '0')}分まで`;
-  }, [post.created_at]);
-
-  // 🔥 新規追加：クーポン画像保存処理
-  const handleDownloadCoupon = useCallback(async () => {
-    if (!couponModalRef.current) return;
-    
-    setIsDownloadingCoupon(true);
-    
-    try {
-      // html2canvasを動的インポート
-      const html2canvas = (await import('html2canvas')).default;
-      
-      const canvas = await html2canvas(couponModalRef.current, {
-        backgroundColor: '#ffffff',
-        scale: 2, // 高解像度
-        useCORS: true,
-        allowTaint: true,
-        // 🔥 修正：黄色背景の範囲のサイズに合わせて調整
-        width: couponModalRef.current.offsetWidth,
-        height: couponModalRef.current.offsetHeight,
-      });
-      
-      // 画像をダウンロード
-      const link = document.createElement('a');
-      link.download = `tokudoku-coupon-${post.store_name || 'store'}-${Date.now()}.png`;
-      link.href = canvas.toDataURL('image/png');
-      link.click();
-      
-      toast({
-        title: "クーポンを保存しました！",
-        description: "画像ファイルとして保存されました",
-        duration: 2000,
-      });
-    } catch (error) {
-      console.error('クーポン画像の保存に失敗しました:', error);
-      toast({
-        title: "保存に失敗しました",
-        description: "もう一度お試しください",
-        duration: 2000,
-      });
-    } finally {
-      setIsDownloadingCoupon(false);
-    }
-  }, [post.store_name, toast]);
-
   return (
     <>
       <Card 
@@ -844,35 +775,12 @@ export const PostCard = memo(({
                   <p className="font-semibold text-base" style={{ color: '#73370c' }}>
                     {post.author?.display_name || '不明な投稿者'}
                   </p>
-                  {/* 🔥 修正：条件に応じてバッジを表示 */}
-                  {(() => {
-                    // クーポン配布中の条件チェック
-                    const hasLocation = post.store_id && post.store_name && post.store_name !== '店舗不明';
-                    const isRestaurant = post.category === '飲食店';
-                    const hasRemainingOrCustomer = (post.remaining_slots != null) || (post.customer_situation && post.customer_situation.trim() !== '');
-                    
-                    const showCouponBadge = hasLocation && isRestaurant && hasRemainingOrCustomer;
-                    
-                    if (showCouponBadge) {
-                      return (
-                        <Badge 
-                          className="text-base bg-yellow-100 text-yellow-800 border-yellow-200 animate-pulse cursor-pointer hover:bg-yellow-200 transition-colors"
-                          title="クリックしてクーポンを表示"
-                          onClick={handleCouponClick}
-                        >
-                          <Tag className="h-3 w-3 mr-1" />
-                          クーポン配布中
-                        </Badge>
-                      );
-                    } else if (isMyPost) {
-                      return <Badge variant="default" className="text-xs">自分の投稿</Badge>;
-                    }
-                    
-                    return null;
-                  })()}
+                  {/* 自分の投稿バッジのみ表示 */}
+                  {isMyPost && (
+                    <Badge variant="default" className="text-xs">自分の投稿</Badge>
+                  )}
                 </div>
                 <div className="flex items-center space-x-2">
-                  {/* 🔥 投稿数の表示を削除 */}
                   <p className="text-xs" style={{ color: '#73370c' }}>
                     {formattedDate}
                   </p>
@@ -880,7 +788,7 @@ export const PostCard = memo(({
               </div>
             </div>
             
-            {/* 🔥 追加：自分の投稿の場合は削除ボタン */}
+            {/* 自分の投稿の場合は削除ボタン */}
             {isMyPost && currentUserId && (
               <Button
                 variant="ghost"
@@ -1053,7 +961,7 @@ export const PostCard = memo(({
                         </tr>
                       )}
                       
-                      {/* 🔥 修正：残り枠数の表示 */}
+                      {/* 残り枠数の表示 */}
                       {post.remaining_slots != null && (
                         <tr className="border-b border-gray-100">
                           <td className="p-3 bg-gray-50 w-1/3 font-medium border-r border-gray-100">
@@ -1072,7 +980,7 @@ export const PostCard = memo(({
                         </tr>
                       )}
 
-                      {/* 🔥 修正：来客状況の表示 */}
+                      {/* 来客状況の表示 */}
                       {post.customer_situation && post.customer_situation.trim() !== '' && (
                         <tr className="border-b border-gray-100">
                           <td className="p-3 bg-gray-50 w-1/3 font-medium border-r border-gray-100">
@@ -1087,7 +995,7 @@ export const PostCard = memo(({
                         </tr>
                       )}
 
-                      {/* 🔥 新規追加：クーポンの表示 */}
+                      {/* クーポンの表示（残す） */}
                       {post.coupon_code && post.coupon_code.trim() !== '' && (
                         <tr className="border-b border-gray-100">
                           <td className="p-3 bg-gray-50 w-1/3 font-medium border-r border-gray-100">
@@ -1519,102 +1427,6 @@ export const PostCard = memo(({
         </div>
         <div className="mt-6 flex justify-end">
             <Button variant="ghost" onClick={() => setShowShareDialog(false)} className="text-base px-5 py-2.5 h-auto">閉じる</Button>
-        </div>
-      </CustomModal>
-
-      {/* 🔥 新規追加：クーポンモーダル */}
-      <CustomModal
-        isOpen={showCouponModal}
-        onClose={() => setShowCouponModal(false)}
-        title=""
-        description=""
-        className="sm:max-w-md"
-      >
-        {/* 🔥 修正：保存対象の範囲を黄色背景のdivのみに限定 */}
-        <div 
-          ref={couponModalRef}
-          className="bg-gradient-to-br from-yellow-50 to-orange-50 p-8 rounded-lg border-2 border-yellow-200"
-          style={{ minHeight: '500px' }}
-        >
-          {/* タイトル */}
-          <div className="text-center mb-6">
-            <h2 className="text-2xl font-bold text-yellow-800 mb-2">
-              トクドク応援クーポン
-            </h2>
-          </div>
-          
-          {/* トクドクアイコン（中央配置） */}
-          <div className="flex justify-center mb-6">
-            <div className="w-24 h-24 rounded-full overflow-hidden shadow-lg">
-              <img 
-                src="https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png"
-                alt="トクドクアイコン"
-                className="w-full h-full object-cover"
-              />
-            </div>
-          </div>
-          
-          {/* 店舗名 */}
-          <div className="text-center mb-4">
-            <h3 className="text-xl font-semibold text-gray-800 mb-2">
-              {post.store_name}
-            </h3>
-            <p className="text-gray-600">でご利用いただけます</p>
-          </div>
-          
-          {/* クーポン内容（投稿のクーポンコードを表示） */}
-          {post.coupon_code && (
-            <div className="bg-white p-4 rounded-lg border-2 border-dashed border-yellow-400 mb-4">
-              <div className="text-center">
-                <p className="text-sm text-gray-600 mb-1">クーポン内容</p>
-                <p className="text-lg font-bold text-yellow-800">{post.coupon_code}</p>
-              </div>
-            </div>
-          )}
-          
-          {/* 有効期限 */}
-          <div className="text-center mb-6">
-            <p className="text-sm text-gray-600 mb-1">有効期限</p>
-            <p className="text-lg font-semibold text-red-600">
-              {getCouponExpiryTime()}
-            </p>
-          </div>
-          
-          {/* 注意事項 */}
-          <div className="text-left text-sm text-gray-500 mb-6">
-            <p>※クーポン内容は、店舗でご確認ください。</p>
-            <p>※クーポンは、１会計につき１枚です。</p>
-            <p>※クーポンは、トクドク利用店舗のみご利用いただけます。</p>
-            <p className="text-sm font-semibold text-red-600">※投稿は、設定した時間が過ぎると自動削除されます。必ず画像を保存して会計時にご提示ください。</p>
-          </div>
-        </div>
-        
-        {/* 🔥 ボタンエリアは保存対象外（refの外側に配置） */}
-        <div className="flex justify-between items-center mt-6">
-          <Button
-            variant="outline"
-            onClick={() => setShowCouponModal(false)}
-          >
-            閉じる
-          </Button>
-          
-          <Button
-            onClick={handleDownloadCoupon}
-            disabled={isDownloadingCoupon}
-            className="bg-yellow-500 hover:bg-yellow-600 text-white"
-          >
-            {isDownloadingCoupon ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                保存中...
-              </>
-            ) : (
-              <>
-                <Camera className="h-4 w-4 mr-2" />
-                画像として保存
-              </>
-            )}
-          </Button>
         </div>
       </CustomModal>
     </>
