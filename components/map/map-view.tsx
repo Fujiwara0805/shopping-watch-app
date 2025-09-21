@@ -5,13 +5,15 @@ import { useSearchParams } from 'next/navigation';
 import { useGeolocation } from '@/lib/hooks/use-geolocation'; // Enhanced version
 import { useGoogleMapsApi } from '@/components/providers/GoogleMapsApiProvider';
 import { Button } from '@/components/ui/button';
-import { MapPin, AlertTriangle, Navigation, RefreshCw, Smartphone, Monitor, Globe, Clock, Eye, EyeOff, ArrowLeft, Utensils, ShoppingBag, Calendar, Heart, Package, MessageSquareText, Layers, Store, ExternalLink } from 'lucide-react';
+import { MapPin, AlertTriangle, Navigation, RefreshCw, Smartphone, Monitor, Globe, Clock, Eye, EyeOff, ArrowLeft, Utensils, ShoppingBag, Calendar, Heart, Package, MessageSquareText, Layers, Store, ExternalLink, Info, HelpCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { MapSearchControl } from './MapSearchControl';
 import { CrossBrowserLocationGuide } from './CrossBrowserLocationGuide'; // Enhanced version
 import { LocationPermissionManager } from '@/lib/hooks/LocationPermissionManager';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
+import { CustomModal } from '@/components/ui/custom-modal';
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 
 declare global {
   interface Window {
@@ -118,6 +120,9 @@ export function MapView() {
   const [postMarkers, setPostMarkers] = useState<google.maps.Marker[]>([]);
   const [loadingPosts, setLoadingPosts] = useState(false);
   const router = useRouter();
+
+  // 🔥 地図の見方モーダルの状態を追加
+  const [showMapGuideModal, setShowMapGuideModal] = useState(false);
 
   // URLパラメータから初期検索値を取得
   const initialSearchValue = searchParams.get('search') || '';
@@ -682,6 +687,16 @@ export function MapView() {
   // ブラウザアイコンを統一（MapPinに統一）
   const getBrowserIcon = () => MapPin;
 
+  // 🔥 カテゴリー情報を定義（getCategoryColor関数の内容に基づいて正確に作成）
+  const categoryInfo = [
+    { name: '飲食店', color: '#ea580c', description: 'レストラン、カフェ、居酒屋など' },
+    { name: '小売店', color: '#2563eb', description: 'ショップ、商店、販売店など' },
+    { name: 'イベント集客', color: '#9333ea', description: 'イベント、セミナー、集会など' },
+    { name: '応援', color: '#dc2626', description: '応援メッセージ、サポート投稿など' },
+    { name: '受け渡し', color: '#16a34a', description: '商品の受け渡し、配達など' },
+    { name: '雑談', color: '#4b5563', description: '日常会話、コミュニケーションなど' },
+  ];
+
   // メッセージカードコンポーネント（変更なし）
   const MessageCard = ({ icon: Icon, title, message, children, variant = 'default' }: {
     icon?: React.ElementType;
@@ -1014,6 +1029,23 @@ export function MapView() {
               </Button>
             </motion.div>
           )}
+
+          {/* 🔥 地図の見方ボタンを追加 */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: 0.1 }}
+          >
+            <Button
+              onClick={() => setShowMapGuideModal(true)}
+              variant="outline"
+              size="sm"
+              className="shadow-lg bg-white hover:bg-blue-50 text-blue-600 border-blue-200 hover:border-blue-300"
+            >
+              <HelpCircle className="h-4 w-4 mr-2" />
+              地図の見方
+            </Button>
+          </motion.div>
         </div>
       )}
 
@@ -1065,6 +1097,156 @@ export function MapView() {
           </div>
         </motion.div>
       )}
+
+      {/* 🔥 地図の見方モーダル（カルーセル対応） */}
+      <CustomModal
+        isOpen={showMapGuideModal}
+        onClose={() => setShowMapGuideModal(false)}
+        title="地図の見方"
+        description="投稿の色分けと操作方法について"
+        className="max-w-lg"
+      >
+        <Carousel className="w-full">
+          <CarouselContent>
+            {/* 1ページ目: 手紙マーカーの色分け */}
+            <CarouselItem>
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-lg font-semibold mb-4 flex items-center">
+                    <MessageSquareText className="h-5 w-5 mr-2 text-blue-600" />
+                    手紙マーカーの色分け
+                  </h3>
+                  <p className="text-sm text-gray-600 mb-4">
+                    地図上の手紙マーカーは、投稿のカテゴリーによって色分けされています：
+                  </p>
+                  <div className="space-y-3 max-h-80 overflow-y-auto">
+                    {categoryInfo.map((category) => (
+                      <div key={category.name} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                        <div className="flex-shrink-0">
+                          {/* 🔥 実際の手紙SVGアイコンを使用 */}
+                          <div 
+                            className="w-10 h-10 flex items-center justify-center"
+                            dangerouslySetInnerHTML={{
+                              __html: getLetterIconSvg(category.color)
+                            }}
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-sm text-gray-900">{category.name}</div>
+                          <div className="text-xs text-gray-500 mt-1">{category.description}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* ページインジケーター */}
+                <div className="flex justify-center items-center space-x-2 pt-4 border-t">
+                  <div className="w-2 h-2 rounded-full bg-blue-600"></div>
+                  <div className="w-2 h-2 rounded-full bg-gray-300"></div>
+                  <span className="text-xs text-gray-500 ml-2">1 / 2</span>
+                </div>
+              </div>
+            </CarouselItem>
+
+            {/* 2ページ目: 地図の操作方法 */}
+            <CarouselItem>
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-lg font-semibold mb-4 flex items-center">
+                    <Info className="h-5 w-5 mr-2 text-green-600" />
+                    地図の操作方法
+                  </h3>
+                  <div className="space-y-4">
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                      <div className="flex items-start space-x-3">
+                        <div className="flex-shrink-0">
+                          {/* 🔥 実際の手紙SVGアイコンを使用（飲食店カテゴリーの色で例示） */}
+                          <div 
+                            className="w-8 h-8 flex items-center justify-center"
+                            dangerouslySetInnerHTML={{
+                              __html: getLetterIconSvg('#ea580c')
+                            }}
+                          />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-blue-800 mb-1">
+                            手紙マーカーをタップ
+                          </p>
+                          <p className="text-xs text-blue-600">
+                            おとく板へ遷移し、該当する投稿の詳細を確認できます
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                      <div className="flex items-start space-x-3">
+                        <div className="flex-shrink-0">
+                          <img 
+                            src="https://res.cloudinary.com/dz9trbwma/image/upload/v1749098791/%E9%B3%A9_azif4f.png" 
+                            alt="現在地" 
+                            className="h-8 w-8" 
+                          />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-green-800 mb-1">
+                            鳩マーカー（現在地）
+                          </p>
+                          <p className="text-xs text-green-600">
+                            あなたの現在位置を示しています。この位置を中心に5km圏内の投稿が表示されます
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
+                      <div className="flex items-start space-x-3">
+                        <div className="flex-shrink-0">
+                          <div className="w-8 h-8 border-2 border-emerald-500 rounded-full bg-emerald-100 opacity-70"></div>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-emerald-800 mb-1">
+                            緑色の円（範囲表示）
+                          </p>
+                          <p className="text-xs text-emerald-600">
+                            投稿を閲覧できる5km圏内の範囲を表示。投稿がある場合は自動的に非表示になります
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* ページインジケーター */}
+                <div className="flex justify-center items-center space-x-2 pt-4 border-t">
+                  <div className="w-2 h-2 rounded-full bg-gray-300"></div>
+                  <div className="w-2 h-2 rounded-full bg-blue-600"></div>
+                  <span className="text-xs text-gray-500 ml-2">2 / 2</span>
+                </div>
+
+                {/* 閉じるボタン */}
+                <div className="pt-2">
+                  <Button 
+                    onClick={() => setShowMapGuideModal(false)}
+                    className="w-full"
+                  >
+                    理解しました
+                  </Button>
+                </div>
+              </div>
+            </CarouselItem>
+          </CarouselContent>
+
+          {/* カルーセルナビゲーション */}
+          <div className="absolute left-4 top-1/2 -translate-y-1/2">
+            <CarouselPrevious className="relative left-0 translate-y-0" />
+          </div>
+          <div className="absolute right-4 top-1/2 -translate-y-1/2">
+            <CarouselNext className="relative right-0 translate-y-0" />
+          </div>
+        </Carousel>
+      </CustomModal>
 
       {/* クロスブラウザ位置情報ガイド */}
       <CrossBrowserLocationGuide
