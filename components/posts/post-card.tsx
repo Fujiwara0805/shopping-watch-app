@@ -877,14 +877,18 @@ export const PostCard = memo(({
                               onClick={handleStoreNameClick}
                               title="地図でお店を探す"
                             >
-                              <div className="flex items-center justify-between w-full">
-                                <span className={cn(
-                                  "whitespace-normal break-words",
-                                  (post.store_name || '').length > 20 ? "text-sm" : "text-base"
-                                )} style={{ color: '#73370c' }}>
-                                  {post.store_name}
-                                </span>
-                                <MapPin className="h-4 w-4 text-blue-500 flex-shrink-0 ml-2" />
+                              <div className="w-full">
+                                <div className="flex items-center justify-between w-full">
+                                  <span className={cn(
+                                    "whitespace-normal break-words",
+                                    (post.store_name || '').length > 20 ? "text-sm" : "text-base"
+                                  )} style={{ color: '#73370c' }}>
+                                    {post.store_name}
+                                  </span>
+                                </div>
+                                <div className="text-xs text-gray-500 mt-1">
+                                  ※タップして「お店を探す」画面へ
+                                </div>
                               </div>
                             </Button>
                           </td>
@@ -1008,9 +1012,14 @@ export const PostCard = memo(({
                             </div>
                           </td>
                           <td className="p-3">
-                            <Badge className="text-base bg-yellow-100 text-yellow-800 border-yellow-200">
-                              {post.coupon_code}
-                            </Badge>
+                            <div>
+                              <Badge className="text-base bg-yellow-100 text-yellow-800 border-yellow-200">
+                                {post.coupon_code}
+                              </Badge>
+                              <div className="text-xs text-gray-500 mt-2">
+                                ※「トクドクで見た」と伝えて下さい
+                              </div>
+                            </div>
                           </td>
                         </tr>
                       )}
