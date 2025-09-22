@@ -2595,7 +2595,7 @@ export default function Timeline() {
                   </p>
                   <h3 className="text-lg font-semibold mb-4 flex items-center">
                     <MessageSquareText className="h-5 w-5 mr-2 text-blue-600" />
-                    6つのカテゴリ
+                    6つのカテゴリと詳細情報について
                   </h3>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
@@ -2628,7 +2628,7 @@ export default function Timeline() {
                             小売店
                           </p>
                           <p className="text-xs text-blue-600">
-                            商品の在庫・セール
+                            スーパーやパン屋、ケーキ屋など
                           </p>
                         </div>
                       </div>
