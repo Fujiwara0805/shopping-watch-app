@@ -21,7 +21,7 @@ declare global {
   }
 }
 
-// 🔥 投稿データの型定義を修正（store_latitude, store_longitudeを使用）
+// 🔥 投稿データの型定義を修正（remaining_slotsを追加）
 interface PostMarkerData {
   id: string;
   category: string | null;
@@ -31,10 +31,10 @@ interface PostMarkerData {
   store_longitude: number;
   created_at: string;
   expires_at: string;
+  remaining_slots: number | null; // �� 残数情報を追加
 }
 
-
-// 🔥 カテゴリーカラーを取得する関数を追加（カテゴリー未入力対応）
+// 🔥 カテゴリーカラーを取得する関数を復活（カテゴリー未入力対応）
 const getCategoryColor = (category: string | null) => {
   if (!category) return '#6b7280'; // カテゴリーが未入力の場合はグレー
   
@@ -43,7 +43,7 @@ const getCategoryColor = (category: string | null) => {
       return '#ea580c'; // orange-600
     case '小売店':
       return '#2563eb'; // blue-600
-    case 'イベント集客':
+    case 'イベント':
       return '#9333ea'; // purple-600
     case '応援':
       return '#dc2626'; // red-600
@@ -56,13 +56,35 @@ const getCategoryColor = (category: string | null) => {
   }
 };
 
-// 🔥 手紙アイコンのSVGパスを使用（大きめサイズ）
-const getLetterIconSvg = (color: string) => {
+// 🔥 残数の単位を取得する関数を追加
+const getRemainingUnit = (category: string | null) => {
+  switch(category) {
+    case '飲食店':
+      return '席';
+    case '小売店':
+      return '個';
+    case 'イベント':
+      return '人';
+    default:
+      return '件';
+  }
+};
+
+// 🔥 吹き出しアイコンのSVGを作成する関数（カテゴリ色対応、テキストサイズ拡大）
+const getSpeechBubbleSvg = (remainingSlots: number, unit: string, categoryColor: string) => {
+  const text = `残り${remainingSlots}${unit}`;
+  const textWidth = text.length * 10 + 20; // 文字幅を拡大（8→10、16→20）
+  const bubbleWidth = Math.max(90, textWidth); // 最小幅も拡大（80→90）
+  const bubbleHeight = 35; // 高さも拡大（30→35）
+  
   return `
-    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <!-- 手紙アイコン -->
-      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" fill="${color}"/>
-      <polyline points="22,6 12,13 2,6" stroke="white" stroke-width="2" fill="none"/>
+    <svg width="${bubbleWidth + 10}" height="55" viewBox="0 0 ${bubbleWidth + 10} 55" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- 吹き出し本体 -->
+      <rect x="5" y="5" width="${bubbleWidth}" height="${bubbleHeight}" rx="17" ry="17" fill="${categoryColor}" stroke="#ffffff" stroke-width="2"/>
+      <!-- 吹き出しの尻尾 -->
+      <path d="M${bubbleWidth/2 + 5} ${bubbleHeight + 5} L${bubbleWidth/2 + 10} ${bubbleHeight + 15} L${bubbleWidth/2} ${bubbleHeight + 15} Z" fill="${categoryColor}" stroke="#ffffff" stroke-width="1"/>
+      <!-- テキスト -->
+      <text x="${bubbleWidth/2 + 5}" y="${bubbleHeight/2 + 10}" text-anchor="middle" fill="white" font-size="14" font-weight="bold" font-family="Arial, sans-serif">${text}</text>
     </svg>
   `;
 };
@@ -235,7 +257,7 @@ export function MapView() {
     requestLocation(); // Enhanced hook will handle permission saving
   };
 
-  // 🔥 投稿データを取得する関数を修正（store_latitude, store_longitudeを使用）
+  // 🔥 投稿データを取得する関数を修正（remaining_slotsを追加）
   const fetchPosts = useCallback(async () => {
     if (!latitude || !longitude) {
       console.log('MapView: 位置情報がないため投稿データの取得をスキップ');
@@ -248,7 +270,7 @@ export function MapView() {
       
       const now = new Date().toISOString();
       
-      // 🔥 store_latitude, store_longitudeを使用して投稿を取得
+      // 🔥 remaining_slotsフィールドを追加して取得
       const { data, error } = await supabase
         .from('posts')
         .select(`
@@ -259,13 +281,15 @@ export function MapView() {
           store_latitude,
           store_longitude,
           created_at,
-          expires_at
+          expires_at,
+          remaining_slots
         `)
         .eq('is_deleted', false)
         .gt('expires_at', now)
         .not('store_latitude', 'is', null)
         .not('store_longitude', 'is', null)
-        .not('store_name', 'is', null);
+        .not('store_name', 'is', null)
+        .not('remaining_slots', 'is', null); // 🔥 残数があるもののみ取得
 
       if (error) {
         console.error('MapView: 投稿データの取得に失敗:', error);
@@ -280,7 +304,7 @@ export function MapView() {
 
       // 5km圏内でフィルタリング
       const filteredPosts = data.filter((post: any) => {
-        if (!post.store_latitude || !post.store_longitude) return false;
+        if (!post.store_latitude || !post.store_longitude || post.remaining_slots == null) return false;
         
         // 距離計算（ハバーサイン公式）
         const R = 6371; // 地球の半径（km）
@@ -306,7 +330,7 @@ export function MapView() {
     }
   }, [latitude, longitude]);
 
-  // 🔥 投稿マーカーを作成する関数を修正（手紙アイコンを使用）
+  // 🔥 投稿マーカーを作成する関数を修正（カテゴリ色対応の吹き出しアイコンを使用）
   const createPostMarkers = useCallback(() => {
     if (!map || !posts.length || !window.google?.maps) {
       console.log('MapView: マーカー作成の条件が揃っていません');
@@ -325,26 +349,27 @@ export function MapView() {
     const newMarkers: google.maps.Marker[] = [];
 
     posts.forEach((post) => {
-      if (!post.store_latitude || !post.store_longitude) return;
+      if (!post.store_latitude || !post.store_longitude || post.remaining_slots == null) return;
 
       const position = new window.google.maps.LatLng(post.store_latitude, post.store_longitude);
-      const categoryColor = getCategoryColor(post.category);
+      const unit = getRemainingUnit(post.category);
+      const categoryColor = getCategoryColor(post.category); // �� カテゴリ色を取得
 
-      // カテゴリー表示用のテキスト
-      const categoryText = post.category || '店舗';
+      // �� 吹き出しアイコンを使用（カテゴリ色対応、サイズ拡大）
+      const speechBubbleSvg = getSpeechBubbleSvg(post.remaining_slots, unit, categoryColor);
+      const iconUrl = createDataUrl(speechBubbleSvg);
 
-      // 🔥 手紙アイコンを使用（カテゴリごとに色分け）
-      const letterIconSvg = getLetterIconSvg(categoryColor);
-      const iconUrl = createDataUrl(letterIconSvg);
+      const textWidth = `残り${post.remaining_slots}${unit}`.length * 10 + 20;
+      const bubbleWidth = Math.max(90, textWidth);
 
       const marker = new window.google.maps.Marker({
         position,
         map,
-        title: `${post.store_name} - ${categoryText}`,
+        title: `${post.store_name} - 残り${post.remaining_slots}${unit}`,
         icon: {
           url: iconUrl,
-          scaledSize: new window.google.maps.Size(32, 32), // 現在地アイコンより少し小さく
-          anchor: new window.google.maps.Point(16, 16),
+          scaledSize: new window.google.maps.Size(bubbleWidth + 10, 55), // 高さも拡大（50→55）
+          anchor: new window.google.maps.Point((bubbleWidth + 10) / 2, 50), // アンカーも調整（45→50）
         },
         animation: window.google.maps.Animation.DROP,
       });
@@ -687,16 +712,6 @@ export function MapView() {
   // ブラウザアイコンを統一（MapPinに統一）
   const getBrowserIcon = () => MapPin;
 
-  // 🔥 カテゴリー情報を定義（getCategoryColor関数の内容に基づいて正確に作成）
-  const categoryInfo = [
-    { name: '飲食店', color: '#ea580c', description: 'レストラン、カフェ、居酒屋など' },
-    { name: '小売店', color: '#2563eb', description: 'ショップ、商店、販売店など' },
-    { name: 'イベント集客', color: '#9333ea', description: 'イベント、セミナー、集会など' },
-    { name: '応援', color: '#dc2626', description: '応援メッセージ、サポート投稿など' },
-    { name: '受け渡し', color: '#16a34a', description: '商品の受け渡し、配達など' },
-    { name: '雑談', color: '#4b5563', description: '日常会話、コミュニケーションなど' },
-  ];
-
   // メッセージカードコンポーネント（変更なし）
   const MessageCard = ({ icon: Icon, title, message, children, variant = 'default' }: {
     icon?: React.ElementType;
@@ -987,9 +1002,9 @@ export function MapView() {
                 {posts.length > 0 
                   ? (
                     <>
-                      {`${posts.length}件の投稿を表示中`}
+                      {`${posts.length}件の残数情報を表示中`}
                       <br />
-                      <span className="text-xs">📧 = カテゴリ別色分け</span>
+                      <span className="text-xs">💬 = 残数情報付き投稿</span>
                     </>
                   )
                   : "緑色のエリア＝投稿閲覧範囲"
@@ -1098,45 +1113,90 @@ export function MapView() {
         </motion.div>
       )}
 
-      {/* 🔥 地図の見方モーダル（カルーセル対応） */}
+      {/* 🔥 地図の見方モーダル（修正版：カテゴリ色対応の吹き出しアイコンの説明に変更） */}
       <CustomModal
         isOpen={showMapGuideModal}
         onClose={() => setShowMapGuideModal(false)}
         title="地図の見方"
-        description="投稿の色分けと操作方法について"
+        description="残数情報付き投稿の表示と操作方法について"
         className="max-w-lg"
       >
         <Carousel className="w-full">
           <CarouselContent>
-            {/* 1ページ目: 手紙マーカーの色分け */}
+            {/* 1ページ目: 吹き出しマーカーの説明 */}
             <CarouselItem>
               <div className="space-y-6">
                 <div>
                   <h3 className="text-lg font-semibold mb-4 flex items-center">
                     <MessageSquareText className="h-5 w-5 mr-2 text-blue-600" />
-                    手紙マーカーの色分け
+                    残数情報付き投稿の表示
                   </h3>
                   <p className="text-sm text-gray-600 mb-4">
-                    地図上の手紙マーカーは、投稿のカテゴリーによって色分けされています：
+                    地図上には、場所と残数情報が入力された投稿のみが吹き出しアイコンで表示されます。カテゴリごとに色分けされています：
                   </p>
-                  <div className="space-y-3 max-h-80 overflow-y-auto">
-                    {categoryInfo.map((category) => (
-                      <div key={category.name} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                  <div className="space-y-4">
+                    <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                      <div className="flex items-center space-x-3">
                         <div className="flex-shrink-0">
-                          {/* 🔥 実際の手紙SVGアイコンを使用 */}
                           <div 
-                            className="w-10 h-10 flex items-center justify-center"
+                            className="flex items-center justify-center"
                             dangerouslySetInnerHTML={{
-                              __html: getLetterIconSvg(category.color)
+                              __html: getSpeechBubbleSvg(5, '席', '#ea580c')
                             }}
                           />
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium text-sm text-gray-900">{category.name}</div>
-                          <div className="text-xs text-gray-500 mt-1">{category.description}</div>
+                        <div>
+                          <p className="text-sm font-medium text-orange-800 mb-1">
+                            飲食店の例
+                          </p>
+                          <p className="text-xs text-orange-600">
+                            オレンジ色で「残り5席」のように表示されます
+                          </p>
                         </div>
                       </div>
-                    ))}
+                    </div>
+
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                      <div className="flex items-center space-x-3">
+                        <div className="flex-shrink-0">
+                          <div 
+                            className="flex items-center justify-center"
+                            dangerouslySetInnerHTML={{
+                              __html: getSpeechBubbleSvg(3, '個', '#2563eb')
+                            }}
+                          />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-blue-800 mb-1">
+                            小売店の例
+                          </p>
+                          <p className="text-xs text-blue-600">
+                            青色で「残り3個」のように表示されます
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                      <div className="flex items-center space-x-3">
+                        <div className="flex-shrink-0">
+                          <div 
+                            className="flex items-center justify-center"
+                            dangerouslySetInnerHTML={{
+                              __html: getSpeechBubbleSvg(10, '人', '#9333ea')
+                            }}
+                          />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-purple-800 mb-1">
+                            イベントの例
+                          </p>
+                          <p className="text-xs text-purple-600">
+                            紫色で「残り10人」のように表示されます
+                          </p>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -1158,29 +1218,28 @@ export function MapView() {
                     地図の操作方法
                   </h3>
                   <div className="space-y-4">
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
                       <div className="flex items-start space-x-3">
                         <div className="flex-shrink-0">
-                          {/* 🔥 実際の手紙SVGアイコンを使用（飲食店カテゴリーの色で例示） */}
                           <div 
-                            className="w-8 h-8 flex items-center justify-center"
+                            className="flex items-center justify-center scale-75"
                             dangerouslySetInnerHTML={{
-                              __html: getLetterIconSvg('#ea580c')
+                              __html: getSpeechBubbleSvg(5, '席', '#ea580c')
                             }}
                           />
                         </div>
                         <div>
-                          <p className="text-sm font-medium text-blue-800 mb-1">
-                            手紙マーカーをタップ
+                          <p className="text-sm font-medium text-orange-800 mb-1">
+                            吹き出しマーカーをタップ
                           </p>
-                          <p className="text-xs text-blue-600">
+                          <p className="text-xs text-orange-600">
                             おとく板へ遷移し、該当する投稿の詳細を確認できます
                           </p>
                         </div>
                       </div>
                     </div>
 
-                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
                       <div className="flex items-start space-x-3">
                         <div className="flex-shrink-0">
                           <img 
@@ -1190,10 +1249,10 @@ export function MapView() {
                           />
                         </div>
                         <div>
-                          <p className="text-sm font-medium text-green-800 mb-1">
+                          <p className="text-sm font-medium text-amber-800 mb-1">
                             鳩マーカー（現在地）
                           </p>
-                          <p className="text-xs text-green-600">
+                          <p className="text-xs text-amber-700">
                             あなたの現在位置を示しています。この位置を中心に5km圏内の投稿が表示されます
                           </p>
                         </div>
@@ -1210,7 +1269,7 @@ export function MapView() {
                             緑色の円（範囲表示）
                           </p>
                           <p className="text-xs text-emerald-600">
-                            投稿を閲覧できる5km圏内の範囲を表示。投稿がある場合は自動的に非表示になります
+                            投稿を閲覧できる5km圏内の範囲を表示。残数情報付き投稿がある場合は自動的に非表示になります
                           </p>
                         </div>
                       </div>
