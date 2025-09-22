@@ -14,14 +14,14 @@ const navItems = [
     icon: Newspaper,
   },
   {
-    name: "買い物メモ",
-    href: "/memo",
-    icon: ShoppingBag,
-  },
-  {
     name: "お店を探す",
     href: "/map",
     icon: MapPin,
+  },
+  {
+    name: "買い物メモ",
+    href: "/memo",
+    icon: ShoppingBag,
   },
   {
     name: "マイページ",
