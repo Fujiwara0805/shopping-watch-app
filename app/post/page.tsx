@@ -1703,7 +1703,7 @@ export default function PostPage() {
                               <FormItem>
                                 <FormLabel className="text-lg font-semibold flex items-center">
                                   <LinkIcon className="mr-2 h-5 w-5" />
-                                  リンク（URL）
+                                  リンク（※HPやSNSのURL）
                                 </FormLabel>
                                   <FormControl>
                                   <Input
