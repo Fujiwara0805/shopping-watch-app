@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { LayoutGrid, Search,  Loader2, SlidersHorizontal,  X,  Menu, User, Edit, Store, HelpCircle, FileText, LogOut,  Globe, NotebookText,  Zap, MessageSquare, Eye, Send, RefreshCw, UserPlus, Link as LinkIcon,  Trash2,  AlertTriangle, Compass, Info, Footprints } from 'lucide-react';
+import { LayoutGrid, Search,  Loader2, SlidersHorizontal,  X,  Menu, User, Edit, Store, HelpCircle, FileText, LogOut,  Globe, NotebookText,  Zap, MessageSquare, Eye, Send, RefreshCw, UserPlus, Link as LinkIcon,  Trash2,  AlertTriangle, Compass, Info, Footprints, BookOpen, Clock, ShoppingBag, Calendar, Heart, Package, MessageSquareText, Utensils } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
@@ -21,6 +21,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { getAnonymousSessionId } from '@/lib/session';
 import { useToast } from '@/hooks/use-toast';
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 
 import { ExtendedPostWithAuthor } from '@/types/timeline';
 
@@ -1885,38 +1886,6 @@ export default function Timeline() {
     };
   }, []);
 
-  // PC版でのサイドバー開閉状態
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-
-  // PC版用のフィルター適用処理を修正
-  const handleApplySidebarFilters = () => {
-    setActiveFilter(tempActiveFilter);
-    setSearchMode(tempSearchMode);
-    setSortBy(tempSortBy);
-    
-    setTimeout(() => {
-      if (fetchPostsRef.current) {
-        fetchPostsRef.current(0, true);
-      }
-    }, 100);
-  };
-
-  // PC版用のフィルタークリア処理を修正
-  const handleClearSidebarFilters = () => {
-    setTempActiveFilter('all');
-    setTempSearchMode('all');
-    setTempSortBy('created_at_desc');
-    setActiveFilter('all');
-    setSearchMode('all');
-    setSortBy('created_at_desc');
-    setGeneralSearchTerm('');
-    
-    setTimeout(() => {
-      if (fetchPostsRef.current) {
-        fetchPostsRef.current(0, true);
-      }
-    }, 100);
-  };
 
   // ログアウト処理をTimelineコンポーネントに移動
   const handleSignOut = async () => {
@@ -2021,6 +1990,9 @@ export default function Timeline() {
       }
     }
   }, [toast]);
+
+  // 招待モーダルの状態を使い方モーダルに変更
+  const [showHowToUseModal, setShowHowToUseModal] = useState(false);
 
   if ((loading && posts.length === 0) || isInitialLoading) {
     return (
@@ -2376,13 +2348,13 @@ export default function Timeline() {
                 )}
               </Button>
               <Button
-                onClick={() => setShowInviteModal(true)}
+                onClick={() => setShowHowToUseModal(true)}
                 variant="outline"
                 className="flex-1"
                 style={{ backgroundColor: '#eefdf6' }}
               >
-                <UserPlus className="h-4 w-4 mr-2" />
-                招待する
+                <Info className="h-4 w-4 mr-2" />
+                使い方
               </Button>
               <Button
                 onClick={handleRefresh}
@@ -2603,51 +2575,408 @@ export default function Timeline() {
         </div>
       </CustomModal>
 
-      {/* 招待モーダル */}
+
+      {/* 使い方モーダル */}
       <CustomModal
-        isOpen={showInviteModal}
-        onClose={() => setShowInviteModal(false)}
-        title="トクドクに友達を招待"
-        description="おトクな情報を友達と共有しましょう！"
-        className="sm:max-w-md"
+        isOpen={showHowToUseModal}
+        onClose={() => setShowHowToUseModal(false)}
+        title="トクドクの使い方"
+        description="おとく板(掲示板)の使い方について"
+        className="max-w-lg"
       >
-        <div className="space-y-4">
-          {/* 招待メッセージ */}
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <h3 className="font-semibold text-sm mb-2" style={{ color: '#73370c' }}>招待メッセージ</h3>
-            <div className="bg-white p-3 rounded border">
-              <p className="text-sm text-gray-700 mb-3">
-                おトクな情報がたくさん見つかる「トクドク」に参加しませんか？
-              </p>
-              <p className="text-sm text-blue-600 font-medium">
-                https://tokudoku.com/
-              </p>
-            </div>
+        <Carousel className="w-full">
+          <CarouselContent>
+            {/* 1ページ目: すべてのカテゴリの説明と自動削除について */}
+            <CarouselItem>
+              <div className="space-y-6">
+                <div>
+                  <p className="text-sm text-gray-600 mb-4">
+                    すべての投稿は設定された時間で自動的に削除されます。リアルタイムな情報共有を実現しています。
+                  </p>
+                  <h3 className="text-lg font-semibold mb-4 flex items-center">
+                    <MessageSquareText className="h-5 w-5 mr-2 text-blue-600" />
+                    6つのカテゴリ
+                  </h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                      <div className="flex items-center space-x-3">
+                        <div className="flex-shrink-0">
+                          <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: '#ea580c' }}>
+                            <Utensils className="h-4 w-4 text-white" />
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-orange-800 mb-1">
+                            飲食店
+                          </p>
+                          <p className="text-xs text-orange-600">
+                            レストラン、カフェなど
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                      <div className="flex items-center space-x-3">
+                        <div className="flex-shrink-0">
+                          <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: '#2563eb' }}>
+                            <Store className="h-4 w-4 text-white" />
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-blue-800 mb-1">
+                            小売店
+                          </p>
+                          <p className="text-xs text-blue-600">
+                            商品の在庫・セール
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                      <div className="flex items-center space-x-3">
+                        <div className="flex-shrink-0">
+                          <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: '#9333ea' }}>
+                            <Calendar className="h-4 w-4 text-white" />
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-purple-800 mb-1">
+                            イベント
+                          </p>
+                          <p className="text-xs text-purple-600">
+                            参加募集・定員情報
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                      <div className="flex items-center space-x-3">
+                        <div className="flex-shrink-0">
+                          <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: '#dc2626' }}>
+                            <Heart className="h-4 w-4 text-white" />
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-red-800 mb-1">
+                            応援
+                          </p>
+                          <p className="text-xs text-red-600">
+                            お店や人の応援
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                      <div className="flex items-center space-x-3">
+                        <div className="flex-shrink-0">
+                          <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: '#16a34a' }}>
+                            <Package className="h-4 w-4 text-white" />
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-green-800 mb-1">
+                            受け渡し
+                          </p>
+                          <p className="text-xs text-green-600">
+                            物の譲渡・受け渡し
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                      <div className="flex items-center space-x-3">
+                        <div className="flex-shrink-0">
+                          <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: '#4b5563' }}>
+                            <MessageSquareText className="h-4 w-4 text-white" />
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-800 mb-1">
+                            雑談
+                          </p>
+                          <p className="text-xs text-gray-600">
+                            地域の情報交換
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* ページインジケーター */}
+                <div className="flex justify-center items-center space-x-2 pt-4 border-t">
+                  <div className="w-2 h-2 rounded-full bg-blue-600"></div>
+                  <div className="w-2 h-2 rounded-full bg-gray-300"></div>
+                  <div className="w-2 h-2 rounded-full bg-gray-300"></div>
+                  <span className="text-xs text-gray-500 ml-2">1 / 3</span>
+                </div>
+              </div>
+            </CarouselItem>
+
+            {/* 2ページ目: 投稿についての詳細情報10個（2列5行） */}
+            <CarouselItem>
+              <div className="space-y-6">
+                <div>
+                  <p className="text-sm text-gray-600 mb-4">
+                    投稿には「内容(240文字以内)」と「掲載期間」の入力が必須です。また、投稿内容に応じて、以下の詳細情報を任意で入力できます。（※ログイン必須）
+                  </p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-2">
+                      <div className="flex items-center space-x-2">
+                        <div className="flex-shrink-0">
+                          <Store className="h-4 w-4 text-blue-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-blue-800">
+                            場所
+                          </p>
+                          <p className="text-xs text-blue-600">
+                            お店や施設の場所を設定
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-2">
+                      <div className="flex items-center space-x-2">
+                        <div className="flex-shrink-0">
+                          <LayoutGrid className="h-4 w-4 text-green-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-green-800">
+                            カテゴリ
+                          </p>
+                          <p className="text-xs text-green-600">
+                            6つのカテゴリから選択
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="bg-purple-50 border border-purple-200 rounded-lg p-2">
+                      <div className="flex items-center space-x-2">
+                        <div className="flex-shrink-0">
+                          <MessageSquare className="h-4 w-4 text-purple-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-purple-800">
+                            評価
+                          </p>
+                          <p className="text-xs text-purple-600">
+                            星による評価表現
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="bg-orange-50 border border-orange-200 rounded-lg p-2">
+                      <div className="flex items-center space-x-2">
+                        <div className="flex-shrink-0">
+                          <LinkIcon className="h-4 w-4 text-orange-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-orange-800">
+                            リンク
+                          </p>
+                          <p className="text-xs text-orange-600">
+                            関連ウェブサイトURL
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-2">
+                      <div className="flex items-center space-x-2">
+                        <div className="flex-shrink-0">
+                          <Package className="h-4 w-4 text-amber-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-amber-800">
+                            残数
+                          </p>
+                          <p className="text-xs text-amber-600">
+                            席数・在庫数など
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-2">
+                      <div className="flex items-center space-x-2">
+                        <div className="flex-shrink-0">
+                          <User className="h-4 w-4 text-indigo-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-indigo-800">
+                            来客状況
+                          </p>
+                          <p className="text-xs text-indigo-600">
+                            現在の混雑度を記載
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-pink-50 border border-pink-200 rounded-lg p-2">
+                      <div className="flex items-center space-x-2">
+                        <div className="flex-shrink-0">
+                          <Zap className="h-4 w-4 text-pink-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-pink-800">
+                            クーポン
+                          </p>
+                          <p className="text-xs text-pink-600">
+                            割引やお得情報
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-teal-50 border border-teal-200 rounded-lg p-2">
+                      <div className="flex items-center space-x-2">
+                        <div className="flex-shrink-0">
+                          <MessageSquare className="h-4 w-4 text-teal-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-teal-800">
+                            電話番号
+                          </p>
+                          <p className="text-xs text-teal-600">
+                            お店への連絡先
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-rose-50 border border-rose-200 rounded-lg p-2">
+                      <div className="flex items-center space-x-2">
+                        <div className="flex-shrink-0">
+                          <FileText className="h-4 w-4 text-rose-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-rose-800">
+                            ファイル
+                          </p>
+                          <p className="text-xs text-rose-600">
+                            メニューや資料添付
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-cyan-50 border border-cyan-200 rounded-lg p-2">
+                      <div className="flex items-center space-x-2">
+                        <div className="flex-shrink-0">
+                          <Heart className="h-4 w-4 text-cyan-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-cyan-800">
+                            おすそわけ
+                          </p>
+                          <p className="text-xs text-cyan-600">
+                            物の共有や譲渡
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* ページインジケーター */}
+                <div className="flex justify-center items-center space-x-2 pt-4 border-t">
+                  <div className="w-2 h-2 rounded-full bg-gray-300"></div>
+                  <div className="w-2 h-2 rounded-full bg-blue-600"></div>
+                  <div className="w-2 h-2 rounded-full bg-gray-300"></div>
+                  <span className="text-xs text-gray-500 ml-2">2 / 3</span>
+                </div>
+              </div>
+            </CarouselItem>
+
+            {/* 3ページ目: 理解しましたボタンと加盟店募集 */}
+            <CarouselItem>
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-lg font-semibold mb-4 flex items-center">
+                    <Store className="h-5 w-5 mr-2 text-orange-600" />
+                    加盟店募集のご案内
+                  </h3>
+                  <div className="space-y-4">
+                    <div className="bg-gradient-to-br from-orange-50 to-yellow-50 border border-orange-200 rounded-lg p-4">
+                      <div className="flex items-start space-x-3">
+                        <div className="flex-shrink-0">
+                          <Store className="h-8 w-8 text-orange-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-orange-800 mb-2">
+                            加盟店を募集しています！
+                          </p>
+                          <p className="text-xs text-orange-700 mb-3">
+                            お店の集客や地域とのつながりを強化したい事業者様を募集中です。リアルタイムで情報発信し、新しい顧客との出会いを創出しませんか？
+                          </p>
+                          <div className="bg-white rounded p-2 border border-orange-100">
+                            <p className="text-xs text-orange-600">
+                              ✓ 無料で始められます<br />
+                              ✓ リアルタイム情報発信<br />
+                              ✓ 地域密着型の集客支援
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                      <div className="flex items-start space-x-3">
+                        <div className="flex-shrink-0">
+                          <HelpCircle className="h-5 w-5 text-blue-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-blue-800 mb-1">
+                            お問い合わせについて
+                          </p>
+                          <p className="text-xs text-blue-600">
+                            ご質問やお問い合わせは、メニューの「お問い合わせ」からお気軽にどうぞ
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* ページインジケーター */}
+                <div className="flex justify-center items-center space-x-2 pt-4 border-t">
+                  <div className="w-2 h-2 rounded-full bg-gray-300"></div>
+                  <div className="w-2 h-2 rounded-full bg-gray-300"></div>
+                  <div className="w-2 h-2 rounded-full bg-blue-600"></div>
+                  <span className="text-xs text-gray-500 ml-2">3 / 3</span>
+                </div>
+
+                {/* 理解しましたボタン */}
+                <div className="pt-2">
+                  <Button 
+                    onClick={() => setShowHowToUseModal(false)}
+                    className="w-full"
+                  >
+                    理解しました
+                  </Button>
+                </div>
+              </div>
+            </CarouselItem>
+          </CarouselContent>
+
+          {/* カルーセルナビゲーション */}
+          <div className="absolute left-4 top-1/2 -translate-y-1/2">
+            <CarouselPrevious className="relative left-0 translate-y-0" />
           </div>
-
-          {/* コピーボタン */}
-          <Button
-            onClick={() => {
-              const message = `お得な情報がたくさん見つかる「トクドク」に参加しませんか？\n\nhttps://tokudoku.com/`;
-              navigator.clipboard.writeText(message);
-              toast({
-                title: "招待メッセージをコピーしました！",
-                description: "SNSやメッセージアプリで友達に送ってください",
-                duration: 1000,
-              });
-            }}
-            className="w-full"
-          >
-            <LinkIcon className="h-4 w-4 mr-2" />
-            招待メッセージをコピー
-          </Button>
-        </div>
-
-        <div className="mt-6 flex justify-end">
-          <Button variant="ghost" onClick={() => setShowInviteModal(false)} className="text-base px-5 py-2.5 h-auto">
-            閉じる
-          </Button>
-        </div>
+          <div className="absolute right-4 top-1/2 -translate-y-1/2">
+            <CarouselNext className="relative right-0 translate-y-0" />
+          </div>
+        </Carousel>
       </CustomModal>
 
       {/* 🔥 位置情報許可モーダルをメインレンダリング部分にも追加 */}
