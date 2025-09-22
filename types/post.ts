@@ -38,6 +38,7 @@ export interface Post {
   remaining_slots?: number | null; // 残りの数（席、在庫）
   coupon_code?: string | null; // クーポン
   customer_situation?: string | null; // 来客状況
+  phone_number?: string | null; // 🔥 電話番号を追加（データベースにまだ存在しないため、コメントアウトまたは将来用）
 }
 
 export interface AuthorProfile {

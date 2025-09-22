@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect, memo } from 'react';
 import { motion } from 'framer-motion';
-import { Heart, Share2, Clock, Link as LinkIcon, ExternalLink, Instagram, Copy, MapPin, Eye, MessageCircle, ChevronDown, Tag, UserPlus, Info, ShoppingCart, Utensils, GamepadIcon, Wrench, Layers, FileIcon, Calendar, Briefcase, ShoppingBag, Users, MessageSquareText, Trash2, Flag, AlertTriangle, Loader2, Star, Package, HandCoins, User, UserCheck, PersonStanding, Footprints } from 'lucide-react';
+import { Heart, Share2, Clock, Link as LinkIcon, ExternalLink, Instagram, Copy, MapPin, Eye, MessageCircle, ChevronDown, Tag, UserPlus, Info, ShoppingCart, Utensils, GamepadIcon, Wrench, Layers, FileIcon, Calendar, Briefcase, ShoppingBag, Users, MessageSquareText, Trash2, Flag, AlertTriangle, Loader2, Star, Package, HandCoins, User, UserCheck, PersonStanding, Footprints, Phone } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -238,7 +238,7 @@ const getCategoryIconAndColor = (category: string) => {
         textColor: 'text-blue-800',
         borderColor: 'border-blue-200'
       };
-    case 'イベント集客':
+    case 'イベント': // 🔥 修正
       return {
         icon: Calendar,
         bgColor: 'bg-purple-100',
@@ -283,7 +283,7 @@ const getCategoryColor = (category: string) => {
       return 'bg-orange-100 text-orange-800 border-orange-200';
     case '小売店':
       return 'bg-blue-100 text-blue-800 border-blue-200';
-    case 'イベント集客':
+    case 'イベント': // 🔥 修正
       return 'bg-purple-100 text-purple-800 border-purple-200';
     case '応援':
       return 'bg-pink-100 text-pink-800 border-pink-200';
@@ -756,14 +756,16 @@ export const PostCard = memo(({
     }
   }, [toast]);
 
-  // 店舗名クリック時に地図ページに遷移する処理
+  // 店舗名クリック時にGoogleマップを開く処理に変更
   const handleStoreNameClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     if (post.store_name && post.store_name !== '店舗不明') {
-      // 地図ページに遷移して店舗を検索
-      router.push(`/map?search=${encodeURIComponent(post.store_name)}`);
+      // Googleマップで店舗名を検索して開く
+      const encodedStoreName = encodeURIComponent(post.store_name);
+      const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodedStoreName}`;
+      window.open(googleMapsUrl, '_blank');
     }
-  }, [post.store_name, router]);
+  }, [post.store_name]);
 
   return (
     <>
@@ -875,7 +877,7 @@ export const PostCard = memo(({
                               variant="ghost"
                               className="p-0 h-auto font-normal hover:bg-transparent hover:text-blue-600 w-full text-left"
                               onClick={handleStoreNameClick}
-                              title="地図でお店を探す"
+                              title="Googleマップで店舗を検索"
                             >
                               <div className="w-full">
                                 <div className="flex items-center justify-between w-full">
@@ -886,8 +888,9 @@ export const PostCard = memo(({
                                     {post.store_name}
                                   </span>
                                 </div>
-                                <div className="text-xs text-gray-500 mt-1">
-                                  ※タップして「お店を探す」画面へ
+                                <div className="text-xs text-gray-500 mt-1 flex items-center">
+                                  ※タップしてGoogleマップで開く
+                                  <ExternalLink className="h-3 w-3 text-gray-500 ml-1" />
                                 </div>
                               </div>
                             </Button>
@@ -923,15 +926,20 @@ export const PostCard = memo(({
                             </div>
                           </td>
                           <td className="p-3">
-                            <a
-                              href={post.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-blue-600 hover:text-blue-800 underline break-all"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              {post.url}
-                            </a>
+                            <div>
+                              <a
+                                href={post.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-600 hover:text-blue-800 underline break-all"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                {post.url}
+                              </a>
+                              <div className="text-xs text-gray-500 mt-1">
+                                ※メディア情報含む
+                              </div>
+                            </div>
                           </td>
                         </tr>
                       )}
@@ -1002,13 +1010,37 @@ export const PostCard = memo(({
                         </tr>
                       )}
 
+                      {/* 電話番号の表示 */}
+                      {post.phone_number && post.phone_number.trim() !== '' && (
+                        <tr className="border-b border-gray-100">
+                          <td className="p-3 bg-gray-50 w-1/3 font-medium border-r border-gray-100">
+                            <div className="flex items-center space-x-2">
+                              <Phone className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                              <span className="text-base" style={{ color: '#73370c' }}>電話番号</span>
+                            </div>
+                          </td>
+                          <td className="p-3">
+                            <a
+                              href={`tel:${post.phone_number}`}
+                              className="text-blue-600 hover:text-blue-800 underline font-medium"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              {post.phone_number}
+                            </a>
+                            <div className="text-xs text-gray-500 mt-1">
+                              ※「トクドクで見た」と伝えて下さい
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+
                       {/* クーポンの表示（残す） */}
                       {post.coupon_code && post.coupon_code.trim() !== '' && (
                         <tr className="border-b border-gray-100">
                           <td className="p-3 bg-gray-50 w-1/3 font-medium border-r border-gray-100">
                             <div className="flex items-center space-x-2">
                               <Tag className="h-4 w-4 text-gray-500 flex-shrink-0" />
-                              <span className="text-base" style={{ color: '#73370c' }}>クーポン</span>
+                              <span className="text-sm" style={{ color: '#73370c' }}>クーポン</span>
                             </div>
                           </td>
                           <td className="p-3">

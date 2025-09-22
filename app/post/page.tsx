@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { Camera, Upload, X, Store as StoreIcon, LayoutGrid, ClipboardList, Image as ImageIcon, ClockIcon, PackageIcon, Tag, HelpCircle, MapPin, CheckCircle, Layers, ChevronDown, ChevronUp, Settings, Link as LinkIcon, FileText, HandCoins, Users, Hash, BarChart3, Star as StarIcon } from 'lucide-react';
+import { Camera, Upload, X, Store as StoreIcon, LayoutGrid, ClipboardList, Image as ImageIcon, ClockIcon, PackageIcon, Tag, HelpCircle, MapPin, CheckCircle, Layers, ChevronDown, ChevronUp, Settings, Link as LinkIcon, FileText, HandCoins, Users, Phone, BarChart3, Star as StarIcon } from 'lucide-react';
 import AppLayout from '@/components/layout/app-layout';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -25,7 +25,6 @@ import { v4 as uuidv4 } from 'uuid';
 import FavoriteStoreInput from '@/components/profile/FavoriteStoreInput';
 import { CustomModal } from '@/components/ui/custom-modal';
 import { useToast } from "@/hooks/use-toast";
-import { useLoadScript, Autocomplete, GoogleMap } from "@react-google-maps/api";
 import { useLoading } from '@/contexts/loading-context';
 import { useGoogleMapsApi } from '@/components/providers/GoogleMapsApiProvider';
 import { Heart, Plus } from 'lucide-react';
@@ -37,11 +36,11 @@ declare global {
   }
 }
 
-// 🔥 更新されたバリデーションスキーマ
+// 🔥 更新されたバリデーションスキーマ（電話番号を追加、カテゴリを修正）
 const postSchema = z.object({
   storeId: z.string().optional(),
   storeName: z.string().optional(),
-  category: z.enum(['飲食店', '小売店', 'イベント集客', '応援', '受け渡し', '雑談']).optional(), // 🔥 雑談を追加
+  category: z.enum(['飲食店', '小売店', 'イベント', '応援', '受け渡し', '雑談']).optional(), // 🔥 「イベント集客」→「イベント」に修正
   content: z.string().min(5, { message: '5文字以上入力してください' }).max(240, { message: '240文字以内で入力してください' }),
   url: z.string().url({ message: '有効なURLを入力してください' }).optional().or(z.literal('')),
   // 🔥 新しい掲載期間スキーマ
@@ -59,6 +58,7 @@ const postSchema = z.object({
   remainingSlots: z.number().min(0).max(9999).optional(), // 残りの数（席、在庫）
   customerSituation: z.string().optional(), // 来客状況
   couponCode: z.string().max(50).optional(), // クーポン
+  phoneNumber: z.string().max(15).optional(), // 🔥 電話番号を追加
 });
 
 type PostFormValues = z.infer<typeof postSchema>;
@@ -67,14 +67,14 @@ type DisplayStore = Pick<Store, 'name'> & { id: string };
 
 const libraries: ("places")[] = ["places"];
 
-// 🔥 カテゴリ定義（雑談を追加）
+// 🔥 カテゴリ定義（「イベント集客」→「イベント」に修正）
 const categoryOptions = [
   { value: '飲食店', label: '飲食店' },
   { value: '小売店', label: '小売店' },
-  { value: 'イベント集客', label: 'イベント集客' },
+  { value: 'イベント', label: 'イベント' }, // 🔥 修正
   { value: '応援', label: '応援' },
   { value: '受け渡し', label: '受け渡し' },
-  { value: '雑談', label: '雑談' }, // 🔥 追加
+  { value: '雑談', label: '雑談' },
 ];
 
 // 🔥 新しい掲載期間オプション
@@ -129,13 +129,13 @@ export default function PostPage() {
 
   const { isLoaded, loadError } = useGoogleMapsApi();
 
-  // 🔥 更新されたフォーム設定
+  // 🔥 更新されたフォーム設定（電話番号を追加）
   const form = useForm<PostFormValues>({
     resolver: zodResolver(postSchema),
     defaultValues: {
       storeId: '',
       storeName: '',
-      category: undefined, // カテゴリに変更
+      category: undefined,
       content: '',
       url: '',
       expiryOption: '30m',
@@ -150,6 +150,7 @@ export default function PostPage() {
       remainingSlots: undefined,
       customerSituation: '',
       couponCode: '',
+      phoneNumber: '', // 🔥 電話番号のデフォルト値を追加
     },
     mode: 'onChange',
   });
@@ -413,6 +414,7 @@ export default function PostPage() {
         remaining_slots: values.remainingSlots || null,
         customer_situation: values.customerSituation && values.customerSituation.trim() !== '' ? values.customerSituation : null,
         coupon_code: values.couponCode && values.couponCode.trim() !== '' ? values.couponCode : null,
+        phone_number: values.phoneNumber && values.phoneNumber.trim() !== '' ? values.phoneNumber : null, // 🔥 電話番号を追加
         author_role: session?.user?.role === 'admin' ? 'admin' : 'user',
       };
 
@@ -481,7 +483,7 @@ export default function PostPage() {
         }
       }
 
-      // フォームリセット
+      // フォームリセット（電話番号を追加）
       form.reset({
         storeId: '',
         storeName: '',
@@ -500,6 +502,7 @@ export default function PostPage() {
         remainingSlots: undefined,
         customerSituation: '',
         couponCode: '',
+        phoneNumber: '', // 🔥 電話番号のリセットを追加
       });
       setImageFiles([]);
       setImagePreviewUrls([]);
@@ -818,21 +821,22 @@ export default function PostPage() {
   };
 
 
-  // 🔥 オプション項目の表示状態管理（9項目に更新）
+  // 🔥 オプション項目の表示状態管理（10項目に更新）
   const [showOptionalFields, setShowOptionalFields] = useState(false);
   const [optionalFieldsExpanded, setOptionalFieldsExpanded] = useState({
     location: false,
-    category: false, // ジャンルからカテゴリに変更
+    category: false,
     rating: false,
     url: false,
-    remainingSlots: false, // 残りの数（席、在庫）
-    customerSituation: false, // 来客状況
-    coupon: false, // クーポン
+    remainingSlots: false,
+    customerSituation: false,
+    coupon: false,
+    phoneNumber: false, // 🔥 電話番号を追加
     file: false,
     supportPurchase: false,
   });
 
-  // 🔥 オプションフィールドの切り替えと値のリセット
+  // 🔥 オプションフィールドの切り替えと値のリセット（電話番号を追加）
   const toggleOptionalField = (field: keyof typeof optionalFieldsExpanded) => {
     setOptionalFieldsExpanded(prev => {
       const newState = {
@@ -852,7 +856,7 @@ export default function PostPage() {
             setSelectedPlace(null);
             break;
           case 'category':
-            form.setValue('category', undefined, { shouldValidate: true }); // 🔥 '' から undefined に変更
+            form.setValue('category', undefined, { shouldValidate: true });
             break;
           case 'rating':
             form.setValue('rating', undefined, { shouldValidate: true });
@@ -871,6 +875,9 @@ export default function PostPage() {
           case 'coupon':
             form.setValue('couponCode', '', { shouldValidate: true });
             break;
+          case 'phoneNumber': // 🔥 電話番号のリセット処理を追加
+            form.setValue('phoneNumber', '', { shouldValidate: true });
+            break;
           case 'file':
             setFileFiles([]);
             setFilePreviewUrls([]);
@@ -887,10 +894,10 @@ export default function PostPage() {
     });
   };
 
-  // 🔥 オプション項目の値が入力されているかチェック
+  // 🔥 オプション項目の値が入力されているかチェック（電話番号を追加）
   const hasOptionalValues = () => {
     const values = form.getValues();
-    return !!(values.storeId || values.category || values.rating || values.url || values.remainingSlots || values.customerSituation || values.couponCode || fileFiles.length > 0 || values.supportPurchaseEnabled);
+    return !!(values.storeId || values.category || values.rating || values.url || values.remainingSlots || values.customerSituation || values.couponCode || values.phoneNumber || fileFiles.length > 0 || values.supportPurchaseEnabled);
   };
 
   // 🔥 Stripe Connect機能を有効化
@@ -1327,8 +1334,8 @@ export default function PostPage() {
                     className="border-t"
                   >
                     <div className="p-4 space-y-4">
-                      {/* オプション項目のトグルボタン - 9項目 */}
-                      <div className="grid grid-cols-3 gap-2">
+                      {/* オプション項目のトグルボタン - 2列5行に変更 */}
+                      <div className="grid grid-cols-2 gap-2">
                         <Button
                           type="button"
                           variant="outline"
@@ -1426,6 +1433,20 @@ export default function PostPage() {
                         >
                           <Tag className="mr-2 h-4 w-4" />
                           クーポン
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => toggleOptionalField('phoneNumber')}
+                          className={`justify-start transition-all duration-200 ${
+                            optionalFieldsExpanded.phoneNumber 
+                              ? 'bg-primary text-primary-foreground border-primary hover:bg-primary/90' 
+                              : 'bg-[#fafafa] text-[#73370c] border-gray-300 hover:bg-[#fafafa] hover:text-[#73370c]'
+                          }`}
+                        >
+                          <Phone className="mr-2 h-4 w-4" />
+                          電話番号
                         </Button>
                         <Button
                           type="button"
@@ -1838,6 +1859,42 @@ export default function PostPage() {
                                     type="text"
                                     maxLength={50}
                                     placeholder="例: 会計から100円引き、ドリンク1杯無料"
+                                    {...field}
+                                    style={{ fontSize: '16px' }}
+                                    disabled={isUploading}
+                                    autoComplete="off"
+                                    autoCorrect="off"
+                                    autoCapitalize="off"
+                                    spellCheck="false"
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </motion.div>
+                      )}
+
+                      {/* 電話番号フィールドを追加 */}
+                      {optionalFieldsExpanded.phoneNumber && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          <FormField
+                            control={form.control}
+                            name="phoneNumber"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-lg font-semibold flex items-center">
+                                  <Phone className="mr-2 h-5 w-5" />
+                                  電話番号
+                                </FormLabel>
+                                <FormControl>
+                                  <Input
+                                    type="tel"
+                                    placeholder="例: 03-1234-5678(※-を含む)"
                                     {...field}
                                     style={{ fontSize: '16px' }}
                                     disabled={isUploading}

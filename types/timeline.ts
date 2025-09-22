@@ -33,4 +33,5 @@ export interface ExtendedPostWithAuthor extends PostWithAuthor {
   remaining_slots?: number | null; // 残り枠数
   coupon_code?: string | null; // クーポン番号
   customer_situation?: string | null; // 来客状況
+  phone_number?: string | null; // 🔥 電話番号を追加（将来用）
 }
