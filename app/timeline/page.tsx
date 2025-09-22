@@ -2591,7 +2591,7 @@ export default function Timeline() {
               <div className="space-y-6">
                 <div>
                   <p className="text-sm text-gray-600 mb-4">
-                    すべての投稿は設定された時間で自動的に削除されます。リアルタイムな情報共有を実現しています。
+                    投稿を見るには、位置情報の許可が必要です。また、全ての投稿は設定された時間で自動的に削除されます。
                   </p>
                   <h3 className="text-lg font-semibold mb-4 flex items-center">
                     <MessageSquareText className="h-5 w-5 mr-2 text-blue-600" />
