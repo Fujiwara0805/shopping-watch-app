@@ -478,38 +478,7 @@ function ProfilePageContent() {
             </motion.div>
           </div>
           
-          {/* 統計カード - よりコンパクトに */}
-          <div className="grid grid-cols-2 gap-3">
-            <StatCard
-              icon={ShoppingBag}
-              title="投稿数"
-              value={userPostsCount}
-              subtitle="これまでの投稿"
-              gradient="bg-green-100"
-              delay={0.4}
-            />
-            {/* 称号カードをランキング確認ボタンに置き換え */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.5 }}
-              className="h-full"
-            >
-              <button
-                onClick={() => router.push('/hunter-ranking')}
-                className="w-full h-full bg-yellow-100 rounded-xl p-3 flex flex-col items-center justify-center text-center backdrop-blur-sm border border-white/30 shadow-md hover:shadow-lg transition-all duration-300 group hover:bg-yellow-200"
-              >
-                <div className="p-3 rounded-full bg-white/50 mb-2 group-hover:bg-white transition-colors">
-                  <Trophy className="h-6 w-6 text-yellow-700" />
-                </div>
-                <p className="font-bold text-gray-800">ランキングを確認</p>
-                <div className="flex items-center justify-center space-x-1 mt-1">
-                  <p className="text-xs text-gray-600">称号と順位を見る</p>
-                  <ExternalLink className="h-3 w-3 text-gray-500" />
-                </div>
-              </button>
-            </motion.div>
-          </div>
+          {/* 統計カード - 削除 */}
         </div>
       </div>
 
