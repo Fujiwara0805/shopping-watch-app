@@ -6,9 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Bell, LogOut, Settings, Edit, MapPin, Heart, Store as StoreIcon, Calendar, TrendingUp, Award, Star, User, Sparkles, ShoppingBag, Info, X, Trash2, NotebookText, CheckCircle, ExternalLink, ArrowRight, Trophy, CreditCard } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
-import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { useSession, signOut } from 'next-auth/react';
@@ -16,7 +14,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { getHunterLevel, HUNTER_LEVELS } from '@/lib/hunter-level';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+
 
 interface AppProfile {
   id: string;
@@ -72,50 +70,16 @@ const StatCard = ({ icon: Icon, title, value, subtitle, gradient, delay = 0 }: {
   </motion.div>
 );
 
-// お気に入り店舗カード
-const FavoriteStoreCard = ({ store, index }: { store: { id: string; name: string }; index: number }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.5, delay: index * 0.1 }}
-    whileHover={{ 
-      y: -3,
-      boxShadow: "0 10px 20px -5px rgb(0 0 0 / 0.1)" 
-    }}
-    className="group relative overflow-hidden rounded-xl bg-white border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300"
-  >
-    <div className="absolute inset-0 bg-gradient-to-br from-orange-50/50 to-red-50/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-    <div className="relative z-10 p-4">
-      <div className="flex items-center space-x-3">
-        <div className="relative">
-          <div className="w-10 h-10 rounded-lg flex items-center justify-center shadow-sm" style={{ backgroundColor: '#c96342' }}>
-            <StoreIcon className="h-5 w-5 text-white" />
-          </div>
-          <motion.div
-            className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white"
-            animate={{ scale: [1, 1.2, 1] }}
-            transition={{ duration: 2, repeat: Infinity }}
-          />
-        </div>
-        <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-gray-900 text-sm group-hover:text-orange-600 transition-colors duration-200 truncate">
-            {store.name}
-          </h3>
-          <p className="text-gray-500 text-xs">お気に入り店舗</p>
-        </div>
-        <Star className="h-4 w-4 text-yellow-400 group-hover:text-yellow-500 transition-colors duration-200 flex-shrink-0" />
-      </div>
-    </div>
-  </motion.div>
-);
+
 
 // 設定アイテム
-const SettingItem = ({ icon: Icon, title, description, action, variant = "default" }: {
+const SettingItem = ({ icon: Icon, title, description, action, variant = "default", loading = false }: {
   icon: any;
   title: string;
   description: string;
   action: () => void;
   variant?: "default" | "danger";
+  loading?: boolean;
 }) => (
   <motion.div
     whileHover={{ x: 3 }}
@@ -131,6 +95,7 @@ const SettingItem = ({ icon: Icon, title, description, action, variant = "defaul
         variant === "danger" && "hover:bg-red-50 hover:border-red-200"
       )}
       onClick={action}
+      disabled={loading}
     >
       <div className="flex items-center space-x-3 w-full">
         <div className={cn(
@@ -139,14 +104,24 @@ const SettingItem = ({ icon: Icon, title, description, action, variant = "defaul
             ? "text-white" 
             : "bg-gradient-to-br from-red-500 to-pink-600 text-white"
         )} style={variant === "default" ? { backgroundColor: '#c96342' } : {}}>
-          <Icon className="h-4 w-4" />
+          {loading ? (
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+              className="h-4 w-4"
+            >
+              ⟳
+            </motion.div>
+          ) : (
+            <Icon className="h-4 w-4" />
+          )}
         </div>
         <div className="flex-1 text-left min-w-0">
           <p className={cn(
             "font-medium text-sm group-hover:translate-x-1 transition-transform duration-200",
             variant === "danger" && "text-red-600"
           )}>
-            {title}
+            {loading ? (variant === "danger" ? "ログアウト中..." : "読み込み中...") : title}
           </p>
           <p className="text-xs text-gray-500 truncate">{description}</p>
         </div>
@@ -244,12 +219,15 @@ function ProfilePageContent() {
   const [userPostsCount, setUserPostsCount] = useState(0);
   const router = useRouter();
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState("memo");
   const [currentUserLevel, setCurrentUserLevel] = useState<any>(null);
 
   // LINE接続状況の管理
   const [isLineConnected, setIsLineConnected] = useState(false);
   const [checkingLineConnection, setCheckingLineConnection] = useState(false);
+  
+  // ボタンローディング状態の管理
+  const [accountSettingsLoading, setAccountSettingsLoading] = useState(false);
+  const [logoutLoading, setLogoutLoading] = useState(false);
 
   useEffect(() => {
     // ProfileLayoutで認証確認済みなので、直接データフェッチ
@@ -356,8 +334,23 @@ function ProfilePageContent() {
   }, [session?.user?.id]);
   
   const handleLogout = async () => {
-    await signOut({ redirect: false, callbackUrl: '/login' });
-    router.push('/login');
+    setLogoutLoading(true);
+    try {
+      await signOut({ redirect: false, callbackUrl: '/login' });
+      router.push('/login');
+    } finally {
+      setLogoutLoading(false);
+    }
+  };
+
+  const handleNavigateToAccountSettings = async () => {
+    setAccountSettingsLoading(true);
+    try {
+      router.push('/profile/edit');
+    } finally {
+      // ページ遷移後にローディングを解除
+      setTimeout(() => setAccountSettingsLoading(false), 100);
+    }
   };
 
   // LINE設定ページへのナビゲーション
@@ -417,7 +410,7 @@ function ProfilePageContent() {
     <div 
       className="h-screen flex flex-col" 
       style={{ 
-        backgroundColor: '#73370c',
+        backgroundColor: '#f3f4f6',
         height: 'calc(var(--mobile-vh, 100vh) - 120px)',
         minHeight: '500px'
       }}
@@ -520,252 +513,146 @@ function ProfilePageContent() {
         </div>
       </div>
 
-      {/* タブナビゲーション - 中央固定 */}
-      <div className="flex-shrink-0 bg-white/95 backdrop-blur-md border-b border-gray-200/50">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <div className="px-4 py-2">
-            <TabsList className="grid w-full grid-cols-3 bg-gray-50 h-10">
-              <TabsTrigger 
-                value="memo"
-                className="data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all duration-300 text-base"
-              >
-                <NotebookText className="h-3 w-3 mr-1" />
-                メモ機能
-              </TabsTrigger>
-              <TabsTrigger 
-                value="favorites"
-                className="data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all duration-300 text-base"
-              >
-                <Heart className="h-3 w-3 mr-1" />
-                お気に入り
-              </TabsTrigger>
-              <TabsTrigger 
-                value="settings"
-                className="data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all duration-300 text-base"
-              >
-                <Settings className="h-3 w-3 mr-1" />
-                設定
-              </TabsTrigger>
-            </TabsList>
-          </div>
-
-          {/* メインコンテンツエリア - スクロール可能 */}
-          <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
-            {/* メモ機能タブ */}
-            <TabsContent value="memo" className="m-0 h-full">
-              <div className="h-full flex items-center justify-center p-8">
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.5 }}
-                  className="text-center"
-                >
-                  <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-green-100 to-blue-100 rounded-full flex items-center justify-center">
-                    <NotebookText className="h-8 w-8 text-green-500" />
-                  </div>
-                  
-                  <p className="text-gray-600 mb-4 text-sm max-w-xs mx-auto">
-                    買い忘れ防止に役立つ、<br />シンプルで使いやすい機能です
-                  </p>
-                  <Button
-                    onClick={() => router.push('/memo')}
-                    className="text-white shadow-md hover:shadow-lg transition-all duration-300"
-                    style={{ backgroundColor: '#c96342' }}
-                    size="sm"
-                  >
-                    メモ機能を使ってみる
-                  </Button>
-                </motion.div>
-              </div>
-            </TabsContent>
+      {/* メインコンテンツエリア - スクロール可能 */}
+      <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
+        <div className="h-full overflow-y-auto p-4 space-y-4 custom-scrollbar">
+          {/* 通知設定セクション */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="space-y-2"
+          >
+            <h3 className="text-lg font-bold text-gray-600 flex items-center mb-2">
+              <Bell className="h-5 w-5 mr-2 text-orange-600" />
+              通知設定
+            </h3>
             
-            {/* お気に入りタブ */}
-            <TabsContent value="favorites" className="m-0 h-full">
-              <div className="h-full overflow-y-auto p-4 space-y-4 custom-scrollbar">
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="flex items-center justify-between"
-                >
-                  <h2 className="text-lg font-bold text-gray-900">お気に入り店舗</h2>
-                  <Badge variant="secondary" className="bg-orange-100 text-orange-700 text-xs">
-                    {favoriteStores.length}/3 店舗
-                  </Badge>
-                </motion.div>
-
-                {favoriteStores.length > 0 ? (
-                  <div className="grid grid-cols-1 gap-3">
-                    {favoriteStores.map((store, index) => (
-                      <FavoriteStoreCard key={store.id} store={store} index={index} />
-                    ))}
-                  </div>
-                ) : (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.5 }}
-                    className="text-center py-8"
-                  >
-                    <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-pink-100 to-red-100 rounded-full flex items-center justify-center">
-                      <Heart className="h-8 w-8 text-pink-400" />
-                    </div>
-                    <h3 className="text-lg font-semibold text-gray-700 mb-2">お気に入り店舗がありません</h3>
-                    <p className="text-gray-500 mb-4 text-sm">よく利用する店舗を追加しましょう</p>
-                    <Button 
-                      variant="outline" 
-                      onClick={() => router.push('/profile/edit')}
-                      className="border-orange-200 hover:bg-orange-50 text-orange-600 text-sm"
-                      size="sm"
-                    >
-                      <Heart className="h-3 w-3 mr-1" />
-                      プロフィール編集
-                    </Button>
-                  </motion.div>
-                )}
-              </div>
-            </TabsContent>
+            <LineNotificationSettings
+              isConnected={isLineConnected}
+              loading={checkingLineConnection}
+              onNavigateToLineConnect={handleNavigateToLineConnect}
+              onRefreshConnection={() => checkLineConnection(true)}
+            />
+          </motion.div>
+          
+          <Separator className="my-3" />
+          
+          {/* アカウント設定セクション */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="space-y-2"
+          >
+            <h3 className="text-lg font-bold text-gray-600 flex items-center mb-2">
+              <User className="h-5 w-5 mr-2 text-blue-600" />
+              アカウント設定
+            </h3>
             
-            {/* 設定タブ */}
-            <TabsContent value="settings" className="m-0 h-full">
-              <div className="h-full overflow-y-auto p-4 space-y-4 custom-scrollbar">
-                {/* 通知設定セクション */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1 }}
-                  className="space-y-2"
-                >
-                  <h3 className="text-base font-bold text-gray-900 flex items-center mb-2">
-                    <Bell className="h-4 w-4 mr-2 text-orange-600" />
-                    通知設定
-                  </h3>
-                  
-                  <LineNotificationSettings
-                    isConnected={isLineConnected}
-                    loading={checkingLineConnection}
-                    onNavigateToLineConnect={handleNavigateToLineConnect}
-                    onRefreshConnection={() => checkLineConnection(true)}
-                  />
-                </motion.div>
+            <div className="space-y-2">
+              <SettingItem
+                icon={Settings}
+                title="アカウント設定"
+                description="プロフィール情報とお気に入り店舗の管理"
+                action={handleNavigateToAccountSettings}
+                loading={accountSettingsLoading}
+              />
+              
+              <SettingItem
+                icon={LogOut}
+                title="ログアウト"
+                description="アカウントからログアウトします"
+                action={handleLogout}
+                variant="danger"
+                loading={logoutLoading}
+              />
+            </div>
+          </motion.div>
+
+          {/* おすそわけ設定セクション */}
+          {profile?.stripe_account_id && (
+            <>
+              <Separator className="my-3" />
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="space-y-2 "
+              >
+                <h3 className="text-lg font-bold text-gray-600 flex items-center mb-2">
+                  <CreditCard className="h-5 w-5 mr-2 text-green-600" />
+                  おすそわけ設定
+                </h3>
                 
-                <Separator className="my-3" />
-                
-                {/* アカウント設定セクション */}
                 <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2 }}
-                  className="space-y-2"
+                  whileHover={{ scale: 1.01 }}
+                  className="p-3 bg-white rounded-lg border border-gray-100 shadow-sm"
                 >
-                  <h3 className="text-base font-bold text-gray-900 flex items-center mb-2">
-                    <User className="h-4 w-4 mr-2 text-amber-600" />
-                    アカウント
-                  </h3>
-                  
                   <div className="space-y-2">
-                    <SettingItem
-                      icon={Settings}
-                      title="アカウント設定"
-                      description="プロフィール情報とお気に入り店舗の管理"
-                      action={() => router.push('/profile/edit')}
-                    />
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5 flex-1 min-w-0">
+                        <div className="flex items-center space-x-2">
+                          <Label className="text-sm font-medium">Stripeアカウント</Label>
+                          <Badge 
+                            variant="secondary" 
+                            className={cn(
+                              "text-xs",
+                              profile.stripe_onboarding_completed 
+                                ? "bg-green-100 text-green-800" 
+                                : "bg-yellow-100 text-yellow-800"
+                            )}
+                          >
+                            {profile.stripe_onboarding_completed ? (
+                              <>
+                                <CheckCircle className="h-3 w-3 mr-1" />
+                                設定完了
+                              </>
+                            ) : (
+                              <>
+                                <Info className="h-3 w-3 mr-1" />
+                                設定中
+                              </>
+                            )}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-gray-500">
+                          {profile.stripe_onboarding_completed 
+                            ? "おすそわけの受け取り設定が完了しています" 
+                            : "おすそわけの受け取り設定を完了してください"
+                          }
+                        </p>
+                      </div>
+                    </div>
                     
-                    <SettingItem
-                      icon={LogOut}
-                      title="ログアウト"
-                      description="アカウントからログアウトします"
-                      action={handleLogout}
-                      variant="danger"
-                    />
+                    <div className="flex space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => router.push('/profile/stripe-setup')}
+                        className="text-green-600 border-green-200 hover:bg-green-50 text-xs px-3 py-1 flex-1"
+                      >
+                        <Settings className="h-3 w-3 mr-1" />
+                        設定確認
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => router.push('/profile/stripe-account-management')}
+                        className="text-blue-600 border-blue-200 hover:bg-blue-50 text-xs px-3 py-1 flex-1"
+                      >
+                        <User className="h-3 w-3 mr-1" />
+                        アカウント管理
+                      </Button>
+                    </div>
                   </div>
                 </motion.div>
-
-                {/* おすそわけ設定セクション */}
-                {profile?.stripe_account_id && (
-                  <>
-                    <Separator className="my-3" />
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.3 }}
-                      className="space-y-2 "
-                    >
-                      <h3 className="text-base font-bold text-gray-900 flex items-center mb-2">
-                        <CreditCard className="h-4 w-4 mr-2 text-green-600" />
-                        おすそわけ設定
-                      </h3>
-                      
-                      <motion.div
-                        whileHover={{ scale: 1.01 }}
-                        className="p-3 bg-white rounded-lg border border-gray-100 shadow-sm"
-                      >
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between">
-                            <div className="space-y-0.5 flex-1 min-w-0">
-                              <div className="flex items-center space-x-2">
-                                <Label className="text-sm font-medium">Stripeアカウント</Label>
-                                <Badge 
-                                  variant="secondary" 
-                                  className={cn(
-                                    "text-xs",
-                                    profile.stripe_onboarding_completed 
-                                      ? "bg-green-100 text-green-800" 
-                                      : "bg-yellow-100 text-yellow-800"
-                                  )}
-                                >
-                                  {profile.stripe_onboarding_completed ? (
-                                    <>
-                                      <CheckCircle className="h-3 w-3 mr-1" />
-                                      設定完了
-                                    </>
-                                  ) : (
-                                    <>
-                                      <Info className="h-3 w-3 mr-1" />
-                                      設定中
-                                    </>
-                                  )}
-                                </Badge>
-                              </div>
-                              <p className="text-xs text-gray-500">
-                                {profile.stripe_onboarding_completed 
-                                  ? "おすそわけの受け取り設定が完了しています" 
-                                  : "おすそわけの受け取り設定を完了してください"
-                                }
-                              </p>
-                            </div>
-                          </div>
-                          
-                          <div className="flex space-x-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => router.push('/profile/stripe-setup')}
-                              className="text-green-600 border-green-200 hover:bg-green-50 text-xs px-3 py-1 flex-1"
-                            >
-                              <Settings className="h-3 w-3 mr-1" />
-                              設定確認
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => router.push('/profile/stripe-account-management')}
-                              className="text-blue-600 border-blue-200 hover:bg-blue-50 text-xs px-3 py-1 flex-1"
-                            >
-                              <User className="h-3 w-3 mr-1" />
-                              アカウント管理
-                            </Button>
-                          </div>
-                        </div>
-                      </motion.div>
-                    </motion.div>
-                  </>
-                )}
-                
-                <div className="h-6" />
-              </div>
-            </TabsContent>
-          </div>
-        </Tabs>
+              </motion.div>
+            </>
+          )}
+          
+          <div className="h-6" />
+        </div>
       </div>
 
     </div>
