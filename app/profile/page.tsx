@@ -229,6 +229,44 @@ function ProfilePageContent() {
   const [accountSettingsLoading, setAccountSettingsLoading] = useState(false);
   const [logoutLoading, setLogoutLoading] = useState(false);
 
+  // PWA viewport height fix
+  const [viewportHeight, setViewportHeight] = useState('100vh');
+
+  useEffect(() => {
+    const updateViewportHeight = () => {
+      // 実際のビューポートの高さを取得
+      const vh = window.innerHeight * 0.01;
+      document.documentElement.style.setProperty('--vh', `${vh}px`);
+      setViewportHeight(`${window.innerHeight}px`);
+    };
+
+    // 初回設定
+    updateViewportHeight();
+
+    // リサイズイベント
+    window.addEventListener('resize', updateViewportHeight);
+    
+    // iOS Safari対応：orientationchange、focus、blur イベント
+    window.addEventListener('orientationchange', updateViewportHeight);
+    window.addEventListener('focus', updateViewportHeight);
+    window.addEventListener('blur', updateViewportHeight);
+    
+    // PWA対応：visibilitychange イベント
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) {
+        // アプリがフォアグラウンドに戻った時
+        setTimeout(updateViewportHeight, 100);
+      }
+    });
+
+    return () => {
+      window.removeEventListener('resize', updateViewportHeight);
+      window.removeEventListener('orientationchange', updateViewportHeight);
+      window.removeEventListener('focus', updateViewportHeight);
+      window.removeEventListener('blur', updateViewportHeight);
+    };
+  }, []);
+
   useEffect(() => {
     // ProfileLayoutで認証確認済みなので、直接データフェッチ
     const fetchProfileAndPostsCount = async () => {
@@ -371,7 +409,7 @@ function ProfilePageContent() {
         className="h-screen flex items-center justify-center" 
         style={{ 
           backgroundColor: '#73370c',
-          height: 'calc(var(--mobile-vh, 100vh) - 120px)',
+          height: `calc(${viewportHeight} - 120px)`,
           minHeight: '400px'
         }}
       >
@@ -390,7 +428,7 @@ function ProfilePageContent() {
         className="h-screen flex items-center justify-center" 
         style={{ 
           backgroundColor: '#73370c',
-          height: 'calc(var(--mobile-vh, 100vh) - 120px)',
+          height: `calc(${viewportHeight} - 120px)`,
           minHeight: '400px'
         }}
       >
@@ -411,7 +449,7 @@ function ProfilePageContent() {
       className="h-screen flex flex-col" 
       style={{ 
         backgroundColor: '#f3f4f6',
-        height: 'calc(var(--mobile-vh, 100vh) - 120px)',
+        height: `calc(${viewportHeight} - 120px)`,
         minHeight: '500px'
       }}
     >
@@ -477,8 +515,6 @@ function ProfilePageContent() {
               </Button>
             </motion.div>
           </div>
-          
-          {/* 統計カード - 削除 */}
         </div>
       </div>
 

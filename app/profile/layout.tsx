@@ -19,6 +19,44 @@ export default function ProfileLayout({ children }: ProfileLayoutProps) {
   const [isLoadingProfileState, setIsLoadingProfileState] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // PWA viewport height fix
+  const [viewportHeight, setViewportHeight] = useState('100vh');
+
+  useEffect(() => {
+    const updateViewportHeight = () => {
+      // 実際のビューポートの高さを取得
+      const vh = window.innerHeight * 0.01;
+      document.documentElement.style.setProperty('--vh', `${vh}px`);
+      setViewportHeight(`${window.innerHeight}px`);
+    };
+
+    // 初回設定
+    updateViewportHeight();
+
+    // リサイズイベント
+    window.addEventListener('resize', updateViewportHeight);
+    
+    // iOS Safari対応：orientationchange、focus、blur イベント
+    window.addEventListener('orientationchange', updateViewportHeight);
+    window.addEventListener('focus', updateViewportHeight);
+    window.addEventListener('blur', updateViewportHeight);
+    
+    // PWA対応：visibilitychange イベント
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) {
+        // アプリがフォアグラウンドに戻った時
+        setTimeout(updateViewportHeight, 100);
+      }
+    });
+
+    return () => {
+      window.removeEventListener('resize', updateViewportHeight);
+      window.removeEventListener('orientationchange', updateViewportHeight);
+      window.removeEventListener('focus', updateViewportHeight);
+      window.removeEventListener('blur', updateViewportHeight);
+    };
+  }, []);
+
   useEffect(() => {
     const checkProfileStatus = async () => {
       setIsLoadingProfileState(true);
@@ -98,8 +136,8 @@ export default function ProfileLayout({ children }: ProfileLayoutProps) {
         <div 
           className="h-screen flex items-center justify-center"
           style={{ 
-            backgroundColor: '#73370c',
-            height: 'calc(var(--mobile-vh, 100vh) - 120px)',
+            backgroundColor: '#f3f4f6',
+            height: `calc(${viewportHeight} - 120px)`,
             minHeight: '400px'
           }}
         >
@@ -112,18 +150,18 @@ export default function ProfileLayout({ children }: ProfileLayoutProps) {
             <motion.div
               animate={{ rotate: 360 }}
               transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-              className="w-12 h-12 border-4 border-white/30 border-t-white rounded-full mx-auto mb-4"
+              className="w-12 h-12 border-4 border-gray-400/30 border-t-gray-600 rounded-full mx-auto mb-4"
             />
-            <p className="text-lg text-white mb-2">プロフィール情報を確認中...</p>
-            <p className="text-sm text-white/70">しばらくお待ちください</p>
+            <p className="text-lg text-gray-700 mb-2">プロフィール情報を確認中...</p>
+            <p className="text-sm text-gray-500">しばらくお待ちください</p>
           </motion.div>
         </div>
       ) : error ? (
         <div 
           className="h-screen flex items-center justify-center"
           style={{ 
-            backgroundColor: '#73370c',
-            height: 'calc(var(--mobile-vh, 100vh) - 120px)',
+            backgroundColor: '#f3f4f6',
+            height: `calc(${viewportHeight} - 120px)`,
             minHeight: '400px'
           }}
         >
@@ -132,13 +170,13 @@ export default function ProfileLayout({ children }: ProfileLayoutProps) {
             animate={{ opacity: 1, scale: 1 }}
             className="text-center p-6"
           >
-            <User className="h-16 w-16 mx-auto text-white/60 mb-4" />
-            <p className="text-lg text-white mb-2">{error}</p>
+            <User className="h-16 w-16 mx-auto text-gray-400 mb-4" />
+            <p className="text-lg text-gray-700 mb-2">{error}</p>
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => router.push('/timeline')}
-              className="px-4 py-2 bg-white/20 hover:bg-white/30 border border-white/30 text-white rounded-lg transition-colors mt-4"
+              className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-colors mt-4"
             >
               タイムラインに戻る
             </motion.button>

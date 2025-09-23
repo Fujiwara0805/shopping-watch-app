@@ -542,3 +542,32 @@
     z-index: 9999;
   }
 }
+
+/* PWA viewport height fix */
+:root {
+  --vh: 1vh;
+}
+
+/* iOS Safari PWA対応 */
+@supports (-webkit-touch-callout: none) {
+  .h-screen {
+    height: calc(var(--vh, 1vh) * 100);
+  }
+}
+
+/* スタンドアロンモード（PWA）での調整 */
+@media all and (display-mode: standalone) {
+  body {
+    /* PWAモードでのオーバースクロール防止 */
+    overscroll-behavior: none;
+    /* 動的ツールバー対応 */
+    height: calc(var(--vh, 1vh) * 100);
+  }
+}
+
+/* iOS Safariの動的ツールバー対応 */
+@supports (height: 100dvh) {
+  .h-screen {
+    height: 100dvh;
+  }
+}
