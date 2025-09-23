@@ -2240,11 +2240,11 @@ export default function Timeline() {
               </div>
               
               {/* フィルターボタン */}
-              <Button onClick={() => setShowFilterModal(true)} variant="outline" className="relative">
+              <Button onClick={() => setShowFilterModal(true)} variant="outline" className="relative" style={{ backgroundColor: '#f3f4f6' }}>
                 <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
-            {(activeFilter !== 'all' || sortBy !== 'created_at_desc') && (
+                {activeFilter !== 'all' && (
                   <Badge className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
-                {(activeFilter !== 'all' ? 1 : 0) + (sortBy !== 'created_at_desc' ? 1 : 0)}
+                    1
                   </Badge>
                 )}
               </Button>
@@ -2262,42 +2262,30 @@ export default function Timeline() {
           )}
 
       {/* アクティブなフィルタの表示 */}
-      {(activeFilter !== 'all' || sortBy !== 'created_at_desc') && (
-            <div className="px-4 py-2 bg-gray-50 border-b">
-              <div className="flex flex-wrap gap-2 items-center">
-                <span className="text-sm text-gray-600">アクティブなフィルタ:</span>
-                {activeFilter !== 'all' && (
-                  <Badge variant="secondary" className="flex items-center gap-1">
-                    カテゴリ: {activeFilter}
-                    <button onClick={() => setActiveFilter('all')} className="ml-1">
-                      <X className="h-3 w-3" />
-                    </button>
-                  </Badge>
-                )}
-                {sortBy !== 'created_at_desc' && (
-                  <Badge variant="secondary" className="flex items-center gap-1">
-                    並び順: {sortBy === 'likes_desc' ? 'いいね順' : sortBy === 'views_desc' ? '閲覧順' : sortBy === 'comments_desc' ? 'コメント順' : sortBy === 'expires_at_asc' ? '期限順' : sortBy === 'distance_asc' ? '距離順' : '新着順'}
-                    <button onClick={() => setSortBy('created_at_desc')} className="ml-1">
-                      <X className="h-3 w-3" />
-                    </button>
-                  </Badge>
-                )}
-                <Button variant="ghost" size="sm" onClick={() => {
-                  setActiveFilter('all');
-                  setSortBy('created_at_desc');
-                  setGeneralSearchTerm('');
-                  
-                  setTimeout(() => {
-                    if (fetchPostsRef.current) {
-                      fetchPostsRef.current(0, true);
-                    }
-                  }, 100);
-                }}>
-                  すべてクリア
-                </Button>
-              </div>
-            </div>
-          )}
+      {activeFilter !== 'all' && (
+        <div className="px-4 py-2 bg-gray-50 border-b">
+          <div className="flex flex-wrap gap-2 items-center">
+            <span className="text-sm text-gray-600">アクティブなフィルタ:</span>
+            <Badge variant="secondary" className="flex items-center gap-1">
+              カテゴリ: {activeFilter}
+              <button onClick={() => setActiveFilter('all')} className="ml-1">
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+            <Button variant="ghost" size="sm" onClick={() => {
+              setActiveFilter('all');
+              setGeneralSearchTerm('');
+              setTimeout(() => {
+                if (fetchPostsRef.current) {
+                  fetchPostsRef.current(0, true);
+                }
+              }, 100);
+            }}>
+              すべてクリア
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* 投稿するボタンと更新ボタンの行 */}
       <div className="px-4 py-3 bg-gray-50 border-b">
@@ -2517,11 +2505,9 @@ export default function Timeline() {
         isOpen={showFilterModal}
         onClose={handleCloseModal}
         title="検索フィルター"
-        description="検索条件と表示順を設定できます。"
+        description="カテゴリーで絞り込むことができます。"
       >
         <div className="space-y-6 max-h-[70vh] overflow-y-auto">
-          {/* 🔥 ジャンルフィルターを削除 */}
-
           <div>
             <h3 className="font-semibold text-lg mb-2">カテゴリーで絞り込み</h3>
             <Select 
@@ -2544,30 +2530,11 @@ export default function Timeline() {
               </SelectContent>
             </Select>
           </div>
-
-          {/* 並び順 */}
-          <div>
-            <h3 className="font-semibold text-lg mb-2">表示順</h3>
-            <Select onValueChange={(value: SortOption) => setTempSortBy(value)} value={tempSortBy}>
-              <SelectTrigger className="w-full focus:ring-0 focus:ring-offset-0 focus:border-input">
-                <SelectValue placeholder="並び替え" />
-              </SelectTrigger>
-              <SelectContent className="max-h-[200px]">
-                <SelectItem value="created_at_desc" className="text-lg py-3">新着順</SelectItem>
-                <SelectItem value="created_at_asc" className="text-lg py-3">古い順</SelectItem>
-                <SelectItem value="expires_at_asc" className="text-lg py-3">期限が近い順</SelectItem>
-                <SelectItem value="likes_desc" className="text-lg py-3">行くよが多い順</SelectItem>
-                <SelectItem value="views_desc" className="text-lg py-3">表示回数が多い順</SelectItem>
-                <SelectItem value="comments_desc" className="text-lg py-3">コメントが多い順</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
         </div>
 
         <div className="mt-6 flex justify-between">
           <Button variant="outline" onClick={() => {
             setTempActiveFilter('all');
-            setTempSortBy('created_at_desc');
           }}>
             すべてクリア
           </Button>
