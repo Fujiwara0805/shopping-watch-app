@@ -2591,7 +2591,7 @@ export default function Timeline() {
               <div className="space-y-6">
                 <div>
                   <p className="text-sm text-gray-600 mb-4">
-                    投稿を見るには、位置情報の許可が必要です。また、全ての投稿は設定された時間で自動的に削除されます。
+                    投稿を見るには、<span className="text-red-600">位置情報の許可</span>が必要です。また、全ての投稿は設定された時間で自動的に削除されます。
                   </p>
                   <h3 className="text-lg font-semibold mb-4 flex items-center">
                     <MessageSquareText className="h-5 w-5 mr-2 text-blue-600" />
@@ -2628,7 +2628,7 @@ export default function Timeline() {
                             小売店
                           </p>
                           <p className="text-xs text-blue-600">
-                            スーパーやパン屋、ケーキ屋など
+                            スーパーやパン屋など
                           </p>
                         </div>
                       </div>
@@ -2723,7 +2723,7 @@ export default function Timeline() {
               <div className="space-y-6">
                 <div>
                   <p className="text-sm text-gray-600 mb-4">
-                    投稿には「内容(240文字以内)」と「掲載期間」の入力が必須です。また、投稿内容に応じて、以下の詳細情報を任意で入力できます。（※ログイン必須）
+                    投稿には<span className="text-red-600">「テキスト(240文字以内)」</span>と<span className="text-red-600">「掲載期間」</span>の入力が必須です。また、投稿内容に応じて、以下の詳細情報を任意で入力できます。（<span className="text-red-600">※ログイン必須</span>）
                   </p>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-2">
@@ -2880,7 +2880,7 @@ export default function Timeline() {
                             おすそわけ
                           </p>
                           <p className="text-xs text-cyan-600">
-                            物の共有や譲渡
+                            寄付・投げ銭機能
                           </p>
                         </div>
                       </div>

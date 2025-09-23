@@ -29,7 +29,7 @@ export default function PostCompletePage() {
           投稿完了！
         </h1>
         <p className="text-lg text-muted-foreground text-center mb-8">
-          商品の情報が正常に投稿されました。ご協力ありがとうございます！
+          商品の情報が正常に投稿されました。<br />ご協力ありがとうございます！
         </p>
         <div className="flex flex-col sm:flex-row gap-4 w-full max-w-xs">
           <motion.div whileTap={{ scale: 0.98 }} className="w-full">
