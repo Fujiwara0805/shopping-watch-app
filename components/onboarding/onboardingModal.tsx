@@ -36,8 +36,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onClose }) =>
       title: "買い物メモを使ってみよう",
       subtitle: (
         <span>
-          シンプルで使いやすいメモ機能です。グループを作成して、家族や友達とメモを共有することができます。
-          買い物メモの共有や家事の分担、イベントの作業リストなどをTODO管理に役立ちます。
+          シンプルで使いやすいメモ機能です。日常の買い物を管理してみよう。
         </span>
       ),
       icon: ListTodo, // Share2 から変更
@@ -53,11 +52,10 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onClose }) =>
     },
     {
       id: 3,
-      title: "おとく板に投稿しよう",
+      title: "おとく板に閲覧・投稿しよう",
       subtitle: (
-        <span className="text-lg">
-          地域のコミュニティ掲示板です。
-          日常生活でみつけたおとくな情報や、こんなおとくがあったらいいなといった要望を気軽に投稿してみよう。
+        <span className="text-base">
+          飲食店の空席情報やよく行くスーパーの値引き情報まで、”その時お店にいないとわからない情報”が投稿されます。
         </span>
       ),
       icon: MessageSquare, // Zap から変更
