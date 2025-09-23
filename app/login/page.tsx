@@ -6,7 +6,6 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import AppLayout from "@/components/layout/app-layout";
 import { GoogleIcon } from "@/components/common/icons/GoogleIcon";
-import { LineIcon } from "@/components/common/icons/LineIcon";
 import { LineConsentModal } from "@/components/common/LineConsentModal";
 import { Loader2, AlertTriangle, ArrowRight, Eye, EyeOff } from "lucide-react";
 import { motion } from "framer-motion";
@@ -245,12 +244,12 @@ export default function LoginPage() {
               <span className="bg-white px-2 text-[#73370c]/60">または</span>
             </div>
             
-            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="mb-4">
+            <motion.div whileTap={{ scale: 0.98 }} className="mb-4">
               <Button 
                 onClick={handleGoogleLogin}
                 disabled={isLoading}
                 variant="outline"
-                className="w-full border-[#73370c]/20 hover:bg-[#73370c]/5 text-[#73370c] text-base sm:text-lg py-6 sm:py-7 shadow-md flex items-center justify-center space-x-3 rounded-lg transition-colors"
+                className="w-full border-[#73370c]/20 hover:bg-[#73370c]/30 text-[#73370c] text-base sm:text-lg py-6 sm:py-7 shadow-md flex items-center justify-center space-x-3 rounded-lg transition-colors"
                 style={{ fontSize: '16px' }}
               >
                 {isLoading ? (
