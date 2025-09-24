@@ -41,7 +41,7 @@ const onboardingSlides = [
     description: (
       <span>
         現在地から5km圏内の投稿に限定して表示される掲示板です。
-        日常生活のおとく情報を気軽に投稿してみよう！
+        身近なおとく情報をゲットしてみよう！
       </span>
     ),
     icon: <MessageSquare className="w-16 h-16 sm:w-20 sm:h-20 text-[#9C27B0]" />,

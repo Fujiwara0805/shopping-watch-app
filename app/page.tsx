@@ -340,7 +340,7 @@ export default function Home() {
           }
           
           // 🔥 修正：初回ユーザーまたは永続スキップしていないユーザーはオンボーディングを表示
-          router.push('/onboarding');
+          router.push('/timeline');
         }, 2000);
       }
     };
@@ -388,7 +388,7 @@ export default function Home() {
       } else {
         // オンボーディングを表示
         localStorage.removeItem('hasSeenOnboarding');
-        router.push('/onboarding');
+        router.push('/timeline');
       }
     } else {
       // 🔥 PC版では QRコードモーダルを表示
