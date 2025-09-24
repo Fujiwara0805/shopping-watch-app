@@ -1469,14 +1469,49 @@ export default function PostPage() {
                           onClick={() => toggleOptionalField('supportPurchase')}
                           className={`justify-start transition-all duration-200 ${
                             optionalFieldsExpanded.supportPurchase 
-                              ? 'bg-primary text-primary-foreground border-primary hover:bg-primary/90' 
-                              : 'bg-[#fafafa] text-[#73370c] border-gray-300 hover:bg-[#fafafa] hover:text-[#73370c]'
+                            ? 'bg-primary text-primary-foreground border-primary hover:bg-primary/90' 
+                            : 'bg-[#fafafa] text-[#73370c] border-gray-300 hover:bg-[#fafafa] hover:text-[#73370c]'
                           }`}
-                        >
+                          >
                           <Heart className="mr-2 h-4 w-4" />
                           おすそわけ
                         </Button>
                       </div>
+                          {/* カテゴリ選択フィールド */}
+                      {optionalFieldsExpanded.category && (
+                            <motion.div
+                              initial={{ opacity: 0, y: -10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ duration: 0.2 }}
+                            >
+                              <FormField
+                                control={form.control}
+                                name="category"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel className="text-lg flex font-semibold items-center">
+                                      <Layers className="mr-2 h-5 w-5" /> カテゴリ
+                                    </FormLabel>
+                                    <Select onValueChange={field.onChange} value={field.value || ""}>
+                                      <FormControl>
+                                        <SelectTrigger className="w-full text-lg py-6">
+                                          <SelectValue placeholder="カテゴリを選択してください" />
+                                        </SelectTrigger>
+                                      </FormControl>
+                                      <SelectContent className="max-h-[200px]">
+                                        {categoryOptions.map((option) => (
+                                          <SelectItem key={option.value} value={option.value} className="text-lg py-3">
+                                            {option.label}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                            </motion.div>
+                      )}
 
                       {/* 場所入力フィールド */}
                       {optionalFieldsExpanded.location && (
@@ -1572,43 +1607,6 @@ export default function PostPage() {
                           />
                         </motion.div>
                       )}
-
-                      {/* カテゴリ選択フィールド */}
-                      {optionalFieldsExpanded.category && (
-                        <motion.div
-                          initial={{ opacity: 0, y: -10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ duration: 0.2 }}
-                        >
-                          <FormField
-                            control={form.control}
-                            name="category"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel className="text-lg flex font-semibold items-center">
-                                  <Layers className="mr-2 h-5 w-5" /> カテゴリ
-                                </FormLabel>
-                                <Select onValueChange={field.onChange} value={field.value || ""}>
-                                  <FormControl>
-                                    <SelectTrigger className="w-full text-lg py-6">
-                                      <SelectValue placeholder="カテゴリを選択してください" />
-                                    </SelectTrigger>
-                                  </FormControl>
-                                  <SelectContent className="max-h-[200px]">
-                                    {categoryOptions.map((option) => (
-                                      <SelectItem key={option.value} value={option.value} className="text-lg py-3">
-                                        {option.label}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </motion.div>
-                      )}
-
                       {/* 🔥 評価入力フィールド (数値入力と部分的な星表示に対応) */}
                       {optionalFieldsExpanded.rating && (
                         <motion.div
