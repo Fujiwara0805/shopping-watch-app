@@ -2577,7 +2577,7 @@ export default function Timeline() {
                             飲食店
                           </p>
                           <p className="text-xs text-orange-600">
-                            レストラン、カフェなど
+                            空席状況・新メニュー情報等
                           </p>
                         </div>
                       </div>
@@ -2595,7 +2595,7 @@ export default function Timeline() {
                             小売店
                           </p>
                           <p className="text-xs text-blue-600">
-                            スーパーやパン屋など
+                            在庫状況・新商品情報等
                           </p>
                         </div>
                       </div>
@@ -2613,7 +2613,7 @@ export default function Timeline() {
                             イベント
                           </p>
                           <p className="text-xs text-purple-600">
-                            参加募集・定員情報
+                            来客状況やボランティア募集等
                           </p>
                         </div>
                       </div>
@@ -2631,7 +2631,7 @@ export default function Timeline() {
                             応援
                           </p>
                           <p className="text-xs text-red-600">
-                            お店や人の応援
+                            お店や人の投稿に投げ銭ができる
                           </p>
                         </div>
                       </div>

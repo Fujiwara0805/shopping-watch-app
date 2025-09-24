@@ -1340,20 +1340,6 @@ export default function PostPage() {
                           type="button"
                           variant="outline"
                           size="sm"
-                          onClick={() => toggleOptionalField('location')}
-                          className={`justify-start transition-all duration-200 ${
-                            optionalFieldsExpanded.location 
-                              ? 'bg-primary text-primary-foreground border-primary hover:bg-primary/90' 
-                              : 'bg-[#fafafa] text-[#73370c] border-gray-300 hover:bg-[#fafafa] hover:text-[#73370c]'
-                          }`}
-                        >
-                          <StoreIcon className="mr-2 h-4 w-4" />
-                          場所
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
                           onClick={() => toggleOptionalField('category')}
                           className={`justify-start transition-all duration-200 ${
                             optionalFieldsExpanded.category 
@@ -1363,6 +1349,20 @@ export default function PostPage() {
                         >
                           <Layers className="mr-2 h-4 w-4" />
                           カテゴリ
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => toggleOptionalField('location')}
+                          className={`justify-start transition-all duration-200 ${
+                            optionalFieldsExpanded.location 
+                              ? 'bg-primary text-primary-foreground border-primary hover:bg-primary/90' 
+                              : 'bg-[#fafafa] text-[#73370c] border-gray-300 hover:bg-[#fafafa] hover:text-[#73370c]'
+                          }`}
+                        >
+                          <StoreIcon className="mr-2 h-4 w-4" />
+                          場所
                         </Button>
                         <Button
                           type="button"
@@ -1703,7 +1703,7 @@ export default function PostPage() {
                               <FormItem>
                                 <FormLabel className="text-lg font-semibold flex items-center">
                                   <LinkIcon className="mr-2 h-5 w-5" />
-                                  リンク（※ 例：SNSアカウントのURL）
+                                  リンク<span className="text-sm text-gray-500">（※例：SNSアカウントのURL）</span>
                                 </FormLabel>
                                   <FormControl>
                                   <Input

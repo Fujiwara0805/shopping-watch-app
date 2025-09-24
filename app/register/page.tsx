@@ -148,7 +148,7 @@ export default function RegisterPage() {
                       <div className="relative">
                         <Input
                           type={showPassword ? "text" : "password"}
-                          placeholder="パスワード (6文字以上)"
+                          placeholder="パスワード (半角英数字6文字以上)"
                           {...field}
                           className="pr-10 text-[#73370c] border-[#73370c]/20 focus-visible:ring-[#73370c]"
                         />
