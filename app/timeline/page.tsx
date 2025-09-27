@@ -2548,7 +2548,7 @@ export default function Timeline() {
         isOpen={showHowToUseModal}
         onClose={() => setShowHowToUseModal(false)}
         title="トクドクの使い方"
-        description="掲示板(掲示板)の使い方について"
+        description="掲示板機能の使い方について"
         className="max-w-lg"
       >
         <Carousel className="w-full">
