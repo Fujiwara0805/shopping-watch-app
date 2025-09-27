@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect, memo } from 'react';
 import { motion } from 'framer-motion';
-import { Heart, Share2, Clock, Link as LinkIcon, ExternalLink, Instagram, Copy, MapPin, Eye, MessageCircle, ChevronDown, Tag, UserPlus, Info, ShoppingCart, Utensils, GamepadIcon, Wrench, Layers, FileIcon, Calendar, Briefcase, ShoppingBag, Users, MessageSquareText, Trash2, Flag, AlertTriangle, Loader2, Star, Package, HandCoins, User, UserCheck, PersonStanding, Footprints, Phone, Megaphone } from 'lucide-react';
+import { Heart, Share2, Clock, Link as LinkIcon, ExternalLink, Instagram, Copy, MapPin, Eye, MessageCircle, ChevronDown, Tag, UserPlus, Info, ShoppingCart, Utensils, GamepadIcon, Wrench, Layers, FileIcon, Calendar, Briefcase, ShoppingBag, Users, MessageSquareText, Trash2, Flag, AlertTriangle, Loader2, Star, Package, HandCoins, User, UserCheck, PersonStanding, Footprints, Phone, Megaphone, X as XIcon } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -379,6 +379,10 @@ export const PostCard = memo(({
   // 🔥 追加：おすそわけのローディング状態管理
   const [supportPurchaseLoading, setSupportPurchaseLoading] = useState<{ [key: string]: boolean }>({});
   
+  // 🔥 追加：画像モーダル関連
+  const [showImageModal, setShowImageModal] = useState(false);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  
   const { toast } = useToast();
   const cardRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
@@ -593,6 +597,12 @@ export const PostCard = memo(({
 
   const imageUrls = getImageUrls();
   const fileUrls = getFileUrls();
+
+  // 🔥 追加：画像クリック時のハンドラー
+  const handleImageClick = (index: number) => {
+    setSelectedImageIndex(index);
+    setShowImageModal(true);
+  };
 
   // 🔥 追加：投稿削除処理
   const handleDeletePost = async () => {
@@ -1169,24 +1179,34 @@ export const PostCard = memo(({
               <div className="relative rounded-md overflow-hidden w-full max-w-sm aspect-[4/5]">
                 {imageUrls.length === 1 ? (
                   // 単一画像の場合
-                  <OptimizedImage
-                    src={imageUrls[0]}
-                    alt="投稿画像"
-                    className="w-full h-full"
-                    onLoad={() => setImageLoaded(true)}
-                  />
+                  <div 
+                    className="w-full h-full cursor-pointer"
+                    onClick={() => handleImageClick(0)}
+                  >
+                    <OptimizedImage
+                      src={imageUrls[0]}
+                      alt="投稿画像"
+                      className="w-full h-full"
+                      onLoad={() => setImageLoaded(true)}
+                    />
+                  </div>
                 ) : (
                   // 複数画像の場合（カルーセル）
                   <Carousel className="w-full h-full">
                     <CarouselContent>
                       {imageUrls.map((imageUrl, index) => (
                         <CarouselItem key={index}>
-                          <OptimizedImage
-                            src={imageUrl}
-                            alt={`投稿画像 ${index + 1}`}
-                            className="w-full h-full"
-                            onLoad={() => setImageLoaded(true)}
-                          />
+                          <div 
+                            className="w-full h-full cursor-pointer"
+                            onClick={() => handleImageClick(index)}
+                          >
+                            <OptimizedImage
+                              src={imageUrl}
+                              alt={`投稿画像 ${index + 1}`}
+                              className="w-full h-full"
+                              onLoad={() => setImageLoaded(true)}
+                            />
+                          </div>
                         </CarouselItem>
                       ))}
                     </CarouselContent>
@@ -1471,6 +1491,65 @@ export const PostCard = memo(({
         </div>
         <div className="mt-6 flex justify-end">
             <Button variant="ghost" onClick={() => setShowShareDialog(false)} className="text-base px-5 py-2.5 h-auto">閉じる</Button>
+        </div>
+      </CustomModal>
+
+      {/* 🔥 追加：画像モーダル */}
+      <CustomModal
+        isOpen={showImageModal}
+        onClose={() => setShowImageModal(false)}
+        title={`画像 ${selectedImageIndex + 1}/${imageUrls.length}`}
+        description=""
+        className="max-w-4xl"
+      >
+        <div className="relative">
+          <img
+            src={imageUrls[selectedImageIndex]}
+            alt={`投稿画像 ${selectedImageIndex + 1}`}
+            className="w-full h-auto max-h-[80vh] object-contain"
+          />
+          
+          {/* 複数画像の場合のナビゲーション */}
+          {imageUrls.length > 1 && (
+            <>
+              <Button
+                variant="outline"
+                size="icon"
+                className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white"
+                onClick={() => setSelectedImageIndex(prev => prev > 0 ? prev - 1 : imageUrls.length - 1)}
+              >
+                ←
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white"
+                onClick={() => setSelectedImageIndex(prev => prev < imageUrls.length - 1 ? prev + 1 : 0)}
+              >
+                →
+              </Button>
+              
+              {/* 画像インジケーター */}
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex space-x-2">
+                {imageUrls.map((_, index) => (
+                  <button
+                    key={index}
+                    className={`w-2 h-2 rounded-full transition-colors ${
+                      index === selectedImageIndex ? 'bg-white' : 'bg-white/50'
+                    }`}
+                    onClick={() => setSelectedImageIndex(index)}
+                  />
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+        
+        <div className="mt-4 flex justify-end">
+          <Button variant="ghost" onClick={() => setShowImageModal(false)}>
+            <XIcon className="h-4 w-4 mr-2" />
+            閉じる
+          </Button>
         </div>
       </CustomModal>
     </>

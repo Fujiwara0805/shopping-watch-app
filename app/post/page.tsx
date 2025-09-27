@@ -40,7 +40,7 @@ declare global {
 const postSchema = z.object({
   storeId: z.string().optional(),
   storeName: z.string().optional(),
-  category: z.enum(['空席状況', '在庫状況', 'PR', '応援', '受け渡し', '雑談']).optional(),
+  category: z.enum(['空席状況', '在庫状況', 'PR', '応援', '受け渡し', '雑談'], { required_error: 'カテゴリを選択してください' }),
   content: z.string().min(5, { message: '5文字以上入力してください' }).max(240, { message: '240文字以内で入力してください' }),
   url: z.string().url({ message: '有効なURLを入力してください' }).optional().or(z.literal('')),
   // 🔥 新しい掲載期間スキーマ
@@ -135,7 +135,7 @@ export default function PostPage() {
     defaultValues: {
       storeId: '',
       storeName: '',
-      category: undefined,
+      category: '空席状況',
       content: '',
       url: '',
       expiryOption: '30m',
@@ -250,7 +250,12 @@ export default function PostPage() {
       return;
     }
 
-    // 🔥 必須フィールドの検証（内容と掲載期間のみ）
+    // 🔥 必須フィールドの検証（カテゴリ、内容、掲載期間）
+    if (!values.category) {
+      setSubmitError("カテゴリを選択してください。");
+      return;
+    }
+
     if (!values.content || values.content.length < 5) {
       setSubmitError("投稿内容を5文字以上入力してください。");
       return;
@@ -487,7 +492,7 @@ export default function PostPage() {
       form.reset({
         storeId: '',
         storeName: '',
-        category: undefined,
+        category: '空席状況',
         content: '',
         url: '',
         expiryOption: '30m',
@@ -824,8 +829,8 @@ export default function PostPage() {
   // 🔥 オプション項目の表示状態管理（10項目に更新）
   const [showOptionalFields, setShowOptionalFields] = useState(false);
   const [optionalFieldsExpanded, setOptionalFieldsExpanded] = useState({
+    image: false, // 🔥 画像を追加
     location: false,
-    category: false,
     rating: false,
     url: false,
     remainingSlots: false,
@@ -847,6 +852,10 @@ export default function PostPage() {
       // フィールドが閉じられるときに値をクリア
       if (!newState[field]) {
         switch (field) {
+          case 'image':
+            setImageFiles([]);
+            setImagePreviewUrls([]);
+            break;
           case 'location':
             form.setValue('storeId', '', { shouldValidate: true });
             form.setValue('storeName', '', { shouldValidate: true });
@@ -854,9 +863,6 @@ export default function PostPage() {
             form.setValue('store_longitude', undefined, { shouldValidate: true });
             setLocationStatus('none');
             setSelectedPlace(null);
-            break;
-          case 'category':
-            form.setValue('category', undefined, { shouldValidate: true });
             break;
           case 'rating':
             form.setValue('rating', undefined, { shouldValidate: true });
@@ -894,10 +900,10 @@ export default function PostPage() {
     });
   };
 
-  // 🔥 オプション項目の値が入力されているかチェック（電話番号を追加）
+  // 🔥 オプション項目の値が入力されているかチェック（画像と電話番号を追加）
   const hasOptionalValues = () => {
     const values = form.getValues();
-    return !!(values.storeId || values.category || values.rating || values.url || values.remainingSlots || values.customerSituation || values.couponCode || values.phoneNumber || fileFiles.length > 0 || values.supportPurchaseEnabled);
+    return !!(imageFiles.length > 0 || values.storeId || values.rating || values.url || values.remainingSlots || values.customerSituation || values.couponCode || values.phoneNumber || fileFiles.length > 0 || values.supportPurchaseEnabled);
   };
 
   // 🔥 Stripe Connect機能を有効化
@@ -1145,72 +1151,35 @@ export default function PostPage() {
           <Form {...form}>
             <form onSubmit={form.handleSubmit(triggerConfirmationModal)} className="space-y-6 pb-20">
               
-              {/* 🔥 1. 商品画像 */}
-              <FormItem>
-                <FormLabel className="text-xl mb-2 flex items-center">
-                  <ImageIcon className="mr-2 h-7 w-7" />
-                  商品画像 (任意・最大5枚)
-                </FormLabel>
-                <FormControl>
-                  <div className="space-y-4">
-                    <div className="flex flex-col items-center space-y-3 p-6 border-2 border-dashed rounded-lg hover:border-primary transition-colors cursor-pointer bg-card">
-                      <Input
-                        id="image-upload"
-                        type="file"
-                        accept="image/png, image/jpeg, image/webp"
-                        multiple
-                        onChange={handleImageUpload}
-                        className="hidden"
-                        disabled={isUploading || imageFiles.length >= 5}
-                      />
-                      
-                      {imagePreviewUrls.length > 0 ? (
-                        <div className="w-full">
-                          <div className="grid grid-cols-2 gap-2 mb-4">
-                            {imagePreviewUrls.map((url, index) => (
-                              <div key={index} className="relative group">
-                                <div className="w-full rounded-md overflow-hidden border-2 border-gray-200 aspect-[4/5]">
-                                  <img 
-                                    src={url} 
-                                    alt={`プレビュー ${index + 1}`} 
-                                    className="w-full h-full object-cover"
-                                  />
-                                </div>
-                                <Button
-                                  type="button"
-                                  variant="destructive"
-                                  size="icon"
-                                  className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                                  onClick={() => removeImage(index)}
-                                  disabled={isUploading}
-                                >
-                                  <X className="h-3 w-3" />
-                                </Button>
-                              </div>
-                            ))}
-                          </div>
-                          
-                          {imageFiles.length < 5 && (
-                            <label htmlFor="image-upload" className="flex flex-col items-center space-y-2 cursor-pointer text-muted-foreground">
-                              <Upload className="h-8 w-8" />
-                              <p className="text-sm">画像を追加 ({imageFiles.length}/5)</p>
-                            </label>
-                          )}
-                        </div>
-                      ) : (
-                        <label htmlFor="image-upload" className="flex flex-col items-center space-y-2 cursor-pointer text-muted-foreground">
-                          <Upload className="h-12 w-12" />
-                          <p className="text-lg">画像をアップロード</p>
-                          <p className="text-xs">PNG, JPG, WEBP (最大5MB・最大5枚)</p>
-                        </label>
-                      )}
-                    </div>
-                  </div>
-                </FormControl>
-                <p className="text-sm text-red-500 mt-1">※アップロードする画像は自己責任でお願いします。</p>
-              </FormItem>
+              {/* 🔥 1. カテゴリ（必須） */}
+              <FormField
+                control={form.control}
+                name="category"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-xl flex font-semibold items-center">
+                      <Layers className="mr-2 h-6 w-6" /> カテゴリ<span className="text-destructive ml-1">※</span>
+                    </FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value || ""}>
+                      <FormControl>
+                        <SelectTrigger className="w-full text-lg py-6">
+                          <SelectValue placeholder="カテゴリを選択してください" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className="max-h-[200px]">
+                        {categoryOptions.map((option) => (
+                          <SelectItem key={option.value} value={option.value} className="text-lg py-3">
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-              {/* 🔥 2. 内容（必須） */}
+              {/* 🔥 2. 投稿内容（必須） */}
               <FormField
                 control={form.control}
                 name="content"
@@ -1241,7 +1210,7 @@ export default function PostPage() {
                 )}
               />
 
-              {/* 🔥 3. 掲載期間（必須）- 修正版 */}
+              {/* 🔥 3. 掲載期間（必須） */}
               <FormField
                 control={form.control}
                 name="expiryOption"
@@ -1340,15 +1309,15 @@ export default function PostPage() {
                           type="button"
                           variant="outline"
                           size="sm"
-                          onClick={() => toggleOptionalField('category')}
+                          onClick={() => toggleOptionalField('image')}
                           className={`justify-start transition-all duration-200 ${
-                            optionalFieldsExpanded.category 
+                            optionalFieldsExpanded.image 
                               ? 'bg-primary text-primary-foreground border-primary hover:bg-primary/90' 
                               : 'bg-[#fafafa] text-[#73370c] border-gray-300 hover:bg-[#fafafa] hover:text-[#73370c]'
                           }`}
                         >
-                          <Layers className="mr-2 h-4 w-4" />
-                          カテゴリ
+                          <ImageIcon className="mr-2 h-4 w-4" />
+                          画像
                         </Button>
                         <Button
                           type="button"
@@ -1477,8 +1446,83 @@ export default function PostPage() {
                           おすそわけ
                         </Button>
                       </div>
-                          {/* カテゴリ選択フィールド */}
-                      {optionalFieldsExpanded.category && (
+
+                      {/* 画像アップロードフィールド */}
+                      {optionalFieldsExpanded.image && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          <FormItem>
+                            <FormLabel className="text-lg font-semibold flex items-center">
+                              <ImageIcon className="mr-2 h-5 w-5" />
+                              画像 (最大5枚・掲示板では4:5比率で表示)
+                            </FormLabel>
+                            <FormControl>
+                              <div className="space-y-4">
+                                <div className="flex flex-col items-center space-y-3 p-6 border-2 border-dashed rounded-lg hover:border-primary transition-colors cursor-pointer bg-card">
+                                  <Input
+                                    id="image-upload"
+                                    type="file"
+                                    accept="image/png, image/jpeg, image/webp"
+                                    multiple
+                                    onChange={handleImageUpload}
+                                    className="hidden"
+                                    disabled={isUploading || imageFiles.length >= 5}
+                                  />
+                                  
+                                  {imagePreviewUrls.length > 0 ? (
+                                    <div className="w-full">
+                                      <div className="grid grid-cols-2 gap-2 mb-4">
+                                        {imagePreviewUrls.map((url, index) => (
+                                          <div key={index} className="relative group">
+                                            <div className="w-full rounded-md overflow-hidden border-2 border-gray-200 aspect-[4/5]">
+                                              <img 
+                                                src={url} 
+                                                alt={`プレビュー ${index + 1}`} 
+                                                className="w-full h-full object-cover"
+                                              />
+                                            </div>
+                                            <Button
+                                              type="button"
+                                              variant="destructive"
+                                              size="icon"
+                                              className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                              onClick={() => removeImage(index)}
+                                              disabled={isUploading}
+                                            >
+                                              <X className="h-3 w-3" />
+                                            </Button>
+                                          </div>
+                                        ))}
+                                      </div>
+                                      
+                                      {imageFiles.length < 5 && (
+                                        <label htmlFor="image-upload" className="flex flex-col items-center space-y-2 cursor-pointer text-muted-foreground">
+                                          <Upload className="h-8 w-8" />
+                                          <p className="text-sm">画像を追加 ({imageFiles.length}/5)</p>
+                                        </label>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <label htmlFor="image-upload" className="flex flex-col items-center space-y-2 cursor-pointer text-muted-foreground">
+                                      <Upload className="h-12 w-12" />
+                                      <p className="text-lg">画像をアップロード</p>
+                                      <p className="text-xs">PNG, JPG, WEBP (最大5MB・最大5枚)</p>
+                                      <p className="text-xs text-blue-600">※掲示板では4:5比率で表示されます</p>
+                                    </label>
+                                  )}
+                                </div>
+                              </div>
+                            </FormControl>
+                            <p className="text-sm text-red-500 mt-1">※アップロードする画像は自己責任でお願いします。</p>
+                          </FormItem>
+                        </motion.div>
+                      )}
+
+                      {/* 場所入力フィールド */}
+                      {optionalFieldsExpanded.location && (
                             <motion.div
                               initial={{ opacity: 0, y: -10 }}
                               animate={{ opacity: 1, y: 0 }}
