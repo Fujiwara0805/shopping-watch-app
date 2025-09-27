@@ -1169,7 +1169,7 @@ export default function PostPage() {
                           <div className="grid grid-cols-2 gap-2 mb-4">
                             {imagePreviewUrls.map((url, index) => (
                               <div key={index} className="relative group">
-                                <div className="w-full aspect-square rounded-md overflow-hidden border-2 border-gray-200">
+                                <div className="w-full rounded-md overflow-hidden border-2 border-gray-200 aspect-[4/5]">
                                   <img 
                                     src={url} 
                                     alt={`プレビュー ${index + 1}`} 
