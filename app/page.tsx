@@ -69,7 +69,7 @@ const SplashScreen = () => (
 );
 
 
-// 通常版LP（スクロール修正版）
+// PC版最高級ランディングページ
 const NormalLP = ({ goToOnboarding, mobileMenuOpen, setMobileMenuOpen, scrollPosition, handlePCLogin }: { 
   goToOnboarding: () => void; 
   mobileMenuOpen: boolean; 
@@ -80,151 +80,237 @@ const NormalLP = ({ goToOnboarding, mobileMenuOpen, setMobileMenuOpen, scrollPos
   
   // 通常版LP専用のbody overflow制御
   useEffect(() => {
-    // 通常版LPではbodyのoverflowを強制的にautoに設定
     const originalOverflow = document.body.style.overflow;
     document.body.style.overflow = 'auto';
     
     return () => {
-      // クリーンアップ時に元に戻す
       document.body.style.overflow = originalOverflow || '';
     };
   }, []);
 
   return (
-    <div className="min-h-screen bg-background relative overflow-x-hidden">
-      <div 
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-10 pointer-events-none"
-        style={{
-          backgroundImage: `url('https://images.pexels.com/photos/3962294/pexels-photo-3962294.jpeg')`
-        }}
-      />
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/30 relative overflow-x-hidden">
+      {/* メイン背景画像 */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div 
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-[0.15]"
+          style={{
+            backgroundImage: `url('https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?ixlib=rb-4.0.3&auto=format&fit=crop&w=2340&q=80')`
+          }}
+        />
+        <div 
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-[0.12]"
+          style={{
+            backgroundImage: `url('https://images.unsplash.com/photo-1573164713714-d95e436ab8d6?ixlib=rb-4.0.3&auto=format&fit=crop&w=2340&q=80')`
+          }}
+        />
+      </div>
+      
+      {/* オーバーレイグラデーション */}
+      <div className="absolute inset-0 bg-gradient-to-br from-background/88 via-background/85 to-background/80 pointer-events-none" />
+      
+      {/* 微細なドットパターン */}
+      <div className="absolute inset-0 opacity-[0.015] pointer-events-none">
+        <div className="absolute inset-0" style={{
+          backgroundImage: `radial-gradient(circle at 1px 1px, rgba(0,0,0,0.15) 1px, transparent 0)`,
+          backgroundSize: '40px 40px'
+        }} />
+      </div>
+
       <div className="relative">
-        {/* モバイルメニュー */}
-        <AnimatePresence>
-          {mobileMenuOpen && (
+        {/* ヒーローセクション */}
+        <section className="min-h-screen flex items-center justify-center px-8 py-20 pt-24">
+          <div className="container mx-auto max-w-7xl">
             <motion.div
-              initial={{ opacity: 0, y: -20 }}
+              initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.2 }}
-              className="fixed inset-0 z-40 bg-background/95 backdrop-blur-md pt-[calc(var(--sat)+4rem)]"
+              transition={{ duration: 0.8, ease: "easeOut" }}
+              className="text-center space-y-12"
             >
-              <div className="absolute top-4 right-4 mt-[var(--sat)]">
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="rounded-full"
+              {/* メインアイコン */}
+              <motion.div
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ duration: 1, delay: 0.2, ease: "easeOut" }}
+                className="flex justify-center mb-12"
+              >
+                <div className="relative">
+                  <motion.img 
+                    src="https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png" 
+                    alt="トクドク" 
+                    className="h-32 w-32 lg:h-40 lg:w-40 drop-shadow-2xl"
+                    animate={{ 
+                      rotate: [0, 2, -2, 0],
+                      scale: [1, 1.02, 1]
+                    }}
+                    transition={{ 
+                      duration: 4,
+                      repeat: Infinity,
+                      repeatType: "reverse",
+                      ease: "easeInOut"
+                    }}
+                  />
+                  <div className="absolute -inset-4 bg-primary/10 rounded-full blur-xl opacity-50" />
+                </div>
+              </motion.div>
+
+              {/* メインタイトル */}
+              <div className="space-y-8">
+                <motion.h1 
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.8, delay: 0.4 }}
+                  className="text-5xl lg:text-7xl xl:text-8xl font-bold leading-tight"
                 >
-                  <X className="h-6 w-6" />
-                </Button>
+                  地域の「今」を、<br />
+                  <span className="text-primary relative inline-block">
+                    みんなでシェア。
+                    <motion.div 
+                      className="absolute -bottom-2 left-0 right-0 h-1 bg-primary/30 rounded-full"
+                      initial={{ scaleX: 0 }}
+                      animate={{ scaleX: 1 }}
+                      transition={{ duration: 1, delay: 1.2 }}
+                    />
+                  </span>
+                </motion.h1>
+
+                <motion.p 
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.8, delay: 0.6 }}
+                  className="text-3xl lg:text-4xl font-medium text-muted-foreground max-w-4xl mx-auto leading-relaxed"
+                >
+                  空席情報、在庫状況、PR情報まで。<br />
+                  <span className="text-primary font-bold">リアルタイム</span>で地域の「今」が分かる掲示板アプリ
+                </motion.p>
+
+                <motion.p 
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.8, delay: 0.8 }}
+                  className="text-xl lg:text-2xl text-muted-foreground/80 max-w-3xl mx-auto"
+                >
+                  買い物メモ機能で家族と共有、地域掲示板で最新情報をキャッチ。<br />
+                  トクドクは、お<span className="text-primary font-semibold">トク</span>な情報があなたに<span className="text-primary font-semibold">とドク</span>地域密着アプリです。
+                </motion.p>
               </div>
-              <div className="flex flex-col items-center justify-center h-full space-y-6 -mt-16">
-                <Button variant="ghost" size="lg" asChild className="w-48 h-14 text-lg rounded-full">
-                  <Link href="/login" onClick={() => setMobileMenuOpen(false)}>
-                    ログイン
-                  </Link>
-                </Button>
+
+              {/* CTAボタン */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 1 }}
+                className="pt-8"
+              >
                 <Button 
                   size="lg" 
-                  className="w-48 h-14 text-lg rounded-full"
-                  onClick={() => {
-                    setMobileMenuOpen(false);
-                    goToOnboarding();
-                  }}
+                  onClick={goToOnboarding}
+                  className="h-16 px-12 text-xl font-semibold rounded-full shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-300 bg-primary hover:bg-primary/90"
                 >
-                  さっそく始める！
+                  <motion.span
+                    animate={{ scale: [1, 1.05, 1] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                  >
+                    さっそく始める！
+                  </motion.span>
+                  <ArrowRight className="ml-3 h-6 w-6" />
                 </Button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        <section className="pt-36 md:pt-32 pb-12 md:pb-16 px-4">
-          <div className="container mx-auto max-w-6xl">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              className="text-center"
-            >
-              <h1 className="text-2xl sm:text-4xl md:text-6xl font-bold mb-4 md:mb-6">
-                毎日をもっと賢く、<br />もっと楽しく。<br />
-                <span className="text-primary block sm:inline">
-                  あなたの街のおとく情報を、<br />みんなでシェアして、<br />おトクな毎日を送ろう！！！
-                </span>
-              </h1>
-              <p className="text-xl sm:text-2xl text-muted-foreground mb-6 md:mb-8 max-w-2xl mx-auto px-2">
-              今日はどこのお店がお得かな？<br /> {/* ここに改行を追加 */}
-                トクドクは、お<span className="text-primary">トク</span>な情報が<span className="sm:hidden" />あなたにと<span className="text-primary">ドク</span>サービスです。 {/* sm:hiddenを調整 */}
-              </p>
-              <Button 
-                size="lg" 
-                onClick={goToOnboarding}
-                className="animate-pulse h-12 md:h-14 rounded-full text-base"
-              >
-                さっそく始める！
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
+                <p className="text-lg text-muted-foreground mt-4 font-medium">
+                  登録・利用料金完全無料！
+                </p>
+              </motion.div>
             </motion.div>
           </div>
         </section>
 
-        <section className="py-12 md:py-16 px-4 bg-muted/50">
-          <div className="container mx-auto max-w-6xl">
-            <h2 className="text-2xl sm:text-3xl font-bold text-center mb-8 md:mb-12">
-              毎日がちょっと特別になる、<br className="sm:hidden" />トクドクの便利な機能
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4 md:gap-8">
+        {/* 機能紹介セクション */}
+        <section className="py-24 px-8 bg-muted/30 relative">
+          {/* セクション背景画像 */}
+          <div className="absolute inset-0 pointer-events-none">
+            <div 
+              className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-[0.08]"
+              style={{
+                backgroundImage: `url('https://images.unsplash.com/photo-1516321318423-f06f85e504b3?ixlib=rb-4.0.3&auto=format&fit=crop&w=2340&q=80')`
+              }}
+            />
+            <div className="absolute inset-0 bg-gradient-to-br from-muted/35 via-muted/25 to-muted/15" />
+          </div>
+          <div className="container mx-auto max-w-7xl relative">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8 }}
+              viewport={{ once: true }}
+              className="text-center mb-20"
+            >
+              <h2 className="text-4xl lg:text-5xl font-bold mb-6">
+                地域密着で、毎日がもっと便利に。<br />
+                トクドクの5つの機能
+              </h2>
+              <p className="text-xl lg:text-2xl text-muted-foreground max-w-3xl mx-auto">
+                買い物から情報収集まで、あなたの地域生活をトータルサポート
+              </p>
+            </motion.div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8 lg:gap-12">
               {[
                 {
                   icon: ListTodo,
-                  title: "買い忘れ、\n買い過ぎを防ぐ",
-                  description: "シンプルで使いやすい買い物メモ\n家族や友達とも共有できるよ！",
+                  title: "スマート買い物メモ",
+                  description: "家族や友人とリアルタイム共有\n買い忘れ・買い過ぎを完全防止！",
                   color: "bg-primary/10",
-                  textColor: "text-primary"
+                  textColor: "text-primary",
+                  borderColor: "border-primary/20"
                 },
                 {
                   icon: Newspaper,
-                  title: "「欲しい」が\n見つかる",
-                  description: "地域のコミュニティ掲示板から、\nあなただけのおとくを見つけよう！",
+                  title: "地域密着掲示板",
+                  description: "空席・在庫・PR情報が5km圏内限定\nあなたの街の「今」をリアルタイムで！",
                   color: "bg-destructive/10",
-                  textColor: "text-destructive"
+                  textColor: "text-destructive",
+                  borderColor: "border-destructive/20"
                 },
                 {
                   icon: Users,
-                  title: "みんなで\nおとくをシェア",
-                  description: "見つけたおとくな情報を、\n感動を分かち合おう！", // 改行を調整
+                  title: "ご近所コミュニティ",
+                  description: "地域の人たちと情報をシェア\n助け合いの輪を広げよう！",
                   color: "bg-secondary/10",
-                  textColor: "text-secondary"
+                  textColor: "text-secondary",
+                  borderColor: "border-secondary/20"
                 },
                 {
                   icon: Bell,
-                  title: "「見逃さない」\nおとく情報",
-                  description: "お気に入りのお店のおトクな情報が投稿されると、すぐに通知がとドク！", // 改行を削除
+                  title: "リアルタイム通知",
+                  description: "お気に入り店舗の最新情報を即座にお知らせ\n見逃し防止で常に最新情報をキャッチ！",
                   color: "bg-accent/10",
-                  textColor: "text-accent"
+                  textColor: "text-accent",
+                  borderColor: "border-accent/20"
                 },
                 {
                   icon: Leaf,
-                  title: "目の届く人から\n幸せを広げたい",
-                  description: "情報を必要とする人に、\n必要な情報が届く社会を作る。",
+                  title: "地域社会への貢献",
+                  description: "必要な人に必要な情報を届ける\n温かい地域コミュニティを一緒に作ろう",
                   color: "bg-green-500/10",
-                  textColor: "text-green-500"
+                  textColor: "text-green-500",
+                  borderColor: "border-green-500/20"
                 }
               ].map((feature, index) => (
                 <motion.div
                   key={feature.title}
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={{ opacity: 0, y: 30 }}
                   whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: index * 0.1 }}
+                  transition={{ duration: 0.6, delay: index * 0.1 }}
                   viewport={{ once: true }}
-                  className="flex flex-col items-center text-center p-5 md:p-6 rounded-2xl bg-background border shadow-sm hover:shadow-md transition-shadow"
+                  whileHover={{ y: -5, scale: 1.02 }}
+                  className={`flex flex-col items-center text-center p-8 lg:p-10 rounded-3xl bg-background border-2 ${feature.borderColor} shadow-lg hover:shadow-2xl transition-all duration-300 group`}
                 >
-                  <div className={`${feature.color} p-3 rounded-full mb-3 md:mb-4`}>
-                    <feature.icon className={`h-8 w-8 ${feature.textColor}`} />
-                  </div>
-                  <h3 className="text-2xl font-semibold mb-2">
+                  <motion.div 
+                    className={`${feature.color} p-6 rounded-2xl mb-6 group-hover:scale-110 transition-transform duration-300`}
+                    whileHover={{ rotate: 5 }}
+                  >
+                    <feature.icon className={`h-12 w-12 lg:h-14 lg:w-14 ${feature.textColor}`} />
+                  </motion.div>
+                  <h3 className="text-2xl lg:text-3xl font-bold mb-4 leading-tight">
                     {feature.title.split('\n').map((line, i) => (
                       <span key={i}>
                         {line}
@@ -232,7 +318,7 @@ const NormalLP = ({ goToOnboarding, mobileMenuOpen, setMobileMenuOpen, scrollPos
                       </span>
                     ))}
                   </h3>
-                  <p className="text-lg md:text-xl text-muted-foreground">
+                  <p className="text-lg lg:text-xl text-muted-foreground leading-relaxed">
                     {feature.description.split('\n').map((line, i) => (
                       <span key={i}>
                         {line}
@@ -246,50 +332,82 @@ const NormalLP = ({ goToOnboarding, mobileMenuOpen, setMobileMenuOpen, scrollPos
           </div>
         </section>
 
-        <section className="py-12 md:py-16 px-4">
-          <div className="container mx-auto max-w-6xl text-center">
+        {/* 最終CTAセクション */}
+        <section className="py-24 px-8 relative">
+          {/* CTA背景画像 */}
+          <div className="absolute inset-0 pointer-events-none">
+            <div 
+              className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-[0.10]"
+              style={{
+                backgroundImage: `url('https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=2340&q=80')`
+              }}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-background/85 via-background/90 to-background/85" />
+          </div>
+          <div className="container mx-auto max-w-6xl text-center relative">
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
+              transition={{ duration: 0.8 }}
               viewport={{ once: true }}
+              className="space-y-12"
             >
-              <h2 className="text-2xl sm:text-3xl font-bold mb-4 md:mb-6">
-                あなたも「トクドク」で<br className="sm:hidden" />おとくな情報を入手しよう！
-              </h2>
-              <p className="text-xl sm:text-2xl text-muted-foreground mb-6 md:mb-8 max-w-2xl mx-auto px-2">
-                毎日のお買い物を、<br className="sm:hidden" />もっと賢く、もっと楽しく。<br />
-                登録・サービス利用料金無料！！！
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <div className="space-y-6">
+                <h2 className="text-4xl lg:text-5xl font-bold leading-tight">
+                  地域の「今」を知りたいなら、<br />
+                  「トクドク」で決まり！
+                </h2>
+                <p className="text-2xl lg:text-3xl text-muted-foreground max-w-4xl mx-auto leading-relaxed">
+                  空席情報も在庫状況も、買い物メモも家族共有も。<br />
+                  地域密着の便利機能が<span className="text-primary font-bold text-3xl lg:text-4xl">完全無料</span>で使い放題！
+                </p>
+              </div>
+
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
                 <Button
                   size="lg"
                   onClick={goToOnboarding}
-                  className="h-12 md:h-14 rounded-full"
+                  className="h-18 px-16 text-2xl font-bold rounded-full shadow-2xl hover:shadow-3xl transform transition-all duration-300 bg-primary hover:bg-primary/90"
                 >
-                  さっそく始める！
-                  <ArrowRight className="ml-2 h-5 w-5" />
+                  <motion.span
+                    animate={{ scale: [1, 1.05, 1] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                  >
+                    今すぐ始める！
+                  </motion.span>
+                  <ArrowRight className="ml-4 h-7 w-7" />
                 </Button>
-                <Button
-                  size="lg"
-                  variant="outline"
-                  onClick={handlePCLogin}
-                  className="h-12 md:h-14 rounded-full"
-                >
-                  ログイン
-                </Button>
+              </motion.div>
+
+              <div className="text-lg text-muted-foreground space-y-2">
+                <p className="font-semibold">✓ 登録料・利用料 完全無料</p>
+                <p className="font-semibold">✓ 5km圏内の地域密着情報</p>
+                <p className="font-semibold">✓ リアルタイム更新で最新情報をお届け</p>
+                <p className="font-semibold">✓ 家族・友人との情報共有機能付き</p>
               </div>
             </motion.div>
           </div>
         </section>
 
-        <footer className="py-8 px-4 border-t pb-[calc(var(--sab)+2rem)]">
-          <div className="container mx-auto max-w-6xl text-center text-sm text-muted-foreground">
-            <p className="mb-2">© 2025 トクドク All rights reserved.</p>
-            <div className="flex justify-center space-x-4 text-xs md:text-sm">
-              <Link href="/terms/privacy-policy" className="hover:underline">プライバシーポリシー</Link>
-              <Link href="/terms/service-policy" className="hover:underline">サービスポリシー</Link>
-              <Link href="/terms/terms-of-service" className="hover:underline">利用規約</Link>
+        {/* フッター */}
+        <footer className="py-12 px-8 border-t bg-muted/20">
+          <div className="container mx-auto max-w-6xl text-center">
+            <div className="space-y-6">
+              <p className="text-lg text-muted-foreground font-medium">© 2025 トクドク All rights reserved.</p>
+              <div className="flex justify-center space-x-8 text-base">
+                <Link href="/terms/privacy-policy" className="hover:underline hover:text-primary transition-colors">
+                  プライバシーポリシー
+                </Link>
+                <Link href="/terms/service-policy" className="hover:underline hover:text-primary transition-colors">
+                  サービスポリシー
+                </Link>
+                <Link href="/terms/terms-of-service" className="hover:underline hover:text-primary transition-colors">
+                  利用規約
+                </Link>
+              </div>
             </div>
           </div>
         </footer>
@@ -416,27 +534,21 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-background">
-      {/* ヘッダー - PCのみ表示 */}
+      {/* ヘッダー - シンプルなPC版ヘッダー */}
       {!isMobileScreen && (
         <nav 
-          className={`fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-sm border-b transition-all duration-300 pt-[var(--sat)] ${
-            scrollPosition > 10 ? 'shadow-sm' : ''
+          className={`fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm transition-all duration-300 pt-[var(--sat)] ${
+            scrollPosition > 10 ? 'shadow-sm border-b' : ''
           }`}
         >
-          <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <div className="rounded-full p-2">
-                <img src="https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png" alt="App Icon" className="h-12 w-12 object-contain" />
-              </div>
-            </div>
-
-            {/* デスクトップ用ナビゲーション - 🔥 修正 */}
-            <div className="flex items-center space-x-4">
-              <Button variant="ghost" onClick={handlePCLogin} className="h-10 px-4 rounded-full">
-                ログイン
-              </Button>
-              <Button onClick={handlePCRegister} className="h-10 px-4 rounded-full">
-                新規登録
+          <div className="container mx-auto px-8 h-20 flex items-center justify-end">
+            <div className="flex items-center space-x-6">
+              <Button 
+                variant="ghost" 
+                onClick={handlePCLogin} 
+                className="h-12 px-6 text-lg font-medium rounded-full hover:bg-primary/10 transition-colors"
+              >
+                既にアカウントをお持ちの方
               </Button>
             </div>
           </div>
