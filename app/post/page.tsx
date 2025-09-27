@@ -40,7 +40,7 @@ declare global {
 const postSchema = z.object({
   storeId: z.string().optional(),
   storeName: z.string().optional(),
-  category: z.enum(['飲食店', '小売店', 'イベント', '応援', '受け渡し', '雑談']).optional(), // 🔥 「イベント集客」→「イベント」に修正
+  category: z.enum(['空席状況', '在庫状況', 'PR', '応援', '受け渡し', '雑談']).optional(),
   content: z.string().min(5, { message: '5文字以上入力してください' }).max(240, { message: '240文字以内で入力してください' }),
   url: z.string().url({ message: '有効なURLを入力してください' }).optional().or(z.literal('')),
   // 🔥 新しい掲載期間スキーマ
@@ -67,11 +67,11 @@ type DisplayStore = Pick<Store, 'name'> & { id: string };
 
 const libraries: ("places")[] = ["places"];
 
-// 🔥 カテゴリ定義（「イベント集客」→「イベント」に修正）
+// 🔥 新しいカテゴリ定義
 const categoryOptions = [
-  { value: '飲食店', label: '飲食店' },
-  { value: '小売店', label: '小売店' },
-  { value: 'イベント', label: 'イベント' }, // 🔥 修正
+  { value: '空席状況', label: '空席状況' },
+  { value: '在庫状況', label: '在庫状況' },
+  { value: 'PR', label: 'PR' },
   { value: '応援', label: '応援' },
   { value: '受け渡し', label: '受け渡し' },
   { value: '雑談', label: '雑談' },
@@ -368,9 +368,9 @@ export default function PostPage() {
         const selectedCategory = form.getValues("category");
         if (selectedCategory) {
           const categoryDefaults = {
-            '飲食店': 'レストラン',
-            '小売店': 'お店',
-            'イベント集客': 'イベント会場',
+            '空席状況': '空席状況',
+            '在庫状況': '在庫状況',
+            'PR': 'PR',
             '応援': '応援先',
             '受け渡し': '受け渡し場所',
           };

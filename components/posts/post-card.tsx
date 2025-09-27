@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect, memo } from 'react';
 import { motion } from 'framer-motion';
-import { Heart, Share2, Clock, Link as LinkIcon, ExternalLink, Instagram, Copy, MapPin, Eye, MessageCircle, ChevronDown, Tag, UserPlus, Info, ShoppingCart, Utensils, GamepadIcon, Wrench, Layers, FileIcon, Calendar, Briefcase, ShoppingBag, Users, MessageSquareText, Trash2, Flag, AlertTriangle, Loader2, Star, Package, HandCoins, User, UserCheck, PersonStanding, Footprints, Phone } from 'lucide-react';
+import { Heart, Share2, Clock, Link as LinkIcon, ExternalLink, Instagram, Copy, MapPin, Eye, MessageCircle, ChevronDown, Tag, UserPlus, Info, ShoppingCart, Utensils, GamepadIcon, Wrench, Layers, FileIcon, Calendar, Briefcase, ShoppingBag, Users, MessageSquareText, Trash2, Flag, AlertTriangle, Loader2, Star, Package, HandCoins, User, UserCheck, PersonStanding, Footprints, Phone, Megaphone } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -224,23 +224,23 @@ UserAvatar.displayName = 'UserAvatar';
 // 🔥 ジャンルのアイコンとカラーを取得する関数を修正（カテゴリ用に変更）
 const getCategoryIconAndColor = (category: string) => {
   switch(category) {
-    case '飲食店':
+    case '空席状況':
       return {
         icon: Utensils,
         bgColor: 'bg-orange-100',
         textColor: 'text-orange-800',
         borderColor: 'border-orange-200'
       };
-    case '小売店':
+    case '在庫状況':
       return {
         icon: ShoppingBag,
         bgColor: 'bg-blue-100',
         textColor: 'text-blue-800',
         borderColor: 'border-blue-200'
       };
-    case 'イベント': // 🔥 修正
+    case 'PR': // 🔥 修正
       return {
-        icon: Calendar,
+        icon: Megaphone,
         bgColor: 'bg-purple-100',
         textColor: 'text-purple-800',
         borderColor: 'border-purple-200'
@@ -279,11 +279,11 @@ const getCategoryIconAndColor = (category: string) => {
 // カテゴリカラーを取得する関数
 const getCategoryColor = (category: string) => {
   switch(category) {
-    case '飲食店':
+    case '空席状況':
       return 'bg-orange-100 text-orange-800 border-orange-200';
-    case '小売店':
+    case '在庫状況':
       return 'bg-blue-100 text-blue-800 border-blue-200';
-    case 'イベント': // 🔥 修正
+    case 'PR': // 🔥 修正
       return 'bg-purple-100 text-purple-800 border-purple-200';
     case '応援':
       return 'bg-pink-100 text-pink-800 border-pink-200';
@@ -338,11 +338,11 @@ CustomerSituationDisplay.displayName = 'CustomerSituationDisplay';
 // 🔥 新規追加：残り数の単位を取得する関数
 const getRemainingUnit = (category: string | null) => {
   switch(category) {
-    case '飲食店':
+    case '空席状況':
       return '席';
-    case '小売店':
+    case '在庫状況':
       return '個';
-    case 'イベント集客':
+    case 'PR集客':
       return '人';
     default:
       return '件';

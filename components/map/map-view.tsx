@@ -39,11 +39,11 @@ const getCategoryColor = (category: string | null) => {
   if (!category) return '#6b7280'; // カテゴリーが未入力の場合はグレー
   
   switch(category) {
-    case '飲食店':
+    case '空席状況':
       return '#ea580c'; // orange-600
-    case '小売店':
+    case '在庫状況':
       return '#2563eb'; // blue-600
-    case 'イベント':
+    case 'PR':
       return '#9333ea'; // purple-600
     case '応援':
       return '#dc2626'; // red-600
@@ -59,14 +59,14 @@ const getCategoryColor = (category: string | null) => {
 // 🔥 残数の単位を取得する関数を追加
 const getRemainingUnit = (category: string | null) => {
   switch(category) {
-    case '飲食店':
+    case '空席状況':
       return '席';
-    case '小売店':
+    case '在庫状況':
       return '個';
-    case 'イベント':
-      return '人';
+    case 'PR':
+      return '枠';
     default:
-      return '件';
+      return '枠';
   }
 };
 
@@ -224,16 +224,16 @@ export function MapView() {
       setTimeout(updateContainerDimensions, browserInfo.name === 'safari' ? 50 : 30);
     };
 
-    // 基本的なイベントリスナー
+    // 基本的なPRリスナー
     window.addEventListener('resize', handleResize, { passive: true });
     window.addEventListener('orientationchange', handleResize, { passive: true });
     
-    // ブラウザ別特有のイベント
+    // ブラウザ別特有のPR
     if (browserInfo.name === 'safari') {
       window.addEventListener('pageshow', handleResize, { passive: true });
       window.addEventListener('focus', handleResize, { passive: true });
     } else if (browserInfo.name === 'firefox') {
-      // Firefox用の追加イベント
+      // Firefox用の追加PR
       window.addEventListener('load', handleResize, { passive: true });
     }
 
@@ -1147,7 +1147,7 @@ export function MapView() {
                         </div>
                         <div>
                           <p className="text-sm font-medium text-orange-800 mb-1">
-                            飲食店の例
+                            空席情報の例
                           </p>
                           <p className="text-xs text-orange-600">
                             オレンジ色で「残り5席」のように表示されます
@@ -1168,7 +1168,7 @@ export function MapView() {
                         </div>
                         <div>
                           <p className="text-sm font-medium text-blue-800 mb-1">
-                            小売店の例
+                            在庫情報の例
                           </p>
                           <p className="text-xs text-blue-600">
                             青色で「残り3個」のように表示されます
@@ -1189,7 +1189,7 @@ export function MapView() {
                         </div>
                         <div>
                           <p className="text-sm font-medium text-purple-800 mb-1">
-                            イベントの例
+                            PR情報の例
                           </p>
                           <p className="text-xs text-purple-600">
                             紫色で「残り10人」のように表示されます

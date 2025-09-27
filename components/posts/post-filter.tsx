@@ -5,7 +5,7 @@ import { useRef, useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
-import { Utensils, ShoppingBag, Calendar, Heart, HandCoins, MessageSquareText } from 'lucide-react';
+import { Utensils, ShoppingBag, Megaphone, Heart, HandCoins, MessageSquareText } from 'lucide-react';
 
 interface PostFilterProps {
   activeFilter: string;
@@ -15,9 +15,9 @@ interface PostFilterProps {
 // 🔥 新しいカテゴリ定義（6つのカテゴリ）
 const categories = [
   { id: 'all', name: 'すべて', icon: null },
-  { id: '飲食店', name: '飲食店', icon: Utensils },
-  { id: '小売店', name: '小売店', icon: ShoppingBag },
-  { id: 'イベント集客', name: 'イベント', icon: Calendar },
+  { id: '空席状況', name: '空席状況', icon: Utensils },
+  { id: '在庫状況', name: '在庫状況', icon: ShoppingBag },
+  { id: 'PR', name: 'PR', icon: Megaphone },
   { id: '応援', name: '応援', icon: Heart },
   { id: '受け渡し', name: '受け渡し', icon: HandCoins },
   { id: '雑談', name: '雑談', icon: MessageSquareText },

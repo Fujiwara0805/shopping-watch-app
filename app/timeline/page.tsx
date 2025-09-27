@@ -98,18 +98,18 @@ interface PostFromDB {
 type SortOption = 'created_at_desc' | 'created_at_asc' | 'expires_at_asc' | 'distance_asc' | 'likes_desc' | 'views_desc' | 'comments_desc';
 type SearchMode = 'all' | 'category' | 'favorite_store' | 'liked_posts' | 'hybrid';
 
-// 🔥 更新されたカテゴリ分類（「イベント集客」→「イベント」に修正）
+// 🔥 更新されたカテゴリ分類
 const categoryOptions = [
-  { value: '飲食店', label: '飲食店' },
-  { value: '小売店', label: '小売店' },
-  { value: 'イベント', label: 'イベント' }, // 🔥 修正
+  { value: '空席状況', label: '空席状況' },
+  { value: '在庫状況', label: '在庫状況' },
+  { value: 'PR', label: 'PR' },
   { value: '応援', label: '応援' },
   { value: '受け渡し', label: '受け渡し' },
   { value: '雑談', label: '雑談' },
 ];
 
-// 🔥 従来のgenreCategoriesを削除し、新しいカテゴリに対応
-const categories = ['すべて', '飲食店', '小売店', 'イベント', '応援', '受け渡し', '雑談']; // 🔥 「イベント集客」→「イベント」に修正
+// 🔥 新しいカテゴリに対応
+const categories = ['すべて', '空席状況', '在庫状況', 'PR', '応援', '受け渡し', '雑談'];
 
 
 const SEARCH_RADIUS_METERS = 5000; // 5km
@@ -1853,9 +1853,9 @@ export default function Timeline() {
   // 🔥 カテゴリのカラーリング関数を修正
   const getCategoryColor = (category: string) => {
     const colorMap: { [key: string]: string } = {
-      '飲食店': '#ea580c',      // orange-600
-      '小売店': '#2563eb',      // blue-600
-      'イベント': '#9333ea',    // purple-600（「イベント集客」から「イベント」に修正）
+      '空席状況': '#ea580c',      // orange-600
+      '在庫状況': '#2563eb',      // blue-600
+      'PR': '#9333ea',    // purple-600
       '応援': '#dc2626',        // red-600
       '受け渡し': '#16a34a',    // green-600
       '雑談': '#4b5563',        // gray-600
@@ -2574,10 +2574,10 @@ export default function Timeline() {
                         </div>
                         <div>
                           <p className="text-sm font-medium text-orange-800 mb-1">
-                            飲食店
+                            空席状況
                           </p>
                           <p className="text-xs text-orange-600">
-                            空席状況・新メニュー情報等
+                            飲食店やコワーキングスペース等の空席状況
                           </p>
                         </div>
                       </div>
@@ -2592,10 +2592,10 @@ export default function Timeline() {
                         </div>
                         <div>
                           <p className="text-sm font-medium text-blue-800 mb-1">
-                            小売店
+                            在庫状況
                           </p>
                           <p className="text-xs text-blue-600">
-                            在庫状況・新商品情報等
+                            ショーケースの在庫やセール商品の在庫状況等
                           </p>
                         </div>
                       </div>
@@ -2610,10 +2610,10 @@ export default function Timeline() {
                         </div>
                         <div>
                           <p className="text-sm font-medium text-purple-800 mb-1">
-                            イベント
+                            PR
                           </p>
                           <p className="text-xs text-purple-600">
-                            来客状況やボランティア募集等
+                            新商品・イベントの紹介や販売状況等
                           </p>
                         </div>
                       </div>

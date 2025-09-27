@@ -52,10 +52,10 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onClose }) =>
     },
     {
       id: 3,
-      title: "掲示板に閲覧・投稿しよう",
+      title: "掲示板でおとく情報をゲット",
       subtitle: (
         <span className="text-base">
-          飲食店の空席情報やよく行くスーパーの値引き情報まで、”その時お店にいないとわからない情報”が投稿されます。
+          空席情報や在庫情報など、”その時、お店にいないとわからない情報”を取得できます。
         </span>
       ),
       icon: MessageSquare, // Zap から変更
