@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { LayoutGrid, Search,  Loader2, SlidersHorizontal,  X,  Menu, User, Edit, Store, HelpCircle, FileText, LogOut,  Globe, NotebookText,  Zap, MessageSquare, Eye, Send, RefreshCw, UserPlus, Link as LinkIcon,  Trash2,  AlertTriangle, Compass, Info, Footprints, BookOpen, Clock, ShoppingBag, Calendar, Heart, Package, MessageSquareText, Utensils } from 'lucide-react';
+import { LayoutGrid, Search,  Loader2, SlidersHorizontal,  X,  Menu, User, Edit, Store, HelpCircle, FileText, LogOut,  Globe, NotebookText,  Zap, MessageSquare, Eye, Send, RefreshCw, UserPlus, Link as LinkIcon,  Trash2,  AlertTriangle, Compass, Info, Footprints, BookOpen, Clock, Megaphone, Heart, Package, MessageSquareText, Utensils } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
@@ -2577,7 +2577,7 @@ export default function Timeline() {
                             空席状況
                           </p>
                           <p className="text-xs text-orange-600">
-                            飲食店やコワーキングスペース等の空席状況
+                            飲食店やコワーキングスペース等
                           </p>
                         </div>
                       </div>
@@ -2595,7 +2595,7 @@ export default function Timeline() {
                             在庫状況
                           </p>
                           <p className="text-xs text-blue-600">
-                            ショーケースの在庫やセール商品の在庫状況等
+                            ショーケースの在庫やセール商品等
                           </p>
                         </div>
                       </div>
@@ -2605,7 +2605,7 @@ export default function Timeline() {
                       <div className="flex items-center space-x-3">
                         <div className="flex-shrink-0">
                           <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: '#9333ea' }}>
-                            <Calendar className="h-4 w-4 text-white" />
+                            <Megaphone className="h-4 w-4 text-white" />
                           </div>
                         </div>
                         <div>
@@ -2613,7 +2613,7 @@ export default function Timeline() {
                             PR
                           </p>
                           <p className="text-xs text-purple-600">
-                            新商品・イベントの紹介や販売状況等
+                            新商品やイベントの紹介等
                           </p>
                         </div>
                       </div>
