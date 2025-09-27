@@ -1944,7 +1944,7 @@ export default function Timeline() {
   // �� 修正: 位置情報を初期化時に必ずリセットして取得
   useEffect(() => {
     // 🔥 画面遷移時には必ずローディング状態にして位置情報をリセット
-    console.log('おとく板画面に遷移しました - 位置情報をリセットして再取得します');
+    console.log('掲示板画面に遷移しました - 位置情報をリセットして再取得します');
     
     setIsInitialLoading(true);
     setLoading(true);
@@ -2548,7 +2548,7 @@ export default function Timeline() {
         isOpen={showHowToUseModal}
         onClose={() => setShowHowToUseModal(false)}
         title="トクドクの使い方"
-        description="おとく板(掲示板)の使い方について"
+        description="掲示板(掲示板)の使い方について"
         className="max-w-lg"
       >
         <Carousel className="w-full">

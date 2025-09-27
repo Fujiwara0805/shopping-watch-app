@@ -37,7 +37,7 @@ const onboardingSlides = [
     color: "bg-[#4CAF50]/10"
   },
   {
-    title: "おとく板に投稿してみよう！",
+    title: "掲示板に投稿してみよう！",
     description: (
       <span>
         現在地から5km圏内の投稿に限定して表示される掲示板です。
@@ -70,7 +70,7 @@ export default function Onboarding() {
     if (currentSlide < onboardingSlides.length - 1) {
       setCurrentSlide(prev => prev + 1);
     } else {
-      // おとく板ページに遷移するよう変更
+      // 掲示板ページに遷移するよう変更
       localStorage.setItem('hasSeenOnboarding', 'true');
       router.push('/timeline');
     }
@@ -204,7 +204,7 @@ export default function Onboarding() {
               onClick={nextSlide}
               className="flex-1 h-12 rounded-xl bg-primary"
             >
-              {currentSlide === onboardingSlides.length - 1 ? 'おとく板を表示' : '次へ'}
+              {currentSlide === onboardingSlides.length - 1 ? '掲示板を表示' : '次へ'}
               <ChevronRight className="ml-1 h-5 w-5" />
             </Button>
           </div>

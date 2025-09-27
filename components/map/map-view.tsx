@@ -1233,7 +1233,7 @@ export function MapView() {
                             吹き出しマーカーをタップ
                           </p>
                           <p className="text-xs text-orange-600">
-                            おとく板へ遷移し、該当する投稿の詳細を確認できます
+                            掲示板へ遷移し、該当する投稿の詳細を確認できます
                           </p>
                         </div>
                       </div>

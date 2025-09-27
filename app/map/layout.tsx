@@ -18,7 +18,7 @@ interface MapLayoutProps {
 // ナビゲーションアイテム
 const navItems = [
   {
-    name: "おとく板",
+    name: "掲示板",
     href: "/timeline",
     icon: Newspaper,
   },

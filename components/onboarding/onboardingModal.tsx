@@ -52,7 +52,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onClose }) =>
     },
     {
       id: 3,
-      title: "おとく板に閲覧・投稿しよう",
+      title: "掲示板に閲覧・投稿しよう",
       subtitle: (
         <span className="text-base">
           飲食店の空席情報やよく行くスーパーの値引き情報まで、”その時お店にいないとわからない情報”が投稿されます。

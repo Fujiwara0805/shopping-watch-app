@@ -38,7 +38,7 @@ export function AppHeader() {
   const getPageTitle = () => {
     switch (pathname) {
       case '/timeline':
-        return isMobile ? 'おとく板' : 'トクドク掲示板サービス';
+        return isMobile ? '掲示板' : 'トクドク掲示板サービス';
       case '/map':
         return 'お店を探す';
       case '/post':
