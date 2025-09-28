@@ -34,6 +34,7 @@ interface AuthorData {
   user_id: string;
   display_name: string;
   avatar_url: string | null;
+  app_users?: { role: string }[] | { role: string } | null; // 🔥 追加：app_usersリレーション
 }
 
 interface PostLike {
@@ -378,7 +379,10 @@ const CommentsModal = ({
             id,
             user_id,
             display_name,
-            avatar_url
+            avatar_url,
+            app_users!app_profiles_user_id_fkey (
+              role
+            )
           )
         `)
         .eq('post_id', post?.id)
@@ -405,9 +409,19 @@ const CommentsModal = ({
         const isOwnComment = currentUserId && authorData?.user_id ? 
           authorData.user_id === currentUserId : false;
         
+        // 🔥 追加：author.roleを設定
+        const authorRole = authorData?.app_users 
+          ? Array.isArray(authorData.app_users) 
+            ? authorData.app_users[0]?.role || null
+            : authorData.app_users.role || null
+          : null;
+        
         return {
           ...comment,
-          author: authorData,
+          author: authorData ? {
+            ...authorData,
+            role: authorRole
+          } : null,
           isOwnComment,
         };
       });
@@ -1173,7 +1187,10 @@ export default function Timeline() {
             id,
             user_id,
             display_name,
-            avatar_url
+            avatar_url,
+            app_users!app_profiles_user_id_fkey (
+              role
+            )
           ),
           post_likes!fk_post_likes_post_id (
             post_id,
@@ -1293,6 +1310,13 @@ export default function Timeline() {
         const authorUserId = authorData && typeof authorData === 'object' && 'user_id' in authorData 
           ? (authorData as any).user_id 
           : null;
+        
+        // 🔥 追加：author.roleを設定（app_usersテーブルから取得）
+        const authorRole = authorData?.app_users 
+          ? Array.isArray(authorData.app_users) 
+            ? authorData.app_users[0]?.role || null
+            : authorData.app_users.role || null
+          : null;
 
         const isLikedByCurrentUser = currentUserId 
           ? Array.isArray(post.post_likes) 
@@ -1304,7 +1328,10 @@ export default function Timeline() {
 
         return {
           ...post,
-          author: authorData,
+          author: authorData ? {
+            ...authorData,
+            role: authorRole
+          } : null,
           author_user_id: authorUserId,
           author_posts_count: authorPostsCount,
           isLikedByCurrentUser,

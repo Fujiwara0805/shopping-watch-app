@@ -798,9 +798,14 @@ export const PostCard = memo(({
                   <p className="font-semibold text-base" style={{ color: '#73370c' }}>
                     {post.author?.display_name || '不明な投稿者'}
                   </p>
-                  {/* 自分の投稿バッジのみ表示 */}
-                  {isMyPost && (
+                  {/* 自分の投稿バッジまたは認証バッジを表示 */}
+                  {isMyPost ? (
                     <Badge variant="default" className="text-xs">自分の投稿</Badge>
+                  ) : post.author?.role === 'business' && (
+                    <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                      <Star className="h-3 w-3 mr-1 fill-blue-500 text-blue-500" />
+                      認証済み
+                    </Badge>
                   )}
                 </div>
                 <div className="flex items-center space-x-2">

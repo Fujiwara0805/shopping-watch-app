@@ -44,6 +44,7 @@ export interface Post {
 export interface AuthorProfile {
   display_name: string | null;
   avatar_url: string | null;
+  role?: string | null; // 🔥 追加：ユーザーの役割（user, admin, business）
 }
 
 // PostWithAuthor は Post の全プロパティを持ち、さらに author オブジェクトを持つ
