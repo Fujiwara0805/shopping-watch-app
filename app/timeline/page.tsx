@@ -2613,7 +2613,7 @@ export default function Timeline() {
                             PR
                           </p>
                           <p className="text-xs text-purple-600">
-                            新商品やイベントの紹介等
+                            本日のおすすめ品の紹介や短期の告知・宣伝等
                           </p>
                         </div>
                       </div>
