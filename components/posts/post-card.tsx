@@ -802,7 +802,7 @@ export const PostCard = memo(({
                   {isMyPost ? (
                     <Badge variant="default" className="text-xs">自分の投稿</Badge>
                   ) : post.author?.role === 'business' && (
-                    <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                    <Badge variant="outline" className="text-sm bg-blue-50 text-blue-700 border-blue-200">
                       <Star className="h-3 w-3 mr-1 fill-blue-500 text-blue-500" />
                       認証済み
                     </Badge>
