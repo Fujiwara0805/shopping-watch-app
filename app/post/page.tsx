@@ -1309,20 +1309,6 @@ export default function PostPage() {
                           type="button"
                           variant="outline"
                           size="sm"
-                          onClick={() => toggleOptionalField('image')}
-                          className={`justify-start transition-all duration-200 ${
-                            optionalFieldsExpanded.image 
-                              ? 'bg-primary text-primary-foreground border-primary hover:bg-primary/90' 
-                              : 'bg-[#fafafa] text-[#73370c] border-gray-300 hover:bg-[#fafafa] hover:text-[#73370c]'
-                          }`}
-                        >
-                          <ImageIcon className="mr-2 h-4 w-4" />
-                          画像
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
                           onClick={() => toggleOptionalField('location')}
                           className={`justify-start transition-all duration-200 ${
                             optionalFieldsExpanded.location 
@@ -1332,34 +1318,6 @@ export default function PostPage() {
                         >
                           <StoreIcon className="mr-2 h-4 w-4" />
                           場所
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => toggleOptionalField('rating')}
-                          className={`justify-start transition-all duration-200 ${
-                            optionalFieldsExpanded.rating 
-                              ? 'bg-primary text-primary-foreground border-primary hover:bg-primary/90' 
-                              : 'bg-[#fafafa] text-[#73370c] border-gray-300 hover:bg-[#fafafa] hover:text-[#73370c]'
-                          }`}
-                        >
-                          <StarIcon className="mr-2 h-4 w-4" />
-                          評価
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => toggleOptionalField('url')}
-                          className={`justify-start transition-all duration-200 ${
-                            optionalFieldsExpanded.url 
-                              ? 'bg-primary text-primary-foreground border-primary hover:bg-primary/90' 
-                              : 'bg-[#fafafa] text-[#73370c] border-gray-300 hover:bg-[#fafafa] hover:text-[#73370c]'
-                          }`}
-                        >
-                          <LinkIcon className="mr-2 h-4 w-4" />
-                          リンク
                         </Button>
                         <Button
                           type="button"
@@ -1379,6 +1337,34 @@ export default function PostPage() {
                           type="button"
                           variant="outline"
                           size="sm"
+                          onClick={() => toggleOptionalField('url')}
+                          className={`justify-start transition-all duration-200 ${
+                            optionalFieldsExpanded.url 
+                              ? 'bg-primary text-primary-foreground border-primary hover:bg-primary/90' 
+                              : 'bg-[#fafafa] text-[#73370c] border-gray-300 hover:bg-[#fafafa] hover:text-[#73370c]'
+                          }`}
+                        >
+                          <LinkIcon className="mr-2 h-4 w-4" />
+                          リンク
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => toggleOptionalField('image')}
+                          className={`justify-start transition-all duration-200 ${
+                            optionalFieldsExpanded.image 
+                              ? 'bg-primary text-primary-foreground border-primary hover:bg-primary/90' 
+                              : 'bg-[#fafafa] text-[#73370c] border-gray-300 hover:bg-[#fafafa] hover:text-[#73370c]'
+                          }`}
+                        >
+                          <ImageIcon className="mr-2 h-4 w-4" />
+                          画像
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
                           onClick={() => toggleOptionalField('customerSituation')}
                           className={`justify-start transition-all duration-200 ${
                             optionalFieldsExpanded.customerSituation 
@@ -1388,6 +1374,20 @@ export default function PostPage() {
                         >
                           <Users className="mr-2 h-4 w-4" />
                           来客状況
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => toggleOptionalField('rating')}
+                          className={`justify-start transition-all duration-200 ${
+                            optionalFieldsExpanded.rating 
+                              ? 'bg-primary text-primary-foreground border-primary hover:bg-primary/90' 
+                              : 'bg-[#fafafa] text-[#73370c] border-gray-300 hover:bg-[#fafafa] hover:text-[#73370c]'
+                          }`}
+                        >
+                          <StarIcon className="mr-2 h-4 w-4" />
+                          評価
                         </Button>
                         <Button
                           type="button"
@@ -1535,86 +1535,6 @@ export default function PostPage() {
                                     </div>
                                   </div>
                                 </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </motion.div>
-                      )}
-
-                      {/* 6. 評価入力フィールド */}
-                      {optionalFieldsExpanded.rating && (
-                        <motion.div
-                          initial={{ opacity: 0, y: -10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ duration: 0.2 }}
-                        >
-                          <FormField
-                            control={form.control}
-                            name="rating"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel className="text-lg flex font-semibold items-center">
-                                  <StarIcon className="mr-2 h-5 w-5" /> 評価 (0.0〜5.0)
-                                </FormLabel>
-                                  <FormControl>
-                                  <div className="flex items-center space-x-2">
-                                    {/* 星の表示 */}
-                                    <div className="flex items-center">
-                                      {[1, 2, 3, 4, 5].map((starIndex) => {
-                                        const currentRating = field.value || 0;
-                                        const fullStars = Math.floor(currentRating);
-                                        const hasHalfStar = currentRating - fullStars >= 0.5;
-                                        const isFull = starIndex <= fullStars;
-                                        const isHalf = starIndex === fullStars + 1 && hasHalfStar;
-
-                                        return (
-                                          <div
-                                            key={starIndex}
-                                            className="relative"
-                                            onClick={() => field.onChange(starIndex)} // クリックで整数値設定も可能
-                                          >
-                                            <StarIcon
-                                              className={cn(
-                                                "h-8 w-8 cursor-pointer text-gray-300",
-                                                { "fill-yellow-400": isFull || isHalf }
-                                              )}
-                                            />
-                                            {isHalf && (
-                                              <div
-                                                className="absolute inset-0 overflow-hidden"
-                                                style={{ width: '50%' }} // 半分だけ色を塗る
-                                              >
-                                                <StarIcon className="h-8 w-8 text-yellow-400 fill-yellow-400" />
-                                              </div>
-                                            )}
-                                          </div>
-                                        );
-                                      })}
-                                    </div>
-                                    {/* 数値入力フィールド */}
-                                    <Input
-                                      type="number"
-                                      step="0.1" // 小数点第一位まで許可
-                                      min="0.0"
-                                      max="5.0"
-                                      placeholder="例: 3.5"
-                                      value={field.value === undefined ? '' : String(field.value)}
-                                      onChange={(e) => {
-                                        const value = e.target.value;
-                                        // 数値または空文字列、小数点第一位までの数値のみを許可
-                                        if (value === '' || /^(?:\d(?:\.\d)?|[0-4](?:\.\d)?|5(?:\.0)?)$/.test(value)) {
-                                          field.onChange(value === '' ? undefined : parseFloat(value));
-                                        }
-                                      }}
-                                      className="w-28 text-lg"
-                                      autoComplete="off"
-                                      autoCorrect="off"
-                                      autoCapitalize="off"
-                                      spellCheck="false"
-                                    />
-                                  </div>
-                                  </FormControl>
                                 <FormMessage />
                               </FormItem>
                             )}
@@ -1786,51 +1706,6 @@ export default function PostPage() {
                         >
                           <FormField
                             control={form.control}
-                            name="remainingSlots"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel className="text-lg font-semibold flex items-center">
-                                  <PackageIcon className="mr-2 h-5 w-5" />
-                                  残数（座席数、在庫数など）
-                                </FormLabel>
-                                <FormControl>
-                                  <Input
-                                    type="number"
-                                    min="0"
-                                    max="9999"
-                                    placeholder="例: 5"
-                                    {...field}
-                                    value={field.value === undefined ? '' : String(field.value)}
-                                    onChange={(e) => {
-                                      const value = e.target.value;
-                                      if (value === '' || /^[0-9]+$/.test(value)) {
-                                         field.onChange(value === '' ? undefined : parseInt(value, 10));
-                                      }
-                                    }}
-                                    style={{ fontSize: '16px' }}
-                                    disabled={isUploading}
-                                    autoComplete="off"
-                                    autoCorrect="off"
-                                    autoCapitalize="off"
-                                    spellCheck="false"
-                                  />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </motion.div>
-                      )}
-
-                      {/* 来客状況フィールド - プレビュー削除版 */}
-                      {optionalFieldsExpanded.customerSituation && (
-                        <motion.div
-                          initial={{ opacity: 0, y: -10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ duration: 0.2 }}
-                        >
-                          <FormField
-                            control={form.control}
                             name="customerSituation"
                             render={({ field }) => (
                               <FormItem>
@@ -1889,6 +1764,87 @@ export default function PostPage() {
                           />
                         </motion.div>
                       )}
+
+                      {/* 6. 評価入力フィールド */}
+                      {optionalFieldsExpanded.rating && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          <FormField
+                            control={form.control}
+                            name="rating"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-lg flex font-semibold items-center">
+                                  <StarIcon className="mr-2 h-5 w-5" /> 評価 (0.0〜5.0)
+                                </FormLabel>
+                                  <FormControl>
+                                  <div className="flex items-center space-x-2">
+                                    {/* 星の表示 */}
+                                    <div className="flex items-center">
+                                      {[1, 2, 3, 4, 5].map((starIndex) => {
+                                        const currentRating = field.value || 0;
+                                        const fullStars = Math.floor(currentRating);
+                                        const hasHalfStar = currentRating - fullStars >= 0.5;
+                                        const isFull = starIndex <= fullStars;
+                                        const isHalf = starIndex === fullStars + 1 && hasHalfStar;
+
+                                        return (
+                                          <div
+                                            key={starIndex}
+                                            className="relative"
+                                            onClick={() => field.onChange(starIndex)} // クリックで整数値設定も可能
+                                          >
+                                            <StarIcon
+                                              className={cn(
+                                                "h-8 w-8 cursor-pointer text-gray-300",
+                                                { "fill-yellow-400": isFull || isHalf }
+                                              )}
+                                            />
+                                            {isHalf && (
+                                              <div
+                                                className="absolute inset-0 overflow-hidden"
+                                                style={{ width: '50%' }} // 半分だけ色を塗る
+                                              >
+                                                <StarIcon className="h-8 w-8 text-yellow-400 fill-yellow-400" />
+                                              </div>
+                                            )}
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                    {/* 数値入力フィールド */}
+                                    <Input
+                                      type="number"
+                                      step="0.1" // 小数点第一位まで許可
+                                      min="0.0"
+                                      max="5.0"
+                                      placeholder="例: 3.5"
+                                      value={field.value === undefined ? '' : String(field.value)}
+                                      onChange={(e) => {
+                                        const value = e.target.value;
+                                        // 数値または空文字列、小数点第一位までの数値のみを許可
+                                        if (value === '' || /^(?:\d(?:\.\d)?|[0-4](?:\.\d)?|5(?:\.0)?)$/.test(value)) {
+                                          field.onChange(value === '' ? undefined : parseFloat(value));
+                                        }
+                                      }}
+                                      className="w-28 text-lg"
+                                      autoComplete="off"
+                                      autoCorrect="off"
+                                      autoCapitalize="off"
+                                      spellCheck="false"
+                                    />
+                                  </div>
+                                  </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </motion.div>
+                      )}
+
 
                       {/* 7. クーポンフィールド */}
                       {optionalFieldsExpanded.coupon && (

@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { LayoutGrid, Search,  Loader2, SlidersHorizontal,  X,  Menu, User, Edit, Store, HelpCircle, FileText, LogOut,  Globe, NotebookText,  Zap, MessageSquare, Eye, Send, RefreshCw, UserPlus, Link as LinkIcon,  Trash2,  AlertTriangle, Compass, Info, Footprints, BookOpen, Clock, Megaphone, Heart, Package, MessageSquareText, Utensils } from 'lucide-react';
+import { LayoutGrid, Search,  Loader2, SlidersHorizontal,  X,  Menu, User, Edit, Store, HelpCircle, FileText, LogOut,  Globe, NotebookText,  Zap, MessageSquare, Eye, Send, RefreshCw, UserPlus, Link as LinkIcon,  Trash2,  AlertTriangle, Compass, Info, Footprints, BookOpen, Clock, Megaphone, Heart, Package, MessageSquareText, Utensils, Image } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
@@ -2690,7 +2690,7 @@ export default function Timeline() {
               <div className="space-y-6">
                 <div>
                   <p className="text-sm text-gray-600 mb-4">
-                    投稿には<span className="text-red-600">「テキスト(240文字以内)」</span>と<span className="text-red-600">「掲載期間」</span>の入力が必須です。また、投稿内容に応じて、以下の詳細情報を任意で入力できます。（<span className="text-red-600">※ログイン必須</span>）
+                    投稿には<span className="text-red-600">「カテゴリ(6種類)」</span>、<span className="text-red-600">「テキスト(240文字以内)」</span>と<span className="text-red-600">「掲載期間」</span>の入力が必須です。また、投稿内容に応じて、以下の詳細情報を任意で入力できます。（<span className="text-red-600">※ログイン必須</span>）
                   </p>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-2">
@@ -2709,17 +2709,65 @@ export default function Timeline() {
                       </div>
                     </div>
                     
+                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-2">
+                      <div className="flex items-center space-x-2">
+                        <div className="flex-shrink-0">
+                          <Package className="h-4 w-4 text-amber-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-amber-800">
+                            残数
+                          </p>
+                          <p className="text-xs text-amber-600">
+                            席数・在庫数など
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-orange-50 border border-orange-200 rounded-lg p-2">
+                      <div className="flex items-center space-x-2">
+                        <div className="flex-shrink-0">
+                          <LinkIcon className="h-4 w-4 text-orange-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-orange-800">
+                            リンク
+                          </p>
+                          <p className="text-xs text-orange-600">
+                            関連ウェブサイトURL
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
                     <div className="bg-green-50 border border-green-200 rounded-lg p-2">
                       <div className="flex items-center space-x-2">
                         <div className="flex-shrink-0">
-                          <LayoutGrid className="h-4 w-4 text-green-600" />
+                          <Image className="h-4 w-4 text-green-600" />
                         </div>
                         <div>
                           <p className="text-sm font-medium text-green-800">
-                            カテゴリ
+                            画像
                           </p>
                           <p className="text-xs text-green-600">
-                            6つのカテゴリから選択
+                            画像の添付(最大5枚)
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-2">
+                      <div className="flex items-center space-x-2">
+                        <div className="flex-shrink-0">
+                          <User className="h-4 w-4 text-indigo-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-indigo-800">
+                            来客状況
+                          </p>
+                          <p className="text-xs text-indigo-600">
+                            現在の混雑度を記載
                           </p>
                         </div>
                       </div>
@@ -2741,54 +2789,6 @@ export default function Timeline() {
                       </div>
                     </div>
                     
-                    <div className="bg-orange-50 border border-orange-200 rounded-lg p-2">
-                      <div className="flex items-center space-x-2">
-                        <div className="flex-shrink-0">
-                          <LinkIcon className="h-4 w-4 text-orange-600" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-orange-800">
-                            リンク
-                          </p>
-                          <p className="text-xs text-orange-600">
-                            関連ウェブサイトURL
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-2">
-                      <div className="flex items-center space-x-2">
-                        <div className="flex-shrink-0">
-                          <Package className="h-4 w-4 text-amber-600" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-amber-800">
-                            残数
-                          </p>
-                          <p className="text-xs text-amber-600">
-                            席数・在庫数など
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-2">
-                      <div className="flex items-center space-x-2">
-                        <div className="flex-shrink-0">
-                          <User className="h-4 w-4 text-indigo-600" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-indigo-800">
-                            来客状況
-                          </p>
-                          <p className="text-xs text-indigo-600">
-                            現在の混雑度を記載
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
                     <div className="bg-pink-50 border border-pink-200 rounded-lg p-2">
                       <div className="flex items-center space-x-2">
                         <div className="flex-shrink-0">
