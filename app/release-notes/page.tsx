@@ -106,12 +106,57 @@ const getReleaseTypeBadge = (type: ReleaseType) => {
 // サンプルリリースノートデータ
 const releaseNotes: ReleaseNote[] = [
   {
+    version: '1.2.1',
+    date: '2025-09-28',
+    type: 'patch',
+    title: 'ビジネス認証システムの導入と投稿機能の改善',
+    description: 'トクドクが認証した企業の投稿に「認証済み」バッジを表示する機能を追加しました。また、投稿画面の画像表示機能を強化し、より使いやすい投稿体験を提供します。',
+    isLatest: true,
+    changes: [
+      {
+        type: 'new',
+        title: 'ビジネス認証バッジシステム',
+        description: 'app_usersテーブルのroleが「business」のユーザーの投稿に「認証済み」バッジを表示する機能を実装。星アイコンと青色のデザインで、トクドクが認証した企業であることを明確に示します。'
+      },
+      {
+        type: 'new',
+        title: 'データベースrole制約の追加',
+        description: 'app_usersテーブルのroleカラムに「user」「admin」「business」の3つの値のみを許可するCHECK制約を追加し、データの整合性を向上させました。'
+      },
+      {
+        type: 'improvement',
+        title: '投稿画面の画像機能強化',
+        description: '投稿画面で画像を詳細情報セクションに移動し、「掲示板では4:5比率で表示」の旨を明記。カテゴリを必須項目として上部に配置し、より直感的な投稿フローを実現しました。'
+      },
+      {
+        type: 'improvement',
+        title: '画像モーダル表示機能',
+        description: '掲示板で画像をクリックすると元サイズで表示するモーダル機能を追加。複数画像の場合はナビゲーション機能付きで、より詳細な画像確認が可能になりました。'
+      },
+      {
+        type: 'improvement',
+        title: '詳細情報フィールドの配置最適化',
+        description: '投稿画面の詳細情報を「場所→残数→リンク→画像→来客状況→評価→クーポン→電話番号→ファイル→おすそわけ」の順に再配置し、より論理的で使いやすい順序に改善しました。'
+      },
+      {
+        type: 'improvement',
+        title: '認証バッジの視認性向上',
+        description: '認証済みバッジのフォントサイズを小（text-xs）から中（text-sm）に変更し、ユーザーが企業の認証状況をより明確に識別できるよう改善しました。'
+      },
+      {
+        type: 'improvement',
+        title: 'データベース型定義の強化',
+        description: 'AuthorProfileインターフェースにroleフィールドを追加し、投稿者の役割情報を適切に管理できるよう型安全性を向上させました。'
+      }
+    ]
+  },
+  {
     version: '1.2.0',
     date: '2025-09-27',
     type: 'minor',
     title: 'UI/UX改善とマップ機能の大幅強化',
     description: 'ユーザビリティを重視したUI改善を実施し、地図機能を大幅に強化しました。投稿カードの操作性向上、地図表示の改善、カテゴリ選択の最適化など、より直感的で使いやすいアプリを実現しました。',
-    isLatest: true,
+    isLatest: false,
     changes: [
       {
         type: 'new',
@@ -922,7 +967,7 @@ export default function ReleaseNotesPage() {
         >
           <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 text-center border border-blue-200">
             <Smartphone className="h-6 w-6 mx-auto text-blue-600 mb-2" />
-            <p className="text-lg font-bold text-blue-900">v1.1.0</p>
+            <p className="text-lg font-bold text-blue-900">v1.2.1</p>
             <p className="text-xs text-blue-700">現在のバージョン</p>
           </div>
           <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4 text-center border border-green-200">

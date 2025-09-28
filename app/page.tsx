@@ -160,11 +160,11 @@ const NormalLP = ({ goToOnboarding, mobileMenuOpen, setMobileMenuOpen, scrollPos
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.8, delay: 0.4 }}
-                  className="text-5xl lg:text-7xl xl:text-8xl font-bold leading-tight"
+                  className="text-4xl lg:text-5xl xl:text-6xl font-bold leading-tight"
                 >
                   地域の「今」を、<br />
                   <span className="text-primary relative inline-block">
-                    みんなでシェア。
+                    共有して、毎日をおとくに！
                     <motion.div 
                       className="absolute -bottom-2 left-0 right-0 h-1 bg-primary/30 rounded-full"
                       initial={{ scaleX: 0 }}
@@ -178,7 +178,7 @@ const NormalLP = ({ goToOnboarding, mobileMenuOpen, setMobileMenuOpen, scrollPos
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.8, delay: 0.6 }}
-                  className="text-3xl lg:text-4xl font-medium text-muted-foreground max-w-4xl mx-auto leading-relaxed"
+                  className="text-3xl lg:text-4xl font-medium text-muted-foreground max-w-4xl mx-auto leading-relaxed m-t-10"
                 >
                   空席情報、在庫状況、PR情報まで。<br />
                   <span className="text-primary font-bold">リアルタイム</span>で地域の「今」が分かる掲示板アプリ
@@ -265,7 +265,7 @@ const NormalLP = ({ goToOnboarding, mobileMenuOpen, setMobileMenuOpen, scrollPos
                 {
                   icon: Newspaper,
                   title: "地域密着掲示板",
-                  description: "空席・在庫・PR情報が5km圏内限定\nあなたの街の「今」をリアルタイムで！",
+                  description: "空席・在庫・PR情報が5km圏内限定。あなたの街の「今」をリアルタイムで！",
                   color: "bg-destructive/10",
                   textColor: "text-destructive",
                   borderColor: "border-destructive/20"
@@ -281,7 +281,7 @@ const NormalLP = ({ goToOnboarding, mobileMenuOpen, setMobileMenuOpen, scrollPos
                 {
                   icon: Bell,
                   title: "リアルタイム通知",
-                  description: "お気に入り店舗の最新情報を即座にお知らせ\n見逃し防止で常に最新情報をキャッチ！",
+                  description: "お気に入り店舗の最新情報を即座にお知らせ。見逃し防止で常に最新情報をキャッチ！",
                   color: "bg-accent/10",
                   textColor: "text-accent",
                   borderColor: "border-accent/20"
