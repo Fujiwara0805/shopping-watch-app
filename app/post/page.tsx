@@ -1447,117 +1447,7 @@ export default function PostPage() {
                         </Button>
                       </div>
 
-                      {/* 画像アップロードフィールド */}
-                      {optionalFieldsExpanded.image && (
-                        <motion.div
-                          initial={{ opacity: 0, y: -10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ duration: 0.2 }}
-                        >
-                          <FormItem>
-                            <FormLabel className="text-lg font-semibold flex items-center">
-                              <ImageIcon className="mr-2 h-5 w-5" />
-                              画像 (最大5枚・掲示板では4:5比率で表示)
-                            </FormLabel>
-                            <FormControl>
-                              <div className="space-y-4">
-                                <div className="flex flex-col items-center space-y-3 p-6 border-2 border-dashed rounded-lg hover:border-primary transition-colors cursor-pointer bg-card">
-                                  <Input
-                                    id="image-upload"
-                                    type="file"
-                                    accept="image/png, image/jpeg, image/webp"
-                                    multiple
-                                    onChange={handleImageUpload}
-                                    className="hidden"
-                                    disabled={isUploading || imageFiles.length >= 5}
-                                  />
-                                  
-                                  {imagePreviewUrls.length > 0 ? (
-                                    <div className="w-full">
-                                      <div className="grid grid-cols-2 gap-2 mb-4">
-                                        {imagePreviewUrls.map((url, index) => (
-                                          <div key={index} className="relative group">
-                                            <div className="w-full rounded-md overflow-hidden border-2 border-gray-200 aspect-[4/5]">
-                                              <img 
-                                                src={url} 
-                                                alt={`プレビュー ${index + 1}`} 
-                                                className="w-full h-full object-cover"
-                                              />
-                                            </div>
-                                            <Button
-                                              type="button"
-                                              variant="destructive"
-                                              size="icon"
-                                              className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                                              onClick={() => removeImage(index)}
-                                              disabled={isUploading}
-                                            >
-                                              <X className="h-3 w-3" />
-                                            </Button>
-                                          </div>
-                                        ))}
-                                      </div>
-                                      
-                                      {imageFiles.length < 5 && (
-                                        <label htmlFor="image-upload" className="flex flex-col items-center space-y-2 cursor-pointer text-muted-foreground">
-                                          <Upload className="h-8 w-8" />
-                                          <p className="text-sm">画像を追加 ({imageFiles.length}/5)</p>
-                                        </label>
-                                      )}
-                                    </div>
-                                  ) : (
-                                    <label htmlFor="image-upload" className="flex flex-col items-center space-y-2 cursor-pointer text-muted-foreground">
-                                      <Upload className="h-12 w-12" />
-                                      <p className="text-lg">画像をアップロード</p>
-                                      <p className="text-xs">PNG, JPG, WEBP (最大5MB・最大5枚)</p>
-                                      <p className="text-xs text-blue-600">※掲示板では4:5比率で表示されます</p>
-                                    </label>
-                                  )}
-                                </div>
-                              </div>
-                            </FormControl>
-                            <p className="text-sm text-red-500 mt-1">※アップロードする画像は自己責任でお願いします。</p>
-                          </FormItem>
-                        </motion.div>
-                      )}
-
-                      {/* 場所入力フィールド */}
-                      {optionalFieldsExpanded.location && (
-                            <motion.div
-                              initial={{ opacity: 0, y: -10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              transition={{ duration: 0.2 }}
-                            >
-                              <FormField
-                                control={form.control}
-                                name="category"
-                                render={({ field }) => (
-                                  <FormItem>
-                                    <FormLabel className="text-lg flex font-semibold items-center">
-                                      <Layers className="mr-2 h-5 w-5" /> カテゴリ
-                                    </FormLabel>
-                                    <Select onValueChange={field.onChange} value={field.value || ""}>
-                                      <FormControl>
-                                        <SelectTrigger className="w-full text-lg py-6">
-                                          <SelectValue placeholder="カテゴリを選択してください" />
-                                        </SelectTrigger>
-                                      </FormControl>
-                                      <SelectContent className="max-h-[200px]">
-                                        {categoryOptions.map((option) => (
-                                          <SelectItem key={option.value} value={option.value} className="text-lg py-3">
-                                            {option.label}
-                                          </SelectItem>
-                                        ))}
-                                      </SelectContent>
-                                    </Select>
-                                    <FormMessage />
-                                  </FormItem>
-                                )}
-                              />
-                            </motion.div>
-                      )}
-
-                      {/* 場所入力フィールド */}
+                      {/* 1. 場所入力フィールド */}
                       {optionalFieldsExpanded.location && (
                         <motion.div
                           initial={{ opacity: 0, y: -10 }}
@@ -1651,7 +1541,8 @@ export default function PostPage() {
                           />
                         </motion.div>
                       )}
-                      {/* 🔥 評価入力フィールド (数値入力と部分的な星表示に対応) */}
+
+                      {/* 6. 評価入力フィールド */}
                       {optionalFieldsExpanded.rating && (
                         <motion.div
                           initial={{ opacity: 0, y: -10 }}
@@ -1731,7 +1622,52 @@ export default function PostPage() {
                         </motion.div>
                       )}
 
-                      {/* リンク入力フィールド */}
+                      {/* 2. 残数フィールド */}
+                      {optionalFieldsExpanded.remainingSlots && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          <FormField
+                            control={form.control}
+                            name="remainingSlots"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-lg font-semibold flex items-center">
+                                  <PackageIcon className="mr-2 h-5 w-5" />
+                                  残数（座席数、在庫数など）
+                                </FormLabel>
+                                <FormControl>
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    max="9999"
+                                    placeholder="例: 5"
+                                    {...field}
+                                    value={field.value === undefined ? '' : String(field.value)}
+                                    onChange={(e) => {
+                                      const value = e.target.value;
+                                      if (value === '' || /^[0-9]+$/.test(value)) {
+                                         field.onChange(value === '' ? undefined : parseInt(value, 10));
+                                      }
+                                    }}
+                                    style={{ fontSize: '16px' }}
+                                    disabled={isUploading}
+                                    autoComplete="off"
+                                    autoCorrect="off"
+                                    autoCapitalize="off"
+                                    spellCheck="false"
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </motion.div>
+                      )}
+
+                      {/* 3. リンク入力フィールド */}
                       {optionalFieldsExpanded.url && (
                         <motion.div
                           initial={{ opacity: 0, y: -10 }}
@@ -1767,8 +1703,82 @@ export default function PostPage() {
                         </motion.div>
                       )}
 
-                      {/* 残りの数（席、在庫）フィールド */}
-                      {optionalFieldsExpanded.remainingSlots && (
+                      {/* 4. 画像アップロードフィールド */}
+                      {optionalFieldsExpanded.image && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          <FormItem>
+                            <FormLabel className="text-lg font-semibold flex items-center">
+                              <ImageIcon className="mr-2 h-5 w-5" />
+                              画像 (最大5枚・掲示板では4:5比率で表示)
+                            </FormLabel>
+                            <FormControl>
+                              <div className="space-y-4">
+                                <div className="flex flex-col items-center space-y-3 p-6 border-2 border-dashed rounded-lg hover:border-primary transition-colors cursor-pointer bg-card">
+                                  <Input
+                                    id="image-upload"
+                                    type="file"
+                                    accept="image/png, image/jpeg, image/webp"
+                                    multiple
+                                    onChange={handleImageUpload}
+                                    className="hidden"
+                                    disabled={isUploading || imageFiles.length >= 5}
+                                  />
+                                  
+                                  {imagePreviewUrls.length > 0 ? (
+                                    <div className="w-full">
+                                      <div className="grid grid-cols-2 gap-2 mb-4">
+                                        {imagePreviewUrls.map((url, index) => (
+                                          <div key={index} className="relative group">
+                                            <div className="w-full rounded-md overflow-hidden border-2 border-gray-200 aspect-[4/5]">
+                                              <img 
+                                                src={url} 
+                                                alt={`プレビュー ${index + 1}`} 
+                                                className="w-full h-full object-cover"
+                                              />
+                                            </div>
+                                            <Button
+                                              type="button"
+                                              variant="destructive"
+                                              size="icon"
+                                              className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                              onClick={() => removeImage(index)}
+                                              disabled={isUploading}
+                                            >
+                                              <X className="h-3 w-3" />
+                                            </Button>
+                                          </div>
+                                        ))}
+                                      </div>
+                                      
+                                      {imageFiles.length < 5 && (
+                                        <label htmlFor="image-upload" className="flex flex-col items-center space-y-2 cursor-pointer text-muted-foreground">
+                                          <Upload className="h-8 w-8" />
+                                          <p className="text-sm">画像を追加 ({imageFiles.length}/5)</p>
+                                        </label>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <label htmlFor="image-upload" className="flex flex-col items-center space-y-2 cursor-pointer text-muted-foreground">
+                                      <Upload className="h-12 w-12" />
+                                      <p className="text-lg">画像をアップロード</p>
+                                      <p className="text-xs">PNG, JPG, WEBP (最大5MB・最大5枚)</p>
+                                      <p className="text-xs text-blue-600">※掲示板では4:5比率で表示されます</p>
+                                    </label>
+                                  )}
+                                </div>
+                              </div>
+                            </FormControl>
+                            <p className="text-sm text-red-500 mt-1">※アップロードする画像は自己責任でお願いします。</p>
+                          </FormItem>
+                        </motion.div>
+                      )}
+
+                      {/* 5. 来客状況フィールド */}
+                      {optionalFieldsExpanded.customerSituation && (
                         <motion.div
                           initial={{ opacity: 0, y: -10 }}
                           animate={{ opacity: 1, y: 0 }}
@@ -1880,7 +1890,7 @@ export default function PostPage() {
                         </motion.div>
                       )}
 
-                      {/* クーポンフィールド */}
+                      {/* 7. クーポンフィールド */}
                       {optionalFieldsExpanded.coupon && (
                         <motion.div
                           initial={{ opacity: 0, y: -10 }}
@@ -1917,7 +1927,7 @@ export default function PostPage() {
                         </motion.div>
                       )}
 
-                      {/* 電話番号フィールドを追加 */}
+                      {/* 8. 電話番号フィールド */}
                       {optionalFieldsExpanded.phoneNumber && (
                         <motion.div
                           initial={{ opacity: 0, y: -10 }}
@@ -1953,7 +1963,7 @@ export default function PostPage() {
                         </motion.div>
                       )}
 
-                      {/* ファイル入力フィールド */}
+                      {/* 9. ファイル入力フィールド */}
                       {optionalFieldsExpanded.file && (
                         <motion.div
                           initial={{ opacity: 0, y: -10 }}
@@ -2021,7 +2031,7 @@ export default function PostPage() {
                         </motion.div>
                       )}
 
-                      {/* おすそわけフィールド - 既存のコードをそのまま維持 */}
+                      {/* 10. おすそわけフィールド */}
                       {optionalFieldsExpanded.supportPurchase && (
                         <motion.div
                           initial={{ opacity: 0, y: -10 }}
