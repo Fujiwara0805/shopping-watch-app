@@ -32,7 +32,7 @@ export function LocationPermissionDialog({
 
   if (permissionState === 'denied') {
     dialogTitle = "位置情報が無効です";
-    dialogMessage = `ブラウザ並びに端末の設定で位置情報を許可してください。`;
+    dialogMessage = `端末の設定画面から位置情報を許可してください。`;
     iconComponent = Info;
   } else {
     dialogTitle = `位置情報の使用を許可しますか？`;

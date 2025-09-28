@@ -1713,7 +1713,7 @@ export default function PostPage() {
                           <FormItem>
                             <FormLabel className="text-lg font-semibold flex items-center">
                               <ImageIcon className="mr-2 h-5 w-5" />
-                              画像 (最大5枚・掲示板では4:5比率で表示)
+                              画像 (最大5枚)
                             </FormLabel>
                             <FormControl>
                               <div className="space-y-4">
