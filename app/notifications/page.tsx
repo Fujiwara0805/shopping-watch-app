@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Disc as Discount, ShoppingBag, User, Loader2, Trash2, MailCheck, Square, CheckSquare } from 'lucide-react';
 import AppLayout from '@/components/layout/app-layout';
 import { Button } from '@/components/ui/button';
-import { Profile } from '@/types/profile';
 import { Notification } from '@/types/notification';
 import { supabase } from '@/lib/supabaseClient';
 import { useSession } from 'next-auth/react';
@@ -13,9 +12,11 @@ import { formatDistanceToNowStrict } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import { useRouter } from 'next/navigation';
 import { CustomModal } from '@/components/ui/custom-modal';
+import { useNotification } from '@/contexts/NotificationContext';
 
 export default function NotificationsPage() {
   const { data: session, status: sessionStatus } = useSession();
+  const { deleteNotification: contextDeleteNotification } = useNotification();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentUserAppProfileId, setCurrentUserAppProfileId] = useState<string | null>(null);
@@ -48,7 +49,7 @@ export default function NotificationsPage() {
     fetchUserAppProfileId();
   }, [sessionStatus, session?.user?.id]);
 
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async () => {
     if (!currentUserAppProfileId) return;
     setLoading(true);
     try {
@@ -67,11 +68,10 @@ export default function NotificationsPage() {
       }
     } catch (e) {
       console.error('Unexpected error fetching notifications:', e);
-      console.log('Notifications state after fetch error:', notifications);
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentUserAppProfileId]);
 
   useEffect(() => {
     if (sessionStatus === 'authenticated' && currentUserAppProfileId) {
@@ -97,7 +97,7 @@ export default function NotificationsPage() {
               return [newNotification, ...prevNotifications];
             });
             console.log('Realtime new notification user_id:', newNotification.user_id);
-            console.log('Notifications state after realtime INSERT:', payload.new, notifications);
+            console.log('Notifications state after realtime INSERT:', payload.new);
             fetchNotifications();
           }
         )
@@ -121,7 +121,7 @@ export default function NotificationsPage() {
       setLoading(false);
       setNotifications([]);
     }
-  }, [sessionStatus, currentUserAppProfileId]);
+  }, [sessionStatus, currentUserAppProfileId, fetchNotifications]);
 
   const markAsRead = async (id: string) => {
     setNotifications(prev =>
@@ -183,6 +183,7 @@ export default function NotificationsPage() {
 
     setShowDeleteConfirmModal(false);
 
+    // ローカル状態を即座に更新
     setNotifications(prev => prev.filter(notification => notification.id !== notificationToDeleteId));
     setSelectedNotifications(prev => {
       const newSet = new Set(prev);
@@ -191,15 +192,9 @@ export default function NotificationsPage() {
     });
 
     try {
-      const { error } = await supabase
-        .from('notifications')
-        .delete()
-        .eq('id', notificationToDeleteId)
-        .eq('user_id', currentUserAppProfileId);
-      if (error) {
-        console.error('Error deleting notification:', error);
-        fetchNotifications();
-      }
+      // Contextの削除関数を呼び出して他の画面の通知アイコンも更新
+      await contextDeleteNotification(notificationToDeleteId);
+      console.log('Notification deleted successfully, triggering realtime update');
     } catch (e) {
       console.error('Unexpected error deleting notification:', e);
       fetchNotifications();
@@ -217,19 +212,14 @@ export default function NotificationsPage() {
 
     const idsToDelete = Array.from(selectedNotifications);
     
+    // ローカル状態を即座に更新
     setNotifications(prev => prev.filter(n => !idsToDelete.includes(n.id)));
     setSelectedNotifications(new Set());
 
     try {
-      const { error } = await supabase
-        .from('notifications')
-        .delete()
-        .in('id', idsToDelete)
-        .eq('user_id', currentUserAppProfileId);
-      if (error) {
-        console.error('Error deleting selected notifications:', error);
-        fetchNotifications();
-      }
+      // 各通知を個別にContextの削除関数で削除して他の画面の通知アイコンも更新
+      await Promise.all(idsToDelete.map(id => contextDeleteNotification(id)));
+      console.log('Selected notifications deleted successfully, triggering realtime update');
     } catch (e) {
       console.error('Unexpected error deleting selected notifications:', e);
       fetchNotifications();
