@@ -57,11 +57,11 @@ export function LocationPermissionDialog({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-6 text-center">
-          <div className="flex justify-center mb-4">
+          {/* <div className="flex justify-center mb-4">
             <div className="bg-muted rounded-full p-3">
               {React.createElement(iconComponent, { className: "h-10 w-10 text-primary" })}
             </div>
-          </div>
+          </div> */}
           <h2 className="text-lg font-semibold mb-2">
             {dialogTitle}
           </h2>
