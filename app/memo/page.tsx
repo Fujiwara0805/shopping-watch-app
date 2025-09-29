@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, Plus, Trash2, History, WifiOff, Loader2, Edit, LogIn, X, CheckSquare, Sparkles, PackageCheck, ShoppingBag, MessageSquare, Users, TrainFront } from 'lucide-react';
+import { Check, Plus, Trash2, History, WifiOff, Loader2, Edit, LogIn, X, CheckSquare, Sparkles, PackageCheck, ShoppingBag, MessageSquare, Users, TrainFront, Info } from 'lucide-react';
 import AppLayout from '@/components/layout/app-layout';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -48,8 +48,8 @@ export default function MemoPage() {
   const [items, setItems] = useLocalStorage<MemoItem[]>('shoppingMemo', []);
   const [newItemName, setNewItemName] = useState('');
 
-  // 使い方ガイドの表示設定をlocalStorageで管理
-  const [showUsageGuide, setShowUsageGuide] = useLocalStorage<boolean>('showUsageGuide', true);
+  // 使い方モーダルの表示状態
+  const [showUsageModal, setShowUsageModal] = useState(false);
 
   // オンラインで同期する「よく買うもの」リスト - ログイン時のみ
   const [frequentItems, setFrequentItems] = useState<FrequentItem[]>([]);
@@ -227,13 +227,9 @@ export default function MemoPage() {
   const checkedItems = items.filter(item => item.checked);
   const uncheckedItems = items.filter(item => !item.checked);
 
-  // 使い方ガイドを閉じる関数
-  const handleCloseUsageGuide = (hideForever: boolean = false) => {
-    if (hideForever) {
-      setShowUsageGuide(false); // 今後表示しない
-    } else {
-      setShowUsageGuide(false); // 一時的に閉じる（次回は表示される）
-    }
+  // 使い方モーダルを開く関数
+  const handleOpenUsageModal = () => {
+    setShowUsageModal(true);
   };
 
   // 割引表（タイムライン）への遷移
@@ -303,78 +299,6 @@ export default function MemoPage() {
           <Button onClick={handleAddItemFromInput} size="icon" className="shrink-0" disabled={newItemName.trim() === ''}><Plus size={20} /></Button>
         </div>
 
-        {showUsageGuide && (
-          <AnimatePresence>
-            <motion.div 
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="relative p-4 mb-6 border rounded-lg bg-card"
-            >
-              <button
-                onClick={() => handleCloseUsageGuide(false)}
-                className="absolute top-3 right-3 p-1 text-muted-foreground hover:bg-accent rounded-full transition-colors z-10"
-              >
-                <X size={18} />
-              </button>
-              
-              <div className="flex items-center gap-3 mb-4">
-                <h2 className="text-lg font-bold">買い物メモの使い方</h2>
-              </div>
-          
-              <div className="space-y-3 text-sm">
-                <div className="p-3 rounded-lg border bg-yellow-50 border-yellow-200/80">
-                  <div className="flex items-center gap-2.5 mb-1.5">
-                    <Sparkles className="h-5 w-5 text-yellow-600" />
-                    <h3 className="font-semibold text-yellow-800">かんたんアイテム追加</h3>
-                  </div>
-                  <p className="text-xs text-yellow-700 pl-1">
-                    テキストでアイテムを入力し、<Plus size={12} className="inline-block mx-0.5 -mt-0.5" />ボタンでリストに追加します。
-                  </p>
-                </div>
-                
-                <div className="p-3 rounded-lg border bg-green-50 border-green-200/80">
-                  <div className="flex items-center gap-2.5 mb-1.5">
-                    <PackageCheck className="h-5 w-5 text-green-600" />
-                    <h3 className="font-semibold text-green-800">リストの管理</h3>
-                  </div>
-                  <p className="text-xs text-green-700 pl-1">
-                    購入済みのアイテムは左の<CheckSquare size={12} className="inline-block mx-0.5 -mt-0.5" />でチェック。不要なアイテムは<Trash2 size={12} className="inline-block mx-0.5 -mt-0.5" />で削除できます。
-                  </p>
-                </div>
-
-                <div className="p-3 rounded-lg border bg-blue-50 border-blue-200/80">
-                  <div className="flex items-center gap-2.5 mb-1.5">
-                    <History className="h-5 w-5 text-blue-600" />
-                    <h3 className="font-semibold text-blue-800">便利な「よく買うもの」</h3>
-                  </div>
-                  <p className="text-xs text-blue-700 pl-1">
-                    タップで直接リストに追加。編集は<Edit size={12} className="inline-block mx-0.5 -mt-0.5" />ボタンから行えます。
-                  </p>
-                </div>
-              </div>
-
-              {/* 今後表示しないオプションを追加 */}
-              <div className="flex justify-between items-center mt-4 pt-3 border-t">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleCloseUsageGuide(true)}
-                  className="text-xs text-muted-foreground hover:text-foreground"
-                >
-                  今後表示しない
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleCloseUsageGuide(false)}
-                >
-                  閉じる
-                </Button>
-              </div>
-            </motion.div>
-          </AnimatePresence>
-        )}
 
         {status === 'authenticated' && (
           <div className="mb-6">
@@ -412,9 +336,20 @@ export default function MemoPage() {
             <div className="text-center py-12 px-6 bg-secondary/20 rounded-xl border-2 border-dashed border-secondary/30">
               <ShoppingBag strokeWidth={1.5} className="mx-auto h-16 w-16 text-muted-foreground/40 mb-4" />
               <h3 className="text-lg font-semibold text-foreground/80 mb-2">買い物メモを作成しましょう！</h3>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-muted-foreground mb-4">
                 「+」ボタンを使って<br />買うものをメモに追加できます。
               </p>
+              <div className="flex justify-center">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleOpenUsageModal}
+                  className="flex items-center gap-2 text-[#fa7415] border-[#fa7415] hover:bg-[#fa7415] hover:text-white"
+                >
+                  <Info size={16} />
+                  使い方を見る
+                </Button>
+              </div>
             </div>
           ) : (
             <>
@@ -497,32 +432,6 @@ export default function MemoPage() {
               </div>
             </motion.div>
           )}
-          {/* 割引表への遷移ボタン
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="p-4 bg-gradient-to-r from-orange-50 to-red-50 border border-orange-200 rounded-lg"
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="bg-orange-100 p-2 rounded-full">
-                  <PackageCheck className="h-5 w-5 text-orange-600" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-orange-900">便利な割引表！</h3>
-                  <p className="text-sm text-orange-700">何％OFFがいくらか瞬時に<br />確認できます。</p>
-                </div>
-              </div>
-              <Button
-                onClick={handleGoToTimeline}
-                variant="outline"
-                size="sm"
-                className="border-orange-300 text-orange-700 hover:bg-orange-100"
-              >
-                割引表へ
-              </Button>
-            </div>
-          </motion.div> */}
 
           {/* グループ管理への遷移ボタン（ブルー配色に変更） */}
           <motion.div
@@ -579,6 +488,42 @@ export default function MemoPage() {
             ))}
             {frequentItems.length === 0 && !loadingFrequentItems && <p className="text-sm text-center text-muted-foreground py-4">登録済みのアイテムはありません</p>}
             {loadingFrequentItems && <div className="text-center py-4"><Loader2 className="h-5 w-5 animate-spin mx-auto text-muted-foreground" /></div>}
+          </div>
+        </div>
+      </CustomModal>
+
+      <CustomModal isOpen={showUsageModal} onClose={() => setShowUsageModal(false)} title="買い物メモの使い方">
+        <div className="pt-2 space-y-4">
+          <div className="space-y-3 text-sm">
+            <div className="p-3 rounded-lg border bg-yellow-50 border-yellow-200/80">
+              <div className="flex items-center gap-2.5 mb-1.5">
+                <Sparkles className="h-5 w-5 text-yellow-600" />
+                <h3 className="font-semibold text-yellow-800">かんたんアイテム追加</h3>
+              </div>
+              <p className="text-xs text-yellow-700 pl-1">
+                テキストでアイテムを入力し、<Plus size={12} className="inline-block mx-0.5 -mt-0.5" />ボタンでリストに追加します。
+              </p>
+            </div>
+            
+            <div className="p-3 rounded-lg border bg-green-50 border-green-200/80">
+              <div className="flex items-center gap-2.5 mb-1.5">
+                <PackageCheck className="h-5 w-5 text-green-600" />
+                <h3 className="font-semibold text-green-800">リストの管理</h3>
+              </div>
+              <p className="text-xs text-green-700 pl-1">
+                購入済みのアイテムは左の<CheckSquare size={12} className="inline-block mx-0.5 -mt-0.5" />でチェック。不要なアイテムは<Trash2 size={12} className="inline-block mx-0.5 -mt-0.5" />で削除できます。
+              </p>
+            </div>
+
+            <div className="p-3 rounded-lg border bg-blue-50 border-blue-200/80">
+              <div className="flex items-center gap-2.5 mb-1.5">
+                <History className="h-5 w-5 text-blue-600" />
+                <h3 className="font-semibold text-blue-800">便利な「よく買うもの」</h3>
+              </div>
+              <p className="text-xs text-blue-700 pl-1">
+                タップで直接リストに追加。編集は<Edit size={12} className="inline-block mx-0.5 -mt-0.5" />ボタンから行えます。
+              </p>
+            </div>
           </div>
         </div>
       </CustomModal>
