@@ -17,6 +17,7 @@ import React from 'react';
 import { ExtendedPostWithAuthor } from '@/types/timeline';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
+import { getUrlInfo, getDisplayUrl } from '@/lib/url-utils';
 
 function formatRemainingTime(expiresAt: number): string {
   const now = Date.now();
@@ -923,19 +924,32 @@ export const PostCard = memo(({
                             </div>
                           </td>
                           <td className="p-3">
-                            <div>
-                              <a
-                                href={post.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-blue-600 hover:text-blue-800 underline break-all"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                {post.url}
-                              </a>
-                              <div className="text-xs text-gray-500 mt-1">
-                                ※メディア情報含む
-                              </div>
+                            <div className="flex items-center">
+                              {(() => {
+                                const urlInfo = getUrlInfo(post.url);
+                                const IconComponent = urlInfo.icon;
+                                
+                                return (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className={cn(
+                                      "p-2 h-auto rounded-md transition-all duration-200 hover:scale-105",
+                                      urlInfo.bgColor,
+                                      urlInfo.color
+                                    )}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (post.url) {
+                                        window.open(post.url, '_blank', 'noopener,noreferrer');
+                                      }
+                                    }}
+                                    title={`${urlInfo.displayName}で開く: ${post.url}`}
+                                  >
+                                    <IconComponent className="h-6 w-6" />
+                                  </Button>
+                                );
+                              })()}
                             </div>
                           </td>
                         </tr>
