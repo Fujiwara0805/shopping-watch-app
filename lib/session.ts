@@ -24,6 +24,5 @@ export function getAnonymousSessionId(): string {
 export function clearAnonymousSession(): void {
   if (typeof window !== 'undefined') {
     localStorage.removeItem('anonymousSessionId');
-    localStorage.removeItem('anonymousLikes');
   }
 }

@@ -1524,7 +1524,8 @@ export default function Timeline() {
       if (currentUserId) {
         await handleAuthenticatedLike(postId, isLiked);
       } else {
-        await handleAnonymousLike(postId, isLiked);
+        // 匿名ユーザーの場合は何もしない（PostCardでログインモーダルが表示される）
+        return;
       }
     } catch (error) {
       console.error('いいね処理エラー:', error);
@@ -1575,36 +1576,6 @@ export default function Timeline() {
     ));
   };
 
-  // 非ログインユーザーのいいね処理
-  const handleAnonymousLike = async (postId: string, isLiked: boolean) => {
-    const anonymousLikes = JSON.parse(localStorage.getItem('anonymousLikes') || '[]');
-    
-    if (isLiked && !anonymousLikes.includes(postId)) {
-      anonymousLikes.push(postId);
-      localStorage.setItem('anonymousLikes', JSON.stringify(anonymousLikes));
-      
-      const { error } = await supabase.rpc('increment_anonymous_like', { post_id: postId });
-      if (error) throw error;
-      
-    } else if (!isLiked && anonymousLikes.includes(postId)) {
-      const updatedLikes = anonymousLikes.filter((id: string) => id !== postId);
-      localStorage.setItem('anonymousLikes', JSON.stringify(updatedLikes));
-      
-      const { error } = await supabase.rpc('decrement_anonymous_like', { post_id: postId });
-      if (error) throw error;
-    } else {
-      return;
-    }
-    
-    setPosts(prevPosts => prevPosts.map(p => 
-      p.id === postId 
-        ? { 
-            ...p, 
-            likes_count: isLiked ? p.likes_count + 1 : Math.max(0, p.likes_count - 1)
-          } 
-        : p
-    ));
-  };
 
   // 🔥 位置情報取得の関数を修正（自動投稿取得を制御可能に）
   const getCurrentLocation = useCallback((autoFetch = true, forceRefresh = false) => {
@@ -1999,7 +1970,6 @@ export default function Timeline() {
       });
   }, []); // �� 依存配列を空にして、画面遷移時のみ実行
 
-  // handleAnonymousLike関数の後に追加
   const handleDeletePost = useCallback(async (postId: string) => {
     try {
       // UIから投稿を即座に削除

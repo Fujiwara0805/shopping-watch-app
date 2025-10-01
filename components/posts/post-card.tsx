@@ -394,14 +394,6 @@ export const PostCard = memo(({
 
   const isMyPost = isOwnPost || (post.author_user_id === currentUserId);
 
-  const [anonymousLikedPosts, setAnonymousLikedPosts] = useState<string[]>([]);
-  
-  useEffect(() => {
-    if (!currentUserId) {
-      const anonymousLikes = JSON.parse(localStorage.getItem('anonymousLikes') || '[]');
-      setAnonymousLikedPosts(anonymousLikes);
-    }
-  }, [currentUserId]);
 
   // ビュー数カウント（Intersection Observer使用）
   useEffect(() => {
@@ -432,7 +424,7 @@ export const PostCard = memo(({
 
   const isLiked = currentUserId 
     ? post.isLikedByCurrentUser 
-    : anonymousLikedPosts.includes(post.id);
+    : false;
 
   const handleLikeClick = useCallback(async (e: React.MouseEvent) => {
     e.stopPropagation();
