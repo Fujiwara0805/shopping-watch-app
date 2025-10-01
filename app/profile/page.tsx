@@ -576,6 +576,15 @@ function ProfilePageContent() {
                 loading={accountSettingsLoading}
               />
 
+              {/* 企業アカウント設定 - businessロールの場合のみ表示 */}
+              {userRole === 'business' && (
+                <SettingItem
+                  icon={Building2}
+                  title="企業アカウント設定"
+                  description="企業用のURL・店舗情報の管理"
+                  action={() => router.push('/profile/edit')}
+                />
+              )}
               
               <SettingItem
                 icon={LogOut}

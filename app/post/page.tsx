@@ -1420,7 +1420,7 @@ export default function PostPage() {
                           }`}
                         >
                           <PackageIcon className="mr-2 h-4 w-4" />
-                          残数
+                          残席・在庫数
                         </Button>
                         <Button
                           type="button"
