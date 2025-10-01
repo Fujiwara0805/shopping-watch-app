@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bell, LogOut, Settings, Edit, MapPin, Heart, Store as StoreIcon, Calendar, TrendingUp, Award, Star, User, Sparkles, ShoppingBag, Info, X, Trash2, NotebookText, CheckCircle, ExternalLink, ArrowRight, Trophy, CreditCard } from 'lucide-react';
+import { Bell, LogOut, Settings, Edit, MapPin, Heart, Store as StoreIcon, Calendar, TrendingUp, Award, Star, User, Sparkles, ShoppingBag, Info, X, Trash2, NotebookText, CheckCircle, ExternalLink, ArrowRight, Trophy, CreditCard, Building2 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -220,6 +220,7 @@ function ProfilePageContent() {
   const router = useRouter();
   const { toast } = useToast();
   const [currentUserLevel, setCurrentUserLevel] = useState<any>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
 
   // LINE接続状況の管理
   const [isLineConnected, setIsLineConnected] = useState(false);
@@ -277,6 +278,17 @@ function ProfilePageContent() {
 
       try {
         setLoading(true);
+
+        // ユーザーの役割を取得
+        const { data: userData, error: userError } = await supabase
+          .from('app_users')
+          .select('role')
+          .eq('id', session.user.id)
+          .single();
+
+        if (!userError && userData) {
+          setUserRole(userData.role);
+        }
 
         const { data: appProfileData, error: profileError } = await supabase
           .from('app_profiles')
@@ -563,6 +575,7 @@ function ProfilePageContent() {
                 action={handleNavigateToAccountSettings}
                 loading={accountSettingsLoading}
               />
+
               
               <SettingItem
                 icon={LogOut}

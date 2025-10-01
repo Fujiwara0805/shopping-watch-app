@@ -16,19 +16,23 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
-import { Loader2, User as UserIcon, Info, Image as ImageIcon, X, Upload, Store, Baby, MapPin, Briefcase, ShoppingCart, Check, Save, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Loader2, User as UserIcon, Info, Image as ImageIcon, X, Upload, Store, Baby, MapPin, Briefcase, ShoppingCart, Check, Save, Trash2, ChevronDown, ChevronUp, Building2, Link as LinkIcon } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { v4 as uuidv4 } from 'uuid';
 import FavoriteStoreInput from '@/components/profile/FavoriteStoreInput';
 import { useLoading } from '@/contexts/loading-context';
 import { useToast } from '@/hooks/use-toast';
 
-// bioフィールドを削除
+// bioフィールドを削除、企業設定フィールドを追加
 const profileSchema = z.object({
   username: z.string().min(2, { message: 'ニックネームは2文字以上で入力してください。' }).max(30, { message: 'ニックネームは30文字以内で入力してください。' }),
   favoriteStore1: z.object({ id: z.string().optional(), name: z.string().optional() }).nullable().optional(),
   favoriteStore2: z.object({ id: z.string().optional(), name: z.string().optional() }).nullable().optional(),
   favoriteStore3: z.object({ id: z.string().optional(), name: z.string().optional() }).nullable().optional(),
+  // 企業設定フィールド
+  businessUrl: z.string().url('有効なURLを入力してください').optional().or(z.literal('')),
+  businessStoreId: z.string().optional(),
+  businessStoreName: z.string().optional(),
 });
 
 type ProfileFormValues = z.infer<typeof profileSchema>;
@@ -65,6 +69,9 @@ export default function ProfileEditPage() {
 
   // 🔥 追加：任意項目の開閉状態
   const [showOptionalFields, setShowOptionalFields] = useState(false);
+  
+  // 企業設定の状態管理
+  const [userRole, setUserRole] = useState<string | null>(null);
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
@@ -73,6 +80,10 @@ export default function ProfileEditPage() {
       favoriteStore1: null,
       favoriteStore2: null,
       favoriteStore3: null,
+      // 企業設定のデフォルト値
+      businessUrl: '',
+      businessStoreId: '',
+      businessStoreName: '',
     },
     mode: 'onChange',
   });
@@ -102,6 +113,17 @@ export default function ProfileEditPage() {
     const loadProfile = async () => {
       if (status === "authenticated" && session?.user?.id) {
         try {
+          // ユーザーの役割を取得
+          const { data: userData, error: userError } = await supabase
+            .from('app_users')
+            .select('role')
+            .eq('id', session.user.id)
+            .single();
+
+          if (!userError && userData) {
+            setUserRole(userData.role);
+          }
+
           const { data: profile, error } = await supabase
             .from('app_profiles')
             .select('*')
@@ -135,6 +157,13 @@ export default function ProfileEditPage() {
                 id: profile.favorite_store_3_id,
                 name: profile.favorite_store_3_name
               });
+            }
+
+            // 企業設定（businessユーザーのみ）
+            if (userData?.role === 'business') {
+              form.setValue('businessUrl', profile.business_url || '');
+              form.setValue('businessStoreId', profile.business_store_id || '');
+              form.setValue('businessStoreName', profile.business_store_name || '');
             }
 
             // アバター
@@ -348,6 +377,12 @@ export default function ProfileEditPage() {
         average_spending: averageSpending || null,
         shopping_style: shoppingStyle || null,
         data_consent: dataConsent,
+        // 企業設定（businessユーザーのみ）
+        ...(userRole === 'business' && {
+          business_url: values.businessUrl || null,
+          business_store_id: values.businessStoreId || null,
+          business_store_name: values.businessStoreName || null,
+        }),
         ...(shouldUpdateAvatar && { avatar_url: uploadedAvatarPath }),
       };
 
@@ -639,6 +674,85 @@ export default function ProfileEditPage() {
                 />
               </CardContent>
             </Card>
+
+            {/* 企業設定（businessユーザーのみ表示） */}
+            {userRole === 'business' && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center text-lg">
+                    <Building2 className="h-5 w-5 mr-2 text-blue-600" />
+                    企業アカウント設定
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* 企業URL */}
+                  <FormField
+                    control={form.control}
+                    name="businessUrl"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="flex items-center space-x-2">
+                          <LinkIcon className="h-4 w-4" />
+                          <span>企業URL</span>
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            type="url"
+                            placeholder="https://example.com"
+                            {...field}
+                            disabled={isSaving}
+                            style={{ fontSize: '16px' }}
+                            autoComplete="url"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                        <p className="text-sm text-gray-500">
+                          投稿時に自動的にリンクとして設定されます
+                        </p>
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* デフォルト店舗 */}
+                  <FormField
+                    control={form.control}
+                    name="businessStoreId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="flex items-center space-x-2">
+                          <MapPin className="h-4 w-4" />
+                          <span>デフォルト店舗</span>
+                        </FormLabel>
+                        <FormControl>
+                          <FavoriteStoreInput
+                            value={{ 
+                              id: field.value || '', 
+                              name: form.getValues("businessStoreName") || '' 
+                            }}
+                            onChange={(store) => {
+                              if (store) {
+                                form.setValue("businessStoreId", store.id);
+                                form.setValue("businessStoreName", store.name);
+                              } else {
+                                form.setValue("businessStoreId", "");
+                                form.setValue("businessStoreName", "");
+                              }
+                            }}
+                            placeholder="デフォルトの店舗を選択してください"
+                            disabled={isSaving}
+                            style={{ fontSize: '16px' }}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                        <p className="text-sm text-gray-500">
+                          投稿時に自動的に場所として設定されます
+                        </p>
+                      </FormItem>
+                    )}
+                  />
+                </CardContent>
+              </Card>
+            )}
 
             {/* 🔥 追加：任意項目のトグルボタン */}
             <Card>

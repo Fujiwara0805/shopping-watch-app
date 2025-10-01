@@ -100,6 +100,14 @@ export default function PostPage() {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [formDataToSubmit, setFormDataToSubmit] = useState<PostFormValues | null>(null);
   
+  // 企業設定の状態管理
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [businessSettings, setBusinessSettings] = useState<{
+    business_url?: string | null;
+    business_store_id?: string | null;
+    business_store_name?: string | null;
+  } | null>(null);
+  
   // 🔥 複数ファイル対応を追加
   const [fileFiles, setFileFiles] = useState<File[]>([]);
   const [filePreviewUrls, setFilePreviewUrls] = useState<string[]>([]);
@@ -658,6 +666,57 @@ export default function PostPage() {
       router.replace(`/login?callbackUrl=${encodeURIComponent(window.location.pathname)}`);
     }
   }, [session, status, router]);
+
+  // 企業設定の読み込みとフォーム自動入力
+  useEffect(() => {
+    const loadBusinessSettings = async () => {
+      if (!session?.user?.id) return;
+
+      try {
+        // ユーザーの役割を取得
+        const { data: userData, error: userError } = await supabase
+          .from('app_users')
+          .select('role')
+          .eq('id', session.user.id)
+          .single();
+
+        if (!userError && userData) {
+          setUserRole(userData.role);
+
+          // businessユーザーの場合、企業設定を取得
+          if (userData.role === 'business') {
+            const { data: profileData, error: profileError } = await supabase
+              .from('app_profiles')
+              .select('business_url, business_store_id, business_store_name')
+              .eq('user_id', session.user.id)
+              .single();
+
+            if (!profileError && profileData) {
+              setBusinessSettings(profileData);
+
+              // フォームに自動入力
+              if (profileData.business_url) {
+                form.setValue('url', profileData.business_url);
+              }
+              if (profileData.business_store_id && profileData.business_store_name) {
+                form.setValue('storeId', profileData.business_store_id);
+                form.setValue('storeName', profileData.business_store_name);
+                
+                // 位置情報は店舗選択時に自動的に設定されるため、ここでは設定しない
+                // Google Places APIの直接呼び出しはCORSエラーを引き起こすため削除
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.error('企業設定の読み込みエラー:', error);
+      }
+    };
+
+    if (status !== 'loading') {
+      loadBusinessSettings();
+    }
+  }, [session?.user?.id, status, form]);
 
   // 🔥 位置情報取得の改善
   useEffect(() => {
