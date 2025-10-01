@@ -106,12 +106,62 @@ const getReleaseTypeBadge = (type: ReleaseType) => {
 // サンプルリリースノートデータ
 const releaseNotes: ReleaseNote[] = [
   {
+    version: '1.2.2',
+    date: '2025-10-01',
+    type: 'minor',
+    title: '店舗位置情報の自動取得とカテゴリシステムの大幅改善',
+    description: 'Google Places APIを活用した店舗位置情報の自動取得機能を追加し、投稿時の利便性を大幅に向上させました。また、カテゴリシステムを「空席状況」「在庫状況」「PR」の3つに再編成し、より直感的で使いやすい分類システムを実現しました。',
+    isLatest: true,
+    changes: [
+      {
+        type: 'new',
+        title: 'Google Places API連携による位置情報自動取得',
+        description: '店舗選択時にGoogle Places JavaScript APIを使用して自動的に位置情報を取得する機能を実装。ユーザーが手動で位置情報を入力する手間を大幅に削減し、より正確な位置情報を提供します。'
+      },
+      {
+        type: 'new',
+        title: '企業設定の状態管理システム',
+        description: 'ユーザーの役割（role）に応じた企業情報の自動入力機能を実装。ビジネスユーザー向けの設定を強化し、企業情報の管理を効率化しました。'
+      },
+      {
+        type: 'new',
+        title: '投稿カードURL表示機能',
+        description: '投稿カードにURL情報を表示する機能を追加。投稿者が設定したリンク情報をユーザーが直接確認できるようになり、より詳細な情報提供が可能になりました。'
+      },
+      {
+        type: 'improvement',
+        title: 'カテゴリシステムの大幅再編成',
+        description: '従来の「飲食店」「小売店」「イベント集客」から「空席状況」「在庫状況」「PR」の3つのカテゴリに再編成。より明確で直感的な分類により、ユーザーが求める情報を見つけやすくなりました。'
+      },
+      {
+        type: 'improvement',
+        title: '「おとく板」から「掲示板」への名称統一',
+        description: '「おとく板」を「掲示板」に名称変更し、関連する説明文やUI要素を更新。ユーザーにとっての理解を深め、地域密着型コミュニティアプリの一貫性を向上させました。'
+      },
+      {
+        type: 'improvement',
+        title: 'プロフィール編集ページの企業設定強化',
+        description: 'プロフィール編集ページに企業設定フィールドを追加し、ビジネスユーザー向けの設定を強化。ユーザーの役割に応じた適切な情報管理が可能になりました。'
+      },
+      {
+        type: 'improvement',
+        title: '店舗検索機能の向上',
+        description: 'Google Places APIとの連携により、店舗検索の精度と速度を向上。より正確な店舗情報の取得と表示が可能になりました。'
+      },
+      {
+        type: 'improvement',
+        title: 'UI/UXの一貫性向上',
+        description: 'カテゴリシステムの変更に伴い、関連するUI要素や説明文を日本語で適切に修正。シンプルでクールなデザインを維持しながら、ユーザビリティを向上させました。'
+      }
+    ]
+  },
+  {
     version: '1.2.1',
     date: '2025-09-28',
     type: 'patch',
     title: 'ビジネス認証システムの導入と投稿機能の改善',
     description: 'トクドクが認証した企業の投稿に「認証済み」バッジを表示する機能を追加しました。また、投稿画面の画像表示機能を強化し、より使いやすい投稿体験を提供します。',
-    isLatest: true,
+    isLatest: false,
     changes: [
       {
         type: 'new',
@@ -967,7 +1017,7 @@ export default function ReleaseNotesPage() {
         >
           <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 text-center border border-blue-200">
             <Smartphone className="h-6 w-6 mx-auto text-blue-600 mb-2" />
-            <p className="text-lg font-bold text-blue-900">v1.2.1</p>
+            <p className="text-lg font-bold text-blue-900">v1.2.2</p>
             <p className="text-xs text-blue-700">現在のバージョン</p>
           </div>
           <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4 text-center border border-green-200">
