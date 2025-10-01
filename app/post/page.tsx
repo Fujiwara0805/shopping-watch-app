@@ -702,8 +702,38 @@ export default function PostPage() {
                 form.setValue('storeId', profileData.business_store_id);
                 form.setValue('storeName', profileData.business_store_name);
                 
-                // 位置情報は店舗選択時に自動的に設定されるため、ここでは設定しない
-                // Google Places APIの直接呼び出しはCORSエラーを引き起こすため削除
+                // Google Places JavaScript APIを使用して位置情報を取得（遅延実行）
+                const fetchStoreLocation = () => {
+                  if (window.google && window.google.maps && window.google.maps.places) {
+                    try {
+                      const service = new window.google.maps.places.PlacesService(document.createElement('div'));
+                      const request = {
+                        placeId: profileData.business_store_id,
+                        fields: ['geometry']
+                      };
+                      
+                      service.getDetails(request, (place: google.maps.places.PlaceResult | null, status: google.maps.places.PlacesServiceStatus) => {
+                        if (status === window.google.maps.places.PlacesServiceStatus.OK && place?.geometry?.location) {
+                          const lat = place.geometry.location.lat();
+                          const lng = place.geometry.location.lng();
+                          form.setValue('store_latitude', lat);
+                          form.setValue('store_longitude', lng);
+                          console.log('企業設定: 店舗位置情報を設定しました', { lat, lng });
+                        } else {
+                          console.warn('企業設定: 店舗位置情報の取得に失敗しました', status);
+                        }
+                      });
+                    } catch (error) {
+                      console.error('企業設定: 店舗位置情報の取得エラー:', error);
+                    }
+                  } else {
+                    // Google Maps APIが読み込まれていない場合は少し待ってから再試行
+                    setTimeout(fetchStoreLocation, 1000);
+                  }
+                };
+                
+                // 少し遅延させてから実行（Google Maps APIの読み込み完了を待つ）
+                setTimeout(fetchStoreLocation, 500);
               }
             }
           }
