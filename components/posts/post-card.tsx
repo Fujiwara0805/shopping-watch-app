@@ -16,6 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import React from 'react';
 import { ExtendedPostWithAuthor } from '@/types/timeline';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 
 function formatRemainingTime(expiresAt: number): string {
   const now = Date.now();
@@ -383,9 +384,13 @@ export const PostCard = memo(({
   const [showImageModal, setShowImageModal] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   
+  // 🔥 追加：ログイン必要モーダル関連
+  const [showLoginRequiredModal, setShowLoginRequiredModal] = useState(false);
+  
   const { toast } = useToast();
   const cardRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+  const { data: session, status } = useSession();
 
   const isMyPost = isOwnPost || (post.author_user_id === currentUserId);
 
@@ -434,6 +439,12 @@ export const PostCard = memo(({
     
     if (isLiking) return;
     
+    // 🔥 修正：ログインしていない場合はモーダルを表示
+    if (status === 'unauthenticated' || !session) {
+      setShowLoginRequiredModal(true);
+      return;
+    }
+    
     if (isMyPost && currentUserId) {
       toast({
         title: "自分の投稿にはいいねできません",
@@ -441,32 +452,11 @@ export const PostCard = memo(({
       });
       return;
     }
-
-    if (!currentUserId) {
-      const anonymousLikes = JSON.parse(localStorage.getItem('anonymousLikes') || '[]');
-      const alreadyLiked = anonymousLikes.includes(post.id);
-      
-      if (alreadyLiked && !isLiked) {
-        setAnonymousLikedPosts(prev => prev.filter(id => id !== post.id));
-        return;
-      } else if (!alreadyLiked && isLiked) {
-        setAnonymousLikedPosts(prev => [...prev, post.id]);
-        return;
-      }
-    }
     
     if (onLike) {
       setIsLiking(true);
       try {
         await onLike(post.id, !isLiked);
-        
-        if (!currentUserId) {
-          if (!isLiked) {
-            setAnonymousLikedPosts(prev => [...prev, post.id]);
-          } else {
-            setAnonymousLikedPosts(prev => prev.filter(id => id !== post.id));
-          }
-        }
       } catch (error) {
         console.error('いいね処理エラー:', error);
         toast({
@@ -478,7 +468,7 @@ export const PostCard = memo(({
         setIsLiking(false);
       }
     }
-  }, [onLike, post.id, isLiked, isLiking, toast, isMyPost, currentUserId]);
+  }, [onLike, post.id, isLiked, isLiking, toast, isMyPost, currentUserId, status, session]);
 
   const handleShareClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
@@ -1555,6 +1545,41 @@ export const PostCard = memo(({
             <XIcon className="h-4 w-4 mr-2" />
             閉じる
           </Button>
+        </div>
+      </CustomModal>
+
+      {/* ログイン必要モーダル */}
+      <CustomModal
+        isOpen={showLoginRequiredModal}
+        onClose={() => setShowLoginRequiredModal(false)}
+        title="ログインが必要です"
+        description="行くよボタンを押すにはログインが必要です"
+      >
+        <div className="space-y-4">
+          <div className="text-center">
+            <Footprints className="h-12 w-12 text-red-500 mx-auto mb-4" />
+            <p className="text-gray-600">
+              行くよボタンを押すには、<br />ログインする必要があります。
+            </p>
+          </div>
+          <div className="flex space-x-3">
+            <Button
+              variant="outline"
+              onClick={() => setShowLoginRequiredModal(false)}
+              className="flex-1"
+            >
+              キャンセル
+            </Button>
+            <Button
+              onClick={() => {
+                setShowLoginRequiredModal(false);
+                router.push('/login');
+              }}
+              className="flex-1"
+            >
+              ログインする
+            </Button>
+          </div>
         </div>
       </CustomModal>
     </>
