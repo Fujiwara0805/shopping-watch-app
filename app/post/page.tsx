@@ -106,7 +106,14 @@ export default function PostPage() {
     business_url?: string | null;
     business_store_id?: string | null;
     business_store_name?: string | null;
+    business_default_content?: string | null;
+    business_default_phone?: string | null;
+    business_default_image_path?: string | null;
+    business_default_coupon?: string | null;
   } | null>(null);
+  
+  // 企業設定のデフォルト画像URL用の状態
+  const [businessDefaultImageUrls, setBusinessDefaultImageUrls] = useState<string[]>([]);
   
   // 🔥 複数ファイル対応を追加
   const [fileFiles, setFileFiles] = useState<File[]>([]);
@@ -336,6 +343,12 @@ export default function PostPage() {
         console.log("PostPage: Multiple images uploaded to Supabase Storage. Public URLs:", imageUrls);
       }
 
+      // 企業設定のデフォルト画像URLがある場合は追加
+      if (businessDefaultImageUrls.length > 0 && imageFiles.length === 0) {
+        imageUrls = [...businessDefaultImageUrls];
+        console.log("PostPage: Using business default image URLs:", imageUrls);
+      }
+
       // 🔥 複数ファイルのアップロード処理
       if (fileFiles.length > 0) {
         const uploadPromises = fileFiles.map(async (file, index) => {
@@ -496,14 +509,14 @@ export default function PostPage() {
         }
       }
 
-      // フォームリセット（電話番号を追加）
-      form.reset({
-        storeId: '',
-        storeName: '',
-        category: '空席状況',
-        content: '',
-        url: '',
-        expiryOption: '30m',
+      // フォームリセット（企業設定を考慮）
+      const resetValues = {
+        storeId: businessSettings?.business_store_id || '',
+        storeName: businessSettings?.business_store_name || '',
+        category: '空席状況' as const,
+        content: businessSettings?.business_default_content || '',
+        url: businessSettings?.business_url || '',
+        expiryOption: '30m' as const,
         customExpiryMinutes: undefined,
         location_lat: undefined,
         location_lng: undefined,
@@ -514,11 +527,18 @@ export default function PostPage() {
         supportPurchaseOptions: [],
         remainingSlots: undefined,
         customerSituation: '',
-        couponCode: '',
-        phoneNumber: '', // 🔥 電話番号のリセットを追加
-      });
+        couponCode: businessSettings?.business_default_coupon || '',
+        phoneNumber: businessSettings?.business_default_phone || '',
+      };
+      
+      form.reset(resetValues);
       setImageFiles([]);
-      setImagePreviewUrls([]);
+      // 企業設定のデフォルト画像がある場合は保持
+      if (businessDefaultImageUrls.length > 0) {
+        setImagePreviewUrls([...businessDefaultImageUrls]);
+      } else {
+        setImagePreviewUrls([]);
+      }
       setFileFiles([]);
       setFilePreviewUrls([]);
       setSelectedPlace(null);
@@ -687,7 +707,7 @@ export default function PostPage() {
           if (userData.role === 'business') {
             const { data: profileData, error: profileError } = await supabase
               .from('app_profiles')
-              .select('business_url, business_store_id, business_store_name')
+              .select('business_url, business_store_id, business_store_name, business_default_content, business_default_phone, business_default_image_path, business_default_coupon')
               .eq('user_id', session.user.id)
               .single();
 
@@ -701,40 +721,59 @@ export default function PostPage() {
               if (profileData.business_store_id && profileData.business_store_name) {
                 form.setValue('storeId', profileData.business_store_id);
                 form.setValue('storeName', profileData.business_store_name);
-                
-                // Google Places JavaScript APIを使用して位置情報を取得（遅延実行）
-                const fetchStoreLocation = () => {
-                  if (window.google && window.google.maps && window.google.maps.places) {
-                    try {
-                      const service = new window.google.maps.places.PlacesService(document.createElement('div'));
-                      const request = {
-                        placeId: profileData.business_store_id,
-                        fields: ['geometry']
-                      };
-                      
-                      service.getDetails(request, (place: google.maps.places.PlaceResult | null, status: google.maps.places.PlacesServiceStatus) => {
-                        if (status === window.google.maps.places.PlacesServiceStatus.OK && place?.geometry?.location) {
-                          const lat = place.geometry.location.lat();
-                          const lng = place.geometry.location.lng();
-                          form.setValue('store_latitude', lat);
-                          form.setValue('store_longitude', lng);
-                          console.log('企業設定: 店舗位置情報を設定しました', { lat, lng });
-                        } else {
-                          console.warn('企業設定: 店舗位置情報の取得に失敗しました', status);
-                        }
-                      });
-                    } catch (error) {
-                      console.error('企業設定: 店舗位置情報の取得エラー:', error);
-                    }
-                  } else {
-                    // Google Maps APIが読み込まれていない場合は少し待ってから再試行
-                    setTimeout(fetchStoreLocation, 1000);
-                  }
-                };
-                
-                // 少し遅延させてから実行（Google Maps APIの読み込み完了を待つ）
-                setTimeout(fetchStoreLocation, 500);
               }
+              // 追加設定項目の自動入力
+              if (profileData.business_default_content) {
+                form.setValue('content', profileData.business_default_content);
+              }
+              if (profileData.business_default_phone) {
+                form.setValue('phoneNumber', profileData.business_default_phone);
+              }
+              if (profileData.business_default_coupon) {
+                form.setValue('couponCode', profileData.business_default_coupon);
+              }
+              // デフォルト画像パスがある場合の処理
+              if (profileData.business_default_image_path) {
+                // 企業設定のデフォルト画像パスから公開URLを生成
+                const { data: { publicUrl } } = supabase.storage
+                  .from('images')
+                  .getPublicUrl(profileData.business_default_image_path);
+                setBusinessDefaultImageUrls([publicUrl]);
+                setImagePreviewUrls([publicUrl]);
+              }
+                
+              // Google Places JavaScript APIを使用して位置情報を取得（遅延実行）
+              const fetchStoreLocation = () => {
+                if (window.google && window.google.maps && window.google.maps.places) {
+                  try {
+                    const service = new window.google.maps.places.PlacesService(document.createElement('div'));
+                    const request = {
+                      placeId: profileData.business_store_id,
+                      fields: ['geometry']
+                    };
+                    
+                    service.getDetails(request, (place: google.maps.places.PlaceResult | null, status: google.maps.places.PlacesServiceStatus) => {
+                      if (status === window.google.maps.places.PlacesServiceStatus.OK && place?.geometry?.location) {
+                        const lat = place.geometry.location.lat();
+                        const lng = place.geometry.location.lng();
+                        form.setValue('store_latitude', lat);
+                        form.setValue('store_longitude', lng);
+                        console.log('企業設定: 店舗位置情報を設定しました', { lat, lng });
+                      } else {
+                        console.warn('企業設定: 店舗位置情報の取得に失敗しました', status);
+                      }
+                    });
+                  } catch (error) {
+                    console.error('企業設定: 店舗位置情報の取得エラー:', error);
+                  }
+                } else {
+                  // Google Maps APIが読み込まれていない場合は少し待ってから再試行
+                  setTimeout(fetchStoreLocation, 1000);
+                }
+              };
+              
+              // 少し遅延させてから実行（Google Maps APIの読み込み完了を待つ）
+              setTimeout(fetchStoreLocation, 500);
             }
           }
         }

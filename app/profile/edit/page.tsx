@@ -12,11 +12,12 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
-import { Loader2, User as UserIcon, Info, Image as ImageIcon, X, Upload, Store, Baby, MapPin, Briefcase, ShoppingCart, Check, Save, Trash2, ChevronDown, ChevronUp, Building2, Link as LinkIcon } from 'lucide-react';
+import { Loader2, User as UserIcon, Info, Image as ImageIcon, X, Upload, Store, Baby, MapPin, Briefcase, ShoppingCart, Check, Save, Trash2, ChevronDown, ChevronUp, Building2, Link as LinkIcon, FileText, Phone, Tag } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { v4 as uuidv4 } from 'uuid';
 import FavoriteStoreInput from '@/components/profile/FavoriteStoreInput';
@@ -33,6 +34,10 @@ const profileSchema = z.object({
   businessUrl: z.string().url('有効なURLを入力してください').optional().or(z.literal('')),
   businessStoreId: z.string().optional(),
   businessStoreName: z.string().optional(),
+  // 企業用追加設定フィールド
+  businessDefaultContent: z.string().max(240, { message: '240文字以内で入力してください' }).optional(),
+  businessDefaultPhone: z.string().max(15, { message: '15文字以内で入力してください' }).optional(),
+  businessDefaultCoupon: z.string().max(50, { message: '50文字以内で入力してください' }).optional(),
 });
 
 type ProfileFormValues = z.infer<typeof profileSchema>;
@@ -73,6 +78,13 @@ export default function ProfileEditPage() {
   // 企業設定の状態管理
   const [userRole, setUserRole] = useState<string | null>(null);
 
+  // 企業用デフォルト画像の状態管理
+  const [businessDefaultImageFile, setBusinessDefaultImageFile] = useState<File | null>(null);
+  const [businessDefaultImagePreviewUrl, setBusinessDefaultImagePreviewUrl] = useState<string | null>(null);
+  const [currentBusinessDefaultImageUrl, setCurrentBusinessDefaultImageUrl] = useState<string | null>(null);
+  const [currentBusinessDefaultImagePath, setCurrentBusinessDefaultImagePath] = useState<string | null>(null);
+  const [isBusinessDefaultImageMarkedForDeletion, setIsBusinessDefaultImageMarkedForDeletion] = useState(false);
+
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
@@ -84,6 +96,10 @@ export default function ProfileEditPage() {
       businessUrl: '',
       businessStoreId: '',
       businessStoreName: '',
+      // 企業用追加設定のデフォルト値
+      businessDefaultContent: '',
+      businessDefaultPhone: '',
+      businessDefaultCoupon: '',
     },
     mode: 'onChange',
   });
@@ -126,7 +142,7 @@ export default function ProfileEditPage() {
 
           const { data: profile, error } = await supabase
             .from('app_profiles')
-            .select('*')
+            .select('*, business_default_content, business_default_phone, business_default_image_path, business_default_coupon')
             .eq('user_id', session.user.id)
             .single();
 
@@ -164,6 +180,19 @@ export default function ProfileEditPage() {
               form.setValue('businessUrl', profile.business_url || '');
               form.setValue('businessStoreId', profile.business_store_id || '');
               form.setValue('businessStoreName', profile.business_store_name || '');
+              // 企業用追加設定
+              form.setValue('businessDefaultContent', profile.business_default_content || '');
+              form.setValue('businessDefaultPhone', profile.business_default_phone || '');
+              form.setValue('businessDefaultCoupon', profile.business_default_coupon || '');
+              
+              // 企業用デフォルト画像
+              if (profile.business_default_image_path) {
+                setCurrentBusinessDefaultImagePath(profile.business_default_image_path);
+                const { data: { publicUrl } } = supabase.storage
+                  .from('images')
+                  .getPublicUrl(profile.business_default_image_path);
+                setCurrentBusinessDefaultImageUrl(publicUrl);
+              }
             }
 
             // アバター
@@ -223,6 +252,28 @@ export default function ProfileEditPage() {
     }
   };
 
+  // 企業用デフォルト画像のアップロード処理
+  const handleBusinessDefaultImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        setSubmitError("ファイルサイズは5MB以下にしてください。");
+        setBusinessDefaultImageFile(null);
+        setBusinessDefaultImagePreviewUrl(null);
+        e.target.value = '';
+        return;
+      }
+      setBusinessDefaultImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setBusinessDefaultImagePreviewUrl(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+      setSubmitError(null);
+      setIsBusinessDefaultImageMarkedForDeletion(false);
+    }
+  };
+
   // 修正：アバター削除処理を改善
   const removeAvatar = () => {
     setAvatarFile(null);
@@ -233,6 +284,19 @@ export default function ProfileEditPage() {
     // 既存のアバターがある場合は削除マークを付ける
     if (currentAvatarUrl) {
       setIsAvatarMarkedForDeletion(true);
+    }
+  };
+
+  // 企業用デフォルト画像の削除処理
+  const removeBusinessDefaultImage = () => {
+    setBusinessDefaultImageFile(null);
+    setBusinessDefaultImagePreviewUrl(null);
+    const fileInput = document.getElementById('business-default-image-upload') as HTMLInputElement;
+    if (fileInput) fileInput.value = '';
+    
+    // 既存の画像がある場合は削除マークを付ける
+    if (currentBusinessDefaultImageUrl) {
+      setIsBusinessDefaultImageMarkedForDeletion(true);
     }
   };
 
@@ -302,6 +366,8 @@ export default function ProfileEditPage() {
 
     let uploadedAvatarPath: string | null = null;
     let shouldUpdateAvatar = false;
+    let uploadedBusinessDefaultImagePath: string | null = null;
+    let shouldUpdateBusinessDefaultImage = false;
 
     try {
       // アバター処理
@@ -352,6 +418,53 @@ export default function ProfileEditPage() {
         shouldUpdateAvatar = true;
       }
 
+      // 企業用デフォルト画像処理
+      if (userRole === 'business') {
+        if (isBusinessDefaultImageMarkedForDeletion) {
+          // 既存の企業用デフォルト画像を削除
+          if (currentBusinessDefaultImagePath) {
+            const { error: deleteError } = await supabase.storage
+              .from('images')
+              .remove([currentBusinessDefaultImagePath]);
+            
+            if (deleteError) {
+              console.error('既存企業デフォルト画像削除エラー:', deleteError);
+            }
+          }
+          uploadedBusinessDefaultImagePath = null;
+          shouldUpdateBusinessDefaultImage = true;
+        } else if (businessDefaultImageFile) {
+          // 新しい企業用デフォルト画像をアップロード
+          if (currentBusinessDefaultImagePath) {
+            const { error: deleteError } = await supabase.storage
+              .from('images')
+              .remove([currentBusinessDefaultImagePath]);
+            
+            if (deleteError) {
+              console.error('既存企業デフォルト画像削除エラー:', deleteError);
+            }
+          }
+
+          const fileExt = businessDefaultImageFile.name.split('.').pop();
+          const userFolder = session.user.id;
+          const uniqueFileName = `business_default_${uuidv4()}.${fileExt}`;
+          const objectPath = `${userFolder}/${uniqueFileName}`;
+
+          const { error: uploadError } = await supabase.storage
+            .from('images')
+            .upload(objectPath, businessDefaultImageFile, {
+              cacheControl: '3600',
+              upsert: true,
+            });
+
+          if (uploadError) {
+            throw new Error(`企業デフォルト画像のアップロードに失敗しました: ${uploadError.message}`);
+          }
+          uploadedBusinessDefaultImagePath = objectPath;
+          shouldUpdateBusinessDefaultImage = true;
+        }
+      }
+
       // プロフィールデータの更新（bioを除外）
       const updateData = {
         display_name: values.username,
@@ -382,6 +495,11 @@ export default function ProfileEditPage() {
           business_url: values.businessUrl || null,
           business_store_id: values.businessStoreId || null,
           business_store_name: values.businessStoreName || null,
+          // 企業用追加設定
+          business_default_content: values.businessDefaultContent || null,
+          business_default_phone: values.businessDefaultPhone || null,
+          business_default_coupon: values.businessDefaultCoupon || null,
+          ...(shouldUpdateBusinessDefaultImage && { business_default_image_path: uploadedBusinessDefaultImagePath }),
         }),
         ...(shouldUpdateAvatar && { avatar_url: uploadedAvatarPath }),
       };
@@ -685,6 +803,9 @@ export default function ProfileEditPage() {
                     <Building2 className="h-5 w-5 mr-2 text-blue-600" />
                     企業アカウント設定
                   </CardTitle>
+                  <p className="text-sm text-gray-600 mt-2">
+                    ここで設定した情報は、投稿時に自動的に入力されます。
+                  </p>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {/* 企業URL */}
@@ -708,14 +829,11 @@ export default function ProfileEditPage() {
                           />
                         </FormControl>
                         <FormMessage />
-                        <p className="text-sm text-gray-500">
-                          投稿時に自動的にリンクとして設定されます
-                        </p>
                       </FormItem>
                     )}
                   />
 
-                  {/* デフォルト店舗 */}
+                  {/* 店舗 */}
                   <FormField
                     control={form.control}
                     name="businessStoreId"
@@ -723,7 +841,7 @@ export default function ProfileEditPage() {
                       <FormItem>
                         <FormLabel className="flex items-center space-x-2">
                           <MapPin className="h-4 w-4" />
-                          <span>デフォルト店舗</span>
+                          <span>店舗</span>
                         </FormLabel>
                         <FormControl>
                           <FavoriteStoreInput
@@ -740,15 +858,148 @@ export default function ProfileEditPage() {
                                 form.setValue("businessStoreName", "");
                               }
                             }}
-                            placeholder="デフォルトの店舗を選択してください"
+                            placeholder="店舗を選択してください"
                             disabled={isSaving}
                             style={{ fontSize: '16px' }}
                           />
                         </FormControl>
                         <FormMessage />
-                        <p className="text-sm text-gray-500">
-                          投稿時に自動的に場所として設定されます
-                        </p>
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* 投稿内容 */}
+                  <FormField
+                    control={form.control}
+                    name="businessDefaultContent"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="flex items-center space-x-2">
+                          <FileText className="h-4 w-4" />
+                          <span>投稿内容</span>
+                        </FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="企業の投稿で毎回使用する内容を入力してください（240文字以内）"
+                            {...field}
+                            disabled={isSaving}
+                            style={{ fontSize: '16px' }}
+                            rows={8}
+                            maxLength={240}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* 電話番号 */}
+                  <FormField
+                    control={form.control}
+                    name="businessDefaultPhone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="flex items-center space-x-2">
+                          <Phone className="h-4 w-4" />
+                          <span>電話番号</span>
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            type="tel"
+                            placeholder="03-1234-5678"
+                            {...field}
+                            disabled={isSaving}
+                            style={{ fontSize: '16px' }}
+                            maxLength={15}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* 画像 */}
+                  <FormItem>
+                    <FormLabel className="text-lg flex items-center font-semibold">
+                      <ImageIcon className="mr-2 h-5 w-5" />
+                      画像
+                    </FormLabel>
+                    <FormControl>
+                      <div className="flex flex-col items-center space-y-3 p-6 border-2 border-dashed rounded-lg">
+                        <Input
+                          id="business-default-image-upload"
+                          type="file"
+                          accept="image/png, image/jpeg, image/webp"
+                          onChange={handleBusinessDefaultImageUpload}
+                          className="hidden"
+                          disabled={isSaving}
+                        />
+                        {(businessDefaultImagePreviewUrl || (currentBusinessDefaultImageUrl && !isBusinessDefaultImageMarkedForDeletion)) ? (
+                          <div className="relative group">
+                            <img 
+                              src={businessDefaultImagePreviewUrl || currentBusinessDefaultImageUrl || ''} 
+                              alt="企業デフォルト画像プレビュー" 
+                              className="w-24 h-24 rounded-lg object-cover" 
+                            />
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="icon"
+                              className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity rounded-full"
+                              onClick={removeBusinessDefaultImage}
+                              disabled={isSaving}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <label htmlFor="business-default-image-upload" className="flex flex-col items-center space-y-2 cursor-pointer text-muted-foreground">
+                            <Upload className="h-12 w-12" />
+                            <p className="text-lg">画像をアップロード</p>
+                            <p className="text-sm">PNG, JPG, WEBP (最大5MB)</p>
+                          </label>
+                        )}
+                        
+                        {/* 削除予定の表示 */}
+                        {isBusinessDefaultImageMarkedForDeletion && (
+                          <div className="text-center text-red-600 text-sm">
+                            <p>画像は更新時に削除されます</p>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setIsBusinessDefaultImageMarkedForDeletion(false)}
+                              className="text-blue-600 hover:text-blue-700"
+                            >
+                              削除をキャンセル
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    </FormControl>
+                  </FormItem>
+
+                  {/* クーポン */}
+                  <FormField
+                    control={form.control}
+                    name="businessDefaultCoupon"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="flex items-center space-x-2">
+                          <Tag className="h-4 w-4" />
+                          <span>クーポン</span>
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            type="text"
+                            placeholder="例: 会計から100円引き、ドリンク1杯無料"
+                            {...field}
+                            disabled={isSaving}
+                            style={{ fontSize: '16px' }}
+                            maxLength={50}
+                          />
+                        </FormControl>
+                        <FormMessage />
                       </FormItem>
                     )}
                   />
