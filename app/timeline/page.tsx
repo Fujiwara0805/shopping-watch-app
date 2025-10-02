@@ -19,7 +19,6 @@ import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
-import { getAnonymousSessionId } from '@/lib/session';
 import { useToast } from '@/hooks/use-toast';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 
@@ -1395,7 +1394,7 @@ export default function Timeline() {
       let success = false;
       
       if (currentUserId) {
-        // ログインユーザーの場合
+        // ログインユーザーの場合のみビュー数を更新
         const { data, error } = await supabase.rpc('increment_post_view', {
           p_post_id: postId,
           p_viewer_user_id: currentUserId
@@ -1403,34 +1402,22 @@ export default function Timeline() {
         
         if (error) {
           console.error('ビュー数更新エラー (認証済み):', error);
-          throw error;
+          // エラーが発生してもUIの動作は継続
+          return;
         }
         
         success = data === true;
-      } else {
-        // 非ログインユーザーの場合
-        const sessionId = getAnonymousSessionId();
-        const { data, error } = await supabase.rpc('increment_post_view_anonymous', {
-          p_post_id: postId,
-          p_viewer_session_id: sessionId
-        });
         
-        if (error) {
-          console.error('ビュー数更新エラー (匿名):', error);
-          throw error;
+        // 成功した場合のみUIを更新
+        if (success) {
+          setPosts(prevPosts => prevPosts.map(p => 
+            p.id === postId 
+              ? { ...p, views_count: p.views_count + 1 }
+              : p
+          ));
         }
-        
-        success = data === true;
       }
-
-      // 成功した場合のみUIを更新
-      if (success) {
-        setPosts(prevPosts => prevPosts.map(p => 
-          p.id === postId 
-            ? { ...p, views_count: p.views_count + 1 }
-            : p
-        ));
-      }
+      // 匿名ユーザーの場合は何もしない（ビュー数カウントなし）
     } catch (error) {
       console.error('ビュー数の更新に失敗しました:', error);
       // エラーが発生してもUIの動作は継続
@@ -1519,10 +1506,10 @@ export default function Timeline() {
   }, [loadMorePosts]);
 
   // いいね処理の統合
-  const handleLike = useCallback(async (postId: string, isLiked: boolean) => {
+  const handleLike = useCallback(async (postId: string, newLikedState: boolean) => {
     try {
       if (currentUserId) {
-        await handleAuthenticatedLike(postId, isLiked);
+        await handleAuthenticatedLike(postId, newLikedState);
       } else {
         // 匿名ユーザーの場合は何もしない（PostCardでログインモーダルが表示される）
         return;
@@ -1534,8 +1521,8 @@ export default function Timeline() {
         p.id === postId 
           ? { 
               ...p, 
-              isLikedByCurrentUser: !isLiked, 
-              likes_count: isLiked ? p.likes_count - 1 : p.likes_count + 1
+              isLikedByCurrentUser: !newLikedState, 
+              likes_count: newLikedState ? p.likes_count - 1 : p.likes_count + 1
             } 
           : p
       ));
@@ -1543,34 +1530,59 @@ export default function Timeline() {
   }, [currentUserId]);
 
   // ログインユーザーのいいね処理
-  const handleAuthenticatedLike = async (postId: string, isLiked: boolean) => {
-    if (isLiked) {
-      const { error } = await supabase
+  const handleAuthenticatedLike = async (postId: string, newLikedState: boolean) => {
+    if (newLikedState) {
+      // いいねを追加
+      const { error: insertError } = await supabase
         .from('post_likes')
         .insert({ 
           post_id: postId, 
           user_id: currentUserId,
           created_at: new Date().toISOString()
         });
-      if (error) throw error;
+      if (insertError) throw insertError;
       
       setLikedPostIds(prev => [postId, ...prev.filter(id => id !== postId)]);
     } else {
-      const { error } = await supabase
+      // いいねを削除
+      const { error: deleteError } = await supabase
         .from('post_likes')
         .delete()
         .match({ post_id: postId, user_id: currentUserId });
-      if (error) throw error;
+      if (deleteError) throw deleteError;
       
       setLikedPostIds(prev => prev.filter(id => id !== postId));
+    }
+    
+    // post_likesテーブルから現在のいいね数を取得して更新
+    const { count, error: countError } = await supabase
+      .from('post_likes')
+      .select('*', { count: 'exact', head: true })
+      .eq('post_id', postId);
+    
+    if (countError) {
+      console.error('いいね数の取得エラー:', countError);
+      // エラーが発生してもUIは楽観的に更新
+    }
+    
+    const actualLikesCount = count || 0;
+    
+    // postsテーブルのlikes_countを実際の数に更新
+    const { error: updateError } = await supabase
+      .from('posts')
+      .update({ likes_count: actualLikesCount })
+      .eq('id', postId);
+    
+    if (updateError) {
+      console.error('いいね数の更新エラー:', updateError);
     }
     
     setPosts(prevPosts => prevPosts.map(p => 
       p.id === postId 
         ? { 
             ...p, 
-            isLikedByCurrentUser: isLiked, 
-            likes_count: isLiked ? p.likes_count + 1 : Math.max(0, p.likes_count - 1)
+            isLikedByCurrentUser: newLikedState, 
+            likes_count: actualLikesCount
           } 
         : p
     ));

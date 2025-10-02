@@ -448,8 +448,11 @@ export const PostCard = memo(({
     
     if (onLike) {
       setIsLiking(true);
+      const newLikedState = !isLiked;
+      
       try {
-        await onLike(post.id, !isLiked);
+        // 新しい状態（いいねを追加するかどうか）を渡す
+        await onLike(post.id, newLikedState);
       } catch (error) {
         console.error('いいね処理エラー:', error);
         toast({
@@ -941,7 +944,11 @@ export const PostCard = memo(({
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       if (post.url) {
-                                        window.open(post.url, '_blank', 'noopener,noreferrer');
+                                        // 新しいタブで開く（現在のタブは維持）
+                                        const newWindow = window.open(post.url, '_blank', 'noopener,noreferrer');
+                                        if (newWindow) {
+                                          newWindow.focus();
+                                        }
                                       }
                                     }}
                                     title={`${urlInfo.displayName}で開く: ${post.url}`}

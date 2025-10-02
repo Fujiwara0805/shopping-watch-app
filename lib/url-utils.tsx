@@ -108,7 +108,13 @@ export function getUrlInfo(url: string): UrlInfo {
     default:
       return {
         platform: 'other',
-        icon: Globe,
+        icon: ({ className }) => (
+          <CustomImageIcon 
+            src="https://res.cloudinary.com/dz9trbwma/image/upload/v1759366399/icons8-%E3%82%A6%E3%82%A7%E3%83%95%E3%82%99-100_a6uwwq.png"
+            alt="Webサイト"
+            className={className}
+          />
+        ),
         displayName: 'Webサイト',
         color: 'text-gray-600',
         bgColor: 'bg-gray-50 hover:bg-gray-100'
