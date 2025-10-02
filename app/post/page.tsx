@@ -190,6 +190,9 @@ export default function PostPage() {
   // 🔥 Stripe設定確認モーダルの状態
   const [showStripeSetupModal, setShowStripeSetupModal] = useState(false);
 
+  // 企業設定変更案内モーダルの状態
+  const [showBusinessSettingsModal, setShowBusinessSettingsModal] = useState(false);
+
   // 🔥 複数画像のクリーンアップ
   useEffect(() => {
     return () => {
@@ -969,8 +972,39 @@ export default function PostPage() {
     supportPurchase: false,
   });
 
+  // 企業設定で値が設定されているかチェックする関数
+  const isBusinessFieldSet = (field: keyof typeof optionalFieldsExpanded): boolean => {
+    if (userRole !== 'business' || !businessSettings) return false;
+    
+    switch (field) {
+      case 'location':
+        return !!(businessSettings.business_store_id && businessSettings.business_store_name);
+      case 'url':
+        return !!businessSettings.business_url;
+      case 'image':
+        return !!businessSettings.business_default_image_path;
+      case 'coupon':
+        return !!businessSettings.business_default_coupon;
+      case 'phoneNumber':
+        return !!businessSettings.business_default_phone;
+      default:
+        return false;
+    }
+  };
+
+  // 企業設定変更案内モーダルを表示する関数
+  const showBusinessSettingsGuide = () => {
+    setShowBusinessSettingsModal(true);
+  };
+
   // 🔥 オプションフィールドの切り替えと値のリセット（電話番号を追加）
   const toggleOptionalField = (field: keyof typeof optionalFieldsExpanded) => {
+    // 企業設定で値が設定されている場合はモーダルを表示
+    if (isBusinessFieldSet(field)) {
+      showBusinessSettingsGuide();
+      return;
+    }
+
     setOptionalFieldsExpanded(prev => {
       const newState = {
         ...prev,
@@ -1439,13 +1473,18 @@ export default function PostPage() {
                           size="sm"
                           onClick={() => toggleOptionalField('location')}
                           className={`justify-start transition-all duration-200 ${
-                            optionalFieldsExpanded.location 
+                            isBusinessFieldSet('location')
+                              ? 'bg-green-100 text-green-800 border-green-300 hover:bg-green-200'
+                              : optionalFieldsExpanded.location 
                               ? 'bg-primary text-primary-foreground border-primary hover:bg-primary/90' 
                               : 'bg-[#fafafa] text-[#73370c] border-gray-300 hover:bg-[#fafafa] hover:text-[#73370c]'
                           }`}
                         >
                           <StoreIcon className="mr-2 h-4 w-4" />
                           場所
+                          {isBusinessFieldSet('location') && (
+                            <span className="ml-1 text-xs">(設定済み)</span>
+                          )}
                         </Button>
                         <Button
                           type="button"
@@ -1467,13 +1506,18 @@ export default function PostPage() {
                           size="sm"
                           onClick={() => toggleOptionalField('url')}
                           className={`justify-start transition-all duration-200 ${
-                            optionalFieldsExpanded.url 
+                            isBusinessFieldSet('url')
+                              ? 'bg-green-100 text-green-800 border-green-300 hover:bg-green-200'
+                              : optionalFieldsExpanded.url 
                               ? 'bg-primary text-primary-foreground border-primary hover:bg-primary/90' 
                               : 'bg-[#fafafa] text-[#73370c] border-gray-300 hover:bg-[#fafafa] hover:text-[#73370c]'
                           }`}
                         >
                           <LinkIcon className="mr-2 h-4 w-4" />
                           リンク
+                          {isBusinessFieldSet('url') && (
+                            <span className="ml-1 text-xs">(設定済み)</span>
+                          )}
                         </Button>
                         <Button
                           type="button"
@@ -1481,13 +1525,18 @@ export default function PostPage() {
                           size="sm"
                           onClick={() => toggleOptionalField('image')}
                           className={`justify-start transition-all duration-200 ${
-                            optionalFieldsExpanded.image 
+                            isBusinessFieldSet('image')
+                              ? 'bg-green-100 text-green-800 border-green-300 hover:bg-green-200'
+                              : optionalFieldsExpanded.image 
                               ? 'bg-primary text-primary-foreground border-primary hover:bg-primary/90' 
                               : 'bg-[#fafafa] text-[#73370c] border-gray-300 hover:bg-[#fafafa] hover:text-[#73370c]'
                           }`}
                         >
                           <ImageIcon className="mr-2 h-4 w-4" />
                           画像
+                          {isBusinessFieldSet('image') && (
+                            <span className="ml-1 text-xs">(設定済み)</span>
+                          )}
                         </Button>
                         <Button
                           type="button"
@@ -1523,13 +1572,18 @@ export default function PostPage() {
                           size="sm"
                           onClick={() => toggleOptionalField('coupon')}
                           className={`justify-start transition-all duration-200 ${
-                            optionalFieldsExpanded.coupon 
+                            isBusinessFieldSet('coupon')
+                              ? 'bg-green-100 text-green-800 border-green-300 hover:bg-green-200'
+                              : optionalFieldsExpanded.coupon 
                               ? 'bg-primary text-primary-foreground border-primary hover:bg-primary/90' 
                               : 'bg-[#fafafa] text-[#73370c] border-gray-300 hover:bg-[#fafafa] hover:text-[#73370c]'
                           }`}
                         >
                           <Tag className="mr-2 h-4 w-4" />
                           クーポン
+                          {isBusinessFieldSet('coupon') && (
+                            <span className="ml-1 text-xs">(設定済み)</span>
+                          )}
                         </Button>
                         <Button
                           type="button"
@@ -1537,13 +1591,18 @@ export default function PostPage() {
                           size="sm"
                           onClick={() => toggleOptionalField('phoneNumber')}
                           className={`justify-start transition-all duration-200 ${
-                            optionalFieldsExpanded.phoneNumber 
+                            isBusinessFieldSet('phoneNumber')
+                              ? 'bg-green-100 text-green-800 border-green-300 hover:bg-green-200'
+                              : optionalFieldsExpanded.phoneNumber 
                               ? 'bg-primary text-primary-foreground border-primary hover:bg-primary/90' 
                               : 'bg-[#fafafa] text-[#73370c] border-gray-300 hover:bg-[#fafafa] hover:text-[#73370c]'
                           }`}
                         >
                           <Phone className="mr-2 h-4 w-4" />
                           電話番号
+                          {isBusinessFieldSet('phoneNumber') && (
+                            <span className="ml-1 text-xs">(設定済み)</span>
+                          )}
                         </Button>
                         <Button
                           type="button"
@@ -2390,6 +2449,45 @@ export default function PostPage() {
                   disabled={customHours * 60 + customMinutes > 720 || customHours * 60 + customMinutes === 0}
                 >
                   設定
+                </Button>
+              </div>
+            </div>
+          </CustomModal>
+
+          {/* 企業設定変更案内モーダル */}
+          <CustomModal
+            isOpen={showBusinessSettingsModal}
+            onClose={() => setShowBusinessSettingsModal(false)}
+            title="企業アカウント設定"
+          >
+            <div className="pt-2 space-y-4">
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <div className="flex items-start space-x-3">
+                  <Settings className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-green-800 mb-2">設定済みの項目です</h3>
+                    <p className="text-sm text-green-700 leading-relaxed">
+                      この項目は企業アカウント設定で既に設定されています。<br />
+                      変更する場合は、プロフィール画面の「企業アカウント設定」から修正してください。
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-3 pt-4">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowBusinessSettingsModal(false)}
+                >
+                  閉じる
+                </Button>
+                <Button 
+                  onClick={() => {
+                    setShowBusinessSettingsModal(false);
+                    router.push('/profile/edit');
+                  }}
+                >
+                  企業設定を変更
                 </Button>
               </div>
             </div>
