@@ -568,21 +568,21 @@ function ProfilePageContent() {
             </h3>
             
             <div className="space-y-2">
-              <SettingItem
-                icon={Settings}
-                title="アカウント設定"
-                description="プロフィール情報とお気に入り店舗の管理"
-                action={handleNavigateToAccountSettings}
-                loading={accountSettingsLoading}
-              />
-
-              {/* 企業アカウント設定 - businessロールの場合のみ表示 */}
-              {userRole === 'business' && (
+              {/* 企業アカウントの場合は企業設定のみ、通常アカウントの場合は通常のアカウント設定のみ表示 */}
+              {userRole === 'business' ? (
                 <SettingItem
                   icon={Building2}
                   title="企業アカウント設定"
                   description="企業用のURL・店舗情報の管理"
                   action={() => router.push('/profile/edit')}
+                />
+              ) : (
+                <SettingItem
+                  icon={Settings}
+                  title="アカウント設定"
+                  description="プロフィール情報とお気に入り店舗の管理"
+                  action={handleNavigateToAccountSettings}
+                  loading={accountSettingsLoading}
                 />
               )}
               

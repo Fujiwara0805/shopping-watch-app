@@ -604,76 +604,78 @@ export default function ProfileEditPage() {
               </CardContent>
             </Card>
 
-            {/* お気に入り店舗 */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center text-lg">
-                  <Store className="h-5 w-5 mr-2 text-green-600" />
-                  お気に入り店舗
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="favoriteStore1"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-sm font-medium">お気に入り店舗 1</FormLabel>
-                      <FormControl>
-                        <FavoriteStoreInput
-                          placeholder="店舗を検索して選択"
-                          value={field.value === null ? undefined : field.value}
-                          onChange={field.onChange}
-                          disabled={isSaving}
-                          style={{ fontSize: '16px' }}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+            {/* お気に入り店舗 - 企業アカウントでは非表示 */}
+            {userRole !== 'business' && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center text-lg">
+                    <Store className="h-5 w-5 mr-2 text-green-600" />
+                    お気に入り店舗
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="favoriteStore1"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-medium">お気に入り店舗 1</FormLabel>
+                        <FormControl>
+                          <FavoriteStoreInput
+                            placeholder="店舗を検索して選択"
+                            value={field.value === null ? undefined : field.value}
+                            onChange={field.onChange}
+                            disabled={isSaving}
+                            style={{ fontSize: '16px' }}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                <FormField
-                  control={form.control}
-                  name="favoriteStore2"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-sm font-medium">お気に入り店舗 2</FormLabel>
-                      <FormControl>
-                        <FavoriteStoreInput
-                          placeholder="店舗を検索して選択"
-                          value={field.value === null ? undefined : field.value}
-                          onChange={field.onChange}
-                          disabled={isSaving}
-                          style={{ fontSize: '16px' }}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                  <FormField
+                    control={form.control}
+                    name="favoriteStore2"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-medium">お気に入り店舗 2</FormLabel>
+                        <FormControl>
+                          <FavoriteStoreInput
+                            placeholder="店舗を検索して選択"
+                            value={field.value === null ? undefined : field.value}
+                            onChange={field.onChange}
+                            disabled={isSaving}
+                            style={{ fontSize: '16px' }}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                <FormField
-                  control={form.control}
-                  name="favoriteStore3"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-sm font-medium">お気に入り店舗 3</FormLabel>
-                      <FormControl>
-                        <FavoriteStoreInput
-                          placeholder="店舗を検索して選択"
-                          value={field.value === null ? undefined : field.value}
-                          onChange={field.onChange}
-                          disabled={isSaving}
-                          style={{ fontSize: '16px' }}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </CardContent>
-            </Card>
+                  <FormField
+                    control={form.control}
+                    name="favoriteStore3"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-medium">お気に入り店舗 3</FormLabel>
+                        <FormControl>
+                          <FavoriteStoreInput
+                            placeholder="店舗を検索して選択"
+                            value={field.value === null ? undefined : field.value}
+                            onChange={field.onChange}
+                            disabled={isSaving}
+                            style={{ fontSize: '16px' }}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </CardContent>
+              </Card>
+            )}
 
             {/* 企業設定（businessユーザーのみ表示） */}
             {userRole === 'business' && (
@@ -754,40 +756,41 @@ export default function ProfileEditPage() {
               </Card>
             )}
 
-            {/* 🔥 追加：任意項目のトグルボタン */}
-            <Card>
-              <CardHeader 
-                className="cursor-pointer hover:bg-gray-50 transition-colors"
-                onClick={() => setShowOptionalFields(!showOptionalFields)}
-              >
-                <CardTitle className="flex items-center justify-between text-lg">
-                  <div className="flex items-center">
-                    <Info className="h-5 w-5 mr-2 text-gray-600" />
-                    任意項目
-                    <Badge variant="secondary" className="ml-2 text-xs">
-                      より詳しく
-                    </Badge>
-                  </div>
-                  {showOptionalFields ? (
-                    <ChevronUp className="h-5 w-5 text-gray-500" />
-                  ) : (
-                    <ChevronDown className="h-5 w-5 text-gray-500" />
-                  )}
-                </CardTitle>
-                <p className="text-sm text-gray-600 mt-1">
-                  より詳細な情報を入力することで、パーソナライズされたサービスを提供できます
-                </p>
-              </CardHeader>
-              
-              <AnimatePresence>
-                {showOptionalFields && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    <CardContent className="space-y-6 pt-0">
+            {/* 任意項目 - 企業アカウントでは非表示 */}
+            {userRole !== 'business' && (
+              <Card>
+                <CardHeader 
+                  className="cursor-pointer hover:bg-gray-50 transition-colors"
+                  onClick={() => setShowOptionalFields(!showOptionalFields)}
+                >
+                  <CardTitle className="flex items-center justify-between text-lg">
+                    <div className="flex items-center">
+                      <Info className="h-5 w-5 mr-2 text-gray-600" />
+                      任意項目
+                      <Badge variant="secondary" className="ml-2 text-xs">
+                        より詳しく
+                      </Badge>
+                    </div>
+                    {showOptionalFields ? (
+                      <ChevronUp className="h-5 w-5 text-gray-500" />
+                    ) : (
+                      <ChevronDown className="h-5 w-5 text-gray-500" />
+                    )}
+                  </CardTitle>
+                  <p className="text-sm text-gray-600 mt-1">
+                    より詳細な情報を入力することで、パーソナライズされたサービスを提供できます
+                  </p>
+                </CardHeader>
+                
+                <AnimatePresence>
+                  {showOptionalFields && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <CardContent className="space-y-6 pt-0">
                       {/* 基本情報 */}
                       <div className="space-y-4">
                         <div className="flex items-center space-x-2 pt-4 border-t">
@@ -1112,12 +1115,13 @@ export default function ProfileEditPage() {
                             </SelectContent>
                           </Select>
                         </div>
-                      </div>
-                    </CardContent>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </Card>
+                        </div>
+                      </CardContent>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </Card>
+            )}
 
             {submitError && (
               <p className="text-base font-medium text-destructive bg-destructive/10 p-3 rounded-md">{submitError}</p>
