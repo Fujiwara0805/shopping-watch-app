@@ -388,6 +388,9 @@ export const PostCard = memo(({
   // 🔥 追加：ログイン必要モーダル関連
   const [showLoginRequiredModal, setShowLoginRequiredModal] = useState(false);
   
+  // 🔥 追加：認証バッジモーダル関連
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
+  
   const { toast } = useToast();
   const cardRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
@@ -788,9 +791,21 @@ export const PostCard = memo(({
                   {isMyPost ? (
                     <Badge variant="default" className="text-xs">自分の投稿</Badge>
                   ) : post.author?.role === 'business' && (
-                    <Badge variant="outline" className="text-sm bg-blue-50 text-blue-700 border-blue-200">
-                      <Star className="h-3 w-3 mr-1 fill-blue-500 text-blue-500" />
-                      認証済み
+                    <Badge 
+                      variant="outline" 
+                      className="text-sm bg-blue-50 text-blue-700 border-blue-200 cursor-pointer hover:bg-blue-100 transition-colors"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowVerificationModal(true);
+                      }}
+                      title="認証バッジについて詳しく見る"
+                    >
+                      <img 
+                        src="https://res.cloudinary.com/dz9trbwma/image/upload/v1759452658/icons8-%E3%83%8F%E3%82%99%E3%83%83%E3%82%B7%E3%82%99-40_b7ya9i.png" 
+                        alt="認証バッジ" 
+                        className="h-3 w-3 mr-1"
+                      />
+                      認証済
                     </Badge>
                   )}
                 </div>
@@ -1591,6 +1606,55 @@ export const PostCard = memo(({
               className="flex-1"
             >
               ログインする
+            </Button>
+          </div>
+        </div>
+      </CustomModal>
+
+      {/* 🔥 追加：認証バッジモーダル */}
+      <CustomModal
+        isOpen={showVerificationModal}
+        onClose={() => setShowVerificationModal(false)}
+        title="認証バッジについて"
+        description="トクドク加盟店様の証です"
+        className="max-w-md"
+      >
+        <div className="space-y-4">
+          <div className="text-center">
+            <img 
+              src="https://res.cloudinary.com/dz9trbwma/image/upload/v1759452658/icons8-%E3%83%8F%E3%82%99%E3%83%83%E3%82%B7%E3%82%99-40_b7ya9i.png" 
+              alt="認証バッジ" 
+              className="h-16 w-16 mx-auto mb-4"
+            />
+          </div>
+          
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <h3 className="font-semibold text-blue-800 mb-2">認証バッジとは</h3>
+            <p className="text-blue-700 text-sm leading-relaxed">
+              『トクドク』を導入いただいた加盟店様に付与するバッジです。
+            </p>
+          </div>
+
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+            <h3 className="font-semibold text-green-800 mb-2">加盟店様の特典</h3>
+            <p className="text-green-700 text-sm leading-relaxed">
+              投稿時の必要項目（住所、リンク、投稿内容など）をテンプレートで保存できる機能をご提供。変わる情報（残席や在庫状況）だけを入力するだけで手軽に投稿できます。
+            </p>
+          </div>
+
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+            <h3 className="font-semibold text-amber-800 mb-2">お問い合わせ</h3>
+            <p className="text-amber-700 text-sm leading-relaxed">
+              加盟店についてのお問い合わせは、SNSまたはお問い合わせフォームからご連絡ください。
+            </p>
+          </div>
+
+          <div className="flex justify-end">
+            <Button 
+              onClick={() => setShowVerificationModal(false)}
+              className="px-6"
+            >
+              閉じる
             </Button>
           </div>
         </div>
