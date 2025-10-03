@@ -1400,46 +1400,76 @@ export default function Timeline() {
     }
   };
 
-  // ビュー数増加処理
+  // ビュー数増加処理（適切な重複防止付き）
   const handleView = useCallback(async (postId: string) => {
+    console.log('🔍 ビュー処理開始:', postId);
+    
     try {
-      // セッションIDを生成または取得（ブラウザのsessionStorageを使用）
+      // クライアントサイドでの重複防止（高速化のため）
+      const viewedKey = `viewed_${postId}`;
+      if (localStorage.getItem(viewedKey)) {
+        console.log('❌ 既に視聴済み（localStorage）:', postId);
+        return; // 既に視聴済みの場合は何もしない
+      }
+
+      // セッションIDを確実に取得
       let sessionId = sessionStorage.getItem('viewer_session_id');
       if (!sessionId) {
         sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         sessionStorage.setItem('viewer_session_id', sessionId);
+        console.log('🆕 新しいセッションID:', sessionId);
       }
 
-      // IPアドレスとUser-Agentを取得
-      const clientInfo = await getClientInfo();
+      // IPアドレス取得
+      let clientInfo = { ip: null, userAgent: navigator.userAgent };
+      try {
+        const response = await fetch('/api/client-info');
+        clientInfo = await response.json();
+      } catch (e) {
+        console.log('IP取得失敗、デフォルト値使用');
+      }
       
-      // ログインユーザーの場合はapp_profile_idを、匿名の場合はsession_idを使用
+      console.log('📤 RPC呼び出し:', {
+        postId,
+        currentUserId,
+        sessionId,
+        clientInfo
+      });
+      
+      // RPC関数呼び出し
       const { data, error } = await supabase.rpc('increment_post_view', {
         p_post_id: postId,
         p_viewer_app_profile_id: currentUserId || null,
-        p_viewer_session_id: currentUserId ? null : sessionId,
+        p_viewer_session_id: sessionId,
+        p_view_type: 'timeline_view',
         p_ip_address: clientInfo.ip,
-        p_user_agent: clientInfo.userAgent,
-        p_view_type: 'detail_view'
+        p_user_agent: clientInfo.userAgent
       });
       
+      console.log('📨 RPC結果:', { data, error });
+      
       if (error) {
-        console.error('ビュー数更新エラー:', error);
+        console.error('❌ RPC エラー:', error);
         return;
       }
       
       const success = data === true;
       
-      // 成功した場合のみUIを更新
       if (success) {
+        // 成功した場合のみUIを更新し、localStorageに記録
+        localStorage.setItem(viewedKey, 'true');
         setPosts(prevPosts => prevPosts.map(p => 
           p.id === postId 
             ? { ...p, views_count: p.views_count + 1 }
             : p
         ));
+        console.log('✅ 視聴回数更新成功');
+      } else {
+        console.log('⚠️ データベース側で重複判定（既に視聴済み）');
       }
+      
     } catch (error) {
-      console.error('ビュー数の更新に失敗しました:', error);
+      console.error('💥 予期しないエラー:', error);
     }
   }, [currentUserId]);
 
