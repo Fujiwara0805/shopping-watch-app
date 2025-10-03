@@ -1388,39 +1388,58 @@ export default function Timeline() {
     }
   }, [currentUserRole]);
 
+  // IPアドレスを取得する関数
+  const getClientInfo = async () => {
+    try {
+      const response = await fetch('/api/client-info');
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('クライアント情報の取得に失敗:', error);
+      return { ip: null, userAgent: navigator.userAgent };
+    }
+  };
+
   // ビュー数増加処理
   const handleView = useCallback(async (postId: string) => {
     try {
-      let success = false;
-      
-      if (currentUserId) {
-        // ログインユーザーの場合のみビュー数を更新
-        const { data, error } = await supabase.rpc('increment_post_view', {
-          p_post_id: postId,
-          p_viewer_user_id: currentUserId
-        });
-        
-        if (error) {
-          console.error('ビュー数更新エラー (認証済み):', error);
-          // エラーが発生してもUIの動作は継続
-          return;
-        }
-        
-        success = data === true;
-        
-        // 成功した場合のみUIを更新
-        if (success) {
-          setPosts(prevPosts => prevPosts.map(p => 
-            p.id === postId 
-              ? { ...p, views_count: p.views_count + 1 }
-              : p
-          ));
-        }
+      // セッションIDを生成または取得（ブラウザのsessionStorageを使用）
+      let sessionId = sessionStorage.getItem('viewer_session_id');
+      if (!sessionId) {
+        sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        sessionStorage.setItem('viewer_session_id', sessionId);
       }
-      // 匿名ユーザーの場合は何もしない（ビュー数カウントなし）
+
+      // IPアドレスとUser-Agentを取得
+      const clientInfo = await getClientInfo();
+      
+      // ログインユーザーの場合はapp_profile_idを、匿名の場合はsession_idを使用
+      const { data, error } = await supabase.rpc('increment_post_view', {
+        p_post_id: postId,
+        p_viewer_app_profile_id: currentUserId || null,
+        p_viewer_session_id: currentUserId ? null : sessionId,
+        p_ip_address: clientInfo.ip,
+        p_user_agent: clientInfo.userAgent,
+        p_view_type: 'detail_view'
+      });
+      
+      if (error) {
+        console.error('ビュー数更新エラー:', error);
+        return;
+      }
+      
+      const success = data === true;
+      
+      // 成功した場合のみUIを更新
+      if (success) {
+        setPosts(prevPosts => prevPosts.map(p => 
+          p.id === postId 
+            ? { ...p, views_count: p.views_count + 1 }
+            : p
+        ));
+      }
     } catch (error) {
       console.error('ビュー数の更新に失敗しました:', error);
-      // エラーが発生してもUIの動作は継続
     }
   }, [currentUserId]);
 
