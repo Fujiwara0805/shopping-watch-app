@@ -8,7 +8,7 @@ import AppLayout from '@/components/layout/app-layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { MessageCircle, CheckCircle, ExternalLink, Copy, RefreshCw, Link, QrCode, Settings, Info, Smartphone } from 'lucide-react';
+import { MessageCircle, CheckCircle, ExternalLink, Copy, RefreshCw, Link, Settings, Info, Smartphone } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 export default function LineConnectPage() {
@@ -21,7 +21,6 @@ export default function LineConnectPage() {
   const [manualLinkId, setManualLinkId] = useState('');
   const [manualLinking, setManualLinking] = useState(false);
   const [showManualLink, setShowManualLink] = useState(false);
-  const [showQRCode, setShowQRCode] = useState(false);
   const [isAddFriendClicked, setIsAddFriendClicked] = useState(false);
 
   // 正しいLINE Bot Basic ID
@@ -241,12 +240,7 @@ export default function LineConnectPage() {
   return (
     <AppLayout>
       <div className="container mx-auto px-4 py-6 max-w-2xl">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="space-y-6"
-        >
+        <div className="space-y-6">
           <Card>
             <CardHeader className="text-center">
               <div className="mx-auto mb-4 w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
@@ -306,7 +300,7 @@ export default function LineConnectPage() {
                       LINE通知の特徴
                     </h3>
                     <ul className="text-sm text-blue-800 space-y-1">
-                      <li>• お気に入り店舗の新着投稿をリアルタイムで通知</li>
+                      <li>• お気に入り店舗の新着投稿をリアルタイム通知</li>
                       <li>• アプリを開かなくても重要な情報をキャッチ</li>
                     </ul>
                   </div>
@@ -416,69 +410,7 @@ export default function LineConnectPage() {
                       </motion.div>
                     )}
 
-                    {/* QRコード表示ボタン */}
-                    <Button 
-                      onClick={() => setShowQRCode(!showQRCode)}
-                      variant="outline"
-                      className="w-full"
-                      size="lg"
-                    >
-                      <QrCode className="w-5 h-5 mr-2" />
-                      QRコードで友達追加
-                    </Button>
 
-                    {/* QRコード表示エリア */}
-                    {showQRCode && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                        className="bg-white p-4 rounded-lg border text-center"
-                      >
-                        <p className="text-sm text-gray-600 mb-3">
-                          LINEアプリでQRコードを読み取ってください
-                        </p>
-                        
-                        <div className="flex justify-center mb-3">
-                          <img 
-                            src={`https://qr-official.line.me/gs/M_${LINE_BOT_ID.replace('@', '')}_GW.png`}
-                            alt="LINE QR Code"
-                            className="w-48 h-48 border rounded-lg"
-                            onError={(e) => {
-                              const target = e.target as HTMLImageElement;
-                              target.style.display = 'none';
-                              const parent = target.parentElement;
-                              if (parent) {
-                                parent.innerHTML = `
-                                  <div class="w-48 h-48 border rounded-lg flex items-center justify-center bg-gray-100">
-                                    <div class="text-center">
-                                      <div class="w-12 h-12 mx-auto mb-2 text-gray-400">📱</div>
-                                      <p class="text-sm text-gray-500">QRコードを表示できません</p>
-                                      <p class="text-xs text-gray-400 mt-1">Bot ID: ${LINE_BOT_ID}</p>
-                                    </div>
-                                  </div>
-                                `;
-                              }
-                            }}
-                          />
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <p className="text-xs text-gray-500">
-                            または、LINEアプリで「{LINE_BOT_ID}」を検索
-                          </p>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={handleCopyId}
-                            className="text-xs"
-                          >
-                            <Copy className="w-3 h-3 mr-1" />
-                            Bot IDをコピー
-                          </Button>
-                        </div>
-                      </motion.div>
-                    )}
 
                     {/* 手動案内セクション */}
                     <div className="bg-yellow-50 p-4 rounded-lg text-left">
@@ -523,7 +455,7 @@ export default function LineConnectPage() {
               <span>プロフィールに戻る</span>
             </Button>
           </div>
-        </motion.div>
+        </div>
       </div>
     </AppLayout>
   );

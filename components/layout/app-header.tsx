@@ -53,6 +53,8 @@ export function AppHeader() {
         return '収益受取設定';
       case '/profile/stripe-account-management':
         return 'アカウント管理';
+      case '/line-connect':
+        return 'LINE通知設定';
       case '/notifications':
         return '通知';
       case '/contact':
