@@ -27,6 +27,9 @@ import { ExtendedPostWithAuthor } from '@/types/timeline';
 // 🔥 位置情報関連のコンポーネントをインポート
 import { LocationPermissionDialog } from '@/components/common/LocationPermissionDialog';
 
+// 🔥 プル・トゥ・リフレッシュライブラリをインポート
+import PullToRefresh from 'react-simple-pull-to-refresh';
+
 // 型定義
 interface AuthorData {
   id: string;
@@ -2452,7 +2455,30 @@ export default function Timeline() {
             </div>
           </div>
 
-          <div className="timeline-scroll-container custom-scrollbar overscroll-none">
+          <PullToRefresh 
+            onRefresh={handleRefresh}
+            pullingContent=""
+            refreshingContent={
+              <div className="flex items-center justify-center py-4">
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{
+                    duration: 1,
+                    repeat: Infinity,
+                    ease: "linear"
+                  }}
+                  className="mr-2"
+                >
+                  <RefreshCw className="h-5 w-5 text-blue-600" />
+                </motion.div>
+                <span className="text-blue-600 font-medium">更新中...</span>
+              </div>
+            }
+            pullDownThreshold={80}
+            maxPullDownDistance={120}
+            resistance={2}
+          >
+            <div className="timeline-scroll-container custom-scrollbar overscroll-none">
             <div className="p-4" style={{ paddingBottom: '24px' }}>
               {posts.length === 0 && !loading && !isSearching ? (
                 <div className="text-center py-10">
@@ -2548,6 +2574,7 @@ export default function Timeline() {
               )}
             </div>
           </div>
+          </PullToRefresh>
       {/* コメントモーダル */}
       {commentsModal.post && (
         <CommentsModal
