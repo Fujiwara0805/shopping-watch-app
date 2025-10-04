@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createHmac } from 'crypto';
-import { supabase } from '@/lib/supabaseClient';
+import { createClient } from '@supabase/supabase-js';
 
 // LINE Bot Channel Secret（環境変数から取得）
 const CHANNEL_SECRET = process.env.LINE_CHANNEL_SECRET;
 const CHANNEL_ACCESS_TOKEN = process.env.LINE_CHANNEL_ACCESS_TOKEN;
+
+// Service Role Keyを使用するSupabaseクライアント（RLSをバイパス）
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
 // LINE署名を検証する関数
 function verifySignature(body: string, signature: string): boolean {
@@ -180,7 +186,7 @@ async function handleFollowEvent(event: any) {
     // 既存のapp_usersテーブルでline_idが既に存在するかチェック
     try {
       console.log(`🔍 Checking if LINE user ${lineUserId} is already linked`);
-      const { data: existingUser, error: checkError } = await supabase
+      const { data: existingUser, error: checkError } = await supabaseAdmin
         .from('app_users')
         .select('id, email')
         .eq('line_id', lineUserId)
@@ -199,7 +205,7 @@ async function handleFollowEvent(event: any) {
 
     // フォローイベントを一時的に保存（接続待ちユーザーとして）
     console.log(`💾 Attempting to save pending connection for user: ${lineUserId}`);
-    const { error: insertError } = await supabase
+    const { error: insertError } = await supabaseAdmin
       .from('pending_line_connections')
       .insert({
         line_user_id: lineUserId,
@@ -238,7 +244,7 @@ async function handleUnfollowEvent(event: any) {
   try {
     // app_usersテーブルのline_idをnullに設定
     console.log(`🔄 Removing LINE ID ${lineUserId} from app_users`);
-    const { data: updatedUsers, error: updateUserError } = await supabase
+    const { data: updatedUsers, error: updateUserError } = await supabaseAdmin
       .from('app_users')
       .update({ line_id: null })
       .eq('line_id', lineUserId)
