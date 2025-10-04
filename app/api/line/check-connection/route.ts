@@ -100,13 +100,17 @@ export async function POST(request: NextRequest) {
       .from('pending_line_connections')
       .select('*')
       .is('connected_to_user_id', null)
-      .gte('expires_at', new Date().toISOString())
+      .gt('expires_at', new Date().toISOString())
       .order('followed_at', { ascending: false })
       .limit(5);
 
     if (!pendingError && pendingConnections && pendingConnections.length > 0) {
+      console.log(`📋 Found ${pendingConnections.length} pending connections for auto-linking`);
+      
       // 最新のフォローイベントを使用（時間的に最も近いもの）
       const latestConnection = pendingConnections[0];
+      
+      console.log(`🔗 Attempting to link user ${session.user.id} with LINE ID: ${latestConnection.line_user_id}`);
       
       // 接続を実行
       const { error: linkError } = await supabase
@@ -118,11 +122,19 @@ export async function POST(request: NextRequest) {
         .eq('id', session.user.id);
 
       if (!linkError) {
+        console.log(`✅ Successfully updated app_users table for user ${session.user.id}`);
+        
         // 接続済みとしてマーク
-        await supabase
+        const { error: markError } = await supabase
           .from('pending_line_connections')
           .update({ connected_to_user_id: session.user.id })
           .eq('id', latestConnection.id);
+
+        if (markError) {
+          console.error('⚠️ Failed to mark connection as used:', markError);
+        } else {
+          console.log(`✅ Successfully marked connection ${latestConnection.id} as used`);
+        }
 
         // 接続完了メッセージをLINEに送信
         await sendConnectionSuccessMessage(latestConnection.line_user_id);
@@ -132,6 +144,24 @@ export async function POST(request: NextRequest) {
           newConnection: true,
           lineId: latestConnection.line_user_id
         });
+      } else {
+        console.error('❌ Failed to update app_users table:', linkError);
+        return NextResponse.json({ 
+          success: false, 
+          error: 'Failed to update user LINE ID',
+          details: linkError.message 
+        });
+      }
+    } else {
+      if (pendingError) {
+        console.error('❌ Error fetching pending connections:', pendingError);
+        return NextResponse.json({ 
+          success: false, 
+          error: 'Database error while fetching pending connections',
+          details: pendingError.message 
+        });
+      } else {
+        console.log('📋 No pending connections found for auto-linking');
       }
     }
 
