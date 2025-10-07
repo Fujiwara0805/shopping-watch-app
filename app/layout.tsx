@@ -17,6 +17,8 @@ const notoSansJP = Noto_Sans_JP({
   subsets: ['latin'],
   weight: ['400', '500', '700'],
   variable: '--font-noto-sans-jp',
+  display: 'swap', // LCP改善：フォント表示の最適化
+  preload: true,   // LCP改善：フォントのプリロード
 });
 
 export const metadata: Metadata = {
@@ -68,7 +70,13 @@ export default function RootLayout({
 
   return (
     <html lang="ja" suppressHydrationWarning>
-      <head />
+      <head>
+        {/* LCP改善：重要なリソースのプリロード */}
+        <link rel="preload" href="https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png" as="image" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+        <link rel="dns-prefetch" href="https://res.cloudinary.com" />
+      </head>
       <body className={`${notoSansJP.variable} font-sans bg-background text-foreground overflow-x-hidden touch-manipulation`}>
         <LoadingProvider>
           <ThemeProvider 

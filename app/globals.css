@@ -2,6 +2,26 @@
 @tailwind components;
 @tailwind utilities;
 
+/* LCP改善：重要なスタイルを最初に読み込み */
+@layer base {
+  /* フォント表示の最適化 */
+  * {
+    font-display: swap;
+  }
+  
+  /* 初期レンダリングの最適化 */
+  html {
+    font-synthesis: none;
+    text-rendering: optimizeSpeed;
+  }
+  
+  body {
+    font-feature-settings: "kern" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
 :root {
   --foreground-rgb: 0, 0, 0;
   --background-start-rgb: 214, 219, 220;

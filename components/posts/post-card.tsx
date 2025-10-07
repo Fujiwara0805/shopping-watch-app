@@ -76,14 +76,15 @@ interface PostCardProps {
   enableComments?: boolean;
 }
 
-// 最適化された画像コンポーネント（CLS対策済み）
+// 最適化された画像コンポーネント（CLS・LCP対策済み）
 const OptimizedImage = memo(({ 
   src, 
   alt, 
   className, 
   onLoad,
   onError,
-  aspectRatio = "4/5" // デフォルトのアスペクト比を追加
+  aspectRatio = "4/5", // デフォルトのアスペクト比を追加
+  priority = false // LCP改善：優先読み込みオプション
 }: { 
   src: string; 
   alt: string; 
@@ -91,6 +92,7 @@ const OptimizedImage = memo(({
   onLoad?: () => void;
   onError?: () => void;
   aspectRatio?: string;
+  priority?: boolean;
 }) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
@@ -101,6 +103,13 @@ const OptimizedImage = memo(({
   useEffect(() => {
     const img = imgRef.current;
     if (!img) return;
+
+    // LCP改善：優先画像は即座に読み込み開始
+    if (priority) {
+      setIsInView(true);
+      setLoadStarted(true);
+      return;
+    }
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -113,18 +122,24 @@ const OptimizedImage = memo(({
         });
       },
       {
-        rootMargin: '50px',
+        rootMargin: priority ? '200px' : '50px', // 優先画像は早めに読み込み
         threshold: 0.1
       }
     );
 
     observer.observe(img);
     return () => observer.unobserve(img);
-  }, [loadStarted]);
+  }, [loadStarted, priority]);
 
   useEffect(() => {
     if (isInView && !isLoaded && !hasError) {
       const img = new Image();
+      
+      // LCP改善：優先画像の場合はfetchPriorityを設定
+      if (priority && 'fetchPriority' in img) {
+        (img as any).fetchPriority = 'high';
+      }
+      
       img.onload = () => {
         setIsLoaded(true);
         onLoad?.();
@@ -135,7 +150,7 @@ const OptimizedImage = memo(({
       };
       img.src = src;
     }
-  }, [isInView, src, isLoaded, hasError, onLoad, onError]);
+  }, [isInView, src, isLoaded, hasError, onLoad, onError, priority]);
 
   return (
     <div 
@@ -165,8 +180,8 @@ const OptimizedImage = memo(({
           className="absolute inset-0 w-full h-full object-cover" // absolute positioningでCLS防止
           initial={{ opacity: 0, scale: 1.1 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.3 }}
-          loading="lazy"
+          transition={{ duration: priority ? 0.2 : 0.3 }} // 優先画像は高速表示
+          loading={priority ? "eager" : "lazy"} // LCP改善：優先画像はeager loading
         />
       )}
     </div>
@@ -1223,6 +1238,7 @@ export const PostCard = memo(({
                       alt="投稿画像"
                       className="w-full h-full rounded-md"
                       aspectRatio="4/5"
+                      priority={true} // LCP改善：最初の画像を優先読み込み
                       onLoad={() => setImageLoaded(true)}
                     />
                   </div>

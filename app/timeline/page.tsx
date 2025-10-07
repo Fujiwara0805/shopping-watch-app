@@ -1142,9 +1142,10 @@ export default function Timeline() {
       return R * c * 1000;
     };
 
+    // LCP改善：初期読み込み時の最適化
     if (isInitial) {
       setLoading(true);
-      setPosts([]);
+      setPosts([]); // 既存投稿をクリア
     } else {
       setLoadingMore(true);
     }
@@ -2055,52 +2056,36 @@ export default function Timeline() {
   // 招待モーダルの状態を使い方モーダルに変更
   const [showHowToUseModal, setShowHowToUseModal] = useState(false);
 
+  // LCP改善：初期ローディング時は最小限の表示
   if ((loading && posts.length === 0) || isInitialLoading) {
     return (
       <AppLayout>
-        <div className="sticky top-0 z-10 border-b p-4 flex items-center space-x-2 bg-[#73370c]">
-          {/* PC版ではHamburgerMenuを非表示にし、その分のスペースを確保 */}
-          {!isMobile && (
-            <div className="w-96 flex-shrink-0"></div> 
-          )}
-          {isMobile && <HamburgerMenu currentUser={currentUserProfile} />}
-          <div className="relative flex-1">
-            <Input
-              type="text"
-              placeholder="店舗名やキーワードで検索"
-              value={generalSearchTerm}
-              onChange={(e) => setGeneralSearchTerm(e.target.value)}
-              className="pr-10 w-full text-base"
-              style={{ fontSize: '16px' }}
-              autoComplete="off"
-              autoCorrect="off"
-              autoCapitalize="off"
-              spellCheck="false"
-              disabled={isInitialLoading} // 🔥 初回ローディング中は無効化
-            />
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center">
-              <Loader2 className="h-4 w-4 text-muted-foreground animate-spin" />
+        <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50">
+          {/* 軽量なヘッダー */}
+          <div className="sticky top-0 z-10 bg-[#73370c] p-4">
+            <div className="flex items-center justify-center">
+              <div className="text-white font-medium">投稿を読み込み中...</div>
             </div>
           </div>
-          {isMobile && (
-            <Button 
-              onClick={() => setShowFilterModal(true)} 
-              variant="outline" 
-              className="relative"
-              disabled={isInitialLoading} // 🔥 初回ローディング中は無効化
-            >
-              <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
-              {activeFiltersCount > 0 && (
-                <Badge className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
-                  {activeFiltersCount}
-                </Badge>
-              )}
-            </Button>
-          )}
-          {/* PC版では右サイドバーの幅を考慮 */}
-          {!isMobile && (
-            <div className="w-80 flex-shrink-0"></div>
-          )}
+          
+          {/* 軽量なスケルトン */}
+          <div className="p-4">
+            <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                  <div className="p-3">
+                    <div className="flex items-center space-x-2 mb-3">
+                      <Skeleton className="h-7 w-7 rounded-full flex-shrink-0" />
+                      <Skeleton className="h-4 w-20" />
+                    </div>
+                    <Skeleton className="h-4 w-full mb-2" />
+                    <Skeleton className="h-4 w-3/4 mb-3" />
+                    <Skeleton className="w-full rounded-md" style={{ aspectRatio: "4/5" }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
         
         {/* 🔥 初回ローディング時の専用メッセージ */}
