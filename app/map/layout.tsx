@@ -113,21 +113,23 @@ export default function MapLayout({ children }: MapLayoutProps) {
     // 初期寸法計算
     updateLayoutDimensions();
     
-    // 複数回の寸法更新（スマホブラウザでアドレスバーの変化に対応）
-    const timeouts = [
-      setTimeout(() => {
-        updateLayoutDimensions();
-      }, 100),
-      setTimeout(() => {
-        updateLayoutDimensions();
-      }, 300),
-      setTimeout(() => {
-        updateLayoutDimensions();
-      }, 500),
-      setTimeout(() => {
-        updateLayoutDimensions();
-      }, 1000)
-    ];
+    // CLS対策：初期レイアウト設定を一度だけ実行
+    let timeoutId: NodeJS.Timeout;
+    const scheduleUpdate = (delay: number) => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        if (updateLayoutDimensions()) {
+          // 成功した場合は追加の更新をスキップ
+          return;
+        }
+        // 失敗した場合のみ再試行
+        if (delay < 1000) {
+          scheduleUpdate(delay * 2);
+        }
+      }, delay);
+    };
+    
+    scheduleUpdate(100);
 
     // リサイズハンドラー
     const handleResize = () => {
@@ -150,7 +152,7 @@ export default function MapLayout({ children }: MapLayoutProps) {
 
     return () => {
       // クリーンアップ
-      timeouts.forEach(clearTimeout);
+      clearTimeout(timeoutId);
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('orientationchange', handleOrientationChange);
       if (window.visualViewport) {

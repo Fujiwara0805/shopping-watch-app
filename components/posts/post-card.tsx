@@ -76,19 +76,21 @@ interface PostCardProps {
   enableComments?: boolean;
 }
 
-// 最適化された画像コンポーネント
+// 最適化された画像コンポーネント（CLS対策済み）
 const OptimizedImage = memo(({ 
   src, 
   alt, 
   className, 
   onLoad,
-  onError 
+  onError,
+  aspectRatio = "4/5" // デフォルトのアスペクト比を追加
 }: { 
   src: string; 
   alt: string; 
   className?: string;
   onLoad?: () => void;
   onError?: () => void;
+  aspectRatio?: string;
 }) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
@@ -136,7 +138,11 @@ const OptimizedImage = memo(({
   }, [isInView, src, isLoaded, hasError, onLoad, onError]);
 
   return (
-    <div ref={imgRef} className={cn("relative overflow-hidden", className)}>
+    <div 
+      ref={imgRef} 
+      className={cn("relative overflow-hidden", className)}
+      style={{ aspectRatio }} // CLS対策：固定アスペクト比
+    >
       {!isLoaded && !hasError && (
         <div className="absolute inset-0 bg-gradient-to-br from-gray-200 to-gray-300 animate-pulse flex items-center justify-center">
           <div className="w-8 h-8 bg-gray-400 rounded animate-pulse" />
@@ -156,7 +162,7 @@ const OptimizedImage = memo(({
         <motion.img
           src={src}
           alt={alt}
-          className="w-full h-full object-cover"
+          className="absolute inset-0 w-full h-full object-cover" // absolute positioningでCLS防止
           initial={{ opacity: 0, scale: 1.1 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.3 }}
@@ -214,9 +220,15 @@ const UserAvatar = memo(({ author }: { author: AuthorProfile | null }) => {
     : null;
 
   return (
-    <Avatar className="h-7 w-7">
-      <AvatarImage src={authorAvatarUrl || undefined} alt={author?.display_name || '投稿者'} />
-      <AvatarFallback className="text-xs">{author?.display_name?.charAt(0) || '?'}</AvatarFallback>
+    <Avatar className="h-7 w-7 flex-shrink-0"> {/* CLS対策：flex-shrink-0を追加 */}
+      <AvatarImage 
+        src={authorAvatarUrl || undefined} 
+        alt={author?.display_name || '投稿者'}
+        className="object-cover" // CLS対策：object-coverを明示
+      />
+      <AvatarFallback className="text-xs bg-gray-200 text-gray-600">
+        {author?.display_name?.charAt(0) || '?'}
+      </AvatarFallback>
     </Avatar>
   );
 });
@@ -1196,10 +1208,10 @@ export const PostCard = memo(({
             </p>
           </div>
           
-          {/* 画像表示エリア（複数画像対応） */}
+          {/* 画像表示エリア（複数画像対応・CLS対策済み） */}
           {imageUrls.length > 0 && (
             <div className="flex justify-center w-full mb-3">
-              <div className="relative rounded-md overflow-hidden w-full max-w-sm aspect-[4/5]">
+              <div className="relative rounded-md overflow-hidden w-full max-w-sm" style={{ aspectRatio: "4/5" }}>
                 {imageUrls.length === 1 ? (
                   // 単一画像の場合
                   <div 
@@ -1209,7 +1221,8 @@ export const PostCard = memo(({
                     <OptimizedImage
                       src={imageUrls[0]}
                       alt="投稿画像"
-                      className="w-full h-full"
+                      className="w-full h-full rounded-md"
+                      aspectRatio="4/5"
                       onLoad={() => setImageLoaded(true)}
                     />
                   </div>

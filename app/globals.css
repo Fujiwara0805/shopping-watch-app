@@ -466,13 +466,15 @@
     overflow: hidden !important;
   }
   
-  /* マップコンテンツエリア */
+  /* マップコンテンツエリア（CLS対策済み） */
   .map-content-area {
     width: 100% !important;
     height: var(--map-content-height) !important;
     min-height: 300px !important;
     overflow: hidden !important;
     position: relative !important;
+    /* CLS対策：初期状態でのサイズ確保 */
+    contain: layout style paint;
   }
   
   /* マップ検索コントロールのモバイル対応 */
