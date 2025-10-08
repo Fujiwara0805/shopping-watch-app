@@ -15,6 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { CustomModal } from '@/components/ui/custom-modal';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -922,6 +923,9 @@ export default function Timeline() {
   const [locationPermissionState, setLocationPermissionState] = useState<'prompt' | 'granted' | 'denied' | 'unavailable' | 'pending'>('prompt');
   const [locationError, setLocationError] = useState<string | null>(null);
   const [isRequestingLocation, setIsRequestingLocation] = useState(false);
+  
+  // 🔥 ご近所モードの状態を追加（デフォルトON）
+  const [isNearbyMode, setIsNearbyMode] = useState(true);
 
   // 管理者権限のログ出力
   useEffect(() => {
@@ -1128,6 +1132,7 @@ export default function Timeline() {
     const currentFavoriteStoreIds = favoriteStoreIdsRef.current;
     const currentLikedPostIds = likedPostIdsRef.current;
     const currentSortBy = sortByRef.current;
+    const currentIsNearbyMode = isNearbyMode; // 🔥 ご近所モード状態を取得
     const isAdmin = currentUserRole === 'admin';
 
     // 距離計算関数
@@ -1354,8 +1359,8 @@ export default function Timeline() {
         });
       }
       
-      // 1km圏内フィルタリング機能を追加（管理者でない場合のみ適用）
-      if (currentUserLocation && !isAdmin) { // 管理者ユーザーの場合、距離フィルタリングをスキップ
+      // 1km圏内フィルタリング機能を追加（管理者でない場合かつご近所モードがONの場合のみ適用）
+      if (currentUserLocation && !isAdmin && currentIsNearbyMode) { // 🔥 ご近所モード条件を追加
         processedPosts = processedPosts.filter(post => {
           // 🔥 投稿者が管理者の場合は距離フィルタリングをスキップ
           if (post.author_role === 'admin') {
@@ -1367,7 +1372,7 @@ export default function Timeline() {
       }
 
       // 距離によるソート
-      if (currentSortBy === 'distance_asc' && currentUserLocation && !isAdmin) { // 管理者でない場合のみ適用
+      if (currentSortBy === 'distance_asc' && currentUserLocation && !isAdmin && currentIsNearbyMode) { // 🔥 ご近所モード条件を追加
         processedPosts = processedPosts
           .filter(post => post.distance !== undefined)
           .sort((a, b) => (a.distance || 0) - (b.distance || 0));
@@ -1380,8 +1385,8 @@ export default function Timeline() {
       }
 
       // 1km圏内フィルタリング適用時はhasMoreをfalseに設定
-      // 管理者の場合はhasMoreをtrueに維持し、全件取得を可能にする
-      setHasMore(data.length === 20 && (!currentUserLocation || isAdmin));
+      // 管理者の場合またはご近所モードがOFFの場合はhasMoreをtrueに維持し、全件取得を可能にする
+      setHasMore(data.length === 20 && (!currentUserLocation || isAdmin || !currentIsNearbyMode));
     } catch (e: any) {
       console.error("投稿の取得に失敗しました:", e);
       setError("投稿の読み込みに失敗しました。しばらくしてから再度お試しください。");
@@ -1888,6 +1893,7 @@ export default function Timeline() {
     setSearchMode('all');
     setSortBy('created_at_desc');
     setGeneralSearchTerm('');
+    setIsNearbyMode(true); // デフォルトのON状態に戻す
     
     setTempActiveFilter('all');
     setTempSearchMode('all');
@@ -1906,8 +1912,9 @@ export default function Timeline() {
     if (activeFilter !== 'all') count++;
     if (searchMode !== 'all') count++;
     if (sortBy !== 'created_at_desc') count++;
+    if (!isNearbyMode) count++; // ご近所モードがOFFの場合もカウント
     return count;
-  }, [activeFilter, searchMode, sortBy]);
+  }, [activeFilter, searchMode, sortBy, isNearbyMode]);
 
   // 招待モーダルの状態を追加
   const [showInviteModal, setShowInviteModal] = useState(false);
@@ -2289,9 +2296,9 @@ export default function Timeline() {
             {/* フィルターボタン */}
             <Button onClick={() => setShowFilterModal(true)} variant="outline" className="relative" style={{ backgroundColor: '#f3f4f6' }}>
               <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
-              {activeFilter !== 'all' && (
+              {(activeFilter !== 'all' || !isNearbyMode) && (
                 <Badge className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
-                  1
+                  {(activeFilter !== 'all' ? 1 : 0) + (!isNearbyMode ? 1 : 0)}
                 </Badge>
               )}
             </Button>
@@ -2309,18 +2316,29 @@ export default function Timeline() {
         )}
 
         {/* アクティブなフィルタの表示 */}
-        {activeFilter !== 'all' && (
+        {(activeFilter !== 'all' || !isNearbyMode) && (
           <div className="px-4 py-2 bg-gray-50 border-b">
             <div className="flex flex-wrap gap-2 items-center">
               <span className="text-sm text-gray-600">アクティブなフィルタ:</span>
-              <Badge variant="secondary" className="flex items-center gap-1">
-                カテゴリ: {activeFilter}
-                <button onClick={() => setActiveFilter('all')} className="ml-1">
-                  <X className="h-3 w-3" />
-                </button>
-              </Badge>
+              {activeFilter !== 'all' && (
+                <Badge variant="secondary" className="flex items-center gap-1">
+                  カテゴリ: {activeFilter}
+                  <button onClick={() => setActiveFilter('all')} className="ml-1">
+                    <X className="h-3 w-3" />
+                  </button>
+                </Badge>
+              )}
+              {!isNearbyMode && (
+                <Badge variant="secondary" className="flex items-center gap-1">
+                  全国表示
+                  <button onClick={() => setIsNearbyMode(true)} className="ml-1">
+                    <X className="h-3 w-3" />
+                  </button>
+                </Badge>
+              )}
               <Button variant="ghost" size="sm" onClick={() => {
                 setActiveFilter('all');
+                setIsNearbyMode(true);
                 setGeneralSearchTerm('');
                 setTimeout(() => {
                   if (fetchPostsRef.current) {
@@ -2622,9 +2640,32 @@ export default function Timeline() {
           isOpen={showFilterModal}
           onClose={handleCloseModal}
           title="検索フィルター"
-          description="カテゴリーで絞り込むことができます。"
+          description="カテゴリーや表示範囲で絞り込むことができます。"
         >
           <div className="space-y-6 max-h-[70vh] overflow-y-auto">
+            {/* ご近所トグルボタンを追加 */}
+            <div>
+              <h3 className="font-semibold text-lg mb-2">表示範囲</h3>
+              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div>
+                  <p className="font-medium text-sm">ご近所モード</p>
+                  <p className="text-xs text-gray-600">1km圏内の投稿のみ表示</p>
+                </div>
+                <Switch
+                  checked={isNearbyMode}
+                  onCheckedChange={(checked) => {
+                    setIsNearbyMode(checked);
+                    // 状態変更後に投稿を再取得
+                    setTimeout(() => {
+                      if (fetchPostsRef.current) {
+                        fetchPostsRef.current(0, true);
+                      }
+                    }, 100);
+                  }}
+                />
+              </div>
+            </div>
+            
             <div>
               <h3 className="font-semibold text-lg mb-2">カテゴリーで絞り込み</h3>
               <Select 
@@ -2652,6 +2693,7 @@ export default function Timeline() {
           <div className="mt-6 flex justify-between">
             <Button variant="outline" onClick={() => {
               setTempActiveFilter('all');
+              setIsNearbyMode(true);
             }}>
               すべてクリア
             </Button>
