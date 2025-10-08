@@ -376,15 +376,28 @@ export default function PostPage() {
       // 🔥 詳細情報セクションを閉じる
       setShowOptionalFields(false);
       
-      // 掲載期間のデフォルト値を設定
+      // 掲載期間の設定
       const defaultExpiry = getDefaultExpiryForCategory(selectedCategory);
-      form.setValue('expiryOption', defaultExpiry);
+      const currentExpiry = form.getValues('expiryOption');
+      const validOptions = getExpiryOptionsForCategory(selectedCategory).map(opt => opt.value);
       
-      // カスタム設定の場合はデフォルト時間を設定
-      if (defaultExpiry === 'custom') {
-        form.setValue('customExpiryMinutes', 120); // 2時間
+      // 空席状況・在庫状況間の移動の場合は現在の値を保持、それ以外はデフォルト値を設定
+      const isAvailabilityCategory = selectedCategory === '空席状況' || selectedCategory === '在庫状況';
+      const currentIsAvailabilityOption = currentExpiry && ['15m', '30m', '45m', '60m'].includes(currentExpiry);
+      
+      if (isAvailabilityCategory && currentIsAvailabilityOption) {
+        // 空席状況・在庫状況間の移動で、現在の値が有効な場合は保持
+        // 何もしない（現在の値を保持）
       } else {
-        form.setValue('customExpiryMinutes', undefined);
+        // それ以外の場合はデフォルト値を設定
+        form.setValue('expiryOption', defaultExpiry);
+        
+        // カスタム設定の場合はデフォルト時間を設定
+        if (defaultExpiry === 'custom') {
+          form.setValue('customExpiryMinutes', 120); // 2時間
+        } else {
+          form.setValue('customExpiryMinutes', undefined);
+        }
       }
       
       // 🔥 空席状況・在庫状況の場合は必要な項目を自動展開（リセット後に）
@@ -1527,13 +1540,6 @@ export default function PostPage() {
                       field.onChange(value);
                       if (value === 'custom') {
                         setShowCustomTimeModal(true);
-                      }
-                      // カテゴリ変更時にデフォルト値を設定
-                      if (selectedCategory && value !== 'custom') {
-                        const defaultExpiry = getDefaultExpiryForCategory(selectedCategory);
-                        if (defaultExpiry !== value) {
-                          field.onChange(defaultExpiry);
-                        }
                       }
                     }} value={field.value || ""}>
                       <FormControl>
