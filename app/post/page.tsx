@@ -803,7 +803,7 @@ export default function PostPage() {
     if (!latitude || !longitude) {
       toast({
         title: "位置情報が必要です",
-        description: "5km圏内表示機能のために位置情報を許可してください",
+        description: "投稿を表示するために位置情報を許可してください",
         duration: 3000,
       });
       requestLocation();

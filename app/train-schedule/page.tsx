@@ -273,7 +273,7 @@ export default function TrainSchedulePage() {
             className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-800 shadow-md"
           >
             <p>※ これは{currentDayType}ダイヤの時刻表です。</p>
-            <p className="mt-1">この機能は、大分大学旦野原キャンパスから5km圏内にいるユーザーのみに表示されています。<br />※運行状況については、最新情報をご確認ください。</p>
+            <p className="mt-1">この機能は、大分大学旦野原キャンパスから1km圏内にいるユーザーのみに表示されています。<br />※運行状況については、最新情報をご確認ください。</p>
             {currentDayType === '土日祝' && (
               <p className="mt-1 text-xs text-yellow-700">※ 07:26発の電車は特定日運行です。</p>
             )}

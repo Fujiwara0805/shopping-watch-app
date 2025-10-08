@@ -134,7 +134,7 @@ export function MapView() {
   const [userLocationMarker, setUserLocationMarker] = useState<google.maps.Marker | null>(null);
   const [userLocationCircle, setUserLocationCircle] = useState<google.maps.Circle | null>(null);
   
-  // 🔥 5km圏内の範囲表示・非表示の状態管理（デフォルト：表示）
+  // 🔥 1km圏内の範囲表示・非表示の状態管理（デフォルト：表示）
   const [showRangeCircle, setShowRangeCircle] = useState(true);
 
   // 🔥 投稿データとマーカー関連の状態を追加
@@ -302,7 +302,7 @@ export function MapView() {
         return;
       }
 
-      // 5km圏内でフィルタリング
+      // 1km圏内でフィルタリング
       const filteredPosts = data.filter((post: any) => {
         if (!post.store_latitude || !post.store_longitude || post.remaining_slots == null) return false;
         
@@ -317,7 +317,7 @@ export function MapView() {
         const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
         const distance = R * c;
         
-        return distance <= 5; // 5km以内
+        return distance <= 1; // 1km以内
       });
 
       console.log(`MapView: ${filteredPosts.length}件の投稿を取得しました`);
@@ -618,7 +618,7 @@ export function MapView() {
         }
       }
 
-      // 🔥 5km圏内の円を表示・非表示の制御
+      // 🔥 1km圏内の円を表示・非表示の制御
       if (showRangeCircle) {
         if (userLocationCircle) {
           userLocationCircle.setCenter(userPosition);
@@ -633,7 +633,7 @@ export function MapView() {
               fillOpacity: 0.35,
               map: map,
               center: userPosition,
-              radius: 5000, // 5km = 5000m
+              radius: 1000, // 1km = 1000m
             });
             setUserLocationCircle(circle);
             console.log(`MapView ${browserInfo.name}: User location circle created successfully`);
@@ -1038,7 +1038,7 @@ export function MapView() {
                 ) : (
                   <>
                     <Eye className="h-4 w-4 mr-2" />
-                    5km圏内を表示
+                    1km圏内を表示
                   </>
                 )}
               </Button>
@@ -1253,7 +1253,7 @@ export function MapView() {
                             鳩マーカー（現在地）
                           </p>
                           <p className="text-xs text-amber-700">
-                            あなたの現在位置を示しています。この位置を中心に5km圏内の投稿が表示されます
+                            あなたの現在位置を示しています。この位置を中心に1km圏内の投稿が表示されます
                           </p>
                         </div>
                       </div>
@@ -1269,7 +1269,7 @@ export function MapView() {
                             緑色の円（範囲表示）
                           </p>
                           <p className="text-xs text-emerald-600">
-                            投稿を閲覧できる5km圏内の範囲を表示。残数情報付き投稿がある場合は自動的に非表示になります
+                            投稿を閲覧できる1km圏内の範囲を表示。残数情報付き投稿がある場合は自動的に非表示になります
                           </p>
                         </div>
                       </div>

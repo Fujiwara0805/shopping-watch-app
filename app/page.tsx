@@ -265,7 +265,7 @@ const NormalLP = ({ goToOnboarding, mobileMenuOpen, setMobileMenuOpen, scrollPos
                 {
                   icon: Newspaper,
                   title: "地域密着掲示板",
-                  description: "空席・在庫・PR情報が5km圏内限定。あなたの街の「今」をリアルタイムで！",
+                  description: "空席・在庫・PR情報が1km圏内限定。あなたの街の「今」をリアルタイムで！",
                   color: "bg-destructive/10",
                   textColor: "text-destructive",
                   borderColor: "border-destructive/20"
@@ -384,7 +384,7 @@ const NormalLP = ({ goToOnboarding, mobileMenuOpen, setMobileMenuOpen, scrollPos
 
               <div className="text-lg text-muted-foreground space-y-2">
                 <p className="font-semibold">✓ 登録料・利用料 完全無料</p>
-                <p className="font-semibold">✓ 5km圏内の地域密着情報</p>
+                <p className="font-semibold">✓ 1km圏内の地域密着情報</p>
                 <p className="font-semibold">✓ リアルタイム更新で最新情報をお届け</p>
                 <p className="font-semibold">✓ 家族・友人との情報共有機能付き</p>
               </div>

@@ -510,8 +510,8 @@ const releaseNotes: ReleaseNote[] = [
       },
       {
         type: 'improvement',
-        title: '5km圏内投稿表示の最適化',
-        description: '投稿者の端末位置情報を基準とした5km圏内の投稿表示機能を実装。常に地域密着型の情報を提供し、より関連性の高いお得情報を表示できるようになりました。'
+        title: '1km圏内投稿表示の最適化',
+        description: '投稿者の端末位置情報を基準とした1km圏内の投稿表示機能を実装。常に地域密着型の情報を提供し、より関連性の高いお得情報を表示できるようになりました。'
       },
       {
         type: 'improvement',

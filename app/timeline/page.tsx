@@ -115,7 +115,7 @@ const categoryOptions = [
 const categories = ['すべて', '空席状況', '在庫状況', 'PR', '応援', 'おとく自慢', '雑談'];
 
 
-const SEARCH_RADIUS_METERS = 5000; // 5km
+const SEARCH_RADIUS_METERS = 1000; // 1km
 
 // コメントコンポーネント
 const CommentItem = ({ comment, onDelete, currentUserId }: {
@@ -1354,7 +1354,7 @@ export default function Timeline() {
         });
       }
       
-      // 5km圏内フィルタリング機能を追加（管理者でない場合のみ適用）
+      // 1km圏内フィルタリング機能を追加（管理者でない場合のみ適用）
       if (currentUserLocation && !isAdmin) { // 管理者ユーザーの場合、距離フィルタリングをスキップ
         processedPosts = processedPosts.filter(post => {
           // 🔥 投稿者が管理者の場合は距離フィルタリングをスキップ
@@ -1379,7 +1379,7 @@ export default function Timeline() {
         setPosts(prevPosts => [...prevPosts, ...processedPosts as ExtendedPostWithAuthor[]]);
       }
 
-      // 5km圏内フィルタリング適用時はhasMoreをfalseに設定
+      // 1km圏内フィルタリング適用時はhasMoreをfalseに設定
       // 管理者の場合はhasMoreをtrueに維持し、全件取得を可能にする
       setHasMore(data.length === 20 && (!currentUserLocation || isAdmin));
     } catch (e: any) {
@@ -2095,7 +2095,7 @@ export default function Timeline() {
               <Compass className="h-12 w-12 text-blue-600 mx-auto mb-4" />
               <p className="text-blue-800 text-lg mb-2">現在地を取得しています</p>
               <p className="text-blue-600 text-sm">
-                5km圏内のおトクな投稿を表示するために<br />
+                1km圏内のおトクな投稿を表示するために<br />
                 位置情報を取得中です...
               </p>
               <div className="mt-4">
