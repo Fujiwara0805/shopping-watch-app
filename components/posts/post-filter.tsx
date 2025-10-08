@@ -5,7 +5,7 @@ import { useRef, useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
-import { Utensils, ShoppingBag, Megaphone, Heart, HandCoins, MessageSquareText } from 'lucide-react';
+import { Utensils, ShoppingBag, Megaphone, Heart, Trophy, MessageSquareText } from 'lucide-react';
 
 interface PostFilterProps {
   activeFilter: string;
@@ -19,7 +19,7 @@ const categories = [
   { id: '在庫状況', name: '在庫状況', icon: ShoppingBag },
   { id: 'PR', name: 'PR', icon: Megaphone },
   { id: '応援', name: '応援', icon: Heart },
-  { id: 'おとく自慢', name: 'おとく自慢', icon: HandCoins },
+  { id: 'おとく自慢', name: 'おとく自慢', icon: Trophy },
   { id: '雑談', name: '雑談', icon: MessageSquareText },
 ];
 
