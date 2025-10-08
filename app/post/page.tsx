@@ -36,11 +36,11 @@ declare global {
   }
 }
 
-// 🔥 更新されたバリデーションスキーマ（電話番号を追加、カテゴリを修正）
+// 🔥 カテゴリ別の条件付きバリデーションスキーマ
 const postSchema = z.object({
   storeId: z.string().optional(),
   storeName: z.string().optional(),
-  category: z.enum(['空席状況', '在庫状況', 'PR', '応援', 'おとく自慢', '雑談'], { required_error: 'カテゴリを選択してください' }),
+  category: z.enum(['おとく自慢', '空席状況', '在庫状況', 'PR', '応援', '雑談'], { required_error: 'カテゴリを選択してください' }),
   content: z.string().min(5, { message: '5文字以上入力してください' }).max(240, { message: '240文字以内で入力してください' }),
   url: z.string().url({ message: '有効なURLを入力してください' }).optional().or(z.literal('')),
   // 🔥 新しい掲載期間スキーマ
@@ -59,6 +59,57 @@ const postSchema = z.object({
   customerSituation: z.string().optional(), // 来客状況
   couponCode: z.string().max(50).optional(), // クーポン
   phoneNumber: z.string().max(15).optional(), // 🔥 電話番号を追加
+}).superRefine((data, ctx) => {
+  // 🔥 空席状況・在庫状況の場合の必須チェック
+  if (data.category === '空席状況' || data.category === '在庫状況') {
+    if (!data.storeId || data.storeId.trim() === '') {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `${data.category}の場合、場所の選択は必須です`,
+        path: ['storeId'],
+      });
+    }
+    if (!data.storeName || data.storeName.trim() === '') {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `${data.category}の場合、場所の選択は必須です`,
+        path: ['storeName'],
+      });
+    }
+    if (data.remainingSlots === undefined || data.remainingSlots === null) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `${data.category}の場合、残数の入力は必須です`,
+        path: ['remainingSlots'],
+      });
+    }
+    // 空席状況・在庫状況では15m-60mのみ許可
+    if (!['15m', '30m', '45m', '60m'].includes(data.expiryOption)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `${data.category}では15分〜60分の掲載期間のみ選択できます`,
+        path: ['expiryOption'],
+      });
+    }
+  }
+  
+  // 🔥 PR・応援・おとく自慢・雑談の場合はカスタム設定必須
+  if (['PR', '応援', 'おとく自慢', '雑談'].includes(data.category)) {
+    if (data.expiryOption !== 'custom') {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `${data.category}ではカスタム設定での掲載期間設定が必要です`,
+        path: ['expiryOption'],
+      });
+    }
+    if (data.expiryOption === 'custom' && (!data.customExpiryMinutes || data.customExpiryMinutes < 1 || data.customExpiryMinutes > 720)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'カスタム掲載期間は1分〜720分（12時間）の範囲で設定してください',
+        path: ['customExpiryMinutes'],
+      });
+    }
+  }
 });
 
 type PostFormValues = z.infer<typeof postSchema>;
@@ -67,24 +118,42 @@ type DisplayStore = Pick<Store, 'name'> & { id: string };
 
 const libraries: ("places")[] = ["places"];
 
-// 🔥 新しいカテゴリ定義
+// 🔥 新しいカテゴリ定義（並び順を変更）
 const categoryOptions = [
+  { value: 'おとく自慢', label: 'おとく自慢' },
   { value: '空席状況', label: '空席状況' },
   { value: '在庫状況', label: '在庫状況' },
   { value: 'PR', label: 'PR' },
   { value: '応援', label: '応援' },
-  { value: 'おとく自慢', label: 'おとく自慢' },
   { value: '雑談', label: '雑談' },
 ];
 
-// 🔥 新しい掲載期間オプション
-const expiryOptions = [
-  { value: '15m', label: '15分' },
-  { value: '30m', label: '30分' },
-  { value: '45m', label: '45分' },
-  { value: '60m', label: '60分' },
-  { value: 'custom', label: 'カスタム設定（最大12時間）' },
-];
+// 🔥 カテゴリ別の掲載期間オプション
+const getExpiryOptionsForCategory = (category: string) => {
+  if (category === '空席状況' || category === '在庫状況') {
+    // 空席状況・在庫状況は15分〜60分のみ
+    return [
+      { value: '15m', label: '15分' },
+      { value: '30m', label: '30分' },
+      { value: '45m', label: '45分' },
+      { value: '60m', label: '60分' },
+    ];
+  } else {
+    // PR・応援・おとく自慢・雑談はカスタム設定のみ
+    return [
+      { value: 'custom', label: 'カスタム設定（最大12時間）' },
+    ];
+  }
+};
+
+// 🔥 デフォルトの掲載期間を取得
+const getDefaultExpiryForCategory = (category: string) => {
+  if (category === '空席状況' || category === '在庫状況') {
+    return '30m';
+  } else {
+    return 'custom';
+  }
+};
 
 export default function PostPage() {
   const { data: session, status } = useSession();
@@ -150,11 +219,11 @@ export default function PostPage() {
     defaultValues: {
       storeId: '',
       storeName: '',
-      category: '空席状況',
+      category: 'おとく自慢', // デフォルトカテゴリを変更
       content: '',
       url: '',
-      expiryOption: '30m',
-      customExpiryMinutes: undefined,
+      expiryOption: 'custom', // デフォルトをカスタムに変更
+      customExpiryMinutes: 120, // デフォルト2時間
       location_lat: undefined,
       location_lng: undefined,
       store_latitude: undefined,
@@ -253,12 +322,85 @@ export default function PostPage() {
     }
   }, [fileFiles]);
 
-  // 🔥 ジャンル変更時にカテゴリーをリセット
-  // useEffect(() => {
-  //   if (selectedCategory) {
-  //     form.setValue('category', undefined);
-  //   }
-  // }, [selectedCategory, form]);
+  // 🔥 カテゴリ変更時の処理
+  useEffect(() => {
+    if (selectedCategory) {
+      // 🔥 詳細情報をすべてリセット（企業設定は保持）
+      form.setValue('storeId', businessSettings?.business_store_id || '');
+      form.setValue('storeName', businessSettings?.business_store_name || '');
+      form.setValue('location_lat', undefined);
+      form.setValue('location_lng', undefined);
+      form.setValue('store_latitude', undefined);
+      form.setValue('store_longitude', undefined);
+      form.setValue('rating', undefined);
+      form.setValue('url', businessSettings?.business_url || '');
+      form.setValue('remainingSlots', undefined);
+      form.setValue('customerSituation', '');
+      form.setValue('couponCode', businessSettings?.business_default_coupon || '');
+      form.setValue('phoneNumber', businessSettings?.business_default_phone || '');
+      form.setValue('supportPurchaseEnabled', false);
+      form.setValue('supportPurchaseOptions', []);
+      
+      // 🔥 画像・ファイルもリセット（企業設定のデフォルト画像は保持）
+      setImageFiles([]);
+      if (businessDefaultImageUrls.length > 0) {
+        setImagePreviewUrls([...businessDefaultImageUrls]);
+      } else {
+        setImagePreviewUrls([]);
+      }
+      setFileFiles([]);
+      setFilePreviewUrls([]);
+      
+      // 🔥 来客状況の状態もリセット
+      setMaleCustomers(undefined);
+      setFemaleCustomers(undefined);
+      
+      // 🔥 位置情報関連の状態もリセット
+      setLocationStatus('none');
+      setSelectedPlace(null);
+      
+      // 🔥 すべてのオプションフィールドを閉じる
+      setOptionalFieldsExpanded({
+        image: false,
+        location: false,
+        rating: false,
+        url: false,
+        remainingSlots: false,
+        customerSituation: false,
+        coupon: false,
+        phoneNumber: false,
+        file: false,
+        supportPurchase: false,
+      });
+      
+      // 🔥 詳細情報セクションを閉じる
+      setShowOptionalFields(false);
+      
+      // 掲載期間のデフォルト値を設定
+      const defaultExpiry = getDefaultExpiryForCategory(selectedCategory);
+      form.setValue('expiryOption', defaultExpiry);
+      
+      // カスタム設定の場合はデフォルト時間を設定
+      if (defaultExpiry === 'custom') {
+        form.setValue('customExpiryMinutes', 120); // 2時間
+      } else {
+        form.setValue('customExpiryMinutes', undefined);
+      }
+      
+      // 🔥 空席状況・在庫状況の場合は必要な項目を自動展開（リセット後に）
+      if (selectedCategory === '空席状況' || selectedCategory === '在庫状況') {
+        // 少し遅延させてから展開（リセット処理完了後）
+        setTimeout(() => {
+          setOptionalFieldsExpanded(prev => ({
+            ...prev,
+            location: true,
+            remainingSlots: true
+          }));
+          setShowOptionalFields(true);
+        }, 100);
+      }
+    }
+  }, [selectedCategory, form, businessSettings, businessDefaultImageUrls]);
   
   // 🔥 更新された投稿処理
   const handleActualSubmit = async (values: PostFormValues) => {
@@ -512,15 +654,15 @@ export default function PostPage() {
         }
       }
 
-      // フォームリセット（企業設定を考慮）
+              // フォームリセット（企業設定を考慮）
       const resetValues = {
         storeId: businessSettings?.business_store_id || '',
         storeName: businessSettings?.business_store_name || '',
-        category: '空席状況' as const,
+        category: 'おとく自慢' as const, // デフォルトカテゴリを変更
         content: businessSettings?.business_default_content || '',
         url: businessSettings?.business_url || '',
-        expiryOption: '30m' as const,
-        customExpiryMinutes: undefined,
+        expiryOption: 'custom' as const, // デフォルトをカスタムに変更
+        customExpiryMinutes: 120, // デフォルト2時間
         location_lat: undefined,
         location_lng: undefined,
         store_latitude: undefined,
@@ -1386,6 +1528,13 @@ export default function PostPage() {
                       if (value === 'custom') {
                         setShowCustomTimeModal(true);
                       }
+                      // カテゴリ変更時にデフォルト値を設定
+                      if (selectedCategory && value !== 'custom') {
+                        const defaultExpiry = getDefaultExpiryForCategory(selectedCategory);
+                        if (defaultExpiry !== value) {
+                          field.onChange(defaultExpiry);
+                        }
+                      }
                     }} value={field.value || ""}>
                       <FormControl>
                         <SelectTrigger className="w-full text-lg py-6">
@@ -1393,7 +1542,7 @@ export default function PostPage() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {expiryOptions.map((option) => (
+                        {getExpiryOptionsForCategory(selectedCategory || 'おとく自慢').map((option) => (
                           <SelectItem key={option.value} value={option.value} className="text-lg py-3">
                             {option.label}
                           </SelectItem>
@@ -1418,6 +1567,27 @@ export default function PostPage() {
                             変更
                           </Button>
                         </div>
+                      </div>
+                    )}
+                    
+                    {/* PR・応援・おとく自慢・雑談でカスタム設定が必要な場合の案内 */}
+                    {['PR', '応援', 'おとく自慢', '雑談'].includes(selectedCategory || '') && selectedExpiryOption === 'custom' && !form.getValues('customExpiryMinutes') && (
+                      <div className="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                        <div className="flex items-center space-x-2">
+                          <ClockIcon className="h-4 w-4 text-amber-600" />
+                          <span className="text-sm text-amber-800">
+                            {selectedCategory}では掲載時間の設定が必要です。「変更」ボタンから時間を設定してください。
+                          </span>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setShowCustomTimeModal(true)}
+                          className="mt-2"
+                        >
+                          時間を設定
+                        </Button>
                       </div>
                     )}
                   </FormItem>
@@ -1649,6 +1819,9 @@ export default function PostPage() {
                                 <FormLabel className="text-lg font-semibold flex items-center">
                                   <StoreIcon className="mr-2 h-5 w-5" />
                                   場所
+                                  {(selectedCategory === '空席状況' || selectedCategory === '在庫状況') && (
+                                    <span className="text-destructive ml-1">※</span>
+                                  )}
                                 </FormLabel>
                                 <FormControl>
                                   <div className="space-y-2">
@@ -1744,6 +1917,9 @@ export default function PostPage() {
                                 <FormLabel className="text-lg font-semibold flex items-center">
                                   <PackageIcon className="mr-2 h-5 w-5" />
                                   残数（座席数、在庫数など）
+                                  {(selectedCategory === '空席状況' || selectedCategory === '在庫状況') && (
+                                    <span className="text-destructive ml-1">※</span>
+                                  )}
                                 </FormLabel>
                                 <FormControl>
                                   <Input

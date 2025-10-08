@@ -12,14 +12,14 @@ interface PostFilterProps {
   setActiveFilter: (filter: string) => void;
 }
 
-// 🔥 新しいカテゴリ定義（6つのカテゴリ）
+// 🔥 新しいカテゴリ定義（並び順を統一）
 const categories = [
   { id: 'all', name: 'すべて', icon: null },
+  { id: 'おとく自慢', name: 'おとく自慢', icon: Trophy },
   { id: '空席状況', name: '空席状況', icon: Utensils },
   { id: '在庫状況', name: '在庫状況', icon: ShoppingBag },
   { id: 'PR', name: 'PR', icon: Megaphone },
   { id: '応援', name: '応援', icon: Heart },
-  { id: 'おとく自慢', name: 'おとく自慢', icon: Trophy },
   { id: '雑談', name: '雑談', icon: MessageSquareText },
 ];
 

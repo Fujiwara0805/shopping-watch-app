@@ -102,18 +102,18 @@ interface PostFromDB {
 type SortOption = 'created_at_desc' | 'created_at_asc' | 'expires_at_asc' | 'distance_asc' | 'likes_desc' | 'views_desc' | 'comments_desc';
 type SearchMode = 'all' | 'category' | 'favorite_store' | 'liked_posts' | 'hybrid';
 
-// 🔥 更新されたカテゴリ分類
+// 🔥 更新されたカテゴリ分類（並び順を統一）
 const categoryOptions = [
+  { value: 'おとく自慢', label: 'おとく自慢' },
   { value: '空席状況', label: '空席状況' },
   { value: '在庫状況', label: '在庫状況' },
   { value: 'PR', label: 'PR' },
   { value: '応援', label: '応援' },
-  { value: 'おとく自慢', label: 'おとく自慢' },
   { value: '雑談', label: '雑談' },
 ];
 
-// 🔥 新しいカテゴリに対応
-const categories = ['すべて', '空席状況', '在庫状況', 'PR', '応援', 'おとく自慢', '雑談'];
+// 🔥 新しいカテゴリに対応（並び順を統一）
+const categories = ['すべて', 'おとく自慢', '空席状況', '在庫状況', 'PR', '応援', '雑談'];
 
 
 const SEARCH_RADIUS_METERS = 1000; // 1km
