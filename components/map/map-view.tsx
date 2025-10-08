@@ -47,7 +47,7 @@ const getCategoryColor = (category: string | null) => {
       return '#9333ea'; // purple-600
     case '応援':
       return '#dc2626'; // red-600
-    case '受け渡し':
+    case 'おとく自慢':
       return '#16a34a'; // green-600
     case '雑談':
       return '#4b5563'; // gray-600

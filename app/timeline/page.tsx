@@ -107,12 +107,12 @@ const categoryOptions = [
   { value: '在庫状況', label: '在庫状況' },
   { value: 'PR', label: 'PR' },
   { value: '応援', label: '応援' },
-  { value: '受け渡し', label: '受け渡し' },
+  { value: 'おとく自慢', label: 'おとく自慢' },
   { value: '雑談', label: '雑談' },
 ];
 
 // 🔥 新しいカテゴリに対応
-const categories = ['すべて', '空席状況', '在庫状況', 'PR', '応援', '受け渡し', '雑談'];
+const categories = ['すべて', '空席状況', '在庫状況', 'PR', '応援', 'おとく自慢', '雑談'];
 
 
 const SEARCH_RADIUS_METERS = 5000; // 5km
@@ -1920,7 +1920,7 @@ export default function Timeline() {
       '在庫状況': '#2563eb',      // blue-600
       'PR': '#9333ea',    // purple-600
       '応援': '#dc2626',        // red-600
-      '受け渡し': '#16a34a',    // green-600
+      'おとく自慢': '#16a34a',    // green-600
       '雑談': '#4b5563',        // gray-600
     };
     
@@ -2763,10 +2763,10 @@ export default function Timeline() {
                           </div>
                           <div>
                             <p className="text-sm font-medium text-green-800 mb-1">
-                              受け渡し
+                              おとく自慢
                             </p>
                             <p className="text-xs text-green-600">
-                              物の譲渡・受け渡し
+                              お得な情報の共有
                             </p>
                           </div>
                         </div>

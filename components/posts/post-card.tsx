@@ -281,7 +281,7 @@ const getCategoryIconAndColor = (category: string) => {
         textColor: 'text-pink-800',
         borderColor: 'border-pink-200'
       };
-    case '受け渡し':
+    case 'おとく自慢':
       return {
         icon: Package,
         bgColor: 'bg-green-100',
@@ -316,7 +316,7 @@ const getCategoryColor = (category: string) => {
       return 'bg-purple-100 text-purple-800 border-purple-200';
     case '応援':
       return 'bg-pink-100 text-pink-800 border-pink-200';
-    case '受け渡し':
+    case 'おとく自慢':
       return 'bg-green-100 text-green-800 border-green-200';
     case '雑談': // 🔥 追加
       return 'bg-gray-100 text-gray-800 border-gray-200';

@@ -40,7 +40,7 @@ declare global {
 const postSchema = z.object({
   storeId: z.string().optional(),
   storeName: z.string().optional(),
-  category: z.enum(['空席状況', '在庫状況', 'PR', '応援', '受け渡し', '雑談'], { required_error: 'カテゴリを選択してください' }),
+  category: z.enum(['空席状況', '在庫状況', 'PR', '応援', 'おとく自慢', '雑談'], { required_error: 'カテゴリを選択してください' }),
   content: z.string().min(5, { message: '5文字以上入力してください' }).max(240, { message: '240文字以内で入力してください' }),
   url: z.string().url({ message: '有効なURLを入力してください' }).optional().or(z.literal('')),
   // 🔥 新しい掲載期間スキーマ
@@ -73,7 +73,7 @@ const categoryOptions = [
   { value: '在庫状況', label: '在庫状況' },
   { value: 'PR', label: 'PR' },
   { value: '応援', label: '応援' },
-  { value: '受け渡し', label: '受け渡し' },
+  { value: 'おとく自慢', label: 'おとく自慢' },
   { value: '雑談', label: '雑談' },
 ];
 
@@ -401,7 +401,7 @@ export default function PostPage() {
             '在庫状況': '在庫状況',
             'PR': 'PR',
             '応援': '応援先',
-            '受け渡し': '受け渡し場所',
+            'おとく自慢': 'おとく自慢',
           };
           return categoryDefaults[selectedCategory as keyof typeof categoryDefaults] || null;
         }

@@ -19,7 +19,7 @@ const categories = [
   { id: '在庫状況', name: '在庫状況', icon: ShoppingBag },
   { id: 'PR', name: 'PR', icon: Megaphone },
   { id: '応援', name: '応援', icon: Heart },
-  { id: '受け渡し', name: '受け渡し', icon: HandCoins },
+  { id: 'おとく自慢', name: 'おとく自慢', icon: HandCoins },
   { id: '雑談', name: '雑談', icon: MessageSquareText },
 ];
 
