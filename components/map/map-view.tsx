@@ -451,14 +451,14 @@ export function MapView() {
           case 'safari':
             return {
               ...baseOptions,
-              zoom: 15,
+              zoom: 14,
               gestureHandling: 'cooperative'
             };
           
           case 'firefox':
             return {
               ...baseOptions,
-              zoom: 15,
+              zoom: 14,
               gestureHandling: 'greedy',
               // Firefox では追加の最適化
               draggableCursor: 'default'
@@ -468,14 +468,14 @@ export function MapView() {
           case 'edge':
             return {
               ...baseOptions,
-              zoom: 15,
+              zoom: 14,
               gestureHandling: 'greedy'
             };
           
           default:
             return {
               ...baseOptions,
-              zoom: 15,  
+              zoom: 14,  
               gestureHandling: 'greedy'
             };
         }
@@ -503,9 +503,9 @@ export function MapView() {
             
             // ブラウザ別のズーム調整
             if (browserInfo.name === 'safari') {
-              newMap.setZoom(15);
+              newMap.setZoom(14);
             } else if (browserInfo.name === 'firefox') {
-              newMap.setZoom(15);
+              newMap.setZoom(14);
             }
           }
         }, resizeDelay);
@@ -650,8 +650,8 @@ export function MapView() {
 
       map.panTo(userPosition);
       const currentZoom = map.getZoom();
-      if (currentZoom !== undefined && currentZoom < 15) {
-        map.setZoom(15);
+      if (currentZoom !== undefined && currentZoom < 14) {
+        map.setZoom(14);
       }
     }
   }, [map, latitude, longitude, mapInitialized, userLocationMarker, userLocationCircle, browserInfo.name, showRangeCircle]);
