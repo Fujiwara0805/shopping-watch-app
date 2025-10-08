@@ -7,7 +7,7 @@ export function cn(...inputs: ClassValue[]) {
 
 const OITA_UNIVERSITY_LAT = 33.1554;
 const OITA_UNIVERSITY_LON = 131.6034;
-const MAX_DISTANCE_KM = 1; // 1km圏内
+const MAX_DISTANCE_KM = 5; // 1km圏内
 
 function degreesToRadians(degrees: number): number {
   return degrees * Math.PI / 180;
