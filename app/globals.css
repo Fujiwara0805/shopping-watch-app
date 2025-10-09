@@ -137,12 +137,81 @@
     font-size: 14px !important; /* 基本フォントサイズを小さく */
   }
 
+  /* 🔥 カスタム検索候補表示（店舗名 + 住所形式） */
+  .pac-container .pac-item {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    padding: 12px 16px !important;
+    border-bottom: 1px solid #f3f4f6 !important;
+    cursor: pointer !important;
+    transition: background-color 0.15s ease !important;
+    position: relative !important;
+  }
+
+  .pac-container .pac-item:hover,
+  .pac-container .pac-item.pac-item-selected {
+    background-color: #f8fafc !important;
+  }
+
+  /* 店舗名を太字で大きく表示 */
+  .pac-container .pac-item .pac-item-query {
+    font-weight: 600 !important;
+    font-size: 16px !important;
+    color: #1f2937 !important;
+    margin-bottom: 4px !important;
+    line-height: 1.2 !important;
+    width: 100% !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    display: block !important;
+  }
+
+  /* 住所を小さく薄い色で表示 */
+  .pac-container .pac-item .pac-item-query + span,
+  .pac-container .pac-item span:last-child {
+    font-size: 13px !important;
+    color: #6b7280 !important;
+    font-weight: 400 !important;
+    line-height: 1.3 !important;
+    width: 100% !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    display: block !important;
+  }
+
+  /* マッチした文字をハイライト */
+  .pac-container .pac-item .pac-matched {
+    font-weight: 700 !important;
+    color: #059669 !important;
+  }
+
+  /* 🔥 住所部分を強制的に2行目に表示 */
+  .pac-container .pac-item span[title] {
+    font-size: 13px !important;
+    color: #6b7280 !important;
+    font-weight: 400 !important;
+    margin-top: 2px !important;
+    display: block !important;
+    width: 100% !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  /* アイコンを非表示にして、テキストのみ表示 */
+  .pac-container .pac-icon {
+    display: none !important;
+  }
+
   /* モバイル専用の Google Places ドロップダウンスタイル */
   @media screen and (max-width: 768px) {
     .pac-container {
       position: fixed !important;
       z-index: 99999 !important;
-      max-height: 100px !important; /* 3~4件の検索結果に対応した高さ */
+      max-height: 240px !important; /* 店舗名+住所表示に対応した高さ */
       overflow-y: auto !important;
       -webkit-overflow-scrolling: touch !important;
       border-radius: 0.5rem !important;
@@ -153,39 +222,57 @@
       max-width: none !important;
     }
 
-    /* モバイルでのドロップダウンアイテム - よりコンパクトに */
+    /* モバイルでのドロップダウンアイテム - 2行表示対応 */
     .pac-container .pac-item {
-      padding: 8px 12px !important; /* パディングを小さく */
-      font-size: 14px !important; /* フォントサイズを小さく */
-      line-height: 1.3 !important; /* 行間を狭く */
+      padding: 12px 16px !important;
       border-bottom: 1px solid #f3f4f6 !important;
       cursor: pointer !important;
       transition: background-color 0.15s ease !important;
       display: flex !important;
-      align-items: center !important;
-      min-height: 40px !important; /* 最小高さを設定 */
+      flex-direction: column !important;
+      align-items: flex-start !important;
+      min-height: 60px !important; /* 2行表示に対応した高さ */
     }
 
     .pac-container .pac-item:hover,
     .pac-container .pac-item.pac-item-selected {
-      background-color: #f3f4f6 !important;
+      background-color: #f8fafc !important;
     }
 
     .pac-container .pac-item:last-child {
       border-bottom: none !important;
     }
 
-    /* モバイルでのテキストスタイル - コンパクト化 */
+    /* モバイルでの店舗名スタイル */
     .pac-container .pac-item .pac-item-query {
       font-weight: 600 !important;
       color: #1f2937 !important;
-      font-size: 14px !important;
+      font-size: 15px !important;
+      margin-bottom: 4px !important;
+      line-height: 1.2 !important;
+      width: 100% !important;
+      white-space: nowrap !important;
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
     }
 
+    /* モバイルでの住所スタイル */
+    .pac-container .pac-item .pac-item-query + span,
+    .pac-container .pac-item span:last-child {
+      font-size: 12px !important;
+      color: #6b7280 !important;
+      font-weight: 400 !important;
+      line-height: 1.3 !important;
+      width: 100% !important;
+      white-space: nowrap !important;
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+    }
+
+    /* モバイルでのマッチハイライト */
     .pac-container .pac-item .pac-matched {
       font-weight: 700 !important;
       color: #059669 !important;
-      font-size: 14px !important;
     }
 
     /* アイコン調整 - より小さく */
@@ -216,30 +303,54 @@
   @media screen and (min-width: 769px) {
     .pac-container {
       z-index: 1000 !important;
-      max-height: 200px !important;
+      max-height: 300px !important; /* 店舗名+住所表示に対応した高さ */
     }
 
     .pac-container .pac-item {
-      padding: 10px 14px !important;
-      font-size: 15px !important;
-      line-height: 1.4 !important;
+      padding: 14px 18px !important;
       border-bottom: 1px solid #f3f4f6 !important;
       cursor: pointer !important;
       transition: background-color 0.15s ease !important;
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: flex-start !important;
+      min-height: 70px !important; /* 2行表示に対応した高さ */
     }
 
     .pac-container .pac-item:hover,
     .pac-container .pac-item.pac-item-selected {
-      background-color: #f9fafb !important;
+      background-color: #f8fafc !important;
     }
 
+    /* デスクトップでの店舗名スタイル */
     .pac-container .pac-item .pac-item-query {
-      font-weight: 500 !important;
+      font-weight: 600 !important;
       color: #1f2937 !important;
+      font-size: 16px !important;
+      margin-bottom: 4px !important;
+      line-height: 1.2 !important;
+      width: 100% !important;
+      white-space: nowrap !important;
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
     }
 
+    /* デスクトップでの住所スタイル */
+    .pac-container .pac-item .pac-item-query + span,
+    .pac-container .pac-item span:last-child {
+      font-size: 14px !important;
+      color: #6b7280 !important;
+      font-weight: 400 !important;
+      line-height: 1.3 !important;
+      width: 100% !important;
+      white-space: nowrap !important;
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+    }
+
+    /* デスクトップでのマッチハイライト */
     .pac-container .pac-item .pac-matched {
-      font-weight: 600 !important;
+      font-weight: 700 !important;
       color: #059669 !important;
     }
   }

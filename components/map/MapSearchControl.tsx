@@ -98,13 +98,48 @@ export function MapSearchControl({
             autocompleteOptions
           );
 
-          // ドロップダウンの表示/非表示を監視
-          const pacContainer = document.querySelector('.pac-container') as HTMLElement;
-          if (pacContainer) {
-            // ドロップダウンがクリックされた時にフォーカスを維持
-            pacContainer.addEventListener('mousedown', (e) => {
-              e.preventDefault(); // デフォルトのブラー動作を防ぐ
-            });
+          // 🔥 検索候補のカスタム表示フォーマット
+          const formatSearchResults = () => {
+            setTimeout(() => {
+              const pacContainer = document.querySelector('.pac-container') as HTMLElement;
+              if (pacContainer) {
+                const pacItems = pacContainer.querySelectorAll('.pac-item');
+                
+                pacItems.forEach((item) => {
+                  const pacItemQuery = item.querySelector('.pac-item-query');
+                  if (pacItemQuery) {
+                    // 店舗名と住所を分離
+                    const fullText = pacItemQuery.textContent || '';
+                    const parts = fullText.split(',');
+                    
+                    if (parts.length >= 2) {
+                      const storeName = parts[0].trim();
+                      const address = parts.slice(1).join(',').trim();
+                      
+                      // HTMLを再構築
+                      pacItemQuery.innerHTML = `
+                        <div style="font-weight: 600; font-size: 16px; color: #1f2937; margin-bottom: 4px; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                          ${storeName}
+                        </div>
+                        <div style="font-size: 13px; color: #6b7280; font-weight: 400; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                          ${address}
+                        </div>
+                      `;
+                    }
+                  }
+                });
+                
+                // ドロップダウンがクリックされた時にフォーカスを維持
+                pacContainer.addEventListener('mousedown', (e) => {
+                  e.preventDefault(); // デフォルトのブラー動作を防ぐ
+                });
+              }
+            }, 100);
+          };
+
+          // 入力イベントでフォーマットを適用
+          if (inputRef.current) {
+            inputRef.current.addEventListener('input', formatSearchResults);
           }
 
           newAutocomplete.addListener('place_changed', () => {
