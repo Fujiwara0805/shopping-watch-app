@@ -22,7 +22,10 @@ export default function MapPage() {
 
   // スマートフォン向けのローディングスケルトン
   const LoadingSkeleton = () => (
-    <div className="w-full h-full bg-muted animate-pulse flex items-center justify-center">
+    <div 
+      className="w-full h-full bg-muted animate-pulse flex items-center justify-center"
+      style={{ minHeight: '100vh' }} // CLS対策：最小高さを固定
+    >
       <div className="text-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
         <p className="text-muted-foreground text-sm">地図を準備中...</p>

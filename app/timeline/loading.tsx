@@ -43,11 +43,12 @@ export default function TimelineLoading() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3, delay: i * 0.05 }}
                 className="w-full"
+                style={{ minHeight: '400px' }} // CLS対策：最小高さを固定
               >
                 {/* 実際の投稿カードと同じ構造のスケルトン */}
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden h-full">
                   {/* ヘッダー部分 */}
-                  <div className="p-3 pb-2">
+                  <div className="p-3 pb-2" style={{ minHeight: '60px' }}>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-2">
                         <Skeleton className="h-7 w-7 rounded-full flex-shrink-0" />
@@ -61,19 +62,21 @@ export default function TimelineLoading() {
                   </div>
                   
                   {/* コンテンツ部分 */}
-                  <div className="p-3 pt-1">
-                    <div className="space-y-2 mb-3">
+                  <div className="p-3 pt-1 flex-1 flex flex-col">
+                    <div className="space-y-2 mb-3" style={{ minHeight: '48px' }}>
                       <Skeleton className="h-4 w-full" />
                       <Skeleton className="h-4 w-3/4" />
                     </div>
                     
                     {/* 画像部分（固定アスペクト比） */}
-                    <div className="flex justify-center w-full mb-3">
-                      <Skeleton className="w-full max-w-sm rounded-md" style={{ aspectRatio: "4/5" }} />
+                    <div className="flex justify-center w-full mb-3 flex-1">
+                      <div className="w-full max-w-sm" style={{ aspectRatio: "4/5" }}>
+                        <Skeleton className="w-full h-full rounded-md" />
+                      </div>
                     </div>
                     
                     {/* フッター部分 */}
-                    <div className="flex items-center justify-between pt-2">
+                    <div className="flex items-center justify-between pt-2" style={{ minHeight: '40px' }}>
                       <div className="flex items-center space-x-4">
                         <Skeleton className="h-8 w-12" />
                         <Skeleton className="h-8 w-12" />
