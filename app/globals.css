@@ -247,6 +247,9 @@
   /* Google Places ドロップダウンの共通スタイル */
   .pac-container .pac-item {
     border-top: none !important;
+    /* ドロップダウン項目の安定性を向上 */
+    pointer-events: auto !important;
+    user-select: none !important;
   }
 
   .pac-container .pac-item:first-child {
@@ -255,6 +258,21 @@
 
   .pac-container .pac-item:last-child {
     border-radius: 0 0 0.5rem 0.5rem !important;
+  }
+
+  /* ドロップダウンの安定性を向上させる */
+  .pac-container {
+    /* タッチイベントの処理を改善 */
+    touch-action: manipulation !important;
+    /* ドロップダウンの表示を安定化 */
+    will-change: auto !important;
+    /* より高いz-indexを設定 */
+    z-index: 10000 !important;
+  }
+
+  /* ドロップダウン項目のクリック領域を確保 */
+  .pac-container .pac-item * {
+    pointer-events: none !important;
   }
 
   /* Google Maps のロゴや著作権表示を隠す（Places Autocomplete使用時） */

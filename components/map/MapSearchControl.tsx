@@ -98,6 +98,15 @@ export function MapSearchControl({
             autocompleteOptions
           );
 
+          // ドロップダウンの表示/非表示を監視
+          const pacContainer = document.querySelector('.pac-container') as HTMLElement;
+          if (pacContainer) {
+            // ドロップダウンがクリックされた時にフォーカスを維持
+            pacContainer.addEventListener('mousedown', (e) => {
+              e.preventDefault(); // デフォルトのブラー動作を防ぐ
+            });
+          }
+
           newAutocomplete.addListener('place_changed', () => {
             const place = newAutocomplete.getPlace();
             console.log("MapSearchControl: Place selected:", place);
@@ -128,6 +137,8 @@ export function MapSearchControl({
               // 少し遅延を入れてから処理を実行（UIの更新を確実にするため）
               setTimeout(() => {
                 onPlaceSelected(place, distanceText);
+                // フォーカス状態をリセット
+                setIsFocused(false);
                 inputRef.current?.blur();
               }, 100);
             } else {
@@ -220,11 +231,25 @@ export function MapSearchControl({
   // 🔥 修正5: タッチイベントの問題を解決するためにpassive optionを追加
   const handleFocus = () => setIsFocused(true);
   
-  const handleBlur = () => {
-    // ブラー時に少し遅延を入れる（オートコンプリートの選択を妨げないため）
+  const handleBlur = (event: React.FocusEvent<HTMLInputElement>) => {
+    // Google Places ドロップダウン内の要素にフォーカスが移った場合は無視
+    const relatedTarget = event.relatedTarget as HTMLElement;
+    if (relatedTarget && relatedTarget.closest('.pac-container')) {
+      return;
+    }
+    
+    // ブラー時に遅延を入れる（オートコンプリートの選択を妨げないため）
     setTimeout(() => {
-      setIsFocused(false);
-    }, 150);
+      // ドロップダウンが表示されている場合は、フォーカス状態を維持
+      const pacContainers = document.querySelectorAll('.pac-container');
+      const hasVisibleDropdown = Array.from(pacContainers).some(
+        container => (container as HTMLElement).style.display !== 'none'
+      );
+      
+      if (!hasVisibleDropdown) {
+        setIsFocused(false);
+      }
+    }, 200); // 遅延を200msに増加
   };
 
   if (loadError) {

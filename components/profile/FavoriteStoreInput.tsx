@@ -218,6 +218,17 @@ const FavoriteStoreInput = React.forwardRef<HTMLInputElement, FavoriteStoreInput
         localInputRef.current.addEventListener('focus', handleInputFocus);
       }
 
+      // ドロップダウンのクリックイベントを処理
+      setTimeout(() => {
+        const pacContainer = document.querySelector('.pac-container') as HTMLElement;
+        if (pacContainer) {
+          // ドロップダウンがクリックされた時にフォーカスを維持
+          pacContainer.addEventListener('mousedown', (e) => {
+            e.preventDefault(); // デフォルトのブラー動作を防ぐ
+          });
+        }
+      }, 100);
+
       const listener = autocompleteRef.current!.addListener('place_changed', () => {
         const place = autocompleteRef.current?.getPlace();
         console.log('FavoriteStoreInput place_changed - place:', place);
@@ -238,7 +249,10 @@ const FavoriteStoreInput = React.forwardRef<HTMLInputElement, FavoriteStoreInput
           }
         }
         
-        setIsDropdownOpen(false);
+        // ドロップダウンを閉じる処理を遅延
+        setTimeout(() => {
+          setIsDropdownOpen(false);
+        }, 100);
       });
 
       return () => {
@@ -297,6 +311,27 @@ const FavoriteStoreInput = React.forwardRef<HTMLInputElement, FavoriteStoreInput
       }
     };
 
+    const handleBlur = (event: React.FocusEvent<HTMLInputElement>) => {
+      // Google Places ドロップダウン内の要素にフォーカスが移った場合は無視
+      const relatedTarget = event.relatedTarget as HTMLElement;
+      if (relatedTarget && relatedTarget.closest('.pac-container')) {
+        return;
+      }
+      
+      // ブラー時に遅延を入れる（オートコンプリートの選択を妨げないため）
+      setTimeout(() => {
+        // ドロップダウンが表示されている場合は、状態を維持
+        const pacContainers = document.querySelectorAll('.pac-container');
+        const hasVisibleDropdown = Array.from(pacContainers).some(
+          container => (container as HTMLElement).style.display !== 'none'
+        );
+        
+        if (!hasVisibleDropdown) {
+          setIsDropdownOpen(false);
+        }
+      }, 200);
+    };
+
     const handleClear = () => {
       setInputValue('');
       if (localInputRef.current) {
@@ -319,6 +354,7 @@ const FavoriteStoreInput = React.forwardRef<HTMLInputElement, FavoriteStoreInput
             type="text"
             value={inputValue}
             onChange={handleInputChange}
+            onBlur={handleBlur}
             placeholder={placeholder}
             className={`pr-10 ${className || ''}`}
             style={{ fontSize: '16px', ...style }}
