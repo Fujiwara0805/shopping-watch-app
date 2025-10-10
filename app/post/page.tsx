@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -322,6 +322,45 @@ export default function PostPage() {
     }
   }, [fileFiles]);
 
+  // 🔥 企業設定の店舗位置情報を取得する関数
+  const fetchBusinessStoreLocation = useCallback(() => {
+    if (!businessSettings?.business_store_id) return;
+    
+    const fetchLocation = () => {
+      if (window.google && window.google.maps && window.google.maps.places) {
+        try {
+          const service = new window.google.maps.places.PlacesService(document.createElement('div'));
+          const request = {
+            placeId: businessSettings.business_store_id,
+            fields: ['geometry']
+          };
+          
+          service.getDetails(request, (place: google.maps.places.PlaceResult | null, status: google.maps.places.PlacesServiceStatus) => {
+            if (status === window.google.maps.places.PlacesServiceStatus.OK && place?.geometry?.location) {
+              const lat = place.geometry.location.lat();
+              const lng = place.geometry.location.lng();
+              form.setValue('store_latitude', lat);
+              form.setValue('store_longitude', lng);
+              form.setValue('location_lat', lat);
+              form.setValue('location_lng', lng);
+              console.log('企業設定: 店舗位置情報を設定しました', { lat, lng, storeId: businessSettings.business_store_id });
+            } else {
+              console.warn('企業設定: 店舗位置情報の取得に失敗しました', status);
+            }
+          });
+        } catch (error) {
+          console.error('企業設定: 店舗位置情報の取得エラー:', error);
+        }
+      } else {
+        // Google Maps APIが読み込まれていない場合は少し待ってから再試行
+        setTimeout(fetchLocation, 1000);
+      }
+    };
+    
+    // 少し遅延させてから実行（Google Maps APIの読み込み完了を待つ）
+    setTimeout(fetchLocation, 500);
+  }, [businessSettings?.business_store_id, form]);
+
   // 🔥 カテゴリ変更時の処理
   useEffect(() => {
     if (selectedCategory) {
@@ -400,6 +439,11 @@ export default function PostPage() {
         }
       }
       
+      // 🔥 企業設定の場合は位置情報を再取得
+      if (businessSettings?.business_store_id) {
+        fetchBusinessStoreLocation();
+      }
+      
       // 🔥 空席状況・在庫状況の場合は必要な項目を自動展開（リセット後に）
       if (selectedCategory === '空席状況' || selectedCategory === '在庫状況') {
         // 少し遅延させてから展開（リセット処理完了後）
@@ -413,7 +457,7 @@ export default function PostPage() {
         }, 100);
       }
     }
-  }, [selectedCategory, form, businessSettings, businessDefaultImageUrls]);
+  }, [selectedCategory, form, businessSettings, businessDefaultImageUrls, fetchBusinessStoreLocation]);
   
   // 🔥 更新された投稿処理
   const handleActualSubmit = async (values: PostFormValues) => {
@@ -900,38 +944,13 @@ export default function PostPage() {
                 setImagePreviewUrls([publicUrl]);
               }
                 
-              // Google Places JavaScript APIを使用して位置情報を取得（遅延実行）
-              const fetchStoreLocation = () => {
-                if (window.google && window.google.maps && window.google.maps.places) {
-                  try {
-                    const service = new window.google.maps.places.PlacesService(document.createElement('div'));
-                    const request = {
-                      placeId: profileData.business_store_id,
-                      fields: ['geometry']
-                    };
-                    
-                    service.getDetails(request, (place: google.maps.places.PlaceResult | null, status: google.maps.places.PlacesServiceStatus) => {
-                      if (status === window.google.maps.places.PlacesServiceStatus.OK && place?.geometry?.location) {
-                        const lat = place.geometry.location.lat();
-                        const lng = place.geometry.location.lng();
-                        form.setValue('store_latitude', lat);
-                        form.setValue('store_longitude', lng);
-                        console.log('企業設定: 店舗位置情報を設定しました', { lat, lng });
-                      } else {
-                        console.warn('企業設定: 店舗位置情報の取得に失敗しました', status);
-                      }
-                    });
-                  } catch (error) {
-                    console.error('企業設定: 店舗位置情報の取得エラー:', error);
-                  }
-                } else {
-                  // Google Maps APIが読み込まれていない場合は少し待ってから再試行
-                  setTimeout(fetchStoreLocation, 1000);
-                }
-              };
-              
-              // 少し遅延させてから実行（Google Maps APIの読み込み完了を待つ）
-              setTimeout(fetchStoreLocation, 500);
+              // 🔥 企業設定の位置情報を取得（共通関数を使用）
+              if (profileData.business_store_id) {
+                // 少し遅延させてから実行（businessSettingsの設定完了を待つ）
+                setTimeout(() => {
+                  fetchBusinessStoreLocation();
+                }, 100);
+              }
             }
           }
         }
@@ -943,7 +962,7 @@ export default function PostPage() {
     if (status !== 'loading') {
       loadBusinessSettings();
     }
-  }, [session?.user?.id, status, form]);
+  }, [session?.user?.id, status, form, fetchBusinessStoreLocation]);
 
   // 🔥 位置情報取得の改善
   useEffect(() => {
