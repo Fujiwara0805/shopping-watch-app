@@ -59,12 +59,6 @@ export function AppHeader() {
         return '通知';
       case '/contact':
         return 'お問い合わせ';
-      case '/family-group':
-        return 'グループ管理';
-      case '/family-group/join/[token]':
-        return '招待状';
-      case '/family-group/shopping':
-        return '共有メモ';
       case '/memo':
         return '買い物メモ';
       case '/flyers':

@@ -148,36 +148,6 @@
 - created_at (Timestamp)
 ```
 
-#### `family_groups`
-家族グループ情報
-```sql
-- id (UUID, Primary Key)
-- name (String)
-- owner_user_id (UUID, Foreign Key → app_users.id)
-- created_at (Timestamp)
-- updated_at (Timestamp)
-```
-
-#### `group_members`
-グループメンバー情報
-```sql
-- group_id (UUID, Foreign Key → family_groups.id)
-- user_id (UUID, Foreign Key → app_users.id)
-- role (String) -- 例: 'owner', 'member'
-- created_at (Timestamp)
-```
-
-#### `shared_memos`
-共有メモ情報
-```sql
-- id (UUID, Primary Key)
-- group_id (UUID, Foreign Key → family_groups.id)
-- created_by_user_id (UUID, Foreign Key → app_users.id)
-- content (Text)
-- is_completed (Boolean, default: false)
-- created_at (Timestamp)
-- updated_at (Timestamp)
-```
 
 ## 🚀 セットアップ手順
 
