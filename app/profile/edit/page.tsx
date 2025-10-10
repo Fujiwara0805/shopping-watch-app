@@ -776,30 +776,63 @@ export default function ProfileEditPage() {
                         name="favoriteStore2"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-sm font-medium flex items-center space-x-2">
-                              <span>お気に入り店舗 2</span>
-                              {field.value?.id ? (
-                                <Badge variant="secondary" className="bg-green-100 text-green-800 text-xs">
-                                  <CheckCircle className="h-3 w-3 mr-1" />
-                                  登録済み
-                                </Badge>
-                              ) : (
-                                <Badge variant="secondary" className="bg-blue-100 text-blue-800 text-xs">
-                                  <Plus className="h-3 w-3 mr-1" />
-                                  追加可能
-                                </Badge>
-                              )}
-                            </FormLabel>
-                            <FormControl>
-                              <FavoriteStoreInput
-                                placeholder="店舗を検索して選択"
-                                value={field.value === null ? undefined : field.value}
-                                onChange={field.onChange}
-                                disabled={isSaving}
-                                style={{ fontSize: '16px' }}
-                              />
-                            </FormControl>
-                            <FormMessage />
+                            {field.value?.id ? (
+                              // 登録済みの場合は削除のみ可能
+                              <div className="space-y-2">
+                                <FormLabel className="text-sm font-medium flex items-center space-x-2">
+                                  <span>お気に入り店舗 2</span>
+                                  <Badge variant="secondary" className="bg-green-100 text-green-800 text-xs">
+                                    <CheckCircle className="h-3 w-3 mr-1" />
+                                    登録済み
+                                  </Badge>
+                                </FormLabel>
+                                <div className="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-md">
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-medium text-gray-900 truncate">
+                                      {field.value.name}
+                                    </p>
+                                    <p className="text-xs text-gray-500">
+                                      変更する場合は一度削除してから再度追加してください
+                                    </p>
+                                  </div>
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                      field.onChange(null);
+                                      // 3店舗目も削除
+                                      form.setValue('favoriteStore3', null);
+                                    }}
+                                    className="ml-3 text-red-600 border-red-200 hover:bg-red-50"
+                                    disabled={isSaving}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              // 未登録の場合は追加可能
+                              <>
+                                <FormLabel className="text-sm font-medium flex items-center space-x-2">
+                                  <span>お気に入り店舗 2</span>
+                                  <Badge variant="secondary" className="bg-blue-100 text-blue-800 text-xs">
+                                    <Plus className="h-3 w-3 mr-1" />
+                                    追加可能
+                                  </Badge>
+                                </FormLabel>
+                                <FormControl>
+                                  <FavoriteStoreInput
+                                    placeholder="店舗を検索して選択"
+                                    value={field.value === null ? undefined : field.value}
+                                    onChange={field.onChange}
+                                    disabled={isSaving}
+                                    style={{ fontSize: '16px' }}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </>
+                            )}
                           </FormItem>
                         )}
                       />
@@ -818,30 +851,59 @@ export default function ProfileEditPage() {
                         name="favoriteStore3"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-sm font-medium flex items-center space-x-2">
-                              <span>お気に入り店舗 3</span>
-                              {field.value?.id ? (
-                                <Badge variant="secondary" className="bg-green-100 text-green-800 text-xs">
-                                  <CheckCircle className="h-3 w-3 mr-1" />
-                                  登録済み
-                                </Badge>
-                              ) : (
-                                <Badge variant="secondary" className="bg-blue-100 text-blue-800 text-xs">
-                                  <Plus className="h-3 w-3 mr-1" />
-                                  追加可能
-                                </Badge>
-                              )}
-                            </FormLabel>
-                            <FormControl>
-                              <FavoriteStoreInput
-                                placeholder="店舗を検索して選択"
-                                value={field.value === null ? undefined : field.value}
-                                onChange={field.onChange}
-                                disabled={isSaving}
-                                style={{ fontSize: '16px' }}
-                              />
-                            </FormControl>
-                            <FormMessage />
+                            {field.value?.id ? (
+                              // 登録済みの場合は削除のみ可能
+                              <div className="space-y-2">
+                                <FormLabel className="text-sm font-medium flex items-center space-x-2">
+                                  <span>お気に入り店舗 3</span>
+                                  <Badge variant="secondary" className="bg-green-100 text-green-800 text-xs">
+                                    <CheckCircle className="h-3 w-3 mr-1" />
+                                    登録済み
+                                  </Badge>
+                                </FormLabel>
+                                <div className="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-md">
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-medium text-gray-900 truncate">
+                                      {field.value.name}
+                                    </p>
+                                    <p className="text-xs text-gray-500">
+                                      変更する場合は一度削除してから再度追加してください
+                                    </p>
+                                  </div>
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => field.onChange(null)}
+                                    className="ml-3 text-red-600 border-red-200 hover:bg-red-50"
+                                    disabled={isSaving}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              // 未登録の場合は追加可能
+                              <>
+                                <FormLabel className="text-sm font-medium flex items-center space-x-2">
+                                  <span>お気に入り店舗 3</span>
+                                  <Badge variant="secondary" className="bg-blue-100 text-blue-800 text-xs">
+                                    <Plus className="h-3 w-3 mr-1" />
+                                    追加可能
+                                  </Badge>
+                                </FormLabel>
+                                <FormControl>
+                                  <FavoriteStoreInput
+                                    placeholder="店舗を検索して選択"
+                                    value={field.value === null ? undefined : field.value}
+                                    onChange={field.onChange}
+                                    disabled={isSaving}
+                                    style={{ fontSize: '16px' }}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </>
+                            )}
                           </FormItem>
                         )}
                       />
@@ -884,9 +946,7 @@ export default function ProfileEditPage() {
                         <Plus className="h-4 w-4" />
                         <span className="text-sm font-medium">2店舗目を追加できます</span>
                       </div>
-                      <p className="text-xs text-blue-600 mt-1">
-                        複数の店舗を登録すると、より多くの情報を受け取れます
-                      </p>
+
                     </div>
                   )}
 
