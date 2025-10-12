@@ -25,10 +25,19 @@ function formatRemainingTime(expiresAt: number): string {
 
   if (remainingMillis <= 0) return "掲載終了";
 
-  const hours = Math.floor(remainingMillis / (1000 * 60 * 60));
+  const days = Math.floor(remainingMillis / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((remainingMillis % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
   const minutes = Math.floor((remainingMillis % (1000 * 60 * 60)) / (1000 * 60));
   
-  if (hours > 0) {
+  if (days > 0) {
+    // 24時間以上の場合は日数表記
+    if (hours > 0) {
+      return `残り約${days}日${hours}時間`;
+    } else {
+      return `残り約${days}日`;
+    }
+  } else if (hours > 0) {
+    // 24時間未満の場合の既存ロジック
     return `残り約${hours}時間${minutes > 0 ? `${minutes}分` : ''}`;
   }
   return `残り約${minutes}分`;
