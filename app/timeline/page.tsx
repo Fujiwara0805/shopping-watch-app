@@ -11,6 +11,7 @@ import { useRouter } from 'next/navigation';
 import AppLayout from '@/components/layout/app-layout';
 import { useSearchParams } from 'next/navigation';
 import { PostCard } from '@/components/posts/post-card';
+import { PostFilter, categories } from '@/components/posts/post-filter';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { CustomModal } from '@/components/ui/custom-modal';
@@ -101,19 +102,6 @@ interface PostFromDB {
 
 type SortOption = 'created_at_desc' | 'created_at_asc' | 'expires_at_asc' | 'distance_asc' | 'likes_desc' | 'views_desc' | 'comments_desc';
 type SearchMode = 'all' | 'category' | 'favorite_store' | 'liked_posts' | 'hybrid';
-
-// 🔥 更新されたカテゴリ分類（並び順を統一）
-const categoryOptions = [
-  { value: 'おとく自慢', label: 'おとく自慢' },
-  { value: '空席情報', label: '空席情報' },
-  { value: '在庫情報', label: '在庫情報' },
-  { value: 'イベント情報', label: 'イベント情報' },
-  { value: '応援', label: '応援' },
-  { value: '口コミ', label: '口コミ' },
-];
-
-// 🔥 新しいカテゴリに対応（並び順を統一）
-const categories = ['すべて', 'おとく自慢', '空席情報', '在庫情報', 'イベント情報', '応援', '口コミ'];
 
 
 const SEARCH_RADIUS_METERS = 1000; // 1km
@@ -983,6 +971,7 @@ export default function Timeline() {
   const favoriteStoreNamesRef = useRef(favoriteStoreNames);
   const likedPostIdsRef = useRef(likedPostIds);
   const sortByRef = useRef(sortBy);
+  const isNearbyModeRef = useRef(isNearbyMode); // 🔥 追加
 
   // Update refs
   useEffect(() => { activeFilterRef.current = activeFilter; }, [activeFilter]);
@@ -992,6 +981,7 @@ export default function Timeline() {
   useEffect(() => { favoriteStoreNamesRef.current = favoriteStoreNames; }, [favoriteStoreNames]);
   useEffect(() => { likedPostIdsRef.current = likedPostIds; }, [likedPostIds]);
   useEffect(() => { sortByRef.current = sortBy; }, [sortBy]);
+  useEffect(() => { isNearbyModeRef.current = isNearbyMode; }, [isNearbyMode]); // 🔥 追加
 
   useEffect(() => {
     setTempActiveFilter(activeFilter);
@@ -1132,7 +1122,7 @@ export default function Timeline() {
     const currentFavoriteStoreIds = favoriteStoreIdsRef.current;
     const currentLikedPostIds = likedPostIdsRef.current;
     const currentSortBy = sortByRef.current;
-    const currentIsNearbyMode = isNearbyMode; // 🔥 ご近所モード状態を取得
+    const currentIsNearbyMode = isNearbyModeRef.current; // 🔥 refから取得するように修正
     const isAdmin = currentUserRole === 'admin';
 
     // 距離計算関数
@@ -1158,6 +1148,18 @@ export default function Timeline() {
     
     try {
       const now = new Date().toISOString();
+      
+      // 🔥 デバッグ情報を追加
+      console.log('🔍 投稿取得開始:', {
+        currentActiveFilter,
+        currentSearchMode,
+        currentIsNearbyMode,
+        currentUserLocation,
+        isAdmin,
+        offset,
+        isInitial,
+        searchTerm
+      });
       
       // 基本クエリ（is_deletedフィルタを追加）
       let query = supabase
@@ -1271,7 +1273,12 @@ export default function Timeline() {
 
       const { data, error: dbError } = await query;
 
+      // 🔥 デバッグ情報を追加
+      console.log('🔍 データベースから取得した投稿数:', data?.length);
+      console.log('🔍 取得した投稿のサンプル:', data?.slice(0, 2));
+
       if (dbError) {
+        console.error('🔥 データベースエラー:', dbError);
         throw dbError;
       }
       
@@ -1304,25 +1311,49 @@ export default function Timeline() {
       let processedPosts = (data as PostFromDB[]).map(post => {
         let distance;
         
-        // カテゴリに応じて距離計算の基準を変更
+        // 🔥 修正: カテゴリに関係なく、まず店舗位置情報をチェック
         if (currentUserLocation) {
-          if (['空席情報', '在庫情報', 'イベント情報'].includes(post.category) && 
-              post.store_latitude && post.store_longitude) {
-            // 空席情報・在庫情報・イベント情報は投稿に設定された場所を基準
+          if (post.store_latitude && post.store_longitude) {
+            // 店舗の位置情報がある場合は店舗位置を基準
             distance = calculateDistance(
               currentUserLocation.latitude,
               currentUserLocation.longitude,
               post.store_latitude,
               post.store_longitude
             );
+            console.log('🔍 店舗位置での距離計算:', {
+              postId: post.id,
+              category: post.category,
+              userLat: currentUserLocation.latitude,
+              userLon: currentUserLocation.longitude,
+              storeLat: post.store_latitude,
+              storeLon: post.store_longitude,
+              distance
+            });
           } else if (post.user_latitude && post.user_longitude) {
-            // その他のカテゴリは投稿者の位置を基準
+            // 店舗位置情報がない場合は投稿者の位置を基準
             distance = calculateDistance(
               currentUserLocation.latitude,
               currentUserLocation.longitude,
               post.user_latitude,
               post.user_longitude
             );
+            console.log('🔍 投稿者位置での距離計算:', {
+              postId: post.id,
+              category: post.category,
+              userLat: currentUserLocation.latitude,
+              userLon: currentUserLocation.longitude,
+              postUserLat: post.user_latitude,
+              postUserLon: post.user_longitude,
+              distance
+            });
+          } else {
+            console.log('🔍 位置情報不足で距離計算スキップ:', {
+              postId: post.id,
+              category: post.category,
+              hasStoreLatLon: !!(post.store_latitude && post.store_longitude),
+              hasUserLatLon: !!(post.user_latitude && post.user_longitude)
+            });
           }
         }
 
@@ -1373,21 +1404,54 @@ export default function Timeline() {
       
       // 1km圏内フィルタリング機能を追加（管理者でない場合かつご近所モードがONの場合のみ適用）
       if (currentUserLocation && !isAdmin && currentIsNearbyMode) { // 🔥 ご近所モード条件を追加
+        console.log('🔍 距離フィルタリング適用前の投稿数:', processedPosts.length);
+        
         processedPosts = processedPosts.filter(post => {
           // 🔥 投稿者が管理者の場合は距離フィルタリングをスキップ
           if (post.author_role === 'admin') {
+            console.log('🔍 管理者投稿のためスキップ:', post.id);
             return true;
           }
           
-          return post.distance !== undefined && post.distance <= SEARCH_RADIUS_METERS;
+          // 🔥 距離が計算されていない場合の処理を改善
+          if (post.distance === undefined) {
+            console.log('🔍 距離未計算のため除外:', {
+              postId: post.id,
+              category: post.category,
+              hasStoreLocation: !!(post.store_latitude && post.store_longitude),
+              hasUserLocation: !!(post.user_latitude && post.user_longitude)
+            });
+            return false;
+          }
+          
+          const isWithinRadius = post.distance <= SEARCH_RADIUS_METERS;
+          console.log('🔍 距離チェック:', {
+            postId: post.id,
+            distance: post.distance,
+            radius: SEARCH_RADIUS_METERS,
+            isWithin: isWithinRadius
+          });
+          
+          return isWithinRadius;
+        });
+        
+        console.log('🔍 距離フィルタリング適用後の投稿数:', processedPosts.length);
+      } else {
+        console.log('🔍 距離フィルタリングをスキップ:', {
+          hasLocation: !!currentUserLocation,
+          isAdmin,
+          isNearbyMode: currentIsNearbyMode
         });
       }
 
-      // 距離によるソート
-      if (currentSortBy === 'distance_asc' && currentUserLocation && !isAdmin && currentIsNearbyMode) { // 🔥 ご近所モード条件を追加
+      // 距離によるソート（ご近所モードがONの場合のみ）
+      if (currentSortBy === 'distance_asc' && currentUserLocation && !isAdmin && currentIsNearbyMode) {
         processedPosts = processedPosts
           .filter(post => post.distance !== undefined)
           .sort((a, b) => (a.distance || 0) - (b.distance || 0));
+      } else if (currentSortBy === 'distance_asc' && (!currentUserLocation || !currentIsNearbyMode)) {
+        // ご近所モードがOFFまたは位置情報がない場合は、距離ソートを作成日時ソートに変更
+        processedPosts = processedPosts.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
       }
 
       if (isInitial) {
@@ -1395,6 +1459,15 @@ export default function Timeline() {
       } else {
         setPosts(prevPosts => [...prevPosts, ...processedPosts as ExtendedPostWithAuthor[]]);
       }
+
+      // 🔥 最終的な投稿数をログ出力
+      console.log('🔍 最終的に表示される投稿数:', processedPosts.length);
+      console.log('🔍 最終投稿のサンプル:', processedPosts.slice(0, 2).map(p => ({
+        id: p.id,
+        category: p.category,
+        distance: p.distance,
+        author_role: p.author_role
+      })));
 
       // 1km圏内フィルタリング適用時はhasMoreをfalseに設定
       // 管理者の場合またはご近所モードがOFFの場合はhasMoreをtrueに維持し、全件取得を可能にする
@@ -2317,6 +2390,21 @@ export default function Timeline() {
           </div>
         </div>
 
+        {/* カテゴリフィルター */}
+        <div className="px-4 py-2 border-b bg-white">
+          <PostFilter 
+            activeFilter={activeFilter} 
+            setActiveFilter={setActiveFilter}
+            onFilterChange={() => {
+              setTimeout(() => {
+                if (fetchPostsRef.current) {
+                  fetchPostsRef.current(0, true);
+                }
+              }, 100);
+            }}
+          />
+        </div>
+
         {/* リアルタイム検索中の表示 */}
         {isSearching && generalSearchTerm && generalSearchTerm.length >= 2 && (
           <div className="px-4 py-2 bg-blue-50 border-b">
@@ -2342,7 +2430,7 @@ export default function Timeline() {
               )}
               {!isNearbyMode && (
                 <Badge variant="secondary" className="flex items-center gap-1">
-                  全国表示
+                  全表示
                   <button 
                     onClick={() => {
                       setIsNearbyMode(true);
@@ -2358,9 +2446,29 @@ export default function Timeline() {
                   </button>
                 </Badge>
               )}
+              {/* 🔥 ご近所モードがONの場合の表示を追加 */}
+              {isNearbyMode && (
+                <Badge variant="outline" className="flex items-center gap-1">
+                  <Compass className="h-3 w-3" />
+                  ご近所モード (1km圏内)
+                  <button 
+                    onClick={() => {
+                      setIsNearbyMode(false);
+                      setTimeout(() => {
+                        if (fetchPostsRef.current) {
+                          fetchPostsRef.current(0, true);
+                        }
+                      }, 100);
+                    }} 
+                    className="ml-1"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </Badge>
+              )}
               <Button variant="ghost" size="sm" onClick={() => {
                 setActiveFilter('all');
-                setIsNearbyMode(true);
+                setIsNearbyMode(false); // 🔥 全クリア時は全表示モードに
                 setGeneralSearchTerm('');
                 setTimeout(() => {
                   if (fetchPostsRef.current) {
@@ -2533,10 +2641,18 @@ export default function Timeline() {
                 ) : (
                   <div>
                     <p className="text-xl text-muted-foreground mb-2">
-                      {currentUserRole === 'admin' ? '投稿がありません' : '近くに投稿がありません'}
+                      {currentUserRole === 'admin' 
+                        ? '投稿がありません' 
+                        : isNearbyMode 
+                          ? '近くに投稿がありません'
+                          : '投稿がありません'
+                      }
                     </p>
                     <p className="text-sm text-gray-500 mb-4">
-                      別の場所に移動するか、時間をおいて再度確認してください
+                      {isNearbyMode 
+                        ? '別の場所に移動するか、時間をおいて再度確認してください'
+                        : '時間をおいて再度確認してください'
+                      }
                     </p>
                   </div>
                 )}
@@ -2672,7 +2788,7 @@ export default function Timeline() {
                 <div>
                   <p className="font-medium text-sm">ご近所モード</p>
                   <p className="text-xs text-gray-600">
-                    {isNearbyMode ? "1km圏内の投稿のみ表示" : "全国の投稿を表示"}
+                    {isNearbyMode ? "1km圏内の投稿のみ表示" : "全ての投稿を表示"}
                   </p>
                 </div>
                 <Switch
@@ -2702,11 +2818,11 @@ export default function Timeline() {
                 <SelectContent className="max-h-[200px]">
                   {categories.map((category) => (
                     <SelectItem 
-                      key={category} 
-                      value={category === 'すべて' ? 'all' : category}
+                      key={category.id} 
+                      value={category.id === 'all' ? 'all' : category.id}
                       className="text-lg py-3"
                     >
-                      {category}
+                      {category.name}
                     </SelectItem>
                   ))}
                 </SelectContent>

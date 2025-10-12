@@ -10,10 +10,11 @@ import { Utensils, ShoppingBag, Megaphone, Heart, Trophy, MessageSquareText } fr
 interface PostFilterProps {
   activeFilter: string;
   setActiveFilter: (filter: string) => void;
+  onFilterChange?: () => void; // フィルター変更時のコールバック
 }
 
 // 🔥 新しいカテゴリ定義（並び順を統一）
-const categories = [
+export const categories = [
   { id: 'all', name: 'すべて', icon: null },
   { id: 'おとく自慢', name: 'おとく自慢', icon: Trophy },
   { id: '空席情報', name: '空席情報', icon: Utensils },
@@ -23,7 +24,7 @@ const categories = [
   { id: '口コミ', name: '口コミ', icon: MessageSquareText },
 ];
 
-export function PostFilter({ activeFilter, setActiveFilter }: PostFilterProps) {
+export function PostFilter({ activeFilter, setActiveFilter, onFilterChange }: PostFilterProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [showScrollShadow, setShowScrollShadow] = useState(false);
   
@@ -65,7 +66,10 @@ export function PostFilter({ activeFilter, setActiveFilter }: PostFilterProps) {
                       ? "bg-primary text-primary-foreground border-primary" 
                       : "bg-background hover:bg-muted border-gray-300"
                   )}
-                  onClick={() => setActiveFilter(category.id)}
+                  onClick={() => {
+                    setActiveFilter(category.id);
+                    onFilterChange?.(); // フィルター変更時のコールバックを実行
+                  }}
                 >
                   {IconComponent && <IconComponent className="h-3 w-3" />}
                   <span className="text-sm">{category.name}</span>
