@@ -44,7 +44,7 @@ const postSchema = z.object({
   content: z.string().min(5, { message: '5文字以上入力してください' }).max(240, { message: '240文字以内で入力してください' }),
   url: z.string().url({ message: '有効なURLを入力してください' }).optional().or(z.literal('')),
   // 🔥 新しい掲載期間スキーマ
-  expiryOption: z.enum(['15m', '30m', '45m', '60m', 'custom'], { required_error: '掲載期間を選択してください' }),
+  expiryOption: z.enum(['15m', '30m', '45m', '60m', 'custom', '90d'], { required_error: '掲載期間を選択してください' }),
   customExpiryMinutes: z.number().min(1).max(720).optional(),
   // 位置情報フィールド（任意）
   location_lat: z.number().optional(),
@@ -93,8 +93,8 @@ const postSchema = z.object({
     }
   }
   
-  // 🔥 イベント情報・応援・おとく自慢・口コミの場合はカスタム設定必須
-  if (['イベント情報', '応援', 'おとく自慢', '口コミ'].includes(data.category)) {
+  // 🔥 イベント情報・応援・おとく自慢の場合はカスタム設定必須
+  if (['イベント情報', '応援', 'おとく自慢'].includes(data.category)) {
     if (data.expiryOption !== 'custom') {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -107,6 +107,17 @@ const postSchema = z.object({
         code: z.ZodIssueCode.custom,
         message: 'カスタム掲載期間は1分〜720分（12時間）の範囲で設定してください',
         path: ['customExpiryMinutes'],
+      });
+    }
+  }
+  
+  // 🔥 口コミの場合は90日間固定
+  if (data.category === '口コミ') {
+    if (data.expiryOption !== '90d') {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: '口コミでは90日間の掲載期間が固定で設定されます',
+        path: ['expiryOption'],
       });
     }
   }
@@ -138,8 +149,13 @@ const getExpiryOptionsForCategory = (category: string) => {
       { value: '45m', label: '45分' },
       { value: '60m', label: '60分' },
     ];
+  } else if (category === '口コミ') {
+    // 口コミは90日間固定
+    return [
+      { value: '90d', label: '90日間（固定）' },
+    ];
   } else {
-    // イベント情報・応援・おとく自慢・口コミはカスタム設定のみ
+    // イベント情報・応援・おとく自慢はカスタム設定のみ
     return [
       { value: 'custom', label: 'カスタム設定（最大12時間）' },
     ];
@@ -150,6 +166,8 @@ const getExpiryOptionsForCategory = (category: string) => {
 const getDefaultExpiryForCategory = (category: string) => {
   if (category === '空席情報' || category === '在庫情報') {
     return '30m';
+  } else if (category === '口コミ') {
+    return '90d';
   } else {
     return 'custom';
   }
@@ -628,7 +646,8 @@ export default function PostPage() {
         file_urls: fileUrls.length > 0 ? JSON.stringify(fileUrls) : null,
         url: values.url && values.url.trim() !== '' ? values.url : null,
         expiry_option: values.expiryOption,
-        custom_expiry_minutes: values.expiryOption === 'custom' ? values.customExpiryMinutes : null,
+        custom_expiry_minutes: values.expiryOption === 'custom' ? values.customExpiryMinutes : 
+                               values.expiryOption === '90d' ? 90 * 24 * 60 : null,
         expires_at: calculateExpiresAt(values.expiryOption, values.customExpiryMinutes).toISOString(),
         likes_count: 0,
         views_count: 0,
@@ -1635,8 +1654,8 @@ export default function PostPage() {
                       </div>
                     )}
                     
-                    {/* イベント情報・応援・おとく自慢・口コミでカスタム設定が必要な場合の案内 */}
-                                    {['イベント情報', '応援', 'おとく自慢', '口コミ'].includes(selectedCategory || '') && selectedExpiryOption === 'custom' && !form.getValues('customExpiryMinutes') && (
+                    {/* イベント情報・応援・おとく自慢でカスタム設定が必要な場合の案内 */}
+                                    {['イベント情報', '応援', 'おとく自慢'].includes(selectedCategory || '') && selectedExpiryOption === 'custom' && !form.getValues('customExpiryMinutes') && (
                       <div className="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
                         <div className="flex items-center space-x-2">
                           <ClockIcon className="h-4 w-4 text-amber-600" />
