@@ -2378,14 +2378,37 @@ export default function Timeline() {
               )}
             </div>
             
-            {/* フィルターボタン */}
-            <Button onClick={() => setShowFilterModal(true)} variant="outline" className="relative" style={{ backgroundColor: '#f3f4f6' }}>
-              <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
-              {(activeFilter !== 'all' || !isNearbyMode) && (
-                <Badge className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
-                  {(activeFilter !== 'all' ? 1 : 0) + (!isNearbyMode ? 1 : 0)}
-                </Badge>
+            {/* 近所/全表示トグルボタン */}
+            <Button 
+              onClick={() => {
+                setIsNearbyMode(!isNearbyMode);
+                setTimeout(() => {
+                  if (fetchPostsRef.current) {
+                    fetchPostsRef.current(0, true);
+                  }
+                }, 100);
+              }}
+              variant="outline"
+              className={cn(
+                "relative px-3 py-2 text-sm font-medium transition-all duration-200 border-2",
+                isNearbyMode 
+                  ? "bg-[#f97414] hover:bg-[#f97414]/90 text-white border-[#f97414] shadow-md" 
+                  : "bg-white hover:bg-gray-50 text-gray-700 border-gray-300 shadow-sm"
               )}
+            >
+              <div className="flex items-center space-x-1">
+                {isNearbyMode ? (
+                  <>
+                    <Compass className="h-4 w-4" />
+                    <span>ご近所</span>
+                  </>
+                ) : (
+                  <>
+                    <Globe className="h-4 w-4" />
+                    <span>全表示</span>
+                  </>
+                )}
+              </div>
             </Button>
           </div>
         </div>
@@ -2394,8 +2417,9 @@ export default function Timeline() {
         <div className="px-4 py-2 border-b bg-white">
           <PostFilter 
             activeFilter={activeFilter} 
-            setActiveFilter={setActiveFilter}
-            onFilterChange={() => {
+            setActiveFilter={(filter) => {
+              setActiveFilter(filter);
+              // カテゴリ選択時に自動的に投稿を再取得
               setTimeout(() => {
                 if (fetchPostsRef.current) {
                   fetchPostsRef.current(0, true);
@@ -2416,68 +2440,26 @@ export default function Timeline() {
         )}
 
         {/* アクティブなフィルタの表示 */}
-        {(activeFilter !== 'all' || !isNearbyMode) && (
+        {activeFilter !== 'all' && (
           <div className="px-4 py-2 bg-gray-50 border-b">
             <div className="flex flex-wrap gap-2 items-center">
-              <span className="text-sm text-gray-600">アクティブなフィルタ:</span>
-              {activeFilter !== 'all' && (
-                <Badge variant="secondary" className="flex items-center gap-1">
-                  カテゴリ: {activeFilter}
-                  <button onClick={() => setActiveFilter('all')} className="ml-1">
-                    <X className="h-3 w-3" />
-                  </button>
-                </Badge>
-              )}
-              {!isNearbyMode && (
-                <Badge variant="secondary" className="flex items-center gap-1">
-                  全表示
-                  <button 
-                    onClick={() => {
-                      setIsNearbyMode(true);
-                      setTimeout(() => {
-                        if (fetchPostsRef.current) {
-                          fetchPostsRef.current(0, true);
-                        }
-                      }, 100);
-                    }} 
-                    className="ml-1"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </Badge>
-              )}
-              {/* 🔥 ご近所モードがONの場合の表示を追加 */}
-              {isNearbyMode && (
-                <Badge variant="outline" className="flex items-center gap-1">
-                  <Compass className="h-3 w-3" />
-                  ご近所モード (1km圏内)
-                  <button 
-                    onClick={() => {
-                      setIsNearbyMode(false);
-                      setTimeout(() => {
-                        if (fetchPostsRef.current) {
-                          fetchPostsRef.current(0, true);
-                        }
-                      }, 100);
-                    }} 
-                    className="ml-1"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </Badge>
-              )}
-              <Button variant="ghost" size="sm" onClick={() => {
-                setActiveFilter('all');
-                setIsNearbyMode(false); // 🔥 全クリア時は全表示モードに
-                setGeneralSearchTerm('');
-                setTimeout(() => {
-                  if (fetchPostsRef.current) {
-                    fetchPostsRef.current(0, true);
-                  }
-                }, 100);
-              }}>
-                すべてクリア
-              </Button>
+              <span className="text-sm text-gray-600">選択中のカテゴリ:</span>
+              <Badge variant="secondary" className="flex items-center gap-1">
+                {activeFilter}
+                <button 
+                  onClick={() => {
+                    setActiveFilter('all');
+                    setTimeout(() => {
+                      if (fetchPostsRef.current) {
+                        fetchPostsRef.current(0, true);
+                      }
+                    }, 100);
+                  }} 
+                  className="ml-1"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </Badge>
             </div>
           </div>
         )}

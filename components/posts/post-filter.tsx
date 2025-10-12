@@ -10,7 +10,6 @@ import { Utensils, ShoppingBag, Megaphone, Heart, Trophy, MessageSquareText } fr
 interface PostFilterProps {
   activeFilter: string;
   setActiveFilter: (filter: string) => void;
-  onFilterChange?: () => void; // フィルター変更時のコールバック
 }
 
 // 🔥 新しいカテゴリ定義（並び順を統一）
@@ -24,7 +23,7 @@ export const categories = [
   { id: '口コミ', name: '口コミ', icon: MessageSquareText },
 ];
 
-export function PostFilter({ activeFilter, setActiveFilter, onFilterChange }: PostFilterProps) {
+export function PostFilter({ activeFilter, setActiveFilter }: PostFilterProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [showScrollShadow, setShowScrollShadow] = useState(false);
   
@@ -68,7 +67,6 @@ export function PostFilter({ activeFilter, setActiveFilter, onFilterChange }: Po
                   )}
                   onClick={() => {
                     setActiveFilter(category.id);
-                    onFilterChange?.(); // フィルター変更時のコールバックを実行
                   }}
                 >
                   {IconComponent && <IconComponent className="h-3 w-3" />}
