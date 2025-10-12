@@ -2343,7 +2343,17 @@ export default function Timeline() {
               {!isNearbyMode && (
                 <Badge variant="secondary" className="flex items-center gap-1">
                   全国表示
-                  <button onClick={() => setIsNearbyMode(true)} className="ml-1">
+                  <button 
+                    onClick={() => {
+                      setIsNearbyMode(true);
+                      setTimeout(() => {
+                        if (fetchPostsRef.current) {
+                          fetchPostsRef.current(0, true);
+                        }
+                      }, 100);
+                    }} 
+                    className="ml-1"
+                  >
                     <X className="h-3 w-3" />
                   </button>
                 </Badge>
@@ -2661,7 +2671,9 @@ export default function Timeline() {
               <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                 <div>
                   <p className="font-medium text-sm">ご近所モード</p>
-                  <p className="text-xs text-gray-600">1km圏内の投稿のみ表示</p>
+                  <p className="text-xs text-gray-600">
+                    {isNearbyMode ? "1km圏内の投稿のみ表示" : "全国の投稿を表示"}
+                  </p>
                 </div>
                 <Switch
                   checked={isNearbyMode}
