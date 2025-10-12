@@ -2160,67 +2160,12 @@ export default function Timeline() {
             </div>
           </div>
           
-          {/* 軽量なスケルトン */}
-          <div className="p-4">
-            <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {[...Array(4)].map((_, i) => (
-                <div key={i} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                  <div className="p-3">
-                    <div className="flex items-center space-x-2 mb-3">
-                      <Skeleton className="h-7 w-7 rounded-full flex-shrink-0" />
-                      <Skeleton className="h-4 w-20" />
-                    </div>
-                    <Skeleton className="h-4 w-full mb-2" />
-                    <Skeleton className="h-4 w-3/4 mb-3" />
-                    <Skeleton className="w-full rounded-md" style={{ aspectRatio: "4/5" }} />
-                  </div>
-                </div>
-              ))}
+          {/* シンプルなローディング表示 */}
+          <div className="flex items-center justify-center min-h-[60vh]">
+            <div className="text-center">
+              <div className="w-8 h-8 border-4 border-orange-200 border-t-orange-600 rounded-full animate-spin mx-auto mb-4"></div>
+              <p className="text-gray-600">現在地を取得しています...</p>
             </div>
-          </div>
-        </div>
-        
-        {/* 🔥 初回ローディング時の専用メッセージ */}
-        <div className="p-4">
-          <div className="text-center py-10">
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 max-w-md mx-auto">
-              <Compass className="h-12 w-12 text-blue-600 mx-auto mb-4" />
-              <p className="text-blue-800 text-lg mb-2">現在地を取得しています</p>
-              <p className="text-blue-600 text-sm">
-                1km圏内のおトクな投稿を表示するために<br />
-                位置情報を取得中です...
-              </p>
-              <div className="mt-4">
-                <motion.div
-                  className="h-2 bg-blue-200 rounded-full overflow-hidden"
-                  initial={{ width: 0 }}
-                >
-                  <motion.div
-                    className="h-full bg-blue-600"
-                    animate={{ x: ['-100%', '100%'] }}
-                    transition={{
-                      duration: 1.5,
-                      repeat: Infinity,
-                      ease: "easeInOut"
-                    }}
-                  />
-                </motion.div>
-              </div>
-            </div>
-          </div>
-          
-          {/* スケルトンローディング */}
-          <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 mt-8">
-            {[...Array(8)].map((_, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: i * 0.1 }}
-              >
-                <Skeleton className="h-[400px] w-full rounded-xl" />
-              </motion.div>
-            ))}
           </div>
         </div>
 
@@ -2471,10 +2416,13 @@ export default function Timeline() {
               onClick={handleNavigateToPost}
               disabled={isNavigatingToPost}
               className={cn(
-                "flex-1 text-white hover:opacity-90 relative overflow-hidden",
+                "flex-1 text-white hover:opacity-90 relative overflow-hidden tap-highlight-transparent focus:ring-0 focus:ring-offset-0 focus:outline-none active:bg-current",
                 isNavigatingToPost && "cursor-not-allowed"
               )}
-              style={{ backgroundColor: '#f97415' }}
+              style={{ 
+                backgroundColor: '#f97415',
+                WebkitTapHighlightColor: 'transparent'
+              }}
             >
               {isNavigatingToPost ? (
                 <motion.div
@@ -2515,8 +2463,11 @@ export default function Timeline() {
             <Button
               onClick={() => setShowHowToUseModal(true)}
               variant="outline"
-              className="flex-1"
-              style={{ backgroundColor: '#eefdf6' }}
+              className="flex-1 tap-highlight-transparent focus:ring-0 focus:ring-offset-0 focus:outline-none active:bg-current"
+              style={{ 
+                backgroundColor: '#eefdf6',
+                WebkitTapHighlightColor: 'transparent'
+              }}
             >
               <Info className="h-4 w-4 mr-2" />
               使い方
@@ -2526,9 +2477,12 @@ export default function Timeline() {
               disabled={isRefreshing}
               variant="outline"
               className={cn(
-                "flex-1 relative overflow-hidden",
+                "flex-1 relative overflow-hidden tap-highlight-transparent focus:ring-0 focus:ring-offset-0 focus:outline-none active:bg-current",
                 isRefreshing && "cursor-not-allowed"
               )}
+              style={{
+                WebkitTapHighlightColor: 'transparent'
+              }}
             >
               {isRefreshing ? (
                 <motion.div

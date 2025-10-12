@@ -1,92 +1,27 @@
 "use client";
 
-import { motion } from 'framer-motion';
-import { Skeleton } from '@/components/ui/skeleton';
 import AppLayout from '@/components/layout/app-layout';
 
 /**
  * Timeline用の最適化されたローディングページ
- * LCP改善：初期表示を高速化
+ * LCP改善：最小限のシンプルなローディング表示
  */
 export default function TimelineLoading() {
   return (
     <AppLayout>
       <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50">
-        {/* ヘッダー部分のスケルトン */}
-        <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b border-orange-200">
-          <div className="flex items-center justify-between p-4">
-            <div className="flex items-center space-x-3">
-              <Skeleton className="h-8 w-8 rounded-full" />
-              <Skeleton className="h-6 w-24" />
-            </div>
-            <Skeleton className="h-8 w-8 rounded" />
+        {/* シンプルなヘッダー */}
+        <div className="sticky top-0 z-10 bg-[#73370c] p-4">
+          <div className="flex items-center justify-center">
+            <div className="text-white font-medium">読み込み中...</div>
           </div>
         </div>
-
-        {/* 検索・フィルター部分 */}
-        <div className="p-4 space-y-4">
-          <Skeleton className="h-10 w-full rounded-lg" />
-          <div className="flex space-x-2 overflow-x-auto">
-            {[...Array(5)].map((_, i) => (
-              <Skeleton key={i} className="h-8 w-20 rounded-full flex-shrink-0" />
-            ))}
-          </div>
-        </div>
-
-        {/* 投稿カード群のスケルトン */}
-        <div className="p-4">
-          <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {[...Array(8)].map((_, i) => (
-              <motion.div 
-                key={i}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: i * 0.05 }}
-                className="w-full"
-                style={{ minHeight: '400px' }} // CLS対策：最小高さを固定
-              >
-                {/* 実際の投稿カードと同じ構造のスケルトン */}
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden h-full">
-                  {/* ヘッダー部分 */}
-                  <div className="p-3 pb-2" style={{ minHeight: '60px' }}>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <Skeleton className="h-7 w-7 rounded-full flex-shrink-0" />
-                        <div className="space-y-1">
-                          <Skeleton className="h-3 w-16" />
-                          <Skeleton className="h-2 w-12" />
-                        </div>
-                      </div>
-                      <Skeleton className="h-6 w-16 rounded-full" />
-                    </div>
-                  </div>
-                  
-                  {/* コンテンツ部分 */}
-                  <div className="p-3 pt-1 flex-1 flex flex-col">
-                    <div className="space-y-2 mb-3" style={{ minHeight: '48px' }}>
-                      <Skeleton className="h-4 w-full" />
-                      <Skeleton className="h-4 w-3/4" />
-                    </div>
-                    
-                    {/* 画像部分（固定アスペクト比） */}
-                    <div className="flex justify-center w-full mb-3 flex-1">
-                      <div className="w-full max-w-sm" style={{ aspectRatio: "4/5" }}>
-                        <Skeleton className="w-full h-full rounded-md" />
-                      </div>
-                    </div>
-                    
-                    {/* フッター部分 */}
-                    <div className="flex items-center justify-between pt-2" style={{ minHeight: '40px' }}>
-                      <div className="flex items-center space-x-4">
-                        <Skeleton className="h-8 w-12" />
-                        <Skeleton className="h-8 w-12" />
-                      </div>
-                      <Skeleton className="h-8 w-16" />
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
+        
+        {/* シンプルなローディング表示 */}
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <div className="w-8 h-8 border-4 border-orange-200 border-t-orange-600 rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-gray-600">投稿を読み込んでいます</p>
           </div>
         </div>
       </div>
