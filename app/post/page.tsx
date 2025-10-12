@@ -494,7 +494,7 @@ export default function PostPage() {
         fetchBusinessStoreLocation();
       }
       
-      // 🔥 空席情報・在庫情報の場合は必要な項目を自動展開（リセット後に）
+      // 🔥 空席情報・在庫情報・イベント情報の場合は必要な項目を自動展開（リセット後に）
       if (selectedCategory === '空席情報' || selectedCategory === '在庫情報') {
         // 少し遅延させてから展開（リセット処理完了後）
         setTimeout(() => {
@@ -502,6 +502,15 @@ export default function PostPage() {
             ...prev,
             location: true,
             remainingSlots: true
+          }));
+          setShowOptionalFields(true);
+        }, 100);
+      } else if (selectedCategory === 'イベント情報') {
+        // イベント情報の場合は場所のみ自動展開
+        setTimeout(() => {
+          setOptionalFieldsExpanded(prev => ({
+            ...prev,
+            location: true
           }));
           setShowOptionalFields(true);
         }, 100);
@@ -1935,7 +1944,7 @@ export default function PostPage() {
                                 <FormLabel className="text-lg font-semibold flex items-center">
                                   <StoreIcon className="mr-2 h-5 w-5" />
                                   場所
-                                  {(selectedCategory === '空席情報' || selectedCategory === '在庫情報') && (
+                                  {(selectedCategory === '空席情報' || selectedCategory === '在庫情報' || selectedCategory === 'イベント情報') && (
                                     <span className="text-destructive ml-1">※</span>
                                   )}
                                 </FormLabel>
