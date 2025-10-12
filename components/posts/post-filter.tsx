@@ -60,11 +60,19 @@ export function PostFilter({ activeFilter, setActiveFilter }: PostFilterProps) {
                   variant="outline"
                   size="sm"
                   className={cn(
-                    "relative rounded-full whitespace-nowrap flex items-center space-x-1 px-3 py-2",
+                    "relative rounded-full whitespace-nowrap flex items-center space-x-1 px-3 py-2 transition-colors duration-200",
                     activeFilter === category.id 
                       ? "bg-primary text-primary-foreground border-primary" 
-                      : "bg-background hover:bg-muted border-gray-300"
+                      : "bg-background hover:bg-muted border-gray-300",
+                    // タップ時の色変化を完全に無効化
+                    "active:bg-current focus:ring-0 focus:ring-offset-0 focus:outline-none",
+                    // ブラウザデフォルトのタップハイライトを無効化
+                    "tap-highlight-transparent"
                   )}
+                  style={{
+                    // Webkit系ブラウザでのタップハイライトを無効化
+                    WebkitTapHighlightColor: 'transparent'
+                  }}
                   onClick={() => {
                     setActiveFilter(category.id);
                   }}
