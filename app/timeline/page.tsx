@@ -2733,7 +2733,7 @@ export default function Timeline() {
                           </div>
                           <div>
                             <p className="text-sm font-medium text-orange-800 mb-1">
-                              空席状況
+                              空席情報
                             </p>
                             <p className="text-xs text-orange-600">
                               飲食店やコワーキングスペース等
@@ -2751,7 +2751,7 @@ export default function Timeline() {
                           </div>
                           <div>
                             <p className="text-sm font-medium text-blue-800 mb-1">
-                              在庫状況
+                              在庫情報
                             </p>
                             <p className="text-xs text-blue-600">
                               ショーケースの在庫やセール商品等
@@ -2768,11 +2768,11 @@ export default function Timeline() {
                             </div>
                           </div>
                           <div>
-                            <p className="text-sm font-medium text-purple-800 mb-1">
-                              PR
+                            <p className="text-xs font-medium text-purple-800 mb-1">
+                              イベント情報
                             </p>
                             <p className="text-xs text-purple-600">
-                              本日のおすすめ品の紹介や短期の告知・宣伝等
+                              イベントの告知や紹介
                             </p>
                           </div>
                         </div>
@@ -2823,10 +2823,10 @@ export default function Timeline() {
                           </div>
                           <div>
                             <p className="text-sm font-medium text-gray-800 mb-1">
-                              雑談
+                              口コミ
                             </p>
                             <p className="text-xs text-gray-600">
-                              地域の情報交換
+                              近所のお店の口コミやレビュー
                             </p>
                           </div>
                         </div>
