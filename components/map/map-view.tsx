@@ -94,6 +94,16 @@ const createDataUrl = (svgString: string) => {
   return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svgString)}`;
 };
 
+// 🔥 イベント情報用のピンアイコンを作成する関数
+const createEventPinIcon = () => {
+  const iconUrl = "https://res.cloudinary.com/dz9trbwma/image/upload/v1760275567/icons8-%E3%83%92%E3%82%99%E3%83%83%E3%82%AF%E3%83%AA%E3%83%9E%E3%83%BC%E3%82%AF-64_sbp78g.png";
+  return {
+    url: iconUrl,
+    scaledSize: new window.google.maps.Size(32, 32), // 32x32のサイズに調整
+    anchor: new window.google.maps.Point(16, 32), // アイコンの下端中央をアンカーに設定
+  };
+};
+
 export function MapView() {
   console.log("MapView: Component rendering START");
   
@@ -257,7 +267,7 @@ export function MapView() {
     requestLocation(); // Enhanced hook will handle permission saving
   };
 
-  // 🔥 投稿データを取得する関数を修正（remaining_slotsを追加）
+  // 🔥 投稿データを取得する関数を修正（イベント情報は残数なしでも取得）
   const fetchPosts = useCallback(async () => {
     if (!latitude || !longitude) {
       console.log('MapView: 位置情報がないため投稿データの取得をスキップ');
@@ -270,7 +280,7 @@ export function MapView() {
       
       const now = new Date().toISOString();
       
-      // 🔥 remaining_slotsフィールドを追加して取得
+      // 🔥 イベント情報は残数なしでも取得、他は残数ありのみ取得
       const { data, error } = await supabase
         .from('posts')
         .select(`
@@ -289,7 +299,7 @@ export function MapView() {
         .not('store_latitude', 'is', null)
         .not('store_longitude', 'is', null)
         .not('store_name', 'is', null)
-        .not('remaining_slots', 'is', null); // 🔥 残数があるもののみ取得
+        .or('category.eq.イベント情報,remaining_slots.not.is.null'); // 🔥 イベント情報または残数ありのもの
 
       if (error) {
         console.error('MapView: 投稿データの取得に失敗:', error);
@@ -304,7 +314,9 @@ export function MapView() {
 
       // 1km圏内でフィルタリング
       const filteredPosts = data.filter((post: any) => {
-        if (!post.store_latitude || !post.store_longitude || post.remaining_slots == null) return false;
+        if (!post.store_latitude || !post.store_longitude) return false;
+        // 🔥 イベント情報は残数なしでもOK、他は残数必須
+        if (post.category !== 'イベント情報' && post.remaining_slots == null) return false;
         
         // 距離計算（ハバーサイン公式）
         const R = 6371; // 地球の半径（km）
@@ -330,7 +342,7 @@ export function MapView() {
     }
   }, [latitude, longitude]);
 
-  // 🔥 投稿マーカーを作成する関数を修正（カテゴリ色対応の吹き出しアイコンを使用）
+  // 🔥 投稿マーカーを作成する関数を修正（イベント情報は専用アイコン、他は吹き出しアイコン）
   const createPostMarkers = useCallback(() => {
     if (!map || !posts.length || !window.google?.maps) {
       console.log('MapView: マーカー作成の条件が揃っていません');
@@ -349,28 +361,41 @@ export function MapView() {
     const newMarkers: google.maps.Marker[] = [];
 
     posts.forEach((post) => {
-      if (!post.store_latitude || !post.store_longitude || post.remaining_slots == null) return;
+      if (!post.store_latitude || !post.store_longitude) return;
 
       const position = new window.google.maps.LatLng(post.store_latitude, post.store_longitude);
-      const unit = getRemainingUnit(post.category);
-      const categoryColor = getCategoryColor(post.category); // �� カテゴリ色を取得
+      
+      let markerIcon;
+      let markerTitle = post.store_name;
 
-      // �� 吹き出しアイコンを使用（カテゴリ色対応、サイズ拡大）
-      const speechBubbleSvg = getSpeechBubbleSvg(post.remaining_slots, unit, categoryColor);
-      const iconUrl = createDataUrl(speechBubbleSvg);
+      // 🔥 イベント情報の場合は専用アイコンを使用
+      if (post.category === 'イベント情報') {
+        markerIcon = createEventPinIcon();
+        markerTitle = `${post.store_name} - イベント情報`;
+      } else {
+        // 🔥 他のカテゴリは従来通り吹き出しアイコン（残数情報必須）
+        if (post.remaining_slots == null) return; // 残数なしはスキップ
+        
+        const unit = getRemainingUnit(post.category);
+        const categoryColor = getCategoryColor(post.category);
+        const speechBubbleSvg = getSpeechBubbleSvg(post.remaining_slots, unit, categoryColor);
+        const iconUrl = createDataUrl(speechBubbleSvg);
+        const textWidth = `残り${post.remaining_slots}${unit}`.length * 10 + 20;
+        const bubbleWidth = Math.max(90, textWidth);
 
-      const textWidth = `残り${post.remaining_slots}${unit}`.length * 10 + 20;
-      const bubbleWidth = Math.max(90, textWidth);
+        markerIcon = {
+          url: iconUrl,
+          scaledSize: new window.google.maps.Size(bubbleWidth + 10, 55),
+          anchor: new window.google.maps.Point((bubbleWidth + 10) / 2, 50),
+        };
+        markerTitle = `${post.store_name} - 残り${post.remaining_slots}${unit}`;
+      }
 
       const marker = new window.google.maps.Marker({
         position,
         map,
-        title: `${post.store_name} - 残り${post.remaining_slots}${unit}`,
-        icon: {
-          url: iconUrl,
-          scaledSize: new window.google.maps.Size(bubbleWidth + 10, 55), // 高さも拡大（50→55）
-          anchor: new window.google.maps.Point((bubbleWidth + 10) / 2, 50), // アンカーも調整（45→50）
-        },
+        title: markerTitle,
+        icon: markerIcon,
         animation: window.google.maps.Animation.DROP,
       });
 
@@ -1132,7 +1157,8 @@ export function MapView() {
                     残数情報付き投稿の表示
                   </h3>
                   <p className="text-sm text-gray-600 mb-4">
-                    地図上には、場所と残数情報が入力された投稿のみが吹き出しアイコンで表示されます。カテゴリごとに色分けされています：
+                    地図上には、場所と残数情報が入力された投稿のみが吹き出しアイコンで表示されます。カテゴリごとに色分けされています：<br />
+                    <span className="font-medium text-blue-700">マーカーをタップすると掲示板へ遷移し、該当する投稿の詳細を確認できます。</span>
                   </p>
                   <div className="space-y-4">
                     <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
@@ -1180,19 +1206,18 @@ export function MapView() {
                     <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
                       <div className="flex items-center space-x-3">
                         <div className="flex-shrink-0">
-                          <div 
-                            className="flex items-center justify-center"
-                            dangerouslySetInnerHTML={{
-                              __html: getSpeechBubbleSvg(10, '人', '#9333ea')
-                            }}
+                          <img 
+                            src="https://res.cloudinary.com/dz9trbwma/image/upload/v1760275567/icons8-%E3%83%92%E3%82%99%E3%83%83%E3%82%AF%E3%83%AA%E3%83%9E%E3%83%BC%E3%82%AF-64_sbp78g.png" 
+                            alt="イベント情報" 
+                            className="h-8 w-8" 
                           />
                         </div>
                         <div>
                           <p className="text-sm font-medium text-purple-800 mb-1">
-                            PR情報の例
+                            イベント情報の例
                           </p>
                           <p className="text-xs text-purple-600">
-                            紫色で「残り10人」のように表示されます
+                            ピンアイコンで表示されます（残数情報なしでも表示）
                           </p>
                         </div>
                       </div>
