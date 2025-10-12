@@ -93,8 +93,40 @@ const postSchema = z.object({
     }
   }
   
-  // 🔥 イベント情報・応援・おとく自慢の場合はカスタム設定必須
-  if (['イベント情報', '応援', 'おとく自慢'].includes(data.category)) {
+  // 🔥 イベント情報の場合の必須チェック
+  if (data.category === 'イベント情報') {
+    if (!data.storeId || data.storeId.trim() === '') {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `${data.category}の場合、場所の選択は必須です`,
+        path: ['storeId'],
+      });
+    }
+    if (!data.storeName || data.storeName.trim() === '') {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `${data.category}の場合、場所の選択は必須です`,
+        path: ['storeName'],
+      });
+    }
+    if (data.expiryOption !== 'custom') {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `${data.category}ではカスタム設定での掲載期間設定が必要です`,
+        path: ['expiryOption'],
+      });
+    }
+    if (data.expiryOption === 'custom' && (!data.customExpiryMinutes || data.customExpiryMinutes < 1 || data.customExpiryMinutes > 720)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'カスタム掲載期間は1分〜720分（12時間）の範囲で設定してください',
+        path: ['customExpiryMinutes'],
+      });
+    }
+  }
+  
+  // 🔥 応援・おとく自慢の場合はカスタム設定必須
+  if (['応援', 'おとく自慢'].includes(data.category)) {
     if (data.expiryOption !== 'custom') {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,

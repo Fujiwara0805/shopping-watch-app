@@ -1300,18 +1300,30 @@ export default function Timeline() {
         }
       }
       
-      // データ処理（距離計算を端末位置情報ベースに変更）
+      // データ処理（空席情報・在庫情報・イベント情報は投稿場所、その他は投稿者位置ベース）
       let processedPosts = (data as PostFromDB[]).map(post => {
         let distance;
         
-        // 端末位置情報を使用して距離計算
-        if (currentUserLocation && post.user_latitude && post.user_longitude) {
-          distance = calculateDistance(
-            currentUserLocation.latitude,
-            currentUserLocation.longitude,
-            post.user_latitude,
-            post.user_longitude
-          );
+        // カテゴリに応じて距離計算の基準を変更
+        if (currentUserLocation) {
+          if (['空席情報', '在庫情報', 'イベント情報'].includes(post.category) && 
+              post.store_latitude && post.store_longitude) {
+            // 空席情報・在庫情報・イベント情報は投稿に設定された場所を基準
+            distance = calculateDistance(
+              currentUserLocation.latitude,
+              currentUserLocation.longitude,
+              post.store_latitude,
+              post.store_longitude
+            );
+          } else if (post.user_latitude && post.user_longitude) {
+            // その他のカテゴリは投稿者の位置を基準
+            distance = calculateDistance(
+              currentUserLocation.latitude,
+              currentUserLocation.longitude,
+              post.user_latitude,
+              post.user_longitude
+            );
+          }
         }
 
         const authorData = Array.isArray(post.author) ? post.author[0] : post.author;
