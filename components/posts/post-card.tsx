@@ -253,21 +253,21 @@ UserAvatar.displayName = 'UserAvatar';
 // 🔥 ジャンルのアイコンとカラーを取得する関数を修正（カテゴリ用に変更）
 const getCategoryIconAndColor = (category: string) => {
   switch(category) {
-    case '空席状況':
+    case '空席情報':
       return {
         icon: Utensils,
         bgColor: 'bg-orange-100',
         textColor: 'text-orange-800',
         borderColor: 'border-orange-200'
       };
-    case '在庫状況':
+    case '在庫情報':
       return {
         icon: ShoppingBag,
         bgColor: 'bg-blue-100',
         textColor: 'text-blue-800',
         borderColor: 'border-blue-200'
       };
-    case 'PR': // 🔥 修正
+    case 'イベント情報': // 🔥 修正
       return {
         icon: Megaphone,
         bgColor: 'bg-purple-100',
@@ -288,7 +288,7 @@ const getCategoryIconAndColor = (category: string) => {
         textColor: 'text-green-800',
         borderColor: 'border-green-200'
       };
-    case '雑談': // 🔥 追加
+    case '口コミ': // 🔥 追加
       return {
         icon: MessageSquareText,
         bgColor: 'bg-gray-100',
@@ -308,17 +308,17 @@ const getCategoryIconAndColor = (category: string) => {
 // カテゴリカラーを取得する関数
 const getCategoryColor = (category: string) => {
   switch(category) {
-    case '空席状況':
+    case '空席情報':
       return 'bg-orange-100 text-orange-800 border-orange-200';
-    case '在庫状況':
+    case '在庫情報':
       return 'bg-blue-100 text-blue-800 border-blue-200';
-    case 'PR': // 🔥 修正
+    case 'イベント情報': // 🔥 修正
       return 'bg-purple-100 text-purple-800 border-purple-200';
     case '応援':
       return 'bg-pink-100 text-pink-800 border-pink-200';
     case 'おとく自慢':
       return 'bg-green-100 text-green-800 border-green-200';
-    case '雑談': // 🔥 追加
+    case '口コミ': // 🔥 追加
       return 'bg-gray-100 text-gray-800 border-gray-200';
     default:
       return 'bg-gray-100 text-gray-800 border-gray-200';
@@ -367,11 +367,11 @@ CustomerSituationDisplay.displayName = 'CustomerSituationDisplay';
 // 🔥 新規追加：残り数の単位を取得する関数
 const getRemainingUnit = (category: string | null) => {
   switch(category) {
-    case '空席状況':
+    case '空席情報':
       return '席';
-    case '在庫状況':
+    case '在庫情報':
       return '個';
-    case 'PR集客':
+    case 'イベント情報':
       return '人';
     default:
       return '件';
@@ -1667,7 +1667,7 @@ export const PostCard = memo(({
           <div className="bg-green-50 border border-green-200 rounded-lg p-4">
             <h3 className="font-semibold text-green-800 mb-2">加盟店様の特典</h3>
             <p className="text-green-700 text-sm leading-relaxed">
-              投稿時の必要項目（住所、リンク、投稿内容など）をテンプレートで保存できる機能をご提供。変わる情報（残席や在庫状況）だけを入力するだけで手軽に投稿できます。
+              投稿時の必要項目（住所、リンク、投稿内容など）をテンプレートで保存できる機能をご提供。変わる情報（残席や在庫情報）だけを入力するだけで手軽に投稿できます。
             </p>
           </div>
 

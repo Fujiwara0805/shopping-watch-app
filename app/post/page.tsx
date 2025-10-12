@@ -40,7 +40,7 @@ declare global {
 const postSchema = z.object({
   storeId: z.string().optional(),
   storeName: z.string().optional(),
-  category: z.enum(['おとく自慢', '空席状況', '在庫状況', 'PR', '応援', '雑談'], { required_error: 'カテゴリを選択してください' }),
+  category: z.enum(['おとく自慢', '空席情報', '在庫情報', 'イベント情報', '応援', '口コミ'], { required_error: 'カテゴリを選択してください' }),
   content: z.string().min(5, { message: '5文字以上入力してください' }).max(240, { message: '240文字以内で入力してください' }),
   url: z.string().url({ message: '有効なURLを入力してください' }).optional().or(z.literal('')),
   // 🔥 新しい掲載期間スキーマ
@@ -60,8 +60,8 @@ const postSchema = z.object({
   couponCode: z.string().max(50).optional(), // クーポン
   phoneNumber: z.string().max(15).optional(), // 🔥 電話番号を追加
 }).superRefine((data, ctx) => {
-  // 🔥 空席状況・在庫状況の場合の必須チェック
-  if (data.category === '空席状況' || data.category === '在庫状況') {
+  // 🔥 空席情報・在庫情報の場合の必須チェック
+  if (data.category === '空席情報' || data.category === '在庫情報') {
     if (!data.storeId || data.storeId.trim() === '') {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -83,7 +83,7 @@ const postSchema = z.object({
         path: ['remainingSlots'],
       });
     }
-    // 空席状況・在庫状況では15m-60mのみ許可
+    // 空席情報・在庫情報では15m-60mのみ許可
     if (!['15m', '30m', '45m', '60m'].includes(data.expiryOption)) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -93,8 +93,8 @@ const postSchema = z.object({
     }
   }
   
-  // 🔥 PR・応援・おとく自慢・雑談の場合はカスタム設定必須
-  if (['PR', '応援', 'おとく自慢', '雑談'].includes(data.category)) {
+  // 🔥 イベント情報・応援・おとく自慢・口コミの場合はカスタム設定必須
+  if (['イベント情報', '応援', 'おとく自慢', '口コミ'].includes(data.category)) {
     if (data.expiryOption !== 'custom') {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -121,17 +121,17 @@ const libraries: ("places")[] = ["places"];
 // 🔥 新しいカテゴリ定義（並び順を変更）
 const categoryOptions = [
   { value: 'おとく自慢', label: 'おとく自慢' },
-  { value: '空席状況', label: '空席状況' },
-  { value: '在庫状況', label: '在庫状況' },
-  { value: 'PR', label: 'PR' },
+  { value: '空席情報', label: '空席情報' },
+  { value: '在庫情報', label: '在庫情報' },
+  { value: 'イベント情報', label: 'イベント情報' },
   { value: '応援', label: '応援' },
-  { value: '雑談', label: '雑談' },
+  { value: '口コミ', label: '口コミ' },
 ];
 
 // 🔥 カテゴリ別の掲載期間オプション
 const getExpiryOptionsForCategory = (category: string) => {
-  if (category === '空席状況' || category === '在庫状況') {
-    // 空席状況・在庫状況は15分〜60分のみ
+  if (category === '空席情報' || category === '在庫情報') {
+    // 空席情報・在庫情報は15分〜60分のみ
     return [
       { value: '15m', label: '15分' },
       { value: '30m', label: '30分' },
@@ -139,7 +139,7 @@ const getExpiryOptionsForCategory = (category: string) => {
       { value: '60m', label: '60分' },
     ];
   } else {
-    // PR・応援・おとく自慢・雑談はカスタム設定のみ
+    // イベント情報・応援・おとく自慢・口コミはカスタム設定のみ
     return [
       { value: 'custom', label: 'カスタム設定（最大12時間）' },
     ];
@@ -148,7 +148,7 @@ const getExpiryOptionsForCategory = (category: string) => {
 
 // 🔥 デフォルトの掲載期間を取得
 const getDefaultExpiryForCategory = (category: string) => {
-  if (category === '空席状況' || category === '在庫状況') {
+  if (category === '空席情報' || category === '在庫情報') {
     return '30m';
   } else {
     return 'custom';
@@ -420,12 +420,12 @@ export default function PostPage() {
       const currentExpiry = form.getValues('expiryOption');
       const validOptions = getExpiryOptionsForCategory(selectedCategory).map(opt => opt.value);
       
-      // 空席状況・在庫状況間の移動の場合は現在の値を保持、それ以外はデフォルト値を設定
-      const isAvailabilityCategory = selectedCategory === '空席状況' || selectedCategory === '在庫状況';
+      // 空席情報・在庫情報間の移動の場合は現在の値を保持、それ以外はデフォルト値を設定
+      const isAvailabilityCategory = selectedCategory === '空席情報' || selectedCategory === '在庫情報';
       const currentIsAvailabilityOption = currentExpiry && ['15m', '30m', '45m', '60m'].includes(currentExpiry);
       
       if (isAvailabilityCategory && currentIsAvailabilityOption) {
-        // 空席状況・在庫状況間の移動で、現在の値が有効な場合は保持
+        // 空席情報・在庫情報間の移動で、現在の値が有効な場合は保持
         // 何もしない（現在の値を保持）
       } else {
         // それ以外の場合はデフォルト値を設定
@@ -444,8 +444,8 @@ export default function PostPage() {
         fetchBusinessStoreLocation();
       }
       
-      // 🔥 空席状況・在庫状況の場合は必要な項目を自動展開（リセット後に）
-      if (selectedCategory === '空席状況' || selectedCategory === '在庫状況') {
+      // 🔥 空席情報・在庫情報の場合は必要な項目を自動展開（リセット後に）
+      if (selectedCategory === '空席情報' || selectedCategory === '在庫情報') {
         // 少し遅延させてから展開（リセット処理完了後）
         setTimeout(() => {
           setOptionalFieldsExpanded(prev => ({
@@ -596,11 +596,12 @@ export default function PostPage() {
         const selectedCategory = form.getValues("category");
         if (selectedCategory) {
           const categoryDefaults = {
-            '空席状況': '空席状況',
-            '在庫状況': '在庫状況',
-            'PR': 'PR',
+            '空席情報': '空席情報',
+            '在庫情報': '在庫情報',
+            'イベント情報': 'イベント情報',
             '応援': '応援先',
             'おとく自慢': 'おとく自慢',
+            '口コミ': '口コミ',
           };
           return categoryDefaults[selectedCategory as keyof typeof categoryDefaults] || null;
         }
@@ -1634,8 +1635,8 @@ export default function PostPage() {
                       </div>
                     )}
                     
-                    {/* PR・応援・おとく自慢・雑談でカスタム設定が必要な場合の案内 */}
-                    {['PR', '応援', 'おとく自慢', '雑談'].includes(selectedCategory || '') && selectedExpiryOption === 'custom' && !form.getValues('customExpiryMinutes') && (
+                    {/* イベント情報・応援・おとく自慢・口コミでカスタム設定が必要な場合の案内 */}
+                                    {['イベント情報', '応援', 'おとく自慢', '口コミ'].includes(selectedCategory || '') && selectedExpiryOption === 'custom' && !form.getValues('customExpiryMinutes') && (
                       <div className="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
                         <div className="flex items-center space-x-2">
                           <ClockIcon className="h-4 w-4 text-amber-600" />
@@ -1883,7 +1884,7 @@ export default function PostPage() {
                                 <FormLabel className="text-lg font-semibold flex items-center">
                                   <StoreIcon className="mr-2 h-5 w-5" />
                                   場所
-                                  {(selectedCategory === '空席状況' || selectedCategory === '在庫状況') && (
+                                  {(selectedCategory === '空席情報' || selectedCategory === '在庫情報') && (
                                     <span className="text-destructive ml-1">※</span>
                                   )}
                                 </FormLabel>
@@ -1981,7 +1982,7 @@ export default function PostPage() {
                                 <FormLabel className="text-lg font-semibold flex items-center">
                                   <PackageIcon className="mr-2 h-5 w-5" />
                                   残数（座席数、在庫数など）
-                                  {(selectedCategory === '空席状況' || selectedCategory === '在庫状況') && (
+                                  {(selectedCategory === '空席情報' || selectedCategory === '在庫情報') && (
                                     <span className="text-destructive ml-1">※</span>
                                   )}
                                 </FormLabel>

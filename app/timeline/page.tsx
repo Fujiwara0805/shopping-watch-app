@@ -105,15 +105,15 @@ type SearchMode = 'all' | 'category' | 'favorite_store' | 'liked_posts' | 'hybri
 // 🔥 更新されたカテゴリ分類（並び順を統一）
 const categoryOptions = [
   { value: 'おとく自慢', label: 'おとく自慢' },
-  { value: '空席状況', label: '空席状況' },
-  { value: '在庫状況', label: '在庫状況' },
-  { value: 'PR', label: 'PR' },
+  { value: '空席情報', label: '空席情報' },
+  { value: '在庫情報', label: '在庫情報' },
+  { value: 'イベント情報', label: 'イベント情報' },
   { value: '応援', label: '応援' },
-  { value: '雑談', label: '雑談' },
+  { value: '口コミ', label: '口コミ' },
 ];
 
 // 🔥 新しいカテゴリに対応（並び順を統一）
-const categories = ['すべて', 'おとく自慢', '空席状況', '在庫状況', 'PR', '応援', '雑談'];
+const categories = ['すべて', 'おとく自慢', '空席情報', '在庫情報', 'イベント情報', '応援', '口コミ'];
 
 
 const SEARCH_RADIUS_METERS = 1000; // 1km
@@ -1923,12 +1923,12 @@ export default function Timeline() {
   // 🔥 カテゴリのカラーリング関数を修正
   const getCategoryColor = (category: string) => {
     const colorMap: { [key: string]: string } = {
-      '空席状況': '#ea580c',      // orange-600
-      '在庫状況': '#2563eb',      // blue-600
-      'PR': '#9333ea',    // purple-600
+      '空席情報': '#ea580c',      // orange-600
+      '在庫情報': '#2563eb',      // blue-600
+      'イベント情報': '#9333ea',    // purple-600
       '応援': '#dc2626',        // red-600
       'おとく自慢': '#16a34a',    // green-600
-      '雑談': '#4b5563',        // gray-600
+      '口コミ': '#4b5563',        // gray-600
     };
     
     return colorMap[category] || '#6b7280'; // gray-500 as default

@@ -39,17 +39,17 @@ const getCategoryColor = (category: string | null) => {
   if (!category) return '#6b7280'; // カテゴリーが未入力の場合はグレー
   
   switch(category) {
-    case '空席状況':
+    case '空席情報':
       return '#ea580c'; // orange-600
-    case '在庫状況':
+    case '在庫情報':
       return '#2563eb'; // blue-600
-    case 'PR':
+    case 'イベント情報':
       return '#9333ea'; // purple-600
     case '応援':
       return '#dc2626'; // red-600
     case 'おとく自慢':
       return '#16a34a'; // green-600
-    case '雑談':
+    case '口コミ':
       return '#4b5563'; // gray-600
     default:
       return '#6b7280'; // gray-500
@@ -59,11 +59,11 @@ const getCategoryColor = (category: string | null) => {
 // 🔥 残数の単位を取得する関数を追加
 const getRemainingUnit = (category: string | null) => {
   switch(category) {
-    case '空席状況':
+    case '空席情報':
       return '席';
-    case '在庫状況':
+    case '在庫情報':
       return '個';
-    case 'PR':
+    case 'イベント情報':
       return '枠';
     default:
       return '枠';

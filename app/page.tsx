@@ -180,7 +180,7 @@ const NormalLP = ({ goToOnboarding, mobileMenuOpen, setMobileMenuOpen, scrollPos
                   transition={{ duration: 0.8, delay: 0.6 }}
                   className="text-3xl lg:text-4xl font-medium text-muted-foreground max-w-4xl mx-auto leading-relaxed m-t-10"
                 >
-                  空席情報、在庫状況、PR情報まで。<br />
+                  空席情報、在庫情報、イベント情報まで。<br />
                   <span className="text-primary font-bold">リアルタイム</span>で地域の「今」が分かる掲示板アプリ
                 </motion.p>
 
@@ -358,7 +358,7 @@ const NormalLP = ({ goToOnboarding, mobileMenuOpen, setMobileMenuOpen, scrollPos
                   「トクドク」で決まり！
                 </h2>
                 <p className="text-2xl lg:text-3xl text-muted-foreground max-w-4xl mx-auto leading-relaxed">
-                  空席情報も在庫状況も、買い物メモも家族共有も。<br />
+                  空席情報も在庫情報も、買い物メモも家族共有も。<br />
                   地域密着の便利機能が<span className="text-primary font-bold text-3xl lg:text-4xl">完全無料</span>で使い放題！
                 </p>
               </div>

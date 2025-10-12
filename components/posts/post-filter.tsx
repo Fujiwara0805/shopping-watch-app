@@ -16,11 +16,11 @@ interface PostFilterProps {
 const categories = [
   { id: 'all', name: 'すべて', icon: null },
   { id: 'おとく自慢', name: 'おとく自慢', icon: Trophy },
-  { id: '空席状況', name: '空席状況', icon: Utensils },
-  { id: '在庫状況', name: '在庫状況', icon: ShoppingBag },
-  { id: 'PR', name: 'PR', icon: Megaphone },
+  { id: '空席情報', name: '空席情報', icon: Utensils },
+  { id: '在庫情報', name: '在庫情報', icon: ShoppingBag },
+  { id: 'イベント情報', name: 'イベント情報', icon: Megaphone },
   { id: '応援', name: '応援', icon: Heart },
-  { id: '雑談', name: '雑談', icon: MessageSquareText },
+  { id: '口コミ', name: '口コミ', icon: MessageSquareText },
 ];
 
 export function PostFilter({ activeFilter, setActiveFilter }: PostFilterProps) {
