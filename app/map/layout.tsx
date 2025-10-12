@@ -23,7 +23,7 @@ const navItems = [
     icon: Newspaper,
   },
   {
-    name: "お店を探す",
+    name: "おとく地図",
     href: "/map",
     icon: MapPin,
   },
@@ -211,7 +211,7 @@ export default function MapLayout({ children }: MapLayoutProps) {
                 </Link>
               </div>
               
-              <h1 className="font-bold text-3xl text-center">お店を探す</h1>
+              <h1 className="font-bold text-3xl text-center">おとく地図</h1>
               
               <div className="absolute right-4 flex items-center space-x-2">
                 <Button variant="ghost" size="icon" className="relative" asChild>

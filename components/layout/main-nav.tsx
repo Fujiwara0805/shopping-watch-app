@@ -14,7 +14,7 @@ const navItems = [
     icon: Newspaper,
   },
   {
-    name: "お店を探す",
+    name: "おとく地図",
     href: "/map",
     icon: MapPin,
   },

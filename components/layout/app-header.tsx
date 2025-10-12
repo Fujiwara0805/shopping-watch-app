@@ -40,7 +40,7 @@ export function AppHeader() {
       case '/timeline':
         return isMobile ? '掲示板' : 'トクドク掲示板サービス';
       case '/map':
-        return 'お店を探す';
+        return 'おとく地図';
       case '/post':
         return '新規投稿';
       case '/profile':

@@ -710,7 +710,7 @@ const HamburgerMenu = ({ currentUser }: { currentUser: any }) => {
     },
     {
       icon: Store,
-      label: 'お店を探す',
+      label: 'おとく地図',
       onClick: () => {
         router.push('/map');
         setIsOpen(false);
