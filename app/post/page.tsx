@@ -44,8 +44,9 @@ const postSchema = z.object({
   content: z.string().min(5, { message: '5文字以上入力してください' }).max(240, { message: '240文字以内で入力してください' }),
   url: z.string().url({ message: '有効なURLを入力してください' }).optional().or(z.literal('')),
   // 🔥 新しい掲載期間スキーマ
-  expiryOption: z.enum(['15m', '30m', '45m', '60m', 'custom', '90d'], { required_error: '掲載期間を選択してください' }),
+  expiryOption: z.enum(['15m', '30m', '45m', '60m', '12h', '24h', 'days', '90d'], { required_error: '掲載期間を選択してください' }),
   customExpiryMinutes: z.number().min(1).max(720).optional(),
+  customExpiryDays: z.number().min(1).max(90).optional(), // イベント情報用の日数設定
   // 位置情報フィールド（任意）
   location_lat: z.number().optional(),
   location_lng: z.number().optional(),
@@ -109,36 +110,29 @@ const postSchema = z.object({
         path: ['storeName'],
       });
     }
-    if (data.expiryOption !== 'custom') {
+    if (data.expiryOption !== 'days') {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: `${data.category}ではカスタム設定での掲載期間設定が必要です`,
+        message: `${data.category}では日数設定での掲載期間設定が必要です`,
         path: ['expiryOption'],
       });
     }
-    if (data.expiryOption === 'custom' && (!data.customExpiryMinutes || data.customExpiryMinutes < 1 || data.customExpiryMinutes > 720)) {
+    if (data.expiryOption === 'days' && (!data.customExpiryDays || data.customExpiryDays < 1 || data.customExpiryDays > 90)) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: 'カスタム掲載期間は1分〜720分（12時間）の範囲で設定してください',
-        path: ['customExpiryMinutes'],
+        message: 'イベント情報の掲載期間は1日〜90日の範囲で設定してください',
+        path: ['customExpiryDays'],
       });
     }
   }
   
-  // 🔥 助け合いの場合はカスタム設定必須
+  // 🔥 助け合いの場合の掲載期間チェック
   if (data.category === '助け合い') {
-    if (data.expiryOption !== 'custom') {
+    if (!['30m', '60m', '12h', '24h'].includes(data.expiryOption)) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: `${data.category}ではカスタム設定での掲載期間設定が必要です`,
+        message: `${data.category}では30分、1時間、12時間、24時間のいずれかを選択してください`,
         path: ['expiryOption'],
-      });
-    }
-    if (data.expiryOption === 'custom' && (!data.customExpiryMinutes || data.customExpiryMinutes < 1 || data.customExpiryMinutes > 720)) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'カスタム掲載期間は1分〜720分（12時間）の範囲で設定してください',
-        path: ['customExpiryMinutes'],
       });
     }
   }
@@ -180,15 +174,28 @@ const getExpiryOptionsForCategory = (category: string) => {
       { value: '45m', label: '45分' },
       { value: '60m', label: '60分' },
     ];
+  } else if (category === '助け合い') {
+    // 助け合いは30分、1時間、12時間、24時間
+    return [
+      { value: '30m', label: '30分' },
+      { value: '60m', label: '1時間' },
+      { value: '12h', label: '12時間' },
+      { value: '24h', label: '24時間' },
+    ];
+  } else if (category === 'イベント情報') {
+    // イベント情報は日数設定
+    return [
+      { value: 'days', label: '日数設定（1-90日）' },
+    ];
   } else if (category === '口コミ') {
     // 口コミは90日間固定
     return [
       { value: '90d', label: '90日間（固定）' },
     ];
   } else {
-    // イベント情報・助け合いはカスタム設定のみ
+    // その他は30分をデフォルト
     return [
-      { value: 'custom', label: 'カスタム設定（最大12時間）' },
+      { value: '30m', label: '30分' },
     ];
   }
 };
@@ -197,10 +204,14 @@ const getExpiryOptionsForCategory = (category: string) => {
 const getDefaultExpiryForCategory = (category: string) => {
   if (category === '空席情報' || category === '在庫情報') {
     return '30m';
+  } else if (category === '助け合い') {
+    return '60m'; // 1時間をデフォルト
+  } else if (category === 'イベント情報') {
+    return 'days';
   } else if (category === '口コミ') {
     return '90d';
   } else {
-    return 'custom';
+    return '30m'; // デフォルトを30分に変更
   }
 };
 
@@ -334,6 +345,7 @@ export default function PostPage() {
       url: '',
       expiryOption: '30m', // デフォルトを30分に変更
       customExpiryMinutes: undefined, // デフォルト2時間
+      customExpiryDays: undefined, // イベント情報用デフォルト日数
       location_lat: undefined,
       location_lng: undefined,
       store_latitude: undefined,
@@ -541,11 +553,13 @@ export default function PostPage() {
         // それ以外の場合はデフォルト値を設定
         form.setValue('expiryOption', defaultExpiry);
         
-        // カスタム設定の場合はデフォルト時間を設定
-        if (defaultExpiry === 'custom') {
-          form.setValue('customExpiryMinutes', 120); // 2時間
+        // 日数設定の場合はデフォルト値を設定
+        if (defaultExpiry === 'days') {
+          form.setValue('customExpiryDays', 7); // 7日間をデフォルト
+          form.setValue('customExpiryMinutes', undefined);
         } else {
           form.setValue('customExpiryMinutes', undefined);
+          form.setValue('customExpiryDays', undefined);
         }
       }
       
@@ -602,9 +616,9 @@ export default function PostPage() {
       return;
     }
 
-    // カスタム掲載期間の検証
-    if (values.expiryOption === 'custom' && (!values.customExpiryMinutes || values.customExpiryMinutes < 1 || values.customExpiryMinutes > 720)) {
-      setSubmitError("カスタム掲載期間は1分〜720分（12時間）の範囲で設定してください。");
+    // 日数設定の検証
+    if (values.expiryOption === 'days' && (!values.customExpiryDays || values.customExpiryDays < 1 || values.customExpiryDays > 90)) {
+      setSubmitError("日数設定は1日〜90日の範囲で設定してください。");
       return;
     }
 
@@ -747,9 +761,9 @@ export default function PostPage() {
         file_urls: fileUrls.length > 0 ? JSON.stringify(fileUrls) : null,
         url: values.url && values.url.trim() !== '' ? values.url : null,
         expiry_option: values.expiryOption,
-        custom_expiry_minutes: values.expiryOption === 'custom' ? values.customExpiryMinutes : 
+        custom_expiry_minutes: values.expiryOption === 'days' ? (values.customExpiryDays || 7) * 24 * 60 :
                                values.expiryOption === '90d' ? 90 * 24 * 60 : null,
-        expires_at: calculateExpiresAt(values.expiryOption, values.customExpiryMinutes).toISOString(),
+        expires_at: calculateExpiresAt(values.expiryOption, values.customExpiryMinutes, values.customExpiryDays).toISOString(),
         likes_count: 0,
         views_count: 0,
         comments_count: 0,
@@ -841,6 +855,7 @@ export default function PostPage() {
         url: businessSettings?.business_url || '',
         expiryOption: '30m' as const, // デフォルトを30分に変更
         customExpiryMinutes: undefined, // デフォルト2時間
+        customExpiryDays: undefined, // イベント情報用デフォルト日数
         location_lat: undefined,
         location_lng: undefined,
         store_latitude: undefined,
@@ -1552,21 +1567,19 @@ export default function PostPage() {
   };
 
   // 🔥 モーダル状態を追加
-  const [showCustomTimeModal, setShowCustomTimeModal] = useState(false);
-  const [customHours, setCustomHours] = useState(0);
-  const [customMinutes, setCustomMinutes] = useState(30);
+  const [showCustomDaysModal, setShowCustomDaysModal] = useState(false);
+  const [customDays, setCustomDays] = useState(7);
 
   // 🔥 来客状況の状態を追加
   const [totalCustomers, setTotalCustomers] = useState<number | undefined>(undefined);
   const [maleCustomers, setMaleCustomers] = useState<number | undefined>(undefined);
   const [femaleCustomers, setFemaleCustomers] = useState<number | undefined>(undefined);
 
-  // 🔥 カスタム時間設定の処理
-  const handleCustomTimeSet = () => {
-    const totalMinutes = customHours * 60 + customMinutes;
-    if (totalMinutes > 0 && totalMinutes <= 720) {
-      form.setValue('customExpiryMinutes', totalMinutes);
-      setShowCustomTimeModal(false);
+  // 🔥 日数設定の処理
+  const handleCustomDaysSet = () => {
+    if (customDays > 0 && customDays <= 90) {
+      form.setValue('customExpiryDays', customDays);
+      setShowCustomDaysModal(false);
     }
   };
 
@@ -1717,8 +1730,8 @@ export default function PostPage() {
                     </FormLabel>
                     <Select onValueChange={(value) => {
                       field.onChange(value);
-                      if (value === 'custom') {
-                        setShowCustomTimeModal(true);
+                      if (value === 'days') {
+                        setShowCustomDaysModal(true);
                       }
                     }} value={field.value || ""}>
                       <FormControl>
@@ -1736,18 +1749,18 @@ export default function PostPage() {
                     </Select>
                     <FormMessage />
                     
-                    {/* カスタム時間が設定されている場合の表示 */}
-                    {selectedExpiryOption === 'custom' && form.getValues('customExpiryMinutes') && (
+                    {/* 日数設定が選択されている場合の表示 */}
+                    {selectedExpiryOption === 'days' && form.getValues('customExpiryDays') && (
                       <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                         <div className="flex items-center justify-between">
                           <span className="text-sm text-blue-800">
-                            設定時間: {Math.floor(form.getValues('customExpiryMinutes')! / 60)}時間{form.getValues('customExpiryMinutes')! % 60}分
+                            設定期間: {form.getValues('customExpiryDays')}日間
                           </span>
                           <Button
                             type="button"
                             variant="outline"
                             size="sm"
-                            onClick={() => setShowCustomTimeModal(true)}
+                            onClick={() => setShowCustomDaysModal(true)}
                           >
                             変更
                           </Button>
@@ -1755,23 +1768,23 @@ export default function PostPage() {
                       </div>
                     )}
                     
-                    {/* イベント情報・応援・おとく自慢でカスタム設定が必要な場合の案内 */}
-                                    {['イベント情報', '応援', 'おとく自慢'].includes(selectedCategory || '') && selectedExpiryOption === 'custom' && !form.getValues('customExpiryMinutes') && (
+                    {/* イベント情報で日数設定が必要な場合の案内 */}
+                    {selectedCategory === 'イベント情報' && selectedExpiryOption === 'days' && !form.getValues('customExpiryDays') && (
                       <div className="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
                         <div className="flex items-center space-x-2">
                           <ClockIcon className="h-4 w-4 text-amber-600" />
                           <span className="text-sm text-amber-800">
-                            {selectedCategory}では掲載時間の設定が必要です。「変更」ボタンから時間を設定してください。
+                            イベント情報では掲載日数の設定が必要です。「日数設定（1-90日）」を選択して日数を設定してください。
                           </span>
                         </div>
                         <Button
                           type="button"
                           variant="outline"
                           size="sm"
-                          onClick={() => setShowCustomTimeModal(true)}
+                          onClick={() => setShowCustomDaysModal(true)}
                           className="mt-2"
                         >
-                          時間を設定
+                          日数を設定
                         </Button>
                       </div>
                     )}
@@ -2615,76 +2628,46 @@ export default function PostPage() {
             </div>
           </CustomModal>
 
-          {/* 🔥 カスタム時間設定モーダル */}
+          {/* 🔥 日数設定モーダル */}
           <CustomModal
-            isOpen={showCustomTimeModal}
-            onClose={() => setShowCustomTimeModal(false)}
-            title="カスタム掲載時間の設定"
+            isOpen={showCustomDaysModal}
+            onClose={() => setShowCustomDaysModal(false)}
+            title="イベント掲載期間の設定"
           >
             <div className="pt-2 space-y-4">
               <p className="text-sm text-gray-600">
-                掲載時間を設定してください（最大12時間）
+                イベントの掲載期間を設定してください（1-90日）
               </p>
               
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-sm font-medium">時間</Label>
-                  <Select 
-                    value={String(customHours)} 
-                    onValueChange={(value) => setCustomHours(parseInt(value))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Array.from({ length: 13 }, (_, i) => (
-                        <SelectItem key={i} value={String(i)}>
-                          {i}時間
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+              <div>
+                <Label className="text-sm font-medium">日数</Label>
+                <Select 
+                  value={String(customDays)} 
+                  onValueChange={(value) => setCustomDays(parseInt(value))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-[200px]">
+                    {Array.from({ length: 90 }, (_, i) => i + 1).map((day) => (
+                      <SelectItem key={day} value={String(day)}>
+                        {day}日間
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-                
-                <div>
-                  <Label className="text-sm font-medium">分</Label>
-                  <Select 
-                    value={String(customMinutes)} 
-                    onValueChange={(value) => setCustomMinutes(parseInt(value))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {[0, 15, 30, 45].map((minute) => (
-                        <SelectItem key={minute} value={String(minute)}>
-                          {minute}分
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-              </div>
-            </div>
               
-              <div className="bg-blue-50 border border-blue-200 rounded p-3">
-                <p className="text-sm text-blue-800">
-                  設定時間: {customHours}時間{customMinutes}分
-                  {customHours * 60 + customMinutes > 720 && (
-                    <span className="text-red-600 block">※12時間を超えています</span>
-                  )}
-                </p>
-              </div>
-
-              <div className="flex justify-end space-x-3 pt-4">
+              <div className="flex justify-end space-x-2 pt-4">
                 <Button 
                   variant="outline" 
-                  onClick={() => setShowCustomTimeModal(false)}
+                  onClick={() => setShowCustomDaysModal(false)}
                 >
                   キャンセル
                 </Button>
                 <Button 
-                  onClick={handleCustomTimeSet}
-                  disabled={customHours * 60 + customMinutes > 720 || customHours * 60 + customMinutes === 0}
+                  onClick={handleCustomDaysSet}
+                  disabled={customDays < 1 || customDays > 90}
                 >
                   設定
                 </Button>
