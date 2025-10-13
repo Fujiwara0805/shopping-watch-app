@@ -2011,8 +2011,7 @@ export default function Timeline() {
       '空席情報': '#ea580c',      // orange-600
       '在庫情報': '#2563eb',      // blue-600
       'イベント情報': '#9333ea',    // purple-600
-      '応援': '#dc2626',        // red-600
-      'おとく自慢': '#16a34a',    // green-600
+      '助け合い': '#dc2626',        // red-600
       '口コミ': '#4b5563',        // gray-600
     };
     
@@ -2797,7 +2796,7 @@ export default function Timeline() {
                     </p>
                     <h3 className="text-lg font-semibold mb-4 flex items-center">
                       <MessageSquareText className="h-5 w-5 mr-2 text-blue-600" />
-                      6つのカテゴリと詳細情報について
+                      5つのカテゴリと詳細情報について
                     </h3>
                     <div className="grid grid-cols-2 gap-3">
                       <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
@@ -2836,24 +2835,6 @@ export default function Timeline() {
                         </div>
                       </div>
 
-                      <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                        <div className="flex items-center space-x-3">
-                          <div className="flex-shrink-0">
-                            <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: '#9333ea' }}>
-                              <Megaphone className="h-4 w-4 text-white" />
-                            </div>
-                          </div>
-                          <div>
-                            <p className="text-xs font-medium text-purple-800 mb-1">
-                              イベント情報
-                            </p>
-                            <p className="text-xs text-purple-600">
-                              イベントの告知や紹介
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
                       <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                         <div className="flex items-center space-x-3">
                           <div className="flex-shrink-0">
@@ -2863,28 +2844,10 @@ export default function Timeline() {
                           </div>
                           <div>
                             <p className="text-sm font-medium text-red-800 mb-1">
-                              応援
+                              助け合い
                             </p>
                             <p className="text-xs text-red-600">
-                              お店や人の投稿に投げ銭ができる
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                        <div className="flex items-center space-x-3">
-                          <div className="flex-shrink-0">
-                            <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: '#16a34a' }}>
-                              <Trophy className="h-4 w-4 text-white" />
-                            </div>
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium text-green-800 mb-1">
-                              おとく自慢
-                            </p>
-                            <p className="text-xs text-green-600">
-                              お得な情報の共有
+                              食品ロス削減、物の譲り合いなど
                             </p>
                           </div>
                         </div>
@@ -2907,6 +2870,24 @@ export default function Timeline() {
                           </div>
                         </div>
                       </div>
+
+                      <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 col-span-2">
+                        <div className="flex items-center space-x-3 justify-center">
+                          <div className="flex-shrink-0">
+                            <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: '#9333ea' }}>
+                              <Megaphone className="h-4 w-4 text-white" />
+                            </div>
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-purple-800 mb-1">
+                              イベント情報
+                            </p>
+                            <p className="text-xs text-purple-600">
+                              イベントの告知や紹介
+                            </p>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
 
@@ -2925,7 +2906,7 @@ export default function Timeline() {
                 <div className="space-y-6">
                   <div>
                     <p className="text-sm text-gray-600 mb-4">
-                      投稿には<span className="text-red-600">「カテゴリ(6種類)」</span>、<span className="text-red-600">「テキスト(240文字以内)」</span>と<span className="text-red-600">「掲載期間」</span>の入力が必須です。また、投稿内容に応じて、以下の詳細情報を任意で入力できます。（<span className="text-red-600">※ログイン必須</span>）
+                      投稿には<span className="text-red-600">「カテゴリ(5種類)」</span>、<span className="text-red-600">「テキスト(240文字以内)」</span>と<span className="text-red-600">「掲載期間」</span>の入力が必須です。また、投稿内容に応じて、以下の詳細情報を任意で入力できます。（<span className="text-red-600">※ログイン必須</span>）
                     </p>
                     <div className="grid grid-cols-2 gap-3">
                       <div className="bg-blue-50 border border-blue-200 rounded-lg p-2">
