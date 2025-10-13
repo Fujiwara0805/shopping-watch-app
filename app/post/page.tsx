@@ -222,6 +222,49 @@ const getPlaceholderForCategory = (category: string) => {
   }
 };
 
+// 🔥 カテゴリ別の表示項目を取得
+const getCategoryFields = (category: string) => {
+  const baseFields = ['location']; // 全カテゴリで場所は表示
+  
+  switch (category) {
+    case '空席情報':
+    case '在庫情報':
+      return [...baseFields, 'remainingSlots', 'url', 'image', 'customerSituation', 'coupon', 'phoneNumber'];
+    case 'イベント情報':
+      return [...baseFields, 'url', 'image', 'phoneNumber', 'file'];
+    case '助け合い':
+      return [...baseFields, 'url', 'image', 'phoneNumber', 'file', 'supportPurchase']; // おすそわけ = supportPurchase
+    case '口コミ':
+      return [...baseFields, 'url', 'image', 'rating', 'file'];
+    default:
+      return baseFields;
+  }
+};
+
+// 🔥 フィールドの表示名とアイコンを取得
+const getFieldDisplayInfo = (field: string) => {
+  const fieldMap = {
+    location: { label: '場所', icon: StoreIcon },
+    remainingSlots: { label: '残席・在庫数', icon: PackageIcon },
+    url: { label: 'リンク', icon: LinkIcon },
+    image: { label: '画像', icon: ImageIcon },
+    customerSituation: { label: '来客状況', icon: Users },
+    coupon: { label: 'クーポン', icon: Tag },
+    phoneNumber: { label: '電話番号', icon: Phone },
+    file: { label: 'ファイル', icon: FileText },
+    supportPurchase: { label: 'おすそわけ', icon: HandCoins },
+    rating: { label: '評価', icon: StarIcon },
+  };
+  
+  return fieldMap[field as keyof typeof fieldMap] || { label: field, icon: HelpCircle };
+};
+
+// 🔥 カテゴリに対応したフィールドかどうかをチェック
+const isFieldVisibleForCategory = (field: string, category: string) => {
+  const categoryFields = getCategoryFields(category);
+  return categoryFields.includes(field);
+};
+
 export default function PostPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -1777,177 +1820,54 @@ export default function PostPage() {
                     className="border-t"
                   >
                     <div className="p-4 space-y-4">
-                      {/* オプション項目のトグルボタン - 2列5行に変更 */}
-                      <div className="grid grid-cols-2 gap-2">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => toggleOptionalField('location')}
-                          className={`justify-start transition-all duration-200 ${
-                            isBusinessFieldSet('location')
-                              ? 'bg-green-100 text-green-800 border-green-300 hover:bg-green-200'
-                              : optionalFieldsExpanded.location 
-                              ? 'bg-primary text-primary-foreground border-primary hover:bg-primary/90' 
-                              : 'bg-[#fafafa] text-[#73370c] border-gray-300 hover:bg-[#fafafa] hover:text-[#73370c]'
-                          }`}
-                        >
-                          <StoreIcon className="mr-2 h-4 w-4" />
-                          場所
-                          {isBusinessFieldSet('location') && (
-                            <span className="ml-1 text-xs">(設定済み)</span>
-                          )}
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => toggleOptionalField('remainingSlots')}
-                          className={`justify-start transition-all duration-200 ${
-                            optionalFieldsExpanded.remainingSlots 
-                              ? 'bg-primary text-primary-foreground border-primary hover:bg-primary/90' 
-                              : 'bg-[#fafafa] text-[#73370c] border-gray-300 hover:bg-[#fafafa] hover:text-[#73370c]'
-                          }`}
-                        >
-                          <PackageIcon className="mr-2 h-4 w-4" />
-                          残席・在庫数
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => toggleOptionalField('url')}
-                          className={`justify-start transition-all duration-200 ${
-                            isBusinessFieldSet('url')
-                              ? 'bg-green-100 text-green-800 border-green-300 hover:bg-green-200'
-                              : optionalFieldsExpanded.url 
-                              ? 'bg-primary text-primary-foreground border-primary hover:bg-primary/90' 
-                              : 'bg-[#fafafa] text-[#73370c] border-gray-300 hover:bg-[#fafafa] hover:text-[#73370c]'
-                          }`}
-                        >
-                          <LinkIcon className="mr-2 h-4 w-4" />
-                          リンク
-                          {isBusinessFieldSet('url') && (
-                            <span className="ml-1 text-xs">(設定済み)</span>
-                          )}
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => toggleOptionalField('image')}
-                          className={`justify-start transition-all duration-200 ${
-                            isBusinessFieldSet('image')
-                              ? 'bg-green-100 text-green-800 border-green-300 hover:bg-green-200'
-                              : optionalFieldsExpanded.image 
-                              ? 'bg-primary text-primary-foreground border-primary hover:bg-primary/90' 
-                              : 'bg-[#fafafa] text-[#73370c] border-gray-300 hover:bg-[#fafafa] hover:text-[#73370c]'
-                          }`}
-                        >
-                          <ImageIcon className="mr-2 h-4 w-4" />
-                          画像
-                          {isBusinessFieldSet('image') && (
-                            <span className="ml-1 text-xs">(設定済み)</span>
-                          )}
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => toggleOptionalField('customerSituation')}
-                          className={`justify-start transition-all duration-200 ${
-                            optionalFieldsExpanded.customerSituation 
-                              ? 'bg-primary text-primary-foreground border-primary hover:bg-primary/90' 
-                              : 'bg-[#fafafa] text-[#73370c] border-gray-300 hover:bg-[#fafafa] hover:text-[#73370c]'
-                          }`}
-                        >
-                          <Users className="mr-2 h-4 w-4" />
-                          来客状況
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => toggleOptionalField('rating')}
-                          className={`justify-start transition-all duration-200 ${
-                            optionalFieldsExpanded.rating 
-                              ? 'bg-primary text-primary-foreground border-primary hover:bg-primary/90' 
-                              : 'bg-[#fafafa] text-[#73370c] border-gray-300 hover:bg-[#fafafa] hover:text-[#73370c]'
-                          }`}
-                        >
-                          <StarIcon className="mr-2 h-4 w-4" />
-                          評価
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => toggleOptionalField('coupon')}
-                          className={`justify-start transition-all duration-200 ${
-                            isBusinessFieldSet('coupon')
-                              ? 'bg-green-100 text-green-800 border-green-300 hover:bg-green-200'
-                              : optionalFieldsExpanded.coupon 
-                              ? 'bg-primary text-primary-foreground border-primary hover:bg-primary/90' 
-                              : 'bg-[#fafafa] text-[#73370c] border-gray-300 hover:bg-[#fafafa] hover:text-[#73370c]'
-                          }`}
-                        >
-                          <Tag className="mr-2 h-4 w-4" />
-                          クーポン
-                          {isBusinessFieldSet('coupon') && (
-                            <span className="ml-1 text-xs">(設定済み)</span>
-                          )}
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => toggleOptionalField('phoneNumber')}
-                          className={`justify-start transition-all duration-200 ${
-                            isBusinessFieldSet('phoneNumber')
-                              ? 'bg-green-100 text-green-800 border-green-300 hover:bg-green-200'
-                              : optionalFieldsExpanded.phoneNumber 
-                              ? 'bg-primary text-primary-foreground border-primary hover:bg-primary/90' 
-                              : 'bg-[#fafafa] text-[#73370c] border-gray-300 hover:bg-[#fafafa] hover:text-[#73370c]'
-                          }`}
-                        >
-                          <Phone className="mr-2 h-4 w-4" />
-                          電話番号
-                          {isBusinessFieldSet('phoneNumber') && (
-                            <span className="ml-1 text-xs">(設定済み)</span>
-                          )}
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => toggleOptionalField('file')}
-                          className={`justify-start transition-all duration-200 ${
-                            optionalFieldsExpanded.file 
-                              ? 'bg-primary text-primary-foreground border-primary hover:bg-primary/90' 
-                              : 'bg-[#fafafa] text-[#73370c] border-gray-300 hover:bg-[#fafafa] hover:text-[#73370c]'
-                          }`}
-                        >
-                          <FileText className="mr-2 h-4 w-4" />
-                          ファイル
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => toggleOptionalField('supportPurchase')}
-                          className={`justify-start transition-all duration-200 ${
-                            optionalFieldsExpanded.supportPurchase 
-                            ? 'bg-primary text-primary-foreground border-primary hover:bg-primary/90' 
-                            : 'bg-[#fafafa] text-[#73370c] border-gray-300 hover:bg-[#fafafa] hover:text-[#73370c]'
-                          }`}
-                          >
-                          <Heart className="mr-2 h-4 w-4" />
-                          おすそわけ
-                        </Button>
-                      </div>
+                      {/* 🔥 カテゴリ別詳細情報項目のトグルボタン */}
+                      <motion.div 
+                        key={selectedCategory}
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="grid grid-cols-2 gap-2"
+                      >
+                        {getCategoryFields(selectedCategory).map((field) => {
+                          const { label, icon: Icon } = getFieldDisplayInfo(field);
+                          const isExpanded = optionalFieldsExpanded[field as keyof typeof optionalFieldsExpanded];
+                          const isBusinessSet = isBusinessFieldSet(field as keyof typeof optionalFieldsExpanded);
+                          
+                          return (
+                            <motion.div
+                              key={field}
+                              initial={{ opacity: 0, scale: 0.95 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              transition={{ duration: 0.2, delay: getCategoryFields(selectedCategory).indexOf(field) * 0.05 }}
+                            >
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => toggleOptionalField(field as keyof typeof optionalFieldsExpanded)}
+                                className={`w-full justify-start transition-all duration-200 ${
+                                  isBusinessSet
+                                    ? 'bg-green-100 text-green-800 border-green-300 hover:bg-green-200'
+                                    : isExpanded 
+                                    ? 'bg-primary text-primary-foreground border-primary hover:bg-primary/90' 
+                                    : 'bg-[#fafafa] text-[#73370c] border-gray-300 hover:bg-[#fafafa] hover:text-[#73370c]'
+                                }`}
+                              >
+                                <Icon className="mr-2 h-4 w-4" />
+                                {label}
+                                {isBusinessSet && (
+                                  <span className="ml-1 text-xs">(設定済み)</span>
+                                )}
+                              </Button>
+                            </motion.div>
+                          );
+                        })}
+                      </motion.div>
+
+                      {/* 🔥 各詳細情報フィールドの表示 */}
 
                       {/* 1. 場所入力フィールド */}
-                      {optionalFieldsExpanded.location && (
+                      {optionalFieldsExpanded.location && isFieldVisibleForCategory('location', selectedCategory) && (
                         <motion.div
                           initial={{ opacity: 0, y: -10 }}
                           animate={{ opacity: 1, y: 0 }}
@@ -2045,7 +1965,7 @@ export default function PostPage() {
                       )}
 
                       {/* 2. 残数フィールド */}
-                      {optionalFieldsExpanded.remainingSlots && (
+                      {optionalFieldsExpanded.remainingSlots && isFieldVisibleForCategory('remainingSlots', selectedCategory) && (
                         <motion.div
                           initial={{ opacity: 0, y: -10 }}
                           animate={{ opacity: 1, y: 0 }}
@@ -2093,7 +2013,7 @@ export default function PostPage() {
                       )}
 
                       {/* 3. リンク入力フィールド */}
-                      {optionalFieldsExpanded.url && (
+                      {optionalFieldsExpanded.url && isFieldVisibleForCategory('url', selectedCategory) && (
                         <motion.div
                           initial={{ opacity: 0, y: -10 }}
                           animate={{ opacity: 1, y: 0 }}
@@ -2129,7 +2049,7 @@ export default function PostPage() {
                       )}
 
                       {/* 4. 画像アップロードフィールド */}
-                      {optionalFieldsExpanded.image && (
+                      {optionalFieldsExpanded.image && isFieldVisibleForCategory('image', selectedCategory) && (
                         <motion.div
                           initial={{ opacity: 0, y: -10 }}
                           animate={{ opacity: 1, y: 0 }}
@@ -2203,7 +2123,7 @@ export default function PostPage() {
                       )}
 
                       {/* 5. 来客状況フィールド */}
-                      {optionalFieldsExpanded.customerSituation && (
+                      {optionalFieldsExpanded.customerSituation && isFieldVisibleForCategory('customerSituation', selectedCategory) && (
                         <motion.div
                           initial={{ opacity: 0, y: -10 }}
                           animate={{ opacity: 1, y: 0 }}
@@ -2271,7 +2191,7 @@ export default function PostPage() {
                       )}
 
                       {/* 6. 評価入力フィールド */}
-                      {optionalFieldsExpanded.rating && (
+                      {optionalFieldsExpanded.rating && isFieldVisibleForCategory('rating', selectedCategory) && (
                         <motion.div
                           initial={{ opacity: 0, y: -10 }}
                           animate={{ opacity: 1, y: 0 }}
@@ -2352,7 +2272,7 @@ export default function PostPage() {
 
 
                       {/* 7. クーポンフィールド */}
-                      {optionalFieldsExpanded.coupon && (
+                      {optionalFieldsExpanded.coupon && isFieldVisibleForCategory('coupon', selectedCategory) && (
                         <motion.div
                           initial={{ opacity: 0, y: -10 }}
                           animate={{ opacity: 1, y: 0 }}
@@ -2389,7 +2309,7 @@ export default function PostPage() {
                       )}
 
                       {/* 8. 電話番号フィールド */}
-                      {optionalFieldsExpanded.phoneNumber && (
+                      {optionalFieldsExpanded.phoneNumber && isFieldVisibleForCategory('phoneNumber', selectedCategory) && (
                         <motion.div
                           initial={{ opacity: 0, y: -10 }}
                           animate={{ opacity: 1, y: 0 }}
@@ -2425,7 +2345,7 @@ export default function PostPage() {
                       )}
 
                       {/* 9. ファイル入力フィールド */}
-                      {optionalFieldsExpanded.file && (
+                      {optionalFieldsExpanded.file && isFieldVisibleForCategory('file', selectedCategory) && (
                         <motion.div
                           initial={{ opacity: 0, y: -10 }}
                           animate={{ opacity: 1, y: 0 }}
@@ -2493,7 +2413,7 @@ export default function PostPage() {
                       )}
 
                       {/* 10. おすそわけフィールド */}
-                      {optionalFieldsExpanded.supportPurchase && (
+                      {optionalFieldsExpanded.supportPurchase && isFieldVisibleForCategory('supportPurchase', selectedCategory) && (
                         <motion.div
                           initial={{ opacity: 0, y: -10 }}
                           animate={{ opacity: 1, y: 0 }}
