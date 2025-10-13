@@ -45,10 +45,8 @@ const getCategoryColor = (category: string | null) => {
       return '#2563eb'; // blue-600
     case 'イベント情報':
       return '#9333ea'; // purple-600
-    case '応援':
+    case '助け合い':
       return '#dc2626'; // red-600
-    case 'おとく自慢':
-      return '#16a34a'; // green-600
     case '口コミ':
       return '#4b5563'; // gray-600
     default:

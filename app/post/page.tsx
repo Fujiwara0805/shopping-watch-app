@@ -40,7 +40,7 @@ declare global {
 const postSchema = z.object({
   storeId: z.string().optional(),
   storeName: z.string().optional(),
-  category: z.enum(['おとく自慢', '空席情報', '在庫情報', 'イベント情報', '応援', '口コミ'], { required_error: 'カテゴリを選択してください' }),
+  category: z.enum(['空席情報', '在庫情報', 'イベント情報', '助け合い', '口コミ'], { required_error: 'カテゴリを選択してください' }),
   content: z.string().min(5, { message: '5文字以上入力してください' }).max(240, { message: '240文字以内で入力してください' }),
   url: z.string().url({ message: '有効なURLを入力してください' }).optional().or(z.literal('')),
   // 🔥 新しい掲載期間スキーマ
@@ -125,8 +125,8 @@ const postSchema = z.object({
     }
   }
   
-  // 🔥 応援・おとく自慢の場合はカスタム設定必須
-  if (['応援', 'おとく自慢'].includes(data.category)) {
+  // 🔥 助け合いの場合はカスタム設定必須
+  if (data.category === '助け合い') {
     if (data.expiryOption !== 'custom') {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -163,11 +163,10 @@ const libraries: ("places")[] = ["places"];
 
 // 🔥 新しいカテゴリ定義（並び順を変更）
 const categoryOptions = [
-  { value: 'おとく自慢', label: 'おとく自慢' },
   { value: '空席情報', label: '空席情報' },
   { value: '在庫情報', label: '在庫情報' },
   { value: 'イベント情報', label: 'イベント情報' },
-  { value: '応援', label: '応援' },
+  { value: '助け合い', label: '助け合い' },
   { value: '口コミ', label: '口コミ' },
 ];
 
@@ -187,7 +186,7 @@ const getExpiryOptionsForCategory = (category: string) => {
       { value: '90d', label: '90日間（固定）' },
     ];
   } else {
-    // イベント情報・応援・おとく自慢はカスタム設定のみ
+    // イベント情報・助け合いはカスタム設定のみ
     return [
       { value: 'custom', label: 'カスタム設定（最大12時間）' },
     ];
@@ -202,6 +201,24 @@ const getDefaultExpiryForCategory = (category: string) => {
     return '90d';
   } else {
     return 'custom';
+  }
+};
+
+// 🔥 カテゴリ別のプレースホルダーテキストを取得
+const getPlaceholderForCategory = (category: string) => {
+  switch (category) {
+    case '空席情報':
+      return '空席情報を投稿してみよう。（240文字以内）';
+    case '在庫情報':
+      return '在庫情報を投稿してみよう。（240文字以内）';
+    case 'イベント情報':
+      return 'イベント情報を投稿してみよう。（240文字以内）';
+    case '助け合い':
+      return '食品ロス削減、物の譲り合いなど、地域の助け合い情報を投稿してみよう。（240文字以内）';
+    case '口コミ':
+      return '口コミ情報を投稿してみよう。（240文字以内）';
+    default:
+      return '日常生活のちょっとしたおとく情報を投稿してみよう。（240文字以内）';
   }
 };
 
@@ -269,11 +286,11 @@ export default function PostPage() {
     defaultValues: {
       storeId: '',
       storeName: '',
-      category: 'おとく自慢', // デフォルトカテゴリを変更
+      category: '空席情報', // デフォルトカテゴリを変更
       content: '',
       url: '',
-      expiryOption: 'custom', // デフォルトをカスタムに変更
-      customExpiryMinutes: 120, // デフォルト2時間
+      expiryOption: '30m', // デフォルトを30分に変更
+      customExpiryMinutes: undefined, // デフォルト2時間
       location_lat: undefined,
       location_lng: undefined,
       store_latitude: undefined,
@@ -776,11 +793,11 @@ export default function PostPage() {
       const resetValues = {
         storeId: businessSettings?.business_store_id || '',
         storeName: businessSettings?.business_store_name || '',
-        category: 'おとく自慢' as const, // デフォルトカテゴリを変更
+        category: '空席情報' as const, // デフォルトカテゴリを変更
         content: businessSettings?.business_default_content || '',
         url: businessSettings?.business_url || '',
-        expiryOption: 'custom' as const, // デフォルトをカスタムに変更
-        customExpiryMinutes: 120, // デフォルト2時間
+        expiryOption: '30m' as const, // デフォルトを30分に変更
+        customExpiryMinutes: undefined, // デフォルト2時間
         location_lat: undefined,
         location_lng: undefined,
         store_latitude: undefined,
@@ -1626,7 +1643,7 @@ export default function PostPage() {
                     </FormLabel>
                     <FormControl>
                       <Textarea
-                        placeholder="日常生活のちょっとしたおとく情報を投稿してみよう。（240文字以内）"
+                        placeholder={getPlaceholderForCategory(selectedCategory)}
                         className="resize-none"
                         style={{ fontSize: '16px', minHeight: '140px' }}
                         rows={7}

@@ -283,19 +283,12 @@ const getCategoryIconAndColor = (category: string) => {
         textColor: 'text-purple-800',
         borderColor: 'border-purple-200'
       };
-    case '応援':
+    case '助け合い':
       return {
         icon: Heart,
         bgColor: 'bg-pink-100',
         textColor: 'text-pink-800',
         borderColor: 'border-pink-200'
-      };
-    case 'おとく自慢':
-      return {
-        icon: Trophy,
-        bgColor: 'bg-green-100',
-        textColor: 'text-green-800',
-        borderColor: 'border-green-200'
       };
     case '口コミ': // 🔥 追加
       return {
@@ -323,10 +316,8 @@ const getCategoryColor = (category: string) => {
       return 'bg-blue-100 text-blue-800 border-blue-200';
     case 'イベント情報': // 🔥 修正
       return 'bg-purple-100 text-purple-800 border-purple-200';
-    case '応援':
+    case '助け合い':
       return 'bg-pink-100 text-pink-800 border-pink-200';
-    case 'おとく自慢':
-      return 'bg-green-100 text-green-800 border-green-200';
     case '口コミ': // 🔥 追加
       return 'bg-gray-100 text-gray-800 border-gray-200';
     default:

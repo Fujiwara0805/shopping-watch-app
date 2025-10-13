@@ -15,11 +15,10 @@ interface PostFilterProps {
 // 🔥 新しいカテゴリ定義（並び順を統一）
 export const categories = [
   { id: 'all', name: 'すべて', icon: null },
-  { id: 'おとく自慢', name: 'おとく自慢', icon: Trophy },
   { id: '空席情報', name: '空席情報', icon: Utensils },
   { id: '在庫情報', name: '在庫情報', icon: ShoppingBag },
   { id: 'イベント情報', name: 'イベント情報', icon: Megaphone },
-  { id: '応援', name: '応援', icon: Heart },
+  { id: '助け合い', name: '助け合い', icon: Heart },
   { id: '口コミ', name: '口コミ', icon: MessageSquareText },
 ];
 
