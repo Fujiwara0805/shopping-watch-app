@@ -84,7 +84,7 @@ interface PostCardProps {
   enableComments?: boolean;
 }
 
-// 🔥 軽量化：シンプルで高速な画像コンポーネント
+// 🔥 高速化：1秒以内表示を目指す画像コンポーネント
 const OptimizedImage = memo(({ 
   src, 
   alt, 
@@ -106,13 +106,13 @@ const OptimizedImage = memo(({
 }) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
-  const [isInView, setIsInView] = useState(priority); // 🔥 priorityの場合のみ即座に開始
+  const [isInView, setIsInView] = useState(true); // 🔥 高速化：即座に読み込み開始
   const imgRef = useRef<HTMLImageElement>(null);
 
-  // 🔥 軽量化されたIntersection Observer
+  // 🔥 高速化：Intersection Observerを積極的に設定
   useEffect(() => {
     const img = imgRef.current;
-    if (!img || isInView || priority) return;
+    if (!img || priority) return; // priorityの場合は既に表示開始
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -122,16 +122,31 @@ const OptimizedImage = memo(({
         }
       },
       {
-        rootMargin: '50px', // 🔥 軽量化：マージンを削減
-        threshold: 0.1
+        rootMargin: '200px', // 🔥 高速化：より早く読み込み開始
+        threshold: 0.01 // 🔥 高速化：わずかでも見えたら読み込み開始
       }
     );
 
     observer.observe(img);
     return () => observer.disconnect();
-  }, [priority, isInView]);
+  }, [priority]);
 
-  // 🔥 シンプルな画像読み込み処理
+  // 🔥 高速化：画像プリロード
+  useEffect(() => {
+    if (preload || priority) {
+      const link = document.createElement('link');
+      link.rel = 'preload';
+      link.as = 'image';
+      link.href = src;
+      document.head.appendChild(link);
+      
+      return () => {
+        document.head.removeChild(link);
+      };
+    }
+  }, [src, preload, priority]);
+
+  // 🔥 高速化：画像読み込み処理
   const handleLoad = useCallback(() => {
     setIsLoaded(true);
     onLoad?.();
@@ -142,39 +157,55 @@ const OptimizedImage = memo(({
     onError?.();
   }, [onError]);
 
+  // 🔥 高速化：画像URLの最適化（サイズ指定）
+  const getOptimizedImageUrl = (originalUrl: string) => {
+    // Supabaseストレージの場合、サイズパラメータを追加
+    if (originalUrl.includes('supabase')) {
+      const url = new URL(originalUrl);
+      // 400x500px（4:5比率）に最適化
+      url.searchParams.set('width', '400');
+      url.searchParams.set('height', '500');
+      url.searchParams.set('resize', 'cover');
+      url.searchParams.set('quality', '80'); // 品質を80%に設定
+      return url.toString();
+    }
+    return originalUrl;
+  };
+
   return (
     <div 
       ref={imgRef} 
       className={cn("relative overflow-hidden bg-gray-100", className)}
       style={{ aspectRatio }}
     >
-      {/* 🔥 シンプルなローディング表示 */}
+      {/* 🔥 高速化：最小限のローディング表示 */}
       {!isLoaded && !hasError && isInView && (
-        <div className="absolute inset-0 bg-gray-200 flex items-center justify-center">
-          <div className="w-4 h-4 bg-gray-400 rounded-full animate-pulse" />
+        <div className="absolute inset-0 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+          <div className="w-3 h-3 bg-orange-400 rounded-full animate-pulse" />
         </div>
       )}
       
-      {/* 🔥 シンプルなエラー表示 */}
+      {/* 🔥 エラー表示 */}
       {hasError && (
         <div className="absolute inset-0 bg-gray-100 flex items-center justify-center">
           <div className="text-gray-400 text-xs">読み込み失敗</div>
         </div>
       )}
       
-      {/* 🔥 標準的な画像表示（アニメーション削減） */}
+      {/* 🔥 高速化：最適化された画像表示 */}
       {isInView && (
         <img
-          src={src}
+          src={getOptimizedImageUrl(src)}
           alt={alt}
           className={cn(
-            "absolute inset-0 w-full h-full object-cover transition-opacity duration-200",
+            "absolute inset-0 w-full h-full object-cover transition-opacity duration-150", // 🔥 アニメーション時間短縮
             isLoaded ? "opacity-100" : "opacity-0"
           )}
           onLoad={handleLoad}
           onError={handleError}
-          loading={priority ? "eager" : "lazy"}
+          loading="eager" // 🔥 高速化：積極的に読み込み
           decoding="async"
+          fetchPriority={priority ? "high" : "auto"} // 🔥 高速化：優先度指定
         />
       )}
     </div>
@@ -1229,8 +1260,8 @@ export const PostCard = memo(({
                       alt="投稿画像"
                       className="w-full h-full rounded-md"
                       aspectRatio="4/5"
-                      priority={false} // 🔥 優先度を下げて初期ローディングを高速化
-                      preload={false}
+                      priority={true} // 🔥 高速化：優先読み込みを有効化
+                      preload={true} // 🔥 高速化：プリロードを有効化
                       onLoad={() => setImageLoaded(true)}
                     />
                   </motion.div>
@@ -1252,8 +1283,8 @@ export const PostCard = memo(({
                               alt={`投稿画像 ${index + 1}`}
                               className="w-full h-full"
                               aspectRatio="4/5"
-                              priority={false} // 🔥 優先度を下げて初期ローディングを高速化
-                              preload={false}
+                              priority={index === 0} // 🔥 高速化：最初の画像のみ優先読み込み
+                              preload={index === 0} // 🔥 高速化：最初の画像のみプリロード
                               onLoad={() => setImageLoaded(true)}
                             />
                           </motion.div>
