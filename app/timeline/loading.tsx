@@ -9,7 +9,7 @@ import AppLayout from '@/components/layout/app-layout';
 export default function TimelineLoading() {
   return (
     <AppLayout>
-      <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50">
+      <div className="min-h-screen" style={{ backgroundColor: '#fffaeb' }}>
         {/* シンプルなヘッダー */}
         <div className="sticky top-0 z-10 bg-[#73370c] p-4">
           <div className="flex items-center justify-center">

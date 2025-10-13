@@ -2095,36 +2095,61 @@ export default function Timeline() {
   // 🔥 新規追加: 初回ローディング状態を管理
   const [isInitialLoading, setIsInitialLoading] = useState(true);
 
-  // �� 修正: 位置情報を初期化時に必ずリセットして取得
+  // 🔥 最適化: 位置情報の効率的な取得
   useEffect(() => {
-    // 🔥 画面遷移時には必ずローディング状態にして位置情報をリセット
-    console.log('掲示板画面に遷移しました - 位置情報をリセットして再取得します');
+    console.log('掲示板画面に遷移しました - 位置情報を確認します');
     
     setIsInitialLoading(true);
     setLoading(true);
-    setPosts([]);
-    setError(null);
     
-    // 🔥 保存された位置情報を強制的に削除
-    localStorage.removeItem('userLocation');
-    console.log('保存された位置情報をクリアしました');
-    
-    // 🔥 位置情報を必ず新規取得（キャッシュを使用しない）
-    getCurrentLocation(true)
-      .then(() => {
-        console.log('位置情報の取得が完了しました');
-      })
-      .catch((error) => {
+    // 🔥 既存の位置情報をチェック（キャッシュ活用）
+    const checkAndGetLocation = async () => {
+      try {
+        const savedLocation = localStorage.getItem('userLocation');
+        
+        if (savedLocation) {
+          try {
+            const locationData = JSON.parse(savedLocation);
+            const now = Date.now();
+            
+            // 🔥 位置情報が5分以内の場合は再利用
+            if (locationData.expiresAt && locationData.expiresAt > now) {
+              console.log('有効な位置情報が見つかりました - キャッシュを使用します');
+              setUserLocation(locationData);
+              setLocationPermissionState('granted');
+              
+              // 🔥 即座に投稿を取得
+              if (fetchPostsRef.current) {
+                await fetchPostsRef.current(0, true);
+              }
+              
+              setIsInitialLoading(false);
+              return;
+            } else {
+              console.log('位置情報の有効期限が切れています - 新規取得します');
+            }
+          } catch (parseError) {
+            console.warn('保存された位置情報の解析に失敗:', parseError);
+          }
+        }
+        
+        // 🔥 位置情報がない、または期限切れの場合のみ新規取得
+        console.log('新しい位置情報を取得します');
+        await getCurrentLocation(true);
+        
+      } catch (error) {
         console.error('位置情報の取得に失敗しました:', error);
         // 管理者でない場合のみエラー表示
         if (currentUserRole !== 'admin') {
           setError('投稿を表示するには位置情報が必要です');
         }
-      })
-      .finally(() => {
+      } finally {
         setIsInitialLoading(false);
-      });
-  }, []); // �� 依存配列を空にして、画面遷移時のみ実行
+      }
+    };
+    
+    checkAndGetLocation();
+  }, []); // 🔥 依存配列を空にして、画面遷移時のみ実行
 
   const handleDeletePost = useCallback(async (postId: string) => {
     try {
@@ -2147,24 +2172,21 @@ export default function Timeline() {
   // 招待モーダルの状態を使い方モーダルに変更
   const [showHowToUseModal, setShowHowToUseModal] = useState(false);
 
-  // LCP改善：初期ローディング時は最小限の表示
+  // 🔥 高速化：最小限のローディング表示
   if ((loading && posts.length === 0) || isInitialLoading) {
     return (
       <AppLayout>
-        <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50">
-          {/* 軽量なヘッダー */}
-          <div className="sticky top-0 z-10 bg-[#73370c] p-4">
+        <div className="min-h-screen" style={{ backgroundColor: '#fffaeb' }}>
+          {/* 🔥 軽量化：シンプルなヘッダー */}
+          <div className="sticky top-0 z-10 bg-[#73370c] p-3">
             <div className="flex items-center justify-center">
-              <div className="text-white font-medium">投稿を読み込み中...</div>
+              <div className="text-white text-sm">読み込み中...</div>
             </div>
           </div>
           
-          {/* シンプルなローディング表示 */}
-          <div className="flex items-center justify-center min-h-[60vh]">
-            <div className="text-center">
-              <div className="w-8 h-8 border-4 border-orange-200 border-t-orange-600 rounded-full animate-spin mx-auto mb-4"></div>
-              <p className="text-gray-600">現在地を取得しています...</p>
-            </div>
+          {/* 🔥 軽量化：最小限のローディング表示 */}
+          <div className="flex items-center justify-center pt-20">
+            <div className="w-6 h-6 border-2 border-gray-300 border-t-orange-500 rounded-full animate-spin"></div>
           </div>
         </div>
 

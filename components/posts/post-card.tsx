@@ -84,7 +84,7 @@ interface PostCardProps {
   enableComments?: boolean;
 }
 
-// 🔥 大幅改善：最適化された画像コンポーネント（パフォーマンス重視）
+// 🔥 軽量化：シンプルで高速な画像コンポーネント
 const OptimizedImage = memo(({ 
   src, 
   alt, 
@@ -93,7 +93,7 @@ const OptimizedImage = memo(({
   onError,
   aspectRatio = "4/5",
   priority = false,
-  preload = false // 🔥 新規：事前読み込みオプション
+  preload = false
 }: { 
   src: string; 
   alt: string; 
@@ -106,81 +106,41 @@ const OptimizedImage = memo(({
 }) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
-  const [isInView, setIsInView] = useState(priority || preload); // 🔥 優先・事前読み込みの場合は即座に開始
+  const [isInView, setIsInView] = useState(priority); // 🔥 priorityの場合のみ即座に開始
   const imgRef = useRef<HTMLImageElement>(null);
-  const imageCache = useRef<Map<string, boolean>>(new Map()); // 🔥 画像キャッシュ
 
-  // 🔥 画像のプリロード処理
-  useEffect(() => {
-    if (preload && src && !imageCache.current.has(src)) {
-      const img = new Image();
-      img.onload = () => {
-        imageCache.current.set(src, true);
-      };
-      img.src = src;
-    }
-  }, [src, preload]);
-
-  // 🔥 改善されたIntersection Observer
+  // 🔥 軽量化されたIntersection Observer
   useEffect(() => {
     const img = imgRef.current;
-    if (!img || isInView) return;
+    if (!img || isInView || priority) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setIsInView(true);
-            observer.unobserve(img);
-          }
-        });
+        if (entries[0]?.isIntersecting) {
+          setIsInView(true);
+          observer.disconnect();
+        }
       },
       {
-        rootMargin: priority ? '300px' : '100px', // 🔥 より早めの読み込み開始
-        threshold: 0.01 // 🔥 より敏感な検出
+        rootMargin: '50px', // 🔥 軽量化：マージンを削減
+        threshold: 0.1
       }
     );
 
     observer.observe(img);
-    return () => observer.unobserve(img);
+    return () => observer.disconnect();
   }, [priority, isInView]);
 
-  // 🔥 改善された画像読み込み処理
-  useEffect(() => {
-    if (!isInView || isLoaded || hasError || !src) return;
+  // 🔥 シンプルな画像読み込み処理
+  const handleLoad = useCallback(() => {
+    setIsLoaded(true);
+    onLoad?.();
+  }, [onLoad]);
 
-    // キャッシュされている場合は即座に表示
-    if (imageCache.current.has(src)) {
-      setIsLoaded(true);
-      onLoad?.();
-      return;
-    }
-
-    const img = new Image();
-    
-    // 🔥 パフォーマンス最適化設定
-    if (priority) {
-      img.decoding = 'sync'; // 同期デコーディング
-      if ('fetchPriority' in img) {
-        (img as any).fetchPriority = 'high';
-      }
-    } else {
-      img.decoding = 'async'; // 非同期デコーディング
-    }
-    
-    img.onload = () => {
-      imageCache.current.set(src, true);
-      setIsLoaded(true);
-      onLoad?.();
-    };
-    
-    img.onerror = () => {
-      setHasError(true);
-      onError?.();
-    };
-    
-    img.src = src;
-  }, [isInView, src, isLoaded, hasError, onLoad, onError, priority]);
+  const handleError = useCallback(() => {
+    setHasError(true);
+    onError?.();
+  }, [onError]);
 
   return (
     <div 
@@ -188,48 +148,33 @@ const OptimizedImage = memo(({
       className={cn("relative overflow-hidden bg-gray-100", className)}
       style={{ aspectRatio }}
     >
-      {/* 🔥 改善されたローディング表示 */}
-      {!isLoaded && !hasError && (
-        <div className="absolute inset-0 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
-          <motion.div
-            animate={{ 
-              scale: [1, 1.2, 1],
-              opacity: [0.5, 0.8, 0.5]
-            }}
-            transition={{ 
-              duration: 1.5, 
-              repeat: Infinity,
-              ease: "easeInOut"
-            }}
-            className="w-6 h-6 bg-gray-300 rounded-full"
-          />
+      {/* 🔥 シンプルなローディング表示 */}
+      {!isLoaded && !hasError && isInView && (
+        <div className="absolute inset-0 bg-gray-200 flex items-center justify-center">
+          <div className="w-4 h-4 bg-gray-400 rounded-full animate-pulse" />
         </div>
       )}
       
-      {/* 🔥 改善されたエラー表示 */}
+      {/* 🔥 シンプルなエラー表示 */}
       {hasError && (
         <div className="absolute inset-0 bg-gray-100 flex items-center justify-center">
-          <div className="text-gray-400 text-xs text-center">
-            <div className="w-6 h-6 bg-gray-300 rounded mx-auto mb-1" />
-            読み込み失敗
-          </div>
+          <div className="text-gray-400 text-xs">読み込み失敗</div>
         </div>
       )}
       
-      {/* 🔥 改善された画像表示 */}
-      {isLoaded && !hasError && (
-        <motion.img
+      {/* 🔥 標準的な画像表示（アニメーション削減） */}
+      {isInView && (
+        <img
           src={src}
           alt={alt}
-          className="absolute inset-0 w-full h-full object-cover"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ 
-            duration: priority ? 0.1 : 0.2, // 🔥 より高速な表示
-            ease: "easeOut"
-          }}
+          className={cn(
+            "absolute inset-0 w-full h-full object-cover transition-opacity duration-200",
+            isLoaded ? "opacity-100" : "opacity-0"
+          )}
+          onLoad={handleLoad}
+          onError={handleError}
           loading={priority ? "eager" : "lazy"}
-          decoding={priority ? "sync" : "async"}
+          decoding="async"
         />
       )}
     </div>
@@ -1284,8 +1229,8 @@ export const PostCard = memo(({
                       alt="投稿画像"
                       className="w-full h-full rounded-md"
                       aspectRatio="4/5"
-                      priority={true}
-                      preload={true}
+                      priority={false} // 🔥 優先度を下げて初期ローディングを高速化
+                      preload={false}
                       onLoad={() => setImageLoaded(true)}
                     />
                   </motion.div>
@@ -1307,8 +1252,8 @@ export const PostCard = memo(({
                               alt={`投稿画像 ${index + 1}`}
                               className="w-full h-full"
                               aspectRatio="4/5"
-                              priority={index === 0} // 🔥 最初の画像のみ優先読み込み
-                              preload={index <= 1} // 🔥 最初の2枚を事前読み込み
+                              priority={false} // 🔥 優先度を下げて初期ローディングを高速化
+                              preload={false}
                               onLoad={() => setImageLoaded(true)}
                             />
                           </motion.div>
