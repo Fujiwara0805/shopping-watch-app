@@ -61,8 +61,6 @@ export function AppHeader() {
         return 'お問い合わせ';
       case '/memo':
         return '買い物メモ';
-      case '/flyers':
-        return 'チラシ・広告';
       case '/train-schedule':
         return '時刻表';
       case '/terms':
@@ -77,8 +75,6 @@ export function AppHeader() {
         return '設定';
       case '/release-notes':
         return 'リリースノート';
-      case '/hunter-ranking':
-        return 'ランキング';
       default:
         return '';
     }
