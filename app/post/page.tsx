@@ -164,6 +164,36 @@ const categoryOptions = [
   { value: '口コミ', label: '口コミ' },
 ];
 
+// 🔥 ロール別に利用可能なカテゴリを取得する関数
+const getAvailableCategoriesForRole = (userRole: string | null) => {
+  if (!userRole) return []; // ロールが不明な場合は空配列
+  
+  switch (userRole) {
+    case 'admin':
+      // 管理者は全てのカテゴリを選択可能
+      return categoryOptions;
+    case 'user':
+      // 一般ユーザーは口コミと助け合いのみ
+      return categoryOptions.filter(option => 
+        option.value === '口コミ' || option.value === '助け合い'
+      );
+    case 'business':
+      // 事業者は空席情報、在庫情報、助け合いを選択可能
+      return categoryOptions.filter(option => 
+        option.value === '空席情報' || option.value === '在庫情報' || option.value === '助け合い'
+      );
+    default:
+      // 不明なロールの場合は空配列
+      return [];
+  }
+};
+
+// 🔥 特定のカテゴリがユーザーロールで選択可能かチェックする関数
+const isCategoryAvailableForRole = (category: string, userRole: string | null) => {
+  const availableCategories = getAvailableCategoriesForRole(userRole);
+  return availableCategories.some(option => option.value === category);
+};
+
 // 🔥 カテゴリ別の掲載期間オプション
 const getExpiryOptionsForCategory = (category: string) => {
   if (category === '空席情報' || category === '在庫情報') {
@@ -603,6 +633,12 @@ export default function PostPage() {
     // 🔥 必須フィールドの検証（カテゴリ、内容、掲載期間）
     if (!values.category) {
       setSubmitError("カテゴリを選択してください。");
+      return;
+    }
+
+    // 🔥 カテゴリ権限チェック
+    if (!isCategoryAvailableForRole(values.category, userRole)) {
+      setSubmitError("選択されたカテゴリを投稿する権限がありません。");
       return;
     }
 
@@ -1669,18 +1705,39 @@ export default function PostPage() {
                     <FormLabel className="text-xl flex font-semibold items-center">
                       <Layers className="mr-2 h-6 w-6" /> カテゴリ<span className="text-destructive ml-1">※</span>
                     </FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value || ""}>
+                    <Select 
+                      onValueChange={(value) => {
+                        // 🔥 権限チェック
+                        if (!isCategoryAvailableForRole(value, userRole)) {
+                          toast({
+                            title: "権限エラー",
+                            description: "このカテゴリを選択する権限がありません。",
+                            variant: "destructive",
+                            duration: 3000,
+                          });
+                          return;
+                        }
+                        field.onChange(value);
+                      }} 
+                      value={field.value || ""}
+                    >
                       <FormControl>
                         <SelectTrigger className="w-full text-lg py-6">
                           <SelectValue placeholder="カテゴリを選択してください" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent className="max-h-[200px]">
-                        {categoryOptions.map((option) => (
-                          <SelectItem key={option.value} value={option.value} className="text-lg py-3">
-                            {option.label}
+                        {userRole ? (
+                          getAvailableCategoriesForRole(userRole).map((option) => (
+                            <SelectItem key={option.value} value={option.value} className="text-lg py-3">
+                              {option.label}
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <SelectItem value="loading" disabled className="text-lg py-3">
+                            ロール情報を読み込み中...
                           </SelectItem>
-                        ))}
+                        )}
                       </SelectContent>
                     </Select>
                     <FormMessage />
