@@ -29,18 +29,17 @@ function formatRemainingTime(expiresAt: number): string {
   const hours = Math.floor((remainingMillis % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
   const minutes = Math.floor((remainingMillis % (1000 * 60 * 60)) / (1000 * 60));
   
+  // 🔥 修正：日数優先、時間優先、分優先の表記に変更
   if (days > 0) {
-    // 24時間以上の場合は日数表記
-    if (hours > 0) {
-      return `残り約${days}日${hours}時間`;
-    } else {
-      return `残り約${days}日`;
-    }
+    // 1日以上の場合は日数のみ表記
+    return `残り${days}日`;
   } else if (hours > 0) {
-    // 24時間未満の場合の既存ロジック
-    return `残り約${hours}時間${minutes > 0 ? `${minutes}分` : ''}`;
+    // 1時間以上24時間未満の場合は時間のみ表記
+    return `残り${hours}時間`;
+  } else {
+    // 60分未満の場合は分のみ表記
+    return `残り${minutes}分`;
   }
-  return `残り約${minutes}分`;
 }
 
 function formatDistance(distance?: number): string {
@@ -85,15 +84,16 @@ interface PostCardProps {
   enableComments?: boolean;
 }
 
-// 最適化された画像コンポーネント（CLS・LCP対策済み）
+// 🔥 大幅改善：最適化された画像コンポーネント（パフォーマンス重視）
 const OptimizedImage = memo(({ 
   src, 
   alt, 
   className, 
   onLoad,
   onError,
-  aspectRatio = "4/5", // デフォルトのアスペクト比を追加
-  priority = false // LCP改善：優先読み込みオプション
+  aspectRatio = "4/5",
+  priority = false,
+  preload = false // 🔥 新規：事前読み込みオプション
 }: { 
   src: string; 
   alt: string; 
@@ -102,95 +102,134 @@ const OptimizedImage = memo(({
   onError?: () => void;
   aspectRatio?: string;
   priority?: boolean;
+  preload?: boolean;
 }) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
-  const [isInView, setIsInView] = useState(false);
+  const [isInView, setIsInView] = useState(priority || preload); // 🔥 優先・事前読み込みの場合は即座に開始
   const imgRef = useRef<HTMLImageElement>(null);
-  const [loadStarted, setLoadStarted] = useState(false);
+  const imageCache = useRef<Map<string, boolean>>(new Map()); // 🔥 画像キャッシュ
 
+  // 🔥 画像のプリロード処理
+  useEffect(() => {
+    if (preload && src && !imageCache.current.has(src)) {
+      const img = new Image();
+      img.onload = () => {
+        imageCache.current.set(src, true);
+      };
+      img.src = src;
+    }
+  }, [src, preload]);
+
+  // 🔥 改善されたIntersection Observer
   useEffect(() => {
     const img = imgRef.current;
-    if (!img) return;
-
-    // LCP改善：優先画像は即座に読み込み開始
-    if (priority) {
-      setIsInView(true);
-      setLoadStarted(true);
-      return;
-    }
+    if (!img || isInView) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
-          if (entry.isIntersecting && !loadStarted) {
+          if (entry.isIntersecting) {
             setIsInView(true);
-            setLoadStarted(true);
             observer.unobserve(img);
           }
         });
       },
       {
-        rootMargin: priority ? '200px' : '50px', // 優先画像は早めに読み込み
-        threshold: 0.1
+        rootMargin: priority ? '300px' : '100px', // 🔥 より早めの読み込み開始
+        threshold: 0.01 // 🔥 より敏感な検出
       }
     );
 
     observer.observe(img);
     return () => observer.unobserve(img);
-  }, [loadStarted, priority]);
+  }, [priority, isInView]);
 
+  // 🔥 改善された画像読み込み処理
   useEffect(() => {
-    if (isInView && !isLoaded && !hasError) {
-      const img = new Image();
-      
-      // LCP改善：優先画像の場合はfetchPriorityを設定
-      if (priority && 'fetchPriority' in img) {
+    if (!isInView || isLoaded || hasError || !src) return;
+
+    // キャッシュされている場合は即座に表示
+    if (imageCache.current.has(src)) {
+      setIsLoaded(true);
+      onLoad?.();
+      return;
+    }
+
+    const img = new Image();
+    
+    // 🔥 パフォーマンス最適化設定
+    if (priority) {
+      img.decoding = 'sync'; // 同期デコーディング
+      if ('fetchPriority' in img) {
         (img as any).fetchPriority = 'high';
       }
-      
-      img.onload = () => {
-        setIsLoaded(true);
-        onLoad?.();
-      };
-      img.onerror = () => {
-        setHasError(true);
-        onError?.();
-      };
-      img.src = src;
+    } else {
+      img.decoding = 'async'; // 非同期デコーディング
     }
+    
+    img.onload = () => {
+      imageCache.current.set(src, true);
+      setIsLoaded(true);
+      onLoad?.();
+    };
+    
+    img.onerror = () => {
+      setHasError(true);
+      onError?.();
+    };
+    
+    img.src = src;
   }, [isInView, src, isLoaded, hasError, onLoad, onError, priority]);
 
   return (
     <div 
       ref={imgRef} 
-      className={cn("relative overflow-hidden", className)}
-      style={{ aspectRatio }} // CLS対策：固定アスペクト比
+      className={cn("relative overflow-hidden bg-gray-100", className)}
+      style={{ aspectRatio }}
     >
+      {/* 🔥 改善されたローディング表示 */}
       {!isLoaded && !hasError && (
-        <div className="absolute inset-0 bg-gradient-to-br from-gray-200 to-gray-300 animate-pulse flex items-center justify-center">
-          <div className="w-8 h-8 bg-gray-400 rounded animate-pulse" />
+        <div className="absolute inset-0 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+          <motion.div
+            animate={{ 
+              scale: [1, 1.2, 1],
+              opacity: [0.5, 0.8, 0.5]
+            }}
+            transition={{ 
+              duration: 1.5, 
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+            className="w-6 h-6 bg-gray-300 rounded-full"
+          />
         </div>
       )}
       
+      {/* 🔥 改善されたエラー表示 */}
       {hasError && (
-        <div className="absolute inset-0 bg-gray-200 flex items-center justify-center">
-          <div className="text-gray-500 text-sm text-center">
-            <div className="w-8 h-8 bg-gray-400 rounded mx-auto mb-2" />
-            画像を読み込めません
+        <div className="absolute inset-0 bg-gray-100 flex items-center justify-center">
+          <div className="text-gray-400 text-xs text-center">
+            <div className="w-6 h-6 bg-gray-300 rounded mx-auto mb-1" />
+            読み込み失敗
           </div>
         </div>
       )}
       
+      {/* 🔥 改善された画像表示 */}
       {isLoaded && !hasError && (
         <motion.img
           src={src}
           alt={alt}
-          className="absolute inset-0 w-full h-full object-cover" // absolute positioningでCLS防止
-          initial={{ opacity: 0, scale: 1.1 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: priority ? 0.2 : 0.3 }} // 優先画像は高速表示
-          loading={priority ? "eager" : "lazy"} // LCP改善：優先画像はeager loading
+          className="absolute inset-0 w-full h-full object-cover"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ 
+            duration: priority ? 0.1 : 0.2, // 🔥 より高速な表示
+            ease: "easeOut"
+          }}
+          loading={priority ? "eager" : "lazy"}
+          decoding={priority ? "sync" : "async"}
         />
       )}
     </div>
@@ -411,6 +450,8 @@ export const PostCard = memo(({
   // 🔥 追加：画像モーダル関連
   const [showImageModal, setShowImageModal] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [modalImageLoading, setModalImageLoading] = useState(false);
+  const [modalImageError, setModalImageError] = useState(false);
   
   // 🔥 追加：ログイン必要モーダル関連
   const [showLoginRequiredModal, setShowLoginRequiredModal] = useState(false);
@@ -617,6 +658,8 @@ export const PostCard = memo(({
   // 🔥 追加：画像クリック時のハンドラー
   const handleImageClick = (index: number) => {
     setSelectedImageIndex(index);
+    setModalImageLoading(true);
+    setModalImageError(false);
     setShowImageModal(true);
   };
 
@@ -1223,62 +1266,72 @@ export const PostCard = memo(({
             </p>
           </div>
           
-          {/* 画像表示エリア（複数画像対応・CLS対策済み） */}
+          {/* 🔥 改善：高速画像表示エリア */}
           {imageUrls.length > 0 && (
             <div className="flex justify-center w-full mb-3">
               <div className="relative rounded-md overflow-hidden w-full max-w-sm" style={{ aspectRatio: "4/5" }}>
                 {imageUrls.length === 1 ? (
                   // 単一画像の場合
-                  <div 
+                  <motion.div 
                     className="w-full h-full cursor-pointer"
                     onClick={() => handleImageClick(0)}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    transition={{ duration: 0.2 }}
                   >
                     <OptimizedImage
                       src={imageUrls[0]}
                       alt="投稿画像"
                       className="w-full h-full rounded-md"
                       aspectRatio="4/5"
-                      priority={true} // LCP改善：最初の画像を優先読み込み
+                      priority={true}
+                      preload={true}
                       onLoad={() => setImageLoaded(true)}
                     />
-                  </div>
+                  </motion.div>
                 ) : (
-                  // 複数画像の場合（カルーセル）
+                  // 🔥 改善：複数画像の場合（最適化されたカルーセル）
                   <Carousel className="w-full h-full">
                     <CarouselContent>
                       {imageUrls.map((imageUrl, index) => (
                         <CarouselItem key={index}>
-                          <div 
+                          <motion.div 
                             className="w-full h-full cursor-pointer"
                             onClick={() => handleImageClick(index)}
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            transition={{ duration: 0.2 }}
                           >
                             <OptimizedImage
                               src={imageUrl}
                               alt={`投稿画像 ${index + 1}`}
                               className="w-full h-full"
+                              aspectRatio="4/5"
+                              priority={index === 0} // 🔥 最初の画像のみ優先読み込み
+                              preload={index <= 1} // 🔥 最初の2枚を事前読み込み
                               onLoad={() => setImageLoaded(true)}
                             />
-                          </div>
+                          </motion.div>
                         </CarouselItem>
                       ))}
                     </CarouselContent>
                     
-                    {/* カルーセルナビゲーション */}
+                    {/* 🔥 改善されたカルーセルナビゲーション */}
                     <CarouselPrevious 
-                      className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white/90 text-gray-700 border-gray-300 shadow-lg"
+                      className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white text-gray-700 border-gray-300 shadow-lg transition-all duration-200 hover:scale-110"
                       size="sm"
                     />
                     <CarouselNext 
-                      className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white/90 text-gray-700 border-gray-300 shadow-lg"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white text-gray-700 border-gray-300 shadow-lg transition-all duration-200 hover:scale-110"
                       size="sm"
                     />
                     
-                    {/* 画像インジケーター */}
-                    <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex space-x-1">
+                    {/* 🔥 改善された画像インジケーター */}
+                    <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex space-x-1 bg-black/30 px-2 py-1 rounded-full">
                       {imageUrls.map((_, index) => (
                         <div
                           key={index}
-                          className="w-2 h-2 rounded-full bg-white/60 shadow-sm"
+                          className="w-1.5 h-1.5 rounded-full bg-white/70 shadow-sm"
                         />
                       ))}
                     </div>
@@ -1546,20 +1599,97 @@ export const PostCard = memo(({
         </div>
       </CustomModal>
 
-      {/* 🔥 追加：画像モーダル */}
+      {/* 🔥 修正：画像モーダル（通常のimg要素を使用） */}
       <CustomModal
         isOpen={showImageModal}
         onClose={() => setShowImageModal(false)}
         title={`画像 ${selectedImageIndex + 1}/${imageUrls.length}`}
         description=""
-        className="max-w-4xl"
+        className="max-w-6xl"
       >
-        <div className="relative">
-          <img
-            src={imageUrls[selectedImageIndex]}
-            alt={`投稿画像 ${selectedImageIndex + 1}`}
-            className="w-full h-auto max-h-[80vh] object-contain"
-          />
+        <div className="relative bg-gray-900 rounded-lg overflow-hidden">
+          <div className="relative w-full flex items-center justify-center" style={{ minHeight: '60vh', maxHeight: '80vh' }}>
+            {/* ローディング表示 */}
+            {modalImageLoading && (
+              <div className="absolute inset-0 flex items-center justify-center bg-gray-900">
+                <motion.div
+                  animate={{ 
+                    scale: [1, 1.2, 1],
+                    opacity: [0.5, 0.8, 0.5]
+                  }}
+                  transition={{ 
+                    duration: 1.5, 
+                    repeat: Infinity,
+                    ease: "easeInOut"
+                  }}
+                  className="w-8 h-8 bg-white rounded-full"
+                />
+              </div>
+            )}
+            
+            {/* エラー表示 */}
+            {modalImageError && (
+              <div className="absolute inset-0 flex items-center justify-center bg-gray-900">
+                <div className="text-white text-center">
+                  <div className="w-12 h-12 bg-gray-600 rounded mx-auto mb-4" />
+                  <p className="text-lg">画像を読み込めませんでした</p>
+                  <Button
+                    variant="outline"
+                    className="mt-4"
+                    onClick={() => {
+                      setModalImageLoading(true);
+                      setModalImageError(false);
+                    }}
+                  >
+                    再試行
+                  </Button>
+                </div>
+              </div>
+            )}
+            
+            {/* 🔥 修正：通常のimg要素を使用 */}
+            <img
+              src={imageUrls[selectedImageIndex]}
+              alt={`投稿画像 ${selectedImageIndex + 1}`}
+              className={`max-w-full max-h-full object-contain transition-opacity duration-300 ${
+                modalImageLoading ? 'opacity-0' : 'opacity-100'
+              }`}
+              style={{ maxHeight: '80vh' }}
+              onLoad={() => {
+                setModalImageLoading(false);
+                setModalImageError(false);
+              }}
+              onError={() => {
+                console.error('画像の読み込みに失敗しました:', imageUrls[selectedImageIndex]);
+                setModalImageLoading(false);
+                setModalImageError(true);
+              }}
+            />
+            
+            {/* 🔥 画像プリロード（次の画像を事前読み込み） */}
+            {imageUrls.length > 1 && !modalImageLoading && !modalImageError && (
+              <>
+                {/* 次の画像をプリロード */}
+                {selectedImageIndex < imageUrls.length - 1 && (
+                  <img
+                    src={imageUrls[selectedImageIndex + 1]}
+                    alt="preload"
+                    className="hidden"
+                    loading="lazy"
+                  />
+                )}
+                {/* 前の画像をプリロード */}
+                {selectedImageIndex > 0 && (
+                  <img
+                    src={imageUrls[selectedImageIndex - 1]}
+                    alt="preload"
+                    className="hidden"
+                    loading="lazy"
+                  />
+                )}
+              </>
+            )}
+          </div>
           
           {/* 複数画像の場合のナビゲーション */}
           {imageUrls.length > 1 && (
@@ -1567,29 +1697,48 @@ export const PostCard = memo(({
               <Button
                 variant="outline"
                 size="icon"
-                className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white"
-                onClick={() => setSelectedImageIndex(prev => prev > 0 ? prev - 1 : imageUrls.length - 1)}
+                className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white shadow-lg transition-all duration-200 hover:scale-110"
+                onClick={() => {
+                  setModalImageLoading(true);
+                  setModalImageError(false);
+                  setSelectedImageIndex(prev => prev > 0 ? prev - 1 : imageUrls.length - 1);
+                }}
+                disabled={modalImageLoading}
               >
                 ←
               </Button>
               <Button
                 variant="outline"
                 size="icon"
-                className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white"
-                onClick={() => setSelectedImageIndex(prev => prev < imageUrls.length - 1 ? prev + 1 : 0)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white shadow-lg transition-all duration-200 hover:scale-110"
+                onClick={() => {
+                  setModalImageLoading(true);
+                  setModalImageError(false);
+                  setSelectedImageIndex(prev => prev < imageUrls.length - 1 ? prev + 1 : 0);
+                }}
+                disabled={modalImageLoading}
               >
                 →
               </Button>
               
-              {/* 画像インジケーター */}
-              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex space-x-2">
+              {/* 🔥 改善された画像インジケーター */}
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex space-x-2 bg-black/50 px-3 py-2 rounded-full">
                 {imageUrls.map((_, index) => (
-                  <button
+                  <motion.button
                     key={index}
-                    className={`w-2 h-2 rounded-full transition-colors ${
-                      index === selectedImageIndex ? 'bg-white' : 'bg-white/50'
+                    className={`w-2 h-2 rounded-full transition-all duration-200 ${
+                      index === selectedImageIndex ? 'bg-white scale-125' : 'bg-white/50 hover:bg-white/75'
                     }`}
-                    onClick={() => setSelectedImageIndex(index)}
+                    onClick={() => {
+                      if (index !== selectedImageIndex) {
+                        setModalImageLoading(true);
+                        setModalImageError(false);
+                        setSelectedImageIndex(index);
+                      }
+                    }}
+                    whileHover={{ scale: 1.2 }}
+                    whileTap={{ scale: 0.9 }}
+                    disabled={modalImageLoading}
                   />
                 ))}
               </div>
