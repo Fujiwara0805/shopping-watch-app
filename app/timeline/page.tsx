@@ -915,19 +915,6 @@ export default function Timeline() {
   // 🔥 ご近所モードの状態を追加（デフォルトON）
   const [isNearbyMode, setIsNearbyMode] = useState(true);
 
-  // 管理者権限のログ出力
-  useEffect(() => {
-    if (currentUserRole) {
-      console.log(`現在のユーザーロール: ${currentUserRole}`);
-      if (currentUserRole === 'admin') {
-        console.log('管理者アカウントでログインしています。');
-      } else {
-        console.log('一般ユーザーアカウントでログインしています。');
-      }
-    } else {
-      console.log('ユーザーはログインしていません。');
-    }
-  }, [currentUserRole]);
 
   const searchParams = useSearchParams();
   const [highlightPostId, setHighlightPostId] = useState<string | null>(null);
@@ -1123,7 +1110,6 @@ export default function Timeline() {
     const currentLikedPostIds = likedPostIdsRef.current;
     const currentSortBy = sortByRef.current;
     const currentIsNearbyMode = isNearbyModeRef.current; // 🔥 refから取得するように修正
-    const isAdmin = currentUserRole === 'admin';
 
     // 距離計算関数
     const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
@@ -1155,7 +1141,6 @@ export default function Timeline() {
         currentSearchMode,
         currentIsNearbyMode,
         currentUserLocation,
-        isAdmin,
         offset,
         isInitial,
         searchTerm
@@ -1402,17 +1387,11 @@ export default function Timeline() {
         });
       }
       
-      // 1km圏内フィルタリング機能を追加（管理者でない場合かつご近所モードがONの場合のみ適用）
-      if (currentUserLocation && !isAdmin && currentIsNearbyMode) { // 🔥 ご近所モード条件を追加
+      // 1km圏内フィルタリング機能を追加（ご近所モードがONの場合のみ適用）
+      if (currentUserLocation && currentIsNearbyMode) { // 🔥 ご近所モード条件を追加
         console.log('🔍 距離フィルタリング適用前の投稿数:', processedPosts.length);
         
         processedPosts = processedPosts.filter(post => {
-          // 🔥 投稿者が管理者の場合は距離フィルタリングをスキップ
-          if (post.author_role === 'admin') {
-            console.log('🔍 管理者投稿のためスキップ:', post.id);
-            return true;
-          }
-          
           // 🔥 距離が計算されていない場合の処理を改善
           if (post.distance === undefined) {
             console.log('🔍 距離未計算のため除外:', {
@@ -1435,17 +1414,16 @@ export default function Timeline() {
           return isWithinRadius;
         });
         
-        console.log('🔍 距離フィルタリング適用後の投稿数:', processedPosts.length);
+        console.log('🔥 距離フィルタリング適用後の投稿数:', processedPosts.length);
       } else {
         console.log('🔍 距離フィルタリングをスキップ:', {
           hasLocation: !!currentUserLocation,
-          isAdmin,
           isNearbyMode: currentIsNearbyMode
         });
       }
 
       // 距離によるソート（ご近所モードがONの場合のみ）
-      if (currentSortBy === 'distance_asc' && currentUserLocation && !isAdmin && currentIsNearbyMode) {
+      if (currentSortBy === 'distance_asc' && currentUserLocation && currentIsNearbyMode) {
         processedPosts = processedPosts
           .filter(post => post.distance !== undefined)
           .sort((a, b) => (a.distance || 0) - (b.distance || 0));
@@ -1470,8 +1448,8 @@ export default function Timeline() {
       })));
 
       // 1km圏内フィルタリング適用時はhasMoreをfalseに設定
-      // 管理者の場合またはご近所モードがOFFの場合はhasMoreをtrueに維持し、全件取得を可能にする
-      setHasMore(data.length === 20 && (!currentUserLocation || isAdmin || !currentIsNearbyMode));
+      // ご近所モードがOFFの場合はhasMoreをtrueに維持し、全件取得を可能にする
+      setHasMore(data.length === 20 && (!currentUserLocation || !currentIsNearbyMode));
     } catch (e: any) {
       console.error("投稿の取得に失敗しました:", e);
       setError("投稿の読み込みに失敗しました。しばらくしてから再度お試しください。");
@@ -1930,17 +1908,7 @@ export default function Timeline() {
   const handleDenyLocation = () => {
     setShowLocationModal(false);
     setLocationPermissionState('denied');
-    // 管理者でない場合はエラー状態を設定
-    if (currentUserRole !== 'admin') {
-      setError('投稿を表示するには位置情報が必要です');
-    } else {
-      // 管理者の場合は位置情報なしで投稿を取得
-      setTimeout(() => {
-        if (fetchPostsRef.current) {
-          fetchPostsRef.current(0, true);
-        }
-      }, 100);
-    }
+    setError('投稿を表示するには位置情報が必要です');
   };
 
   // 🔥 再試行ボタンのハンドラーを修正
@@ -2139,10 +2107,7 @@ export default function Timeline() {
         
       } catch (error) {
         console.error('位置情報の取得に失敗しました:', error);
-        // 管理者でない場合のみエラー表示
-        if (currentUserRole !== 'admin') {
-          setError('投稿を表示するには位置情報が必要です');
-        }
+        setError('投稿を表示するには位置情報が必要です');
       } finally {
         setIsInitialLoading(false);
       }
@@ -2586,7 +2551,7 @@ export default function Timeline() {
                       検索をクリア
                     </Button>
                   </div>
-                ) : !userLocation && currentUserRole !== 'admin' ? (
+                ) : !userLocation ? (
                   <div>
                     <p className="text-xl text-muted-foreground mb-2">
                       現在地を取得しています...
@@ -2598,11 +2563,9 @@ export default function Timeline() {
                 ) : (
                   <div>
                     <p className="text-xl text-muted-foreground mb-2">
-                      {currentUserRole === 'admin' 
-                        ? '投稿がありません' 
-                        : isNearbyMode 
-                          ? '近くに投稿がありません'
-                          : '投稿がありません'
+                      {isNearbyMode 
+                        ? '近くに投稿がありません'
+                        : '投稿がありません'
                       }
                     </p>
                     <p className="text-sm text-gray-500 mb-4">
@@ -2643,7 +2606,7 @@ export default function Timeline() {
                         showDistance={
                           process.env.NODE_ENV === 'development' 
                             ? post.distance !== undefined
-                            : !!userLocation && post.distance !== undefined && currentUserRole !== 'admin'
+                            : !!userLocation && post.distance !== undefined
                         }
                         isOwnPost={post.author_user_id === currentUserId}
                         enableComments={true}
