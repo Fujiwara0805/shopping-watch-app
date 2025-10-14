@@ -631,22 +631,6 @@ export const PostCard = memo(({
     return [];
   }, [post.file_urls]);
 
-  // ファイルアイコンの取得
-  const getFileIcon = useCallback((fileName: string) => {
-    const extension = fileName.split('.').pop()?.toLowerCase();
-    switch (extension) {
-      case 'pdf':
-        return '📄';
-      case 'doc':
-      case 'docx':
-        return '📝';
-      case 'xls':
-      case 'xlsx':
-        return '📊';
-      default:
-        return '📎';
-    }
-  }, []);
 
   const imageUrls = getImageUrls();
   const fileUrls = getFileUrls();
@@ -1065,23 +1049,24 @@ export const PostCard = memo(({
                             </div>
                           </td>
                           <td className="p-3">
-                            <div className="space-y-2">
-                              {fileUrls.map((fileUrl, index) => {
-                                const fileName = fileUrl.split('/').pop() || `ファイル${index + 1}`;
-                                return (
-                                  <a
-                                    key={index}
-                                    href={fileUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="flex items-center space-x-2 text-blue-600 hover:text-blue-800 underline"
-                                    onClick={(e) => e.stopPropagation()}
-                                  >
-                                    <span className="text-lg">{getFileIcon(fileName)}</span>
-                                    <span className="break-all">{fileName}</span>
-                                  </a>
-                                );
-                              })}
+                            <div className="flex flex-wrap gap-2">
+                              {fileUrls.map((fileUrl, index) => (
+                                <a
+                                  key={index}
+                                  href={fileUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-block hover:opacity-80 transition-opacity"
+                                  onClick={(e) => e.stopPropagation()}
+                                  title={`ファイル${index + 1}をダウンロード`}
+                                >
+                                  <img 
+                                    src="https://res.cloudinary.com/dz9trbwma/image/upload/v1760438086/icons8-%E8%B3%87%E6%96%99-64_owrxr6.png"
+                                    alt="ファイルアイコン"
+                                    className="w-8 h-8 flex-shrink-0"
+                                  />
+                                </a>
+                              ))}
                             </div>
                           </td>
                         </tr>
