@@ -70,6 +70,30 @@ function formatCommentCount(count: number): string {
   }
 }
 
+// 🔥 新規追加：イベント日付をフォーマットする関数
+function formatEventDate(dateString: string): string {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  const dayOfWeek = ['日', '月', '火', '水', '木', '金', '土'][date.getDay()];
+  return `${month}/${day}(${dayOfWeek})`;
+}
+
+// 🔥 新規追加：イベント期間をフォーマットする関数
+function formatEventPeriod(startDate: string, endDate?: string): string {
+  if (!startDate) return '';
+  
+  const formattedStart = formatEventDate(startDate);
+  
+  if (!endDate || endDate === startDate) {
+    return formattedStart;
+  }
+  
+  const formattedEnd = formatEventDate(endDate);
+  return `${formattedStart}〜${formattedEnd}`;
+}
+
 interface PostCardProps {
   post: ExtendedPostWithAuthor;
   onLike?: (postId: string, isLiked: boolean) => Promise<void>;
@@ -534,12 +558,14 @@ export const PostCard = memo(({
   const categoryIconAndColor = getCategoryIconAndColor(post.category || '');
   const CategoryIcon = categoryIconAndColor.icon;
 
-  // 🔥 修正：投稿時間のフォーマット関数を変更（489行目付近）
+  // 🔥 修正：投稿時間のフォーマット関数を日付と時間の形式に変更
   const formattedDate = post.created_at ? (() => {
     const date = new Date(post.created_at);
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
     const hours = date.getHours();
     const minutes = date.getMinutes();
-    return `${hours}時${minutes.toString().padStart(2, '0')}分投稿`;
+    return `${month}/${day} ${hours}:${minutes.toString().padStart(2, '0')}`;
   })() : '時間不明';
 
   const copyToClipboard = useCallback((text: string, message: string) => {
@@ -863,21 +889,41 @@ export const PostCard = memo(({
               </div>
             </div>
             
-            {/* 自分の投稿の場合は削除ボタン */}
-            {isMyPost && currentUserId && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowDeleteModal(true);
-                }}
-                className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                title="投稿を削除"
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            )}
+            {/* 右側：視聴回数・残り時間・削除ボタン */}
+            <div className="flex flex-col items-end space-y-1">
+              {/* 視聴回数と削除ボタンの行 */}
+              <div className="flex items-center space-x-2">
+                {/* 視聴回数 */}
+                <div className="flex items-center space-x-1 text-gray-600">
+                  <Eye className="h-4 w-4" />
+                  <span className="text-sm font-medium">{formatViewCount(post.views_count)}</span>
+                </div>
+                
+                {/* 自分の投稿の場合は削除ボタン */}
+                {isMyPost && currentUserId && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowDeleteModal(true);
+                    }}
+                    className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1 h-7 w-7"
+                    title="投稿を削除"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+              
+              {/* 残り時間 */}
+              <div className="flex items-center space-x-1">
+                <Clock className="h-4 w-4 text-gray-500" />
+                <span className="text-sm font-medium" style={{ color: '#dd3730' }}>
+                  {post.expires_at ? formatRemainingTime(new Date(post.expires_at).getTime()) : '期限なし'}
+                </span>
+              </div>
+            </div>
           </div>
           
           {/* 詳細情報セクション（トグル形式・6行2列表形式） */}
@@ -1135,6 +1181,64 @@ export const PostCard = memo(({
                         </tr>
                       )}
 
+                      {/* 🔥 新規追加：イベント情報表示 */}
+                      {post.category === 'イベント情報' && ((post as any).event_name || (post as any).event_start_date || (post as any).event_price) && (
+                        <>
+                          {/* イベント名 */}
+                          {(post as any).event_name && (post as any).event_name.trim() !== '' && (
+                            <tr className="border-b border-gray-100">
+                              <td className="p-3 bg-gray-50 w-1/3 font-medium border-r border-gray-100">
+                                <div className="flex items-center space-x-2">
+                                  <Calendar className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                                  <span className="text-base" style={{ color: '#73370c' }}>イベント名</span>
+                                </div>
+                              </td>
+                              <td className="p-3">
+                                <span className="text-base font-medium" style={{ color: '#73370c' }}>
+                                  {(post as any).event_name}
+                                </span>
+                              </td>
+                            </tr>
+                          )}
+
+                          {/* 開催期日 */}
+                          {(post as any).event_start_date && (post as any).event_start_date.trim() !== '' && (
+                            <tr className="border-b border-gray-100">
+                              <td className="p-3 bg-gray-50 w-1/3 font-medium border-r border-gray-100">
+                                <div className="flex items-center space-x-2">
+                                  <Calendar className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                                  <span className="text-base" style={{ color: '#73370c' }}>開催期日</span>
+                                </div>
+                              </td>
+                              <td className="p-3">
+                                <div className="flex items-center">
+                                  <Badge className="bg-purple-100 text-purple-800 border-purple-200 text-base font-medium">
+                                    {formatEventPeriod((post as any).event_start_date, (post as any).event_end_date)}
+                                  </Badge>
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+
+                          {/* 料金 */}
+                          {(post as any).event_price && (post as any).event_price.trim() !== '' && (
+                            <tr className="border-b border-gray-100">
+                              <td className="p-3 bg-gray-50 w-1/3 font-medium border-r border-gray-100">
+                                <div className="flex items-center space-x-2">
+                                  <Tag className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                                  <span className="text-base" style={{ color: '#73370c' }}>料金</span>
+                                </div>
+                              </td>
+                              <td className="p-3">
+                                <span className="text-base font-medium" style={{ color: '#73370c' }}>
+                                  {(post as any).event_price}
+                                </span>
+                              </td>
+                            </tr>
+                          )}
+                        </>
+                      )}
+
                       {/* おすそわけ表示 */}
                       {post.support_purchase_enabled && post.support_purchase_options && (
                         <tr className="border-b border-gray-100">
@@ -1196,36 +1300,6 @@ export const PostCard = memo(({
                           </td>
                         </tr>
                       )}
-                      
-                      {/* 視聴回数行 - 常に表示 */}
-                      <tr className="border-b border-gray-100">
-                        <td className="p-3 bg-gray-50 w-1/3 font-medium border-r border-gray-100">
-                          <div className="flex items-center space-x-2">
-                            <Eye className="h-4 w-4 text-gray-500 flex-shrink-0" />
-                            <span className="text-base" style={{ color: '#73370c' }}>視聴回数</span>
-                          </div>
-                        </td>
-                        <td className="p-3">
-                          <span className="text-base" style={{ color: '#73370c' }}>
-                            {formatViewCount(post.views_count)}
-                          </span>
-                        </td>
-                      </tr>
-                      
-                      {/* 残り時間行 - 常に表示 */}
-                      <tr className={cn(showDistance && post.distance !== undefined ? "border-b border-gray-100" : "")}>
-                        <td className="p-3 bg-gray-50 w-1/3 font-medium border-r border-gray-100">
-                          <div className="flex items-center space-x-2">
-                            <Clock className="h-4 w-4 text-gray-500 flex-shrink-0" />
-                            <span className="text-base" style={{ color: '#73370c' }}>残り時間</span>
-                          </div>
-                        </td>
-                        <td className="p-3">
-                          <span className="text-base" style={{ color: '#dd3730' }}>
-                            {post.expires_at ? formatRemainingTime(new Date(post.expires_at).getTime()) : '期限なし'}
-                          </span>
-                        </td>
-                      </tr>
                     </tbody>
                   </table>
                 </div>

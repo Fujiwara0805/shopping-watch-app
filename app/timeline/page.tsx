@@ -98,6 +98,11 @@ interface PostFromDB {
   coupon_code?: string | null;
   customer_situation?: string | null;
   phone_number?: string | null; // 🔥 追加：電話番号フィールド
+  // 🔥 イベント情報フィールドを追加
+  event_name?: string | null;
+  event_start_date?: string | null;
+  event_end_date?: string | null;
+  event_price?: string | null;
 }
 
 type SortOption = 'created_at_desc' | 'created_at_asc' | 'expires_at_asc' | 'distance_asc' | 'likes_desc' | 'views_desc' | 'comments_desc';
@@ -1178,6 +1183,10 @@ export default function Timeline() {
           coupon_code,
           customer_situation,
           phone_number,
+          event_name,
+          event_start_date,
+          event_end_date,
+          event_price,
           author:app_profiles!posts_app_profile_id_fkey (
             id,
             user_id,

@@ -39,6 +39,12 @@ export interface Post {
   coupon_code?: string | null; // クーポン
   customer_situation?: string | null; // 来客状況
   phone_number?: string | null; // 🔥 電話番号を追加（データベースにまだ存在しないため、コメントアウトまたは将来用）
+  
+  // 🔥 イベント情報フィールド
+  event_name?: string | null; // イベント名
+  event_start_date?: string | null; // 開催開始日
+  event_end_date?: string | null; // 開催終了日
+  event_price?: string | null; // 料金
 }
 
 export interface AuthorProfile {
