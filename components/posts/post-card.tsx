@@ -447,12 +447,6 @@ export const PostCard = memo(({
   // 🔥 追加：おすそわけのローディング状態管理
   const [supportPurchaseLoading, setSupportPurchaseLoading] = useState<{ [key: string]: boolean }>({});
   
-  // 🔥 追加：画像モーダル関連
-  const [showImageModal, setShowImageModal] = useState(false);
-  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
-  const [modalImageLoading, setModalImageLoading] = useState(false);
-  const [modalImageError, setModalImageError] = useState(false);
-  
   // 🔥 追加：ログイン必要モーダル関連
   const [showLoginRequiredModal, setShowLoginRequiredModal] = useState(false);
   
@@ -656,14 +650,6 @@ export const PostCard = memo(({
 
   const imageUrls = getImageUrls();
   const fileUrls = getFileUrls();
-
-  // 🔥 追加：画像クリック時のハンドラー
-  const handleImageClick = (index: number) => {
-    setSelectedImageIndex(index);
-    setModalImageLoading(true);
-    setModalImageError(false);
-    setShowImageModal(true);
-  };
 
   // 🔥 追加：投稿削除処理
   const handleDeletePost = async () => {
@@ -1322,13 +1308,7 @@ export const PostCard = memo(({
               <div className="relative rounded-md overflow-hidden w-full max-w-sm" style={{ aspectRatio: "4/5" }}>
                 {imageUrls.length === 1 ? (
                   // 単一画像の場合
-                  <motion.div 
-                    className="w-full h-full cursor-pointer"
-                    onClick={() => handleImageClick(0)}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    transition={{ duration: 0.2 }}
-                  >
+                  <div className="w-full h-full">
                     <OptimizedImage
                       src={imageUrls[0]}
                       alt="投稿画像"
@@ -1338,20 +1318,14 @@ export const PostCard = memo(({
                       preload={true} // 🔥 高速化：プリロードを有効化
                       onLoad={() => setImageLoaded(true)}
                     />
-                  </motion.div>
+                  </div>
                 ) : (
                   // 🔥 改善：複数画像の場合（最適化されたカルーセル）
                   <Carousel className="w-full h-full">
                     <CarouselContent>
                       {imageUrls.map((imageUrl, index) => (
                         <CarouselItem key={index}>
-                          <motion.div 
-                            className="w-full h-full cursor-pointer"
-                            onClick={() => handleImageClick(index)}
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            transition={{ duration: 0.2 }}
-                          >
+                          <div className="w-full h-full">
                             <OptimizedImage
                               src={imageUrl}
                               alt={`投稿画像 ${index + 1}`}
@@ -1361,7 +1335,7 @@ export const PostCard = memo(({
                               preload={index === 0} // 🔥 高速化：最初の画像のみプリロード
                               onLoad={() => setImageLoaded(true)}
                             />
-                          </motion.div>
+                          </div>
                         </CarouselItem>
                       ))}
                     </CarouselContent>
@@ -1646,161 +1620,6 @@ export const PostCard = memo(({
         </div>
         <div className="mt-6 flex justify-end">
             <Button variant="ghost" onClick={() => setShowShareDialog(false)} className="text-base px-5 py-2.5 h-auto">閉じる</Button>
-        </div>
-      </CustomModal>
-
-      {/* 🔥 修正：画像モーダル（通常のimg要素を使用） */}
-      <CustomModal
-        isOpen={showImageModal}
-        onClose={() => setShowImageModal(false)}
-        title={`画像 ${selectedImageIndex + 1}/${imageUrls.length}`}
-        description=""
-        className="max-w-6xl"
-      >
-        <div className="relative bg-gray-900 rounded-lg overflow-hidden">
-          <div className="relative w-full flex items-center justify-center" style={{ minHeight: '60vh', maxHeight: '80vh' }}>
-            {/* ローディング表示 */}
-            {modalImageLoading && (
-              <div className="absolute inset-0 flex items-center justify-center bg-gray-900">
-                <motion.div
-                  animate={{ 
-                    scale: [1, 1.2, 1],
-                    opacity: [0.5, 0.8, 0.5]
-                  }}
-                  transition={{ 
-                    duration: 1.5, 
-                    repeat: Infinity,
-                    ease: "easeInOut"
-                  }}
-                  className="w-8 h-8 bg-white rounded-full"
-                />
-              </div>
-            )}
-            
-            {/* エラー表示 */}
-            {modalImageError && (
-              <div className="absolute inset-0 flex items-center justify-center bg-gray-900">
-                <div className="text-white text-center">
-                  <div className="w-12 h-12 bg-gray-600 rounded mx-auto mb-4" />
-                  <p className="text-lg">画像を読み込めませんでした</p>
-                  <Button
-                    variant="outline"
-                    className="mt-4"
-                    onClick={() => {
-                      setModalImageLoading(true);
-                      setModalImageError(false);
-                    }}
-                  >
-                    再試行
-                  </Button>
-                </div>
-              </div>
-            )}
-            
-            {/* 🔥 修正：通常のimg要素を使用 */}
-            <img
-              src={imageUrls[selectedImageIndex]}
-              alt={`投稿画像 ${selectedImageIndex + 1}`}
-              className={`max-w-full max-h-full object-contain transition-opacity duration-300 ${
-                modalImageLoading ? 'opacity-0' : 'opacity-100'
-              }`}
-              style={{ maxHeight: '80vh' }}
-              onLoad={() => {
-                setModalImageLoading(false);
-                setModalImageError(false);
-              }}
-              onError={() => {
-                console.error('画像の読み込みに失敗しました:', imageUrls[selectedImageIndex]);
-                setModalImageLoading(false);
-                setModalImageError(true);
-              }}
-            />
-            
-            {/* 🔥 画像プリロード（次の画像を事前読み込み） */}
-            {imageUrls.length > 1 && !modalImageLoading && !modalImageError && (
-              <>
-                {/* 次の画像をプリロード */}
-                {selectedImageIndex < imageUrls.length - 1 && (
-                  <img
-                    src={imageUrls[selectedImageIndex + 1]}
-                    alt="preload"
-                    className="hidden"
-                    loading="lazy"
-                  />
-                )}
-                {/* 前の画像をプリロード */}
-                {selectedImageIndex > 0 && (
-                  <img
-                    src={imageUrls[selectedImageIndex - 1]}
-                    alt="preload"
-                    className="hidden"
-                    loading="lazy"
-                  />
-                )}
-              </>
-            )}
-          </div>
-          
-          {/* 複数画像の場合のナビゲーション */}
-          {imageUrls.length > 1 && (
-            <>
-              <Button
-                variant="outline"
-                size="icon"
-                className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white shadow-lg transition-all duration-200 hover:scale-110"
-                onClick={() => {
-                  setModalImageLoading(true);
-                  setModalImageError(false);
-                  setSelectedImageIndex(prev => prev > 0 ? prev - 1 : imageUrls.length - 1);
-                }}
-                disabled={modalImageLoading}
-              >
-                ←
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white shadow-lg transition-all duration-200 hover:scale-110"
-                onClick={() => {
-                  setModalImageLoading(true);
-                  setModalImageError(false);
-                  setSelectedImageIndex(prev => prev < imageUrls.length - 1 ? prev + 1 : 0);
-                }}
-                disabled={modalImageLoading}
-              >
-                →
-              </Button>
-              
-              {/* 🔥 改善された画像インジケーター */}
-              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex space-x-2 bg-black/50 px-3 py-2 rounded-full">
-                {imageUrls.map((_, index) => (
-                  <motion.button
-                    key={index}
-                    className={`w-2 h-2 rounded-full transition-all duration-200 ${
-                      index === selectedImageIndex ? 'bg-white scale-125' : 'bg-white/50 hover:bg-white/75'
-                    }`}
-                    onClick={() => {
-                      if (index !== selectedImageIndex) {
-                        setModalImageLoading(true);
-                        setModalImageError(false);
-                        setSelectedImageIndex(index);
-                      }
-                    }}
-                    whileHover={{ scale: 1.2 }}
-                    whileTap={{ scale: 0.9 }}
-                    disabled={modalImageLoading}
-                  />
-                ))}
-              </div>
-            </>
-          )}
-        </div>
-        
-        <div className="mt-4 flex justify-end">
-          <Button variant="ghost" onClick={() => setShowImageModal(false)}>
-            <XIcon className="h-4 w-4 mr-2" />
-            閉じる
-          </Button>
         </div>
       </CustomModal>
 
