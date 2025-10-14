@@ -1176,7 +1176,7 @@ export const PostCard = memo(({
                               <td className="p-3 bg-gray-50 w-1/3 font-medium border-r border-gray-100">
                                 <div className="flex items-center space-x-2">
                                   <Calendar className="h-4 w-4 text-gray-500 flex-shrink-0" />
-                                  <span className="text-base" style={{ color: '#73370c' }}>イベント名</span>
+                                  <span className="text-base" style={{ color: '#73370c' }}>イベント</span>
                                 </div>
                               </td>
                               <td className="p-3">
