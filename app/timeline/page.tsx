@@ -1456,9 +1456,12 @@ export default function Timeline() {
         author_role: p.author_role
       })));
 
-      // 1km圏内フィルタリング適用時はhasMoreをfalseに設定
-      // ご近所モードがOFFの場合はhasMoreをtrueに維持し、全件取得を可能にする
-      setHasMore(data.length === 20 && (!currentUserLocation || !currentIsNearbyMode));
+      // 🔥 修正：hasMoreの判定を改善
+      // データが20件未満の場合は次のページがないと判断
+      // ご近所モードがONで位置情報がある場合は距離フィルタ後の件数で判定
+      // それ以外の場合は取得件数で判定
+      const shouldHaveMore = data.length === 20;
+      setHasMore(shouldHaveMore);
     } catch (e: any) {
       console.error("投稿の取得に失敗しました:", e);
       setError("投稿の読み込みに失敗しました。しばらくしてから再度お試しください。");
@@ -1616,24 +1619,44 @@ export default function Timeline() {
 
   const loadMorePosts = useCallback(() => {
     if (!loadingMore && hasMore && fetchPostsRef.current) {
+      console.log('🔥 次のページを読み込み中...', { 
+        currentPostsLength: posts.length, 
+        hasMore, 
+        loadingMore 
+      });
       fetchPostsRef.current(posts.length, false, debouncedSearchTerm);
     }
   }, [posts.length, loadingMore, hasMore, debouncedSearchTerm]);
 
+  // 🔥 Intersection Observer APIを使用した無限スクロール実装
   useEffect(() => {
-    const handleScroll = (event: Event) => {
-      const target = event.target as HTMLElement;
-      if (target.scrollTop + target.clientHeight >= target.scrollHeight - 100) {
-        loadMorePosts();
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const target = entries[0];
+        if (target.isIntersecting && hasMore && !loadingMore) {
+          console.log('🔥 スクロール検知: 次のページを読み込み');
+          loadMorePosts();
+        }
+      },
+      {
+        root: null,
+        rootMargin: '100px', // 100px手前で検知
+        threshold: 0.1
       }
-    };
+    );
 
-    const scrollContainer = document.querySelector('.timeline-scroll-container');
-    if (scrollContainer) {
-      scrollContainer.addEventListener('scroll', handleScroll);
-      return () => scrollContainer.removeEventListener('scroll', handleScroll);
+    const loadMoreTrigger = document.getElementById('load-more-trigger');
+    if (loadMoreTrigger) {
+      observer.observe(loadMoreTrigger);
     }
-  }, [loadMorePosts]);
+
+    return () => {
+      if (loadMoreTrigger) {
+        observer.unobserve(loadMoreTrigger);
+      }
+      observer.disconnect();
+    };
+  }, [loadMorePosts, hasMore, loadingMore]);
 
   // いいね処理の統合
   const handleLike = useCallback(async (postId: string, newLikedState: boolean) => {
@@ -2681,12 +2704,88 @@ export default function Timeline() {
               </div>
             )}
             
+            {/* 🔥 無限スクロール用のUI表示を改善 */}
+            {loadingMore && (
+              <motion.div 
+                className="text-center py-6"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.3 }}
+              >
+                <div className="flex flex-col items-center space-y-3">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                  <p className="text-sm text-muted-foreground">
+                    さらに投稿を読み込み中...
+                  </p>
+                </div>
+              </motion.div>
+            )}
+            
+            {hasMore && !loadingMore && posts.length >= 20 && (
+              <motion.div 
+                id="load-more-trigger"
+                className="text-center py-6"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <div className="flex flex-col items-center space-y-3">
+                  <div className="flex items-center space-x-2 text-primary">
+                    <svg 
+                      className="w-5 h-5 animate-bounce" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                    >
+                      <path 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round" 
+                        strokeWidth={2} 
+                        d="M19 14l-7 7m0 0l-7-7m7 7V3" 
+                      />
+                    </svg>
+                    <span className="text-sm font-medium">スクロールして更新</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    下にスクロールすると次の20件を表示します
+                  </p>
+                </div>
+              </motion.div>
+            )}
+            
             {!hasMore && posts.length > 0 && (
-              <div className="text-center py-8" style={{ marginBottom: '16px' }}>
-                <p className="text-muted-foreground">
-                  すべての投稿を表示しました
-                </p>
-              </div>
+              <motion.div 
+                className="text-center py-8" 
+                style={{ marginBottom: '16px' }}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <div className="flex flex-col items-center space-y-2">
+                  <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
+                    <svg 
+                      className="w-4 h-4 text-green-600" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                    >
+                      <path 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round" 
+                        strokeWidth={2} 
+                        d="M5 13l4 4L19 7" 
+                      />
+                    </svg>
+                  </div>
+                  <p className="text-muted-foreground font-medium">
+                    すべての投稿を表示しました
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {posts.length}件の投稿を表示中
+                  </p>
+                </div>
+              </motion.div>
             )}
           </div>
         </div>
