@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { Camera, Upload, X, Store as StoreIcon, LayoutGrid, ClipboardList, Image as ImageIcon, ClockIcon, PackageIcon, Tag, HelpCircle, MapPin, CheckCircle, Layers, ChevronDown, ChevronUp, Settings, Link as LinkIcon, FileText, HandCoins, Users, Phone, BarChart3, Star as StarIcon } from 'lucide-react';
+import { Camera, Upload, X, Store as StoreIcon, LayoutGrid, ClipboardList, Image as ImageIcon, ClockIcon, PackageIcon, Tag, HelpCircle, MapPin, CheckCircle, Layers, ChevronDown, ChevronUp, Settings, Link as LinkIcon, FileText, HandCoins, Users, Phone, BarChart3, Star as StarIcon, CalendarDays } from 'lucide-react';
 import AppLayout from '@/components/layout/app-layout';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -60,6 +60,11 @@ const postSchema = z.object({
   customerSituation: z.string().optional(), // 来客状況
   couponCode: z.string().max(50).optional(), // クーポン
   phoneNumber: z.string().max(15).optional(), // 🔥 電話番号を追加
+  // 🔥 イベント情報用フィールド
+  eventName: z.string().max(100).optional(), // イベント名
+  eventStartDate: z.string().optional(), // 開催開始日
+  eventEndDate: z.string().optional(), // 開催終了日
+  eventPrice: z.string().max(50).optional(), // 料金
 }).superRefine((data, ctx) => {
   // 🔥 空席情報・在庫情報の場合の必須チェック
   if (data.category === '空席情報' || data.category === '在庫情報') {
@@ -123,6 +128,34 @@ const postSchema = z.object({
         message: 'イベント情報の掲載期間は1日〜90日の範囲で設定してください',
         path: ['customExpiryDays'],
       });
+    }
+    // イベント情報の必須フィールドチェック
+    if (!data.eventName || data.eventName.trim() === '') {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'イベント情報の場合、イベント名の入力は必須です',
+        path: ['eventName'],
+      });
+    }
+    if (!data.eventStartDate || data.eventStartDate.trim() === '') {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'イベント情報の場合、開催開始日の入力は必須です',
+        path: ['eventStartDate'],
+      });
+    }
+    // 開催終了日は任意（1日開催の場合は不要）
+    // 終了日が入力されている場合は、開始日より後の日付であることをチェック
+    if (data.eventEndDate && data.eventEndDate.trim() !== '' && data.eventStartDate && data.eventStartDate.trim() !== '') {
+      const startDate = new Date(data.eventStartDate);
+      const endDate = new Date(data.eventEndDate);
+      if (endDate < startDate) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: '開催終了日は開始日以降の日付を選択してください',
+          path: ['eventEndDate'],
+        });
+      }
     }
   }
   
@@ -230,6 +263,24 @@ const getExpiryOptionsForCategory = (category: string) => {
   }
 };
 
+// 🔥 イベント情報の掲載期間を自動計算する関数
+const calculateEventExpiryDays = (startDate: string, endDate?: string): number => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0); // 時刻を00:00:00にリセット
+  
+  // 開催終了日がある場合はそれを使用、なければ開始日を使用
+  const targetDateStr = endDate && endDate.trim() !== '' ? endDate : startDate;
+  const targetDate = new Date(targetDateStr);
+  targetDate.setHours(23, 59, 59, 999); // 対象日の23:59:59に設定
+  
+  // 本日から対象日までの日数を計算
+  const diffTime = targetDate.getTime() - today.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  
+  // 最小1日、最大90日に制限
+  return Math.max(1, Math.min(90, diffDays));
+};
+
 // 🔥 デフォルトの掲載期間を取得
 const getDefaultExpiryForCategory = (category: string) => {
   if (category === '空席情報' || category === '在庫情報') {
@@ -272,7 +323,7 @@ const getCategoryFields = (category: string) => {
     case '在庫情報':
       return [...baseFields, 'remainingSlots', 'url', 'image', 'customerSituation', 'coupon', 'phoneNumber'];
     case 'イベント情報':
-      return [...baseFields, 'url', 'image', 'phoneNumber', 'file'];
+      return [...baseFields, 'eventName', 'eventDate', 'eventPrice', 'url', 'image', 'phoneNumber', 'file'];
     case '助け合い':
       return [...baseFields, 'url', 'image', 'phoneNumber', 'file', 'supportPurchase']; // おすそわけ = supportPurchase
     case '口コミ':
@@ -295,6 +346,9 @@ const getFieldDisplayInfo = (field: string) => {
     file: { label: 'ファイル', icon: FileText },
     supportPurchase: { label: 'おすそわけ', icon: HandCoins },
     rating: { label: '評価', icon: StarIcon },
+    eventName: { label: 'イベント名', icon: CalendarDays },
+    eventDate: { label: '開催期日', icon: CalendarDays },
+    eventPrice: { label: '料金', icon: Tag },
   };
   
   return fieldMap[field as keyof typeof fieldMap] || { label: field, icon: HelpCircle };
@@ -387,6 +441,11 @@ export default function PostPage() {
       customerSituation: '',
       couponCode: '',
       phoneNumber: '', // 🔥 電話番号のデフォルト値を追加
+      // 🔥 イベント情報フィールドのデフォルト値を追加
+      eventName: '',
+      eventStartDate: '',
+      eventEndDate: '',
+      eventPrice: '',
     },
     mode: 'onChange',
   });
@@ -396,6 +455,10 @@ export default function PostPage() {
   const selectedCategory = form.watch('category'); // ジャンルからカテゴリに変更
   const selectedExpiryOption = form.watch('expiryOption');
   const watchedFormValues = form.watch();
+  
+  // 🔥 イベント日付の監視
+  const eventStartDate = form.watch('eventStartDate');
+  const eventEndDate = form.watch('eventEndDate');
 
   // 🔥 Stripe設定状態を管理
   const [stripeSetupStatus, setStripeSetupStatus] = useState<{
@@ -562,6 +625,9 @@ export default function PostPage() {
         phoneNumber: false,
         file: false,
         supportPurchase: false,
+        eventName: false,
+        eventDate: false,
+        eventPrice: false,
       });
       
       // 🔥 詳細情報セクションを閉じる
@@ -814,6 +880,11 @@ export default function PostPage() {
         customer_situation: values.customerSituation && values.customerSituation.trim() !== '' ? values.customerSituation : null,
         coupon_code: values.couponCode && values.couponCode.trim() !== '' ? values.couponCode : null,
         phone_number: values.phoneNumber && values.phoneNumber.trim() !== '' ? values.phoneNumber : null, // 🔥 電話番号を追加
+        // 🔥 イベント情報フィールドを追加
+        event_name: values.eventName && values.eventName.trim() !== '' ? values.eventName : null,
+        event_start_date: values.eventStartDate && values.eventStartDate.trim() !== '' ? values.eventStartDate : null,
+        event_end_date: values.eventEndDate && values.eventEndDate.trim() !== '' ? values.eventEndDate : null,
+        event_price: values.eventPrice && values.eventPrice.trim() !== '' ? values.eventPrice : null,
         author_role: session?.user?.role === 'admin' ? 'admin' : 'user',
       };
 
@@ -1355,6 +1426,9 @@ export default function PostPage() {
     phoneNumber: false, // 🔥 電話番号を追加
     file: false,
     supportPurchase: false,
+    eventName: false, // 🔥 イベント名を追加
+    eventDate: false, // 🔥 開催期日を追加
+    eventPrice: false, // 🔥 料金を追加
   });
 
   // 企業設定で値が設定されているかチェックする関数
@@ -1438,6 +1512,16 @@ export default function PostPage() {
           case 'supportPurchase':
             form.setValue('supportPurchaseEnabled', false);
             form.setValue('supportPurchaseOptions', []);
+            break;
+          case 'eventName': // 🔥 イベント名のリセット処理を追加
+            form.setValue('eventName', '', { shouldValidate: true });
+            break;
+          case 'eventDate': // 🔥 開催期日のリセット処理を追加
+            form.setValue('eventStartDate', '', { shouldValidate: true });
+            form.setValue('eventEndDate', '', { shouldValidate: true });
+            break;
+          case 'eventPrice': // 🔥 料金のリセット処理を追加
+            form.setValue('eventPrice', '', { shouldValidate: true });
             break;
           default:
             break;
@@ -1674,6 +1758,19 @@ export default function PostPage() {
     updateCustomerSituation();
   }, [maleCustomers, femaleCustomers]);
 
+  // 🔥 イベント日付変更時の掲載期間自動更新
+  useEffect(() => {
+    if (selectedCategory === 'イベント情報' && eventStartDate && eventStartDate.trim() !== '') {
+      const calculatedDays = calculateEventExpiryDays(eventStartDate, eventEndDate);
+      
+      // 掲載期間を日数設定に変更し、計算された日数を設定
+      form.setValue('expiryOption', 'days', { shouldValidate: true });
+      form.setValue('customExpiryDays', calculatedDays, { shouldValidate: true });
+      
+      console.log(`イベント掲載期間を自動計算: ${calculatedDays}日 (開始: ${eventStartDate}, 終了: ${eventEndDate || '未設定'})`);
+    }
+  }, [selectedCategory, eventStartDate, eventEndDate, form]);
+
   if (status === "loading") {
     return (
       <AppLayout>
@@ -1810,16 +1907,28 @@ export default function PostPage() {
                     {selectedExpiryOption === 'days' && form.getValues('customExpiryDays') && (
                       <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                         <div className="flex items-center justify-between">
-                          <span className="text-sm text-blue-800">
-                            設定期間: {form.getValues('customExpiryDays')}日間
-                          </span>
+                          <div className="flex-1">
+                            <span className="text-sm text-blue-800">
+                              設定期間: {form.getValues('customExpiryDays')}日間
+                            </span>
+                            {selectedCategory === 'イベント情報' && eventStartDate && (
+                              <div className="text-xs text-blue-600 mt-1">
+                                📅 開催日に基づいて自動計算されました
+                                {eventEndDate ? 
+                                  ` (本日〜${eventEndDate})` : 
+                                  ` (本日〜${eventStartDate})`
+                                }
+                              </div>
+                            )}
+                          </div>
                           <Button
                             type="button"
                             variant="outline"
                             size="sm"
                             onClick={() => setShowCustomDaysModal(true)}
+                            disabled={selectedCategory === 'イベント情報' && Boolean(eventStartDate)}
                           >
-                            変更
+                            {selectedCategory === 'イベント情報' && eventStartDate ? '自動計算' : '変更'}
                           </Button>
                         </div>
                       </div>
@@ -1831,18 +1940,9 @@ export default function PostPage() {
                         <div className="flex items-center space-x-2">
                           <ClockIcon className="h-4 w-4 text-amber-600" />
                           <span className="text-sm text-amber-800">
-                            イベント情報では掲載日数の設定が必要です。「日数設定（1-90日）」を選択して日数を設定してください。
+                            イベント情報では開催日を入力すると掲載期間が自動計算されます。開催期日を入力してください。
                           </span>
                         </div>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setShowCustomDaysModal(true)}
-                          className="mt-2"
-                        >
-                          日数を設定
-                        </Button>
                       </div>
                     )}
                   </FormItem>
@@ -2033,7 +2133,139 @@ export default function PostPage() {
                           />
                         </motion.div>
                       )}
-
+                      {/* 11. イベント名フィールド */}
+                      {optionalFieldsExpanded.eventName && isFieldVisibleForCategory('eventName', selectedCategory) && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          <FormField
+                            control={form.control}
+                            name="eventName"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-lg font-semibold flex items-center">
+                                  <CalendarDays className="mr-2 h-5 w-5" />
+                                  イベント名<span className="text-destructive ml-1">※</span>
+                                </FormLabel>
+                                <FormControl>
+                                  <Input
+                                    placeholder="例: 春祭り、セール、ワークショップなど"
+                                    {...field}
+                                    style={{ fontSize: '16px' }}
+                                    disabled={isUploading}
+                                    autoComplete="off"
+                                    autoCorrect="off"
+                                    autoCapitalize="off"
+                                    spellCheck="false"
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </motion.div>
+                      )}
+                      
+                      {/* 12. 開催期日フィールド */}
+                      {optionalFieldsExpanded.eventDate && isFieldVisibleForCategory('eventDate', selectedCategory) && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          <div className="space-y-4">
+                            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                              <p className="text-sm text-amber-800">
+                                💡 1日だけの開催の場合は、開始日のみ入力してください。複数日開催の場合は終了日も入力してください。
+                              </p>
+                            </div>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <FormField
+                                control={form.control}
+                                name="eventStartDate"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel className="text-lg font-semibold flex items-center">
+                                      <CalendarDays className="mr-2 h-5 w-5" />
+                                      開催開始日<span className="text-destructive ml-1">※</span>
+                                    </FormLabel>
+                                    <FormControl>
+                                      <Input
+                                        type="date"
+                                        {...field}
+                                        style={{ fontSize: '16px' }}
+                                        disabled={isUploading}
+                                      />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                      
+                              <FormField
+                                control={form.control}
+                                name="eventEndDate"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel className="text-lg font-semibold flex items-center">
+                                      <CalendarDays className="mr-2 h-5 w-5" />
+                                      開催終了日<span className="text-sm text-gray-500 ml-1">（複数日開催の場合）</span>
+                                    </FormLabel>
+                                    <FormControl>
+                                      <Input
+                                        type="date"
+                                        {...field}
+                                        style={{ fontSize: '16px' }}
+                                        disabled={isUploading}
+                                        placeholder="1日開催の場合は空欄でOK"
+                                      />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+                      
+                      {/* 13. 料金フィールド */}
+                      {optionalFieldsExpanded.eventPrice && isFieldVisibleForCategory('eventPrice', selectedCategory) && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          <FormField
+                            control={form.control}
+                            name="eventPrice"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-lg font-semibold flex items-center">
+                                  <Tag className="mr-2 h-5 w-5" />
+                                  料金
+                                </FormLabel>
+                                <FormControl>
+                                  <Input
+                                    placeholder="例: 無料、1000円、大人500円・子供300円など"
+                                    {...field}
+                                    style={{ fontSize: '16px' }}
+                                    disabled={isUploading}
+                                    autoComplete="off"
+                                    autoCorrect="off"
+                                    autoCapitalize="off"
+                                    spellCheck="false"
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </motion.div>
+                      )}
                       {/* 2. 残数フィールド */}
                       {optionalFieldsExpanded.remainingSlots && isFieldVisibleForCategory('remainingSlots', selectedCategory) && (
                         <motion.div
@@ -2340,7 +2572,6 @@ export default function PostPage() {
                         </motion.div>
                       )}
 
-
                       {/* 7. クーポンフィールド */}
                       {optionalFieldsExpanded.coupon && isFieldVisibleForCategory('coupon', selectedCategory) && (
                         <motion.div
@@ -2625,6 +2856,7 @@ export default function PostPage() {
                           )}
                         </motion.div>
                       )}
+
                     </div>
                   </motion.div>
                 )}
