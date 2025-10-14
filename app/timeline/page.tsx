@@ -1263,7 +1263,57 @@ export default function Timeline() {
         query = query.order('comments_count', { ascending: false });
       }
 
-      query = query.range(offset, offset + 19);
+      // 🔥 ご近所モード時は全件取得してから距離フィルタリング、それ以外は従来通り
+      if (currentUserLocation && currentIsNearbyMode) {
+        // ご近所モード：初回のみ全件取得、2回目以降はキャッシュから取得
+        if (offset === 0) {
+          // パフォーマンス考慮で上限1000件に制限
+          query = query.limit(1000);
+          console.log('🔍 ご近所モード: 全件取得してから距離フィルタリング（上限1000件）');
+        } else {
+          // 2回目以降はキャッシュされたデータから取得するため、空のクエリを返す
+          console.log('🔍 ご近所モード: キャッシュからページング処理');
+          // 空の結果を返してキャッシュ処理に委ねる
+          const { data: emptyData } = await supabase
+            .from('posts')
+            .select('id')
+            .eq('id', 'non-existent-id')
+            .limit(0);
+          
+          // キャッシュされたフィルタリング結果から次のページを取得
+          const cachedFiltered = (window as any)._nearbyFilteredPosts || [];
+          const startIndex = offset;
+          const endIndex = offset + 20;
+          const pageData = cachedFiltered.slice(startIndex, endIndex);
+          
+          console.log('🔍 キャッシュからページング:', {
+            totalCached: cachedFiltered.length,
+            startIndex,
+            endIndex,
+            pageSize: pageData.length
+          });
+          
+          // ページデータを直接設定
+          if (isInitial) {
+            setPosts(pageData);
+          } else {
+            setPosts(prevPosts => [...prevPosts, ...pageData]);
+          }
+          
+          // hasMoreの判定
+          const remainingPosts = cachedFiltered.length - endIndex;
+          setHasMore(remainingPosts > 0);
+          
+          setLoading(false);
+          setLoadingMore(false);
+          setIsSearching(false);
+          return; // 早期リターン
+        }
+      } else {
+        // 通常モード：従来通りのページング
+        query = query.range(offset, offset + 19);
+        console.log('🔍 通常モード: ページング適用', { offset, limit: offset + 19 });
+      }
 
       const { data, error: dbError } = await query;
 
@@ -1396,12 +1446,13 @@ export default function Timeline() {
         });
       }
       
-      // 1km圏内フィルタリング機能を追加（ご近所モードがONの場合のみ適用）
-      if (currentUserLocation && currentIsNearbyMode) { // 🔥 ご近所モード条件を追加
+      // 🔥 ご近所モード時の距離フィルタリングとページング処理
+      if (currentUserLocation && currentIsNearbyMode) {
         console.log('🔍 距離フィルタリング適用前の投稿数:', processedPosts.length);
         
-        processedPosts = processedPosts.filter(post => {
-          // 🔥 距離が計算されていない場合の処理を改善
+        // 距離フィルタリングを適用
+        const filteredPosts = processedPosts.filter(post => {
+          // 距離が計算されていない場合の処理を改善
           if (post.distance === undefined) {
             console.log('🔍 距離未計算のため除外:', {
               postId: post.id,
@@ -1423,7 +1474,34 @@ export default function Timeline() {
           return isWithinRadius;
         });
         
-        console.log('🔥 距離フィルタリング適用後の投稿数:', processedPosts.length);
+        console.log('🔥 距離フィルタリング適用後の投稿数:', filteredPosts.length);
+        
+        // 🔥 距離フィルタリング後にページング処理を適用
+        const startIndex = offset;
+        const endIndex = offset + 20;
+        processedPosts = filteredPosts.slice(startIndex, endIndex);
+        
+        console.log('🔍 ご近所モード ページング:', {
+          totalFiltered: filteredPosts.length,
+          startIndex,
+          endIndex,
+          currentPage: processedPosts.length
+        });
+        
+        // 🔥 hasMoreの判定をフィルタリング後の総数で行う
+        const remainingPosts = filteredPosts.length - endIndex;
+        const shouldHaveMoreNearby = remainingPosts > 0;
+        console.log('🔍 ご近所モード hasMore判定:', {
+          totalFiltered: filteredPosts.length,
+          endIndex,
+          remainingPosts,
+          shouldHaveMore: shouldHaveMoreNearby
+        });
+        
+        // 🔥 フィルタリング結果をキャッシュして後続のページングで使用
+        (window as any)._nearbyFilteredPosts = filteredPosts;
+        (window as any)._nearbyModeHasMore = shouldHaveMoreNearby;
+        
       } else {
         console.log('🔍 距離フィルタリングをスキップ:', {
           hasLocation: !!currentUserLocation,
@@ -1457,11 +1535,17 @@ export default function Timeline() {
       })));
 
       // 🔥 修正：hasMoreの判定を改善
-      // データが20件未満の場合は次のページがないと判断
-      // ご近所モードがONで位置情報がある場合は距離フィルタ後の件数で判定
-      // それ以外の場合は取得件数で判定
-      const shouldHaveMore = data.length === 20;
-      setHasMore(shouldHaveMore);
+      if (currentUserLocation && currentIsNearbyMode) {
+        // ご近所モード：距離フィルタリング後の残り件数で判定
+        const nearbyHasMore = (window as any)._nearbyModeHasMore || false;
+        setHasMore(nearbyHasMore);
+        console.log('🔍 ご近所モード hasMore設定:', nearbyHasMore);
+      } else {
+        // 通常モード：データベースから取得した件数で判定
+        const shouldHaveMore = data.length === 20;
+        setHasMore(shouldHaveMore);
+        console.log('🔍 通常モード hasMore設定:', shouldHaveMore);
+      }
     } catch (e: any) {
       console.error("投稿の取得に失敗しました:", e);
       setError("投稿の読み込みに失敗しました。しばらくしてから再度お試しください。");
@@ -1955,6 +2039,10 @@ export default function Timeline() {
     setSearchMode(tempSearchMode);
     setSortBy(tempSortBy);
     
+    // 🔥 ご近所モードのキャッシュをクリア
+    (window as any)._nearbyFilteredPosts = null;
+    (window as any)._nearbyModeHasMore = false;
+    
     setShowFilterModal(false);
     
     setTimeout(() => {
@@ -2345,6 +2433,9 @@ export default function Timeline() {
             <Button 
               onClick={() => {
                 setIsNearbyMode(!isNearbyMode);
+                // 🔥 ご近所モードのキャッシュをクリア
+                (window as any)._nearbyFilteredPosts = null;
+                (window as any)._nearbyModeHasMore = false;
                 setTimeout(() => {
                   if (fetchPostsRef.current) {
                     fetchPostsRef.current(0, true);
@@ -2823,6 +2914,9 @@ export default function Timeline() {
                   checked={isNearbyMode}
                   onCheckedChange={(checked) => {
                     setIsNearbyMode(checked);
+                    // 🔥 ご近所モードのキャッシュをクリア
+                    (window as any)._nearbyFilteredPosts = null;
+                    (window as any)._nearbyModeHasMore = false;
                     // 状態変更後に投稿を再取得
                     setTimeout(() => {
                       if (fetchPostsRef.current) {
