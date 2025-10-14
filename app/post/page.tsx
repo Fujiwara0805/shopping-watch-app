@@ -263,6 +263,40 @@ const getExpiryOptionsForCategory = (category: string) => {
   }
 };
 
+// 🔥 カテゴリ別定型文データ
+const templateTexts = {
+  '空席情報': [
+    '【空席あり】\n現在空席があります！\n・席数: \n・利用可能時間: \n・注意事項: ',
+    '【カウンター席空き】\nカウンター席に空きがあります。\nお一人様でもお気軽にどうぞ！',
+    '【テーブル席空き】\nテーブル席に余裕があります。\nグループでのご利用も可能です。',
+    '【予約なしOK】\n予約なしでもご案内できます！\n混雑状況: \nお待ち時間: ',
+  ],
+  '在庫情報': [
+    '【在庫あり】\n人気商品の在庫があります！\n・商品名: \n・残り数量: \n・価格: ',
+    '【限定商品入荷】\n限定商品が入荷しました。\n数量限定のためお早めに！',
+    '【セール商品あり】\nセール対象商品の在庫があります。\n・割引率: \n・セール期間: ',
+    '【新商品入荷】\n新商品が入荷しました！\n・商品名: \n・特徴: \n・価格: ',
+  ],
+  'イベント情報': [
+    '【イベント開催】\n楽しいイベントを開催します！\n・内容: \n・対象: \n・持ち物: ',
+    '【ワークショップ開催】\nワークショップを開催します。\n・テーマ: \n・定員: \n・申込方法: ',
+    '【セール開催】\n特別セールを開催中！\n・対象商品: \n・割引内容: \n・期間限定: ',
+    '【体験会実施】\n体験会を実施します。\n・体験内容: \n・所要時間: \n・参加費: ',
+  ],
+  '助け合い': [
+    '【おすそわけ】\n余ってしまった食材をおすそわけします。\n・品名: \n・数量: \n・受渡方法: ',
+    '【お手伝い募集】\nお手伝いしていただける方を募集しています。\n・作業内容: \n・時間: \n・お礼: ',
+    '【譲ります】\n使わなくなったものを譲ります。\n・品名: \n・状態: \n・引取方法: ',
+    '【探しています】\n以下のものを探しています。\n・品名: \n・用途: \n・条件: ',
+  ],
+  '口コミ': [
+    '【おすすめ】\nとても良かったのでおすすめします！\n・良かった点: \n・注意点: \n・総合評価: ',
+    '【体験レポート】\n実際に利用してみた感想です。\n・サービス内容: \n・満足度: \n・リピート: ',
+    '【お気に入り】\nお気に入りのお店/サービスです。\n・おすすめポイント: \n・利用頻度: \n・コスパ: ',
+    '【比較レビュー】\n他と比較した感想です。\n・比較対象: \n・違い: \n・どちらがおすすめ: ',
+  ],
+};
+
 // 🔥 イベント情報の掲載期間を自動計算する関数
 const calculateEventExpiryDays = (startDate: string, endDate?: string): number => {
   const today = new Date();
@@ -477,6 +511,9 @@ export default function PostPage() {
   // 企業設定変更案内モーダルの状態
   const [showBusinessSettingsModal, setShowBusinessSettingsModal] = useState(false);
 
+  // 🔥 定型文選択モーダルの状態
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
+
   // 🔥 複数画像のクリーンアップ
   useEffect(() => {
     return () => {
@@ -579,6 +616,9 @@ export default function PostPage() {
   // 🔥 カテゴリ変更時の処理
   useEffect(() => {
     if (selectedCategory) {
+      // 🔥 投稿内容をリセット
+      form.setValue('content', '');
+      
       // 🔥 詳細情報をすべてリセット（企業設定は保持）
       form.setValue('storeId', businessSettings?.business_store_id || '');
       form.setValue('storeName', businessSettings?.business_store_name || '');
@@ -594,6 +634,12 @@ export default function PostPage() {
       form.setValue('phoneNumber', businessSettings?.business_default_phone || '');
       form.setValue('supportPurchaseEnabled', false);
       form.setValue('supportPurchaseOptions', []);
+      
+      // 🔥 イベント情報フィールドもリセット
+      form.setValue('eventName', '');
+      form.setValue('eventStartDate', '');
+      form.setValue('eventEndDate', '');
+      form.setValue('eventPrice', '');
       
       // 🔥 画像・ファイルもリセット（企業設定のデフォルト画像は保持）
       setImageFiles([]);
@@ -632,6 +678,17 @@ export default function PostPage() {
       
       // 🔥 詳細情報セクションを閉じる
       setShowOptionalFields(false);
+      
+      // 🔥 イベント情報の場合は必須フィールドを自動展開
+      if (selectedCategory === 'イベント情報') {
+        setShowOptionalFields(true);
+        setOptionalFieldsExpanded(prev => ({
+          ...prev,
+          location: true,     // 場所（必須）
+          eventName: true,    // イベント名（必須）
+          eventDate: true,    // 開催期日（必須）
+        }));
+      }
       
       // 掲載期間の設定
       const defaultExpiry = getDefaultExpiryForCategory(selectedCategory);
@@ -1531,6 +1588,18 @@ export default function PostPage() {
     });
   };
 
+  // 🔥 定型文を投稿内容に転記する関数
+  const applyTemplate = (templateText: string) => {
+    form.setValue('content', templateText, { shouldValidate: true });
+    setShowTemplateModal(false);
+    
+    toast({
+      title: "✅ 定型文を適用しました",
+      description: "投稿内容を確認して、必要に応じて編集してください。",
+      duration: 2000,
+    });
+  };
+
   // 🔥 オプション項目の値が入力されているかチェック（画像と電話番号を追加）
   const hasOptionalValues = () => {
     const values = form.getValues();
@@ -1848,8 +1917,20 @@ export default function PostPage() {
                 name="content"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-xl flex font-semibold items-center">
-                      <ClipboardList className="mr-2 h-6 w-6" /> 投稿内容<span className="text-destructive ml-1">※</span>
+                    <FormLabel className="text-xl flex font-semibold items-center justify-between">
+                      <div className="flex items-center">
+                        <ClipboardList className="mr-2 h-6 w-6" /> 投稿内容<span className="text-destructive ml-1">※</span>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowTemplateModal(true)}
+                        className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 text-sm font-normal"
+                        disabled={!selectedCategory}
+                      >
+                        定型文
+                      </Button>
                     </FormLabel>
                     <FormControl>
                       <Textarea
@@ -2998,6 +3079,57 @@ export default function PostPage() {
                   }}
                 >
                   企業設定を変更
+                </Button>
+              </div>
+            </div>
+          </CustomModal>
+
+          {/* 🔥 定型文選択モーダル */}
+          <CustomModal
+            isOpen={showTemplateModal}
+            onClose={() => setShowTemplateModal(false)}
+            title={`定型文を選択 - ${selectedCategory}`}
+          >
+            <div className="pt-2 space-y-4">
+              <p className="text-sm text-gray-600">
+                以下から定型文を選択して投稿内容に適用できます。適用後に編集も可能です。
+              </p>
+              
+              {selectedCategory && templateTexts[selectedCategory as keyof typeof templateTexts] && (
+                <div className="space-y-3 max-h-96 overflow-y-auto">
+                  {templateTexts[selectedCategory as keyof typeof templateTexts].map((template, index) => (
+                    <motion.div
+                      key={index}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.2, delay: index * 0.05 }}
+                      className="border border-gray-200 rounded-lg p-4 hover:border-blue-300 hover:bg-blue-50 transition-all cursor-pointer"
+                      onClick={() => applyTemplate(template)}
+                    >
+                      <div className="text-sm text-gray-700 whitespace-pre-wrap line-clamp-4">
+                        {template}
+                      </div>
+                      <div className="mt-2 flex justify-end">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          className="text-xs"
+                        >
+                          この定型文を使用
+                        </Button>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
+              
+              <div className="flex justify-end space-x-3 pt-4">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowTemplateModal(false)}
+                >
+                  キャンセル
                 </Button>
               </div>
             </div>
