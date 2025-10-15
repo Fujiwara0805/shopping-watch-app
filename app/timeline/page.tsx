@@ -909,6 +909,7 @@ export default function Timeline() {
   const [highlightPostId, setHighlightPostId] = useState<string | null>(null);
 
   const [generalSearchTerm, setGeneralSearchTerm] = useState<string>('');
+  const [pendingSearchQuery, setPendingSearchQuery] = useState<string | null>(null);
   const [favoriteStoreIds, setFavoriteStoreIds] = useState<string[]>([]);
   const [favoriteStoreNames, setFavoriteStoreNames] = useState<string[]>([]);
   const [likedPostIds, setLikedPostIds] = useState<string[]>([]);
@@ -987,7 +988,81 @@ export default function Timeline() {
     if (id) {
       setHighlightPostId(id);
     }
-  }, [searchParams]);
+    
+    // 🔥 URLパラメータから検索クエリを取得して設定
+    const searchQuery = searchParams.get('search');
+    if (searchQuery) {
+      const decodedQuery = decodeURIComponent(searchQuery);
+      console.log('🔥 URLパラメータから検索クエリを取得:', decodedQuery);
+      setGeneralSearchTerm(decodedQuery);
+      setIsSearching(true);
+      console.log('🔥 検索状態を設定完了:', { decodedQuery, isSearching: true });
+      
+      // 🔥 検索履歴に追加（2文字以上の場合）
+      if (decodedQuery.trim().length >= 2) {
+        addToHistory(decodedQuery.trim());
+      }
+      
+      // 🔥 即座に検索実行を試行する関数
+      const executeSearch = () => {
+        if (fetchPostsRef.current) {
+          console.log('🔥 検索実行:', decodedQuery);
+          return fetchPostsRef.current(0, true, decodedQuery.trim())
+            .then(() => {
+              console.log('🔥 検索完了');
+              setIsSearching(false);
+              return true;
+            })
+            .catch((error) => {
+              console.error('🔥 検索エラー:', error);
+              setIsSearching(false);
+              return false;
+            });
+        }
+        return Promise.resolve(false);
+      };
+      
+      // 🔥 複数のタイミングで検索実行を試行
+      const attemptSearch = async () => {
+        // 即座に試行
+        if (await executeSearch()) {
+          return;
+        }
+        
+        // 🔥 即座の実行が失敗した場合は保留検索もセット
+        setPendingSearchQuery(decodedQuery);
+        
+        // 100ms後に再試行
+        setTimeout(async () => {
+          if (await executeSearch()) {
+            setPendingSearchQuery(null); // 成功したら保留検索をクリア
+            return;
+          }
+          
+          // 300ms後にさらに再試行
+          setTimeout(async () => {
+            if (await executeSearch()) {
+              setPendingSearchQuery(null); // 成功したら保留検索をクリア
+              return;
+            }
+            
+            // 最後の試行（500ms後）
+            setTimeout(async () => {
+              const result = await executeSearch();
+              if (result) {
+                setPendingSearchQuery(null); // 成功したら保留検索をクリア
+              } else {
+                console.warn('🔥 検索実行に失敗しました - 保留検索に依存');
+                // 保留検索はそのまま残して、fetchPostsRefが利用可能になったら実行される
+              }
+            }, 500);
+          }, 300);
+        }, 100);
+      };
+      
+      attemptSearch();
+    }
+  }, [searchParams, addToHistory]);
 
   // 現在のユーザープロフィール取得
   useEffect(() => {
@@ -1213,10 +1288,11 @@ export default function Timeline() {
 
       // 🔥 ジャンルフィルタを削除
 
-      // 検索語による絞り込み（categoryも検索対象に追加）
+      // 🔥 検索語による絞り込み（categoryも検索対象に追加）
       const effectiveSearchTerm = searchTerm;
       if (effectiveSearchTerm && effectiveSearchTerm.trim()) {
         const searchTermLower = effectiveSearchTerm.toLowerCase();
+        console.log('🔥 検索クエリでフィルタリング:', { effectiveSearchTerm, searchTermLower });
         query = query.or(`store_name.ilike.%${searchTermLower}%,category.ilike.%${searchTermLower}%,content.ilike.%${searchTermLower}%`);
       }
 
@@ -1320,11 +1396,20 @@ export default function Timeline() {
 
       // 🔥 デバッグ情報を追加
       console.log('🔍 データベースから取得した投稿数:', data?.length);
+      console.log('🔍 検索クエリ:', effectiveSearchTerm);
+      if (effectiveSearchTerm) {
+        console.log('🔍 検索結果の店舗名:', data?.map(p => p.store_name).slice(0, 5));
+      }
       console.log('🔍 取得した投稿のサンプル:', data?.slice(0, 2));
 
       if (dbError) {
         console.error('🔥 データベースエラー:', dbError);
         throw dbError;
+      }
+
+      // 🔥 検索結果が0件の場合のログ
+      if (effectiveSearchTerm && (!data || data.length === 0)) {
+        console.log('🔥 検索結果が0件:', { searchTerm: effectiveSearchTerm, data });
       }
       
       // ユーザーごとの総投稿数を取得
@@ -1521,8 +1606,10 @@ export default function Timeline() {
       }
 
       if (isInitial) {
+        console.log('🔥 投稿リストを初期化:', processedPosts.length, '件');
         setPosts(processedPosts as ExtendedPostWithAuthor[]);
       } else {
+        console.log('🔥 投稿リストに追加:', processedPosts.length, '件');
         setPosts(prevPosts => [...prevPosts, ...processedPosts as ExtendedPostWithAuthor[]]);
       }
 
@@ -1658,16 +1745,52 @@ export default function Timeline() {
     });
   }, []);
 
-  // 初回データ取得
+  // 初回データ取得（検索クエリがない場合のみ）
   useEffect(() => {
-    if (fetchPostsRef.current) {
+    // 🔥 URLパラメータに検索クエリがある場合は初回データ取得をスキップ
+    const searchQuery = searchParams.get('search');
+    if (!searchQuery && fetchPostsRef.current) {
+      console.log('🔥 初回データ取得を実行（検索クエリなし）');
       fetchPostsRef.current(0, true);
+    } else if (searchQuery) {
+      console.log('🔥 初回データ取得をスキップ（検索クエリあり）:', searchQuery);
     }
-  }, []);
+  }, [searchParams]);
 
   // リアルタイム検索の実装
   const fetchPostsRef = useRef<typeof fetchPosts>();
   fetchPostsRef.current = fetchPosts;
+
+  // 🔥 fetchPostsRefが設定された後に保留中の検索を実行（バックアップ機能）
+  useEffect(() => {
+    if (pendingSearchQuery && fetchPostsRef.current) {
+      console.log('🔥 保留中の検索を実行開始:', pendingSearchQuery);
+      
+      // 🔥 handleSearchと同じ処理を実行
+      setIsSearching(true);
+      if (pendingSearchQuery.trim().length >= 2) {
+        addToHistory(pendingSearchQuery.trim());
+        console.log('🔥 検索履歴に追加:', pendingSearchQuery.trim());
+      }
+      
+      console.log('🔥 fetchPosts実行開始:', { query: pendingSearchQuery.trim() });
+      
+      // 🔥 検索実行
+      fetchPostsRef.current(0, true, pendingSearchQuery.trim())
+        .then(() => {
+          console.log('🔥 保留検索完了');
+          setIsSearching(false);
+          setPendingSearchQuery(null); // 🔥 検索完了後にクリア
+        })
+        .catch((error) => {
+          console.error('🔥 保留検索エラー:', error);
+          setIsSearching(false);
+          setPendingSearchQuery(null); // 🔥 エラー時もクリア
+        });
+      
+      console.log('🔥 保留中の検索実行完了');
+    }
+  }, [pendingSearchQuery, addToHistory]);
 
   useEffect(() => {
     if (highlightPostId && posts.length > 0) {

@@ -340,7 +340,47 @@ export function MapView() {
     }
   }, [latitude, longitude]);
 
-  // 🔥 投稿マーカーを作成する関数を修正（イベント情報は専用アイコン、他は吹き出しアイコン）
+  // 🔥 クラスターアイコンを作成する関数
+  const createClusterIcon = (count: number) => {
+    const size = count > 99 ? 60 : count > 9 ? 50 : 40;
+    const fontSize = count > 99 ? 14 : count > 9 ? 16 : 18;
+    
+    const svg = `
+      <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="#dc2626" stroke="#ffffff" stroke-width="3"/>
+        <text x="${size/2}" y="${size/2 + fontSize/3}" text-anchor="middle" fill="white" font-size="${fontSize}" font-weight="bold" font-family="Arial, sans-serif">${count}</text>
+      </svg>
+    `;
+    
+    return {
+      url: createDataUrl(svg),
+      scaledSize: new window.google.maps.Size(size, size),
+      anchor: new window.google.maps.Point(size/2, size/2),
+    };
+  };
+
+  // 🔥 同じ場所の投稿をグループ化する関数
+  const groupPostsByLocation = (posts: PostMarkerData[]) => {
+    const locationGroups: { [key: string]: PostMarkerData[] } = {};
+    
+    posts.forEach(post => {
+      if (!post.store_latitude || !post.store_longitude) return;
+      
+      // 座標を小数点第4位で丸めて同じ場所として扱う（約10m程度の精度）
+      const lat = Math.round(post.store_latitude * 10000) / 10000;
+      const lng = Math.round(post.store_longitude * 10000) / 10000;
+      const locationKey = `${lat},${lng}`;
+      
+      if (!locationGroups[locationKey]) {
+        locationGroups[locationKey] = [];
+      }
+      locationGroups[locationKey].push(post);
+    });
+    
+    return locationGroups;
+  };
+
+  // 🔥 投稿マーカーを作成する関数を修正（クラスター対応）
   const createPostMarkers = useCallback(() => {
     if (!map || !posts.length || !window.google?.maps) {
       console.log('MapView: マーカー作成の条件が揃っていません');
@@ -358,58 +398,92 @@ export function MapView() {
     
     const newMarkers: google.maps.Marker[] = [];
 
-    posts.forEach((post) => {
-      if (!post.store_latitude || !post.store_longitude) return;
+    // 🔥 同じ場所の投稿をグループ化
+    const locationGroups = groupPostsByLocation(posts);
 
-      const position = new window.google.maps.LatLng(post.store_latitude, post.store_longitude);
+    Object.entries(locationGroups).forEach(([locationKey, groupPosts]) => {
+      const [lat, lng] = locationKey.split(',').map(Number);
+      const position = new window.google.maps.LatLng(lat, lng);
       
-      let markerIcon;
-      let markerTitle = post.store_name;
+      if (groupPosts.length === 1) {
+        // 🔥 単一の投稿の場合は従来通りの表示
+        const post = groupPosts[0];
+        let markerIcon;
+        let markerTitle = post.store_name;
 
-      // 🔥 イベント情報の場合は専用アイコンを使用
-      if (post.category === 'イベント情報') {
-        markerIcon = createEventPinIcon();
-        markerTitle = `${post.store_name} - イベント情報`;
+        // イベント情報の場合は専用アイコンを使用
+        if (post.category === 'イベント情報') {
+          markerIcon = createEventPinIcon();
+          markerTitle = `${post.store_name} - イベント情報`;
+        } else {
+          // 他のカテゴリは従来通り吹き出しアイコン（残数情報必須）
+          if (post.remaining_slots == null) return; // 残数なしはスキップ
+          
+          const unit = getRemainingUnit(post.category);
+          const categoryColor = getCategoryColor(post.category);
+          const speechBubbleSvg = getSpeechBubbleSvg(post.remaining_slots, unit, categoryColor);
+          const iconUrl = createDataUrl(speechBubbleSvg);
+          const textWidth = `残り${post.remaining_slots}${unit}`.length * 10 + 20;
+          const bubbleWidth = Math.max(90, textWidth);
+
+          markerIcon = {
+            url: iconUrl,
+            scaledSize: new window.google.maps.Size(bubbleWidth + 10, 55),
+            anchor: new window.google.maps.Point((bubbleWidth + 10) / 2, 50),
+          };
+          markerTitle = `${post.store_name} - 残り${post.remaining_slots}${unit}`;
+        }
+
+        const marker = new window.google.maps.Marker({
+          position,
+          map,
+          title: markerTitle,
+          icon: markerIcon,
+          animation: window.google.maps.Animation.DROP,
+        });
+
+        // マーカークリック時の処理
+        marker.addListener('click', () => {
+          console.log(`MapView: 投稿マーカーがクリックされました - ID: ${post.id}`);
+          // タイムラインページに遷移（該当投稿をハイライト）
+          router.push(`/timeline?highlightPostId=${post.id}`);
+        });
+
+        newMarkers.push(marker);
       } else {
-        // 🔥 他のカテゴリは従来通り吹き出しアイコン（残数情報必須）
-        if (post.remaining_slots == null) return; // 残数なしはスキップ
+        // 🔥 複数の投稿がある場合はクラスターアイコンを表示
+        const clusterIcon = createClusterIcon(groupPosts.length);
+        const storeName = groupPosts[0].store_name;
         
-        const unit = getRemainingUnit(post.category);
-        const categoryColor = getCategoryColor(post.category);
-        const speechBubbleSvg = getSpeechBubbleSvg(post.remaining_slots, unit, categoryColor);
-        const iconUrl = createDataUrl(speechBubbleSvg);
-        const textWidth = `残り${post.remaining_slots}${unit}`.length * 10 + 20;
-        const bubbleWidth = Math.max(90, textWidth);
+        const marker = new window.google.maps.Marker({
+          position,
+          map,
+          title: `${storeName} - ${groupPosts.length}件の投稿`,
+          icon: clusterIcon,
+          animation: window.google.maps.Animation.DROP,
+        });
 
-        markerIcon = {
-          url: iconUrl,
-          scaledSize: new window.google.maps.Size(bubbleWidth + 10, 55),
-          anchor: new window.google.maps.Point((bubbleWidth + 10) / 2, 50),
-        };
-        markerTitle = `${post.store_name} - 残り${post.remaining_slots}${unit}`;
+        // クラスタークリック時の処理
+        marker.addListener('click', () => {
+          console.log(`MapView: クラスターマーカーがクリックされました - ${groupPosts.length}件の投稿`);
+          console.log('MapView: 店舗名:', storeName);
+          console.log('MapView: グループ投稿:', groupPosts.map(p => ({ id: p.id, store_name: p.store_name, category: p.category })));
+          
+          // 🔥 タイムラインページに遷移し、場所で検索
+          const searchQuery = encodeURIComponent(storeName);
+          console.log('MapView: 検索クエリ:', searchQuery);
+          console.log('MapView: 遷移URL:', `/timeline?search=${searchQuery}`);
+          
+          router.push(`/timeline?search=${searchQuery}`);
+        });
+
+        newMarkers.push(marker);
       }
-
-      const marker = new window.google.maps.Marker({
-        position,
-        map,
-        title: markerTitle,
-        icon: markerIcon,
-        animation: window.google.maps.Animation.DROP,
-      });
-
-      // マーカークリック時の処理
-      marker.addListener('click', () => {
-        console.log(`MapView: 投稿マーカーがクリックされました - ID: ${post.id}`);
-        // タイムラインページに遷移（該当投稿をハイライト）
-        router.push(`/timeline?highlightPostId=${post.id}`);
-      });
-
-      newMarkers.push(marker);
     });
 
     setPostMarkers(newMarkers);
     console.log(`MapView: ${newMarkers.length}個のマーカーを作成しました`);
-  }, [map, posts, router]); // 🔥 postMarkersを依存配列から除去
+  }, [map, posts, router]);
 
   // 地図初期化のメイン処理（変更なし）
   const initializeMap = useCallback(() => {
@@ -467,7 +541,14 @@ export function MapView() {
               east: 145.817,
               west: 122.933
             }
-          }
+          },
+          // 🔥 タッチイベント問題を修正 - cooperativeに統一
+          gestureHandling: 'cooperative',
+          scrollwheel: true,
+          disableDoubleClickZoom: false,
+          // 🔥 追加のタッチ最適化オプション
+          draggable: true,
+          keyboardShortcuts: false
         };
 
         switch (browserInfo.name) {
@@ -482,7 +563,7 @@ export function MapView() {
             return {
               ...baseOptions,
               zoom: 14,
-              gestureHandling: 'greedy',
+              gestureHandling: 'cooperative', // 🔥 'greedy'から'cooperative'に変更
               // Firefox では追加の最適化
               draggableCursor: 'default'
             };
@@ -492,14 +573,14 @@ export function MapView() {
             return {
               ...baseOptions,
               zoom: 14,
-              gestureHandling: 'greedy'
+              gestureHandling: 'cooperative' // 🔥 'greedy'から'cooperative'に変更
             };
           
           default:
             return {
               ...baseOptions,
               zoom: 14,  
-              gestureHandling: 'greedy'
+              gestureHandling: 'cooperative' // 🔥 'greedy'から'cooperative'に変更
             };
         }
       };
@@ -1005,6 +1086,15 @@ export function MapView() {
       <div 
         ref={mapContainerRef} 
         className="w-full h-full"
+        style={{
+          // 🔥 タッチイベント最適化 - manipulationを追加してスクロール干渉を防ぐ
+          touchAction: 'manipulation',
+          WebkitOverflowScrolling: 'touch',
+          // 🔥 追加のブラウザ最適化
+          WebkitTouchCallout: 'none',
+          WebkitUserSelect: 'none',
+          userSelect: 'none'
+        }}
       />
 
       {/* 説明テキストと範囲表示切り替えボタン（左下に配置） */}
@@ -1220,6 +1310,30 @@ export function MapView() {
                         </div>
                       </div>
                     </div>
+
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                      <div className="flex items-center space-x-3">
+                        <div className="flex-shrink-0">
+                          <div 
+                            className="flex items-center justify-center"
+                            dangerouslySetInnerHTML={{
+                              __html: `<svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="20" cy="20" r="18" fill="#dc2626" stroke="#ffffff" stroke-width="3"/>
+                                <text x="20" y="26" text-anchor="middle" fill="white" font-size="18" font-weight="bold" font-family="Arial, sans-serif">3</text>
+                              </svg>`
+                            }}
+                          />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-red-800 mb-1">
+                            クラスター表示の例
+                          </p>
+                          <p className="text-xs text-red-600">
+                            同じ場所に複数の投稿がある場合、赤い円に数字で表示されます
+                          </p>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -1257,6 +1371,30 @@ export function MapView() {
                           </p>
                           <p className="text-xs text-orange-600">
                             掲示板へ遷移し、該当する投稿の詳細を確認できます
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                      <div className="flex items-start space-x-3">
+                        <div className="flex-shrink-0">
+                          <div 
+                            className="flex items-center justify-center scale-75"
+                            dangerouslySetInnerHTML={{
+                              __html: `<svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="20" cy="20" r="18" fill="#dc2626" stroke="#ffffff" stroke-width="3"/>
+                                <text x="20" y="26" text-anchor="middle" fill="white" font-size="18" font-weight="bold" font-family="Arial, sans-serif">3</text>
+                              </svg>`
+                            }}
+                          />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-red-800 mb-1">
+                            クラスターマーカーをタップ
+                          </p>
+                          <p className="text-xs text-red-600">
+                            掲示板へ遷移し、その場所の投稿一覧を検索結果として表示します
                           </p>
                         </div>
                       </div>
