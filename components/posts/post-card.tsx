@@ -436,6 +436,9 @@ export const PostCard = memo(({
   const [isLiking, setIsLiking] = useState(false);
   const [hasBeenViewed, setHasBeenViewed] = useState(false);
   
+  // 🔥 追加：投稿内容の展開状態管理
+  const [isContentExpanded, setIsContentExpanded] = useState(false);
+  
   // 🔥 追加：削除・通報モーダル関連
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
@@ -1282,9 +1285,49 @@ export const PostCard = memo(({
         <CardContent className="p-3 pt-1 flex flex-col h-full">
           {/* 投稿内容との間隔調整 */}
           <div className="flex-grow overflow-hidden mb-3 mt-1">
-            <p className="text-lg whitespace-pre-line" style={{ color: '#73370c' }}>
-              {post.content ? (post.content.length > 240 ? post.content.substring(0, 240) + '...' : post.content) : '内容がありません'}
-            </p>
+            <div className="relative">
+              <motion.div
+                initial={false}
+                animate={{ height: isContentExpanded ? 'auto' : 'auto' }}
+                transition={{ duration: 0.3, ease: "easeInOut" }}
+                className="overflow-hidden"
+              >
+                <p className="text-lg whitespace-pre-line" style={{ color: '#73370c' }}>
+                  {post.content ? (
+                    isContentExpanded 
+                      ? post.content 
+                      : (post.content.length > 100 ? post.content.substring(0, 100) + '...' : post.content)
+                  ) : '内容がありません'}
+                </p>
+              </motion.div>
+              
+              {/* 続きを読むボタン */}
+              {post.content && post.content.length > 100 && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.2, delay: 0.1 }}
+                  className="mt-2"
+                >
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsContentExpanded(!isContentExpanded);
+                    }}
+                    className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 p-0 h-auto font-medium transition-all duration-200"
+                  >
+                    <motion.span
+                      animate={{ color: isContentExpanded ? '#1d4ed8' : '#2563eb' }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      {isContentExpanded ? '折りたたむ' : '続きを読む'}
+                    </motion.span>
+                  </Button>
+                </motion.div>
+              )}
+            </div>
           </div>
           
           {/* 🔥 改善：高速画像表示エリア */}
