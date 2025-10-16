@@ -41,7 +41,7 @@ const postSchema = z.object({
   storeId: z.string().optional(),
   storeName: z.string().optional(),
   category: z.enum(['空席情報', '在庫情報', 'イベント情報', '助け合い', '口コミ'], { required_error: 'カテゴリを選択してください' }),
-  content: z.string().min(5, { message: '5文字以上入力してください' }).max(240, { message: '240文字以内で入力してください' }),
+  content: z.string().min(5, { message: '5文字以上入力してください' }).max(400, { message: '400文字以内で入力してください' }),
   url: z.string().url({ message: '有効なURLを入力してください' }).optional().or(z.literal('')),
   // 🔥 新しい掲載期間スキーマ
   expiryOption: z.enum(['15m', '30m', '45m', '60m', '12h', '24h', 'days', '90d'], { required_error: '掲載期間を選択してください' }),
@@ -1933,21 +1933,27 @@ export default function PostPage() {
                       </Button>
                     </FormLabel>
                     <FormControl>
-                      <Textarea
-                        placeholder={getPlaceholderForCategory(selectedCategory)}
-                        className="resize-none"
-                        style={{ fontSize: '16px', minHeight: '140px' }}
-                        rows={7}
-                        autoComplete="off"
-                        autoCorrect="off"
-                        autoCapitalize="off"
-                        spellCheck="false"
-                        {...field}
-                        ref={(e) => {
-                          field.ref(e);
-                          (contentTextareaRef as any).current = e;
-                        }}
-                      />
+                      <div className="relative">
+                        <Textarea
+                          placeholder={getPlaceholderForCategory(selectedCategory)}
+                          className="resize-none"
+                          style={{ fontSize: '16px', minHeight: '140px' }}
+                          rows={7}
+                          maxLength={400}
+                          autoComplete="off"
+                          autoCorrect="off"
+                          autoCapitalize="off"
+                          spellCheck="false"
+                          {...field}
+                          ref={(e) => {
+                            field.ref(e);
+                            (contentTextareaRef as any).current = e;
+                          }}
+                        />
+                        <div className="absolute bottom-2 right-2 text-xs text-gray-500 bg-white px-1 rounded">
+                          {field.value?.length || 0}/400
+                        </div>
+                      </div>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
