@@ -3264,7 +3264,7 @@ export default function Timeline() {
                 <div className="space-y-6">
                   <div>
                     <p className="text-sm text-gray-600 mb-4">
-                      投稿には<span className="text-red-600">「カテゴリ(5種類)」</span>、<span className="text-red-600">「テキスト(240文字以内)」</span>と<span className="text-red-600">「掲載期間」</span>の入力が必須です。また、投稿内容に応じて、以下の詳細情報を任意で入力できます。（<span className="text-red-600">※ログイン必須</span>）
+                      投稿には<span className="text-red-600">「カテゴリ(5種類)」</span>、<span className="text-red-600">「テキスト(400文字以内)」</span>と<span className="text-red-600">「掲載期間」</span>の入力が必須です。また、投稿内容に応じて、以下の詳細情報を任意で入力できます。（<span className="text-red-600">※ログイン必須</span>）
                     </p>
                     <div className="grid grid-cols-2 gap-3">
                       <div className="bg-blue-50 border border-blue-200 rounded-lg p-2">
