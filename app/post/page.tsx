@@ -334,17 +334,17 @@ const getDefaultExpiryForCategory = (category: string) => {
 const getPlaceholderForCategory = (category: string) => {
   switch (category) {
     case '空席情報':
-      return '空席情報を投稿してみよう。（240文字以内）';
+      return '空席情報を投稿してみよう。（400文字以内）';
     case '在庫情報':
-      return '在庫情報を投稿してみよう。（240文字以内）';
+      return '在庫情報を投稿してみよう。（400文字以内）';
     case 'イベント情報':
-      return 'イベント情報を投稿してみよう。（240文字以内）';
+      return 'イベント情報を投稿してみよう。（400文字以内）';
     case '助け合い':
-      return '食品ロス削減、物の譲り合いなど、地域の助け合い情報を投稿してみよう。（240文字以内）';
+      return '食品ロス削減、物の譲り合いなど、地域の助け合い情報を投稿してみよう。（400文字以内）';
     case '口コミ':
-      return '口コミ情報を投稿してみよう。（240文字以内）';
+      return '口コミ情報を投稿してみよう。（400文字以内）';
     default:
-      return '日常生活のちょっとしたおとく情報を投稿してみよう。（240文字以内）';
+      return '日常生活のちょっとしたおとく情報を投稿してみよう。（400文字以内）';
   }
 };
 
