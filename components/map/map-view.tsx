@@ -94,7 +94,7 @@ const createDataUrl = (svgString: string) => {
 
 // 🔥 イベント情報用のピンアイコンを作成する関数
 const createEventPinIcon = () => {
-  const iconUrl = "https://res.cloudinary.com/dz9trbwma/image/upload/v1760275567/icons8-%E3%83%92%E3%82%99%E3%83%83%E3%82%AF%E3%83%AA%E3%83%9E%E3%83%BC%E3%82%AF-64_sbp78g.png";
+  const iconUrl = "https://res.cloudinary.com/dz9trbwma/image/upload/v1760666722/%E3%81%B2%E3%82%99%E3%81%A3%E3%81%8F%E3%82%8A%E3%83%9E%E3%83%BC%E3%82%AF_kvzxcp.png";
   return {
     url: iconUrl,
     scaledSize: new window.google.maps.Size(32, 32), // 32x32のサイズに調整
@@ -1295,7 +1295,7 @@ export function MapView() {
                       <div className="flex items-center space-x-3">
                         <div className="flex-shrink-0">
                           <img 
-                            src="https://res.cloudinary.com/dz9trbwma/image/upload/v1760275567/icons8-%E3%83%92%E3%82%99%E3%83%83%E3%82%AF%E3%83%AA%E3%83%9E%E3%83%BC%E3%82%AF-64_sbp78g.png" 
+src="https://res.cloudinary.com/dz9trbwma/image/upload/v1760666722/%E3%81%B2%E3%82%99%E3%81%A3%E3%81%8F%E3%82%8A%E3%83%9E%E3%83%BC%E3%82%AF_kvzxcp.png" 
                             alt="イベント情報" 
                             className="h-8 w-8" 
                           />
