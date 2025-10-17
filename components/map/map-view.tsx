@@ -534,6 +534,8 @@ export function MapView() {
           streetViewControl: false,
           mapTypeControl: false,
           backgroundColor: '#f5f5f5',
+          // 🔥 「この地域の詳細画像は表示できません」メッセージを回避するため、明示的にROADMAPを設定
+          mapTypeId: window.google.maps.MapTypeId.ROADMAP,
           restriction: {
             latLngBounds: {
               north: 45.557,
