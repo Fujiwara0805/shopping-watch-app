@@ -340,22 +340,32 @@ export function MapView() {
     }
   }, [latitude, longitude]);
 
-  // 🔥 クラスターアイコンを作成する関数
+  // 🔥 クラスターアイコンを作成する関数（指定画像を直接使用）
   const createClusterIcon = (count: number) => {
     const size = count > 99 ? 60 : count > 9 ? 50 : 40;
-    const fontSize = count > 99 ? 14 : count > 9 ? 16 : 18;
     
-    const svg = `
-      <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="#dc2626" stroke="#ffffff" stroke-width="3"/>
-        <text x="${size/2}" y="${size/2 + fontSize/3}" text-anchor="middle" fill="white" font-size="${fontSize}" font-weight="bold" font-family="Arial, sans-serif">${count}</text>
-      </svg>
-    `;
-    
+    // 🔥 指定された画像を直接使用し、数字をオーバーレイとして表示
     return {
-      url: createDataUrl(svg),
+      url: "https://res.cloudinary.com/dz9trbwma/image/upload/v1760667310/%E3%83%98%E3%82%9A%E3%83%B3%E3%82%AD%E8%B7%A1%E3%81%AE%E3%82%A4%E3%83%A9%E3%82%B9%E3%83%882_homiep.png",
       scaledSize: new window.google.maps.Size(size, size),
       anchor: new window.google.maps.Point(size/2, size/2),
+      // 🔥 ラベルで数字を表示
+      labelOrigin: new window.google.maps.Point(size/2, size/2),
+    };
+  };
+
+  // 🔥 クラスターマーカー用のラベルスタイルを作成する関数
+  const createClusterLabel = (count: number) => {
+    const fontSize = count > 99 ? 12 : count > 9 ? 14 : 16;
+    
+    return {
+      text: count.toString(),
+      color: '#ffffff',
+      fontSize: `${fontSize}px`,
+      fontWeight: 'bold',
+      fontFamily: 'Arial, sans-serif',
+      // 🔥 黒い縁取りを追加して視認性を向上
+      className: 'cluster-label'
     };
   };
 
@@ -453,6 +463,7 @@ export function MapView() {
       } else {
         // 🔥 複数の投稿がある場合はクラスターアイコンを表示
         const clusterIcon = createClusterIcon(groupPosts.length);
+        const clusterLabel = createClusterLabel(groupPosts.length);
         const storeName = groupPosts[0].store_name;
         
         const marker = new window.google.maps.Marker({
@@ -460,6 +471,7 @@ export function MapView() {
           map,
           title: `${storeName} - ${groupPosts.length}件の投稿`,
           icon: clusterIcon,
+          label: clusterLabel,
           animation: window.google.maps.Animation.DROP,
         });
 
@@ -1320,8 +1332,13 @@ src="https://res.cloudinary.com/dz9trbwma/image/upload/v1760666722/%E3%81%B2%E3%
                             className="flex items-center justify-center"
                             dangerouslySetInnerHTML={{
                               __html: `<svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <circle cx="20" cy="20" r="18" fill="#dc2626" stroke="#ffffff" stroke-width="3"/>
-                                <text x="20" y="26" text-anchor="middle" fill="white" font-size="18" font-weight="bold" font-family="Arial, sans-serif">3</text>
+                                <defs>
+                                  <pattern id="clusterImageExample" patternUnits="objectBoundingBox" width="1" height="1">
+                                    <image href="https://res.cloudinary.com/dz9trbwma/image/upload/v1760667310/%E3%83%98%E3%82%9A%E3%83%B3%E3%82%AD%E8%B7%A1%E3%81%AE%E3%82%A4%E3%83%A9%E3%82%B9%E3%83%882_homiep.png" x="0" y="0" width="40" height="40" preserveAspectRatio="xMidYMid slice"/>
+                                  </pattern>
+                                </defs>
+                                <circle cx="20" cy="20" r="18" fill="url(#clusterImageExample)" stroke="#ffffff" stroke-width="3"/>
+                                <text x="20" y="26" text-anchor="middle" fill="white" font-size="16" font-weight="bold" font-family="Arial, sans-serif" stroke="#000000" stroke-width="0.5">3</text>
                               </svg>`
                             }}
                           />
@@ -1331,7 +1348,7 @@ src="https://res.cloudinary.com/dz9trbwma/image/upload/v1760666722/%E3%81%B2%E3%
                             クラスター表示の例
                           </p>
                           <p className="text-xs text-red-600">
-                            同じ場所に複数の投稿がある場合、赤い円に数字で表示されます
+                            同じ場所に複数の投稿がある場合、専用アイコンに数字で表示されます
                           </p>
                         </div>
                       </div>
@@ -1385,8 +1402,13 @@ src="https://res.cloudinary.com/dz9trbwma/image/upload/v1760666722/%E3%81%B2%E3%
                             className="flex items-center justify-center scale-75"
                             dangerouslySetInnerHTML={{
                               __html: `<svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <circle cx="20" cy="20" r="18" fill="#dc2626" stroke="#ffffff" stroke-width="3"/>
-                                <text x="20" y="26" text-anchor="middle" fill="white" font-size="18" font-weight="bold" font-family="Arial, sans-serif">3</text>
+                                <defs>
+                                  <pattern id="clusterImageExample2" patternUnits="objectBoundingBox" width="1" height="1">
+                                    <image href="https://res.cloudinary.com/dz9trbwma/image/upload/v1760667310/%E3%83%98%E3%82%9A%E3%83%B3%E3%82%AD%E8%B7%A1%E3%81%AE%E3%82%A4%E3%83%A9%E3%82%B9%E3%83%882_homiep.png" x="0" y="0" width="40" height="40" preserveAspectRatio="xMidYMid slice"/>
+                                  </pattern>
+                                </defs>
+                                <circle cx="20" cy="20" r="18" fill="url(#clusterImageExample2)" stroke="#ffffff" stroke-width="3"/>
+                                <text x="20" y="26" text-anchor="middle" fill="white" font-size="16" font-weight="bold" font-family="Arial, sans-serif" stroke="#000000" stroke-width="0.5">3</text>
                               </svg>`
                             }}
                           />
