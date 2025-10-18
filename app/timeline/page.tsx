@@ -108,8 +108,7 @@ interface PostFromDB {
   city?: string | null;
 }
 
-type SortOption = 'created_at_desc' | 'created_at_asc' | 'expires_at_asc' | 'distance_asc' | 'likes_desc' | 'views_desc' | 'comments_desc';
-type SearchMode = 'all' | 'category' | 'favorite_store' | 'liked_posts' | 'hybrid';
+// ソート機能と特別検索モードを削除
 
 
 const SEARCH_RADIUS_METERS = 1000; // 1km
@@ -899,14 +898,9 @@ export default function Timeline() {
   const [activeFilter, setActiveFilter] = useState<string>('all');
   // 🔥 ジャンルフィルターを削除
   // const [activeGenreFilter, setActiveGenreFilter] = useState<string>('all');
-  const [searchMode, setSearchMode] = useState<SearchMode>('all');
-  const [sortBy, setSortBy] = useState<SortOption>('created_at_desc');
-  
   const [tempActiveFilter, setTempActiveFilter] = useState<string>('all');
   // 🔥 ジャンルフィルターを削除
   // const [tempActiveGenreFilter, setTempActiveGenreFilter] = useState<string>('all');
-  const [tempSearchMode, setTempSearchMode] = useState<SearchMode>('all');
-  const [tempSortBy, setTempSortBy] = useState<SortOption>('created_at_desc');
   
   // 🔥 新しいフィルター項目の状態を追加
   const [selectedPrefecture, setSelectedPrefecture] = useState<string>('all');
@@ -935,13 +929,11 @@ export default function Timeline() {
 
   const [generalSearchTerm, setGeneralSearchTerm] = useState<string>('');
   const [pendingSearchQuery, setPendingSearchQuery] = useState<string | null>(null);
-  const [favoriteStoreIds, setFavoriteStoreIds] = useState<string[]>([]);
-  const [favoriteStoreNames, setFavoriteStoreNames] = useState<string[]>([]);
-  const [likedPostIds, setLikedPostIds] = useState<string[]>([]);
+  // お気に入り店舗とイイネ投稿の状態管理を削除
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [showLocationPermissionAlert, setShowLocationPermissionAlert] = useState(false);
   
-  const [showSpecialSearch, setShowSpecialSearch] = useState(false);
+  // 特別検索モードのUI状態を削除
   const { searchHistory, addToHistory, clearHistory } = useSearchHistory();
 
   const [currentUserProfile, setCurrentUserProfile] = useState<any>(null);
@@ -1041,33 +1033,21 @@ export default function Timeline() {
 
   // Refs for stable references
   const activeFilterRef = useRef(activeFilter);
-  const searchModeRef = useRef(searchMode);
   const userLocationRef = useRef(userLocation);
-  const favoriteStoreIdsRef = useRef(favoriteStoreIds);
-  const favoriteStoreNamesRef = useRef(favoriteStoreNames);
-  const likedPostIdsRef = useRef(likedPostIds);
-  const sortByRef = useRef(sortBy);
   const isNearbyModeRef = useRef(isNearbyMode); // 🔥 追加
   const selectedPrefectureRef = useRef(selectedPrefecture); // 🔥 追加
   const selectedCityRef = useRef(selectedCity); // 🔥 追加
 
   // Update refs
   useEffect(() => { activeFilterRef.current = activeFilter; }, [activeFilter]);
-  useEffect(() => { searchModeRef.current = searchMode; }, [searchMode]);
   useEffect(() => { userLocationRef.current = userLocation; }, [userLocation]);
-  useEffect(() => { favoriteStoreIdsRef.current = favoriteStoreIds; }, [favoriteStoreIds]);
-  useEffect(() => { favoriteStoreNamesRef.current = favoriteStoreNames; }, [favoriteStoreNames]);
-  useEffect(() => { likedPostIdsRef.current = likedPostIds; }, [likedPostIds]);
-  useEffect(() => { sortByRef.current = sortBy; }, [sortBy]);
   useEffect(() => { isNearbyModeRef.current = isNearbyMode; }, [isNearbyMode]); // 🔥 追加
   useEffect(() => { selectedPrefectureRef.current = selectedPrefecture; }, [selectedPrefecture]); // 🔥 追加
   useEffect(() => { selectedCityRef.current = selectedCity; }, [selectedCity]); // 🔥 追加
 
   useEffect(() => {
     setTempActiveFilter(activeFilter);
-    setTempSearchMode(searchMode);
-    setTempSortBy(sortBy);
-  }, [activeFilter, searchMode, sortBy]);
+  }, [activeFilter]);
 
   useEffect(() => {
     const id = searchParams.get('highlightPostId');
@@ -1184,98 +1164,14 @@ export default function Timeline() {
     }
   }, [currentUserId, session?.user?.email]);
 
-  // お気に入り店舗情報の取得
-  useEffect(() => {
-    const fetchFavoriteStores = async () => {
-      if (!currentUserId) {
-        setFavoriteStoreIds([]);
-        setFavoriteStoreNames([]);
-        return;
-      }
-      try {
-        const { data: profileData, error: profileError } = await supabase
-          .from('app_profiles')
-          .select('favorite_store_1_id, favorite_store_1_name, favorite_store_2_id, favorite_store_2_name, favorite_store_3_id, favorite_store_3_name')
-          .eq('user_id', currentUserId)
-          .single();
+  // お気に入り店舗情報の取得処理を削除
 
-        if (profileError) {
-          console.error('プロフィールのお気に入り店舗の取得に失敗しました:', profileError);
-          setFavoriteStoreIds([]);
-          setFavoriteStoreNames([]);
-          return;
-        }
-
-        const ids: string[] = [];
-        const names: string[] = [];
-        
-        if (profileData?.favorite_store_1_id) {
-          ids.push(profileData.favorite_store_1_id);
-          if (profileData.favorite_store_1_name) names.push(profileData.favorite_store_1_name);
-        }
-        if (profileData?.favorite_store_2_id) {
-          ids.push(profileData.favorite_store_2_id);
-          if (profileData.favorite_store_2_name) names.push(profileData.favorite_store_2_name);
-        }
-        if (profileData?.favorite_store_3_id) {
-          ids.push(profileData.favorite_store_3_id);
-          if (profileData.favorite_store_3_name) names.push(profileData.favorite_store_3_name);
-        }
-        
-        setFavoriteStoreIds(ids);
-        setFavoriteStoreNames(names);
-      } catch (e) {
-        console.error('プロフィールのお気に入り店舗の取得中に予期せぬエラー:', e);
-        setFavoriteStoreIds([]);
-        setFavoriteStoreNames([]);
-      }
-    };
-
-    if (session?.user?.id) {
-      fetchFavoriteStores();
-    }
-  }, [currentUserId, session?.user?.id]);
-
-  // いいねした投稿IDの取得
-  useEffect(() => {
-    const fetchLikedPostIds = async () => {
-      if (!currentUserId) {
-        setLikedPostIds([]);
-        return;
-      }
-      try {
-        const { data, error } = await supabase
-          .from('post_likes')
-          .select('post_id, created_at')
-          .eq('user_id', currentUserId)
-          .order('created_at', { ascending: false });
-
-        if (error) {
-          console.error('いいねした投稿の取得に失敗しました:', error);
-          setLikedPostIds([]);
-        } else {
-          const postIds = data?.map(item => item.post_id) || [];
-          setLikedPostIds(postIds);
-        }
-      } catch (e) {
-        console.error('いいねした投稿の取得中に予期せぬエラー:', e);
-        setLikedPostIds([]);
-      }
-    };
-
-    if (session?.user?.id) {
-      fetchLikedPostIds();
-    }
-  }, [currentUserId, session?.user?.id]);
+  // いいねした投稿IDの取得処理を削除
 
   // 投稿データの取得
   const fetchPosts = useCallback(async (offset = 0, isInitial = false, searchTerm = '') => {
     const currentActiveFilter = activeFilterRef.current;
-    const currentSearchMode = searchModeRef.current;
     const currentUserLocation = userLocationRef.current;
-    const currentFavoriteStoreIds = favoriteStoreIdsRef.current;
-    const currentLikedPostIds = likedPostIdsRef.current;
-    const currentSortBy = sortByRef.current;
     const currentIsNearbyMode = isNearbyModeRef.current; // 🔥 refから取得するように修正
 
     // 距離計算関数
@@ -1305,7 +1201,6 @@ export default function Timeline() {
       // 🔥 デバッグ情報を追加
       console.log('🔍 投稿取得開始:', {
         currentActiveFilter,
-        currentSearchMode,
         currentIsNearbyMode,
         currentUserLocation,
         offset,
@@ -1393,49 +1288,10 @@ export default function Timeline() {
         query = query.or(`store_name.ilike.%${searchTermLower}%,category.ilike.%${searchTermLower}%,content.ilike.%${searchTermLower}%`);
       }
 
-      // 特別な検索モード
-      if (currentSearchMode === 'favorite_store') {
-        if (currentFavoriteStoreIds.length > 0) {
-          query = query.in('store_id', currentFavoriteStoreIds);
-        } else {
-          query = query.eq('id', 'impossible-id');
-        }
-      } else if (currentSearchMode === 'liked_posts') {
-        if (currentLikedPostIds.length > 0) {
-          query = query.in('id', currentLikedPostIds);
-        } else {
-          query = query.eq('id', 'impossible-id');
-        }
-      } else if (currentSearchMode === 'hybrid') {
-        const conditions = [];
-        if (currentFavoriteStoreIds.length > 0) {
-          conditions.push(`store_id.in.(${currentFavoriteStoreIds.join(',')})`);
-        }
-        if (currentLikedPostIds.length > 0) {
-          conditions.push(`id.in.(${currentLikedPostIds.join(',')})`);
-        }
-        
-        if (conditions.length > 0) {
-          query = query.or(conditions.join(','));
-        } else {
-          query = query.eq('id', 'impossible-id');
-        }
-      }
+      // 特別な検索モードを削除
 
-      // ソート処理（views_desc、comments_descを追加）
-      if (currentSortBy === 'created_at_desc') {
-        query = query.order('created_at', { ascending: false });
-      } else if (currentSortBy === 'created_at_asc') {
-        query = query.order('created_at', { ascending: true });
-      } else if (currentSortBy === 'expires_at_asc') {
-        query = query.order('expires_at', { ascending: true });
-      } else if (currentSortBy === 'likes_desc') {
-        query = query.order('likes_count', { ascending: false });
-      } else if (currentSortBy === 'views_desc') {
-        query = query.order('views_count', { ascending: false });
-      } else if (currentSortBy === 'comments_desc') {
-        query = query.order('comments_count', { ascending: false });
-      }
+      // デフォルトのソート（作成日時の降順）
+      query = query.order('created_at', { ascending: false });
 
       // 🔥 ご近所モード時は全件取得してから距離フィルタリング、それ以外は従来通り
       if (currentUserLocation && currentIsNearbyMode) {
@@ -1599,7 +1455,7 @@ export default function Timeline() {
         const isLikedByCurrentUser = currentUserId 
           ? Array.isArray(post.post_likes) 
             ? post.post_likes.some((like: PostLike) => like.user_id === currentUserId)
-            : currentLikedPostIds.includes(post.id)
+            : false
           : false;
 
         const authorPostsCount = authorData?.id ? authorPostCounts[authorData.id] || 0 : 0;
@@ -1620,14 +1476,7 @@ export default function Timeline() {
         };
       });
 
-      // いいね検索時の特別なソート
-      if (currentSearchMode === 'liked_posts' && currentLikedPostIds.length > 0) {
-        processedPosts = processedPosts.sort((a, b) => {
-          const aIndex = currentLikedPostIds.indexOf(a.id);
-          const bIndex = currentLikedPostIds.indexOf(b.id);
-          return aIndex - bIndex;
-        });
-      }
+      // 特別なソート処理を削除
       
       // 🔥 ご近所モード時の距離フィルタリングとページング処理
       if (currentUserLocation && currentIsNearbyMode) {
@@ -1692,15 +1541,7 @@ export default function Timeline() {
         });
       }
 
-      // 距離によるソート（ご近所モードがONの場合のみ）
-      if (currentSortBy === 'distance_asc' && currentUserLocation && currentIsNearbyMode) {
-        processedPosts = processedPosts
-          .filter(post => post.distance !== undefined)
-          .sort((a, b) => (a.distance || 0) - (b.distance || 0));
-      } else if (currentSortBy === 'distance_asc' && (!currentUserLocation || !currentIsNearbyMode)) {
-        // ご近所モードがOFFまたは位置情報がない場合は、距離ソートを作成日時ソートに変更
-        processedPosts = processedPosts.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-      }
+      // 距離ソート処理を削除
 
       if (isInitial) {
         console.log('🔥 投稿リストを初期化:', processedPosts.length, '件');
@@ -1979,7 +1820,7 @@ export default function Timeline() {
         });
       if (insertError) throw insertError;
       
-      setLikedPostIds(prev => [postId, ...prev.filter(id => id !== postId)]);
+      // いいね状態の管理を削除
     } else {
       // いいねを削除
       const { error: deleteError } = await supabase
@@ -1988,7 +1829,7 @@ export default function Timeline() {
         .match({ post_id: postId, user_id: currentUserId });
       if (deleteError) throw deleteError;
       
-      setLikedPostIds(prev => prev.filter(id => id !== postId));
+      // いいね状態の管理を削除
     }
     
     // post_likesテーブルから現在のいいね数を取得して更新
@@ -2357,14 +2198,10 @@ export default function Timeline() {
       // 🔥 検索バーに値がある場合は「すべて」ボタンと同じ処理を実行
       if (generalSearchTerm) {
         setActiveFilter('all');
-        setSearchMode('all');
-        setSortBy('created_at_desc');
         setGeneralSearchTerm('');
         setIsNearbyMode(true); // デフォルトのON状態に戻す
         
         setTempActiveFilter('all');
-        setTempSearchMode('all');
-        setTempSortBy('created_at_desc');
         console.log('検索バーに値があったため、すべてのフィルターと検索条件をリセットしました');
       } else {
         console.log('検索バーに値がないため、フィルターリセットはスキップします');
