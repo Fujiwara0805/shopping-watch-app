@@ -346,7 +346,7 @@ export function MapView() {
     
     // 🔥 指定された画像を直接使用し、数字をオーバーレイとして表示
     return {
-      url: "https://res.cloudinary.com/dz9trbwma/image/upload/v1760667310/%E3%83%98%E3%82%9A%E3%83%B3%E3%82%AD%E8%B7%A1%E3%81%AE%E3%82%A4%E3%83%A9%E3%82%B9%E3%83%882_homiep.png",
+      url: "https://res.cloudinary.com/dz9trbwma/image/upload/v1760764598/%E3%83%98%E3%82%9A%E3%83%B3%E3%82%AD%E8%B7%A1%E3%81%AE%E3%82%A4%E3%83%A9%E3%82%B9%E3%83%882_2_g5u8pr.png",
       scaledSize: new window.google.maps.Size(size, size),
       anchor: new window.google.maps.Point(size/2, size/2),
       // 🔥 ラベルで数字を表示
@@ -1334,7 +1334,7 @@ src="https://res.cloudinary.com/dz9trbwma/image/upload/v1760666722/%E3%81%B2%E3%
                               __html: `<svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <defs>
                                   <pattern id="clusterImageExample" patternUnits="objectBoundingBox" width="1" height="1">
-                                    <image href="https://res.cloudinary.com/dz9trbwma/image/upload/v1760667310/%E3%83%98%E3%82%9A%E3%83%B3%E3%82%AD%E8%B7%A1%E3%81%AE%E3%82%A4%E3%83%A9%E3%82%B9%E3%83%882_homiep.png" x="0" y="0" width="40" height="40" preserveAspectRatio="xMidYMid slice"/>
+                                    <image href="https://res.cloudinary.com/dz9trbwma/image/upload/v1760764598/%E3%83%98%E3%82%9A%E3%83%B3%E3%82%AD%E8%B7%A1%E3%81%AE%E3%82%A4%E3%83%A9%E3%82%B9%E3%83%882_2_g5u8pr.png" x="0" y="0" width="40" height="40" preserveAspectRatio="xMidYMid slice"/>
                                   </pattern>
                                 </defs>
                                 <circle cx="20" cy="20" r="18" fill="url(#clusterImageExample)" stroke="#ffffff" stroke-width="3"/>
@@ -1404,7 +1404,7 @@ src="https://res.cloudinary.com/dz9trbwma/image/upload/v1760666722/%E3%81%B2%E3%
                               __html: `<svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <defs>
                                   <pattern id="clusterImageExample2" patternUnits="objectBoundingBox" width="1" height="1">
-                                    <image href="https://res.cloudinary.com/dz9trbwma/image/upload/v1760667310/%E3%83%98%E3%82%9A%E3%83%B3%E3%82%AD%E8%B7%A1%E3%81%AE%E3%82%A4%E3%83%A9%E3%82%B9%E3%83%882_homiep.png" x="0" y="0" width="40" height="40" preserveAspectRatio="xMidYMid slice"/>
+                                    <image href="https://res.cloudinary.com/dz9trbwma/image/upload/v1760764598/%E3%83%98%E3%82%9A%E3%83%B3%E3%82%AD%E8%B7%A1%E3%81%AE%E3%82%A4%E3%83%A9%E3%82%B9%E3%83%882_2_g5u8pr.png" x="0" y="0" width="40" height="40" preserveAspectRatio="xMidYMid slice"/>
                                   </pattern>
                                 </defs>
                                 <circle cx="20" cy="20" r="18" fill="url(#clusterImageExample2)" stroke="#ffffff" stroke-width="3"/>
