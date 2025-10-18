@@ -65,6 +65,9 @@ const postSchema = z.object({
   eventStartDate: z.string().optional(), // 開催開始日
   eventEndDate: z.string().optional(), // 開催終了日
   eventPrice: z.string().max(50).optional(), // 料金
+  // 🔥 エリア情報フィールド
+  prefecture: z.string().max(20).optional(), // 都道府県
+  city: z.string().max(50).optional(), // 市町村
 }).superRefine((data, ctx) => {
   // 🔥 空席情報・在庫情報の場合の必須チェック
   if (data.category === '空席情報' || data.category === '在庫情報') {
@@ -357,7 +360,7 @@ const getCategoryFields = (category: string) => {
     case '在庫情報':
       return [...baseFields, 'remainingSlots', 'url', 'image', 'customerSituation', 'coupon', 'phoneNumber'];
     case 'イベント情報':
-      return [...baseFields, 'eventName', 'eventDate', 'eventPrice', 'url', 'image', 'phoneNumber', 'file'];
+      return [...baseFields, 'eventName', 'eventDate', 'eventPrice', 'eventArea', 'url', 'image', 'phoneNumber', 'file'];
     case '助け合い':
       return [...baseFields, 'url', 'image', 'phoneNumber', 'file', 'supportPurchase']; // おすそわけ = supportPurchase
     case '口コミ':
@@ -383,6 +386,7 @@ const getFieldDisplayInfo = (field: string) => {
     eventName: { label: 'イベント名', icon: CalendarDays },
     eventDate: { label: '開催期日', icon: CalendarDays },
     eventPrice: { label: '料金', icon: Tag },
+    eventArea: { label: 'エリア情報', icon: MapPin },
   };
   
   return fieldMap[field as keyof typeof fieldMap] || { label: field, icon: HelpCircle };
@@ -674,6 +678,7 @@ export default function PostPage() {
         eventName: false,
         eventDate: false,
         eventPrice: false,
+        eventArea: false,
       });
       
       // 🔥 詳細情報セクションを閉じる
@@ -942,6 +947,9 @@ export default function PostPage() {
         event_start_date: values.eventStartDate && values.eventStartDate.trim() !== '' ? values.eventStartDate : null,
         event_end_date: values.eventEndDate && values.eventEndDate.trim() !== '' ? values.eventEndDate : null,
         event_price: values.eventPrice && values.eventPrice.trim() !== '' ? values.eventPrice : null,
+        // 🔥 直接入力されたエリア情報を設定
+        prefecture: values.prefecture && values.prefecture.trim() !== '' ? values.prefecture : null,
+        city: values.city && values.city.trim() !== '' ? values.city : null,
         author_role: session?.user?.role === 'admin' ? 'admin' : 'user',
       };
 
@@ -952,6 +960,7 @@ export default function PostPage() {
         postData.store_latitude = Number(storeLatitude);
         postData.store_longitude = Number(storeLongitude);
         postData.location_geom = `POINT(${storeLongitude} ${storeLatitude})`;
+        
         console.log("PostPage: Setting store location data:", {
           store_latitude: postData.store_latitude,
           store_longitude: postData.store_longitude,
@@ -1470,7 +1479,7 @@ export default function PostPage() {
   };
 
 
-  // 🔥 オプション項目の表示状態管理（10項目に更新）
+  // 🔥 オプション項目の表示状態管理（12項目に更新）
   const [showOptionalFields, setShowOptionalFields] = useState(false);
   const [optionalFieldsExpanded, setOptionalFieldsExpanded] = useState({
     image: false, // 🔥 画像を追加
@@ -1486,6 +1495,7 @@ export default function PostPage() {
     eventName: false, // 🔥 イベント名を追加
     eventDate: false, // 🔥 開催期日を追加
     eventPrice: false, // 🔥 料金を追加
+    eventArea: false, // 🔥 エリア情報を追加
   });
 
   // 企業設定で値が設定されているかチェックする関数
@@ -1579,6 +1589,10 @@ export default function PostPage() {
             break;
           case 'eventPrice': // 🔥 料金のリセット処理を追加
             form.setValue('eventPrice', '', { shouldValidate: true });
+            break;
+          case 'eventArea': // 🔥 エリア情報のリセット処理を追加
+            form.setValue('prefecture', '', { shouldValidate: true });
+            form.setValue('city', '', { shouldValidate: true });
             break;
           default:
             break;
@@ -2351,6 +2365,76 @@ export default function PostPage() {
                               </FormItem>
                             )}
                           />
+                        </motion.div>
+                      )}
+
+                      {/* 14. エリア情報フィールド */}
+                      {optionalFieldsExpanded.eventArea && isFieldVisibleForCategory('eventArea', selectedCategory) && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          <div className="space-y-4">
+                            <div className="flex items-center">
+                              <MapPin className="mr-2 h-5 w-5" />
+                              <span className="text-lg font-semibold">エリア情報</span>
+                            </div>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              {/* 都道府県 */}
+                              <FormField
+                                control={form.control}
+                                name="prefecture"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel className="text-base font-medium">
+                                      都道府県
+                                    </FormLabel>
+                                    <FormControl>
+                                      <Input
+                                        placeholder="例: 東京都、大阪府など"
+                                        {...field}
+                                        style={{ fontSize: '16px' }}
+                                        disabled={isUploading}
+                                        autoComplete="off"
+                                        autoCorrect="off"
+                                        autoCapitalize="off"
+                                        spellCheck="false"
+                                      />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                              
+                              {/* 市町村 */}
+                              <FormField
+                                control={form.control}
+                                name="city"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel className="text-base font-medium">
+                                      市町村
+                                    </FormLabel>
+                                    <FormControl>
+                                      <Input
+                                        placeholder="例: 渋谷区、大阪市など"
+                                        {...field}
+                                        style={{ fontSize: '16px' }}
+                                        disabled={isUploading}
+                                        autoComplete="off"
+                                        autoCorrect="off"
+                                        autoCapitalize="off"
+                                        spellCheck="false"
+                                      />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                            </div>
+                          </div>
                         </motion.div>
                       )}
                       {/* 2. 残数フィールド */}

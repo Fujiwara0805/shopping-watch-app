@@ -45,6 +45,10 @@ export interface Post {
   event_start_date?: string | null; // 開催開始日
   event_end_date?: string | null; // 開催終了日
   event_price?: string | null; // 料金
+  
+  // 🔥 住所情報フィールド
+  prefecture?: string | null; // 都道府県
+  city?: string | null; // 市町村
 }
 
 export interface AuthorProfile {

@@ -103,6 +103,9 @@ interface PostFromDB {
   event_start_date?: string | null;
   event_end_date?: string | null;
   event_price?: string | null;
+  // 🔥 住所情報フィールドを追加
+  prefecture?: string | null;
+  city?: string | null;
 }
 
 type SortOption = 'created_at_desc' | 'created_at_asc' | 'expires_at_asc' | 'distance_asc' | 'likes_desc' | 'views_desc' | 'comments_desc';
@@ -638,7 +641,7 @@ const useSearchHistory = () => {
 
 
 // ハンバーガーメニューコンポーネント
-const HamburgerMenu = ({ currentUser }: { currentUser: any }) => {
+const HamburgerMenu = ({ currentUser, onShowHowToUse }: { currentUser: any; onShowHowToUse?: () => void }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const router = useRouter();
@@ -710,6 +713,14 @@ const HamburgerMenu = ({ currentUser }: { currentUser: any }) => {
       }
     },
     {
+      icon: BookOpen,
+      label: '使い方',
+      onClick: () => {
+        onShowHowToUse?.();
+        setIsOpen(false);
+      }
+    },
+    {
       icon: HelpCircle,
       label: 'お問い合わせ',
       onClick: () => {
@@ -758,6 +769,14 @@ const HamburgerMenu = ({ currentUser }: { currentUser: any }) => {
       label: 'ランディングページ',
       onClick: () => {
         router.push('/');
+        setIsOpen(false);
+      }
+    },
+    {
+      icon: BookOpen,
+      label: '使い方',
+      onClick: () => {
+        onShowHowToUse?.();
         setIsOpen(false);
       }
     },
@@ -889,6 +908,12 @@ export default function Timeline() {
   const [tempSearchMode, setTempSearchMode] = useState<SearchMode>('all');
   const [tempSortBy, setTempSortBy] = useState<SortOption>('created_at_desc');
   
+  // 🔥 新しいフィルター項目の状態を追加
+  const [selectedPrefecture, setSelectedPrefecture] = useState<string>('all');
+  const [selectedCity, setSelectedCity] = useState<string>('all');
+  const [tempSelectedPrefecture, setTempSelectedPrefecture] = useState<string>('all');
+  const [tempSelectedCity, setTempSelectedCity] = useState<string>('all');
+  
   const [hasMore, setHasMore] = useState(true);
   const { data: session } = useSession();
   const currentUserId = session?.user?.id;
@@ -920,12 +945,69 @@ export default function Timeline() {
   const { searchHistory, addToHistory, clearHistory } = useSearchHistory();
 
   const [currentUserProfile, setCurrentUserProfile] = useState<any>(null);
+  
+  // 🔥 都道府県・市町村のリスト
+  const [prefectureList, setPrefectureList] = useState<string[]>([]);
+  const [cityList, setCityList] = useState<string[]>([]);
 
   // 🔥 新規追加: 投稿ボタンのローディング状態
   const [isNavigatingToPost, setIsNavigatingToPost] = useState(false);
   // 🔥 追加: 更新ボタンのローディング状態
   const [isRefreshing, setIsRefreshing] = useState(false);
 
+  // 🔥 都道府県・市町村リストを取得する関数
+  const fetchLocationLists = useCallback(async () => {
+    try {
+      // 都道府県リストを取得
+      const { data: prefectures, error: prefError } = await supabase
+        .from('posts')
+        .select('prefecture')
+        .not('prefecture', 'is', null)
+        .order('prefecture');
+      
+      if (prefError) throw prefError;
+      
+      const uniquePrefectures = Array.from(new Set(prefectures.map(p => p.prefecture))).filter(Boolean);
+      setPrefectureList(uniquePrefectures);
+      
+      // 市町村リストを取得（選択された都道府県に基づく）
+      let cityQuery = supabase
+        .from('posts')
+        .select('city')
+        .not('city', 'is', null);
+      
+      if (selectedPrefecture !== 'all') {
+        cityQuery = cityQuery.eq('prefecture', selectedPrefecture);
+      }
+      
+      const { data: cities, error: cityError } = await cityQuery.order('city');
+      
+      if (cityError) throw cityError;
+      
+      const uniqueCities = Array.from(new Set(cities.map(c => c.city))).filter(Boolean);
+      setCityList(uniqueCities);
+      
+    } catch (error) {
+      console.error('Error fetching location lists:', error);
+    }
+  }, [selectedPrefecture]);
+
+  // 🔥 フィルターモーダルが開かれたときに都道府県・市町村リストを取得
+  useEffect(() => {
+    if (showFilterModal) {
+      fetchLocationLists();
+    }
+  }, [showFilterModal, fetchLocationLists]);
+
+  // 🔥 都道府県が変更されたときに市町村リストを更新
+  useEffect(() => {
+    if (tempSelectedPrefecture !== 'all') {
+      fetchLocationLists();
+    } else {
+      // すべての都道府県が選択された場合は全市町村を表示
+      fetchLocationLists();
+    }
+  }, [tempSelectedPrefecture, fetchLocationLists]);
 
   // 検索ボタン処理
   const handleSearch = useCallback(() => {
@@ -966,6 +1048,8 @@ export default function Timeline() {
   const likedPostIdsRef = useRef(likedPostIds);
   const sortByRef = useRef(sortBy);
   const isNearbyModeRef = useRef(isNearbyMode); // 🔥 追加
+  const selectedPrefectureRef = useRef(selectedPrefecture); // 🔥 追加
+  const selectedCityRef = useRef(selectedCity); // 🔥 追加
 
   // Update refs
   useEffect(() => { activeFilterRef.current = activeFilter; }, [activeFilter]);
@@ -976,6 +1060,8 @@ export default function Timeline() {
   useEffect(() => { likedPostIdsRef.current = likedPostIds; }, [likedPostIds]);
   useEffect(() => { sortByRef.current = sortBy; }, [sortBy]);
   useEffect(() => { isNearbyModeRef.current = isNearbyMode; }, [isNearbyMode]); // 🔥 追加
+  useEffect(() => { selectedPrefectureRef.current = selectedPrefecture; }, [selectedPrefecture]); // 🔥 追加
+  useEffect(() => { selectedCityRef.current = selectedCity; }, [selectedCity]); // 🔥 追加
 
   useEffect(() => {
     setTempActiveFilter(activeFilter);
@@ -1263,6 +1349,8 @@ export default function Timeline() {
           event_start_date,
           event_end_date,
           event_price,
+          prefecture,
+          city,
           author:app_profiles!posts_app_profile_id_fkey (
             id,
             user_id,
@@ -1281,10 +1369,19 @@ export default function Timeline() {
         .eq('is_deleted', false)
         .gt('expires_at', now);
 
-      // カテゴリフィルタ
-      if (currentActiveFilter !== 'all') {
-        query = query.eq('category', currentActiveFilter);
+
+      // 🔥 都道府県フィルタ
+      const currentSelectedPrefecture = selectedPrefectureRef.current;
+      if (currentSelectedPrefecture !== 'all') {
+        query = query.eq('prefecture', currentSelectedPrefecture);
       }
+
+      // 🔥 市町村フィルタ
+      const currentSelectedCity = selectedCityRef.current;
+      if (currentSelectedCity !== 'all') {
+        query = query.eq('city', currentSelectedCity);
+      }
+
 
       // 🔥 ジャンルフィルタを削除
 
@@ -2138,9 +2235,9 @@ export default function Timeline() {
 
   // フィルターを適用する処理を修正
   const handleApplyFilters = () => {
-    setActiveFilter(tempActiveFilter);
-    setSearchMode(tempSearchMode);
-    setSortBy(tempSortBy);
+    // 🔥 新しいフィルター項目を適用
+    setSelectedPrefecture(tempSelectedPrefecture);
+    setSelectedCity(tempSelectedCity);
     
     // 🔥 ご近所モードのキャッシュをクリア
     (window as any)._nearbyFilteredPosts = null;
@@ -2157,23 +2254,21 @@ export default function Timeline() {
 
   // モーダルを閉じる処理を修正
   const handleCloseModal = () => {
-    setTempActiveFilter(activeFilter);
-    setTempSearchMode(searchMode);
-    setTempSortBy(sortBy);
+    // 🔥 新しいフィルター項目も元に戻す
+    setTempSelectedPrefecture(selectedPrefecture);
+    setTempSelectedCity(selectedCity);
     setShowFilterModal(false);
   };
 
   // すべてクリア機能を修正
   const handleClearAllFilters = useCallback(() => {
-    setActiveFilter('all');
-    setSearchMode('all');
-    setSortBy('created_at_desc');
     setGeneralSearchTerm('');
     setIsNearbyMode(true); // デフォルトのON状態に戻す
-    
-    setTempActiveFilter('all');
-    setTempSearchMode('all');
-    setTempSortBy('created_at_desc');
+    // 🔥 新しいフィルター項目をクリア
+    setSelectedPrefecture('all');
+    setSelectedCity('all');
+    setTempSelectedPrefecture('all');
+    setTempSelectedCity('all');
     
     setTimeout(() => {
       if (fetchPostsRef.current) {
@@ -2185,12 +2280,11 @@ export default function Timeline() {
   // アクティブなフィルタ数を計算を修正
   const activeFiltersCount = useMemo(() => {
     let count = 0;
-    if (activeFilter !== 'all') count++;
-    if (searchMode !== 'all') count++;
-    if (sortBy !== 'created_at_desc') count++;
-    if (!isNearbyMode) count++; // ご近所モードがOFFの場合もカウント
+    // 🔥 新しいフィルター項目をカウント
+    if (selectedPrefecture !== 'all') count++;
+    if (selectedCity !== 'all') count++;
     return count;
-  }, [activeFilter, searchMode, sortBy, isNearbyMode]);
+  }, [selectedPrefecture, selectedCity]);
 
   // 招待モーダルの状態を追加
   const [showInviteModal, setShowInviteModal] = useState(false);
@@ -2414,7 +2508,7 @@ export default function Timeline() {
           {!isMobile && (
             <div className="w-96 flex-shrink-0"></div> 
           )}
-          {isMobile && <HamburgerMenu currentUser={currentUserProfile} />}
+          {isMobile && <HamburgerMenu currentUser={currentUserProfile} onShowHowToUse={() => setShowHowToUseModal(true)} />}
           <div className="relative flex-1">
             <Input
               type="text"
@@ -2519,7 +2613,7 @@ export default function Timeline() {
         <div className="sticky top-0 z-10 border-b bg-[#73370c]">
           {/* 検索行 */}
           <div className="p-4 flex items-center space-x-2">
-            <HamburgerMenu currentUser={currentUserProfile} />
+            <HamburgerMenu currentUser={currentUserProfile} onShowHowToUse={() => setShowHowToUseModal(true)} />
             <div className="relative flex-1">
               <Input
                 type="text"
@@ -2735,16 +2829,27 @@ export default function Timeline() {
               )}
             </Button>
             <Button
-              onClick={() => setShowHowToUseModal(true)}
+              onClick={() => setShowFilterModal(true)}
               variant="outline"
-              className="flex-1 tap-highlight-transparent focus:ring-0 focus:ring-offset-0 focus:outline-none active:bg-current"
+              className={cn(
+                "flex-1 tap-highlight-transparent focus:ring-0 focus:ring-offset-0 focus:outline-none active:bg-current relative",
+                activeFiltersCount > 0 && "bg-blue-50 border-blue-300"
+              )}
               style={{ 
-                backgroundColor: '#eefdf6',
+                backgroundColor: activeFiltersCount > 0 ? '#dbeafe' : '#eefdf6',
                 WebkitTapHighlightColor: 'transparent'
               }}
             >
-              <Info className="h-4 w-4 mr-2" />
-              使い方
+              <SlidersHorizontal className="h-4 w-4 mr-2" />
+              フィルター
+              {activeFiltersCount > 0 && (
+                <Badge 
+                  variant="destructive" 
+                  className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center text-xs"
+                >
+                  {activeFiltersCount}
+                </Badge>
+              )}
             </Button>
             <Button
               onClick={handleRefresh}
@@ -3099,33 +3204,74 @@ export default function Timeline() {
               </div>
             </div>
             
+
+            {/* 🔥 都道府県フィルター */}
             <div>
-              <h3 className="font-semibold text-lg mb-2">カテゴリーで絞り込み</h3>
+              <h3 className="font-semibold text-lg mb-2">都道府県で絞り込み</h3>
               <Select 
-                onValueChange={(value: string) => setTempActiveFilter(value)} 
-                value={tempActiveFilter}
+                onValueChange={(value: string) => {
+                  setTempSelectedPrefecture(value);
+                  // 都道府県が変更されたら市町村をリセット
+                  if (value !== tempSelectedPrefecture) {
+                    setTempSelectedCity('all');
+                  }
+                }} 
+                value={tempSelectedPrefecture}
               >
                 <SelectTrigger className="w-full focus:ring-0 focus:ring-offset-0 focus:border-input">
-                  <SelectValue placeholder="カテゴリを選択" />
+                  <SelectValue placeholder="都道府県を選択" />
                 </SelectTrigger>
                 <SelectContent className="max-h-[200px]">
-                  {categories.map((category) => (
+                  <SelectItem value="all" className="text-lg py-3">
+                    すべての都道府県
+                  </SelectItem>
+                  {prefectureList.map((prefecture) => (
                     <SelectItem 
-                      key={category.id} 
-                      value={category.id === 'all' ? 'all' : category.id}
+                      key={prefecture} 
+                      value={prefecture}
                       className="text-lg py-3"
                     >
-                      {category.name}
+                      {prefecture}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
+
+            {/* 🔥 市町村フィルター */}
+            <div>
+              <h3 className="font-semibold text-lg mb-2">市町村で絞り込み</h3>
+              <Select 
+                onValueChange={(value: string) => setTempSelectedCity(value)} 
+                value={tempSelectedCity}
+                disabled={tempSelectedPrefecture === 'all' && cityList.length === 0}
+              >
+                <SelectTrigger className="w-full focus:ring-0 focus:ring-offset-0 focus:border-input">
+                  <SelectValue placeholder="市町村を選択" />
+                </SelectTrigger>
+                <SelectContent className="max-h-[200px]">
+                  <SelectItem value="all" className="text-lg py-3">
+                    すべての市町村
+                  </SelectItem>
+                  {cityList.map((city) => (
+                    <SelectItem 
+                      key={city} 
+                      value={city}
+                      className="text-lg py-3"
+                    >
+                      {city}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
           </div>
 
           <div className="mt-6 flex justify-between">
             <Button variant="outline" onClick={() => {
-              setTempActiveFilter('all');
+              setTempSelectedPrefecture('all');
+              setTempSelectedCity('all');
               setIsNearbyMode(true);
             }}>
               すべてクリア
