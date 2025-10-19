@@ -483,18 +483,13 @@ export function MapView() {
           
           // 🔥 タイムラインページに遷移し、場所で検索
           const searchQuery = encodeURIComponent(storeName);
-          console.log('MapView: 検索クエリ:', searchQuery);
-          console.log('MapView: 遷移URL:', `/timeline?search=${searchQuery}`);
-          
           router.push(`/timeline?search=${searchQuery}`);
         });
-
         newMarkers.push(marker);
       }
     });
 
     setPostMarkers(newMarkers);
-    console.log(`MapView: ${newMarkers.length}個のマーカーを作成しました`);
   }, [map, posts, router]);
 
   // 地図初期化のメイン処理（変更なし）
@@ -526,7 +521,6 @@ export function MapView() {
       return false;
     }
 
-    console.log(`MapView ${browserInfo.name}: Starting map initialization`);
     initializationTriedRef.current = true;
 
     try {
@@ -1324,35 +1318,6 @@ src="https://res.cloudinary.com/dz9trbwma/image/upload/v1760666722/%E3%81%B2%E3%
                         </div>
                       </div>
                     </div>
-
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                      <div className="flex items-center space-x-3">
-                        <div className="flex-shrink-0">
-                          <div 
-                            className="flex items-center justify-center"
-                            dangerouslySetInnerHTML={{
-                              __html: `<svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <defs>
-                                  <pattern id="clusterImageExample" patternUnits="objectBoundingBox" width="1" height="1">
-                                    <image href="https://res.cloudinary.com/dz9trbwma/image/upload/v1760764598/%E3%83%98%E3%82%9A%E3%83%B3%E3%82%AD%E8%B7%A1%E3%81%AE%E3%82%A4%E3%83%A9%E3%82%B9%E3%83%882_2_g5u8pr.png" x="0" y="0" width="40" height="40" preserveAspectRatio="xMidYMid slice"/>
-                                  </pattern>
-                                </defs>
-                                <circle cx="20" cy="20" r="18" fill="url(#clusterImageExample)" stroke="#ffffff" stroke-width="3"/>
-                                <text x="20" y="26" text-anchor="middle" fill="white" font-size="16" font-weight="bold" font-family="Arial, sans-serif" stroke="#000000" stroke-width="0.5">3</text>
-                              </svg>`
-                            }}
-                          />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-red-800 mb-1">
-                            クラスター表示の例
-                          </p>
-                          <p className="text-xs text-red-600">
-                            同じ場所に複数の投稿がある場合、専用アイコンに数字で表示されます
-                          </p>
-                        </div>
-                      </div>
-                    </div>
                   </div>
                 </div>
 
@@ -1390,35 +1355,6 @@ src="https://res.cloudinary.com/dz9trbwma/image/upload/v1760666722/%E3%81%B2%E3%
                           </p>
                           <p className="text-xs text-orange-600">
                             掲示板へ遷移し、該当する投稿の詳細を確認できます
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                      <div className="flex items-start space-x-3">
-                        <div className="flex-shrink-0">
-                          <div 
-                            className="flex items-center justify-center scale-75"
-                            dangerouslySetInnerHTML={{
-                              __html: `<svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <defs>
-                                  <pattern id="clusterImageExample2" patternUnits="objectBoundingBox" width="1" height="1">
-                                    <image href="https://res.cloudinary.com/dz9trbwma/image/upload/v1760764598/%E3%83%98%E3%82%9A%E3%83%B3%E3%82%AD%E8%B7%A1%E3%81%AE%E3%82%A4%E3%83%A9%E3%82%B9%E3%83%882_2_g5u8pr.png" x="0" y="0" width="40" height="40" preserveAspectRatio="xMidYMid slice"/>
-                                  </pattern>
-                                </defs>
-                                <circle cx="20" cy="20" r="18" fill="url(#clusterImageExample2)" stroke="#ffffff" stroke-width="3"/>
-                                <text x="20" y="26" text-anchor="middle" fill="white" font-size="16" font-weight="bold" font-family="Arial, sans-serif" stroke="#000000" stroke-width="0.5">3</text>
-                              </svg>`
-                            }}
-                          />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-red-800 mb-1">
-                            クラスターマーカーをタップ
-                          </p>
-                          <p className="text-xs text-red-600">
-                            掲示板へ遷移し、その場所の投稿一覧を検索結果として表示します
                           </p>
                         </div>
                       </div>
