@@ -130,47 +130,62 @@ const OptimizedImage = memo(({
 }) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
-  const [isInView, setIsInView] = useState(true); // 🔥 高速化：即座に読み込み開始
+  const [isInView, setIsInView] = useState(true); // 常時読み込み
   const imgRef = useRef<HTMLImageElement>(null);
 
-  // 🔥 高速化：Intersection Observerを積極的に設定
+  // プリロード・先読みの改善
   useEffect(() => {
-    const img = imgRef.current;
-    if (!img || priority) return; // priorityの場合は既に表示開始
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0]?.isIntersecting) {
-          setIsInView(true);
-          observer.disconnect();
-        }
-      },
-      {
-        rootMargin: '200px', // 🔥 高速化：より早く読み込み開始
-        threshold: 0.01 // 🔥 高速化：わずかでも見えたら読み込み開始
-      }
-    );
-
-    observer.observe(img);
-    return () => observer.disconnect();
-  }, [priority]);
-
-  // 🔥 高速化：画像プリロード
-  useEffect(() => {
-    if (preload || priority) {
+    if (priority || preload) {
       const link = document.createElement('link');
       link.rel = 'preload';
       link.as = 'image';
       link.href = src;
       document.head.appendChild(link);
-      
+
+      const prefetch = document.createElement('link');
+      prefetch.rel = 'prefetch';
+      prefetch.href = src;
+      prefetch.as = 'image';
+      document.head.appendChild(prefetch);
+
       return () => {
         document.head.removeChild(link);
+        document.head.removeChild(prefetch);
       };
     }
-  }, [src, preload, priority]);
+  }, [src, priority, preload]);
 
-  // 🔥 高速化：画像読み込み処理
+  // Intersection Observer の除外（常時読み込み）
+  useEffect(() => {
+    // 全ての画像を即座に読み込み対象とする
+    setIsInView(true);
+  }, []);
+
+  // 画像最適化ロジックの見直し
+  const getOptimizedImageUrl = (originalUrl: string) => {
+    // Supabaseストレージの場合、WebP化＋高品質リサイズ
+    if (originalUrl.includes('supabase')) {
+      const url = new URL(originalUrl);
+      url.searchParams.set('width', '400');
+      url.searchParams.set('height', '500');
+      url.searchParams.set('resize', 'cover');
+      url.searchParams.set('quality', '85');
+      url.searchParams.set('format', 'webp'); // WebP化
+      return url.toString();
+    }
+    return originalUrl;
+  };
+
+  // ブラウザキャッシュを活用し、高速再描画
+  useEffect(() => {
+    if (isInView && !hasError) {
+      const img = new window.Image();
+      img.src = getOptimizedImageUrl(src);
+      img.onload = () => setIsLoaded(true);
+      img.onerror = () => setHasError(true);
+    }
+  }, [src, isInView]);
+
   const handleLoad = useCallback(() => {
     setIsLoaded(true);
     onLoad?.();
@@ -180,21 +195,6 @@ const OptimizedImage = memo(({
     setHasError(true);
     onError?.();
   }, [onError]);
-
-  // 🔥 高速化：画像URLの最適化（サイズ指定）
-  const getOptimizedImageUrl = (originalUrl: string) => {
-    // Supabaseストレージの場合、サイズパラメータを追加
-    if (originalUrl.includes('supabase')) {
-      const url = new URL(originalUrl);
-      // 400x500px（4:5比率）に最適化
-      url.searchParams.set('width', '400');
-      url.searchParams.set('height', '500');
-      url.searchParams.set('resize', 'cover');
-      url.searchParams.set('quality', '80'); // 品質を80%に設定
-      return url.toString();
-    }
-    return originalUrl;
-  };
 
   return (
     <div 
@@ -208,28 +208,27 @@ const OptimizedImage = memo(({
           <div className="w-3 h-3 bg-orange-400 rounded-full animate-pulse" />
         </div>
       )}
-      
       {/* 🔥 エラー表示 */}
       {hasError && (
         <div className="absolute inset-0 bg-gray-100 flex items-center justify-center">
           <div className="text-gray-400 text-xs">読み込み失敗</div>
         </div>
       )}
-      
-      {/* 🔥 高速化：最適化された画像表示 */}
+      {/* imgタグの改善 */}
       {isInView && (
         <img
           src={getOptimizedImageUrl(src)}
           alt={alt}
           className={cn(
-            "absolute inset-0 w-full h-full object-cover transition-opacity duration-150", // 🔥 アニメーション時間短縮
-            isLoaded ? "opacity-100" : "opacity-0"
+            'absolute inset-0 w-full h-full object-cover transition-opacity duration-100',
+            isLoaded ? 'opacity-100' : 'opacity-0'
           )}
           onLoad={handleLoad}
           onError={handleError}
-          loading="eager" // 🔥 高速化：積極的に読み込み
-          decoding="async"
-          fetchPriority={priority ? "high" : "auto"} // 🔥 高速化：優先度指定
+          loading="eager"
+          decoding="sync"
+          fetchPriority="high"
+          crossOrigin="anonymous"
         />
       )}
     </div>
