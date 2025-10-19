@@ -512,30 +512,70 @@ export function MapView() {
 
         newMarkers.push(marker);
       } else {
-        // 🔥 複数の投稿がある場合はクラスターアイコンを表示
-        const clusterIcon = createClusterIcon(groupPosts.length);
-        const clusterLabel = createClusterLabel(groupPosts.length);
-        const storeName = groupPosts[0].store_name;
-        
+        // 🔄 複数の投稿がある場合も単一投稿と同じアイコンロジックで表示
+        const representative = groupPosts[0];
+        let markerIcon;
+        let markerTitle = representative.store_name;
+        let composed: { icon: any; label: google.maps.MarkerLabel } | null = null;
+
+        // イベント情報の場合は専用アイコンを使用
+        if (representative.category === 'イベント情報') {
+          markerIcon = createEventPinIcon();
+          markerTitle = `${representative.store_name} - イベント情報`;
+        } else {
+          // 空席／在庫は指定画像＋ラベル、それ以外はSVG吹き出し
+          if (representative.remaining_slots == null) {
+            // 複数投稿のいずれかで残数がある想定だが、念のため残数なしはスキップ
+            // （残数なしのみの場合は汎用表示にフォールバック）
+            const unit = getRemainingUnit(representative.category);
+            const categoryColor = getCategoryColor(representative.category);
+            const speechBubbleSvg = getSpeechBubbleSvg(0, unit, categoryColor);
+            const iconUrl = createDataUrl(speechBubbleSvg);
+            const textWidth = `残り0${unit}`.length * 10 + 20;
+            const bubbleWidth = Math.max(90, textWidth);
+            markerIcon = {
+              url: iconUrl,
+              scaledSize: new window.google.maps.Size(bubbleWidth + 10, 55),
+              anchor: new window.google.maps.Point((bubbleWidth + 10) / 2, 50),
+            };
+            markerTitle = `${representative.store_name}`;
+          } else if (representative.category === '空席情報') {
+            composed = createSeatsIconWithLabel(representative.remaining_slots);
+            markerTitle = `${representative.store_name} - ${representative.remaining_slots}席`;
+          } else if (representative.category === '在庫情報') {
+            composed = createStockIconWithLabel(representative.remaining_slots);
+            markerTitle = `${representative.store_name} - ${representative.remaining_slots}個`;
+          } else {
+            const unit = getRemainingUnit(representative.category);
+            const categoryColor = getCategoryColor(representative.category);
+            const speechBubbleSvg = getSpeechBubbleSvg(representative.remaining_slots, unit, categoryColor);
+            const iconUrl = createDataUrl(speechBubbleSvg);
+            const textWidth = `残り${representative.remaining_slots}${unit}`.length * 10 + 20;
+            const bubbleWidth = Math.max(90, textWidth);
+            markerIcon = {
+              url: iconUrl,
+              scaledSize: new window.google.maps.Size(bubbleWidth + 10, 55),
+              anchor: new window.google.maps.Point((bubbleWidth + 10) / 2, 50),
+            };
+            markerTitle = `${representative.store_name} - 残り${representative.remaining_slots}${unit}`;
+          }
+        }
+
         const marker = new window.google.maps.Marker({
           position,
           map,
-          title: `${storeName} - ${groupPosts.length}件の投稿`,
-          icon: clusterIcon,
-          label: clusterLabel,
+          title: markerTitle,
+          icon: composed ? composed.icon : markerIcon,
+          label: composed ? composed.label : undefined,
           animation: window.google.maps.Animation.DROP,
         });
 
-        // クラスタークリック時の処理
+        // クリック時の処理（単一/複数で共通：掲示板検索へ遷移）
         marker.addListener('click', () => {
-          console.log(`MapView: クラスターマーカーがクリックされました - ${groupPosts.length}件の投稿`);
-          console.log('MapView: 店舗名:', storeName);
-          console.log('MapView: グループ投稿:', groupPosts.map(p => ({ id: p.id, store_name: p.store_name, category: p.category })));
-          
-          // 🔥 タイムラインページに遷移し、場所で検索
-          const searchQuery = encodeURIComponent(storeName);
+          const searchQuery = encodeURIComponent(representative.store_name || '');
           router.push(`/timeline?search=${searchQuery}`);
         });
+
         newMarkers.push(marker);
       }
     });
