@@ -2939,8 +2939,8 @@ export default function Timeline() {
             </div>
             
 
-            {/* 🔥 都道府県フィルター */}
-            <div>
+            {/* 🔥 都道府県フィルター（大分県に絞って現在展開しているので他県が入り次第追加） */}
+            {/* <div>
               <h3 className="font-semibold text-lg mb-2">都道府県で絞り込み</h3>
               <Select 
                 onValueChange={(value: string) => {
@@ -2970,7 +2970,7 @@ export default function Timeline() {
                   ))}
                 </SelectContent>
               </Select>
-            </div>
+            </div> */}
 
             {/* 🔥 市町村フィルター */}
             <div>
