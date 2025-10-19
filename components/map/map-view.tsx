@@ -124,7 +124,7 @@ const createSeatsIconWithLabel = (count: number) => {
 };
 
 const createStockIconWithLabel = (count: number) => {
-  const width = 50; // 横幅を拡大
+  const width = 70; // 横幅を拡大
   const height = 40;
   return {
     icon: {
