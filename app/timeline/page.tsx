@@ -1052,34 +1052,75 @@ export default function Timeline() {
 
   useEffect(() => {
     const id = searchParams.get('highlightPostId');
-    if (id) {
-      setHighlightPostId(id);
-    }
-    // 🔥 URLパラメータから検索クエリを取得して設定 + 自動検索実行
     const searchQuery = searchParams.get('search');
 
+    // ① highlightPostId だけが指定されている場合は、店舗名検索に正規化
+    if (id && (!searchQuery || searchQuery.trim() === '')) {
+      (async () => {
+        try {
+          // 投稿IDから店舗名を引く
+          const { data, error } = await supabase
+            .from('posts')
+            .select('store_name')
+            .eq('id', id)
+            .single();
+
+          const storeName = (data?.store_name || '').trim();
+          if (error) {
+            console.warn('highlightPostId から店舗名の取得に失敗:', error);
+          }
+
+          if (storeName) {
+            // URL を `?search=店舗名` に正規化（以降のフローを統一）
+            const encoded = encodeURIComponent(storeName);
+            if (pathname) {
+              router.replace(`${pathname}?search=${encoded}`);
+            }
+
+            // 入力欄と検索状態を設定して即実行
+            setGeneralSearchTerm(storeName);
+            setIsSearching(true);
+            if (storeName.length >= 2) addToHistory(storeName);
+            hasActiveSearchRef.current = true;
+            if (fetchPostsRef.current) {
+              fetchPostsRef.current(0, true, storeName);
+            }
+            setPendingSearchQuery(storeName);
+            return; // この分岐で処理終了
+          } else {
+            // 店舗名が取れない場合は、従来のハイライトのみ適用
+            setHighlightPostId(id);
+          }
+        } catch (e) {
+          console.warn('highlightPostId の正規化で例外:', e);
+          // フォールバックとしてハイライトのみ
+          setHighlightPostId(id);
+        }
+      })();
+      return; // 非同期処理後に再評価されるため一旦抜ける
+    }
+
+    // ② search= が指定されている場合（単一/複数投稿どちらの遷移でも同じ挙動）
     if (searchQuery && searchQuery.trim() !== '') {
       const decodedQuery = decodeURIComponent(searchQuery).trim();
       setGeneralSearchTerm(decodedQuery);
       setIsSearching(true);
       if (decodedQuery.length >= 2) addToHistory(decodedQuery);
 
-      // URL由来の検索をアクティブ扱い
       hasActiveSearchRef.current = true;
       if (fetchPostsRef.current) {
         fetchPostsRef.current(0, true, decodedQuery);
       }
-
-      // バックアップとしてpendingにも設定
       setPendingSearchQuery(decodedQuery);
-    } else {
-      // search指定がない/空 → 全件表示
-      setGeneralSearchTerm('');
-      if (fetchPostsRef.current) {
-        fetchPostsRef.current(0, true);
-      }
+      return;
     }
-  }, [searchParams, addToHistory]);
+
+    // ③ どちらもない場合は全件表示
+    setGeneralSearchTerm('');
+    if (fetchPostsRef.current) {
+      fetchPostsRef.current(0, true);
+    }
+  }, [searchParams, addToHistory, pathname, router]);
 
   // 現在のユーザープロフィール取得
   useEffect(() => {
@@ -2073,31 +2114,8 @@ export default function Timeline() {
       }, 800);
     }
   }, [getCurrentLocation, pathname, router, searchParams, generalSearchTerm]);
-  // 🔥 ページリロード/初回マウント時に、検索が有効な場合のみ検索をリセット
+  // 🔥 ページリロード/初回マウント時の初期取得（検索の強制リセットはしない）
   useEffect(() => {
-    // リロード検知（Navigation Timing API）
-    let isReload = false;
-    try {
-      const nav = (performance.getEntriesByType && performance.getEntriesByType('navigation')[0]) as PerformanceNavigationTiming | undefined;
-      isReload = nav?.type === 'reload' || (window.performance && (window.performance as any).navigation?.type === 1);
-    } catch {}
-
-    const hasSearch = searchParams.get('search') !== null;
-
-    // 🔥 リロード かつ 検索が URL に存在する（=検索状態とみなす）場合のみリセット実行
-    if (isReload && hasSearch) {
-      // 検索状態を初期化
-      setGeneralSearchTerm('');
-      setIsSearching(false);
-      hasActiveSearchRef.current = false;
-      setPendingSearchQuery(null);
-
-      // URL に search クエリがあれば除去
-      if (pathname) {
-        router.replace(pathname);
-      }
-    }
-
     // 初期タイムライン取得（現在のご近所/全表示トグルを尊重）。
     // URL検索がある場合は別の useEffect が自動検索を実行するため、この呼び出しは問題なし。
     setTimeout(() => {

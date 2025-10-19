@@ -452,11 +452,11 @@ export function MapView() {
           animation: window.google.maps.Animation.DROP,
         });
 
-        // マーカークリック時の処理
+        // マーカークリック時の処理（複数投稿と同一挙動に統一：検索で遷移）
         marker.addListener('click', () => {
           console.log(`MapView: 投稿マーカーがクリックされました - ID: ${post.id}`);
-          // タイムラインページに遷移（該当投稿をハイライト）
-          router.push(`/timeline?highlightPostId=${post.id}`);
+          const searchQuery = encodeURIComponent(post.store_name || '');
+          router.push(`/timeline?search=${searchQuery}`);
         });
 
         newMarkers.push(marker);
