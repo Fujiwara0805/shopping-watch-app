@@ -1267,15 +1267,19 @@ export default function Timeline() {
       }
 
 
-      // 🔥 ジャンルフィルタを削除
+        // 🔥 ジャンルフィルタを削除
+        // 🔥 カテゴリフィルタ（復活）
+        if (currentActiveFilter && currentActiveFilter !== 'all') {
+          query = query.eq('category', currentActiveFilter);
+        }
 
-      // 🔥 検索語による絞り込み（categoryも検索対象に追加）
-      const effectiveSearchTerm = searchTerm;
-      if (effectiveSearchTerm && effectiveSearchTerm.trim()) {
-        const searchTermLower = effectiveSearchTerm.toLowerCase();
-        console.log('🔥 検索クエリでフィルタリング:', { effectiveSearchTerm, searchTermLower });
-        query = query.or(`store_name.ilike.%${searchTermLower}%,category.ilike.%${searchTermLower}%,content.ilike.%${searchTermLower}%`);
-      }
+        // 🔥 検索語による絞り込み（categoryも検索対象に追加）
+        const effectiveSearchTerm = searchTerm;
+        if (effectiveSearchTerm && effectiveSearchTerm.trim()) {
+          const searchTermLower = effectiveSearchTerm.toLowerCase();
+          console.log('🔥 検索クエリでフィルタリング:', { effectiveSearchTerm, searchTermLower });
+          query = query.or(`store_name.ilike.%${searchTermLower}%,category.ilike.%${searchTermLower}%,content.ilike.%${searchTermLower}%`);
+        }
 
       // 特別な検索モードを削除
 
@@ -2466,10 +2470,11 @@ export default function Timeline() {
             activeFilter={activeFilter} 
             setActiveFilter={(filter) => {
               setActiveFilter(filter);
-              // カテゴリ選択時に自動的に投稿を再取得
+              const term = generalSearchTerm.trim();
+              // 🔥 検索の有無に関係なく再取得（検索語はそのまま適用）
               setTimeout(() => {
-                if (!hasActiveSearchRef.current && fetchPostsRef.current) {
-                  fetchPostsRef.current(0, true);
+                if (fetchPostsRef.current) {
+                  fetchPostsRef.current(0, true, term);
                 }
               }, 100);
             }}
