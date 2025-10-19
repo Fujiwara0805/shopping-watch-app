@@ -7,9 +7,8 @@ import { Button } from '@/components/ui/button';
 import { LayoutGrid, Search,  Loader2, SlidersHorizontal,  X,  Menu, User, Edit, Store, HelpCircle, FileText, LogOut,  Globe, NotebookText,  Zap, MessageSquare, Eye, Send, RefreshCw, UserPlus, Link as LinkIcon,  Trash2,  AlertTriangle, Compass, Info, Footprints, BookOpen, Clock, Megaphone, Heart, Package, Trophy, MessageSquareText, Utensils, Image } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { useSession, signOut } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import AppLayout from '@/components/layout/app-layout';
-import { useSearchParams } from 'next/navigation';
 import { PostCard } from '@/components/posts/post-card';
 import { PostFilter, categories } from '@/components/posts/post-filter';
 import { Input } from '@/components/ui/input';
@@ -887,6 +886,7 @@ const HamburgerMenu = ({ currentUser, onShowHowToUse }: { currentUser: any; onSh
 
 export default function Timeline() {
   const router = useRouter();
+  const pathname = usePathname();
   const { toast } = useToast();
   
   const [posts, setPosts] = useState<ExtendedPostWithAuthor[]>([]);
@@ -929,6 +929,7 @@ export default function Timeline() {
 
   const [generalSearchTerm, setGeneralSearchTerm] = useState<string>('');
   const [pendingSearchQuery, setPendingSearchQuery] = useState<string | null>(null);
+  const hasActiveSearchRef = useRef(false);
   // お気に入り店舗とイイネ投稿の状態管理を削除
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [showLocationPermissionAlert, setShowLocationPermissionAlert] = useState(false);
@@ -1003,12 +1004,14 @@ export default function Timeline() {
 
   // 検索ボタン処理
   const handleSearch = useCallback(() => {
-    if (generalSearchTerm.trim().length >= 2) {
-      addToHistory(generalSearchTerm.trim());
+    const term = generalSearchTerm.trim();
+    if (term.length >= 2) {
+      addToHistory(term);
     }
+    hasActiveSearchRef.current = true;
     setIsSearching(true);
     if (fetchPostsRef.current) {
-      fetchPostsRef.current(0, true, generalSearchTerm.trim());
+      fetchPostsRef.current(0, true, term);
     }
   }, [generalSearchTerm, addToHistory]);
 
@@ -1028,8 +1031,6 @@ export default function Timeline() {
     post: null,
   });
 
-  // 追加: QRコードモーダルの状態
-  const [showQrCodeModal, setShowQrCodeModal] = useState(false);
 
   // Refs for stable references
   const activeFilterRef = useRef(activeFilter);
@@ -1054,79 +1055,29 @@ export default function Timeline() {
     if (id) {
       setHighlightPostId(id);
     }
-    
-    // 🔥 URLパラメータから検索クエリを取得して設定
+    // 🔥 URLパラメータから検索クエリを取得して設定 + 自動検索実行
     const searchQuery = searchParams.get('search');
-    if (searchQuery) {
-      const decodedQuery = decodeURIComponent(searchQuery);
-      console.log('🔥 URLパラメータから検索クエリを取得:', decodedQuery);
+
+    if (searchQuery && searchQuery.trim() !== '') {
+      const decodedQuery = decodeURIComponent(searchQuery).trim();
       setGeneralSearchTerm(decodedQuery);
       setIsSearching(true);
-      console.log('🔥 検索状態を設定完了:', { decodedQuery, isSearching: true });
-      
-      // 🔥 検索履歴に追加（2文字以上の場合）
-      if (decodedQuery.trim().length >= 2) {
-        addToHistory(decodedQuery.trim());
+      if (decodedQuery.length >= 2) addToHistory(decodedQuery);
+
+      // URL由来の検索をアクティブ扱い
+      hasActiveSearchRef.current = true;
+      if (fetchPostsRef.current) {
+        fetchPostsRef.current(0, true, decodedQuery);
       }
-      
-      // 🔥 即座に検索実行を試行する関数
-      const executeSearch = () => {
-        if (fetchPostsRef.current) {
-          console.log('🔥 検索実行:', decodedQuery);
-          return fetchPostsRef.current(0, true, decodedQuery.trim())
-            .then(() => {
-              console.log('🔥 検索完了');
-              setIsSearching(false);
-              return true;
-            })
-            .catch((error) => {
-              console.error('🔥 検索エラー:', error);
-              setIsSearching(false);
-              return false;
-            });
-        }
-        return Promise.resolve(false);
-      };
-      
-      // 🔥 複数のタイミングで検索実行を試行
-      const attemptSearch = async () => {
-        // 即座に試行
-        if (await executeSearch()) {
-          return;
-        }
-        
-        // 🔥 即座の実行が失敗した場合は保留検索もセット
-        setPendingSearchQuery(decodedQuery);
-        
-        // 100ms後に再試行
-        setTimeout(async () => {
-          if (await executeSearch()) {
-            setPendingSearchQuery(null); // 成功したら保留検索をクリア
-            return;
-          }
-          
-          // 300ms後にさらに再試行
-          setTimeout(async () => {
-            if (await executeSearch()) {
-              setPendingSearchQuery(null); // 成功したら保留検索をクリア
-              return;
-            }
-            
-            // 最後の試行（500ms後）
-            setTimeout(async () => {
-              const result = await executeSearch();
-              if (result) {
-                setPendingSearchQuery(null); // 成功したら保留検索をクリア
-              } else {
-                console.warn('🔥 検索実行に失敗しました - 保留検索に依存');
-                // 保留検索はそのまま残して、fetchPostsRefが利用可能になったら実行される
-              }
-            }, 500);
-          }, 300);
-        }, 100);
-      };
-      
-      attemptSearch();
+
+      // バックアップとしてpendingにも設定
+      setPendingSearchQuery(decodedQuery);
+    } else {
+      // search指定がない/空 → 全件表示
+      setGeneralSearchTerm('');
+      if (fetchPostsRef.current) {
+        fetchPostsRef.current(0, true);
+      }
     }
   }, [searchParams, addToHistory]);
 
@@ -1164,9 +1115,6 @@ export default function Timeline() {
     }
   }, [currentUserId, session?.user?.email]);
 
-  // お気に入り店舗情報の取得処理を削除
-
-  // いいねした投稿IDの取得処理を削除
 
   // 投稿データの取得
   const fetchPosts = useCallback(async (offset = 0, isInitial = false, searchTerm = '') => {
@@ -1348,12 +1296,8 @@ export default function Timeline() {
       const { data, error: dbError } = await query;
 
       // 🔥 デバッグ情報を追加
-      console.log('🔍 データベースから取得した投稿数:', data?.length);
-      console.log('🔍 検索クエリ:', effectiveSearchTerm);
       if (effectiveSearchTerm) {
-        console.log('🔍 検索結果の店舗名:', data?.map(p => p.store_name).slice(0, 5));
       }
-      console.log('🔍 取得した投稿のサンプル:', data?.slice(0, 2));
 
       if (dbError) {
         console.error('🔥 データベースエラー:', dbError);
@@ -1404,15 +1348,6 @@ export default function Timeline() {
               post.store_latitude,
               post.store_longitude
             );
-            console.log('🔍 店舗位置での距離計算:', {
-              postId: post.id,
-              category: post.category,
-              userLat: currentUserLocation.latitude,
-              userLon: currentUserLocation.longitude,
-              storeLat: post.store_latitude,
-              storeLon: post.store_longitude,
-              distance
-            });
           } else if (post.user_latitude && post.user_longitude) {
             // 店舗位置情報がない場合は投稿者の位置を基準
             distance = calculateDistance(
@@ -1421,22 +1356,7 @@ export default function Timeline() {
               post.user_latitude,
               post.user_longitude
             );
-            console.log('🔍 投稿者位置での距離計算:', {
-              postId: post.id,
-              category: post.category,
-              userLat: currentUserLocation.latitude,
-              userLon: currentUserLocation.longitude,
-              postUserLat: post.user_latitude,
-              postUserLon: post.user_longitude,
-              distance
-            });
           } else {
-            console.log('🔍 位置情報不足で距離計算スキップ:', {
-              postId: post.id,
-              category: post.category,
-              hasStoreLatLon: !!(post.store_latitude && post.store_longitude),
-              hasUserLatLon: !!(post.user_latitude && post.user_longitude)
-            });
           }
         }
 
@@ -1475,90 +1395,36 @@ export default function Timeline() {
           distance,
         };
       });
-
-      // 特別なソート処理を削除
       
       // 🔥 ご近所モード時の距離フィルタリングとページング処理
       if (currentUserLocation && currentIsNearbyMode) {
-        console.log('🔍 距離フィルタリング適用前の投稿数:', processedPosts.length);
-        
         // 距離フィルタリングを適用
         const filteredPosts = processedPosts.filter(post => {
           // 距離が計算されていない場合の処理を改善
           if (post.distance === undefined) {
-            console.log('🔍 距離未計算のため除外:', {
-              postId: post.id,
-              category: post.category,
-              hasStoreLocation: !!(post.store_latitude && post.store_longitude),
-              hasUserLocation: !!(post.user_latitude && post.user_longitude)
-            });
             return false;
           }
-          
           const isWithinRadius = post.distance <= SEARCH_RADIUS_METERS;
-          console.log('🔍 距離チェック:', {
-            postId: post.id,
-            distance: post.distance,
-            radius: SEARCH_RADIUS_METERS,
-            isWithin: isWithinRadius
-          });
-          
           return isWithinRadius;
         });
-        
-        console.log('🔥 距離フィルタリング適用後の投稿数:', filteredPosts.length);
         
         // 🔥 距離フィルタリング後にページング処理を適用
         const startIndex = offset;
         const endIndex = offset + 20;
         processedPosts = filteredPosts.slice(startIndex, endIndex);
-        
-        console.log('🔍 ご近所モード ページング:', {
-          totalFiltered: filteredPosts.length,
-          startIndex,
-          endIndex,
-          currentPage: processedPosts.length
-        });
-        
         // 🔥 hasMoreの判定をフィルタリング後の総数で行う
         const remainingPosts = filteredPosts.length - endIndex;
         const shouldHaveMoreNearby = remainingPosts > 0;
-        console.log('🔍 ご近所モード hasMore判定:', {
-          totalFiltered: filteredPosts.length,
-          endIndex,
-          remainingPosts,
-          shouldHaveMore: shouldHaveMoreNearby
-        });
-        
         // 🔥 フィルタリング結果をキャッシュして後続のページングで使用
         (window as any)._nearbyFilteredPosts = filteredPosts;
         (window as any)._nearbyModeHasMore = shouldHaveMoreNearby;
-        
       } else {
-        console.log('🔍 距離フィルタリングをスキップ:', {
-          hasLocation: !!currentUserLocation,
-          isNearbyMode: currentIsNearbyMode
-        });
       }
-
-      // 距離ソート処理を削除
-
       if (isInitial) {
-        console.log('🔥 投稿リストを初期化:', processedPosts.length, '件');
         setPosts(processedPosts as ExtendedPostWithAuthor[]);
       } else {
-        console.log('🔥 投稿リストに追加:', processedPosts.length, '件');
         setPosts(prevPosts => [...prevPosts, ...processedPosts as ExtendedPostWithAuthor[]]);
       }
-
-      // 🔥 最終的な投稿数をログ出力
-      console.log('🔍 最終的に表示される投稿数:', processedPosts.length);
-      console.log('🔍 最終投稿のサンプル:', processedPosts.slice(0, 2).map(p => ({
-        id: p.id,
-        category: p.category,
-        distance: p.distance,
-        author_role: p.author_role
-      })));
 
       // 🔥 修正：hasMoreの判定を改善
       if (currentUserLocation && currentIsNearbyMode) {
@@ -1582,17 +1448,6 @@ export default function Timeline() {
     }
   }, [currentUserRole]);
 
-  // IPアドレスを取得する関数
-  const getClientInfo = async () => {
-    try {
-      const response = await fetch('/api/client-info');
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.error('クライアント情報の取得に失敗:', error);
-      return { ip: null, userAgent: navigator.userAgent };
-    }
-  };
 
   // ビュー数増加処理（適切な重複防止付き）
   const handleView = useCallback(async (postId: string) => {
@@ -1640,7 +1495,6 @@ export default function Timeline() {
         p_user_agent: clientInfo.userAgent
       });
       
-      console.log('📨 RPC結果:', { data, error });
       
       if (error) {
         console.error('❌ RPC エラー:', error);
@@ -1657,7 +1511,6 @@ export default function Timeline() {
             ? { ...p, views_count: p.views_count + 1 }
             : p
         ));
-        console.log('✅ 視聴回数更新成功');
       } else {
         console.log('⚠️ データベース側で重複判定（既に視聴済み）');
       }
@@ -1687,11 +1540,9 @@ export default function Timeline() {
   useEffect(() => {
     // 🔥 URLパラメータに検索クエリがある場合は初回データ取得をスキップ
     const searchQuery = searchParams.get('search');
-    if (!searchQuery && fetchPostsRef.current) {
-      console.log('🔥 初回データ取得を実行（検索クエリなし）');
+    if (!searchQuery && fetchPostsRef.current && !hasActiveSearchRef.current) {
       fetchPostsRef.current(0, true);
     } else if (searchQuery) {
-      console.log('🔥 初回データ取得をスキップ（検索クエリあり）:', searchQuery);
     }
   }, [searchParams]);
 
@@ -1702,33 +1553,20 @@ export default function Timeline() {
   // 🔥 fetchPostsRefが設定された後に保留中の検索を実行（バックアップ機能）
   useEffect(() => {
     if (pendingSearchQuery && fetchPostsRef.current) {
-      console.log('🔥 保留中の検索を実行開始:', pendingSearchQuery);
-      
       // 🔥 handleSearchと同じ処理を実行
       setIsSearching(true);
-      if (pendingSearchQuery.trim().length >= 2) {
-        addToHistory(pendingSearchQuery.trim());
-        console.log('🔥 検索履歴に追加:', pendingSearchQuery.trim());
-      }
-      
-      console.log('🔥 fetchPosts実行開始:', { query: pendingSearchQuery.trim() });
-      
       // 🔥 検索実行
       fetchPostsRef.current(0, true, pendingSearchQuery.trim())
         .then(() => {
-          console.log('🔥 保留検索完了');
           setIsSearching(false);
           setPendingSearchQuery(null); // 🔥 検索完了後にクリア
         })
         .catch((error) => {
-          console.error('🔥 保留検索エラー:', error);
           setIsSearching(false);
           setPendingSearchQuery(null); // 🔥 エラー時もクリア
         });
-      
-      console.log('🔥 保留中の検索実行完了');
     }
-  }, [pendingSearchQuery, addToHistory]);
+  }, [pendingSearchQuery]);
 
   useEffect(() => {
     if (highlightPostId && posts.length > 0) {
@@ -1749,9 +1587,9 @@ export default function Timeline() {
         hasMore, 
         loadingMore 
       });
-      fetchPostsRef.current(posts.length, false, '');
+      fetchPostsRef.current(posts.length, false, generalSearchTerm.trim());
     }
-  }, [posts.length, loadingMore, hasMore]);
+  }, [posts.length, loadingMore, hasMore, generalSearchTerm]);
 
   // 🔥 Intersection Observer APIを使用した無限スクロール実装
   useEffect(() => {
@@ -1927,9 +1765,9 @@ export default function Timeline() {
             }
             
             // 🔥 自動投稿取得の制御
-            if (autoFetch) {
+            if (autoFetch && !hasActiveSearchRef.current) {
               setTimeout(() => {
-                if (fetchPostsRef.current) {
+                if (!hasActiveSearchRef.current && fetchPostsRef.current) {
                   fetchPostsRef.current(0, true);
                 }
               }, 100);
@@ -1984,7 +1822,7 @@ export default function Timeline() {
             // 🔥 自動投稿取得の制御
             if (autoFetch) {
               setTimeout(() => {
-                if (fetchPostsRef.current) {
+                if (!hasActiveSearchRef.current && fetchPostsRef.current) {
                   fetchPostsRef.current(0, true);
                 }
               }, 100);
@@ -2049,7 +1887,7 @@ export default function Timeline() {
     } else {
       // 保存された位置情報がある場合は投稿を取得
       setTimeout(() => {
-        if (fetchPostsRef.current) {
+        if (!hasActiveSearchRef.current && fetchPostsRef.current) {
           fetchPostsRef.current(0, true);
         }
       }, 100);
@@ -2087,7 +1925,7 @@ export default function Timeline() {
     setShowFilterModal(false);
     
     setTimeout(() => {
-      if (fetchPostsRef.current) {
+      if (!hasActiveSearchRef.current && fetchPostsRef.current) {
         fetchPostsRef.current(0, true);
       }
     }, 100);
@@ -2103,6 +1941,7 @@ export default function Timeline() {
 
   // すべてクリア機能を修正
   const handleClearAllFilters = useCallback(() => {
+    hasActiveSearchRef.current = false;
     setGeneralSearchTerm('');
     setIsNearbyMode(true); // デフォルトのON状態に戻す
     // 🔥 新しいフィルター項目をクリア
@@ -2112,7 +1951,7 @@ export default function Timeline() {
     setTempSelectedCity('all');
     
     setTimeout(() => {
-      if (fetchPostsRef.current) {
+      if (!hasActiveSearchRef.current && fetchPostsRef.current) {
         fetchPostsRef.current(0, true);
       }
     }, 100);
@@ -2191,35 +2030,40 @@ export default function Timeline() {
   // 🔥 更新ボタンのハンドラーを修正（ローディング状態を追加）
   const handleRefresh = useCallback(async () => {
     console.log('更新ボタンが押されました - 位置情報の強制リセットと再取得、投稿の更新を実行します');
-    
     setIsRefreshing(true); // ローディング開始
-    
-    try {
-      // 🔥 検索バーに値がある場合は「すべて」ボタンと同じ処理を実行
-      if (generalSearchTerm) {
-        setActiveFilter('all');
-        setGeneralSearchTerm('');
-        setIsNearbyMode(true); // デフォルトのON状態に戻す
-        
-        setTempActiveFilter('all');
-        console.log('検索バーに値があったため、すべてのフィルターと検索条件をリセットしました');
-      } else {
-        console.log('検索バーに値がないため、フィルターリセットはスキップします');
+
+    // 🔥 検索が“実行中/実行済み”のときだけ検索状態をクリア
+    const hasUrlSearch = searchParams.get('search') !== null;
+    const hasInputSearch = (generalSearchTerm || '').trim().length > 0;
+    const isActiveSearch = hasActiveSearchRef.current || hasUrlSearch || hasInputSearch;
+
+    if (isActiveSearch) {
+      // 検索条件リセット（バーも結果状態もクリア）
+      setGeneralSearchTerm('');
+      setIsSearching(false);
+      hasActiveSearchRef.current = false;
+      setPendingSearchQuery(null);
+
+      // URL から ?search=... を除去（クリーンURLへ置換）
+      if (pathname) {
+        router.replace(pathname);
       }
-      
+    }
+
+    try {
       // 🔥 ローカルストレージから位置情報を削除
       localStorage.removeItem('userLocation');
       console.log('ローカルストレージの位置情報をリセットしました');
-      
+
       // 🔥 位置情報を強制再取得（キャッシュを使用しない）
       await getCurrentLocation(true, true); // forceRefresh = true
-      
+
       console.log('更新処理が完了しました');
     } catch (error) {
       console.error('更新処理中にエラーが発生しました:', error);
-      
+
       // エラーが発生した場合でも投稿の再取得は実行
-      if (fetchPostsRef.current) {
+      if (!hasActiveSearchRef.current && fetchPostsRef.current) {
         fetchPostsRef.current(0, true);
       }
     } finally {
@@ -2228,7 +2072,41 @@ export default function Timeline() {
         setIsRefreshing(false);
       }, 800);
     }
-  }, [getCurrentLocation]);
+  }, [getCurrentLocation, pathname, router, searchParams, generalSearchTerm]);
+  // 🔥 ページリロード/初回マウント時に、検索が有効な場合のみ検索をリセット
+  useEffect(() => {
+    // リロード検知（Navigation Timing API）
+    let isReload = false;
+    try {
+      const nav = (performance.getEntriesByType && performance.getEntriesByType('navigation')[0]) as PerformanceNavigationTiming | undefined;
+      isReload = nav?.type === 'reload' || (window.performance && (window.performance as any).navigation?.type === 1);
+    } catch {}
+
+    const hasSearch = searchParams.get('search') !== null;
+
+    // 🔥 リロード かつ 検索が URL に存在する（=検索状態とみなす）場合のみリセット実行
+    if (isReload && hasSearch) {
+      // 検索状態を初期化
+      setGeneralSearchTerm('');
+      setIsSearching(false);
+      hasActiveSearchRef.current = false;
+      setPendingSearchQuery(null);
+
+      // URL に search クエリがあれば除去
+      if (pathname) {
+        router.replace(pathname);
+      }
+    }
+
+    // 初期タイムライン取得（現在のご近所/全表示トグルを尊重）。
+    // URL検索がある場合は別の useEffect が自動検索を実行するため、この呼び出しは問題なし。
+    setTimeout(() => {
+      if (!hasActiveSearchRef.current && fetchPostsRef.current) {
+        fetchPostsRef.current(0, true);
+      }
+    }, 50);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // 🔥 新規追加: 初回ローディング状態を管理
   const [isInitialLoading, setIsInitialLoading] = useState(true);
@@ -2257,7 +2135,7 @@ export default function Timeline() {
               setLocationPermissionState('granted');
               
               // 🔥 即座に投稿を取得
-              if (fetchPostsRef.current) {
+              if (!hasActiveSearchRef.current && fetchPostsRef.current) {
                 await fetchPostsRef.current(0, true);
               }
               
@@ -2298,7 +2176,7 @@ export default function Timeline() {
     } catch (error) {
       console.error('投稿削除の処理でエラーが発生しました:', error);
       // エラー時は投稿一覧を再取得
-      if (fetchPostsRef.current) {
+      if (!hasActiveSearchRef.current && fetchPostsRef.current) {
         fetchPostsRef.current(0, true);
       }
     }
@@ -2503,24 +2381,25 @@ export default function Timeline() {
                       <X className="h-3 w-3" />
                     </Button>
                   </div>
-                  {searchHistory.slice(0, 5).map((term, index) => (
-                     <button
-                       key={index}
-                       className="w-full text-left p-2 hover:bg-gray-100 text-sm"
-                       onClick={() => {
-                         setGeneralSearchTerm(term);
-                         addToHistory(term);
-                         setIsSearching(true);
-                         setTimeout(() => {
-                           if (fetchPostsRef.current) {
-                             fetchPostsRef.current(0, true, term);
-                           }
-                         }, 50);
-                       }}
-                     >
-                       {term}
-                     </button>
-                  ))}
+              {searchHistory.slice(0, 5).map((term, index) => (
+                 <button
+                   key={index}
+                   className="w-full text-left p-2 hover:bg-gray-100 text-sm"
+                   onClick={() => {
+                     setGeneralSearchTerm(term);
+                     addToHistory(term);
+                     hasActiveSearchRef.current = true;
+                     setIsSearching(true);
+                     setTimeout(() => {
+                       if (fetchPostsRef.current) {
+                         fetchPostsRef.current(0, true, term);
+                       }
+                     }, 50);
+                   }}
+                 >
+                   {term}
+                 </button>
+              ))}
                 </div>
               )}
             </div>
@@ -2533,7 +2412,7 @@ export default function Timeline() {
                 (window as any)._nearbyFilteredPosts = null;
                 (window as any)._nearbyModeHasMore = false;
                 setTimeout(() => {
-                  if (fetchPostsRef.current) {
+                  if (!hasActiveSearchRef.current && fetchPostsRef.current) {
                     fetchPostsRef.current(0, true);
                   }
                 }, 100);
@@ -2571,7 +2450,7 @@ export default function Timeline() {
               setActiveFilter(filter);
               // カテゴリ選択時に自動的に投稿を再取得
               setTimeout(() => {
-                if (fetchPostsRef.current) {
+                if (!hasActiveSearchRef.current && fetchPostsRef.current) {
                   fetchPostsRef.current(0, true);
                 }
               }, 100);
@@ -2600,7 +2479,7 @@ export default function Timeline() {
                   onClick={() => {
                     setActiveFilter('all');
                     setTimeout(() => {
-                      if (fetchPostsRef.current) {
+                      if (!hasActiveSearchRef.current && fetchPostsRef.current) {
                         fetchPostsRef.current(0, true);
                       }
                     }, 100);
@@ -2780,7 +2659,7 @@ export default function Timeline() {
                      <Button onClick={() => {
                        setGeneralSearchTerm('');
                        setIsSearching(true);
-                       if (fetchPostsRef.current) {
+                       if (!hasActiveSearchRef.current && fetchPostsRef.current) {
                          fetchPostsRef.current(0, true, '');
                        }
                      }} className="mt-4">
@@ -3032,7 +2911,7 @@ export default function Timeline() {
                     (window as any)._nearbyModeHasMore = false;
                     // 状態変更後に投稿を再取得
                     setTimeout(() => {
-                      if (fetchPostsRef.current) {
+                      if (!hasActiveSearchRef.current && fetchPostsRef.current) {
                         fetchPostsRef.current(0, true);
                       }
                     }, 100);
