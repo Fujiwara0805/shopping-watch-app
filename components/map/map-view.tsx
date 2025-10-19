@@ -102,6 +102,47 @@ const createEventPinIcon = () => {
   };
 };
 
+// 🔥 空席／在庫アイコンにラベル（◯席／◯個）を重ねるためのヘルパー（ラベル中央・フォントサイズ調整）
+const createSeatsIconWithLabel = (count: number) => {
+  const width = 70; // 横幅を拡大
+  const height = 40;
+  return {
+    icon: {
+      url: "https://res.cloudinary.com/dz9trbwma/image/upload/v1760849819/icons8-%E5%90%B9%E3%81%8D%E5%87%BA%E3%81%97-100_vznqfu.png",
+      scaledSize: new window.google.maps.Size(width, height),
+      anchor: new window.google.maps.Point(width / 2, height / 2),
+      labelOrigin: new window.google.maps.Point(width / 2, height / 2 - 5) // テキストを少し上に配置
+    },
+    label: {
+      text: `残り${count}席`,
+      color: '#ffffff',
+      fontSize: '10px', // 少し小さく
+      fontWeight: 'bold',
+      fontFamily: 'Arial, sans-serif'
+    } as google.maps.MarkerLabel
+  };
+};
+
+const createStockIconWithLabel = (count: number) => {
+  const width = 50; // 横幅を拡大
+  const height = 40;
+  return {
+    icon: {
+      url: "https://res.cloudinary.com/dz9trbwma/image/upload/v1760849938/icons8-%E5%90%B9%E3%81%8D%E5%87%BA%E3%81%97-100_1_eoddir.png",
+      scaledSize: new window.google.maps.Size(width, height),
+      anchor: new window.google.maps.Point(width / 2, height / 2),
+      labelOrigin: new window.google.maps.Point(width / 2, height / 2 - 5) // テキストを少し上に配置
+    },
+    label: {
+      text: `残り${count}個`,
+      color: '#ffffff',
+      fontSize: '10px', // 少し小さく
+      fontWeight: 'bold',
+      fontFamily: 'Arial, sans-serif'
+    } as google.maps.MarkerLabel
+  };
+};
+
 export function MapView() {
   console.log("MapView: Component rendering START");
   
@@ -420,35 +461,45 @@ export function MapView() {
         const post = groupPosts[0];
         let markerIcon;
         let markerTitle = post.store_name;
+        let composed: { icon: any; label: google.maps.MarkerLabel } | null = null;
 
         // イベント情報の場合は専用アイコンを使用
         if (post.category === 'イベント情報') {
           markerIcon = createEventPinIcon();
           markerTitle = `${post.store_name} - イベント情報`;
         } else {
-          // 他のカテゴリは従来通り吹き出しアイコン（残数情報必須）
+          // 🔥 空席情報／在庫情報は指定画像に差し替え、上に「◯席／◯個」のラベルを重ねる
           if (post.remaining_slots == null) return; // 残数なしはスキップ
-          
-          const unit = getRemainingUnit(post.category);
-          const categoryColor = getCategoryColor(post.category);
-          const speechBubbleSvg = getSpeechBubbleSvg(post.remaining_slots, unit, categoryColor);
-          const iconUrl = createDataUrl(speechBubbleSvg);
-          const textWidth = `残り${post.remaining_slots}${unit}`.length * 10 + 20;
-          const bubbleWidth = Math.max(90, textWidth);
 
-          markerIcon = {
-            url: iconUrl,
-            scaledSize: new window.google.maps.Size(bubbleWidth + 10, 55),
-            anchor: new window.google.maps.Point((bubbleWidth + 10) / 2, 50),
-          };
-          markerTitle = `${post.store_name} - 残り${post.remaining_slots}${unit}`;
+          if (post.category === '空席情報') {
+            composed = createSeatsIconWithLabel(post.remaining_slots);
+            markerTitle = `${post.store_name} - ${post.remaining_slots}席`;
+          } else if (post.category === '在庫情報') {
+            composed = createStockIconWithLabel(post.remaining_slots);
+            markerTitle = `${post.store_name} - ${post.remaining_slots}個`;
+          } else {
+            // その他カテゴリは従来のSVG吹き出し（助け合い・口コミ 等）
+            const unit = getRemainingUnit(post.category);
+            const categoryColor = getCategoryColor(post.category);
+            const speechBubbleSvg = getSpeechBubbleSvg(post.remaining_slots, unit, categoryColor);
+            const iconUrl = createDataUrl(speechBubbleSvg);
+            const textWidth = `残り${post.remaining_slots}${unit}`.length * 10 + 20;
+            const bubbleWidth = Math.max(90, textWidth);
+            markerIcon = {
+              url: iconUrl,
+              scaledSize: new window.google.maps.Size(bubbleWidth + 10, 55),
+              anchor: new window.google.maps.Point((bubbleWidth + 10) / 2, 50),
+            };
+            markerTitle = `${post.store_name} - 残り${post.remaining_slots}${unit}`;
+          }
         }
 
         const marker = new window.google.maps.Marker({
           position,
           map,
           title: markerTitle,
-          icon: markerIcon,
+          icon: composed ? composed.icon : markerIcon,
+          label: composed ? composed.label : undefined,
           animation: window.google.maps.Animation.DROP,
         });
 
