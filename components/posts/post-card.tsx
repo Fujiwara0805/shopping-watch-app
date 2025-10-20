@@ -1295,13 +1295,13 @@ export const PostCard = memo(({
                   {post.content ? (
                     isContentExpanded 
                       ? post.content 
-                      : (post.content.length > 100 ? post.content.substring(0, 100) + '...' : post.content)
+                      : (post.content.length > 50 ? post.content.substring(0, 50) + '...' : post.content)
                   ) : '内容がありません'}
                 </p>
               </motion.div>
               
               {/* 続きを読むボタン */}
-              {post.content && post.content.length > 100 && (
+              {post.content && post.content.length > 50 && (
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
