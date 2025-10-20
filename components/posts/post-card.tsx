@@ -1063,7 +1063,7 @@ export const PostCard = memo(({
                                   title={`ファイル${index + 1}をダウンロード`}
                                 >
                                   <img 
-                                    src="https://res.cloudinary.com/dz9trbwma/image/upload/v1760438086/icons8-%E8%B3%87%E6%96%99-64_owrxr6.png"
+                                    src="https://res.cloudinary.com/dz9trbwma/image/upload/v1760936614/icons8-%E3%82%B9%E3%83%88%E3%83%BC%E3%83%AA%E3%83%BC%E3%83%95%E3%82%99%E3%83%83%E3%82%AF-48_bp05cb.png"
                                     alt="ファイルアイコン"
                                     className="w-8 h-8 flex-shrink-0"
                                   />
