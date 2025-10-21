@@ -106,12 +106,43 @@ const getReleaseTypeBadge = (type: ReleaseType) => {
 // サンプルリリースノートデータ
 const releaseNotes: ReleaseNote[] = [
   {
+    version: '1.3.0',
+    date: '2025-10-20',
+    type: 'minor',
+    title: 'タイムライン検索とマップ表示の強化、イベント情報対応',
+    description: '検索と地図まわりの使い勝手を大幅に改善し、イベント情報の入力・表示に対応しました。投稿カードの表示最適化やご近所モードの高速化など、日常利用時の体感を重視したアップデートです。',
+    isLatest: true,
+    changes: [
+      { type: 'new', title: '「続きを読む」で投稿内容を展開', description: '投稿カードに長文時の展開機能を追加し、可読性と操作性を向上しました。' },
+      { type: 'new', title: 'イベント情報フィールドの追加', description: 'イベント名・開催開始/終了日・料金を投稿に付与できるようにし、カード側でも表示するようにしました。' },
+      { type: 'new', title: 'イベント入力のバリデーションと自動計算', description: '日付の整合性チェックや、イベント期間に基づく掲載期間の自動計算を実装しました。' },
+      { type: 'new', title: 'リアルタイム検索とURLパラメータ対応', description: 'デバウンスを廃止し、検索ボタン/Enterキーに対応。URLクエリからの検索も可能にしました。' },
+      { type: 'new', title: '地域フィルター（都道府県・市町村）', description: '投稿ページにエリア入力、タイムラインにフィルター機能を追加し、地域で絞り込みやすくしました。' },
+      { type: 'new', title: 'マップのクラスターとラベル', description: 'クラスター用アイコン/ラベル機能を追加し、視認性を向上。地図タイプは明示的にROADMAPを使用します。' },
+      { type: 'new', title: '空席/在庫アイコンと残数ラベル', description: 'カテゴリに応じたピンアイコンを作成し、残数をラベル表示して状況を直感的に把握できるようにしました。' },
+
+      { type: 'improvement', title: 'ご近所モードの高速化', description: '距離フィルタとページング処理を見直し、初回取得のキャッシュ化とモード切替時のクリアで体感速度を改善しました。' },
+      { type: 'improvement', title: '無限スクロールの改善', description: 'Intersection Observer による読み込み最適化とローディングUIの改善で操作感を向上しました。' },
+      { type: 'improvement', title: 'ファイルリンク表示の見直し', description: '投稿カードのファイルリンクをアイコン表示から画像表示に変更し、操作を直感的にしました。' },
+      { type: 'improvement', title: '画像読み込み/最適化の強化', description: '常時読み込み＋WebP最適化により表示速度と画質を両立しました。' },
+      { type: 'improvement', title: 'イベント名表記の統一', description: 'カード上の表記を「イベント」に統一し、UIの一貫性を高めました。' },
+      { type: 'improvement', title: '在庫アイコンの視認性向上', description: '在庫ピンの幅を拡大し、地図上で識別しやすくしました。' },
+      { type: 'improvement', title: '検索クエリ連携の強化', description: 'ハイライト投稿IDから店舗名を自動抽出し検索に反映。マップ→タイムライン遷移でもクエリを引き継ぎます。' },
+      { type: 'improvement', title: '検索状態と取得処理の整理', description: '状態管理/取得ロジックを簡素化し、ソートと特別検索モードを削除しました。' },
+      { type: 'improvement', title: '都道府県フィルターの明示', description: '対象エリアのコメント/説明を明確化して可読性を向上しました。' },
+      { type: 'improvement', title: '投稿カードの折りたたみ最適化', description: '折りたたみ時の表示文字数を100→50文字に変更し、一覧性を高めました。' },
+      { type: 'improvement', title: '投稿の最大文字数拡張', description: '最大文字数を240→400に拡張し、文字数カウンターを追加しました。' },
+
+      { type: 'fix', title: '不要ログ/デバッグ出力の整理', description: 'マップの説明モーダル削除やconsole整理など、メンテナンス性を向上しました。' }
+    ]
+  },
+  {
     version: '1.2.2',
     date: '2025-10-01',
     type: 'minor',
     title: '店舗位置情報の自動取得とカテゴリシステムの大幅改善',
     description: 'Google Places APIを活用した店舗位置情報の自動取得機能を追加し、投稿時の利便性を大幅に向上させました。また、カテゴリシステムを「空席情報」「在庫情報」「イベント情報」の3つに再編成し、より直感的で使いやすい分類システムを実現しました。',
-    isLatest: true,
+    isLatest: false,
     changes: [
       {
         type: 'new',
@@ -1017,7 +1048,7 @@ export default function ReleaseNotesPage() {
         >
           <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 text-center border border-blue-200">
             <Smartphone className="h-6 w-6 mx-auto text-blue-600 mb-2" />
-            <p className="text-lg font-bold text-blue-900">v1.2.2</p>
+            <p className="text-lg font-bold text-blue-900">v1.3.0</p>
             <p className="text-xs text-blue-700">現在のバージョン</p>
           </div>
           <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4 text-center border border-green-200">
