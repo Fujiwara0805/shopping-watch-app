@@ -908,6 +908,10 @@ export default function Timeline() {
   const [tempSelectedPrefecture, setTempSelectedPrefecture] = useState<string>('all');
   const [tempSelectedCity, setTempSelectedCity] = useState<string>('all');
   
+  // 🔥 開催日順ソートの状態を追加
+  const [sortByEventDate, setSortByEventDate] = useState<string>('default'); // 'default' | 'event_date_asc'
+  const [tempSortByEventDate, setTempSortByEventDate] = useState<string>('default');
+  
   const [hasMore, setHasMore] = useState(true);
   const { data: session } = useSession();
   const currentUserId = session?.user?.id;
@@ -1038,6 +1042,7 @@ export default function Timeline() {
   const isNearbyModeRef = useRef(isNearbyMode); // 🔥 追加
   const selectedPrefectureRef = useRef(selectedPrefecture); // 🔥 追加
   const selectedCityRef = useRef(selectedCity); // 🔥 追加
+  const sortByEventDateRef = useRef(sortByEventDate); // 🔥 追加
 
   // Update refs
   useEffect(() => { activeFilterRef.current = activeFilter; }, [activeFilter]);
@@ -1045,6 +1050,7 @@ export default function Timeline() {
   useEffect(() => { isNearbyModeRef.current = isNearbyMode; }, [isNearbyMode]); // 🔥 追加
   useEffect(() => { selectedPrefectureRef.current = selectedPrefecture; }, [selectedPrefecture]); // 🔥 追加
   useEffect(() => { selectedCityRef.current = selectedCity; }, [selectedCity]); // 🔥 追加
+  useEffect(() => { sortByEventDateRef.current = sortByEventDate; }, [sortByEventDate]); // 🔥 追加
 
   useEffect(() => {
     setTempActiveFilter(activeFilter);
@@ -1283,8 +1289,15 @@ export default function Timeline() {
 
       // 特別な検索モードを削除
 
-      // デフォルトのソート（作成日時の降順）
-      query = query.order('created_at', { ascending: false });
+      // 🔥 ソート順の適用
+      const currentSortByEventDate = sortByEventDateRef.current;
+      if (currentSortByEventDate === 'event_date_asc') {
+        // 開催日順（早い順）でソート - event_start_dateがnullの場合は最後に表示
+        query = query.order('event_start_date', { ascending: true, nullsFirst: false });
+      } else {
+        // デフォルトのソート（作成日時の降順）
+        query = query.order('created_at', { ascending: false });
+      }
 
       // 🔥 ご近所モード時は全件取得してから距離フィルタリング、それ以外は従来通り
       if (currentUserLocation && currentIsNearbyMode) {
@@ -1962,6 +1975,7 @@ export default function Timeline() {
     // 🔥 新しいフィルター項目を適用
     setSelectedPrefecture(tempSelectedPrefecture);
     setSelectedCity(tempSelectedCity);
+    setSortByEventDate(tempSortByEventDate);
     
     // 🔥 ご近所モードのキャッシュをクリア
     (window as any)._nearbyFilteredPosts = null;
@@ -1981,6 +1995,7 @@ export default function Timeline() {
     // 🔥 新しいフィルター項目も元に戻す
     setTempSelectedPrefecture(selectedPrefecture);
     setTempSelectedCity(selectedCity);
+    setTempSortByEventDate(sortByEventDate);
     setShowFilterModal(false);
   };
 
@@ -1994,6 +2009,8 @@ export default function Timeline() {
     setSelectedCity('all');
     setTempSelectedPrefecture('all');
     setTempSelectedCity('all');
+    setSortByEventDate('default');
+    setTempSortByEventDate('default');
     
     setTimeout(() => {
       if (!hasActiveSearchRef.current && fetchPostsRef.current) {
@@ -2977,6 +2994,27 @@ export default function Timeline() {
               </Select>
             </div> */}
 
+            {/* 🔥 開催日順ソートフィルター */}
+            <div>
+              <h3 className="font-semibold text-lg mb-2">並び順</h3>
+              <Select 
+                onValueChange={(value: string) => setTempSortByEventDate(value)} 
+                value={tempSortByEventDate}
+              >
+                <SelectTrigger className="w-full focus:ring-0 focus:ring-offset-0 focus:border-input">
+                  <SelectValue placeholder="並び順を選択" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="default" className="text-lg py-3">
+                    投稿日時順（新しい順）
+                  </SelectItem>
+                  <SelectItem value="event_date_asc" className="text-lg py-3">
+                    開催日順（早い順）
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
             {/* 🔥 市町村フィルター */}
             <div>
               <h3 className="font-semibold text-lg mb-2">市町村で絞り込み</h3>
@@ -3011,6 +3049,7 @@ export default function Timeline() {
             <Button variant="outline" onClick={() => {
               setTempSelectedPrefecture('all');
               setTempSelectedCity('all');
+              setTempSortByEventDate('default');
               setIsNearbyMode(true);
             }}>
               すべてクリア
