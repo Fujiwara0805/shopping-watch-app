@@ -1,19 +1,13 @@
 "use client";
 
 import { useRef, useEffect, useState, useCallback } from 'react';
-import { useSearchParams } from 'next/navigation';
-import { useGeolocation } from '@/lib/hooks/use-geolocation'; // Enhanced version
+import { useGeolocation } from '@/lib/hooks/use-geolocation';
 import { useGoogleMapsApi } from '@/components/providers/GoogleMapsApiProvider';
 import { Button } from '@/components/ui/button';
-import { MapPin, AlertTriangle, Navigation, RefreshCw, Smartphone, Monitor, Globe, Clock, Eye, EyeOff, ArrowLeft, Utensils, ShoppingBag, Calendar, Heart, Package, MessageSquareText, Layers, Store, ExternalLink, Info, HelpCircle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { MapPin, AlertTriangle, RefreshCw, Clock, Eye, EyeOff, Calendar } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { MapSearchControl } from './MapSearchControl';
-import { CrossBrowserLocationGuide } from './CrossBrowserLocationGuide'; // Enhanced version
-import { LocationPermissionManager } from '@/lib/hooks/LocationPermissionManager';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
-import { CustomModal } from '@/components/ui/custom-modal';
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 
 declare global {
   interface Window {
@@ -35,70 +29,100 @@ interface PostMarkerData {
   image_urls: string[] | null; // 画像URLの配列に変更
 }
 
-// 🔥 イベント情報のみ表示するため、不要な関数を削除
-
-// 🔥 イベント情報用のピンアイコンを作成する関数を修正（画像表示の改善）
-const createEventPinIcon = (imageUrls: string[] | null) => {
-  // 画像がない、または配列が空の場合はデフォルトアイコンを使用
-  const imageUrl = imageUrls && imageUrls.length > 0 ? imageUrls[0] : null;
+// 🔥 簡易的なイベントアイコンを作成（SVG形式）
+const createSimpleEventIcon = () => {
+  const svgIcon = `
+    <svg width="32" height="40" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="16" cy="16" r="14" fill="#8B5CF6" stroke="white" stroke-width="2"/>
+      <text x="16" y="21" text-anchor="middle" font-size="18" fill="white">📅</text>
+    </svg>
+  `;
   
-  if (!imageUrl) {
-    const defaultIconUrl = "https://res.cloudinary.com/dz9trbwma/image/upload/v1760666722/%E3%81%B2%E3%82%99%E3%81%A3%E3%81%8F%E3%82%8A%E3%83%9E%E3%83%BC%E3%82%AF_kvzxcp.png";
-    return {
-      url: defaultIconUrl,
-      scaledSize: new window.google.maps.Size(32, 32),
-      anchor: new window.google.maps.Point(16, 32),
-    };
+  return {
+    url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svgIcon),
+    scaledSize: new window.google.maps.Size(32, 40),
+    anchor: new window.google.maps.Point(16, 40),
+  };
+};
+
+// 🔥 画像付きイベント情報用のアイコンを作成（円形・白縁・40x40）
+const createEventPinIcon = async (imageUrls: string[] | null): Promise<google.maps.Icon> => {
+  // 🔥 image_urlsが文字列の場合はパースを試みる
+  let parsedUrls = imageUrls;
+  if (typeof imageUrls === 'string') {
+    try {
+      parsedUrls = JSON.parse(imageUrls);
+    } catch (e) {
+      console.error('createEventPinIcon: 画像URLのパースに失敗:', e);
+      parsedUrls = null;
+    }
+  }
+  
+  const imageUrl = parsedUrls && Array.isArray(parsedUrls) && parsedUrls.length > 0 ? parsedUrls[0] : null;
+  
+  // 画像がない、またはURLが不正な場合は簡易的なアイコンを返す
+  if (!imageUrl || typeof imageUrl !== 'string' || !imageUrl.startsWith('http')) {
+    return createSimpleEventIcon();
   }
 
-  // 🔥 Canvasを使用して円形画像を生成する方法に変更
-  const size = 40; // サイズを少し大きく
-  const borderWidth = 3; // 白い縁を太く
+  // 🔥 画像を円形・白縁で40x40サイズに
+  const size = 40;
+  const borderWidth = 3; // 白い縁の幅
   
-  // Canvasで円形画像を作成
-  const canvas = document.createElement('canvas');
-  canvas.width = size;
-  canvas.height = size;
-  const ctx = canvas.getContext('2d');
-  
-  if (!ctx) {
-    // Canvas が使えない場合はデフォルトアイコン
-    const defaultIconUrl = "https://res.cloudinary.com/dz9trbwma/image/upload/v1760666722/%E3%81%B2%E3%82%99%E3%81%A3%E3%81%8F%E3%82%8A%E3%83%9E%E3%83%BC%E3%82%AF_kvzxcp.png";
-    return {
-      url: defaultIconUrl,
-      scaledSize: new window.google.maps.Size(32, 32),
-      anchor: new window.google.maps.Point(16, 32),
-    };
-  }
-
-  // 画像を読み込んで円形に描画
-  const img = new Image();
-  img.crossOrigin = 'anonymous'; // CORS対応
-  
-  // 画像読み込み完了時の処理
   return new Promise<google.maps.Icon>((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    
     img.onload = () => {
+      // Canvasで円形画像を作成
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      
+      if (!ctx) {
+        // Canvas が使えない場合は簡易アイコン
+        resolve(createSimpleEventIcon());
+        return;
+      }
+
       // 背景を透明に
       ctx.clearRect(0, 0, size, size);
       
       // 円形のクリッピングパスを作成
+      ctx.save();
       ctx.beginPath();
       ctx.arc(size / 2, size / 2, size / 2 - borderWidth, 0, Math.PI * 2);
       ctx.closePath();
       ctx.clip();
       
       // 画像を円形に描画（中央に配置してトリミング）
-      const imgSize = size - borderWidth * 2;
-      ctx.drawImage(img, borderWidth, borderWidth, imgSize, imgSize);
+      // 画像のアスペクト比を保ちながら円形にフィット
+      const imgAspect = img.width / img.height;
+      let drawWidth = size;
+      let drawHeight = size;
+      let offsetX = 0;
+      let offsetY = 0;
+      
+      if (imgAspect > 1) {
+        // 横長の画像
+        drawWidth = drawHeight * imgAspect;
+        offsetX = -(drawWidth - size) / 2;
+      } else {
+        // 縦長の画像
+        drawHeight = drawWidth / imgAspect;
+        offsetY = -(drawHeight - size) / 2;
+      }
+      
+      ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
       
       // クリップを解除
       ctx.restore();
-      ctx.save();
       
       // 白い縁を描画
       ctx.beginPath();
       ctx.arc(size / 2, size / 2, size / 2 - borderWidth / 2, 0, Math.PI * 2);
-      ctx.strokeStyle = 'white';
+      ctx.strokeStyle = '#73370c';
       ctx.lineWidth = borderWidth;
       ctx.stroke();
       
@@ -113,26 +137,19 @@ const createEventPinIcon = (imageUrls: string[] | null) => {
     };
     
     img.onerror = () => {
-      // 画像読み込みエラー時はデフォルトアイコンを返す
-      const defaultIconUrl = "https://res.cloudinary.com/dz9trbwma/image/upload/v1760666722/%E3%81%B2%E3%82%99%E3%81%A3%E3%81%8F%E3%82%8A%E3%83%9E%E3%83%BC%E3%82%AF_kvzxcp.png";
-      resolve({
-        url: defaultIconUrl,
-        scaledSize: new window.google.maps.Size(32, 32),
-        anchor: new window.google.maps.Point(16, 32),
-      });
+      // 画像読み込みエラー時は簡易アイコンを返す
+      console.error('createEventPinIcon: 画像の読み込みに失敗:', imageUrl);
+      resolve(createSimpleEventIcon());
     };
     
     img.src = imageUrl;
   });
 };
 
-// 🔥 空席・在庫情報は不要なので削除
-
 export function MapView() {
   console.log("MapView: Component rendering START");
   
   const { isLoaded: googleMapsLoaded, loadError: googleMapsLoadError, isLoading: googleMapsLoading } = useGoogleMapsApi();
-  const searchParams = useSearchParams();
   
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
@@ -147,24 +164,17 @@ export function MapView() {
     permissionState, 
     requestLocation,
     browserInfo,
-    // 新しく追加されたプロパティ
     isPermissionGranted,
     permissionRemainingMinutes
-  } = useGeolocation(); // Enhanced hook
+  } = useGeolocation();
 
   const [mapInitialized, setMapInitialized] = useState(false);
   const [initializationError, setInitializationError] = useState<string | null>(null);
-  const [showLocationGuide, setShowLocationGuide] = useState(false);
-  // 🔥 設定方法表示用の状態を追加
-  const [showSettingsGuide, setShowSettingsGuide] = useState(false);
   const [containerDimensions, setContainerDimensions] = useState({
     width: 0,
     height: 0
   });
 
-  const [selectedPlace, setSelectedPlace] = useState<google.maps.places.PlaceResult | null>(null);
-  const [selectedPlaceMarker, setSelectedPlaceMarker] = useState<google.maps.Marker | null>(null);
-  const [distanceToSelectedPlace, setDistanceToSelectedPlace] = useState<string | null>(null);
   const [userLocationMarker, setUserLocationMarker] = useState<google.maps.Marker | null>(null);
   const [userLocationCircle, setUserLocationCircle] = useState<google.maps.Circle | null>(null);
   
@@ -177,26 +187,8 @@ export function MapView() {
   const [loadingPosts, setLoadingPosts] = useState(false);
   const router = useRouter();
 
-  // 🔥 地図の見方モーダルの状態を追加
-  const [showMapGuideModal, setShowMapGuideModal] = useState(false);
-
-  // URLパラメータから初期検索値を取得
-  const initialSearchValue = searchParams.get('search') || '';
-
-  // 改良されたガイド表示制御（許可状態を考慮）
-  useEffect(() => {
-    // 既に許可されている場合はガイドを表示しない
-    if (isPermissionGranted && permissionRemainingMinutes > 0) {
-      setShowLocationGuide(false);
-      return;
-    }
-
-    // 🔥 常にfalseに設定して自動表示を防ぐ
-    setShowLocationGuide(false);
-  }, [browserInfo.name, permissionState, latitude, longitude, isPermissionGranted, permissionRemainingMinutes]);
-
-  // デバッグ情報の出力（許可状態情報も含む）
-  console.log("MapView Enhanced: Current state:", {
+  // デバッグ情報の出力
+  console.log("MapView: Current state:", {
     googleMapsLoaded,
     googleMapsLoading,
     googleMapsLoadError: !!googleMapsLoadError,
@@ -207,10 +199,8 @@ export function MapView() {
     browserInfo,
     containerDimensions,
     mapInitialized,
-    showLocationGuide,
     isPermissionGranted,
-    permissionRemainingMinutes,
-    storedPermissionInfo: LocationPermissionManager.getPermissionInfo()
+    permissionRemainingMinutes
   });
 
   // コンテナ寸法の取得（変更なし）
@@ -285,13 +275,8 @@ export function MapView() {
     };
   }, [updateContainerDimensions, browserInfo.name]);
 
-  // 改良された位置情報要求ハンドラー
-  const handleLocationRequest = () => {
-    setShowLocationGuide(false);
-    requestLocation(); // Enhanced hook will handle permission saving
-  };
 
-  // 🔥 投稿データを取得する関数を修正（イベント情報のみ取得）
+  // 🔥 投稿データを取得する関数を修正（範囲制限を削除）
   const fetchPosts = useCallback(async () => {
     if (!latitude || !longitude) {
       console.log('MapView: 位置情報がないため投稿データの取得をスキップ');
@@ -304,7 +289,7 @@ export function MapView() {
       
       const now = new Date().toISOString();
       
-      // 🔥 イベント情報のみを取得
+      // �� イベント情報のみを取得（距離制限なし）
       const { data, error } = await supabase
         .from('posts')
         .select(`
@@ -337,26 +322,26 @@ export function MapView() {
         return;
       }
 
-      // 1km圏内でフィルタリング
-      const filteredPosts = data.filter((post: any) => {
-        if (!post.store_latitude || !post.store_longitude) return false;
+      // �� image_urlsの正規化のみ実行（距離フィルタリング削除）
+      const normalizedPosts = data.map((post: any) => {
+        let imageUrls = post.image_urls;
+        if (typeof imageUrls === 'string') {
+          try {
+            imageUrls = JSON.parse(imageUrls);
+          } catch (e) {
+            console.error('画像URLのパースに失敗:', e);
+            imageUrls = null;
+          }
+        }
         
-        // 距離計算（ハバーサイン公式）
-        const R = 6371; // 地球の半径（km）
-        const dLat = (post.store_latitude - latitude) * Math.PI / 180;
-        const dLon = (post.store_longitude - longitude) * Math.PI / 180;
-        const a = 
-          Math.sin(dLat/2) * Math.sin(dLat/2) +
-          Math.cos(latitude * Math.PI / 180) * Math.cos(post.store_latitude * Math.PI / 180) *
-          Math.sin(dLon/2) * Math.sin(dLon/2);
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-        const distance = R * c;
-        
-        return distance <= 1; // 1km以内
+        return {
+          ...post,
+          image_urls: imageUrls
+        };
       });
 
-      console.log(`MapView: ${filteredPosts.length}件のイベント情報を取得しました`);
-      setPosts(filteredPosts);
+      console.log(`MapView: ${normalizedPosts.length}件のイベント情報を取得しました`);
+      setPosts(normalizedPosts);
       
     } catch (error) {
       console.error('MapView: 投稿データの取得中にエラー:', error);
@@ -388,7 +373,7 @@ export function MapView() {
     return locationGroups;
   };
 
-  // 🔥 投稿マーカーを作成する関数（イベント情報のみ表示）
+  // �� 投稿マーカーを作成する関数（軽量化版）- 依存配列から postMarkers を削除
   const createPostMarkers = useCallback(async () => {
     if (!map || !posts.length || !window.google?.maps) {
       console.log('MapView: マーカー作成の条件が揃っていません');
@@ -397,8 +382,9 @@ export function MapView() {
 
     console.log(`MapView: ${posts.length}件のイベント情報マーカーを作成中...`);
 
-    // 既存のマーカーを削除
-    postMarkers.forEach(marker => {
+    // �� 既存のマーカーを削除（クロージャー内の変数を使用）
+    const markersToClean = [...postMarkers];
+    markersToClean.forEach(marker => {
       if (marker && marker.setMap) {
         marker.setMap(null);
       }
@@ -414,11 +400,10 @@ export function MapView() {
       const [lat, lng] = locationKey.split(',').map(Number);
       const position = new window.google.maps.LatLng(lat, lng);
       
-      // すべてイベント情報なので、最初の投稿を代表として使用
       const post = groupPosts[0];
       const markerTitle = `${post.store_name} - イベント情報`;
 
-      // 🔥 画像を円形アイコンで表示（非同期処理）
+      // 🔥 画像アイコンを作成（非同期処理）
       const markerIcon = await createEventPinIcon(post.image_urls);
 
       const marker = new window.google.maps.Marker({
@@ -440,7 +425,7 @@ export function MapView() {
     }
 
     setPostMarkers(newMarkers);
-  }, [map, posts, router, postMarkers]);
+  }, [map, posts, router]); // �� postMarkers を依存配列から削除
 
   // 地図初期化のメイン処理（変更なし）
   const initializeMap = useCallback(() => {
@@ -633,7 +618,7 @@ export function MapView() {
     if (posts.length > 0 && map && window.google?.maps) {
       createPostMarkers();
     }
-  }, [posts, map, createPostMarkers]);
+  }, [posts, map]); // �� createPostMarkers を依存配列から削除
 
   // 🔥 投稿がある場合は範囲円を非表示にする
   useEffect(() => {
@@ -715,7 +700,7 @@ export function MapView() {
     setShowRangeCircle(!showRangeCircle);
   };
 
-  // 改良された再試行機能
+  // 再試行機能
   const handleRetry = () => {
     console.log(`MapView ${browserInfo.name}: Retrying initialization`);
     setInitializationError(null);
@@ -723,7 +708,6 @@ export function MapView() {
     initializationTriedRef.current = false;
     mapInstanceRef.current = null;
     setMap(null);
-    setShowLocationGuide(false);
     
     // 既存のマーカーと円をクリーンアップ
     if (userLocationMarker) {
@@ -734,12 +718,8 @@ export function MapView() {
       userLocationCircle.setMap(null);
       setUserLocationCircle(null);
     }
-    if (selectedPlaceMarker) {
-      selectedPlaceMarker.setMap(null);
-      setSelectedPlaceMarker(null);
-    }
     
-    // 🔥 投稿マーカーもクリーンアップ
+    // 投稿マーカーもクリーンアップ
     postMarkers.forEach(marker => {
       if (marker && marker.setMap) {
         marker.setMap(null);
@@ -752,12 +732,9 @@ export function MapView() {
       mapContainerRef.current.innerHTML = '';
     }
     
-    // 許可状態を確認してから再試行
-    const permissionInfo = LocationPermissionManager.checkPermission();
-    
     setTimeout(() => {
       updateContainerDimensions();
-      if (!latitude || !longitude || !permissionInfo.isGranted) {
+      if (!latitude || !longitude) {
         requestLocation();
       }
     }, 100);
@@ -794,77 +771,6 @@ export function MapView() {
     );
   };
 
-  // 場所選択ハンドラー（変更なし）
-  const handlePlaceSelected = (place: google.maps.places.PlaceResult, distance: string | null) => {
-    setSelectedPlace(place);
-    setDistanceToSelectedPlace(distance);
-
-    if (selectedPlaceMarker) {
-      selectedPlaceMarker.setMap(null);
-    }
-
-    if (map && place.geometry?.location) {
-      map.panTo(place.geometry.location);
-      map.setZoom(16);
-
-      const marker = new window.google.maps.Marker({
-        position: place.geometry.location,
-        map: map,
-        title: place.name,
-        animation: window.google.maps.Animation.DROP,
-      });
-      setSelectedPlaceMarker(marker);
-    }
-  };
-
-  const handleSearchError = (error: string) => {
-    console.warn(`MapView ${browserInfo.name}: Search error:`, error);
-  };
-
-  const openGoogleMapsNavigation = (place: google.maps.places.PlaceResult | null) => {
-    if (!place?.geometry?.location) return;
-    
-    const lat = place.geometry.location.lat();
-    const lng = place.geometry.location.lng();
-    const url = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}&query_place_id=${place.place_id}`;
-    window.open(url, '_blank');
-  };
-
-  // 改良されたクロスブラウザ位置情報ガイドの表示判定
-  if (showLocationGuide && !isPermissionGranted) {
-    const BrowserIcon = getBrowserIcon();
-    
-    return (
-      <>
-        <div className="w-full h-full bg-gray-50 relative">
-          <div ref={mapContainerRef} className="w-full h-full bg-gray-50" />
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/90 backdrop-blur-sm">
-            <div className="text-center">
-              <BrowserIcon className="h-16 w-16 text-blue-500 mx-auto mb-4" />
-              <h2 className="text-xl font-semibold mb-2">位置情報を待機中...</h2>
-              <p className="text-gray-600 text-sm mb-6">
-                位置情報の許可をお待ちしています
-              </p>
-              <Button onClick={handleLocationRequest} className="mb-4">
-                <MapPin className="h-4 w-4 mr-2" />
-                位置情報を許可する
-              </Button>
-            </div>
-          </div>
-        </div>
-        
-        <CrossBrowserLocationGuide
-          isVisible={showLocationGuide}
-          browserInfo={browserInfo}
-          permissionState={permissionState}
-          onRequestLocation={handleLocationRequest}
-          onClose={() => setShowLocationGuide(false)}
-          isPermissionGranted={isPermissionGranted}
-          permissionRemainingMinutes={permissionRemainingMinutes}
-        />
-      </>
-    );
-  }
 
   // エラー状態の処理（変更なし）
   if (googleMapsLoadError) {
@@ -899,76 +805,28 @@ export function MapView() {
     );
   }
 
-  // 統一された位置情報エラー処理
+  // 位置情報エラー処理（シンプル化）
   if ((permissionState === 'denied' || locationError) && !isPermissionGranted) {
     const getLocationMessage = () => {
       if (locationError) return locationError;
-      return "地図を表示するために位置情報の許可が必要です。アドレスバーの🔒アイコンから設定を変更してください。";
+      return "地図を表示するために位置情報の許可が必要です。ブラウザの設定から位置情報を許可してください。";
     };
 
     return (
-      <>
-        <MessageCard 
-          title="位置情報が必要です" 
-          message={getLocationMessage()}
-          variant="warning" 
-          icon={MapPin}
+      <MessageCard 
+        title="位置情報が必要です" 
+        message={getLocationMessage()}
+        variant="warning" 
+        icon={MapPin}
+      >
+        <Button 
+          onClick={requestLocation}
+          className="w-full mt-4"
         >
-          <div className="space-y-3">
-            {/* オレンジボタン：「なぜ、位置情報が必要なのか？」 */}
-            <Button 
-              onClick={() => setShowLocationGuide(true)}
-              className="w-full"
-            >
-              なぜ、位置情報が必要なのか？
-            </Button>
-            {/* 白ボタン：設定方法の説明を表示 */}
-            <Button 
-              variant="outline"
-              onClick={() => setShowSettingsGuide(true)}
-              className="w-full"
-            >
-              設定方法を見る
-            </Button>
-          </div>
-        </MessageCard>
-
-        {/* 設定方法表示用のモーダル */}
-        {showSettingsGuide && (
-          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
-              <div className="p-6 text-center">
-                <div className="space-y-4 mb-6">
-                  <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                    <h3 className="font-semibold text-red-800 mb-3">
-                      <AlertTriangle className="h-4 w-4 inline mr-2" />
-                      位置情報の利用が許可が必要です
-                    </h3>
-                    
-                    <div className="bg-white rounded p-3 border">
-                      <h4 className="font-semibold text-gray-500 mb-2">【設定方法】</h4>
-                      <div className="text-sm text-gray-500 space-y-1">
-                        <p><strong>1.</strong> 各種(iphone等)端末の設定 → プライバシーとセキュリティ → 位置情報サービス→各種ブラウザ(chrome,safari等)の設定を「使用中のみ」に設定を変更してください</p>
-                        <p><strong>2.</strong> 各種ブラウザ(chrome,safari等)における設定 → プライバシーとセキュリティから位置情報を許可orアドレスバーの🔒アイコンから設定を変更してください</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <Button 
-                    onClick={() => setShowSettingsGuide(false)}
-                    variant="outline"
-                    className="w-full"
-                  >
-                    戻る
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-      </>
+          <MapPin className="h-4 w-4 mr-2" />
+          位置情報を許可する
+        </Button>
+      </MessageCard>
     );
   }
 
@@ -1015,10 +873,7 @@ export function MapView() {
             <Button 
               variant="outline" 
               size="sm"
-              onClick={() => {
-                // 🔥 モーダルを表示せず、直接位置情報を要求
-                requestLocation();
-              }}
+              onClick={requestLocation}
               className="mb-4"
             >
               <MapPin className="h-4 w-4 mr-2" />
@@ -1063,13 +918,7 @@ export function MapView() {
               </div>
               <div className="text-xs text-gray-600">
                 {posts.length > 0 
-                  ? (
-                    <>
-                      {`${posts.length}件のイベント情報を表示中`}
-                      <br />
-                      <span className="text-xs">📷 = イベント情報</span>
-                    </>
-                  )
+                  ? `${posts.length}件のイベント情報を表示中`
                   : "緑色のエリア＝イベント閲覧範囲"
                 }
               </div>
@@ -1107,172 +956,8 @@ export function MapView() {
               </Button>
             </motion.div>
           )}
-
-          {/* 🔥 地図の見方ボタンを追加 */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: 0.1 }}
-          >
-            <Button
-              onClick={() => setShowMapGuideModal(true)}
-              variant="outline"
-              size="sm"
-              className="shadow-lg bg-white hover:bg-blue-50 text-blue-600 border-blue-200 hover:border-blue-300"
-            >
-              <HelpCircle className="h-4 w-4 mr-2" />
-              地図の見方
-            </Button>
-          </motion.div>
         </div>
       )}
-
-      {/* 検索コントロール */}
-      {map && mapInitialized && (
-        <div 
-          className="absolute top-2 left-1/2 -translate-x-1/2 z-20 w-[calc(100%-1rem)] max-w-md sm:max-w-lg"
-        >
-          <MapSearchControl
-            map={map}
-            userLocation={latitude && longitude ? new google.maps.LatLng(latitude, longitude) : null}
-            onPlaceSelected={handlePlaceSelected}
-            onSearchError={handleSearchError}
-            initialValue={initialSearchValue} // 初期検索値を渡す
-          />
-        </div>
-      )}
-
-      {/* 選択された場所の情報表示 */}
-      {selectedPlace && selectedPlace.geometry && map && mapInitialized && (
-        <motion.div
-          className="absolute bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-1.5rem)] sm:w-auto sm:max-w-md z-10 bg-background rounded-lg shadow-xl cursor-pointer hover:shadow-2xl transition-all duration-200"
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          exit={{ y: 20, opacity: 0 }}
-          transition={{ duration: 0.3 }}
-          onClick={() => openGoogleMapsNavigation(selectedPlace)}
-        >
-          <div className="p-3 flex items-center justify-between">
-            <div className="overflow-hidden mr-2">
-              <h3 className="font-semibold text-sm sm:text-base truncate">{selectedPlace.name}</h3>
-              {distanceToSelectedPlace && (
-                <p className="text-xs sm:text-sm text-muted-foreground">
-                  現在地からの距離: {distanceToSelectedPlace}
-                </p>
-              )}
-              <p className="text-xs text-muted-foreground truncate max-w-[160px] xs:max-w-[180px] sm:max-w-xs">
-                {selectedPlace.formatted_address}
-              </p>
-              {/* クリックでGoogleマップに遷移することを示すテキスト */}
-              <p className="text-xs text-blue-600 font-medium mt-1 flex items-center">
-                <ExternalLink className="h-3 w-3 mr-1" />
-                タップしてGoogleマップで開く
-              </p>
-            </div>
-            <div className="flex-shrink-0 text-blue-600">
-              <ExternalLink className="h-5 w-5" />
-            </div>
-          </div>
-        </motion.div>
-      )}
-
-      {/* 🔥 地図の見方モーダル（イベント情報のみ） */}
-      <CustomModal
-        isOpen={showMapGuideModal}
-        onClose={() => setShowMapGuideModal(false)}
-        title="地図の見方"
-        description="イベント情報の表示と操作方法について"
-        className="max-w-lg"
-      >
-        <div className="space-y-6">
-          <div>
-            <h3 className="text-lg font-semibold mb-4 flex items-center">
-              <MessageSquareText className="h-5 w-5 mr-2 text-purple-600" />
-              イベント情報の表示
-            </h3>
-            <p className="text-sm text-gray-600 mb-4">
-              地図上には、場所が入力されたイベント情報が画像アイコンで表示されます。<br />
-              <span className="font-medium text-blue-700">マーカーをタップすると掲示板へ遷移し、該当する投稿の詳細を確認できます。</span>
-            </p>
-            <div className="space-y-4">
-              <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                <div className="flex items-center space-x-3">
-                  <div className="flex-shrink-0">
-                    <div className="w-10 h-10 rounded-full border-2 border-white bg-purple-200 flex items-center justify-center overflow-hidden">
-                      <span className="text-lg">📷</span>
-                    </div>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-purple-800 mb-1">
-                      イベント情報
-                    </p>
-                    <p className="text-xs text-purple-600">
-                      投稿内の画像が円形アイコンで表示されます
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                <div className="flex items-start space-x-3">
-                  <div className="flex-shrink-0">
-                    <img 
-                      src="https://res.cloudinary.com/dz9trbwma/image/upload/v1749098791/%E9%B3%A9_azif4f.png" 
-                      alt="現在地" 
-                      className="h-8 w-8" 
-                    />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-amber-800 mb-1">
-                      鳩マーカー（現在地）
-                    </p>
-                    <p className="text-xs text-amber-700">
-                      あなたの現在位置を示しています。この位置を中心に1km圏内のイベント情報が表示されます
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
-                <div className="flex items-start space-x-3">
-                  <div className="flex-shrink-0">
-                    <div className="w-8 h-8 border-2 border-emerald-500 rounded-full bg-emerald-100 opacity-70"></div>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-emerald-800 mb-1">
-                      緑色の円（範囲表示）
-                    </p>
-                    <p className="text-xs text-emerald-600">
-                      イベント情報を閲覧できる1km圏内の範囲を表示。イベント情報がある場合は自動的に非表示になります
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* 閉じるボタン */}
-          <div className="pt-2">
-            <Button 
-              onClick={() => setShowMapGuideModal(false)}
-              className="w-full"
-            >
-              理解しました
-            </Button>
-          </div>
-        </div>
-      </CustomModal>
-
-      {/* クロスブラウザ位置情報ガイド */}
-      <CrossBrowserLocationGuide
-        isVisible={showLocationGuide}
-        browserInfo={browserInfo}
-        permissionState={permissionState}
-        onRequestLocation={handleLocationRequest}
-        onClose={() => setShowLocationGuide(false)}
-        isPermissionGranted={isPermissionGranted}
-        permissionRemainingMinutes={permissionRemainingMinutes}
-      />
     </div>
   );
 }
