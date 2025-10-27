@@ -3,9 +3,7 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { MapView } from '@/components/map/map-view';
-import { CustomModal } from '@/components/ui/custom-modal';
-import { Award, Sparkles, ShoppingBag, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+
 
 export default function MapPage() {
   const [loading, setLoading] = useState(true);

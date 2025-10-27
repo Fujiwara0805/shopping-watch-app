@@ -36,153 +36,40 @@ declare global {
   }
 }
 
-// 🔥 カテゴリ別の条件付きバリデーションスキーマ
+// 🔥 イベント情報専用のバリデーションスキーマ
 const postSchema = z.object({
-  storeId: z.string().optional(),
-  storeName: z.string().optional(),
-  category: z.enum(['空席情報', '在庫情報', 'イベント情報', '助け合い', '口コミ'], { required_error: 'カテゴリを選択してください' }),
+  storeId: z.string().min(1, { message: '場所の選択は必須です' }),
+  storeName: z.string().min(1, { message: '場所の選択は必須です' }),
+  category: z.literal('イベント情報'),
   content: z.string().min(5, { message: '5文字以上入力してください' }).max(400, { message: '400文字以内で入力してください' }),
   url: z.string().url({ message: '有効なURLを入力してください' }).optional().or(z.literal('')),
-  // 🔥 新しい掲載期間スキーマ
-  expiryOption: z.enum(['15m', '30m', '45m', '60m', '12h', '24h', 'days', '90d'], { required_error: '掲載期間を選択してください' }),
-  customExpiryMinutes: z.number().min(1).max(720).optional(),
-  customExpiryDays: z.number().min(1).max(90).optional(), // イベント情報用の日数設定
-  // 位置情報フィールド（任意）
-  location_lat: z.number().optional(),
-  location_lng: z.number().optional(),
-  store_latitude: z.number().optional(),
-  store_longitude: z.number().optional(),
-  rating: z.number().min(0).max(5, { message: '0以上5以下の値を入力してください' }).optional(),
-  supportPurchaseEnabled: z.boolean().default(false),
-  supportPurchaseOptions: z.array(z.number().min(100).max(100000)).max(3).optional(),
-  // 🔥 独立した項目として分離
-  remainingSlots: z.number().min(0).max(9999).optional(), // 残りの数（席、在庫）
-  customerSituation: z.string().optional(), // 来客状況
-  couponCode: z.string().max(50).optional(), // クーポン
-  phoneNumber: z.string().max(15).optional(), // 🔥 電話番号を追加
-  // 🔥 イベント情報用フィールド
-  eventName: z.string().max(100).optional(), // イベント名
-  eventStartDate: z.string().optional(), // 開催開始日
-  eventEndDate: z.string().optional(), // 開催終了日
-  eventPrice: z.string().max(50).optional(), // 料金
+  expiryOption: z.literal('days'),
+  customExpiryDays: z.number().min(1, { message: '1日以上を設定してください' }).max(90, { message: '90日以下を設定してください' }),
+  // 位置情報フィールド（必須）
+  location_lat: z.number(),
+  location_lng: z.number(),
+  store_latitude: z.number(),
+  store_longitude: z.number(),
+  phoneNumber: z.string().max(15).optional(),
+  // 🔥 イベント情報用フィールド（必須）
+  eventName: z.string().min(1, { message: 'イベント名の入力は必須です' }).max(100),
+  eventStartDate: z.string().min(1, { message: '開催開始日の入力は必須です' }),
+  eventEndDate: z.string().optional(),
+  eventPrice: z.string().max(50).optional(),
   // 🔥 エリア情報フィールド
-  prefecture: z.string().max(20).optional(), // 都道府県
-  city: z.string().max(50).optional(), // 市町村
-}).superRefine((data, ctx) => {
-  // 🔥 空席情報・在庫情報の場合の必須チェック
-  if (data.category === '空席情報' || data.category === '在庫情報') {
-    if (!data.storeId || data.storeId.trim() === '') {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: `${data.category}の場合、場所の選択は必須です`,
-        path: ['storeId'],
-      });
-    }
-    if (!data.storeName || data.storeName.trim() === '') {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: `${data.category}の場合、場所の選択は必須です`,
-        path: ['storeName'],
-      });
-    }
-    if (data.remainingSlots === undefined || data.remainingSlots === null) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: `${data.category}の場合、残数の入力は必須です`,
-        path: ['remainingSlots'],
-      });
-    }
-    // 空席情報・在庫情報では15m-60mのみ許可
-    if (!['15m', '30m', '45m', '60m'].includes(data.expiryOption)) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: `${data.category}では15分〜60分の掲載期間のみ選択できます`,
-        path: ['expiryOption'],
-      });
-    }
+  prefecture: z.string().max(20).optional(),
+  city: z.string().max(50).optional(),
+}).refine((data) => {
+  // 開催終了日が入力されている場合は、開始日より後の日付であることをチェック
+  if (data.eventEndDate && data.eventEndDate.trim() !== '' && data.eventStartDate && data.eventStartDate.trim() !== '') {
+    const startDate = new Date(data.eventStartDate);
+    const endDate = new Date(data.eventEndDate);
+    return endDate >= startDate;
   }
-  
-  // 🔥 イベント情報の場合の必須チェック
-  if (data.category === 'イベント情報') {
-    if (!data.storeId || data.storeId.trim() === '') {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: `${data.category}の場合、場所の選択は必須です`,
-        path: ['storeId'],
-      });
-    }
-    if (!data.storeName || data.storeName.trim() === '') {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: `${data.category}の場合、場所の選択は必須です`,
-        path: ['storeName'],
-      });
-    }
-    if (data.expiryOption !== 'days') {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: `${data.category}では日数設定での掲載期間設定が必要です`,
-        path: ['expiryOption'],
-      });
-    }
-    if (data.expiryOption === 'days' && (!data.customExpiryDays || data.customExpiryDays < 1 || data.customExpiryDays > 90)) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'イベント情報の掲載期間は1日〜90日の範囲で設定してください',
-        path: ['customExpiryDays'],
-      });
-    }
-    // イベント情報の必須フィールドチェック
-    if (!data.eventName || data.eventName.trim() === '') {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'イベント情報の場合、イベント名の入力は必須です',
-        path: ['eventName'],
-      });
-    }
-    if (!data.eventStartDate || data.eventStartDate.trim() === '') {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'イベント情報の場合、開催開始日の入力は必須です',
-        path: ['eventStartDate'],
-      });
-    }
-    // 開催終了日は任意（1日開催の場合は不要）
-    // 終了日が入力されている場合は、開始日より後の日付であることをチェック
-    if (data.eventEndDate && data.eventEndDate.trim() !== '' && data.eventStartDate && data.eventStartDate.trim() !== '') {
-      const startDate = new Date(data.eventStartDate);
-      const endDate = new Date(data.eventEndDate);
-      if (endDate < startDate) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: '開催終了日は開始日以降の日付を選択してください',
-          path: ['eventEndDate'],
-        });
-      }
-    }
-  }
-  
-  // 🔥 助け合いの場合の掲載期間チェック
-  if (data.category === '助け合い') {
-    if (!['30m', '60m', '12h', '24h'].includes(data.expiryOption)) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: `${data.category}では30分、1時間、12時間、24時間のいずれかを選択してください`,
-        path: ['expiryOption'],
-      });
-    }
-  }
-  
-  // 🔥 口コミの場合は90日間固定
-  if (data.category === '口コミ') {
-    if (data.expiryOption !== '90d') {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: '口コミでは90日間の掲載期間が固定で設定されます',
-        path: ['expiryOption'],
-      });
-    }
-  }
+  return true;
+}, {
+  message: '開催終了日は開始日以降の日付を選択してください',
+  path: ['eventEndDate'],
 });
 
 type PostFormValues = z.infer<typeof postSchema>;
@@ -191,112 +78,17 @@ type DisplayStore = Pick<Store, 'name'> & { id: string };
 
 const libraries: ("places")[] = ["places"];
 
-// 🔥 新しいカテゴリ定義（並び順を変更）
-const categoryOptions = [
-  { value: '空席情報', label: '空席情報' },
-  { value: '在庫情報', label: '在庫情報' },
-  { value: 'イベント情報', label: 'イベント情報' },
-  { value: '助け合い', label: '助け合い' },
-  { value: '口コミ', label: '口コミ' },
-];
+// イベント情報のみ対応
 
-// 🔥 ロール別に利用可能なカテゴリを取得する関数
-const getAvailableCategoriesForRole = (userRole: string | null) => {
-  if (!userRole) return []; // ロールが不明な場合は空配列
-  
-  switch (userRole) {
-    case 'admin':
-      // 管理者は全てのカテゴリを選択可能
-      return categoryOptions;
-    case 'user':
-      // 一般ユーザーは口コミと助け合いのみ
-      return categoryOptions.filter(option => 
-        option.value === '口コミ' || option.value === '助け合い'
-      );
-    case 'business':
-      // 事業者は空席情報、在庫情報、助け合いを選択可能
-      return categoryOptions.filter(option => 
-        option.value === '空席情報' || option.value === '在庫情報' || option.value === '助け合い'
-      );
-    default:
-      // 不明なロールの場合は空配列
-      return [];
-  }
-};
-
-// 🔥 特定のカテゴリがユーザーロールで選択可能かチェックする関数
-const isCategoryAvailableForRole = (category: string, userRole: string | null) => {
-  const availableCategories = getAvailableCategoriesForRole(userRole);
-  return availableCategories.some(option => option.value === category);
-};
-
-// 🔥 カテゴリ別の掲載期間オプション
-const getExpiryOptionsForCategory = (category: string) => {
-  if (category === '空席情報' || category === '在庫情報') {
-    // 空席情報・在庫情報は15分〜60分のみ
-    return [
-      { value: '15m', label: '15分' },
-      { value: '30m', label: '30分' },
-      { value: '45m', label: '45分' },
-      { value: '60m', label: '60分' },
-    ];
-  } else if (category === '助け合い') {
-    // 助け合いは30分、1時間、12時間、24時間
-    return [
-      { value: '30m', label: '30分' },
-      { value: '60m', label: '1時間' },
-      { value: '12h', label: '12時間' },
-      { value: '24h', label: '24時間' },
-    ];
-  } else if (category === 'イベント情報') {
-    // イベント情報は日数設定
-    return [
-      { value: 'days', label: '日数設定（1-90日）' },
-    ];
-  } else if (category === '口コミ') {
-    // 口コミは90日間固定
-    return [
-      { value: '90d', label: '90日間（固定）' },
-    ];
-  } else {
-    // その他は30分をデフォルト
-    return [
-      { value: '30m', label: '30分' },
-    ];
-  }
-};
-
-// 🔥 カテゴリ別定型文データ
+// 🔥 イベント情報専用定型文データ
 const templateTexts = {
-  '空席情報': [
-    '【空席あり】\n現在空席があります！\n・席数: \n・利用可能時間: \n・注意事項: ',
-    '【カウンター席空き】\nカウンター席に空きがあります。\nお一人様でもお気軽にどうぞ！',
-    '【テーブル席空き】\nテーブル席に余裕があります。\nグループでのご利用も可能です。',
-    '【予約なしOK】\n予約なしでもご案内できます！\n混雑状況: \nお待ち時間: ',
-  ],
-  '在庫情報': [
-    '【在庫あり】\n人気商品の在庫があります！\n・商品名: \n・残り数量: \n・価格: ',
-    '【限定商品入荷】\n限定商品が入荷しました。\n数量限定のためお早めに！',
-    '【セール商品あり】\nセール対象商品の在庫があります。\n・割引率: \n・セール期間: ',
-    '【新商品入荷】\n新商品が入荷しました！\n・商品名: \n・特徴: \n・価格: ',
-  ],
   'イベント情報': [
     '【イベント開催】\n楽しいイベントを開催します！\n・内容: \n・対象: \n・持ち物: ',
     '【ワークショップ開催】\nワークショップを開催します。\n・テーマ: \n・定員: \n・申込方法: ',
     '【セール開催】\n特別セールを開催中！\n・対象商品: \n・割引内容: \n・期間限定: ',
     '【体験会実施】\n体験会を実施します。\n・体験内容: \n・所要時間: \n・参加費: ',
-  ],
-  '助け合い': [
-    '【おすそわけ】\n余ってしまった食材をおすそわけします。\n・品名: \n・数量: \n・受渡方法: ',
-    '【お手伝い募集】\nお手伝いしていただける方を募集しています。\n・作業内容: \n・時間: \n・お礼: ',
-    '【譲ります】\n使わなくなったものを譲ります。\n・品名: \n・状態: \n・引取方法: ',
-    '【探しています】\n以下のものを探しています。\n・品名: \n・用途: \n・条件: ',
-  ],
-  '口コミ': [
-    '【おすすめ】\nとても良かったのでおすすめします！\n・良かった点: \n・注意点: \n・総合評価: ',
-    '【体験レポート】\n実際に利用してみた感想です。\n・サービス内容: \n・満足度: \n・リピート: ',
-    '【お気に入り】\nお気に入りのお店/サービスです。\n・おすすめポイント: \n・利用頻度: \n・コスパ: ',
-    '【比較レビュー】\n他と比較した感想です。\n・比較対象: \n・違い: \n・どちらがおすすめ: ',
+    '【地域イベント】\n地域のみなさまにお楽しみいただけるイベントです。\n・日時: \n・場所: \n・参加方法: ',
+    '【フェスティバル】\n年に一度の特別なフェスティバルを開催！\n・見どころ: \n・出店: \n・アクセス: ',
   ],
 };
 
@@ -318,71 +110,17 @@ const calculateEventExpiryDays = (startDate: string, endDate?: string): number =
   return Math.max(1, Math.min(90, diffDays));
 };
 
-// 🔥 デフォルトの掲載期間を取得
-const getDefaultExpiryForCategory = (category: string) => {
-  if (category === '空席情報' || category === '在庫情報') {
-    return '30m';
-  } else if (category === '助け合い') {
-    return '60m'; // 1時間をデフォルト
-  } else if (category === 'イベント情報') {
-    return 'days';
-  } else if (category === '口コミ') {
-    return '90d';
-  } else {
-    return '30m'; // デフォルトを30分に変更
-  }
-};
+// イベント情報の表示項目
+const eventFields = ['location', 'eventName', 'eventDate', 'eventPrice', 'eventArea', 'url', 'image', 'phoneNumber', 'file'];
 
-// 🔥 カテゴリ別のプレースホルダーテキストを取得
-const getPlaceholderForCategory = (category: string) => {
-  switch (category) {
-    case '空席情報':
-      return '空席情報を投稿してみよう。（400文字以内）';
-    case '在庫情報':
-      return '在庫情報を投稿してみよう。（400文字以内）';
-    case 'イベント情報':
-      return 'イベント情報を投稿してみよう。（400文字以内）';
-    case '助け合い':
-      return '食品ロス削減、物の譲り合いなど、地域の助け合い情報を投稿してみよう。（400文字以内）';
-    case '口コミ':
-      return '口コミ情報を投稿してみよう。（400文字以内）';
-    default:
-      return '日常生活のちょっとしたおとく情報を投稿してみよう。（400文字以内）';
-  }
-};
-
-// 🔥 カテゴリ別の表示項目を取得
-const getCategoryFields = (category: string) => {
-  const baseFields = ['location']; // 全カテゴリで場所は表示
-  
-  switch (category) {
-    case '空席情報':
-    case '在庫情報':
-      return [...baseFields, 'remainingSlots', 'url', 'image', 'customerSituation', 'coupon', 'phoneNumber'];
-    case 'イベント情報':
-      return [...baseFields, 'eventName', 'eventDate', 'eventPrice', 'eventArea', 'url', 'image', 'phoneNumber', 'file'];
-    case '助け合い':
-      return [...baseFields, 'url', 'image', 'phoneNumber', 'file', 'supportPurchase']; // おすそわけ = supportPurchase
-    case '口コミ':
-      return [...baseFields, 'url', 'image', 'rating', 'file'];
-    default:
-      return baseFields;
-  }
-};
-
-// 🔥 フィールドの表示名とアイコンを取得
+// イベント情報用フィールドの表示名とアイコン
 const getFieldDisplayInfo = (field: string) => {
   const fieldMap = {
     location: { label: '場所', icon: StoreIcon },
-    remainingSlots: { label: '残席・在庫数', icon: PackageIcon },
     url: { label: 'リンク', icon: LinkIcon },
     image: { label: '画像', icon: ImageIcon },
-    customerSituation: { label: '来客状況', icon: Users },
-    coupon: { label: 'クーポン', icon: Tag },
     phoneNumber: { label: '電話番号', icon: Phone },
     file: { label: 'ファイル', icon: FileText },
-    supportPurchase: { label: 'おすそわけ', icon: HandCoins },
-    rating: { label: '評価', icon: StarIcon },
     eventName: { label: 'イベント名', icon: CalendarDays },
     eventDate: { label: '開催期日', icon: CalendarDays },
     eventPrice: { label: '料金', icon: Tag },
@@ -390,12 +128,6 @@ const getFieldDisplayInfo = (field: string) => {
   };
   
   return fieldMap[field as keyof typeof fieldMap] || { label: field, icon: HelpCircle };
-};
-
-// 🔥 カテゴリに対応したフィールドかどうかをチェック
-const isFieldVisibleForCategory = (field: string, category: string) => {
-  const categoryFields = getCategoryFields(category);
-  return categoryFields.includes(field);
 };
 
 export default function PostPage() {
@@ -456,34 +188,28 @@ export default function PostPage() {
 
   const { isLoaded, loadError } = useGoogleMapsApi();
 
-  // 🔥 更新されたフォーム設定（電話番号を追加）
+  // イベント情報専用フォーム設定
   const form = useForm<PostFormValues>({
     resolver: zodResolver(postSchema),
     defaultValues: {
       storeId: '',
       storeName: '',
-      category: '空席情報', // デフォルトカテゴリを変更
+      category: 'イベント情報',
       content: '',
       url: '',
-      expiryOption: '30m', // デフォルトを30分に変更
-      customExpiryMinutes: undefined, // デフォルト2時間
-      customExpiryDays: undefined, // イベント情報用デフォルト日数
+      expiryOption: 'days',
+      customExpiryDays: 7,
       location_lat: undefined,
       location_lng: undefined,
       store_latitude: undefined,
       store_longitude: undefined,
-      rating: undefined,
-      supportPurchaseEnabled: false,
-      supportPurchaseOptions: [],
-      remainingSlots: undefined,
-      customerSituation: '',
-      couponCode: '',
-      phoneNumber: '', // 🔥 電話番号のデフォルト値を追加
-      // 🔥 イベント情報フィールドのデフォルト値を追加
+      phoneNumber: '',
       eventName: '',
       eventStartDate: '',
       eventEndDate: '',
       eventPrice: '',
+      prefecture: '',
+      city: '',
     },
     mode: 'onChange',
   });
@@ -617,140 +343,29 @@ export default function PostPage() {
     setTimeout(fetchLocation, 500);
   }, [businessSettings?.business_store_id, form]);
 
-  // 🔥 カテゴリ変更時の処理
+  // イベント情報の必須フィールドを自動展開
   useEffect(() => {
-    if (selectedCategory) {
-      // 🔥 投稿内容をリセット
-      form.setValue('content', '');
-      
-      // 🔥 詳細情報をすべてリセット（企業設定は保持）
-      form.setValue('storeId', businessSettings?.business_store_id || '');
-      form.setValue('storeName', businessSettings?.business_store_name || '');
-      form.setValue('location_lat', undefined);
-      form.setValue('location_lng', undefined);
-      form.setValue('store_latitude', undefined);
-      form.setValue('store_longitude', undefined);
-      form.setValue('rating', undefined);
-      form.setValue('url', businessSettings?.business_url || '');
-      form.setValue('remainingSlots', undefined);
-      form.setValue('customerSituation', '');
-      form.setValue('couponCode', businessSettings?.business_default_coupon || '');
-      form.setValue('phoneNumber', businessSettings?.business_default_phone || '');
-      form.setValue('supportPurchaseEnabled', false);
-      form.setValue('supportPurchaseOptions', []);
-      
-      // 🔥 イベント情報フィールドもリセット
-      form.setValue('eventName', '');
-      form.setValue('eventStartDate', '');
-      form.setValue('eventEndDate', '');
-      form.setValue('eventPrice', '');
-      
-      // 🔥 画像・ファイルもリセット（企業設定のデフォルト画像は保持）
-      setImageFiles([]);
-      if (businessDefaultImageUrls.length > 0) {
-        setImagePreviewUrls([...businessDefaultImageUrls]);
-      } else {
-        setImagePreviewUrls([]);
-      }
-      setFileFiles([]);
-      setFilePreviewUrls([]);
-      
-      // 🔥 来客状況の状態もリセット
-      setMaleCustomers(undefined);
-      setFemaleCustomers(undefined);
-      
-      // 🔥 位置情報関連の状態もリセット
-      setLocationStatus('none');
-      setSelectedPlace(null);
-      
-      // 🔥 すべてのオプションフィールドを閉じる
-      setOptionalFieldsExpanded({
-        image: false,
-        location: false,
-        rating: false,
-        url: false,
-        remainingSlots: false,
-        customerSituation: false,
-        coupon: false,
-        phoneNumber: false,
-        file: false,
-        supportPurchase: false,
-        eventName: false,
-        eventDate: false,
-        eventPrice: false,
-        eventArea: false,
-      });
-      
-      // 🔥 詳細情報セクションを閉じる
-      setShowOptionalFields(false);
-      
-      // 🔥 イベント情報の場合は必須フィールドを自動展開
-      if (selectedCategory === 'イベント情報') {
-        setShowOptionalFields(true);
-        setOptionalFieldsExpanded(prev => ({
-          ...prev,
-          location: true,     // 場所（必須）
-          eventName: true,    // イベント名（必須）
-          eventDate: true,    // 開催期日（必須）
-        }));
-      }
-      
-      // 掲載期間の設定
-      const defaultExpiry = getDefaultExpiryForCategory(selectedCategory);
-      const currentExpiry = form.getValues('expiryOption');
-      const validOptions = getExpiryOptionsForCategory(selectedCategory).map(opt => opt.value);
-      
-      // 空席情報・在庫情報間の移動の場合は現在の値を保持、それ以外はデフォルト値を設定
-      const isAvailabilityCategory = selectedCategory === '空席情報' || selectedCategory === '在庫情報';
-      const currentIsAvailabilityOption = currentExpiry && ['15m', '30m', '45m', '60m'].includes(currentExpiry);
-      
-      if (isAvailabilityCategory && currentIsAvailabilityOption) {
-        // 空席情報・在庫情報間の移動で、現在の値が有効な場合は保持
-        // 何もしない（現在の値を保持）
-      } else {
-        // それ以外の場合はデフォルト値を設定
-        form.setValue('expiryOption', defaultExpiry);
-        
-        // 日数設定の場合はデフォルト値を設定
-        if (defaultExpiry === 'days') {
-          form.setValue('customExpiryDays', 7); // 7日間をデフォルト
-          form.setValue('customExpiryMinutes', undefined);
-        } else {
-          form.setValue('customExpiryMinutes', undefined);
-          form.setValue('customExpiryDays', undefined);
-        }
-      }
-      
-      // 🔥 企業設定の場合は位置情報を再取得
-      if (businessSettings?.business_store_id) {
-        fetchBusinessStoreLocation();
-      }
-      
-      // 🔥 空席情報・在庫情報・イベント情報の場合は必要な項目を自動展開（リセット後に）
-      if (selectedCategory === '空席情報' || selectedCategory === '在庫情報') {
-        // 少し遅延させてから展開（リセット処理完了後）
-        setTimeout(() => {
-          setOptionalFieldsExpanded(prev => ({
-            ...prev,
-            location: true,
-            remainingSlots: true
-          }));
-          setShowOptionalFields(true);
-        }, 100);
-      } else if (selectedCategory === 'イベント情報') {
-        // イベント情報の場合は場所のみ自動展開
-        setTimeout(() => {
-          setOptionalFieldsExpanded(prev => ({
-            ...prev,
-            location: true
-          }));
-          setShowOptionalFields(true);
-        }, 100);
-      }
+    // 初期表示時に必須フィールドを展開
+    setShowOptionalFields(true);
+    setOptionalFieldsExpanded({
+      image: false,
+      location: true,
+      url: false,
+      phoneNumber: false,
+      file: false,
+      eventName: true,
+      eventDate: true,
+      eventPrice: false,
+      eventArea: false,
+    });
+    
+    // 企業設定の場合は位置情報を再取得
+    if (businessSettings?.business_store_id) {
+      fetchBusinessStoreLocation();
     }
-  }, [selectedCategory, form, businessSettings, businessDefaultImageUrls, fetchBusinessStoreLocation]);
+  }, [businessSettings?.business_store_id, fetchBusinessStoreLocation]);
   
-  // 🔥 更新された投稿処理
+  // イベント情報投稿処理
   const handleActualSubmit = async (values: PostFormValues) => {
     if (!session?.user?.id) {
       console.log("PostPage: User not logged in, redirecting to login page.");
@@ -758,31 +373,24 @@ export default function PostPage() {
       return;
     }
 
-    // 🔥 必須フィールドの検証（カテゴリ、内容、掲載期間）
-    if (!values.category) {
-      setSubmitError("カテゴリを選択してください。");
-      return;
-    }
-
-    // 🔥 カテゴリ権限チェック
-    if (!isCategoryAvailableForRole(values.category, userRole)) {
-      setSubmitError("選択されたカテゴリを投稿する権限がありません。");
-      return;
-    }
-
+    // 必須フィールドの検証
     if (!values.content || values.content.length < 5) {
       setSubmitError("投稿内容を5文字以上入力してください。");
       return;
     }
 
-    if (!values.expiryOption) {
-      setSubmitError("掲載期間を選択してください。");
+    if (!values.customExpiryDays || values.customExpiryDays < 1 || values.customExpiryDays > 90) {
+      setSubmitError("掲載期間は1日〜90日の範囲で設定してください。");
       return;
     }
 
-    // 日数設定の検証
-    if (values.expiryOption === 'days' && (!values.customExpiryDays || values.customExpiryDays < 1 || values.customExpiryDays > 90)) {
-      setSubmitError("日数設定は1日〜90日の範囲で設定してください。");
+    if (!values.eventName) {
+      setSubmitError("イベント名を入力してください。");
+      return;
+    }
+
+    if (!values.eventStartDate) {
+      setSubmitError("開催開始日を入力してください。");
       return;
     }
 
@@ -881,73 +489,28 @@ export default function PostPage() {
         console.log("PostPage: Multiple files uploaded to Supabase Storage. Public URLs:", fileUrls);
       }
 
-      // 🔥 投稿データを準備（完全版）
-      const getDefaultStoreName = () => {
-        // 🔥 実際に入力された店舗名がある場合はそれを使用
-        const actualStoreName = form.getValues("storeName");
-        if (actualStoreName && actualStoreName.trim() !== '') {
-          return actualStoreName;
-        }
-        
-        // 🔥 店舗名が入力されていない場合のみ、カテゴリベースのデフォルト値を使用
-        const selectedCategory = form.getValues("category");
-        if (selectedCategory) {
-          const categoryDefaults = {
-            '空席情報': '空席情報',
-            '在庫情報': '在庫情報',
-            'イベント情報': 'イベント情報',
-            '応援': '応援先',
-            'おとく自慢': 'おとく自慢',
-            '口コミ': '口コミ',
-          };
-          return categoryDefaults[selectedCategory as keyof typeof categoryDefaults] || null;
-        }
-        
-        return null;
-      };
-
-      const getDefaultCategory = () => {
-        if (values.category && values.category.trim() !== '') {
-          return values.category;
-        }
-        
-        return null;
-      };
-
-      // 🔥 修正：投稿作成時にis_deletedフィールドを追加
+      // イベント情報投稿データを準備
       const postData: any = {
         app_profile_id: appProfileId,
-        store_id: values.storeId && values.storeId.trim() !== '' ? values.storeId : null,
-        store_name: getDefaultStoreName(),
-        category: values.category || null, // 🔥 カテゴリは明示的に選択された場合のみ保存
+        store_id: values.storeId || null,
+        store_name: values.storeName || 'イベント情報',
+        category: 'イベント情報',
         content: values.content,
         image_urls: imageUrls.length > 0 ? JSON.stringify(imageUrls) : null,
         file_urls: fileUrls.length > 0 ? JSON.stringify(fileUrls) : null,
         url: values.url && values.url.trim() !== '' ? values.url : null,
-        expiry_option: values.expiryOption,
-        custom_expiry_minutes: values.expiryOption === 'days' ? (values.customExpiryDays || 7) * 24 * 60 :
-                               values.expiryOption === '90d' ? 90 * 24 * 60 : null,
-        expires_at: calculateExpiresAt(values.expiryOption, values.customExpiryMinutes, values.customExpiryDays).toISOString(),
+        expiry_option: 'days',
+        custom_expiry_minutes: (values.customExpiryDays || 7) * 24 * 60,
+        expires_at: calculateExpiresAt('days', undefined, values.customExpiryDays).toISOString(),
         likes_count: 0,
         views_count: 0,
         comments_count: 0,
         is_deleted: false,
-        rating: values.rating || null,
-        support_purchase_enabled: values.supportPurchaseEnabled,
-        support_purchase_options: values.supportPurchaseEnabled && (values.supportPurchaseOptions?.length ?? 0) > 0 
-          ? JSON.stringify(values.supportPurchaseOptions) 
-          : null,
-        // 🔥 独立したフィールドとして追加
-        remaining_slots: values.remainingSlots || null,
-        customer_situation: values.customerSituation && values.customerSituation.trim() !== '' ? values.customerSituation : null,
-        coupon_code: values.couponCode && values.couponCode.trim() !== '' ? values.couponCode : null,
-        phone_number: values.phoneNumber && values.phoneNumber.trim() !== '' ? values.phoneNumber : null, // 🔥 電話番号を追加
-        // 🔥 イベント情報フィールドを追加
-        event_name: values.eventName && values.eventName.trim() !== '' ? values.eventName : null,
-        event_start_date: values.eventStartDate && values.eventStartDate.trim() !== '' ? values.eventStartDate : null,
+        phone_number: values.phoneNumber && values.phoneNumber.trim() !== '' ? values.phoneNumber : null,
+        event_name: values.eventName,
+        event_start_date: values.eventStartDate,
         event_end_date: values.eventEndDate && values.eventEndDate.trim() !== '' ? values.eventEndDate : null,
         event_price: values.eventPrice && values.eventPrice.trim() !== '' ? values.eventPrice : null,
-        // 🔥 直接入力されたエリア情報を設定
         prefecture: values.prefecture && values.prefecture.trim() !== '' ? values.prefecture : null,
         city: values.city && values.city.trim() !== '' ? values.city : null,
         author_role: session?.user?.role === 'admin' ? 'admin' : 'user',
@@ -1019,27 +582,26 @@ export default function PostPage() {
         }
       }
 
-              // フォームリセット（企業設定を考慮）
+      // フォームリセット
       const resetValues = {
         storeId: businessSettings?.business_store_id || '',
         storeName: businessSettings?.business_store_name || '',
-        category: '空席情報' as const, // デフォルトカテゴリを変更
+        category: 'イベント情報' as const,
         content: businessSettings?.business_default_content || '',
         url: businessSettings?.business_url || '',
-        expiryOption: '30m' as const, // デフォルトを30分に変更
-        customExpiryMinutes: undefined, // デフォルト2時間
-        customExpiryDays: undefined, // イベント情報用デフォルト日数
+        expiryOption: 'days' as const,
+        customExpiryDays: 7,
         location_lat: undefined,
         location_lng: undefined,
         store_latitude: undefined,
         store_longitude: undefined,
-        rating: undefined,
-        supportPurchaseEnabled: false,
-        supportPurchaseOptions: [],
-        remainingSlots: undefined,
-        customerSituation: '',
-        couponCode: businessSettings?.business_default_coupon || '',
         phoneNumber: businessSettings?.business_default_phone || '',
+        eventName: '',
+        eventStartDate: '',
+        eventEndDate: '',
+        eventPrice: '',
+        prefecture: '',
+        city: '',
       };
       
       form.reset(resetValues);
@@ -1479,23 +1041,18 @@ export default function PostPage() {
   };
 
 
-  // 🔥 オプション項目の表示状態管理（12項目に更新）
+  // オプション項目の表示状態管理（イベント情報専用）
   const [showOptionalFields, setShowOptionalFields] = useState(false);
   const [optionalFieldsExpanded, setOptionalFieldsExpanded] = useState({
-    image: false, // 🔥 画像を追加
+    image: false,
     location: false,
-    rating: false,
     url: false,
-    remainingSlots: false,
-    customerSituation: false,
-    coupon: false,
-    phoneNumber: false, // 🔥 電話番号を追加
+    phoneNumber: false,
     file: false,
-    supportPurchase: false,
-    eventName: false, // 🔥 イベント名を追加
-    eventDate: false, // 🔥 開催期日を追加
-    eventPrice: false, // 🔥 料金を追加
-    eventArea: false, // 🔥 エリア情報を追加
+    eventName: false,
+    eventDate: false,
+    eventPrice: false,
+    eventArea: false,
   });
 
   // 企業設定で値が設定されているかチェックする関数
@@ -1523,7 +1080,7 @@ export default function PostPage() {
     setShowBusinessSettingsModal(true);
   };
 
-  // 🔥 オプションフィールドの切り替えと値のリセット（電話番号を追加）
+  // オプションフィールドの切り替え（イベント情報専用）
   const toggleOptionalField = (field: keyof typeof optionalFieldsExpanded) => {
     // 企業設定で値が設定されている場合はモーダルを表示
     if (isBusinessFieldSet(field)) {
@@ -1552,45 +1109,27 @@ export default function PostPage() {
             setLocationStatus('none');
             setSelectedPlace(null);
             break;
-          case 'rating':
-            form.setValue('rating', undefined, { shouldValidate: true });
-            break;
           case 'url':
             form.setValue('url', '', { shouldValidate: true });
             break;
-          case 'remainingSlots':
-            form.setValue('remainingSlots', undefined, { shouldValidate: true });
-            break;
-          case 'customerSituation':
-            form.setValue('customerSituation', '', { shouldValidate: true });
-            setMaleCustomers(undefined);
-            setFemaleCustomers(undefined);
-            break;
-          case 'coupon':
-            form.setValue('couponCode', '', { shouldValidate: true });
-            break;
-          case 'phoneNumber': // 🔥 電話番号のリセット処理を追加
+          case 'phoneNumber':
             form.setValue('phoneNumber', '', { shouldValidate: true });
             break;
           case 'file':
             setFileFiles([]);
             setFilePreviewUrls([]);
             break;
-          case 'supportPurchase':
-            form.setValue('supportPurchaseEnabled', false);
-            form.setValue('supportPurchaseOptions', []);
-            break;
-          case 'eventName': // 🔥 イベント名のリセット処理を追加
+          case 'eventName':
             form.setValue('eventName', '', { shouldValidate: true });
             break;
-          case 'eventDate': // 🔥 開催期日のリセット処理を追加
+          case 'eventDate':
             form.setValue('eventStartDate', '', { shouldValidate: true });
             form.setValue('eventEndDate', '', { shouldValidate: true });
             break;
-          case 'eventPrice': // 🔥 料金のリセット処理を追加
+          case 'eventPrice':
             form.setValue('eventPrice', '', { shouldValidate: true });
             break;
-          case 'eventArea': // 🔥 エリア情報のリセット処理を追加
+          case 'eventArea':
             form.setValue('prefecture', '', { shouldValidate: true });
             form.setValue('city', '', { shouldValidate: true });
             break;
@@ -1614,232 +1153,23 @@ export default function PostPage() {
     });
   };
 
-  // 🔥 オプション項目の値が入力されているかチェック（画像と電話番号を追加）
+  // オプション項目の値が入力されているかチェック
   const hasOptionalValues = () => {
     const values = form.getValues();
-    return !!(imageFiles.length > 0 || values.storeId || values.rating || values.url || values.remainingSlots || values.customerSituation || values.couponCode || values.phoneNumber || fileFiles.length > 0 || values.supportPurchaseEnabled);
+    return !!(imageFiles.length > 0 || values.storeId || values.url || values.phoneNumber || fileFiles.length > 0);
   };
 
-  // 🔥 Stripe Connect機能を有効化
-  const STRIPE_CONNECT_ENABLED = true; // falseから変更
-
-  // 🔥 Stripe設定確認を有効化
-  const checkStripeSetup = async () => {
-    if (!session?.user?.id) return;
-    
-    setStripeSetupStatus(prev => ({ ...prev, loading: true }));
-    
-    try {
-      const { data: profile, error } = await supabase
-        .from('app_profiles')
-        .select('stripe_account_id, stripe_onboarding_completed')
-        .eq('user_id', session.user.id)
-        .single();
-
-      if (error) {
-        console.error('Profile fetch error:', error);
-        setStripeSetupStatus({
-          hasAccount: false,
-          onboardingCompleted: false,
-          loading: false
-        });
-        return;
-      }
-
-      const hasAccount = !!profile?.stripe_account_id;
-      const onboardingCompleted = !!profile?.stripe_onboarding_completed;
-      
-      setStripeSetupStatus({
-        hasAccount,
-        onboardingCompleted,
-        loading: false
-      });
-
-      // デバッグログ追加
-      console.log('Stripe Setup Status:', {
-        hasAccount,
-        onboardingCompleted,
-        stripe_account_id: profile?.stripe_account_id
-      });
-
-    } catch (error) {
-      console.error('Stripe setup check error:', error);
-      setStripeSetupStatus(prev => ({ ...prev, loading: false }));
-    }
-  };
-
-  // 🔥 おすそわけ有効化時のチェック処理を修正
-  const handleSupportPurchaseToggle = async (checked: boolean) => {
-    if (!checked) {
-      form.setValue("supportPurchaseEnabled", false);
-      form.setValue("supportPurchaseOptions", []);
-      return;
-    }
-
-    // 最新のStripe設定状況をチェック
-    await checkStripeSetup();
-    
-    // 少し待ってから状態を確認（非同期処理の完了を待つ）
-    setTimeout(() => {
-      if (!stripeSetupStatus.hasAccount || !stripeSetupStatus.onboardingCompleted) {
-        setShowStripeSetupModal(true);
-        return;
-      }
-
-      form.setValue("supportPurchaseEnabled", true);
-      toast({
-        title: "✅ おすそわけ機能を有効化しました",
-        description: "金額を選択して投稿してください",
-        duration: 3000,
-      });
-    }, 500);
-  };
-
-  // 🔥 Stripe設定画面への遷移
-  const handleNavigateToStripeSetup = () => {
-    setShowStripeSetupModal(false);
-    router.push('/profile/stripe-setup');
-  };
-
-  // 🔥 初期ロード時にStripe設定状態を確認
-  useEffect(() => {
-    if (session?.user?.id && STRIPE_CONNECT_ENABLED) {
-      checkStripeSetup();
-    }
-  }, [session?.user?.id]);
-
-  // 🔥 Stripe設定完了後の自動有効化
-  useEffect(() => {
-    const fromStripeSetup = searchParams.get('from_stripe_setup');
-    if (fromStripeSetup === 'true' && session?.user?.id) {
-      // Stripe設定状況を確認してからおすそわけを有効化
-      checkStripeSetupAndEnable();
-    }
-  }, [session?.user?.id, searchParams]);
-
-  // 🔥 Stripe設定確認とおすそわけ自動有効化
-  const checkStripeSetupAndEnable = async () => {
-    if (!session?.user?.id) return; // この行を追加
-    
-    setStripeSetupStatus(prev => ({ ...prev, loading: true }));
-    
-    try {
-      const { data: profile, error } = await supabase
-        .from('app_profiles')
-        .select('stripe_account_id, stripe_onboarding_completed')
-        .eq('user_id', session.user.id)
-        .single();
-
-      if (error) {
-        console.error('Profile fetch error:', error);
-        setStripeSetupStatus({
-          hasAccount: false,
-          onboardingCompleted: false,
-          loading: false
-        });
-        return;
-      }
-
-      const hasAccount = !!profile?.stripe_account_id;
-      const onboardingCompleted = !!profile?.stripe_onboarding_completed;
-      
-      setStripeSetupStatus({
-        hasAccount,
-        onboardingCompleted,
-        loading: false
-      });
-
-      // 設定が完了している場合、おすそわけを自動有効化
-      if (hasAccount && onboardingCompleted) {
-        form.setValue("supportPurchaseEnabled", true);
-        
-        toast({
-          title: "✅ おすそわけ機能を有効化しました",
-          description: "金額を選択して投稿してください",
-          duration: 4000,
-        });
-        
-        // URLパラメータをクリア
-        router.replace('/post');
-      }
-
-    } catch (error) {
-      console.error('Stripe setup check error:', error);
-      setStripeSetupStatus(prev => ({ ...prev, loading: false }));
-    }
-  };
-
-  // 🔥 モーダル状態を追加
+  // カスタム日数モーダル状態
   const [showCustomDaysModal, setShowCustomDaysModal] = useState(false);
   const [customDays, setCustomDays] = useState(7);
 
-  // 🔥 来客状況の状態を追加
-  const [totalCustomers, setTotalCustomers] = useState<number | undefined>(undefined);
-  const [maleCustomers, setMaleCustomers] = useState<number | undefined>(undefined);
-  const [femaleCustomers, setFemaleCustomers] = useState<number | undefined>(undefined);
-
-  // 🔥 日数設定の処理
+  // 日数設定の処理
   const handleCustomDaysSet = () => {
     if (customDays > 0 && customDays <= 90) {
       form.setValue('customExpiryDays', customDays);
       setShowCustomDaysModal(false);
     }
   };
-
-  // 🔥 来客状況の更新処理を修正（男性・女性の両方を確実に保存）
-  const updateCustomerSituation = () => {
-    let situation = '';
-    
-    // 男性・女性の人数が入力されている場合のみ処理
-    if (maleCustomers !== undefined || femaleCustomers !== undefined) {
-      const parts = [];
-      
-      // 男性の人数（0でも表示）
-      if (maleCustomers !== undefined) {
-        parts.push(`男性: ${maleCustomers}人`);
-      }
-      
-      // 女性の人数（0でも表示）
-      if (femaleCustomers !== undefined) {
-        parts.push(`女性: ${femaleCustomers}人`);
-      }
-      
-      if (parts.length > 0) {
-        situation = parts.join(', ');
-      }
-    }
-    
-    console.log('updateCustomerSituation:', { 
-      maleCustomers, 
-      femaleCustomers, 
-      situation 
-    }); // デバッグログ追加
-    
-    form.setValue('customerSituation', situation);
-  };
-
-  // 🔥 男性数変更時の処理を修正
-  const handleMaleCustomersChange = (value: string) => {
-    const num = value === '' ? undefined : parseInt(value, 10);
-    console.log('handleMaleCustomersChange:', { value, num }); // デバッグログ追加
-    setMaleCustomers(num);
-    // 即座に更新するためsetTimeoutを削除
-    updateCustomerSituation();
-  };
-
-  // 🔥 女性数変更時の処理を修正
-  const handleFemaleCustomersChange = (value: string) => {
-    const num = value === '' ? undefined : parseInt(value, 10);
-    console.log('handleFemaleCustomersChange:', { value, num }); // デバッグログ追加
-    setFemaleCustomers(num);
-    // 即座に更新するためsetTimeoutを削除
-    updateCustomerSituation();
-  };
-
-  // 🔥 useEffectで状態変更時に確実に更新
-  useEffect(() => {
-    updateCustomerSituation();
-  }, [maleCustomers, femaleCustomers]);
 
   // 🔥 イベント日付変更時の掲載期間自動更新
   useEffect(() => {
@@ -1876,56 +1206,18 @@ export default function PostPage() {
           <Form {...form}>
             <form onSubmit={form.handleSubmit(triggerConfirmationModal)} className="space-y-6 pb-20">
               
-              {/* 🔥 1. カテゴリ（必須） */}
-              <FormField
-                control={form.control}
-                name="category"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xl flex font-semibold items-center">
-                      <Layers className="mr-2 h-6 w-6" /> カテゴリ<span className="text-destructive ml-1">※</span>
-                    </FormLabel>
-                    <Select 
-                      onValueChange={(value) => {
-                        // 🔥 権限チェック
-                        if (!isCategoryAvailableForRole(value, userRole)) {
-                          toast({
-                            title: "権限エラー",
-                            description: "このカテゴリを選択する権限がありません。",
-                            variant: "destructive",
-                            duration: 3000,
-                          });
-                          return;
-                        }
-                        field.onChange(value);
-                      }} 
-                      value={field.value || ""}
-                    >
-                      <FormControl>
-                        <SelectTrigger className="w-full text-lg py-6">
-                          <SelectValue placeholder="カテゴリを選択してください" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent className="max-h-[200px]">
-                        {userRole ? (
-                          getAvailableCategoriesForRole(userRole).map((option) => (
-                            <SelectItem key={option.value} value={option.value} className="text-lg py-3">
-                              {option.label}
-                            </SelectItem>
-                          ))
-                        ) : (
-                          <SelectItem value="loading" disabled className="text-lg py-3">
-                            ロール情報を読み込み中...
-                          </SelectItem>
-                        )}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {/* イベント情報タイトル */}
+              <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white p-4 rounded-lg shadow-lg">
+                <div className="flex items-center">
+                  <CalendarDays className="mr-3 h-7 w-7" />
+                  <div>
+                    <h2 className="text-2xl font-bold">イベント情報を投稿</h2>
+                    <p className="text-sm text-white/90 mt-1">地域のイベント情報を共有しましょう</p>
+                  </div>
+                </div>
+              </div>
 
-              {/* 🔥 2. 投稿内容（必須） */}
+              {/* 投稿内容（必須） */}
               <FormField
                 control={form.control}
                 name="content"
@@ -1941,7 +1233,6 @@ export default function PostPage() {
                         size="sm"
                         onClick={() => setShowTemplateModal(true)}
                         className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 text-sm font-normal"
-                        disabled={!selectedCategory}
                       >
                         定型文
                       </Button>
@@ -1949,7 +1240,7 @@ export default function PostPage() {
                     <FormControl>
                       <div className="relative">
                         <Textarea
-                          placeholder={getPlaceholderForCategory(selectedCategory)}
+                          placeholder="イベント情報を投稿してみよう。（400文字以内）"
                           className="resize-none"
                           style={{ fontSize: '16px', minHeight: '140px' }}
                           rows={7}
@@ -1974,45 +1265,23 @@ export default function PostPage() {
                 )}
               />
 
-              {/* 🔥 3. 掲載期間（必須） */}
+              {/* 掲載期間（イベント情報専用） */}
               <FormField
                 control={form.control}
-                name="expiryOption"
+                name="customExpiryDays"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-xl flex font-semibold items-center">
                       <ClockIcon className="mr-2 h-6 w-6" /> 掲載期間<span className="text-destructive ml-1">※</span>
                     </FormLabel>
-                    <Select onValueChange={(value) => {
-                      field.onChange(value);
-                      if (value === 'days') {
-                        setShowCustomDaysModal(true);
-                      }
-                    }} value={field.value || ""}>
-                      <FormControl>
-                        <SelectTrigger className="w-full text-lg py-6">
-                          <SelectValue placeholder="掲載期間を選択してください" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {getExpiryOptionsForCategory(selectedCategory || 'おとく自慢').map((option) => (
-                          <SelectItem key={option.value} value={option.value} className="text-lg py-3">
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                    
-                    {/* 日数設定が選択されている場合の表示 */}
-                    {selectedExpiryOption === 'days' && form.getValues('customExpiryDays') && (
+                    {form.getValues('customExpiryDays') ? (
                       <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                         <div className="flex items-center justify-between">
                           <div className="flex-1">
                             <span className="text-sm text-blue-800">
                               設定期間: {form.getValues('customExpiryDays')}日間
                             </span>
-                            {selectedCategory === 'イベント情報' && eventStartDate && (
+                            {eventStartDate && (
                               <div className="text-xs text-blue-600 mt-1">
                                 📅 開催日に基づいて自動計算されました
                                 {eventEndDate ? 
@@ -2027,32 +1296,30 @@ export default function PostPage() {
                             variant="outline"
                             size="sm"
                             onClick={() => setShowCustomDaysModal(true)}
-                            disabled={selectedCategory === 'イベント情報' && Boolean(eventStartDate)}
+                            disabled={Boolean(eventStartDate)}
                           >
-                            {selectedCategory === 'イベント情報' && eventStartDate ? '自動計算' : '変更'}
+                            {eventStartDate ? '自動計算' : '変更'}
                           </Button>
                         </div>
                       </div>
-                    )}
-                    
-                    {/* イベント情報で日数設定が必要な場合の案内 */}
-                    {selectedCategory === 'イベント情報' && selectedExpiryOption === 'days' && !form.getValues('customExpiryDays') && (
+                    ) : (
                       <div className="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
                         <div className="flex items-center space-x-2">
                           <ClockIcon className="h-4 w-4 text-amber-600" />
                           <span className="text-sm text-amber-800">
-                            イベント情報では開催日を入力すると掲載期間が自動計算されます。開催期日を入力してください。
+                            開催期日を入力すると掲載期間が自動計算されます
                           </span>
                         </div>
                       </div>
                     )}
+                    <FormMessage />
                   </FormItem>
                 )}
               />
 
               {/* 🔥 カスタム掲載期間入力フィールドを削除 */}
 
-              {/* 🔥 4. オプション項目バー */}
+              {/* 詳細情報（イベント情報専用） */}
               <div className="border rounded-lg bg-card">
                 <motion.div
                   className="p-4 cursor-pointer select-none"
@@ -2063,7 +1330,7 @@ export default function PostPage() {
                     <div className="flex flex-col">
                       <div className="flex items-center">
                         <Settings className="mr-2 h-5 w-5 text-muted-foreground" />
-                        <span className="text-lg font-semibold">詳細情報 (任意)</span>
+                        <span className="text-lg font-semibold">詳細情報</span>
                         {hasOptionalValues() && (
                           <div className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
                             入力済み
@@ -2071,7 +1338,7 @@ export default function PostPage() {
                         )}
                       </div>
                       <p className="text-sm text-red-600 mt-1 ml-7">
-                        投稿内容に応じて詳細情報をご利用ください
+                        場所、イベント名、開催期日は必須です
                       </p>
                     </div>
                     {showOptionalFields ? (
@@ -2091,25 +1358,25 @@ export default function PostPage() {
                     className="border-t"
                   >
                     <div className="p-4 space-y-4">
-                      {/* 🔥 カテゴリ別詳細情報項目のトグルボタン */}
+                      {/* イベント情報項目のトグルボタン */}
                       <motion.div 
-                        key={selectedCategory}
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.3 }}
                         className="grid grid-cols-2 gap-2"
                       >
-                        {getCategoryFields(selectedCategory).map((field) => {
+                        {eventFields.map((field) => {
                           const { label, icon: Icon } = getFieldDisplayInfo(field);
                           const isExpanded = optionalFieldsExpanded[field as keyof typeof optionalFieldsExpanded];
                           const isBusinessSet = isBusinessFieldSet(field as keyof typeof optionalFieldsExpanded);
+                          const isRequired = ['location', 'eventName', 'eventDate'].includes(field);
                           
                           return (
                             <motion.div
                               key={field}
                               initial={{ opacity: 0, scale: 0.95 }}
                               animate={{ opacity: 1, scale: 1 }}
-                              transition={{ duration: 0.2, delay: getCategoryFields(selectedCategory).indexOf(field) * 0.05 }}
+                              transition={{ duration: 0.2, delay: eventFields.indexOf(field) * 0.05 }}
                             >
                               <Button
                                 type="button"
@@ -2126,19 +1393,18 @@ export default function PostPage() {
                               >
                                 <Icon className="mr-2 h-4 w-4" />
                                 {label}
-                                {isBusinessSet && (
-                                  <span className="ml-1 text-xs">(設定済み)</span>
-                                )}
+                                {isRequired && <span className="ml-1 text-xs text-red-500">※</span>}
+                                {isBusinessSet && <span className="ml-1 text-xs">(設定済み)</span>}
                               </Button>
                             </motion.div>
                           );
                         })}
                       </motion.div>
 
-                      {/* 🔥 各詳細情報フィールドの表示 */}
+                      {/* 各詳細情報フィールドの表示 */}
 
                       {/* 1. 場所入力フィールド */}
-                      {optionalFieldsExpanded.location && isFieldVisibleForCategory('location', selectedCategory) && (
+                      {optionalFieldsExpanded.location && (
                         <motion.div
                           initial={{ opacity: 0, y: -10 }}
                           animate={{ opacity: 1, y: 0 }}

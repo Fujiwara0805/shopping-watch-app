@@ -912,7 +912,7 @@ export function MapView() {
             transition={{ duration: 0.3, delay: 0.1 }}
           >
             <Button
-              onClick={() => router.push('/timeline')}
+              onClick={() => router.push('/events')}
               size="icon"
               className="h-12 w-12 rounded-full shadow-lg bg-white hover:bg-gray-100 border-2 border-gray-200"
               style={{ backgroundColor: 'white' }}

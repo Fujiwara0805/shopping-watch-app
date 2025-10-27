@@ -3,7 +3,6 @@
 import { ReactNode, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { usePathname } from 'next/navigation';
-import { MainNav } from '@/components/layout/main-nav';
 import { AppHeader } from '@/components/layout/app-header';
 
 interface AppLayoutProps {
@@ -191,12 +190,6 @@ export default function AppLayout({
           </motion.div>
         </main>
         
-        {/* 固定フッター */}
-        {showNav && isMobile && (
-          <div className="flex-shrink-0 z-50">
-            <MainNav />
-          </div>
-        )}
       </div>
     );
   }
@@ -229,12 +222,6 @@ export default function AppLayout({
         </motion.div>
       </main>
       
-      {/* 固定フッター - モバイルのみ表示 */}
-      {showNav && isMobile && (
-        <div className="fixed bottom-0 left-0 right-0 z-50">
-          <MainNav />
-        </div>
-      )}
     </div>
   );
 }
