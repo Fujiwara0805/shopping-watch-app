@@ -2,15 +2,12 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { Search, Loader2, X, Calendar, MapPin, Eye, MessageSquare, Footprints, SlidersHorizontal, RefreshCw } from 'lucide-react';
+import { Loader2, X, Calendar, MapPin, Eye, MessageSquare, Footprints, SlidersHorizontal,  Map } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import AppLayout from '@/components/layout/app-layout';
 import { Input } from '@/components/ui/input';
-import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import PullToRefresh from 'react-simple-pull-to-refresh';
@@ -75,7 +72,7 @@ const EventCard = ({
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.95 }}
       transition={{ duration: 0.2 }}
-      className="bg-white rounded-2xl shadow-lg overflow-hidden border-2 border-gray-200 hover:shadow-xl transition-shadow duration-200"
+      className="bg-white rounded-2xl shadow-lg overflow-hidden border-2 border-[#73370c]/10 hover:shadow-xl transition-shadow duration-200"
     >
       {/* カードヘッダー */}
       <div className="relative">
@@ -90,7 +87,7 @@ const EventCard = ({
             />
           </div>
         ) : (
-          <div className="relative h-48 w-full bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center">
+          <div className="relative h-48 w-full bg-gradient-to-br from-[#73370c] to-[#8B4513] flex items-center justify-center">
             <Calendar className="h-20 w-20 text-white opacity-50" />
           </div>
         )}
@@ -166,7 +163,7 @@ const EventCard = ({
         {/* 詳細を見るボタン */}
         <Button
           onClick={() => router.push(`/map/event/${post.id}`)}
-          className="w-full mt-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-lg"
+          className="w-full mt-2 bg-[#73370c] hover:bg-[#5c2a0a] text-white shadow-lg"
         >
           詳細を見る
         </Button>
@@ -485,27 +482,21 @@ export default function EventsPage() {
 
   if (loading) {
     return (
-      <AppLayout>
+      <>
         <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50">
-          <div className="sticky top-0 z-10 bg-[#73370c] p-3">
-            <h1 className="text-white text-xl font-bold text-center">イベントリスト</h1>
-          </div>
           <div className="flex items-center justify-center pt-20">
             <div className="w-6 h-6 border-2 border-gray-300 border-t-orange-500 rounded-full animate-spin"></div>
           </div>
         </div>
-      </AppLayout>
+      </>
     );
   }
 
   return (
-    <AppLayout>
       <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50">
-        {/* ヘッダー */}
         <div className="sticky top-0 z-10 border-b bg-[#73370c]">
+         <h1 className="text-2xl font-bold text-center text-white p-2">イベントリスト一覧</h1>
           <div className="p-4">
-            <h1 className="text-white text-xl font-bold text-center mb-3">イベントリスト</h1>
-            
             {/* 検索バー */}
             <div className="flex items-center space-x-2">
               <div className="relative flex-1">
@@ -535,19 +526,6 @@ export default function EventsPage() {
                   </Button>
                 )}
               </div>
-
-              <Button
-                onClick={handleSearch}
-                className="bg-[#f97414] hover:bg-[#f97414]/90 text-white"
-                disabled={isSearching}
-              >
-                {isSearching ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Search className="h-4 w-4" />
-                )}
-              </Button>
-
               <Button
                 onClick={() => setShowFilterModal(true)}
                 variant="outline"
@@ -562,28 +540,6 @@ export default function EventsPage() {
               </Button>
             </div>
           </div>
-        </div>
-
-        {/* 更新ボタン */}
-        <div className="px-4 py-3 bg-gray-50 border-b">
-          <Button
-            onClick={handleRefresh}
-            disabled={isRefreshing}
-            variant="outline"
-            className="w-full"
-          >
-            {isRefreshing ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                更新中...
-              </>
-            ) : (
-              <>
-                <RefreshCw className="h-4 w-4 mr-2" />
-                更新
-              </>
-            )}
-          </Button>
         </div>
 
         {/* コンテンツ */}
@@ -652,6 +608,22 @@ export default function EventsPage() {
           </div>
         </PullToRefresh>
 
+        {/* マップアイコン（右下固定） */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.3 }}
+          className="fixed bottom-6 right-6 z-50"
+        >
+          <Button
+            onClick={() => router.push('/map')}
+            size="icon"
+            className="h-14 w-14 rounded-full shadow-2xl bg-[#73370c] hover:bg-[#5c2a0a] text-white border-2 border-white"
+          >
+            <Map className="h-6 w-6" />
+          </Button>
+        </motion.div>
+
         {/* フィルター・ソートモーダル */}
         <CustomModal
           isOpen={showFilterModal}
@@ -673,23 +645,6 @@ export default function EventsPage() {
                 </SelectContent>
               </Select>
             </div>
-
-            {/* 都道府県 */}
-            <div>
-              <label className="block text-sm font-medium mb-2">都道府県</label>
-              <Select value={tempSelectedPrefecture} onValueChange={setTempSelectedPrefecture}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">すべて</SelectItem>
-                  {prefectureList.map(pref => (
-                    <SelectItem key={pref} value={pref}>{pref}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
             {/* 市町村 */}
             {tempSelectedPrefecture !== 'all' && (
               <div>
@@ -719,6 +674,5 @@ export default function EventsPage() {
           </div>
         </CustomModal>
       </div>
-    </AppLayout>
   );
 }

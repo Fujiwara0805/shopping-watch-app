@@ -176,11 +176,7 @@ export function MapView() {
   });
 
   const [userLocationMarker, setUserLocationMarker] = useState<google.maps.Marker | null>(null);
-  const [userLocationCircle, setUserLocationCircle] = useState<google.maps.Circle | null>(null);
   
-  // 🔥 1km圏内の範囲表示・非表示の状態管理（デフォルト：表示）
-  const [showRangeCircle, setShowRangeCircle] = useState(true);
-
   // 🔥 投稿データとマーカー関連の状態を追加
   const [posts, setPosts] = useState<PostMarkerData[]>([]);
   const [postMarkers, setPostMarkers] = useState<google.maps.Marker[]>([]);
@@ -188,23 +184,7 @@ export function MapView() {
   const [selectedPost, setSelectedPost] = useState<PostMarkerData | null>(null);
   const router = useRouter();
 
-  // デバッグ情報の出力
-  console.log("MapView: Current state:", {
-    googleMapsLoaded,
-    googleMapsLoading,
-    googleMapsLoadError: !!googleMapsLoadError,
-    latitude,
-    longitude,
-    locationLoading,
-    permissionState,
-    browserInfo,
-    containerDimensions,
-    mapInitialized,
-    isPermissionGranted,
-    permissionRemainingMinutes
-  });
-
-  // コンテナ寸法の取得（変更なし）
+  // コンテナ寸法の取得（シンプル化）
   const updateContainerDimensions = useCallback(() => {
     if (!mapContainerRef.current) return false;
     
@@ -217,64 +197,34 @@ export function MapView() {
     const width = parentRect.width;
     const height = parentRect.height;
     
-    console.log(`MapView ${browserInfo.name}: Container dimensions updated:`, { width, height });
-    
     setContainerDimensions({ width, height });
     
-    // コンテナスタイルの明示的設定（ブラウザ別調整）
     container.style.width = `${width}px`;
     container.style.height = `${height}px`;
     container.style.position = 'relative';
-    container.style.backgroundColor = '#f5f5f5';
-    
-    // Firefox 特有の調整
-    if (browserInfo.name === 'firefox') {
-      container.style.overflow = 'hidden';
-    }
     
     return width > 0 && height > 200;
-  }, [browserInfo.name]);
+  }, []);
 
-  // コンテナ寸法の監視（変更なし）
+  // コンテナ寸法の監視（シンプル化）
   useEffect(() => {
     updateContainerDimensions();
     
-    const timeouts = [
-      setTimeout(updateContainerDimensions, 100),
-      setTimeout(updateContainerDimensions, 300),
-      setTimeout(updateContainerDimensions, 500)
-    ];
+    const timer = setTimeout(updateContainerDimensions, 300);
 
     const handleResize = () => {
-      setTimeout(updateContainerDimensions, browserInfo.name === 'safari' ? 50 : 30);
+      setTimeout(updateContainerDimensions, 100);
     };
 
-    // 基本的なPRリスナー
-    window.addEventListener('resize', handleResize, { passive: true });
-    window.addEventListener('orientationchange', handleResize, { passive: true });
-    
-    // ブラウザ別特有のPR
-    if (browserInfo.name === 'safari') {
-      window.addEventListener('pageshow', handleResize, { passive: true });
-      window.addEventListener('focus', handleResize, { passive: true });
-    } else if (browserInfo.name === 'firefox') {
-      // Firefox用の追加PR
-      window.addEventListener('load', handleResize, { passive: true });
-    }
+    window.addEventListener('resize', handleResize);
+    window.addEventListener('orientationchange', handleResize);
 
     return () => {
-      timeouts.forEach(clearTimeout);
+      clearTimeout(timer);
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('orientationchange', handleResize);
-      
-      if (browserInfo.name === 'safari') {
-        window.removeEventListener('pageshow', handleResize);
-        window.removeEventListener('focus', handleResize);
-      } else if (browserInfo.name === 'firefox') {
-        window.removeEventListener('load', handleResize);
-      }
     };
-  }, [updateContainerDimensions, browserInfo.name]);
+  }, [updateContainerDimensions]);
 
 
   // 🔥 投稿データを取得する関数を修正（範囲制限を削除）
@@ -427,18 +377,8 @@ export function MapView() {
     setPostMarkers(newMarkers);
   }, [map, posts, router]); // �� postMarkers を依存配列から削除
 
-  // 地図初期化のメイン処理（変更なし）
+  // 地図初期化（シンプル化 - ブラウザ別設定を削除）
   const initializeMap = useCallback(() => {
-    console.log(`MapView ${browserInfo.name}: initializeMap called with conditions:`, {
-      container: !!mapContainerRef.current,
-      mapInstance: !!mapInstanceRef.current,
-      googleMapsLoaded,
-      location: !!(latitude && longitude),
-      dimensions: containerDimensions,
-      alreadyTried: initializationTriedRef.current,
-      browserName: browserInfo.name
-    });
-
     if (!mapContainerRef.current || 
         mapInstanceRef.current || 
         !googleMapsLoaded || 
@@ -446,13 +386,11 @@ export function MapView() {
         !longitude || 
         containerDimensions.height < 200 ||
         initializationTriedRef.current) {
-      console.log(`MapView ${browserInfo.name}: Initialization conditions not met`);
       return false;
     }
 
     if (!window.google?.maps?.Map) {
-      console.error(`MapView ${browserInfo.name}: Google Maps API not available despite isLoaded=true`);
-      setInitializationError("Google Maps APIが利用できません。ページを再読み込みしてください。");
+      setInitializationError("Google Maps APIが利用できません。");
       return false;
     }
 
@@ -464,126 +402,35 @@ export function MapView() {
 
       const center = { lat: latitude, lng: longitude };
 
-      // ブラウザ別の地図オプション
-      const getMapOptions = (): google.maps.MapOptions => {
-        const baseOptions: google.maps.MapOptions = {
-          center,
-          clickableIcons: true,
-          disableDefaultUI: true,
-          zoomControl: true,
-          fullscreenControl: false,
-          streetViewControl: false,
-          mapTypeControl: false,
-          backgroundColor: '#f5f5f5',
-          // 🔥 「この地域の詳細画像は表示できません」メッセージを回避するため、明示的にROADMAPを設定
-          mapTypeId: window.google.maps.MapTypeId.ROADMAP,
-          restriction: {
-            latLngBounds: {
-              north: 45.557,
-              south: 24.217,
-              east: 145.817,
-              west: 122.933
-            }
-          },
-          // 🔥 タッチイベント問題を修正 - cooperativeに統一
-          gestureHandling: 'cooperative',
-          scrollwheel: true,
-          disableDoubleClickZoom: false,
-          // 🔥 追加のタッチ最適化オプション
-          draggable: true,
-          keyboardShortcuts: false
-        };
-
-        switch (browserInfo.name) {
-          case 'safari':
-            return {
-              ...baseOptions,
-              zoom: 14,
-              gestureHandling: 'cooperative'
-            };
-          
-          case 'firefox':
-            return {
-              ...baseOptions,
-              zoom: 14,
-              gestureHandling: 'cooperative', // 🔥 'greedy'から'cooperative'に変更
-              // Firefox では追加の最適化
-              draggableCursor: 'default'
-            };
-          
-          case 'chrome':
-          case 'edge':
-            return {
-              ...baseOptions,
-              zoom: 14,
-              gestureHandling: 'cooperative' // 🔥 'greedy'から'cooperative'に変更
-            };
-          
-          default:
-            return {
-              ...baseOptions,
-              zoom: 14,  
-              gestureHandling: 'cooperative' // 🔥 'greedy'から'cooperative'に変更
-            };
-        }
+      // シンプルな地図オプション
+      const mapOptions: google.maps.MapOptions = {
+        center,
+        zoom: 14,
+        disableDefaultUI: true,
+        zoomControl: true,
+        gestureHandling: 'cooperative',
+        mapTypeId: window.google.maps.MapTypeId.ROADMAP,
       };
 
-      console.log(`MapView ${browserInfo.name}: Creating Google Map instance`);
-      const newMap = new window.google.maps.Map(container, getMapOptions());
+      const newMap = new window.google.maps.Map(container, mapOptions);
       mapInstanceRef.current = newMap;
 
-      // ブラウザ別の地図読み込み完了処理
-      const idleListener = window.google.maps.event.addListenerOnce(newMap, 'idle', () => {
-        console.log(`MapView ${browserInfo.name}: Map idle event - initialization complete`);
+      // 地図読み込み完了
+      window.google.maps.event.addListenerOnce(newMap, 'idle', () => {
         setMap(newMap);
         setMapInitialized(true);
         setInitializationError(null);
-        
-        // ブラウザ別の地図リサイズ処理
-        const resizeDelay = browserInfo.name === 'safari' ? 300 : 
-                          browserInfo.name === 'firefox' ? 200 : 100;
-                          
-        setTimeout(() => {
-          if (newMap && window.google?.maps?.event) {
-            window.google.maps.event.trigger(newMap, 'resize');
-            newMap.setCenter(center);
-            
-            // ブラウザ別のズーム調整
-            if (browserInfo.name === 'safari') {
-              newMap.setZoom(14);
-            } else if (browserInfo.name === 'firefox') {
-              newMap.setZoom(14);
-            }
-          }
-        }, resizeDelay);
       });
-
-      // エラーハンドリング
-      const errorListener = window.google.maps.event.addListener(newMap, 'error', (error: any) => {
-        console.error(`MapView ${browserInfo.name}: Map error:`, error);
-        setInitializationError("地図の表示中にエラーが発生しました。");
-        initializationTriedRef.current = false;
-        
-        window.google.maps.event.removeListener(idleListener);
-        window.google.maps.event.removeListener(errorListener);
-      });
-
-      // タイムアウト機能を削除（無制限に待機）
-
-      return () => {
-        if (idleListener) window.google.maps.event.removeListener(idleListener);
-        if (errorListener) window.google.maps.event.removeListener(errorListener);
-      };
 
     } catch (error) {
-      console.error(`MapView ${browserInfo.name}: Map initialization failed:`, error);
-      setInitializationError(`地図の初期化に失敗しました: ${error instanceof Error ? error.message : '不明なエラー'}`);
+      console.error('Map initialization failed:', error);
+      setInitializationError(`地図の初期化に失敗しました`);
       initializationTriedRef.current = false;
       return false;
     }
-  }, [googleMapsLoaded, latitude, longitude, containerDimensions, browserInfo.name]);
+  }, [googleMapsLoaded, latitude, longitude, containerDimensions]);
 
-  // 地図初期化の実行タイミング制御（変更なし）
+  // 地図初期化の実行タイミング制御（シンプル化）
   useEffect(() => {
     if (googleMapsLoaded && 
         latitude && 
@@ -592,19 +439,13 @@ export function MapView() {
         !mapInitialized &&
         !initializationTriedRef.current) {
       
-      console.log(`MapView ${browserInfo.name}: Conditions met for initialization, starting...`);
-      
-      // ブラウザ別の初期化遅延
-      const initDelay = browserInfo.name === 'safari' ? 200 : 
-                       browserInfo.name === 'firefox' ? 150 : 100;
-      
       const timer = setTimeout(() => {
         initializeMap();
-      }, initDelay);
+      }, 200);
 
       return () => clearTimeout(timer);
     }
-  }, [googleMapsLoaded, latitude, longitude, containerDimensions, mapInitialized, initializeMap, browserInfo.name]);
+  }, [googleMapsLoaded, latitude, longitude, containerDimensions, mapInitialized, initializeMap]);
 
   // 🔥 位置情報が取得できたら投稿データを取得
   useEffect(() => {
@@ -620,16 +461,16 @@ export function MapView() {
     }
   }, [posts, map]); // �� createPostMarkers を依存配列から削除
 
-  // 🔥 投稿がある場合は範囲円を非表示にする
-  useEffect(() => {
-    if (posts.length > 0) {
-      setShowRangeCircle(false);
-    } else {
-      setShowRangeCircle(true);
-    }
-  }, [posts.length]);
+  // �� 投稿がある場合は範囲円を非表示にするuseEffectを削除
+  // useEffect(() => {
+  //   if (posts.length > 0) {
+  //     setShowRangeCircle(false);
+  //   } else {
+  //     setShowRangeCircle(true);
+  //   }
+  // }, [posts.length]);
 
-  // ユーザー位置マーカーの設置（修正版）
+  // ユーザー位置マーカーの設置（修正版 - 円の描画を削除）
   useEffect(() => {
     if (map && latitude && longitude && mapInitialized && window.google?.maps) {
       console.log(`MapView ${browserInfo.name}: Setting user location marker`);
@@ -657,35 +498,7 @@ export function MapView() {
         }
       }
 
-      // 🔥 1km圏内の円を表示・非表示の制御
-      if (showRangeCircle) {
-        if (userLocationCircle) {
-          userLocationCircle.setCenter(userPosition);
-          userLocationCircle.setMap(map);
-        } else {
-          try {
-            const circle = new window.google.maps.Circle({
-              strokeColor: '#10b981', // 緑色のボーダー
-              strokeOpacity: 0.8,
-              strokeWeight: 2,
-              fillColor: '#effdf4', // 指定された緑色
-              fillOpacity: 0.35,
-              map: map,
-              center: userPosition,
-              radius: 1000, // 1km = 1000m
-            });
-            setUserLocationCircle(circle);
-            console.log(`MapView ${browserInfo.name}: User location circle created successfully`);
-          } catch (error) {
-            console.error(`MapView ${browserInfo.name}: Failed to create user location circle:`, error);
-          }
-        }
-      } else {
-        // 範囲非表示の場合は円を地図から削除
-        if (userLocationCircle) {
-          userLocationCircle.setMap(null);
-        }
-      }
+      // 🔥 円の描画を完全に削除
 
       map.panTo(userPosition);
       const currentZoom = map.getZoom();
@@ -693,14 +506,10 @@ export function MapView() {
         map.setZoom(14);
       }
     }
-  }, [map, latitude, longitude, mapInitialized, userLocationMarker, userLocationCircle, browserInfo.name, showRangeCircle]);
+  }, [map, latitude, longitude, mapInitialized, userLocationMarker, browserInfo.name]); // 🔥 showRangeCircle, userLocationCircle を依存配列から削除
 
-  // 🔥 範囲表示切り替えハンドラー
-  const toggleRangeCircle = () => {
-    setShowRangeCircle(!showRangeCircle);
-  };
 
-  // 再試行機能
+  // 再試行機能（円のクリーンアップを削除）
   const handleRetry = () => {
     console.log(`MapView ${browserInfo.name}: Retrying initialization`);
     setInitializationError(null);
@@ -709,16 +518,11 @@ export function MapView() {
     mapInstanceRef.current = null;
     setMap(null);
     
-    // 既存のマーカーと円をクリーンアップ
+    // 既存のマーカーをクリーンアップ
     if (userLocationMarker) {
       userLocationMarker.setMap(null);
       setUserLocationMarker(null);
-    }
-    if (userLocationCircle) {
-      userLocationCircle.setMap(null);
-      setUserLocationCircle(null);
-    }
-    
+    }    
     // 投稿マーカーもクリーンアップ
     postMarkers.forEach(marker => {
       if (marker && marker.setMap) {
@@ -740,9 +544,7 @@ export function MapView() {
     }, 100);
   };
 
-  // ブラウザアイコンを統一（MapPinに統一）
-  const getBrowserIcon = () => MapPin;
-
+  
   // メッセージカードコンポーネント（変更なし）
   const MessageCard = ({ icon: Icon, title, message, children, variant = 'default' }: {
     icon?: React.ElementType;
@@ -805,48 +607,14 @@ export function MapView() {
     );
   }
 
-  // 位置情報エラー処理（シンプル化）
-  if ((permissionState === 'denied' || locationError) && !isPermissionGranted) {
-    const getLocationMessage = () => {
-      if (locationError) return locationError;
-      return "地図を表示するために位置情報の許可が必要です。ブラウザの設定から位置情報を許可してください。";
-    };
 
-    return (
-      <MessageCard 
-        title="位置情報が必要です" 
-        message={getLocationMessage()}
-        variant="warning" 
-        icon={MapPin}
-      >
-        <Button 
-          onClick={requestLocation}
-          className="w-full mt-4"
-        >
-          <MapPin className="h-4 w-4 mr-2" />
-          位置情報を許可する
-        </Button>
-      </MessageCard>
-    );
-  }
-
-  // 統一されたローディング状態
+  // 統一されたローディング状態（シンプル化）
   if (googleMapsLoading || 
       !googleMapsLoaded || 
       containerDimensions.height === 0 || 
       locationLoading || 
       (!latitude || !longitude) ||
       !mapInitialized) {
-    
-    let loadingMessage = "地図を準備中...";
-    if (googleMapsLoading) loadingMessage = "Google Maps APIを読み込み中...";
-    else if (!googleMapsLoaded) loadingMessage = "Google Maps APIを待機中...";
-    else if (containerDimensions.height === 0) loadingMessage = "画面サイズを調整中...";
-    else if (locationLoading) {
-      loadingMessage = isPermissionGranted ? "保存された設定で位置情報を取得中..." : "現在位置を取得中...";
-    }
-    else if (!latitude || !longitude) loadingMessage = "位置情報を待機中...";
-    else if (!mapInitialized) loadingMessage = "地図を作成中...";
     
     return (
       <div className="w-full h-full bg-gray-50 relative">
@@ -855,31 +623,10 @@ export function MapView() {
           className="w-full h-full bg-gray-50"
         />
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/90 backdrop-blur-sm">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
-          <p className="text-gray-600 text-center px-4 font-medium mb-4">
-            {loadingMessage}
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#73370c] mb-4"></div>
+          <p className="text-gray-600 text-center px-4 font-medium">
+            地図を準備中...
           </p>
-          
-          {/* 許可状態の表示 */}
-          {isPermissionGranted && permissionRemainingMinutes > 0 && (
-            <div className="flex items-center text-green-600 text-sm mb-4">
-              <Clock className="h-4 w-4 mr-2" />
-              位置情報許可中（残り約{permissionRemainingMinutes}分）
-            </div>
-          )}
-          
-          {/* 位置情報ヘルプボタン */}
-          {(permissionState === 'prompt' || (!latitude && !isPermissionGranted)) && (
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={requestLocation}
-              className="mb-4"
-            >
-              <MapPin className="h-4 w-4 mr-2" />
-              位置情報を許可する
-            </Button>
-          )}
         </div>
       </div>
     );
@@ -905,7 +652,7 @@ export function MapView() {
       {/* 右上のナビゲーションボタン（縦並び） */}
       {map && mapInitialized && (
         <div className="absolute top-4 right-4 z-30 flex flex-col gap-2">
-          {/* 掲示板アイコン（タイムライン画面へ） */}
+          {/* イベントリスト画面 */}
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -939,10 +686,9 @@ export function MapView() {
         </div>
       )}
 
-      {/* 説明テキストと範囲表示切り替えボタン（左下に配置） */}
       {map && mapInitialized && (
         <div className="absolute bottom-8 left-2 z-30 space-y-2">
-          {/* 現在地と範囲の説明テキスト */}
+          {/* 現在地の説明テキスト */}
           <div className="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-800 shadow-lg max-w-xs">
             <div className="space-y-1">
               <div className="flex items-center">
@@ -1032,7 +778,7 @@ export function MapView() {
                 {/* 詳細を見るボタン */}
                 <Button
                   onClick={() => router.push(`/map/event/${selectedPost.id}`)}
-                  className="w-full mt-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-lg"
+                  className="w-full mt-2 bg-[#73370c] text-white shadow-lg"
                 >
                   詳細を見る
                 </Button>

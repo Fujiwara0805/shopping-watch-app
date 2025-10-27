@@ -1,197 +1,129 @@
 'use client';
 
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence, PanInfo } from 'framer-motion';
-import { ArrowRight, ShoppingCart, MapPin, Bell, Users, Menu, X, Leaf, ChevronDown, Circle, ListTodo, Newspaper } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { ArrowRight, MapPin, Users, Sparkles, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { CustomModal } from '@/components/ui/custom-modal'; // 🔥 追加
+import { CustomModal } from '@/components/ui/custom-modal';
 
-// スプラッシュ画面コンポーネント
-const SplashScreen = () => (
-  <motion.div 
-    className="fixed inset-0 z-50 bg-background flex items-center justify-center"
-    initial={{ opacity: 0 }}
-    animate={{ opacity: 1 }}
-    exit={{ opacity: 0 }}
-    transition={{ duration: 0.5 }}
-  >
-    <motion.div
-      initial={{ scale: 0.5, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      transition={{ 
-        duration: 0.8, 
-        ease: "easeOut",
-        delay: 0.2 
-      }}
-      className="flex flex-col items-center"
-    >
-      <motion.img 
-        src="https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png" 
-        alt="トクドク" 
-        className="h-32 w-32 drop-shadow-lg"
-        animate={{ 
-          rotate: [0, 5, -5, 0],
-          scale: [1, 1.05, 1]
-        }}
-        transition={{ 
-          duration: 2,
-          repeat: Infinity,
-          repeatType: "reverse",
-          ease: "easeInOut"
-        }}
-      />
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.8, duration: 0.5 }}
-        className="mt-8"
-      >
-        <div className="flex space-x-1">
-          {[0, 1, 2].map((i) => (
-            <motion.div
-              key={i}
-              className="w-2 h-2 bg-primary rounded-full"
-              animate={{ opacity: [0.3, 1, 0.3] }}
-              transition={{
-                duration: 1.5,
-                repeat: Infinity,
-                delay: i * 0.2,
-                ease: "easeInOut"
-              }}
-            />
-          ))}
-        </div>
-      </motion.div>
-    </motion.div>
-  </motion.div>
-);
+// イベント特化型ランディングページ
+const EventLP = ({ onStart }: { onStart: () => void }) => {
+  const [scrollPosition, setScrollPosition] = useState(0);
 
-
-// PC版最高級ランディングページ
-const NormalLP = ({ goToOnboarding, mobileMenuOpen, setMobileMenuOpen, scrollPosition, handlePCLogin }: { 
-  goToOnboarding: () => void; 
-  mobileMenuOpen: boolean; 
-  setMobileMenuOpen: (open: boolean) => void; 
-  scrollPosition: number;
-  handlePCLogin: () => void;
-}) => {
-  
-  // 通常版LP専用のbody overflow制御
   useEffect(() => {
-    const originalOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'auto';
-    
-    return () => {
-      document.body.style.overflow = originalOverflow || '';
+    const handleScroll = () => {
+      setScrollPosition(window.scrollY);
     };
+    
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/30 relative overflow-x-hidden">
-      {/* メイン背景画像 */}
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-pink-50 relative overflow-x-hidden">
+      {/* 背景装飾 */}
       <div className="absolute inset-0 pointer-events-none">
-        <div 
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-[0.15]"
-          style={{
-            backgroundImage: `url('https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?ixlib=rb-4.0.3&auto=format&fit=crop&w=2340&q=80')`
-          }}
-        />
-        <div 
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-[0.12]"
-          style={{
-            backgroundImage: `url('https://images.unsplash.com/photo-1573164713714-d95e436ab8d6?ixlib=rb-4.0.3&auto=format&fit=crop&w=2340&q=80')`
-          }}
-        />
-      </div>
-      
-      {/* オーバーレイグラデーション */}
-      <div className="absolute inset-0 bg-gradient-to-br from-background/88 via-background/85 to-background/80 pointer-events-none" />
-      
-      {/* 微細なドットパターン */}
-      <div className="absolute inset-0 opacity-[0.015] pointer-events-none">
-        <div className="absolute inset-0" style={{
+        <div className="absolute inset-0 bg-gradient-to-br from-purple-100/30 via-blue-100/30 to-pink-100/30" />
+        <div className="absolute inset-0 opacity-[0.02]" style={{
           backgroundImage: `radial-gradient(circle at 1px 1px, rgba(0,0,0,0.15) 1px, transparent 0)`,
           backgroundSize: '40px 40px'
         }} />
       </div>
 
       <div className="relative">
+        {/* ヘッダー */}
+        <nav className={`fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm transition-all duration-300 ${
+          scrollPosition > 10 ? 'shadow-md' : ''
+        }`}>
+          <div className="container mx-auto px-4 sm:px-8 h-16 sm:h-20 flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <img 
+                src="https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png" 
+                alt="トクドク" 
+                className="h-10 w-10 sm:h-12 sm:w-12"
+              />
+            </div>
+            <Button 
+              onClick={onStart}
+              className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold px-4 sm:px-6 rounded-full shadow-lg"
+            >
+              <span className="hidden sm:inline">さっそく始める</span>
+              <span className="sm:hidden">始める</span>
+            </Button>
+          </div>
+        </nav>
+
         {/* ヒーローセクション */}
-        <section className="min-h-screen flex items-center justify-center px-8 py-20 pt-24">
-          <div className="container mx-auto max-w-7xl">
+        <section className="min-h-screen flex items-center justify-center px-4 sm:px-8 py-20 pt-32">
+          <div className="container mx-auto max-w-6xl">
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, ease: "easeOut" }}
-              className="text-center space-y-12"
+              transition={{ duration: 0.8 }}
+              className="text-center space-y-8 sm:space-y-12"
             >
               {/* メインアイコン */}
               <motion.div
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                transition={{ duration: 1, delay: 0.2, ease: "easeOut" }}
-                className="flex justify-center mb-12"
+                transition={{ duration: 1, delay: 0.2 }}
+                className="flex justify-center mb-8"
               >
                 <div className="relative">
-                  <motion.img 
-                    src="https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png" 
-                    alt="トクドク" 
-                    className="h-32 w-32 lg:h-40 lg:w-40 drop-shadow-2xl"
+                  <motion.div
                     animate={{ 
                       rotate: [0, 2, -2, 0],
-                      scale: [1, 1.02, 1]
+                      scale: [1, 1.05, 1]
                     }}
                     transition={{ 
                       duration: 4,
                       repeat: Infinity,
-                      repeatType: "reverse",
                       ease: "easeInOut"
                     }}
-                  />
-                  <div className="absolute -inset-4 bg-primary/10 rounded-full blur-xl opacity-50" />
+                    className="relative z-10"
+                  >
+                    <img 
+                      src="https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png" 
+                      alt="トクドク" 
+                      className="h-28 w-28 sm:h-32 sm:w-32"
+                    />
+                  </motion.div>
+                  <div className="absolute -inset-4 bg-purple-400/20 rounded-full blur-2xl" />
                 </div>
               </motion.div>
 
               {/* メインタイトル */}
-              <div className="space-y-8">
+              <div className="space-y-6 sm:space-y-8">
                 <motion.h1 
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.8, delay: 0.4 }}
-                  className="text-4xl lg:text-5xl xl:text-6xl font-bold leading-tight"
+                  className="text-3xl sm:text-4xl lg:text-6xl font-bold leading-tight"
                 >
-                  地域の「今」を、<br />
-                  <span className="text-primary relative inline-block">
-                    共有して、毎日をおとくに！
-                    <motion.div 
-                      className="absolute -bottom-2 left-0 right-0 h-1 bg-primary/30 rounded-full"
-                      initial={{ scaleX: 0 }}
-                      animate={{ scaleX: 1 }}
-                      transition={{ duration: 1, delay: 1.2 }}
-                    />
-                  </span>
+                  あなたの街の<br className="sm:hidden" />
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#73370c] to-[#8B4513]">イベント情報</span>が、<br />
+                  今すぐ見つかる
                 </motion.h1>
 
                 <motion.p 
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.8, delay: 0.6 }}
-                  className="text-3xl lg:text-4xl font-medium text-muted-foreground max-w-4xl mx-auto leading-relaxed m-t-10"
+                  className="text-lg sm:text-2xl lg:text-3xl text-gray-700 max-w-4xl mx-auto leading-relaxed"
                 >
-                  空席情報、在庫情報、イベント情報まで。<br />
-                  <span className="text-primary font-bold">リアルタイム</span>で地域の「今」が分かる掲示板アプリ
+                  地域のお祭り、マルシェ、ワークショップ。<br className="hidden sm:block" />
+                  <span className="font-bold text-[#73370c]">近くで開催中のイベント</span>を地図で見つけよう
                 </motion.p>
 
                 <motion.p 
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.8, delay: 0.8 }}
-                  className="text-xl lg:text-2xl text-muted-foreground/80 max-w-3xl mx-auto"
+                  className="text-base sm:text-xl text-gray-600 max-w-3xl mx-auto"
                 >
-                  買い物メモ機能で家族と共有、地域掲示板で最新情報をキャッチ。<br />
-                  トクドクは、お<span className="text-primary font-semibold">トク</span>な情報があなたに<span className="text-primary font-semibold">とドク</span>地域密着アプリです。
+                  完全無料で、今日・明日の楽しいを探せる地域密着イベントアプリ
                 </motion.p>
               </div>
 
@@ -200,23 +132,23 @@ const NormalLP = ({ goToOnboarding, mobileMenuOpen, setMobileMenuOpen, scrollPos
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 1 }}
-                className="pt-8"
+                className="pt-6 sm:pt-8"
               >
                 <Button 
                   size="lg" 
-                  onClick={goToOnboarding}
-                  className="h-16 px-12 text-xl font-semibold rounded-full shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-300 bg-primary hover:bg-primary/90"
+                  onClick={onStart}
+                  className="h-14 sm:h-16 px-8 sm:px-12 text-lg sm:text-xl font-semibold rounded-full shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-300 bg-gradient-to-r from-[#73370c] to-[#8B4513] hover:from-[#5c2a0a] hover:to-[#73370c]"
                 >
                   <motion.span
                     animate={{ scale: [1, 1.05, 1] }}
                     transition={{ duration: 2, repeat: Infinity }}
                   >
-                    さっそく始める！
+                    イベントを探す
                   </motion.span>
-                  <ArrowRight className="ml-3 h-6 w-6" />
+                  <ArrowRight className="ml-3 h-5 w-5 sm:h-6 sm:w-6" />
                 </Button>
-                <p className="text-lg text-muted-foreground mt-4 font-medium">
-                  登録・利用料金完全無料！
+                <p className="text-sm sm:text-lg text-gray-600 mt-4 font-medium">
+                  登録・利用料金完全無料
                 </p>
               </motion.div>
             </motion.div>
@@ -224,75 +156,39 @@ const NormalLP = ({ goToOnboarding, mobileMenuOpen, setMobileMenuOpen, scrollPos
         </section>
 
         {/* 機能紹介セクション */}
-        <section className="py-24 px-8 bg-muted/30 relative">
-          {/* セクション背景画像 */}
-          <div className="absolute inset-0 pointer-events-none">
-            <div 
-              className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-[0.08]"
-              style={{
-                backgroundImage: `url('https://images.unsplash.com/photo-1516321318423-f06f85e504b3?ixlib=rb-4.0.3&auto=format&fit=crop&w=2340&q=80')`
-              }}
-            />
-            <div className="absolute inset-0 bg-gradient-to-br from-muted/35 via-muted/25 to-muted/15" />
-          </div>
-          <div className="container mx-auto max-w-7xl relative">
+        <section className="py-16 sm:py-24 px-4 sm:px-8 bg-white/50 relative">
+          <div className="container mx-auto max-w-6xl relative">
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
               viewport={{ once: true }}
-              className="text-center mb-20"
+              className="text-center mb-12 sm:mb-20"
             >
-              <h2 className="text-4xl lg:text-5xl font-bold mb-6">
-                地域密着で、毎日がもっと便利に。<br />
-                トクドクの5つの機能
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 sm:mb-6">
+                トクドクの3つの特徴
               </h2>
-              <p className="text-xl lg:text-2xl text-muted-foreground max-w-3xl mx-auto">
-                買い物から情報収集まで、あなたの地域生活をトータルサポート
+              <p className="text-lg sm:text-xl lg:text-2xl text-gray-600 max-w-3xl mx-auto">
+                地域のイベントをもっと身近に、もっと楽しく
               </p>
             </motion.div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8 lg:gap-12">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 lg:gap-12">
               {[
                 {
-                  icon: ListTodo,
-                  title: "スマート買い物メモ",
-                  description: "家族や友人とリアルタイム共有\n買い忘れ・買い過ぎを完全防止！",
-                  color: "bg-primary/10",
-                  textColor: "text-primary",
-                  borderColor: "border-primary/20"
+                  icon: MapPin,
+                  title: "地図でかんたん発見",
+                  description: "現在地から近いイベントを地図上で一目で確認。気になるイベントをタップで詳細表示"
                 },
                 {
-                  icon: Newspaper,
-                  title: "地域密着掲示板",
-                  description: "空席・在庫・PR情報が1km圏内限定。あなたの街の「今」をリアルタイムで！",
-                  color: "bg-destructive/10",
-                  textColor: "text-destructive",
-                  borderColor: "border-destructive/20"
+                  icon: Calendar,
+                  title: "リアルタイム更新",
+                  description: "今日・明日開催のイベントが常に最新状態。見逃すことなく地域の楽しい情報をキャッチ"
                 },
                 {
                   icon: Users,
-                  title: "ご近所コミュニティ",
-                  description: "地域の人たちと情報をシェア\n助け合いの輪を広げよう！",
-                  color: "bg-secondary/10",
-                  textColor: "text-secondary",
-                  borderColor: "border-secondary/20"
-                },
-                {
-                  icon: Bell,
-                  title: "リアルタイム通知",
-                  description: "お気に入り店舗の最新情報を即座にお知らせ。見逃し防止で常に最新情報をキャッチ！",
-                  color: "bg-accent/10",
-                  textColor: "text-accent",
-                  borderColor: "border-accent/20"
-                },
-                {
-                  icon: Leaf,
-                  title: "地域社会への貢献",
-                  description: "必要な人に必要な情報を届ける\n温かい地域コミュニティを一緒に作ろう",
-                  color: "bg-green-500/10",
-                  textColor: "text-green-500",
-                  borderColor: "border-green-500/20"
+                  title: "地域とつながる",
+                  description: "お祭り、マルシェ、ワークショップなど、地域の人と人をつなぐイベント情報が満載"
                 }
               ].map((feature, index) => (
                 <motion.div
@@ -302,29 +198,19 @@ const NormalLP = ({ goToOnboarding, mobileMenuOpen, setMobileMenuOpen, scrollPos
                   transition={{ duration: 0.6, delay: index * 0.1 }}
                   viewport={{ once: true }}
                   whileHover={{ y: -5, scale: 1.02 }}
-                  className={`flex flex-col items-center text-center p-8 lg:p-10 rounded-3xl bg-background border-2 ${feature.borderColor} shadow-lg hover:shadow-2xl transition-all duration-300 group`}
+                  className="flex flex-col items-center text-center p-6 sm:p-8 lg:p-10 rounded-3xl bg-white border-2 border-[#73370c]/20 shadow-lg hover:shadow-2xl transition-all duration-300"
                 >
                   <motion.div 
-                    className={`${feature.color} p-6 rounded-2xl mb-6 group-hover:scale-110 transition-transform duration-300`}
-                    whileHover={{ rotate: 5 }}
+                    className="bg-gradient-to-br from-[#73370c]/10 to-[#8B4513]/10 p-5 sm:p-6 rounded-2xl mb-4 sm:mb-6"
+                    whileHover={{ rotate: 5, scale: 1.1 }}
                   >
-                    <feature.icon className={`h-12 w-12 lg:h-14 lg:w-14 ${feature.textColor}`} />
+                    <feature.icon className="h-10 w-10 sm:h-12 sm:w-12 text-[#73370c]" />
                   </motion.div>
-                  <h3 className="text-2xl lg:text-3xl font-bold mb-4 leading-tight">
-                    {feature.title.split('\n').map((line, i) => (
-                      <span key={i}>
-                        {line}
-                        {i < feature.title.split('\n').length - 1 && <br />}
-                      </span>
-                    ))}
+                  <h3 className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4">
+                    {feature.title}
                   </h3>
-                  <p className="text-lg lg:text-xl text-muted-foreground leading-relaxed">
-                    {feature.description.split('\n').map((line, i) => (
-                      <span key={i}>
-                        {line}
-                        {i < feature.description.split('\n').length - 1 && <br />}
-                      </span>
-                    ))}
+                  <p className="text-base sm:text-lg text-gray-600 leading-relaxed">
+                    {feature.description}
                   </p>
                 </motion.div>
               ))}
@@ -333,33 +219,22 @@ const NormalLP = ({ goToOnboarding, mobileMenuOpen, setMobileMenuOpen, scrollPos
         </section>
 
         {/* 最終CTAセクション */}
-        <section className="py-24 px-8 relative">
-          {/* CTA背景画像 */}
-          <div className="absolute inset-0 pointer-events-none">
-            <div 
-              className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-[0.10]"
-              style={{
-                backgroundImage: `url('https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=2340&q=80')`
-              }}
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-background/85 via-background/90 to-background/85" />
-          </div>
-          <div className="container mx-auto max-w-6xl text-center relative">
+        <section className="py-16 sm:py-24 px-4 sm:px-8 relative">
+          <div className="container mx-auto max-w-5xl text-center relative">
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
               viewport={{ once: true }}
-              className="space-y-12"
+              className="space-y-8 sm:space-y-12"
             >
-              <div className="space-y-6">
-                <h2 className="text-4xl lg:text-5xl font-bold leading-tight">
-                  地域の「今」を知りたいなら、<br />
-                  「トクドク」で決まり！
+              <div className="space-y-4 sm:space-y-6">
+                <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight">
+                  週末の予定、<br className="sm:hidden" />まだ決まってない？
                 </h2>
-                <p className="text-2xl lg:text-3xl text-muted-foreground max-w-4xl mx-auto leading-relaxed">
-                  空席情報も在庫情報も、買い物メモも家族共有も。<br />
-                  地域密着の便利機能が<span className="text-primary font-bold text-3xl lg:text-4xl">完全無料</span>で使い放題！
+                <p className="text-xl sm:text-2xl lg:text-3xl text-gray-700 max-w-4xl mx-auto leading-relaxed">
+                  トクドクで、<span className="font-bold text-[#73370c]">今週のイベント</span>を<br className="hidden sm:block" />
+                  チェックしよう！
                 </p>
               </div>
 
@@ -369,42 +244,42 @@ const NormalLP = ({ goToOnboarding, mobileMenuOpen, setMobileMenuOpen, scrollPos
               >
                 <Button
                   size="lg"
-                  onClick={goToOnboarding}
-                  className="h-18 px-16 text-2xl font-bold rounded-full shadow-2xl hover:shadow-3xl transform transition-all duration-300 bg-primary hover:bg-primary/90"
+                  onClick={onStart}
+                  className="h-14 sm:h-16 px-10 sm:px-16 text-lg sm:text-2xl font-bold rounded-full shadow-2xl hover:shadow-3xl transform transition-all duration-300 bg-gradient-to-r from-[#73370c] to-[#8B4513] hover:from-[#5c2a0a] hover:to-[#73370c]"
                 >
+                  <Sparkles className="mr-2 sm:mr-3 h-5 w-5 sm:h-6 sm:w-6" />
                   <motion.span
                     animate={{ scale: [1, 1.05, 1] }}
                     transition={{ duration: 2, repeat: Infinity }}
                   >
-                    今すぐ始める！
+                    今すぐ探す
                   </motion.span>
-                  <ArrowRight className="ml-4 h-7 w-7" />
+                  <ArrowRight className="ml-2 sm:ml-4 h-5 w-5 sm:h-6 sm:w-6" />
                 </Button>
               </motion.div>
 
-              <div className="text-lg text-muted-foreground space-y-2">
-                <p className="font-semibold">✓ 登録料・利用料 完全無料</p>
-                <p className="font-semibold">✓ 1km圏内の地域密着情報</p>
-                <p className="font-semibold">✓ リアルタイム更新で最新情報をお届け</p>
-                <p className="font-semibold">✓ 家族・友人との情報共有機能付き</p>
+              <div className="text-base sm:text-lg text-gray-600 space-y-2">
+                <p className="font-semibold">✓ 登録・利用料 完全無料</p>
+                <p className="font-semibold">✓ 地図で見やすい表示</p>
+                <p className="font-semibold">✓ リアルタイム更新</p>
               </div>
             </motion.div>
           </div>
         </section>
 
         {/* フッター */}
-        <footer className="py-12 px-8 border-t bg-muted/20">
+        <footer className="py-8 sm:py-12 px-4 sm:px-8 border-t bg-gray-50">
           <div className="container mx-auto max-w-6xl text-center">
-            <div className="space-y-6">
-              <p className="text-lg text-muted-foreground font-medium">© 2025 トクドク All rights reserved.</p>
-              <div className="flex justify-center space-x-8 text-base">
-                <Link href="/terms/privacy-policy" className="hover:underline hover:text-primary transition-colors">
+            <div className="space-y-4 sm:space-y-6">
+              <p className="text-base sm:text-lg text-gray-600 font-medium">© 2025 トクドク All rights reserved.</p>
+              <div className="flex flex-wrap justify-center gap-4 sm:gap-8 text-sm sm:text-base">
+                <Link href="/terms/privacy-policy" className="hover:underline hover:text-[#73370c] transition-colors">
                   プライバシーポリシー
                 </Link>
-                <Link href="/terms/service-policy" className="hover:underline hover:text-primary transition-colors">
+                <Link href="/terms/service-policy" className="hover:underline hover:text-[#73370c] transition-colors">
                   サービスポリシー
                 </Link>
-                <Link href="/terms/terms-of-service" className="hover:underline hover:text-primary transition-colors">
+                <Link href="/terms/terms-of-service" className="hover:underline hover:text-[#73370c] transition-colors">
                   利用規約
                 </Link>
               </div>
@@ -416,178 +291,111 @@ const NormalLP = ({ goToOnboarding, mobileMenuOpen, setMobileMenuOpen, scrollPos
   );
 };
 
-
 // メインコンポーネント
 export default function Home() {
   const router = useRouter();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [scrollPosition, setScrollPosition] = useState(0);
-  const [activeTab, setActiveTab] = useState('normal');
-  const [isMobileScreen, setIsMobileScreen] = useState(false);
-  const [showSplash, setShowSplash] = useState(false);
-  
-  // 🔥 追加：QRコードモーダルの状態
-  const [showQrCodeModal, setShowQrCodeModal] = useState(false);
-  
-  useEffect(() => {
-    // SafeAreaのための変数設定
-    document.documentElement.style.setProperty(
-      '--sat', `env(safe-area-inset-top, 0px)`
-    );
-    document.documentElement.style.setProperty(
-      '--sab', `env(safe-area-inset-bottom, 0px)`
-    );
-    
-    // 画面サイズ判定
-    const checkMobile = () => {
-      const isMobile = window.innerWidth < 768;
-      setIsMobileScreen(isMobile);
-      
-      // モバイルの場合はスプラッシュ画面を表示
-      if (isMobile) {
-        setShowSplash(true);
-        // 2秒後にオンボーディング画面判定処理
-        setTimeout(() => {
-          // 🔥 修正：永続的スキップフラグをチェック
-          const skipPermanently = localStorage.getItem('skipOnboardingPermanently');
-          
-          // 永続的にスキップするフラグがある場合は直接タイムラインに遷移
-          if (skipPermanently === 'true') {
-            router.push('/timeline');
-            return;
-          }
-          
-          // 🔥 修正：初回ユーザーまたは永続スキップしていないユーザーはオンボーディングを表示
-          router.push('/timeline');
-        }, 2000);
-      }
-    };
-    
-    checkMobile(); // 初期チェック
-    window.addEventListener('resize', checkMobile); // リサイズ時に更新
-    
-    // スクロール位置の監視（NormalLPの場合のみ）
-    const handleScroll = () => {
-      setScrollPosition(window.scrollY);
-    };
-    
-    // PCの場合のみスクロールイベントリスナーを設定
-    if (!isMobileScreen) {
-      window.addEventListener('scroll', handleScroll);
-    }
-    
-    return () => {
-      window.removeEventListener('resize', checkMobile);
-      window.removeEventListener('scroll', handleScroll);
-    };
-  }, [router, isMobileScreen]);
+  const [showLocationModal, setShowLocationModal] = useState(false);
 
-  // モバイルメニューを開いた時にスクロールを無効化
-  useEffect(() => {
-    if (mobileMenuOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'auto';
-    }
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [mobileMenuOpen]);
+  // 🔥 イベントを探すボタンクリック時に位置情報モーダルを表示
+  const handleStart = () => {
+    setShowLocationModal(true);
+  };
 
-  // 🔥 修正：onboardingへ遷移する関数（PC版でもQRコード表示）
-  const goToOnboarding = () => {
-    if (isMobileScreen) {
-      // 🔥 修正：永続的スキップフラグをチェック
-      const skipPermanently = localStorage.getItem('skipOnboardingPermanently');
-      
-      if (skipPermanently === 'true') {
-        // 永続的にスキップする場合は直接タイムラインに遷移
-        router.push('/timeline');
-      } else {
-        // オンボーディングを表示
-        localStorage.removeItem('hasSeenOnboarding');
-        router.push('/timeline');
+  // 🔥 位置情報を許可してマップ画面へ遷移
+  const handleAllowLocation = async () => {
+    if ('geolocation' in navigator) {
+      try {
+        // 位置情報を取得
+        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
+          });
+        });
+
+        // 位置情報をlocalStorageに保存
+        const locationData = {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          timestamp: Date.now(),
+          expiresAt: Date.now() + (5 * 60 * 1000) // 5分間有効
+        };
+        localStorage.setItem('userLocation', JSON.stringify(locationData));
+
+        // モーダルを閉じてマップ画面へ遷移
+        setShowLocationModal(false);
+        router.push('/map');
+      } catch (error) {
+        console.error('位置情報の取得に失敗:', error);
+        // エラーでもマップ画面へ遷移（マップ側で再度許可を求める）
+        setShowLocationModal(false);
+        router.push('/map');
       }
     } else {
-      // 🔥 PC版では QRコードモーダルを表示
-      setShowQrCodeModal(true);
+      // 位置情報が利用できない場合もマップ画面へ
+      setShowLocationModal(false);
+      router.push('/map');
     }
   };
 
-  // 🔥 追加：PC版ログイン・新規登録ボタンのハンドラー
-  const handlePCLogin = () => {
-    setShowQrCodeModal(true);
+  // 🔥 位置情報を許可しない場合もマップ画面へ
+  const handleDenyLocation = () => {
+    setShowLocationModal(false);
+    router.push('/map');
   };
-
-  const handlePCRegister = () => {
-    setShowQrCodeModal(true);
-  };
-
-  // モバイルでスプラッシュ画面を表示中の場合
-  if (isMobileScreen && showSplash) {
-    return (
-      <AnimatePresence>
-        <SplashScreen />
-      </AnimatePresence>
-    );
-  }
 
   return (
     <main className="min-h-screen bg-background">
-      {/* ヘッダー - シンプルなPC版ヘッダー */}
-      {!isMobileScreen && (
-        <nav 
-          className={`fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm transition-all duration-300 pt-[var(--sat)] ${
-            scrollPosition > 10 ? 'shadow-sm border-b' : ''
-          }`}
-        >
-          <div className="container mx-auto px-8 h-20 flex items-center justify-end">
-            <div className="flex items-center space-x-6">
-              <Button 
-                variant="ghost" 
-                onClick={handlePCLogin} 
-                className="h-12 px-6 text-lg font-medium rounded-full hover:bg-primary/10 transition-colors"
-              >
-                既にアカウントをお持ちの方
-              </Button>
+      <EventLP onStart={handleStart} />
+      
+      {/* 🔥 位置情報許可モーダル */}
+      <CustomModal
+        isOpen={showLocationModal}
+        onClose={handleDenyLocation}
+        title="位置情報の利用について"
+        description="近くのイベントを地図上で表示するために位置情報を使用します"
+      >
+        <div className="space-y-6">
+          <div className="space-y-4">
+            <div className="flex items-start gap-3">
+              <MapPin className="h-5 w-5 text-[#73370c] mt-0.5 flex-shrink-0" />
+              <div className="text-sm text-gray-700">
+                <p className="font-semibold mb-1">現在地周辺のイベントを表示</p>
+                <p className="text-gray-600">あなたの位置情報を使って、近くで開催中のイベントを地図上に表示します。</p>
+              </div>
+            </div>
+            
+            <div className="flex items-start gap-3">
+              <Calendar className="h-5 w-5 text-[#73370c] mt-0.5 flex-shrink-0" />
+              <div className="text-sm text-gray-700">
+                <p className="font-semibold mb-1">プライバシーを保護</p>
+                <p className="text-gray-600">位置情報はイベント検索のみに使用し、外部に共有されることはありません。</p>
+              </div>
             </div>
           </div>
-        </nav>
-      )}
 
-      {/* コンテンツ - PCの場合のみNormalLPを表示 */}
-      {!isMobileScreen && (
-        <NormalLP 
-          goToOnboarding={goToOnboarding}
-          mobileMenuOpen={mobileMenuOpen}
-          setMobileMenuOpen={setMobileMenuOpen}
-          scrollPosition={scrollPosition}
-          handlePCLogin={handlePCLogin}
-        />
-      )}
-
-      {/* 🔥 追加：QRコードモーダル */}
-      <CustomModal
-        isOpen={showQrCodeModal}
-        onClose={() => setShowQrCodeModal(false)}
-        title="スマートフォンでアクセス"
-        description="QRコードを読み取ってスマートフォンからアクセスしてください。"
-        className="sm:max-w-sm"
-      >
-        <div className="flex flex-col items-center justify-center p-4">
-          <img
-            src="https://res.cloudinary.com/dz9trbwma/image/upload/v1753769575/%E3%82%B9%E3%82%AF%E3%83%AA%E3%83%BC%E3%83%B3%E3%82%B7%E3%83%A7%E3%83%83%E3%83%88_2025-06-27_9.29.07_h7cyb8.png"
-            alt="QR Code for Mobile Access"
-            className="w-48 h-48 sm:w-64 sm:h-64 object-contain mb-4"
-          />
-          <p className="text-sm text-gray-600 text-center">
-            QRコードをスキャンしてスマートフォンから「トクドク」にアクセスしてください。
+          <div className="space-y-3">
+            <Button
+              onClick={handleAllowLocation}
+              className="w-full bg-gradient-to-r from-[#73370c] to-[#8B4513] hover:from-[#5c2a0a] hover:to-[#73370c] text-white font-semibold"
+            >
+              <MapPin className="mr-2 h-4 w-4" />
+              位置情報を許可してイベントを探す
+            </Button>
+            
+            <Button
+              onClick={handleDenyLocation}
+              variant="outline"
+              className="w-full"
+            >
+              今はスキップ
+            </Button>
+          </div>
+          
+          <p className="text-xs text-gray-500 text-center">
+            ※ブラウザの設定で位置情報の許可をONにしてください
           </p>
-        </div>
-        <div className="mt-6 flex justify-end">
-          <Button variant="ghost" onClick={() => setShowQrCodeModal(false)} className="text-base px-5 py-2.5 h-auto">
-            閉じる
-          </Button>
         </div>
       </CustomModal>
     </main>

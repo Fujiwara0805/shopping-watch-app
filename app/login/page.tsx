@@ -68,7 +68,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (status === "authenticated") {
-      const callbackUrl = searchParams.get("callbackUrl") || "/timeline";
+      const callbackUrl = searchParams.get("callbackUrl") || "/map";
       router.replace(callbackUrl);
     }
   }, [status, router, searchParams]);

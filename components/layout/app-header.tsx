@@ -2,7 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Bell, Search } from 'lucide-react';
+import { Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/common/logo';
 import { Badge } from '@/components/ui/badge';
@@ -37,22 +37,16 @@ export function AppHeader() {
   // Get page title based on current path
   const getPageTitle = () => {
     switch (pathname) {
-      case '/timeline':
-        return isMobile ? '掲示板' : 'トクドク掲示板サービス';
-      case '/map':
-        return 'おとく地図';
       case '/post':
         return '新規投稿';
+      case '/events':
+        return 'イベントリスト';
       case '/profile':
         return 'マイページ';
       case '/profile/edit':
         return 'プロフィール編集';
       case '/profile/setup':
         return 'プロフィール作成';
-      case '/profile/stripe-setup':
-        return '収益受取設定';
-      case '/profile/stripe-account-management':
-        return 'アカウント管理';
       case '/line-connect':
         return 'LINE通知設定';
       case '/notifications':
@@ -92,7 +86,7 @@ export function AppHeader() {
         transition={{ duration: 0.3 }}
       >
         <div className="absolute left-4 flex items-center">
-          <Link href="/timeline">
+          <Link href="/map">
             <img src="https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png" alt="App Icon" className="h-12 w-12 object-contain" />
           </Link>
           {showLogo && <Logo withText size="small" />}
