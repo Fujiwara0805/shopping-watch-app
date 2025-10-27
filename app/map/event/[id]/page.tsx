@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, MapPin, Calendar, Clock, Users, ExternalLink, AlertCircle } from 'lucide-react';
+import { ArrowLeft, MapPin, Calendar, Clock, ExternalLink, AlertCircle, Phone, FileText, DollarSign, MapPinned, Link as LinkIcon, ChevronLeft, ChevronRight } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 
 interface EventDetail {
@@ -16,8 +16,14 @@ interface EventDetail {
   store_longitude: number;
   created_at: string;
   expires_at: string;
-  remaining_slots: number | null;
   image_urls: string[] | null;
+  event_name?: string | null;
+  event_price?: string | null;
+  prefecture?: string | null;
+  city?: string | null;
+  url?: string | null;
+  phone_number?: string | null;
+  file_urls?: string[] | null;
   user_id: string;
   profiles?: {
     display_name: string;
@@ -33,6 +39,7 @@ export default function EventDetailPage() {
   const [event, setEvent] = useState<EventDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   useEffect(() => {
     if (!eventId) return;
@@ -75,9 +82,21 @@ export default function EventDetailPage() {
           }
         }
 
+        // file_urlsの正規化
+        let fileUrls = data.file_urls;
+        if (typeof fileUrls === 'string') {
+          try {
+            fileUrls = JSON.parse(fileUrls);
+          } catch (e) {
+            console.error('ファイルURLのパースに失敗:', e);
+            fileUrls = null;
+          }
+        }
+
         setEvent({
           ...data,
-          image_urls: imageUrls
+          image_urls: imageUrls,
+          file_urls: fileUrls
         });
       } catch (error) {
         console.error('イベント詳細の取得中にエラー:', error);
@@ -132,140 +151,272 @@ export default function EventDetailPage() {
     window.open(url, '_blank');
   };
 
+  const nextImage = () => {
+    if (event?.image_urls && event.image_urls.length > 0) {
+      setCurrentImageIndex((prev) => (prev + 1) % event.image_urls!.length);
+    }
+  };
+
+  const prevImage = () => {
+    if (event?.image_urls && event.image_urls.length > 0) {
+      setCurrentImageIndex((prev) => (prev - 1 + event.image_urls!.length) % event.image_urls!.length);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* ヘッダー */}
-      <div className="bg-white border-b sticky top-0 z-10 shadow-sm">
-        <div className="max-w-4xl mx-auto px-4 py-3 flex items-center gap-3">
+      <div className="bg-[#2C2C2C] border-b sticky top-0 z-10 shadow-sm">
+        <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Button
+              onClick={() => router.push('/map')}
+              variant="ghost"
+              size="icon"
+              className="rounded-full hover:bg-white/10 text-white"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <h1 className="text-lg font-bold text-white">店舗詳細画面</h1>
+          </div>
           <Button
             onClick={() => router.push('/map')}
             variant="ghost"
             size="icon"
-            className="rounded-full"
+            className="rounded-full hover:bg-white/10 text-white"
           >
-            <ArrowLeft className="h-5 w-5" />
+            <span className="text-xl">×</span>
           </Button>
-          <h1 className="text-lg font-bold text-gray-900">イベント詳細</h1>
         </div>
       </div>
 
       {/* メインコンテンツ */}
-      <div className="max-w-4xl mx-auto p-4 pb-20">
+      <div className="max-w-4xl mx-auto pb-20">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
         >
-          <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
-            {/* イベント画像 */}
-            {event.image_urls && event.image_urls.length > 0 ? (
-              <div className="relative h-64 sm:h-80 w-full overflow-hidden bg-gray-100">
-                <img
-                  src={event.image_urls[0]}
-                  alt={event.store_name}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            ) : (
-              <div className="relative h-64 sm:h-80 w-full bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center">
-                <Calendar className="h-32 w-32 text-white opacity-50" />
+          {/* イベント画像カルーセル */}
+          {event.image_urls && event.image_urls.length > 0 ? (
+            <div className="relative h-80 w-full overflow-hidden bg-gray-900">
+              <img
+                src={event.image_urls[currentImageIndex]}
+                alt={event.event_name || event.store_name}
+                className="w-full h-full object-cover"
+              />
+              
+              {/* 画像ナビゲーション */}
+              {event.image_urls.length > 1 && (
+                <>
+                  <button
+                    onClick={prevImage}
+                    className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full"
+                  >
+                    <ChevronLeft className="h-6 w-6" />
+                  </button>
+                  <button
+                    onClick={nextImage}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full"
+                  >
+                    <ChevronRight className="h-6 w-6" />
+                  </button>
+                  
+                  {/* インジケーター */}
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+                    {event.image_urls.map((_, index) => (
+                      <div
+                        key={index}
+                        className={`h-2 rounded-full transition-all ${
+                          index === currentImageIndex
+                            ? 'w-8 bg-white'
+                            : 'w-2 bg-white/50'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          ) : (
+            <div className="relative h-80 w-full bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center">
+              <Calendar className="h-32 w-32 text-white opacity-50" />
+            </div>
+          )}
+
+          {/* 店舗/イベント名 */}
+          <div className="bg-white px-4 py-5 border-b">
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              {event.event_name || event.store_name}
+            </h2>
+            {event.event_name && event.store_name && (
+              <p className="text-gray-600 text-sm">{event.store_name}</p>
+            )}
+            {event.category && (
+              <div className="inline-block mt-2 px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium">
+                {event.category}
               </div>
             )}
+          </div>
 
-            {/* イベント情報 */}
-            <div className="p-6 space-y-6">
-              {/* イベント名 */}
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                  {event.content}
-                </h2>
-                <div className="inline-block px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-medium">
-                  {event.category || 'イベント情報'}
-                </div>
-              </div>
-
-              {/* 場所 */}
-              <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-xl">
-                <MapPin className="h-5 w-5 mt-0.5 flex-shrink-0 text-red-500" />
-                <div className="flex-1">
-                  <p className="font-medium text-gray-900">開催場所</p>
-                  <p className="text-gray-600 mt-1">{event.store_name}</p>
-                  <Button
-                    onClick={openGoogleMaps}
-                    variant="link"
-                    className="p-0 h-auto mt-2 text-blue-600"
-                  >
-                    Google Mapsで開く
-                    <ExternalLink className="h-4 w-4 ml-1" />
-                  </Button>
-                </div>
-              </div>
-
-              {/* 開催期日 */}
-              <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-xl">
-                <Clock className="h-5 w-5 mt-0.5 flex-shrink-0 text-blue-500" />
-                <div className="flex-1">
-                  <p className="font-medium text-gray-900">開催期限</p>
-                  <p className="text-gray-600 mt-1">{formatDate(event.expires_at)}まで</p>
-                </div>
-              </div>
-
-              {/* 投稿日時 */}
-              <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-xl">
-                <Calendar className="h-5 w-5 mt-0.5 flex-shrink-0 text-green-500" />
-                <div className="flex-1">
-                  <p className="font-medium text-gray-900">投稿日</p>
-                  <p className="text-gray-600 mt-1">{formatDate(event.created_at)}</p>
-                </div>
-              </div>
-
-              {/* 残り枠数（あれば） */}
-              {event.remaining_slots !== null && (
-                <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-xl">
-                  <Users className="h-5 w-5 mt-0.5 flex-shrink-0 text-orange-500" />
-                  <div className="flex-1">
-                    <p className="font-medium text-gray-900">残り枠数</p>
-                    <p className="text-gray-600 mt-1">
-                      {event.remaining_slots > 0
-                        ? `${event.remaining_slots}枠`
-                        : '満員'}
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {/* 投稿者情報（あれば） */}
-              {event.profiles && (
-                <div className="pt-4 border-t">
-                  <p className="text-sm text-gray-500 mb-2">投稿者</p>
-                  <div className="flex items-center gap-3">
-                    {event.profiles.avatar_url ? (
-                      <img
-                        src={event.profiles.avatar_url}
-                        alt={event.profiles.display_name}
-                        className="h-10 w-10 rounded-full object-cover"
-                      />
-                    ) : (
-                      <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
-                        <span className="text-gray-600 text-sm font-medium">
-                          {event.profiles.display_name.charAt(0)}
-                        </span>
-                      </div>
-                    )}
-                    <p className="font-medium text-gray-900">
-                      {event.profiles.display_name}
-                    </p>
-                  </div>
-                </div>
-              )}
+          {/* ステータスバッジ（閉店中の例） */}
+          <div className="bg-white px-4 py-3 border-b">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-red-100 text-red-700 rounded-lg text-sm font-medium">
+              <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+              閉店中
             </div>
           </div>
 
+          {/* 投稿内容 */}
+          <div className="bg-white px-4 py-5 border-b">
+            <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-r-lg">
+              <p className="text-gray-800 leading-relaxed whitespace-pre-wrap">
+                {event.content}
+              </p>
+            </div>
+          </div>
+
+          {/* 詳細情報 */}
+          <div className="bg-white divide-y">
+            {/* 場所 */}
+            <div className="px-4 py-4">
+              <div className="flex items-start gap-3">
+                <MapPin className="h-5 w-5 mt-1 flex-shrink-0 text-red-500" />
+                <div className="flex-1">
+                  <p className="font-semibold text-gray-900 mb-1">住所</p>
+                  <p className="text-gray-700">
+                    {event.prefecture && event.city 
+                      ? `${event.prefecture}${event.city}`
+                      : event.store_name}
+                  </p>
+                  <Button
+                    onClick={openGoogleMaps}
+                    variant="link"
+                    className="p-0 h-auto mt-2 text-blue-600 hover:text-blue-700"
+                  >
+                    Googleマップで開く
+                    <ExternalLink className="h-3 w-3 ml-1" />
+                  </Button>
+                  <p className="text-xs text-gray-500 mt-1">現在地から約 291m</p>
+                </div>
+              </div>
+            </div>
+
+            {/* 開催期日 */}
+            <div className="px-4 py-4">
+              <div className="flex items-start gap-3">
+                <Clock className="h-5 w-5 mt-1 flex-shrink-0 text-blue-500" />
+                <div className="flex-1">
+                  <p className="font-semibold text-gray-900 mb-1">営業時間</p>
+                  <p className="text-gray-700">{formatDate(event.expires_at)}まで</p>
+                  <p className="text-sm text-gray-500 mt-1">火曜日が定休日</p>
+                </div>
+              </div>
+            </div>
+
+            {/* 料金 */}
+            {event.event_price && (
+              <div className="px-4 py-4">
+                <div className="flex items-start gap-3">
+                  <DollarSign className="h-5 w-5 mt-1 flex-shrink-0 text-green-500" />
+                  <div className="flex-1">
+                    <p className="font-semibold text-gray-900 mb-1">予算</p>
+                    <p className="text-gray-700">{event.event_price}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* エリア情報 */}
+            {(event.prefecture || event.city) && (
+              <div className="px-4 py-4">
+                <div className="flex items-start gap-3">
+                  <MapPinned className="h-5 w-5 mt-1 flex-shrink-0 text-purple-500" />
+                  <div className="flex-1">
+                    <p className="font-semibold text-gray-900 mb-1">エリア</p>
+                    <p className="text-gray-700">
+                      {event.prefecture} {event.city}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 電話番号 */}
+            {event.phone_number && (
+              <div className="px-4 py-4">
+                <div className="flex items-start gap-3">
+                  <Phone className="h-5 w-5 mt-1 flex-shrink-0 text-orange-500" />
+                  <div className="flex-1">
+                    <p className="font-semibold text-gray-900 mb-1">電話番号</p>
+                    <a
+                      href={`tel:${event.phone_number}`}
+                      className="text-blue-600 hover:text-blue-700 font-medium"
+                    >
+                      {event.phone_number}
+                    </a>
+                    <p className="text-xs text-gray-500 mt-1">「2軒目を見ました」と言ってください</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ウェブサイト */}
+            {event.url && (
+              <div className="px-4 py-4">
+                <div className="flex items-start gap-3">
+                  <LinkIcon className="h-5 w-5 mt-1 flex-shrink-0 text-indigo-500" />
+                  <div className="flex-1">
+                    <p className="font-semibold text-gray-900 mb-1">ウェブサイト</p>
+                    <a
+                      href={event.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:text-blue-700 break-all"
+                    >
+                      {event.url}
+                      <ExternalLink className="h-3 w-3 ml-1 inline" />
+                    </a>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ファイル */}
+            {event.file_urls && event.file_urls.length > 0 && (
+              <div className="px-4 py-4">
+                <div className="flex items-start gap-3">
+                  <FileText className="h-5 w-5 mt-1 flex-shrink-0 text-gray-500" />
+                  <div className="flex-1">
+                    <p className="font-semibold text-gray-900 mb-2">添付ファイル</p>
+                    <div className="space-y-2">
+                      {event.file_urls.map((fileUrl, index) => (
+                        <a
+                          key={index}
+                          href={fileUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                        >
+                          <FileText className="h-4 w-4 text-gray-600" />
+                          <span className="text-sm text-gray-700 flex-1">
+                            ファイル {index + 1}
+                          </span>
+                          <ExternalLink className="h-4 w-4 text-gray-400" />
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* アクションボタン */}
-          <div className="mt-6 space-y-3">
+          <div className="mt-6 px-4 space-y-3">
             <Button
               onClick={openGoogleMaps}
-              className="w-full bg-red-500 hover:bg-red-600 text-white py-6 text-lg shadow-lg"
+              className="w-full bg-red-500 hover:bg-red-600 text-white py-6 text-lg shadow-lg rounded-xl"
             >
               <MapPin className="h-5 w-5 mr-2" />
               地図で場所を確認
@@ -274,7 +425,7 @@ export default function EventDetailPage() {
             <Button
               onClick={() => router.push('/map')}
               variant="outline"
-              className="w-full py-6 text-lg"
+              className="w-full py-6 text-lg rounded-xl border-2"
             >
               <ArrowLeft className="h-5 w-5 mr-2" />
               マップに戻る

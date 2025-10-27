@@ -956,43 +956,11 @@ export function MapView() {
               <div className="text-xs text-gray-600">
                 {posts.length > 0 
                   ? `${posts.length}件のイベント情報有`
-                  : "緑色のエリア＝イベント閲覧範囲"
+                  : "イベント情報を検索中..."
                 }
               </div>
             </div>
           </div>
-          
-          {/* 🔥 範囲表示切り替えボタン（投稿がある場合のみ表示） */}
-          {posts.length === 0 && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
-            >
-              <Button
-                onClick={toggleRangeCircle}
-                variant={showRangeCircle ? "default" : "outline"}
-                size="sm"
-                className={`shadow-lg ${
-                  showRangeCircle 
-                    ? 'bg-green-600 hover:bg-green-700 text-white border-green-600 hover:border-green-700' 
-                    : 'bg-white hover:bg-gray-400 text-gray-800 border-gray-800 hover:border-gray-400'
-                }`}
-              >
-                {showRangeCircle ? (
-                  <>
-                    <EyeOff className="h-4 w-4 mr-2" />
-                    範囲を非表示
-                  </>
-                ) : (
-                  <>
-                    <Eye className="h-4 w-4 mr-2" />
-                    1km圏内を表示
-                  </>
-                )}
-              </Button>
-            </motion.div>
-          )}
         </div>
       )}
 
