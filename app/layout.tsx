@@ -31,9 +31,10 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
   const isLoginPage = pathname === '/login';
   const isRegisterPage = pathname === '/register';
   const isLandingPage = pathname === '/';
+  const isEventDetailPage = pathname?.startsWith('/map/event/'); // 🔥 イベント詳細ページを追加
   
   // ヘッダーを表示しないページ
-  const hideHeader = isMapPage || isLoginPage || isRegisterPage || isLandingPage;
+  const hideHeader = isMapPage || isLoginPage || isRegisterPage || isLandingPage || isEventDetailPage; // 🔥 追加
 
   useEffect(() => {
     // マップページの場合、bodyのスクロールを無効化
@@ -85,7 +86,7 @@ export default function RootLayout({
   return (
     <html lang="ja" suppressHydrationWarning>
       <head>
-        <title>トクドク - 地域イベント発見アプリ</title>
+        <title>トクドク</title>
         <meta name="description" content="地域のお祭り、マルシェ、ワークショップを地図で発見！現在地から近いイベントをかんたん検索。週末の予定探しに最適な、完全無料の地域密着イベントアプリです。" />
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
         <meta name="theme-color" content="#73370c" />

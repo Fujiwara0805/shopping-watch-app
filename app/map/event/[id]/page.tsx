@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, MapPin, Calendar, Map, ExternalLink, AlertCircle, Phone, FileText, DollarSign, MapPinned, Link as LinkIcon, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { ArrowLeft, MapPin, Calendar, Map, ExternalLink, AlertCircle, Phone, FileText, DollarSign, MapPinned, Link as LinkIcon, ChevronLeft, ChevronRight, X, ChevronDown, ChevronUp } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 
 interface EventDetail {
@@ -21,6 +21,7 @@ interface EventDetail {
   event_price?: string | null;
   prefecture?: string | null;
   city?: string | null;
+  address?: string | null;
   url?: string | null;
   phone_number?: string | null;
   file_urls?: string[] | null;
@@ -37,6 +38,7 @@ export default function EventDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [isContentExpanded, setIsContentExpanded] = useState(false);
 
   useEffect(() => {
     if (!eventId) return;
@@ -100,12 +102,74 @@ export default function EventDetailPage() {
     fetchEventDetail();
   }, [eventId]);
 
+  // イベントステータスと残り時間を計算
+  const getEventStatus = () => {
+    if (!event) return { status: '未定', color: 'gray', remainingTime: '' };
+
+    const now = new Date();
+    const startDate = event.event_start_date ? new Date(event.event_start_date) : null;
+    const endDate = event.event_end_date ? new Date(event.event_end_date) : new Date(event.expires_at);
+
+    // 開催開始前
+    if (startDate && now < startDate) {
+      const diffMs = startDate.getTime() - now.getTime();
+      const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+      return { 
+        status: '開催予定', 
+        color: 'blue',
+        remainingTime: `開催まであと${diffDays}日`
+      };
+    }
+
+    // 開催期間中または開催日当日
+    if (now <= endDate) {
+      const diffMs = endDate.getTime() - now.getTime();
+      const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+      const diffHours = Math.ceil(diffMs / (1000 * 60 * 60));
+      
+      let remainingText = '';
+      if (diffDays > 1) {
+        remainingText = `あと${diffDays}日`;
+      } else if (diffHours > 1) {
+        remainingText = `あと${diffHours}時間`;
+      } else {
+        remainingText = 'まもなく終了';
+      }
+      
+      return { 
+        status: '開催中', 
+        color: 'green',
+        remainingTime: remainingText
+      };
+    }
+
+    // 終了
+    return { 
+      status: '終了', 
+      color: 'gray',
+      remainingTime: ''
+    };
+  };
+
+  // URLがInstagramかどうかを判定
+  const isInstagramUrl = (url: string) => {
+    return url.toLowerCase().includes('instagram.com');
+  };
+
+  // ウェブサイトのアイコンを取得
+  const getWebsiteIcon = (url: string) => {
+    if (isInstagramUrl(url)) {
+      return 'https://res.cloudinary.com/dz9trbwma/image/upload/v1759308496/icons8-%E3%82%A4%E3%83%B3%E3%82%B9%E3%82%BF%E3%82%AF%E3%82%99%E3%83%A9%E3%83%A0-100_idedfz.png';
+    }
+    return 'https://res.cloudinary.com/dz9trbwma/image/upload/v1759366399/icons8-%E3%82%A6%E3%82%A7%E3%83%95%E3%82%99-100_a6uwwq.png';
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#73370c] mx-auto mb-4"></div>
-          <p className="text-gray-600">イベント情報を読み込み中...</p>
+          <p className="text-gray-600 font-bold">イベント情報を読み込み中...</p>
         </div>
       </div>
     );
@@ -117,9 +181,8 @@ export default function EventDetailPage() {
         <div className="bg-white rounded-xl shadow-lg p-8 max-w-md w-full text-center">
           <AlertCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
           <h2 className="text-xl font-bold text-gray-900 mb-2">エラー</h2>
-          <p className="text-gray-600 mb-6">{error || 'イベントが見つかりませんでした。'}</p>
-          <Button onClick={() => router.back()} className="w-full">
-            <ArrowLeft className="h-4 w-4 mr-2" />
+          <p className="text-gray-600 font-bold mb-6">{error || 'イベントが見つかりませんでした。'}</p>
+          <Button onClick={() => router.push('/map')} className="w-full font-bold">
             戻る
           </Button>
         </div>
@@ -154,29 +217,27 @@ export default function EventDetailPage() {
     }
   };
 
+  const eventStatus = getEventStatus();
+  const statusColors = {
+    green: { bg: 'bg-green-100', text: 'text-green-700', dot: 'bg-green-500' },
+    blue: { bg: 'bg-blue-100', text: 'text-blue-700', dot: 'bg-blue-500' },
+    gray: { bg: 'bg-gray-100', text: 'text-gray-700', dot: 'bg-gray-500' }
+  };
+  const colors = statusColors[eventStatus.color as keyof typeof statusColors];
+
+  // 投稿内容の表示制御
+  const contentText = event.content;
+  const shouldTruncate = contentText.length > 100;
+  const displayContent = shouldTruncate && !isContentExpanded 
+    ? contentText.slice(0, 100) 
+    : contentText;
+
   return (
-    <div className="min-h-screen bg-gray-50 overflow-y-auto">
+    <div className="min-h-screen bg-gray-50 overflow-y-auto font-bold">
       {/* ヘッダー */}
       <div className="bg-[#73370c] border-b sticky top-0 z-10 shadow-sm">
-        <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Button
-              onClick={() => router.push('/map')}
-              variant="ghost"
-              size="icon"
-              className="rounded-full hover:bg-white/10 text-white"
-            >
-            </Button>
-            <h1 className="text-lg font-bold text-white">イベント詳細画面</h1>
-          </div>
-          <Button
-            onClick={() => router.push('/map')}
-            variant="ghost"
-            size="icon"
-            className="rounded-full hover:bg-white/10 text-white"
-          >
-            <span className="text-xl">×</span>
-          </Button>
+        <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-center">
+          <h1 className="text-2xl font-bold text-white">イベント詳細画面</h1>
         </div>
       </div>
 
@@ -190,7 +251,7 @@ export default function EventDetailPage() {
         >
           {/* イベント画像カルーセル */}
           {event.image_urls && event.image_urls.length > 0 ? (
-            <div className="relative h-80 w-full overflow-hidden bg-gray-900 sticky top-0 z-10">
+            <div className="relative h-80 w-full overflow-hidden bg-gray-900">
               <img
                 src={event.image_urls[currentImageIndex]}
                 alt={event.event_name || event.store_name}
@@ -199,9 +260,9 @@ export default function EventDetailPage() {
               
               {/* 右上の閉じるボタン */}
               <Button
-                onClick={() => router.back()}
+                onClick={() => router.push('/map')}
                 size="icon"
-                className="absolute top-4 right-4 h-10 w-10 rounded-full bg-black/50 hover:bg-black/70 text-white border-2 border-white shadow-lg z-10"
+                className="absolute top-4 right-4 h-10 w-10 rounded-full bg-black/50 hover:bg-black/70 text-white border-2 border-white shadow-lg z-10 font-bold"
               >
                 <X className="h-6 w-6" />
               </Button>
@@ -239,14 +300,14 @@ export default function EventDetailPage() {
               )}
             </div>
           ) : (
-            <div className="relative h-80 w-full bg-gradient-to-br from-[#73370c] to-[#8B4513] flex items-center justify-center sticky top-0 z-10">
+            <div className="relative h-80 w-full bg-gradient-to-br from-[#73370c] to-[#8B4513] flex items-center justify-center">
               <Calendar className="h-32 w-32 text-white opacity-50" />
               
               {/* 右上の閉じるボタン（画像なしの場合） */}
               <Button
-                onClick={() => router.back()}
+                onClick={() => router.push('/map')}
                 size="icon"
-                className="absolute top-4 right-4 h-10 w-10 rounded-full bg-black/50 hover:bg-black/70 text-white border-2 border-white shadow-lg"
+                className="absolute top-4 right-4 h-10 w-10 rounded-full bg-black/50 hover:bg-black/70 text-white border-2 border-white shadow-lg font-bold"
               >
                 <X className="h-6 w-6" />
               </Button>
@@ -255,26 +316,25 @@ export default function EventDetailPage() {
 
           {/* スクロール可能なコンテンツエリア */}
           <div className="bg-white">
-            {/* 店舗/イベント名 */}
-            <div className="px-4 py-5 border-b">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                {event.event_name || event.store_name}
+            {/* イベント名 */}
+            <div className="px-4 py-5 pb-3">
+              <h2 className="text-2xl font-bold text-[#73370c] mb-0">
+                {event.event_name}
               </h2>
-              {event.event_name && event.store_name && (
-                <p className="text-gray-600 text-sm">{event.store_name}</p>
-              )}
-              {event.category && (
-                <div className="inline-block mt-2 px-3 py-1 bg-[#73370c]/10 text-[#73370c] rounded-full text-xs font-medium">
-                  {event.category}
-                </div>
-              )}
             </div>
 
-            {/* ステータスバッジ */}
+            {/* ステータスバッジと残り時間 */}
             <div className="px-4 py-3 border-b">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-green-100 text-green-700 rounded-lg text-sm font-medium">
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                開催中
+              <div className="flex items-center gap-3">
+                <div className={`inline-flex items-center gap-2 px-3 py-1.5 ${colors.bg} ${colors.text} rounded-lg text-sm font-bold`}>
+                  <div className={`w-2 h-2 ${colors.dot} rounded-full`}></div>
+                  {eventStatus.status}
+                </div>
+                {eventStatus.remainingTime && (
+                  <span className="text-red-600 font-bold text-sm">
+                    {eventStatus.remainingTime}
+                  </span>
+                )}
               </div>
             </div>
 
@@ -282,28 +342,47 @@ export default function EventDetailPage() {
             <div className="px-4 py-5 border-b">
               <div className="bg-blue-50 border-l-4 border-[#73370c] p-4 rounded-r-lg">
                 <p className="text-gray-800 leading-relaxed whitespace-pre-wrap">
-                  {event.content}
+                  {displayContent}
                 </p>
+                {shouldTruncate && (
+                  <button
+                    onClick={() => setIsContentExpanded(!isContentExpanded)}
+                    className="mt-2 flex items-center gap-1 text-[#73370c] hover:text-[#5c2a0a] font-bold text-sm"
+                  >
+                    {isContentExpanded ? (
+                      <>
+                        <ChevronUp className="h-4 w-4" />
+                        閉じる
+                      </>
+                    ) : (
+                      <>
+                        <ChevronDown className="h-4 w-4" />
+                        続きを読む
+                      </>
+                    )}
+                  </button>
+                )}
               </div>
             </div>
 
             {/* 詳細情報 */}
             <div className="divide-y">
-              {/* 場所 */}
+              {/* 開催場所 */}
               <div className="px-4 py-4">
                 <div className="flex items-start gap-3">
                   <MapPin className="h-5 w-5 mt-1 flex-shrink-0 text-red-500" />
                   <div className="flex-1">
-                    <p className="font-semibold text-gray-900 mb-1">住所</p>
-                    <p className="text-gray-700">
-                      {event.prefecture && event.city 
-                        ? `${event.prefecture}${event.city}`
-                        : event.store_name}
+                    <p className="font-bold text-gray-900 mb-1">開催場所</p>
+                    <p className="text-gray-700 font-bold mb-2">
+                      {event.store_name}
+                    </p>
+                    <p className="text-xs text-gray-500 mb-2">
+                      ※詳細はメディア情報をご確認ください
                     </p>
                     <Button
                       onClick={openGoogleMaps}
                       variant="link"
-                      className="p-0 h-auto mt-2 text-[#73370c] hover:text-[#5c2a0a]"
+                      className="p-0 h-auto text-[#73370c] hover:text-[#5c2a0a] font-bold"
                     >
                       Googleマップで開く
                       <ExternalLink className="h-3 w-3 ml-1" />
@@ -317,9 +396,9 @@ export default function EventDetailPage() {
                 <div className="flex items-start gap-3">
                   <Calendar className="h-5 w-5 mt-1 flex-shrink-0 text-[#73370c]" />
                   <div className="flex-1">
-                    <p className="font-semibold text-gray-900 mb-1">開催期間</p>
+                    <p className="font-bold text-gray-900 mb-1">開催期間</p>
                     {event.event_start_date ? (
-                      <p className="text-gray-700">
+                      <p className="text-gray-700 font-bold">
                         {new Date(event.event_start_date).toLocaleDateString('ja-JP', {
                           year: 'numeric',
                           month: 'long',
@@ -333,7 +412,7 @@ export default function EventDetailPage() {
                         )}
                       </p>
                     ) : (
-                      <p className="text-gray-700">{formatDate(event.expires_at)}まで</p>
+                      <p className="text-gray-700 font-bold">{formatDate(event.expires_at)}まで</p>
                     )}
                   </div>
                 </div>
@@ -345,23 +424,8 @@ export default function EventDetailPage() {
                   <div className="flex items-start gap-3">
                     <DollarSign className="h-5 w-5 mt-1 flex-shrink-0 text-green-500" />
                     <div className="flex-1">
-                      <p className="font-semibold text-gray-900 mb-1">料金</p>
-                      <p className="text-gray-700">{event.event_price}</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* エリア情報 */}
-              {(event.prefecture || event.city) && (
-                <div className="px-4 py-4">
-                  <div className="flex items-start gap-3">
-                    <MapPinned className="h-5 w-5 mt-1 flex-shrink-0 text-[#73370c]" />
-                    <div className="flex-1">
-                      <p className="font-semibold text-gray-900 mb-1">エリア</p>
-                      <p className="text-gray-700">
-                        {event.prefecture} {event.city}
-                      </p>
+                      <p className="font-bold text-gray-900 mb-1">料金</p>
+                      <p className="text-gray-700 font-bold">{event.event_price}</p>
                     </div>
                   </div>
                 </div>
@@ -373,10 +437,10 @@ export default function EventDetailPage() {
                   <div className="flex items-start gap-3">
                     <Phone className="h-5 w-5 mt-1 flex-shrink-0 text-orange-500" />
                     <div className="flex-1">
-                      <p className="font-semibold text-gray-900 mb-1">電話番号</p>
+                      <p className="font-bold text-gray-900 mb-1">電話番号</p>
                       <a
                         href={`tel:${event.phone_number}`}
-                        className="text-[#73370c] hover:text-[#5c2a0a] font-medium"
+                        className="text-[#73370c] hover:text-[#5c2a0a] font-bold"
                       >
                         {event.phone_number}
                       </a>
@@ -391,15 +455,18 @@ export default function EventDetailPage() {
                   <div className="flex items-start gap-3">
                     <LinkIcon className="h-5 w-5 mt-1 flex-shrink-0 text-indigo-500" />
                     <div className="flex-1">
-                      <p className="font-semibold text-gray-900 mb-1">ウェブサイト</p>
+                      <p className="font-bold text-gray-900 mb-1">メディア情報</p>
                       <a
                         href={event.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-[#73370c] hover:text-[#5c2a0a] break-all"
+                        className="block"
                       >
-                        {event.url}
-                        <ExternalLink className="h-3 w-3 ml-1 inline" />
+                        <img 
+                          src={getWebsiteIcon(event.url)} 
+                          alt={isInstagramUrl(event.url) ? 'Instagram' : 'Website'}
+                          className="h-12 w-12 cursor-pointer hover:opacity-80 transition-opacity"
+                        />
                       </a>
                     </div>
                   </div>
@@ -412,7 +479,7 @@ export default function EventDetailPage() {
                   <div className="flex items-start gap-3">
                     <FileText className="h-5 w-5 mt-1 flex-shrink-0 text-gray-500" />
                     <div className="flex-1">
-                      <p className="font-semibold text-gray-900 mb-2">添付ファイル</p>
+                      <p className="font-bold text-gray-900 mb-2">添付ファイル</p>
                       <div className="space-y-2">
                         {event.file_urls.map((fileUrl, index) => (
                           <a
@@ -423,7 +490,7 @@ export default function EventDetailPage() {
                             className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
                           >
                             <FileText className="h-4 w-4 text-gray-600" />
-                            <span className="text-sm text-gray-700 flex-1">
+                            <span className="text-sm text-gray-700 flex-1 font-bold">
                               ファイル {index + 1}
                             </span>
                             <ExternalLink className="h-4 w-4 text-gray-400" />
@@ -440,16 +507,16 @@ export default function EventDetailPage() {
             <div className="px-4 py-6 space-y-3">
               <Button
                 onClick={openGoogleMaps}
-                className="w-full bg-[#73370c] text-white py-6 text-lg shadow-lg rounded-xl"
+                className="w-full bg-[#73370c] text-white py-6 text-lg shadow-lg rounded-xl font-bold"
               >
                 <Map className="h-5 w-5 mr-2" />
                 地図でイベントを確認
               </Button>
 
               <Button
-                onClick={() => router.back()}
+                onClick={() => router.push('/map')}
                 variant="outline"
-                className="w-full py-6 text-lg rounded-xl border-2"
+                className="w-full py-6 text-lg rounded-xl border-2 font-bold"
               >
                 戻る
               </Button>
