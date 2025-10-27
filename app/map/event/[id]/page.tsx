@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, MapPin, Calendar, Clock, ExternalLink, AlertCircle, Phone, FileText, DollarSign, MapPinned, Link as LinkIcon, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { ArrowLeft, MapPin, Calendar, Map, ExternalLink, AlertCircle, Phone, FileText, DollarSign, MapPinned, Link as LinkIcon, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 
 interface EventDetail {
@@ -157,7 +157,7 @@ export default function EventDetailPage() {
   return (
     <div className="min-h-screen bg-gray-50 overflow-y-auto">
       {/* ヘッダー */}
-      <div className="bg-[#2C2C2C] border-b sticky top-0 z-10 shadow-sm">
+      <div className="bg-[#73370c] border-b sticky top-0 z-10 shadow-sm">
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Button
@@ -166,9 +166,8 @@ export default function EventDetailPage() {
               size="icon"
               className="rounded-full hover:bg-white/10 text-white"
             >
-              <ArrowLeft className="h-5 w-5" />
             </Button>
-            <h1 className="text-lg font-bold text-white">店舗詳細画面</h1>
+            <h1 className="text-lg font-bold text-white">イベント詳細画面</h1>
           </div>
           <Button
             onClick={() => router.push('/map')}
@@ -441,10 +440,10 @@ export default function EventDetailPage() {
             <div className="px-4 py-6 space-y-3">
               <Button
                 onClick={openGoogleMaps}
-                className="w-full bg-[#73370c] hover:bg-[#5c2a0a] text-white py-6 text-lg shadow-lg rounded-xl"
+                className="w-full bg-[#73370c] text-white py-6 text-lg shadow-lg rounded-xl"
               >
-                <MapPin className="h-5 w-5 mr-2" />
-                地図で場所を確認
+                <Map className="h-5 w-5 mr-2" />
+                地図でイベントを確認
               </Button>
 
               <Button
@@ -452,7 +451,6 @@ export default function EventDetailPage() {
                 variant="outline"
                 className="w-full py-6 text-lg rounded-xl border-2"
               >
-                <ArrowLeft className="h-5 w-5 mr-2" />
                 戻る
               </Button>
             </div>

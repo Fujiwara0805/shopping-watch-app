@@ -40,7 +40,7 @@ export function AppHeader() {
       case '/post':
         return '新規投稿';
       case '/events':
-        return 'イベントリスト';
+        return 'イベント一覧';
       case '/profile':
         return 'マイページ';
       case '/profile/edit':

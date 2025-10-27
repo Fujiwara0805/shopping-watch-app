@@ -495,7 +495,6 @@ export default function EventsPage() {
   return (
       <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50">
         <div className="sticky top-0 z-10 border-b bg-[#73370c]">
-         <h1 className="text-2xl font-bold text-center text-white p-2">イベントリスト一覧</h1>
           <div className="p-4">
             {/* 検索バー */}
             <div className="flex items-center space-x-2">

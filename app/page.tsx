@@ -305,6 +305,8 @@ export default function Home() {
   const handleAllowLocation = async () => {
     if ('geolocation' in navigator) {
       try {
+        console.log('位置情報を取得中...');
+        
         // 位置情報を取得
         const position = await new Promise<GeolocationPosition>((resolve, reject) => {
           navigator.geolocation.getCurrentPosition(resolve, reject, {
@@ -314,14 +316,23 @@ export default function Home() {
           });
         });
 
-        // 位置情報をlocalStorageに保存
+        console.log('位置情報取得成功:', position.coords);
+
+        // 位置情報をlocalStorageに保存（map-view.tsxが読み込むキー）
         const locationData = {
           latitude: position.coords.latitude,
           longitude: position.coords.longitude,
           timestamp: Date.now(),
-          expiresAt: Date.now() + (5 * 60 * 1000) // 5分間有効
+          expiresAt: Date.now() + (60 * 60 * 1000) // 1時間有効
         };
         localStorage.setItem('userLocation', JSON.stringify(locationData));
+        console.log('位置情報を保存:', locationData);
+
+        // �� LocationPermissionManagerが使用する許可フラグも保存
+        localStorage.setItem('locationPermission', JSON.stringify({
+          isGranted: true,
+          timestamp: Date.now()
+        }));
 
         // モーダルを閉じてマップ画面へ遷移
         setShowLocationModal(false);
@@ -333,13 +344,14 @@ export default function Home() {
         router.push('/map');
       }
     } else {
+      console.warn('位置情報が利用できません');
       // 位置情報が利用できない場合もマップ画面へ
       setShowLocationModal(false);
       router.push('/map');
     }
   };
 
-  // 🔥 位置情報を許可しない場合もマップ画面へ
+  // �� 位置情報を許可しない場合もマップ画面へ
   const handleDenyLocation = () => {
     setShowLocationModal(false);
     router.push('/map');

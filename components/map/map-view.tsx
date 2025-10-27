@@ -184,6 +184,34 @@ export function MapView() {
   const [selectedPost, setSelectedPost] = useState<PostMarkerData | null>(null);
   const router = useRouter();
 
+  // 🔥 保存された位置情報を読み込む
+  const [savedLocation, setSavedLocation] = useState<{lat: number, lng: number} | null>(null);
+
+  useEffect(() => {
+    // localStorageから位置情報を読み込む
+    try {
+      const savedData = localStorage.getItem('userLocation');
+      if (savedData) {
+        const locationData = JSON.parse(savedData);
+        const now = Date.now();
+        
+        // 有効期限内かチェック
+        if (locationData.expiresAt && locationData.expiresAt > now) {
+          console.log('MapView: 保存された位置情報を使用', locationData);
+          setSavedLocation({
+            lat: locationData.latitude,
+            lng: locationData.longitude
+          });
+        } else {
+          console.log('MapView: 保存された位置情報の有効期限切れ');
+          localStorage.removeItem('userLocation');
+        }
+      }
+    } catch (error) {
+      console.error('MapView: 位置情報の読み込みに失敗:', error);
+    }
+  }, []);
+
   // コンテナ寸法の取得（シンプル化）
   const updateContainerDimensions = useCallback(() => {
     if (!mapContainerRef.current) return false;
@@ -229,18 +257,21 @@ export function MapView() {
 
   // 🔥 投稿データを取得する関数を修正（範囲制限を削除）
   const fetchPosts = useCallback(async () => {
-    if (!latitude || !longitude) {
+    const userLat = savedLocation?.lat || latitude;
+    const userLng = savedLocation?.lng || longitude;
+    
+    if (!userLat || !userLng) {
       console.log('MapView: 位置情報がないため投稿データの取得をスキップ');
       return;
     }
 
     setLoadingPosts(true);
     try {
-      console.log('MapView: イベント情報を取得中...');
+      console.log('MapView: イベント情報を取得中...', { lat: userLat, lng: userLng });
       
       const now = new Date().toISOString();
       
-      // �� イベント情報のみを取得（距離制限なし）
+      // 🔥 イベント情報のみを取得（距離制限なし）
       const { data, error } = await supabase
         .from('posts')
         .select(`
@@ -273,7 +304,7 @@ export function MapView() {
         return;
       }
 
-      // �� image_urlsの正規化のみ実行（距離フィルタリング削除）
+      // 🔥 image_urlsの正規化のみ実行（距離フィルタリング削除）
       const normalizedPosts = data.map((post: any) => {
         let imageUrls = post.image_urls;
         if (typeof imageUrls === 'string') {
@@ -299,9 +330,9 @@ export function MapView() {
     } finally {
       setLoadingPosts(false);
     }
-  }, [latitude, longitude]);
+  }, [latitude, longitude, savedLocation]);
 
-  // 🔥 クラスター機能は不要なので削除
+  // �� クラスター機能は不要なので削除
 
   // 🔥 同じ場所の投稿をグループ化する関数
   const groupPostsByLocation = (posts: PostMarkerData[]) => {
@@ -375,15 +406,13 @@ export function MapView() {
     }
 
     setPostMarkers(newMarkers);
-  }, [map, posts, router]); // �� postMarkers を依存配列から削除
+  }, [map, posts, router]); 
 
-  // 地図初期化（シンプル化 - ブラウザ別設定を削除）
+  // 地図初期化（シンプル化 - 位置情報なしでも初期化可能に）
   const initializeMap = useCallback(() => {
     if (!mapContainerRef.current || 
         mapInstanceRef.current || 
         !googleMapsLoaded || 
-        !latitude || 
-        !longitude || 
         containerDimensions.height < 200 ||
         initializationTriedRef.current) {
       return false;
@@ -400,12 +429,19 @@ export function MapView() {
       const container = mapContainerRef.current;
       container.innerHTML = '';
 
-      const center = { lat: latitude, lng: longitude };
+      // 🔥 保存された位置情報を最優先、次にuseGeolocationの値、最後にデフォルト（東京）
+      const center = savedLocation 
+        ? savedLocation
+        : (latitude && longitude) 
+          ? { lat: latitude, lng: longitude }
+          : { lat: 35.6812, lng: 139.7671 }; // 東京駅
+
+      console.log('MapView: 地図の中心座標:', center);
 
       // シンプルな地図オプション
       const mapOptions: google.maps.MapOptions = {
         center,
-        zoom: 14,
+        zoom: (savedLocation || (latitude && longitude)) ? 14 : 12, // 位置情報がある場合はズーム
         disableDefaultUI: true,
         zoomControl: true,
         gestureHandling: 'cooperative',
@@ -428,33 +464,34 @@ export function MapView() {
       initializationTriedRef.current = false;
       return false;
     }
-  }, [googleMapsLoaded, latitude, longitude, containerDimensions]);
+  }, [googleMapsLoaded, latitude, longitude, savedLocation, containerDimensions]);
 
-  // 地図初期化の実行タイミング制御（シンプル化）
+  // 地図初期化の実行タイミング制御（位置情報を待たずに実行）
   useEffect(() => {
     if (googleMapsLoaded && 
-        latitude && 
-        longitude && 
         containerDimensions.height >= 200 && 
         !mapInitialized &&
         !initializationTriedRef.current) {
       
       const timer = setTimeout(() => {
         initializeMap();
-      }, 200);
+      }, 100); // 200ms → 100ms に短縮
 
       return () => clearTimeout(timer);
     }
-  }, [googleMapsLoaded, latitude, longitude, containerDimensions, mapInitialized, initializeMap]);
+  }, [googleMapsLoaded, containerDimensions, mapInitialized, initializeMap]);
 
-  // 🔥 位置情報が取得できたら投稿データを取得
+  // 🔥 位置情報が取得できたら投稿データを取得（保存された位置情報も考慮）
   useEffect(() => {
-    if (latitude && longitude && mapInitialized) {
+    const userLat = savedLocation?.lat || latitude;
+    const userLng = savedLocation?.lng || longitude;
+    
+    if (userLat && userLng && mapInitialized) {
       fetchPosts();
     }
-  }, [latitude, longitude, mapInitialized, fetchPosts]);
+  }, [latitude, longitude, savedLocation, mapInitialized, fetchPosts]);
 
-  // 🔥 投稿データが更新されたらマーカーを作成（修正版）
+  //  投稿データが更新されたらマーカーを作成（修正版）
   useEffect(() => {
     if (posts.length > 0 && map && window.google?.maps) {
       createPostMarkers();
@@ -470,11 +507,14 @@ export function MapView() {
   //   }
   // }, [posts.length]);
 
-  // ユーザー位置マーカーの設置（修正版 - 円の描画を削除）
+  // ユーザー位置マーカーの設置（保存された位置情報も考慮）
   useEffect(() => {
-    if (map && latitude && longitude && mapInitialized && window.google?.maps) {
-      console.log(`MapView ${browserInfo.name}: Setting user location marker`);
-      const userPosition = new window.google.maps.LatLng(latitude, longitude);
+    const userLat = savedLocation?.lat || latitude;
+    const userLng = savedLocation?.lng || longitude;
+    
+    if (map && userLat && userLng && mapInitialized && window.google?.maps) {
+      console.log(`MapView ${browserInfo.name}: Setting user location marker`, { lat: userLat, lng: userLng });
+      const userPosition = new window.google.maps.LatLng(userLat, userLng);
       
       if (userLocationMarker) {
         userLocationMarker.setPosition(userPosition);
@@ -498,15 +538,14 @@ export function MapView() {
         }
       }
 
-      // 🔥 円の描画を完全に削除
-
+      // 位置情報が取得できたら地図の中心を移動
       map.panTo(userPosition);
       const currentZoom = map.getZoom();
       if (currentZoom !== undefined && currentZoom < 14) {
         map.setZoom(14);
       }
     }
-  }, [map, latitude, longitude, mapInitialized, userLocationMarker, browserInfo.name]); // 🔥 showRangeCircle, userLocationCircle を依存配列から削除
+  }, [map, latitude, longitude, savedLocation, mapInitialized, userLocationMarker, browserInfo.name]);
 
 
   // 再試行機能（円のクリーンアップを削除）
@@ -608,13 +647,24 @@ export function MapView() {
   }
 
 
-  // 統一されたローディング状態（シンプル化）
-  if (googleMapsLoading || 
-      !googleMapsLoaded || 
-      containerDimensions.height === 0 || 
-      locationLoading || 
-      (!latitude || !longitude) ||
-      !mapInitialized) {
+  // 統一されたローディング状態（シンプル化） - 612行目あたり
+  if (!googleMapsLoaded || !mapInitialized) {
+    // 位置情報エラーがある場合は許可ダイアログを表示
+    if (locationError && permissionState === 'denied') {
+      return (
+        <MessageCard 
+          title="位置情報の許可が必要です" 
+          message={locationError}
+          variant="warning" 
+          icon={MapPin}
+        >
+          <Button onClick={requestLocation} className="mt-4">
+            <MapPin className="mr-2 h-4 w-4" />
+            位置情報を許可する
+          </Button>
+        </MessageCard>
+      );
+    }
     
     return (
       <div className="w-full h-full bg-gray-50 relative">
@@ -627,6 +677,11 @@ export function MapView() {
           <p className="text-gray-600 text-center px-4 font-medium">
             地図を準備中...
           </p>
+          {(!latitude || !longitude) && permissionState !== 'denied' && (
+            <p className="text-gray-500 text-sm text-center px-4 mt-2">
+              位置情報を取得中...
+            </p>
+          )}
         </div>
       </div>
     );
