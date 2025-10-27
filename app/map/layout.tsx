@@ -1,52 +1,14 @@
 "use client";
 
 import { ReactNode, useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import { Bell, Navigation } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import Link from 'next/link';
-import { useNotification } from '@/contexts/NotificationContext';
-import { Clock, MapPin, PlusCircle, User, ShoppingBag, Newspaper } from 'lucide-react';
-import { usePathname } from "next/navigation";
-import { cn } from "@/lib/utils";
 
 interface MapLayoutProps {
   children: ReactNode;
 }
 
-// ナビゲーションアイテム
-const navItems = [
-  {
-    name: "掲示板",
-    href: "/timeline",
-    icon: Newspaper,
-  },
-  {
-    name: "おとく地図",
-    href: "/map",
-    icon: MapPin,
-  },
-  {
-    name: "買い物メモ",
-    href: "/memo",
-    icon: ShoppingBag,
-  },
-  {
-    name: "マイページ",
-    href: "/profile",
-    icon: User,
-  },
-];
-
 export default function MapLayout({ children }: MapLayoutProps) {
-  const pathname = usePathname();
-  const { unreadCount, isLoading } = useNotification();
-  
   const [layoutDimensions, setLayoutDimensions] = useState({
     viewportHeight: 0,
-    headerHeight: 56,
-    navHeight: 64,
     contentHeight: 0
   });
 
@@ -74,14 +36,11 @@ export default function MapLayout({ children }: MapLayoutProps) {
   // レイアウト寸法の更新
   const updateLayoutDimensions = () => {
     const viewportHeight = calculateViewportHeight();
-    const headerHeight = 56; // AppHeaderの固定高さ
-    const navHeight = 64;    // MainNavの固定高さ
-    const contentHeight = Math.max(300, viewportHeight - headerHeight - navHeight);
+    // ヘッダーとナビゲーションを削除したので全画面使用
+    const contentHeight = Math.max(300, viewportHeight);
     
     setLayoutDimensions({
       viewportHeight,
-      headerHeight,
-      navHeight,
       contentHeight
     });
 
@@ -91,8 +50,6 @@ export default function MapLayout({ children }: MapLayoutProps) {
     
     console.log('MapLayout: Layout dimensions updated:', {
       viewportHeight,
-      headerHeight,
-      navHeight,
       contentHeight
     });
     
@@ -168,14 +125,9 @@ export default function MapLayout({ children }: MapLayoutProps) {
     };
   }, []);
 
-  // ナビゲーションのクリックハンドラー
-  const handlePostClick = (e: React.MouseEvent) => {
-    // 必要に応じてログイン状態チェックなどを追加
-  };
-
   return (
     <>
-      {/* メインレイアウト */}
+      {/* メインレイアウト - ヘッダーとナビゲーションを削除して全画面表示 */}
       <div 
         className="map-layout-container"
         style={{
@@ -190,63 +142,15 @@ export default function MapLayout({ children }: MapLayoutProps) {
           overflow: 'hidden'
         }}
       >
-        {/* ヘッダー (AppHeaderの機能を統合) */}
-        <div 
-          style={{
-            flexShrink: 0,
-            height: `${layoutDimensions.headerHeight}px`,
-            zIndex: 50
-          }}
-        >
-          <header className="bg-background border-b border-border">
-            <motion.div 
-              className="h-14 px-4 flex items-center justify-center relative"
-              initial={{ y: -10, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ duration: 0.3 }}
-            >
-              <div className="absolute left-4 flex items-center">
-                <Link href="/timeline">
-                  <img src="https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png" alt="App Icon" className="h-12 w-12 object-contain" />
-                </Link>
-              </div>
-              
-              <h1 className="font-bold text-3xl text-center">おとく地図</h1>
-              
-              <div className="absolute right-4 flex items-center space-x-2">
-                <Button variant="ghost" size="icon" className="relative" asChild>
-                  <Link href="/notifications">
-                    <Bell className="h-8 w-8" />
-                    {!isLoading && unreadCount > 0 && (
-                      <motion.div
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        transition={{ type: "spring", stiffness: 500, damping: 20 }}
-                        className="absolute -top-1 -right-1"
-                      >
-                        <Badge 
-                          variant="destructive"
-                          className="px-1.5 py-0.5 min-w-[1.25rem] h-5 flex items-center justify-center text-xs"
-                        >
-                          {unreadCount > 9 ? '9+' : unreadCount}
-                        </Badge>
-                      </motion.div>
-                    )}
-                  </Link>
-                </Button>
-              </div>
-            </motion.div>
-          </header>
-        </div>
-        
-        {/* メインコンテンツ */}
+        {/* メインコンテンツ - 全画面表示 */}
         <div 
           style={{
             flex: 1,
             position: 'relative',
             overflow: 'hidden',
             height: `${layoutDimensions.contentHeight}px`,
-            minHeight: '300px'
+            minHeight: '300px',
+            width: '100%'
           }}
         >
           <div 
@@ -258,48 +162,6 @@ export default function MapLayout({ children }: MapLayoutProps) {
           >
             {children}
           </div>
-        </div>
-        
-        {/* ナビゲーション (MainNavの機能を統合) */}
-        <div 
-          style={{
-            flexShrink: 0,
-            height: `${layoutDimensions.navHeight}px`,
-            zIndex: 50
-          }}
-        >
-          <nav className="bg-background border-t border-border pb-safe">
-            <div className="flex justify-around items-center h-16">
-              {navItems.map((item) => {
-                const isActive = pathname === item.href;
-                
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    onClick={item.href === '/post' ? handlePostClick : undefined}
-                    className={cn(
-                      "flex flex-col items-center justify-center w-full h-full relative",
-                      "transition-colors duration-200",
-                      isActive ? "text-primary" : "text-muted-foreground"
-                    )}
-                  >
-                    <div className="relative">
-                      <item.icon className="h-6 w-6" />
-                      {isActive && (
-                        <motion.div
-                          layoutId="navIndicator"
-                          className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-primary rounded-full"
-                          transition={{ duration: 0.3 }}
-                        />
-                      )}
-                    </div>
-                    <span className="text-xs mt-1">{item.name}</span>
-                  </Link>
-                );
-              })}
-            </div>
-          </nav>
         </div>
       </div>
     </>

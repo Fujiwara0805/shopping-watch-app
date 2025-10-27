@@ -21,7 +21,7 @@ declare global {
   }
 }
 
-// 🔥 投稿データの型定義を修正（remaining_slotsを追加）
+// 投稿データの型定義を修正（image_urlsは配列型）
 interface PostMarkerData {
   id: string;
   category: string | null;
@@ -31,117 +31,102 @@ interface PostMarkerData {
   store_longitude: number;
   created_at: string;
   expires_at: string;
-  remaining_slots: number | null; // �� 残数情報を追加
+  remaining_slots: number | null;
+  image_urls: string[] | null; // 画像URLの配列に変更
 }
 
-// 🔥 カテゴリーカラーを取得する関数を復活（カテゴリー未入力対応）
-const getCategoryColor = (category: string | null) => {
-  if (!category) return '#6b7280'; // カテゴリーが未入力の場合はグレー
+// 🔥 イベント情報のみ表示するため、不要な関数を削除
+
+// 🔥 イベント情報用のピンアイコンを作成する関数を修正（画像表示の改善）
+const createEventPinIcon = (imageUrls: string[] | null) => {
+  // 画像がない、または配列が空の場合はデフォルトアイコンを使用
+  const imageUrl = imageUrls && imageUrls.length > 0 ? imageUrls[0] : null;
   
-  switch(category) {
-    case '空席情報':
-      return '#ea580c'; // orange-600
-    case '在庫情報':
-      return '#2563eb'; // blue-600
-    case 'イベント情報':
-      return '#9333ea'; // purple-600
-    case '助け合い':
-      return '#dc2626'; // red-600
-    case '口コミ':
-      return '#4b5563'; // gray-600
-    default:
-      return '#6b7280'; // gray-500
+  if (!imageUrl) {
+    const defaultIconUrl = "https://res.cloudinary.com/dz9trbwma/image/upload/v1760666722/%E3%81%B2%E3%82%99%E3%81%A3%E3%81%8F%E3%82%8A%E3%83%9E%E3%83%BC%E3%82%AF_kvzxcp.png";
+    return {
+      url: defaultIconUrl,
+      scaledSize: new window.google.maps.Size(32, 32),
+      anchor: new window.google.maps.Point(16, 32),
+    };
   }
-};
 
-// 🔥 残数の単位を取得する関数を追加
-const getRemainingUnit = (category: string | null) => {
-  switch(category) {
-    case '空席情報':
-      return '席';
-    case '在庫情報':
-      return '個';
-    case 'イベント情報':
-      return '枠';
-    default:
-      return '枠';
-  }
-};
-
-// 🔥 吹き出しアイコンのSVGを作成する関数（カテゴリ色対応、テキストサイズ拡大）
-const getSpeechBubbleSvg = (remainingSlots: number, unit: string, categoryColor: string) => {
-  const text = `残り${remainingSlots}${unit}`;
-  const textWidth = text.length * 10 + 20; // 文字幅を拡大（8→10、16→20）
-  const bubbleWidth = Math.max(90, textWidth); // 最小幅も拡大（80→90）
-  const bubbleHeight = 35; // 高さも拡大（30→35）
+  // 🔥 Canvasを使用して円形画像を生成する方法に変更
+  const size = 40; // サイズを少し大きく
+  const borderWidth = 3; // 白い縁を太く
   
-  return `
-    <svg width="${bubbleWidth + 10}" height="55" viewBox="0 0 ${bubbleWidth + 10} 55" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <!-- 吹き出し本体 -->
-      <rect x="5" y="5" width="${bubbleWidth}" height="${bubbleHeight}" rx="17" ry="17" fill="${categoryColor}" stroke="#ffffff" stroke-width="2"/>
-      <!-- 吹き出しの尻尾 -->
-      <path d="M${bubbleWidth/2 + 5} ${bubbleHeight + 5} L${bubbleWidth/2 + 10} ${bubbleHeight + 15} L${bubbleWidth/2} ${bubbleHeight + 15} Z" fill="${categoryColor}" stroke="#ffffff" stroke-width="1"/>
-      <!-- テキスト -->
-      <text x="${bubbleWidth/2 + 5}" y="${bubbleHeight/2 + 10}" text-anchor="middle" fill="white" font-size="14" font-weight="bold" font-family="Arial, sans-serif">${text}</text>
-    </svg>
-  `;
+  // Canvasで円形画像を作成
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  
+  if (!ctx) {
+    // Canvas が使えない場合はデフォルトアイコン
+    const defaultIconUrl = "https://res.cloudinary.com/dz9trbwma/image/upload/v1760666722/%E3%81%B2%E3%82%99%E3%81%A3%E3%81%8F%E3%82%8A%E3%83%9E%E3%83%BC%E3%82%AF_kvzxcp.png";
+    return {
+      url: defaultIconUrl,
+      scaledSize: new window.google.maps.Size(32, 32),
+      anchor: new window.google.maps.Point(16, 32),
+    };
+  }
+
+  // 画像を読み込んで円形に描画
+  const img = new Image();
+  img.crossOrigin = 'anonymous'; // CORS対応
+  
+  // 画像読み込み完了時の処理
+  return new Promise<google.maps.Icon>((resolve) => {
+    img.onload = () => {
+      // 背景を透明に
+      ctx.clearRect(0, 0, size, size);
+      
+      // 円形のクリッピングパスを作成
+      ctx.beginPath();
+      ctx.arc(size / 2, size / 2, size / 2 - borderWidth, 0, Math.PI * 2);
+      ctx.closePath();
+      ctx.clip();
+      
+      // 画像を円形に描画（中央に配置してトリミング）
+      const imgSize = size - borderWidth * 2;
+      ctx.drawImage(img, borderWidth, borderWidth, imgSize, imgSize);
+      
+      // クリップを解除
+      ctx.restore();
+      ctx.save();
+      
+      // 白い縁を描画
+      ctx.beginPath();
+      ctx.arc(size / 2, size / 2, size / 2 - borderWidth / 2, 0, Math.PI * 2);
+      ctx.strokeStyle = 'white';
+      ctx.lineWidth = borderWidth;
+      ctx.stroke();
+      
+      // CanvasをData URLに変換
+      const dataUrl = canvas.toDataURL('image/png');
+      
+      resolve({
+        url: dataUrl,
+        scaledSize: new window.google.maps.Size(size, size),
+        anchor: new window.google.maps.Point(size / 2, size),
+      });
+    };
+    
+    img.onerror = () => {
+      // 画像読み込みエラー時はデフォルトアイコンを返す
+      const defaultIconUrl = "https://res.cloudinary.com/dz9trbwma/image/upload/v1760666722/%E3%81%B2%E3%82%99%E3%81%A3%E3%81%8F%E3%82%8A%E3%83%9E%E3%83%BC%E3%82%AF_kvzxcp.png";
+      resolve({
+        url: defaultIconUrl,
+        scaledSize: new window.google.maps.Size(32, 32),
+        anchor: new window.google.maps.Point(16, 32),
+      });
+    };
+    
+    img.src = imageUrl;
+  });
 };
 
-// 🔥 SVGをData URLに変換する関数
-const createDataUrl = (svgString: string) => {
-  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svgString)}`;
-};
-
-// 🔥 イベント情報用のピンアイコンを作成する関数
-const createEventPinIcon = () => {
-  const iconUrl = "https://res.cloudinary.com/dz9trbwma/image/upload/v1760666722/%E3%81%B2%E3%82%99%E3%81%A3%E3%81%8F%E3%82%8A%E3%83%9E%E3%83%BC%E3%82%AF_kvzxcp.png";
-  return {
-    url: iconUrl,
-    scaledSize: new window.google.maps.Size(32, 32), // 32x32のサイズに調整
-    anchor: new window.google.maps.Point(16, 32), // アイコンの下端中央をアンカーに設定
-  };
-};
-
-// 🔥 空席／在庫アイコンにラベル（◯席／◯個）を重ねるためのヘルパー（ラベル中央・フォントサイズ調整）
-const createSeatsIconWithLabel = (count: number) => {
-  const width = 70; // 横幅を拡大
-  const height = 40;
-  return {
-    icon: {
-      url: "https://res.cloudinary.com/dz9trbwma/image/upload/v1760849819/icons8-%E5%90%B9%E3%81%8D%E5%87%BA%E3%81%97-100_vznqfu.png",
-      scaledSize: new window.google.maps.Size(width, height),
-      anchor: new window.google.maps.Point(width / 2, height / 2),
-      labelOrigin: new window.google.maps.Point(width / 2, height / 2 - 5) // テキストを少し上に配置
-    },
-    label: {
-      text: `残り${count}席`,
-      color: '#ffffff',
-      fontSize: '10px', // 少し小さく
-      fontWeight: 'bold',
-      fontFamily: 'Arial, sans-serif'
-    } as google.maps.MarkerLabel
-  };
-};
-
-const createStockIconWithLabel = (count: number) => {
-  const width = 70; // 横幅を拡大
-  const height = 40;
-  return {
-    icon: {
-      url: "https://res.cloudinary.com/dz9trbwma/image/upload/v1760849938/icons8-%E5%90%B9%E3%81%8D%E5%87%BA%E3%81%97-100_1_eoddir.png",
-      scaledSize: new window.google.maps.Size(width, height),
-      anchor: new window.google.maps.Point(width / 2, height / 2),
-      labelOrigin: new window.google.maps.Point(width / 2, height / 2 - 5) // テキストを少し上に配置
-    },
-    label: {
-      text: `残り${count}個`,
-      color: '#ffffff',
-      fontSize: '10px', // 少し小さく
-      fontWeight: 'bold',
-      fontFamily: 'Arial, sans-serif'
-    } as google.maps.MarkerLabel
-  };
-};
+// 🔥 空席・在庫情報は不要なので削除
 
 export function MapView() {
   console.log("MapView: Component rendering START");
@@ -306,7 +291,7 @@ export function MapView() {
     requestLocation(); // Enhanced hook will handle permission saving
   };
 
-  // 🔥 投稿データを取得する関数を修正（イベント情報は残数なしでも取得）
+  // 🔥 投稿データを取得する関数を修正（イベント情報のみ取得）
   const fetchPosts = useCallback(async () => {
     if (!latitude || !longitude) {
       console.log('MapView: 位置情報がないため投稿データの取得をスキップ');
@@ -315,11 +300,11 @@ export function MapView() {
 
     setLoadingPosts(true);
     try {
-      console.log('MapView: 投稿データを取得中...');
+      console.log('MapView: イベント情報を取得中...');
       
       const now = new Date().toISOString();
       
-      // 🔥 イベント情報は残数なしでも取得、他は残数ありのみ取得
+      // 🔥 イベント情報のみを取得
       const { data, error } = await supabase
         .from('posts')
         .select(`
@@ -331,14 +316,15 @@ export function MapView() {
           store_longitude,
           created_at,
           expires_at,
-          remaining_slots
+          remaining_slots,
+          image_urls
         `)
         .eq('is_deleted', false)
+        .eq('category', 'イベント情報')
         .gt('expires_at', now)
         .not('store_latitude', 'is', null)
         .not('store_longitude', 'is', null)
-        .not('store_name', 'is', null)
-        .or('category.eq.イベント情報,remaining_slots.not.is.null'); // 🔥 イベント情報または残数ありのもの
+        .not('store_name', 'is', null);
 
       if (error) {
         console.error('MapView: 投稿データの取得に失敗:', error);
@@ -354,8 +340,6 @@ export function MapView() {
       // 1km圏内でフィルタリング
       const filteredPosts = data.filter((post: any) => {
         if (!post.store_latitude || !post.store_longitude) return false;
-        // 🔥 イベント情報は残数なしでもOK、他は残数必須
-        if (post.category !== 'イベント情報' && post.remaining_slots == null) return false;
         
         // 距離計算（ハバーサイン公式）
         const R = 6371; // 地球の半径（km）
@@ -371,7 +355,7 @@ export function MapView() {
         return distance <= 1; // 1km以内
       });
 
-      console.log(`MapView: ${filteredPosts.length}件の投稿を取得しました`);
+      console.log(`MapView: ${filteredPosts.length}件のイベント情報を取得しました`);
       setPosts(filteredPosts);
       
     } catch (error) {
@@ -381,34 +365,7 @@ export function MapView() {
     }
   }, [latitude, longitude]);
 
-  // 🔥 クラスターアイコンを作成する関数（指定画像を直接使用）
-  const createClusterIcon = (count: number) => {
-    const size = count > 99 ? 60 : count > 9 ? 50 : 40;
-    
-    // 🔥 指定された画像を直接使用し、数字をオーバーレイとして表示
-    return {
-      url: "https://res.cloudinary.com/dz9trbwma/image/upload/v1760764598/%E3%83%98%E3%82%9A%E3%83%B3%E3%82%AD%E8%B7%A1%E3%81%AE%E3%82%A4%E3%83%A9%E3%82%B9%E3%83%882_2_g5u8pr.png",
-      scaledSize: new window.google.maps.Size(size, size),
-      anchor: new window.google.maps.Point(size/2, size/2),
-      // 🔥 ラベルで数字を表示
-      labelOrigin: new window.google.maps.Point(size/2, size/2),
-    };
-  };
-
-  // 🔥 クラスターマーカー用のラベルスタイルを作成する関数
-  const createClusterLabel = (count: number) => {
-    const fontSize = count > 99 ? 12 : count > 9 ? 14 : 16;
-    
-    return {
-      text: count.toString(),
-      color: '#ffffff',
-      fontSize: `${fontSize}px`,
-      fontWeight: 'bold',
-      fontFamily: 'Arial, sans-serif',
-      // 🔥 黒い縁取りを追加して視認性を向上
-      className: 'cluster-label'
-    };
-  };
+  // 🔥 クラスター機能は不要なので削除
 
   // 🔥 同じ場所の投稿をグループ化する関数
   const groupPostsByLocation = (posts: PostMarkerData[]) => {
@@ -431,14 +388,14 @@ export function MapView() {
     return locationGroups;
   };
 
-  // 🔥 投稿マーカーを作成する関数を修正（クラスター対応）
-  const createPostMarkers = useCallback(() => {
+  // 🔥 投稿マーカーを作成する関数（イベント情報のみ表示）
+  const createPostMarkers = useCallback(async () => {
     if (!map || !posts.length || !window.google?.maps) {
       console.log('MapView: マーカー作成の条件が揃っていません');
       return;
     }
 
-    console.log(`MapView: ${posts.length}件の投稿マーカーを作成中...`);
+    console.log(`MapView: ${posts.length}件のイベント情報マーカーを作成中...`);
 
     // 既存のマーカーを削除
     postMarkers.forEach(marker => {
@@ -452,136 +409,38 @@ export function MapView() {
     // 🔥 同じ場所の投稿をグループ化
     const locationGroups = groupPostsByLocation(posts);
 
-    Object.entries(locationGroups).forEach(([locationKey, groupPosts]) => {
+    // 🔥 非同期処理を順次実行
+    for (const [locationKey, groupPosts] of Object.entries(locationGroups)) {
       const [lat, lng] = locationKey.split(',').map(Number);
       const position = new window.google.maps.LatLng(lat, lng);
       
-      if (groupPosts.length === 1) {
-        // 🔥 単一の投稿の場合は従来通りの表示
-        const post = groupPosts[0];
-        let markerIcon;
-        let markerTitle = post.store_name;
-        let composed: { icon: any; label: google.maps.MarkerLabel } | null = null;
+      // すべてイベント情報なので、最初の投稿を代表として使用
+      const post = groupPosts[0];
+      const markerTitle = `${post.store_name} - イベント情報`;
 
-        // イベント情報の場合は専用アイコンを使用
-        if (post.category === 'イベント情報') {
-          markerIcon = createEventPinIcon();
-          markerTitle = `${post.store_name} - イベント情報`;
-        } else {
-          // 🔥 空席情報／在庫情報は指定画像に差し替え、上に「◯席／◯個」のラベルを重ねる
-          if (post.remaining_slots == null) return; // 残数なしはスキップ
+      // 🔥 画像を円形アイコンで表示（非同期処理）
+      const markerIcon = await createEventPinIcon(post.image_urls);
 
-          if (post.category === '空席情報') {
-            composed = createSeatsIconWithLabel(post.remaining_slots);
-            markerTitle = `${post.store_name} - ${post.remaining_slots}席`;
-          } else if (post.category === '在庫情報') {
-            composed = createStockIconWithLabel(post.remaining_slots);
-            markerTitle = `${post.store_name} - ${post.remaining_slots}個`;
-          } else {
-            // その他カテゴリは従来のSVG吹き出し（助け合い・口コミ 等）
-            const unit = getRemainingUnit(post.category);
-            const categoryColor = getCategoryColor(post.category);
-            const speechBubbleSvg = getSpeechBubbleSvg(post.remaining_slots, unit, categoryColor);
-            const iconUrl = createDataUrl(speechBubbleSvg);
-            const textWidth = `残り${post.remaining_slots}${unit}`.length * 10 + 20;
-            const bubbleWidth = Math.max(90, textWidth);
-            markerIcon = {
-              url: iconUrl,
-              scaledSize: new window.google.maps.Size(bubbleWidth + 10, 55),
-              anchor: new window.google.maps.Point((bubbleWidth + 10) / 2, 50),
-            };
-            markerTitle = `${post.store_name} - 残り${post.remaining_slots}${unit}`;
-          }
-        }
+      const marker = new window.google.maps.Marker({
+        position,
+        map,
+        title: markerTitle,
+        icon: markerIcon,
+        animation: window.google.maps.Animation.DROP,
+      });
 
-        const marker = new window.google.maps.Marker({
-          position,
-          map,
-          title: markerTitle,
-          icon: composed ? composed.icon : markerIcon,
-          label: composed ? composed.label : undefined,
-          animation: window.google.maps.Animation.DROP,
-        });
+      // マーカークリック時の処理
+      marker.addListener('click', () => {
+        console.log(`MapView: イベント情報マーカーがクリックされました - ID: ${post.id}`);
+        const searchQuery = encodeURIComponent(post.store_name || '');
+        router.push(`/timeline?search=${searchQuery}`);
+      });
 
-        // マーカークリック時の処理（複数投稿と同一挙動に統一：検索で遷移）
-        marker.addListener('click', () => {
-          console.log(`MapView: 投稿マーカーがクリックされました - ID: ${post.id}`);
-          const searchQuery = encodeURIComponent(post.store_name || '');
-          router.push(`/timeline?search=${searchQuery}`);
-        });
-
-        newMarkers.push(marker);
-      } else {
-        // 🔄 複数の投稿がある場合も単一投稿と同じアイコンロジックで表示
-        const representative = groupPosts[0];
-        let markerIcon;
-        let markerTitle = representative.store_name;
-        let composed: { icon: any; label: google.maps.MarkerLabel } | null = null;
-
-        // イベント情報の場合は専用アイコンを使用
-        if (representative.category === 'イベント情報') {
-          markerIcon = createEventPinIcon();
-          markerTitle = `${representative.store_name} - イベント情報`;
-        } else {
-          // 空席／在庫は指定画像＋ラベル、それ以外はSVG吹き出し
-          if (representative.remaining_slots == null) {
-            // 複数投稿のいずれかで残数がある想定だが、念のため残数なしはスキップ
-            // （残数なしのみの場合は汎用表示にフォールバック）
-            const unit = getRemainingUnit(representative.category);
-            const categoryColor = getCategoryColor(representative.category);
-            const speechBubbleSvg = getSpeechBubbleSvg(0, unit, categoryColor);
-            const iconUrl = createDataUrl(speechBubbleSvg);
-            const textWidth = `残り0${unit}`.length * 10 + 20;
-            const bubbleWidth = Math.max(90, textWidth);
-            markerIcon = {
-              url: iconUrl,
-              scaledSize: new window.google.maps.Size(bubbleWidth + 10, 55),
-              anchor: new window.google.maps.Point((bubbleWidth + 10) / 2, 50),
-            };
-            markerTitle = `${representative.store_name}`;
-          } else if (representative.category === '空席情報') {
-            composed = createSeatsIconWithLabel(representative.remaining_slots);
-            markerTitle = `${representative.store_name} - ${representative.remaining_slots}席`;
-          } else if (representative.category === '在庫情報') {
-            composed = createStockIconWithLabel(representative.remaining_slots);
-            markerTitle = `${representative.store_name} - ${representative.remaining_slots}個`;
-          } else {
-            const unit = getRemainingUnit(representative.category);
-            const categoryColor = getCategoryColor(representative.category);
-            const speechBubbleSvg = getSpeechBubbleSvg(representative.remaining_slots, unit, categoryColor);
-            const iconUrl = createDataUrl(speechBubbleSvg);
-            const textWidth = `残り${representative.remaining_slots}${unit}`.length * 10 + 20;
-            const bubbleWidth = Math.max(90, textWidth);
-            markerIcon = {
-              url: iconUrl,
-              scaledSize: new window.google.maps.Size(bubbleWidth + 10, 55),
-              anchor: new window.google.maps.Point((bubbleWidth + 10) / 2, 50),
-            };
-            markerTitle = `${representative.store_name} - 残り${representative.remaining_slots}${unit}`;
-          }
-        }
-
-        const marker = new window.google.maps.Marker({
-          position,
-          map,
-          title: markerTitle,
-          icon: composed ? composed.icon : markerIcon,
-          label: composed ? composed.label : undefined,
-          animation: window.google.maps.Animation.DROP,
-        });
-
-        // クリック時の処理（単一/複数で共通：掲示板検索へ遷移）
-        marker.addListener('click', () => {
-          const searchQuery = encodeURIComponent(representative.store_name || '');
-          router.push(`/timeline?search=${searchQuery}`);
-        });
-
-        newMarkers.push(marker);
-      }
-    });
+      newMarkers.push(marker);
+    }
 
     setPostMarkers(newMarkers);
-  }, [map, posts, router]);
+  }, [map, posts, router, postMarkers]);
 
   // 地図初期化のメイン処理（変更なし）
   const initializeMap = useCallback(() => {
@@ -724,17 +583,9 @@ export function MapView() {
         window.google.maps.event.removeListener(errorListener);
       });
 
-      // タイムアウト設定（120秒に統一）
-      const timeout = setTimeout(() => {
-        if (!mapInitialized) {
-          console.error(`MapView ${browserInfo.name}: Map initialization timeout`);
-          setInitializationError("タイムアウトしました。再度ロードしてください。");
-          initializationTriedRef.current = false;
-        }
-      }, 120000); // 120秒に統一
+      // タイムアウト機能を削除（無制限に待機）
 
       return () => {
-        clearTimeout(timeout);
         if (idleListener) window.google.maps.event.removeListener(idleListener);
         if (errorListener) window.google.maps.event.removeListener(errorListener);
       };
@@ -745,7 +596,7 @@ export function MapView() {
       initializationTriedRef.current = false;
       return false;
     }
-  }, [googleMapsLoaded, latitude, longitude, containerDimensions, mapInitialized, browserInfo.name]);
+  }, [googleMapsLoaded, latitude, longitude, containerDimensions, browserInfo.name]);
 
   // 地図初期化の実行タイミング制御（変更なし）
   useEffect(() => {
@@ -1214,12 +1065,12 @@ export function MapView() {
                 {posts.length > 0 
                   ? (
                     <>
-                      {`${posts.length}件の残数情報を表示中`}
+                      {`${posts.length}件のイベント情報を表示中`}
                       <br />
-                      <span className="text-xs">💬 = 残数情報付き投稿</span>
+                      <span className="text-xs">📷 = イベント情報</span>
                     </>
                   )
-                  : "緑色のエリア＝投稿閲覧範囲"
+                  : "緑色のエリア＝イベント閲覧範囲"
                 }
               </div>
             </div>
@@ -1325,198 +1176,91 @@ export function MapView() {
         </motion.div>
       )}
 
-      {/* 🔥 地図の見方モーダル（修正版：カテゴリ色対応の吹き出しアイコンの説明に変更） */}
+      {/* 🔥 地図の見方モーダル（イベント情報のみ） */}
       <CustomModal
         isOpen={showMapGuideModal}
         onClose={() => setShowMapGuideModal(false)}
         title="地図の見方"
-        description="残数情報付き投稿の表示と操作方法について"
+        description="イベント情報の表示と操作方法について"
         className="max-w-lg"
       >
-        <Carousel className="w-full">
-          <CarouselContent>
-            {/* 1ページ目: 吹き出しマーカーの説明 */}
-            <CarouselItem>
-              <div className="space-y-6">
-                <div>
-                  <h3 className="text-lg font-semibold mb-4 flex items-center">
-                    <MessageSquareText className="h-5 w-5 mr-2 text-blue-600" />
-                    残数情報付き投稿の表示
-                  </h3>
-                  <p className="text-sm text-gray-600 mb-4">
-                    地図上には、場所と残数情報が入力された投稿のみが吹き出しアイコンで表示されます。カテゴリごとに色分けされています：<br />
-                    <span className="font-medium text-blue-700">マーカーをタップすると掲示板へ遷移し、該当する投稿の詳細を確認できます。</span>
-                  </p>
-                  <div className="space-y-4">
-                    <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-                      <div className="flex items-center space-x-3">
-                        <div className="flex-shrink-0">
-                          <div 
-                            className="flex items-center justify-center"
-                            dangerouslySetInnerHTML={{
-                              __html: getSpeechBubbleSvg(5, '席', '#ea580c')
-                            }}
-                          />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-orange-800 mb-1">
-                            空席情報の例
-                          </p>
-                          <p className="text-xs text-orange-600">
-                            オレンジ色で「残り5席」のように表示されます
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                      <div className="flex items-center space-x-3">
-                        <div className="flex-shrink-0">
-                          <div 
-                            className="flex items-center justify-center"
-                            dangerouslySetInnerHTML={{
-                              __html: getSpeechBubbleSvg(3, '個', '#2563eb')
-                            }}
-                          />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-blue-800 mb-1">
-                            在庫情報の例
-                          </p>
-                          <p className="text-xs text-blue-600">
-                            青色で「残り3個」のように表示されます
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                      <div className="flex items-center space-x-3">
-                        <div className="flex-shrink-0">
-                          <img 
-src="https://res.cloudinary.com/dz9trbwma/image/upload/v1760666722/%E3%81%B2%E3%82%99%E3%81%A3%E3%81%8F%E3%82%8A%E3%83%9E%E3%83%BC%E3%82%AF_kvzxcp.png" 
-                            alt="イベント情報" 
-                            className="h-8 w-8" 
-                          />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-purple-800 mb-1">
-                            イベント情報の例
-                          </p>
-                          <p className="text-xs text-purple-600">
-                            ピンアイコンで表示されます（残数情報なしでも表示）
-                          </p>
-                        </div>
-                      </div>
+        <div className="space-y-6">
+          <div>
+            <h3 className="text-lg font-semibold mb-4 flex items-center">
+              <MessageSquareText className="h-5 w-5 mr-2 text-purple-600" />
+              イベント情報の表示
+            </h3>
+            <p className="text-sm text-gray-600 mb-4">
+              地図上には、場所が入力されたイベント情報が画像アイコンで表示されます。<br />
+              <span className="font-medium text-blue-700">マーカーをタップすると掲示板へ遷移し、該当する投稿の詳細を確認できます。</span>
+            </p>
+            <div className="space-y-4">
+              <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                <div className="flex items-center space-x-3">
+                  <div className="flex-shrink-0">
+                    <div className="w-10 h-10 rounded-full border-2 border-white bg-purple-200 flex items-center justify-center overflow-hidden">
+                      <span className="text-lg">📷</span>
                     </div>
                   </div>
-                </div>
-
-                {/* ページインジケーター */}
-                <div className="flex justify-center items-center space-x-2 pt-4 border-t">
-                  <div className="w-2 h-2 rounded-full bg-blue-600"></div>
-                  <div className="w-2 h-2 rounded-full bg-gray-300"></div>
-                  <span className="text-xs text-gray-500 ml-2">1 / 2</span>
-                </div>
-              </div>
-            </CarouselItem>
-
-            {/* 2ページ目: 地図の操作方法 */}
-            <CarouselItem>
-              <div className="space-y-6">
-                <div>
-                  <h3 className="text-lg font-semibold mb-4 flex items-center">
-                    <Info className="h-5 w-5 mr-2 text-green-600" />
-                    地図の操作方法
-                  </h3>
-                  <div className="space-y-4">
-                    <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-                      <div className="flex items-start space-x-3">
-                        <div className="flex-shrink-0">
-                          <div 
-                            className="flex items-center justify-center scale-75"
-                            dangerouslySetInnerHTML={{
-                              __html: getSpeechBubbleSvg(5, '席', '#ea580c')
-                            }}
-                          />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-orange-800 mb-1">
-                            吹き出しマーカーをタップ
-                          </p>
-                          <p className="text-xs text-orange-600">
-                            掲示板へ遷移し、該当する投稿の詳細を確認できます
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                      <div className="flex items-start space-x-3">
-                        <div className="flex-shrink-0">
-                          <img 
-                            src="https://res.cloudinary.com/dz9trbwma/image/upload/v1749098791/%E9%B3%A9_azif4f.png" 
-                            alt="現在地" 
-                            className="h-8 w-8" 
-                          />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-amber-800 mb-1">
-                            鳩マーカー（現在地）
-                          </p>
-                          <p className="text-xs text-amber-700">
-                            あなたの現在位置を示しています。この位置を中心に1km圏内の投稿が表示されます
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
-                      <div className="flex items-start space-x-3">
-                        <div className="flex-shrink-0">
-                          <div className="w-8 h-8 border-2 border-emerald-500 rounded-full bg-emerald-100 opacity-70"></div>
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-emerald-800 mb-1">
-                            緑色の円（範囲表示）
-                          </p>
-                          <p className="text-xs text-emerald-600">
-                            投稿を閲覧できる1km圏内の範囲を表示。残数情報付き投稿がある場合は自動的に非表示になります
-                          </p>
-                        </div>
-                      </div>
-                    </div>
+                  <div>
+                    <p className="text-sm font-medium text-purple-800 mb-1">
+                      イベント情報
+                    </p>
+                    <p className="text-xs text-purple-600">
+                      投稿内の画像が円形アイコンで表示されます
+                    </p>
                   </div>
                 </div>
+              </div>
 
-                {/* ページインジケーター */}
-                <div className="flex justify-center items-center space-x-2 pt-4 border-t">
-                  <div className="w-2 h-2 rounded-full bg-gray-300"></div>
-                  <div className="w-2 h-2 rounded-full bg-blue-600"></div>
-                  <span className="text-xs text-gray-500 ml-2">2 / 2</span>
-                </div>
-
-                {/* 閉じるボタン */}
-                <div className="pt-2">
-                  <Button 
-                    onClick={() => setShowMapGuideModal(false)}
-                    className="w-full"
-                  >
-                    理解しました
-                  </Button>
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                <div className="flex items-start space-x-3">
+                  <div className="flex-shrink-0">
+                    <img 
+                      src="https://res.cloudinary.com/dz9trbwma/image/upload/v1749098791/%E9%B3%A9_azif4f.png" 
+                      alt="現在地" 
+                      className="h-8 w-8" 
+                    />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-amber-800 mb-1">
+                      鳩マーカー（現在地）
+                    </p>
+                    <p className="text-xs text-amber-700">
+                      あなたの現在位置を示しています。この位置を中心に1km圏内のイベント情報が表示されます
+                    </p>
+                  </div>
                 </div>
               </div>
-            </CarouselItem>
-          </CarouselContent>
 
-          {/* カルーセルナビゲーション */}
-          <div className="absolute left-4 top-1/2 -translate-y-1/2">
-            <CarouselPrevious className="relative left-0 translate-y-0" />
+              <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
+                <div className="flex items-start space-x-3">
+                  <div className="flex-shrink-0">
+                    <div className="w-8 h-8 border-2 border-emerald-500 rounded-full bg-emerald-100 opacity-70"></div>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-emerald-800 mb-1">
+                      緑色の円（範囲表示）
+                    </p>
+                    <p className="text-xs text-emerald-600">
+                      イベント情報を閲覧できる1km圏内の範囲を表示。イベント情報がある場合は自動的に非表示になります
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-          <div className="absolute right-4 top-1/2 -translate-y-1/2">
-            <CarouselNext className="relative right-0 translate-y-0" />
+
+          {/* 閉じるボタン */}
+          <div className="pt-2">
+            <Button 
+              onClick={() => setShowMapGuideModal(false)}
+              className="w-full"
+            >
+              理解しました
+            </Button>
           </div>
-        </Carousel>
+        </div>
       </CustomModal>
 
       {/* クロスブラウザ位置情報ガイド */}
