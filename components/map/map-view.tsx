@@ -4,8 +4,8 @@ import { useRef, useEffect, useState, useCallback } from 'react';
 import { useGeolocation } from '@/lib/hooks/use-geolocation';
 import { useGoogleMapsApi } from '@/components/providers/GoogleMapsApiProvider';
 import { Button } from '@/components/ui/button';
-import { MapPin, AlertTriangle, RefreshCw, Clock, Eye, EyeOff, Calendar } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { MapPin, AlertTriangle, RefreshCw, Clock, Eye, EyeOff, Calendar, Newspaper, User, MapPinIcon, CalendarDays, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
 
@@ -185,6 +185,7 @@ export function MapView() {
   const [posts, setPosts] = useState<PostMarkerData[]>([]);
   const [postMarkers, setPostMarkers] = useState<google.maps.Marker[]>([]);
   const [loadingPosts, setLoadingPosts] = useState(false);
+  const [selectedPost, setSelectedPost] = useState<PostMarkerData | null>(null);
   const router = useRouter();
 
   // デバッグ情報の出力
@@ -414,11 +415,10 @@ export function MapView() {
         animation: window.google.maps.Animation.DROP,
       });
 
-      // マーカークリック時の処理
+      // マーカークリック時の処理（カードを表示）
       marker.addListener('click', () => {
         console.log(`MapView: イベント情報マーカーがクリックされました - ID: ${post.id}`);
-        const searchQuery = encodeURIComponent(post.store_name || '');
-        router.push(`/timeline?search=${searchQuery}`);
+        setSelectedPost(post);
       });
 
       newMarkers.push(marker);
@@ -902,6 +902,43 @@ export function MapView() {
         }}
       />
 
+      {/* 右上のナビゲーションボタン（縦並び） */}
+      {map && mapInitialized && (
+        <div className="absolute top-4 right-4 z-30 flex flex-col gap-2">
+          {/* 掲示板アイコン（タイムライン画面へ） */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.3, delay: 0.1 }}
+          >
+            <Button
+              onClick={() => router.push('/timeline')}
+              size="icon"
+              className="h-12 w-12 rounded-full shadow-lg bg-white hover:bg-gray-100 border-2 border-gray-200"
+              style={{ backgroundColor: 'white' }}
+            >
+              <Newspaper className="h-6 w-6 text-gray-700" />
+            </Button>
+          </motion.div>
+
+          {/* プロフィールアイコン（マイページ画面へ） */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.3, delay: 0.2 }}
+          >
+            <Button
+              onClick={() => router.push('/profile')}
+              size="icon"
+              className="h-12 w-12 rounded-full shadow-lg bg-white hover:bg-gray-100 border-2 border-gray-200"
+              style={{ backgroundColor: 'white' }}
+            >
+              <User className="h-6 w-6 text-gray-700" />
+            </Button>
+          </motion.div>
+        </div>
+      )}
+
       {/* 説明テキストと範囲表示切り替えボタン（左下に配置） */}
       {map && mapInitialized && (
         <div className="absolute bottom-8 left-2 z-30 space-y-2">
@@ -918,7 +955,7 @@ export function MapView() {
               </div>
               <div className="text-xs text-gray-600">
                 {posts.length > 0 
-                  ? `${posts.length}件のイベント情報を表示中`
+                  ? `${posts.length}件のイベント情報有`
                   : "緑色のエリア＝イベント閲覧範囲"
                 }
               </div>
@@ -958,6 +995,84 @@ export function MapView() {
           )}
         </div>
       )}
+
+      {/* イベント詳細カード（下部に表示） */}
+      <AnimatePresence>
+        {selectedPost && (
+          <motion.div
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 100, opacity: 0 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+            className="absolute bottom-4 left-4 right-4 z-40"
+          >
+            <div className="bg-white rounded-2xl shadow-2xl overflow-hidden border-2 border-gray-200">
+              {/* カードヘッダー */}
+              <div className="relative">
+                {/* 画像表示 */}
+                {selectedPost.image_urls && selectedPost.image_urls.length > 0 ? (
+                  <div className="relative h-48 w-full overflow-hidden bg-gray-100">
+                    <img
+                      src={selectedPost.image_urls[0]}
+                      alt={selectedPost.store_name}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                ) : (
+                  <div className="relative h-48 w-full bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center">
+                    <Calendar className="h-20 w-20 text-white opacity-50" />
+                  </div>
+                )}
+                
+                {/* 閉じるボタン */}
+                <Button
+                  onClick={() => setSelectedPost(null)}
+                  size="icon"
+                  className="absolute top-2 right-2 h-8 w-8 rounded-full bg-white/90 hover:bg-white shadow-lg"
+                >
+                  <X className="h-4 w-4 text-gray-700" />
+                </Button>
+              </div>
+
+              {/* カード内容 */}
+              <div className="p-4 space-y-3">
+                {/* イベント名 */}
+                <h3 className="text-lg font-bold text-gray-900 line-clamp-2">
+                  {selectedPost.content}
+                </h3>
+
+                {/* 場所 */}
+                <div className="flex items-start gap-2 text-sm text-gray-600">
+                  <MapPinIcon className="h-4 w-4 mt-0.5 flex-shrink-0 text-red-500" />
+                  <span className="line-clamp-1">{selectedPost.store_name}</span>
+                </div>
+
+                {/* 開催期日 */}
+                <div className="flex items-start gap-2 text-sm text-gray-600">
+                  <CalendarDays className="h-4 w-4 mt-0.5 flex-shrink-0 text-blue-500" />
+                  <span>
+                    {new Date(selectedPost.expires_at).toLocaleDateString('ja-JP', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}まで
+                  </span>
+                </div>
+
+                {/* 詳細を見るボタン */}
+                <Button
+                  onClick={() => router.push(`/map/event/${selectedPost.id}`)}
+                  className="w-full mt-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-lg"
+                >
+                  詳細を見る
+                </Button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
