@@ -200,19 +200,19 @@ export default function PostPage() {
     }
   }, [imageFiles]);
 
-  // イベント情報の必須フィールドを自動展開
+  // イベント情報の必須フィールドを自動展開（全項目を開いた状態に）
   useEffect(() => {
     setShowOptionalFields(true);
     setOptionalFieldsExpanded({
-      image: false,
+      image: true,
       location: true,
-      url: false,
-      phoneNumber: false,
-      file: false,
+      url: true,
+      phoneNumber: true,
+      file: true,
       eventName: true,
       eventDate: true,
-      eventPrice: false,
-      eventArea: false,
+      eventPrice: true,
+      eventArea: true,
     });
   }, []);
   
@@ -863,7 +863,7 @@ export default function PostPage() {
                           >
                             <div className="flex items-center">
                               <Icon className={cn("mr-2 h-5 w-5", isExpanded ? "text-[#73370c]" : "text-gray-600")} />
-                              <span className={cn("font-medium", isExpanded ? "text-[#73370c]" : "text-gray-700")}>
+                              <span className={cn("font-bold", isExpanded ? "text-[#73370c]" : "text-gray-700")}>
                                 {fieldInfo.label}
                                 {isRequired && <span className="text-destructive ml-1">※</span>}
                               </span>

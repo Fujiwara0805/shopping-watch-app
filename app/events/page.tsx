@@ -161,10 +161,10 @@ const EventCard = ({
 
       {/* カード内容 */}
       <div className="p-4 space-y-3">
-        {/* 🔥 イベント名 - 20文字制限、テキストカラー変更 */}
-        <h3 className="text-lg font-bold line-clamp-2 min-h-[3.5rem]" style={{ color: '#73370c' }}>
-          {(post.event_name || post.content).length > 20 
-            ? `${(post.event_name || post.content).substring(0, 20)}...` 
+        {/* 🔥 イベント名 - 15文字制限、テキストカラー変更 */}
+        <h3 className="text-lg font-bold line-clamp-2 min-h-[1.5rem]" style={{ color: '#73370c' }}>
+          {(post.event_name || post.content).length > 15 
+            ? `${(post.event_name || post.content).substring(0, 15)}...` 
             : (post.event_name || post.content)}
         </h3>
 

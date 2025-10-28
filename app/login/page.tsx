@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import AppLayout from "@/app/layout";
 import { GoogleIcon } from "@/components/common/icons/GoogleIcon";
 import { LineConsentModal } from "@/components/common/LineConsentModal";
-import { Loader2, AlertTriangle, ArrowRight, Eye, EyeOff } from "lucide-react";
+import { Loader2, AlertTriangle, Eye, EyeOff } from "lucide-react";
 import { motion } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -110,7 +110,7 @@ export default function LoginPage() {
   };
 
   const handleContinueWithoutLogin = () => {
-    router.push("/timeline");
+    router.push("/map");
   };
 
   if (status === "loading" && !isLoading) {

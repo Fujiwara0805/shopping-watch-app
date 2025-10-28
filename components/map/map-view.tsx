@@ -871,10 +871,10 @@ export function MapView() {
 
                 {/* カード内容 */}
                 <div className="p-4 space-y-3">
-                  {/* イベント名 - 🔥 20文字制限、テキストカラー変更 */}
+                  {/* イベント名 - 🔥 15文字制限、テキストカラー変更 */}
                   <h3 className="text-lg font-bold line-clamp-2" style={{ color: '#73370c' }}>
-                    {(post.event_name || post.content).length > 20 
-                      ? `${(post.event_name || post.content).substring(0, 20)}...` 
+                    {(post.event_name || post.content).length > 15 
+                      ? `${(post.event_name || post.content).substring(0, 15)}...` 
                       : (post.event_name || post.content)}
                   </h3>
 
@@ -889,11 +889,17 @@ export function MapView() {
                     <div className="flex items-start gap-2 text-sm text-gray-600">
                       <Calendar className="h-4 w-4 mt-0.5 flex-shrink-0 text-blue-500" />
                       <span>
-                        {new Date(post.expires_at).toLocaleDateString('ja-JP', {
+                      {post.event_start_date && new Date(post.event_start_date).toLocaleDateString('ja-JP', {
                           year: 'numeric',
                           month: 'long',
                           day: 'numeric'
                         })}
+                        {post.event_end_date && post.event_end_date !== post.event_start_date && (
+                          <> 〜 {new Date(post.event_end_date).toLocaleDateString('ja-JP', {
+                            month: 'long',
+                            day: 'numeric'
+                          })}</>
+                        )}
                       </span>
                     </div>
                   )}
