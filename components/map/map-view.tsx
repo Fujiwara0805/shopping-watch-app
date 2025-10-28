@@ -4,7 +4,7 @@ import { useRef, useEffect, useState, useCallback } from 'react';
 import { useGeolocation } from '@/lib/hooks/use-geolocation';
 import { useGoogleMapsApi } from '@/components/providers/GoogleMapsApiProvider';
 import { Button } from '@/components/ui/button';
-import { MapPin, AlertTriangle, RefreshCw, Clock, Eye, EyeOff, Calendar, Newspaper, User, MapPinIcon, CalendarDays, X } from 'lucide-react';
+import { MapPin, AlertTriangle, RefreshCw,  Calendar, Newspaper, User, MapPinIcon, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
@@ -27,21 +27,30 @@ interface PostMarkerData {
   expires_at: string;
   remaining_slots: number | null;
   image_urls: string[] | null; // 画像URLの配列に変更
+  event_name: string | null;
+  event_start_date?: string | null; // 🔥 追加
+  event_end_date?: string | null;   // 🔥 追加
 }
 
-// 🔥 簡易的なイベントアイコンを作成（SVG形式）
+// 🔥 簡易的なイベントアイコンを作成（サイズを40x40に統一）
 const createSimpleEventIcon = () => {
+  const size = 40;
   const svgIcon = `
-    <svg width="32" height="40" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="16" cy="16" r="14" fill="#8B5CF6" stroke="white" stroke-width="2"/>
-      <text x="16" y="21" text-anchor="middle" font-size="18" fill="white">📅</text>
+    <svg width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="${size/2}" cy="${size/2}" r="${size/2 - 3}" fill="#73370c" stroke="#ffffff" stroke-width="3"/>
+      <g transform="translate(${size/2 - 8}, ${size/2 - 8})">
+        <rect x="2" y="4" width="12" height="10" rx="1" fill="none" stroke="white" stroke-width="1.5"/>
+        <line x1="2" y1="7" x2="14" y2="7" stroke="white" stroke-width="1.5"/>
+        <line x1="5" y1="2" x2="5" y2="5" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="11" y1="2" x2="11" y2="5" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+      </g>
     </svg>
   `;
   
   return {
     url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svgIcon),
-    scaledSize: new window.google.maps.Size(32, 40),
-    anchor: new window.google.maps.Point(16, 40),
+    scaledSize: new window.google.maps.Size(size, size),
+    anchor: new window.google.maps.Point(size / 2, size),
   };
 };
 
@@ -147,7 +156,6 @@ const createEventPinIcon = async (imageUrls: string[] | null): Promise<google.ma
 };
 
 export function MapView() {
-  console.log("MapView: Component rendering START");
   
   const { isLoaded: googleMapsLoaded, loadError: googleMapsLoadError, isLoading: googleMapsLoading } = useGoogleMapsApi();
   
@@ -255,7 +263,7 @@ export function MapView() {
   }, [updateContainerDimensions]);
 
 
-  // 🔥 投稿データを取得する関数を修正（範囲制限を削除）
+  // 🔥 投稿データを取得する関数を修正（現在地の近い順にソート）
   const fetchPosts = useCallback(async () => {
     const userLat = savedLocation?.lat || latitude;
     const userLng = savedLocation?.lng || longitude;
@@ -281,6 +289,9 @@ export function MapView() {
           content,
           store_latitude,
           store_longitude,
+          event_name,
+          event_start_date,
+          event_end_date,
           created_at,
           expires_at,
           remaining_slots,
@@ -304,8 +315,8 @@ export function MapView() {
         return;
       }
 
-      // 🔥 image_urlsの正規化のみ実行（距離フィルタリング削除）
-      const normalizedPosts = data.map((post: any) => {
+      // �� 現在地からの距離を計算して近い順にソート
+      const postsWithDistance = data.map((post: any) => {
         let imageUrls = post.image_urls;
         if (typeof imageUrls === 'string') {
           try {
@@ -316,14 +327,28 @@ export function MapView() {
           }
         }
         
+        // 距離計算（Haversine formula）
+        const R = 6371; // 地球の半径（km）
+        const dLat = (post.store_latitude - userLat) * Math.PI / 180;
+        const dLng = (post.store_longitude - userLng) * Math.PI / 180;
+        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                  Math.cos(userLat * Math.PI / 180) * Math.cos(post.store_latitude * Math.PI / 180) *
+                  Math.sin(dLng / 2) * Math.sin(dLng / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        const distance = R * c; // km単位
+        
         return {
           ...post,
-          image_urls: imageUrls
+          image_urls: imageUrls,
+          distance: distance
         };
       });
 
-      console.log(`MapView: ${normalizedPosts.length}件のイベント情報を取得しました`);
-      setPosts(normalizedPosts);
+      // 距離が近い順にソート
+      const sortedPosts = postsWithDistance.sort((a, b) => a.distance - b.distance);
+
+      console.log(`MapView: ${sortedPosts.length}件のイベント情報を取得しました（距離順）`);
+      setPosts(sortedPosts);
       
     } catch (error) {
       console.error('MapView: 投稿データの取得中にエラー:', error);
@@ -355,7 +380,7 @@ export function MapView() {
     return locationGroups;
   };
 
-  // �� 投稿マーカーを作成する関数（軽量化版）- 依存配列から postMarkers を削除
+  // �� 投稿マーカーを作成する関数（段階的に表示）
   const createPostMarkers = useCallback(async () => {
     if (!map || !posts.length || !window.google?.maps) {
       console.log('MapView: マーカー作成の条件が揃っていません');
@@ -364,7 +389,7 @@ export function MapView() {
 
     console.log(`MapView: ${posts.length}件のイベント情報マーカーを作成中...`);
 
-    // �� 既存のマーカーを削除（クロージャー内の変数を使用）
+    // 🔥 既存のマーカーを削除
     const markersToClean = [...postMarkers];
     markersToClean.forEach(marker => {
       if (marker && marker.setMap) {
@@ -377,38 +402,59 @@ export function MapView() {
     // 🔥 同じ場所の投稿をグループ化
     const locationGroups = groupPostsByLocation(posts);
 
-    // 🔥 非同期処理を順次実行
-    for (const [locationKey, groupPosts] of Object.entries(locationGroups)) {
-      const [lat, lng] = locationKey.split(',').map(Number);
-      const position = new window.google.maps.LatLng(lat, lng);
+    // �� 近い順に処理（既に距離順にソートされている）
+    let batchIndex = 0;
+    const batchSize = 10; // 一度に10個ずつ処理
+    
+    const processNextBatch = async () => {
+      const entries = Object.entries(locationGroups);
+      const batch = entries.slice(batchIndex, batchIndex + batchSize);
       
-      const post = groupPosts[0];
-      const markerTitle = `${post.store_name} - イベント情報`;
+      if (batch.length === 0) {
+        setPostMarkers(newMarkers);
+        return;
+      }
+      
+      // バッチ内のマーカーを並列処理
+      const batchPromises = batch.map(async ([locationKey, groupPosts]) => {
+        const [lat, lng] = locationKey.split(',').map(Number);
+        const position = new window.google.maps.LatLng(lat, lng);
+        
+        const post = groupPosts[0];
+        const markerTitle = `${post.store_name} - イベント情報`;
 
-      // 🔥 画像アイコンを作成（非同期処理）
-      const markerIcon = await createEventPinIcon(post.image_urls);
+        // 🔥 画像アイコンを作成
+        const markerIcon = await createEventPinIcon(post.image_urls);
 
-      const marker = new window.google.maps.Marker({
-        position,
-        map,
-        title: markerTitle,
-        icon: markerIcon,
-        animation: window.google.maps.Animation.DROP,
+        const marker = new window.google.maps.Marker({
+          position,
+          map,
+          title: markerTitle,
+          icon: markerIcon,
+          animation: window.google.maps.Animation.DROP,
+        });
+
+        marker.addListener('click', () => {
+          console.log(`MapView: イベント情報マーカーがクリックされました - ID: ${post.id}`);
+          setSelectedPost(post);
+        });
+
+        return marker;
       });
+      
+      const batchMarkers = await Promise.all(batchPromises);
+      newMarkers.push(...batchMarkers);
+      
+      batchIndex += batchSize;
+      
+      // 次のバッチを少し遅延させて処理
+      setTimeout(processNextBatch, 100);
+    };
+    
+    processNextBatch();
+  }, [map, posts, router]);
 
-      // マーカークリック時の処理（カードを表示）
-      marker.addListener('click', () => {
-        console.log(`MapView: イベント情報マーカーがクリックされました - ID: ${post.id}`);
-        setSelectedPost(post);
-      });
-
-      newMarkers.push(marker);
-    }
-
-    setPostMarkers(newMarkers);
-  }, [map, posts, router]); 
-
-  // 地図初期化（シンプル化 - 位置情報なしでも初期化可能に）
+  // 地図初期化（ズームレベルを調整）
   const initializeMap = useCallback(() => {
     if (!mapContainerRef.current || 
         mapInstanceRef.current || 
@@ -429,19 +475,17 @@ export function MapView() {
       const container = mapContainerRef.current;
       container.innerHTML = '';
 
-      // 🔥 保存された位置情報を最優先、次にuseGeolocationの値、最後にデフォルト（東京）
       const center = savedLocation 
         ? savedLocation
         : (latitude && longitude) 
           ? { lat: latitude, lng: longitude }
-          : { lat: 35.6812, lng: 139.7671 }; // 東京駅
+          : { lat: 35.6812, lng: 139.7671 };
 
       console.log('MapView: 地図の中心座標:', center);
 
-      // シンプルな地図オプション
       const mapOptions: google.maps.MapOptions = {
         center,
-        zoom: (savedLocation || (latitude && longitude)) ? 14 : 12, // 位置情報がある場合はズーム
+        zoom: (savedLocation || (latitude && longitude)) ? 15 : 13, // 🔥 14→15, 12→13にズームアップ
         disableDefaultUI: true,
         zoomControl: true,
         gestureHandling: 'cooperative',
@@ -451,7 +495,6 @@ export function MapView() {
       const newMap = new window.google.maps.Map(container, mapOptions);
       mapInstanceRef.current = newMap;
 
-      // 地図読み込み完了
       window.google.maps.event.addListenerOnce(newMap, 'idle', () => {
         setMap(newMap);
         setMapInitialized(true);
@@ -507,7 +550,7 @@ export function MapView() {
   //   }
   // }, [posts.length]);
 
-  // ユーザー位置マーカーの設置（保存された位置情報も考慮）
+  // ユーザー位置マーカーの設置（ズームレベルを調整）
   useEffect(() => {
     const userLat = savedLocation?.lat || latitude;
     const userLng = savedLocation?.lng || longitude;
@@ -538,11 +581,10 @@ export function MapView() {
         }
       }
 
-      // 位置情報が取得できたら地図の中心を移動
       map.panTo(userPosition);
       const currentZoom = map.getZoom();
-      if (currentZoom !== undefined && currentZoom < 14) {
-        map.setZoom(14);
+      if (currentZoom !== undefined && currentZoom < 15) { // 🔥 14→15に変更
+        map.setZoom(15);
       }
     }
   }, [map, latitude, longitude, savedLocation, mapInitialized, userLocationMarker, browserInfo.name]);
@@ -712,15 +754,16 @@ export function MapView() {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.3, delay: 0.1 }}
+            className="flex flex-col items-center"
           >
             <Button
               onClick={() => router.push('/events')}
               size="icon"
-              className="h-12 w-12 rounded-full shadow-lg bg-white hover:bg-gray-100 border-2 border-gray-200"
-              style={{ backgroundColor: 'white' }}
+              className="h-12 w-12 rounded-full shadow-lg bg-[#73370c] hover:bg-[#5c2a0a] border-2 border-white"
             >
-              <Newspaper className="h-6 w-6 text-gray-700" />
+              <Newspaper className="h-6 w-6 text-white" />
             </Button>
+            <span className="text-sm font-bold text-gray-700 ">リスト</span>
           </motion.div>
 
           {/* プロフィールアイコン（マイページ画面へ） */}
@@ -728,15 +771,16 @@ export function MapView() {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.3, delay: 0.2 }}
+            className="flex flex-col items-center"
           >
             <Button
               onClick={() => router.push('/profile')}
               size="icon"
-              className="h-12 w-12 rounded-full shadow-lg bg-white hover:bg-gray-100 border-2 border-gray-200"
-              style={{ backgroundColor: 'white' }}
+              className="h-12 w-12 rounded-full shadow-lg bg-[#73370c] hover:bg-[#5c2a0a] border-2 border-white"
             >
-              <User className="h-6 w-6 text-gray-700" />
+              <User className="h-6 w-6 text-white" />
             </Button>
+            <span className="text-sm font-bold text-gray-700 ">マイページ</span>
           </motion.div>
         </div>
       )}
@@ -788,7 +832,7 @@ export function MapView() {
                     />
                   </div>
                 ) : (
-                  <div className="relative h-48 w-full bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center">
+                  <div className="relative h-48 w-full bg-gradient-to-br from-[#73370c] to-[#8B4513] flex items-center justify-center">
                     <Calendar className="h-20 w-20 text-white opacity-50" />
                   </div>
                 )}
@@ -803,32 +847,32 @@ export function MapView() {
                 </Button>
               </div>
 
-              {/* カード内容 */}
+              {/* カード内容 - イベントカードの表示内容を修正 */}
               <div className="p-4 space-y-3">
-                {/* イベント名 */}
+                {/* 🔥 イベント名 */}
                 <h3 className="text-lg font-bold text-gray-900 line-clamp-2">
-                  {selectedPost.content}
+                  {selectedPost.event_name || selectedPost.content}
                 </h3>
 
-                {/* 場所 */}
+                {/* 🔥 開催場所 */}
                 <div className="flex items-start gap-2 text-sm text-gray-600">
                   <MapPinIcon className="h-4 w-4 mt-0.5 flex-shrink-0 text-red-500" />
                   <span className="line-clamp-1">{selectedPost.store_name}</span>
                 </div>
 
-                {/* 開催期日 */}
-                <div className="flex items-start gap-2 text-sm text-gray-600">
-                  <CalendarDays className="h-4 w-4 mt-0.5 flex-shrink-0 text-blue-500" />
-                  <span>
-                    {new Date(selectedPost.expires_at).toLocaleDateString('ja-JP', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })}まで
-                  </span>
-                </div>
+                {/* �� 開催期日 - event_start_dateから取得 */}
+                {selectedPost.expires_at && (
+                  <div className="flex items-start gap-2 text-sm text-gray-600">
+                    <Calendar className="h-4 w-4 mt-0.5 flex-shrink-0 text-blue-500" />
+                    <span>
+                      {new Date(selectedPost.expires_at).toLocaleDateString('ja-JP', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })}まで
+                    </span>
+                  </div>
+                )}
 
                 {/* 詳細を見るボタン */}
                 <Button

@@ -51,10 +51,10 @@ export function AppHeader() {
         return 'LINE通知設定';
       case '/notifications':
         return '通知';
-      case '/contact':
+      case '/contactm':
         return 'お問い合わせ';
       case '/memo':
-        return '買い物メモ';
+        return 'メモ';
       case '/train-schedule':
         return '時刻表';
       case '/terms':

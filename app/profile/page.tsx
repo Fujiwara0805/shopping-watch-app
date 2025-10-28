@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Bell, LogOut, Settings, Edit, MapPin, Heart, Store as StoreIcon, Calendar, TrendingUp, Award, Star, User, Sparkles, ShoppingBag, Info, X, Trash2, NotebookText, CheckCircle, ExternalLink, ArrowRight, Trophy, CreditCard, Building2 } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Bell, LogOut, Settings, Edit,  Store as StoreIcon, Calendar,  User, CheckCircle,  ArrowRight, Trophy, Map, ShoppingBag } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -13,7 +13,7 @@ import { useSession, signOut } from 'next-auth/react';
 import { supabase } from '@/lib/supabaseClient';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
-import { getHunterLevel, HUNTER_LEVELS } from '@/lib/hunter-level';
+import { getHunterLevel} from '@/lib/hunter-level';
 
 
 interface AppProfile {
@@ -461,7 +461,7 @@ function ProfilePageContent() {
       className="h-screen flex flex-col" 
       style={{ 
         backgroundColor: '#f3f4f6',
-        height: `calc(${viewportHeight} - 120px)`,
+        height: `${viewportHeight}`, // 🔥 120pxの引き算を削除
         minHeight: '500px'
       }}
     >
@@ -568,23 +568,23 @@ function ProfilePageContent() {
             </h3>
             
             <div className="space-y-2">
-              {/* 企業アカウントの場合は企業設定のみ、通常アカウントの場合は通常のアカウント設定のみ表示 */}
-              {userRole === 'business' ? (
+              {/* 🔥 adminユーザーの場合は投稿ボタンを表示 */}
+              {userRole === 'admin' && (
                 <SettingItem
-                  icon={Building2}
-                  title="企業アカウント設定"
-                  description="企業用のURL・店舗情報の管理"
-                  action={() => router.push('/profile/edit')}
-                />
-              ) : (
-                <SettingItem
-                  icon={Settings}
-                  title="アカウント設定"
-                  description="プロフィール情報とお気に入り店舗の管理"
-                  action={handleNavigateToAccountSettings}
-                  loading={accountSettingsLoading}
+                  icon={Edit}
+                  title="投稿する"
+                  description="新しいイベント情報を投稿"
+                  action={() => router.push('/post')}
                 />
               )}
+              
+              <SettingItem
+                icon={Settings}
+                title="アカウント設定"
+                description="プロフィール情報とお気に入り店舗の管理"
+                action={handleNavigateToAccountSettings}
+                loading={accountSettingsLoading}
+              />
               
               <SettingItem
                 icon={LogOut}
@@ -596,90 +596,43 @@ function ProfilePageContent() {
               />
             </div>
           </motion.div>
-
-          {/* おすそわけ設定セクション */}
-          {profile?.stripe_account_id && (
-            <>
-              <Separator className="my-3" />
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-                className="space-y-2 "
-              >
-                <h3 className="text-lg font-bold text-gray-600 flex items-center mb-2">
-                  <CreditCard className="h-5 w-5 mr-2 text-green-600" />
-                  おすそわけ設定
-                </h3>
-                
-                <motion.div
-                  whileHover={{ scale: 1.01 }}
-                  className="p-3 bg-white rounded-lg border border-gray-100 shadow-sm"
-                >
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5 flex-1 min-w-0">
-                        <div className="flex items-center space-x-2">
-                          <Label className="text-sm font-medium">Stripeアカウント</Label>
-                          <Badge 
-                            variant="secondary" 
-                            className={cn(
-                              "text-xs",
-                              profile.stripe_onboarding_completed 
-                                ? "bg-green-100 text-green-800" 
-                                : "bg-yellow-100 text-yellow-800"
-                            )}
-                          >
-                            {profile.stripe_onboarding_completed ? (
-                              <>
-                                <CheckCircle className="h-3 w-3 mr-1" />
-                                設定完了
-                              </>
-                            ) : (
-                              <>
-                                <Info className="h-3 w-3 mr-1" />
-                                設定中
-                              </>
-                            )}
-                          </Badge>
-                        </div>
-                        <p className="text-xs text-gray-500">
-                          {profile.stripe_onboarding_completed 
-                            ? "おすそわけの受け取り設定が完了しています" 
-                            : "おすそわけの受け取り設定を完了してください"
-                          }
-                        </p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex space-x-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => router.push('/profile/stripe-setup')}
-                        className="text-green-600 border-green-200 hover:bg-green-50 text-xs px-3 py-1 flex-1"
-                      >
-                        <Settings className="h-3 w-3 mr-1" />
-                        設定確認
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => router.push('/profile/stripe-account-management')}
-                        className="text-blue-600 border-blue-200 hover:bg-blue-50 text-xs px-3 py-1 flex-1"
-                      >
-                        <User className="h-3 w-3 mr-1" />
-                        アカウント管理
-                      </Button>
-                    </div>
-                  </div>
-                </motion.div>
-              </motion.div>
-            </>
-          )}
           
-          <div className="h-6" />
+          {/* 🔥 下部に余白を追加（マップボタンのための余白） */}
+          <div className="h-24" />
         </div>
+      </div>
+
+      {/* �� 右下のボタングループ（マップと買い物メモ） */}
+      <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-3">
+        {/* マップボタン */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.3, delay: 0.1 }}
+        >
+          <Button
+            onClick={() => router.push('/map')}
+            size="icon"
+            className="h-14 w-14 rounded-full shadow-2xl bg-[#73370c]  text-white border-2 border-white"
+          >
+            <Map className="h-6 w-6" />
+          </Button>
+        </motion.div>
+
+        {/* 🔥 買い物メモボタン */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.3, delay: 0.2 }}
+        >
+          <Button
+            onClick={() => router.push('/memo')}
+            size="icon"
+            className="h-14 w-14 rounded-full shadow-2xl bg-[#73370c] ] text-white border-2 border-white"
+          >
+            <ShoppingBag className="h-6 w-6" />
+          </Button>
+        </motion.div>
       </div>
 
     </div>

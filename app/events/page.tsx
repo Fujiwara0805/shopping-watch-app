@@ -99,13 +99,11 @@ const EventCard = ({
           </div>
         )}
 
-        {/* 距離バッジ */}
-        {post.distance !== undefined && (
+        {/* 🔥 市町村バッジ（距離の代わりに表示） */}
+        {post.city && (
           <div className="absolute top-2 right-2">
             <Badge className="text-xs bg-green-600">
-              {post.distance < 1000 
-                ? `${Math.round(post.distance)}m` 
-                : `${(post.distance / 1000).toFixed(1)}km`}
+              {post.city}
             </Badge>
           </div>
         )}
@@ -113,18 +111,18 @@ const EventCard = ({
 
       {/* カード内容 */}
       <div className="p-4 space-y-3">
-        {/* イベント名 */}
+        {/* 🔥 イベント名 */}
         <h3 className="text-lg font-bold text-gray-900 line-clamp-2 min-h-[3.5rem]">
-          {post.content}
+          {post.event_name || post.content}
         </h3>
 
-        {/* 場所 */}
+        {/* 🔥 開催場所 */}
         <div className="flex items-start gap-2 text-sm text-gray-600">
           <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0 text-red-500" />
           <span className="line-clamp-1">{post.store_name}</span>
         </div>
 
-        {/* 開催期日 */}
+        {/* 🔥 開催期日 */}
         {post.event_start_date && (
           <div className="flex items-start gap-2 text-sm text-gray-600">
             <Calendar className="h-4 w-4 mt-0.5 flex-shrink-0 text-blue-500" />
@@ -144,21 +142,7 @@ const EventCard = ({
           </div>
         )}
 
-        {/* 統計情報（いいね・閲覧数） */}
-        <div className="flex items-center gap-4 pt-2 border-t border-gray-100">
-          <div className="flex items-center gap-1 text-sm text-gray-600">
-            <Footprints className="h-4 w-4 text-red-500" />
-            <span>{post.likes_count}</span>
-          </div>
-          <div className="flex items-center gap-1 text-sm text-gray-600">
-            <Eye className="h-4 w-4 text-blue-500" />
-            <span>{post.views_count}</span>
-          </div>
-          <div className="flex items-center gap-1 text-sm text-gray-600">
-            <MessageSquare className="h-4 w-4 text-green-500" />
-            <span>{post.comments_count}</span>
-          </div>
-        </div>
+        {/* 統計情報（いいね・閲覧数） - 削除 */}
 
         {/* 詳細を見るボタン */}
         <Button
@@ -372,19 +356,25 @@ export default function EventsPage() {
           .from('posts')
           .select('prefecture, city')
           .eq('category', 'イベント情報')
-          .not('prefecture', 'is', null);
+          .not('city', 'is', null); // 🔥 cityカラムをフィルタリング
 
         if (error) throw error;
 
+        // �� 都道府県リストの取得
         const prefectures = Array.from(new Set(data.map(d => d.prefecture).filter(Boolean))).sort();
         setPrefectureList(prefectures as string[]);
 
+        // �� 市町村リストの取得（全体または都道府県でフィルタ）
         if (selectedPrefecture !== 'all') {
           const cities = Array.from(new Set(
             data.filter(d => d.prefecture === selectedPrefecture)
               .map(d => d.city)
               .filter(Boolean)
           )).sort();
+          setCityList(cities as string[]);
+        } else {
+          // 🔥 全都道府県の市町村を表示
+          const cities = Array.from(new Set(data.map(d => d.city).filter(Boolean))).sort();
           setCityList(cities as string[]);
         }
       } catch (error) {
@@ -497,6 +487,9 @@ export default function EventsPage() {
         <div className="sticky top-0 z-10 border-b bg-[#73370c]">
           <div className="p-4">
             {/* 検索バー */}
+            <div className="max-w-4xl mx-auto px-4 py-2 flex items-center justify-center">
+              <h1 className="text-3xl font-bold text-white">イベント一覧</h1>
+            </div>
             <div className="flex items-center space-x-2">
               <div className="relative flex-1">
                 <Input
@@ -627,8 +620,8 @@ export default function EventsPage() {
         <CustomModal
           isOpen={showFilterModal}
           onClose={() => setShowFilterModal(false)}
-          title="フィルター・ソート"
-          description="イベントを絞り込み・並び替え"
+          title="フィルター機能"
+          description="イベントを絞り込み・並び替えます"
         >
           <div className="space-y-4">
             {/* ソート */}
@@ -644,23 +637,22 @@ export default function EventsPage() {
                 </SelectContent>
               </Select>
             </div>
-            {/* 市町村 */}
-            {tempSelectedPrefecture !== 'all' && (
-              <div>
-                <label className="block text-sm font-medium mb-2">市町村</label>
-                <Select value={tempSelectedCity} onValueChange={setTempSelectedCity}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">すべて</SelectItem>
-                    {cityList.map(city => (
-                      <SelectItem key={city} value={city}>{city}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
+            
+            {/* 🔥 市町村フィルター */}
+            <div>
+              <label className="block text-sm font-medium mb-2">市町村</label>
+              <Select value={tempSelectedCity} onValueChange={setTempSelectedCity}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">すべて</SelectItem>
+                  {cityList.map(city => (
+                    <SelectItem key={city} value={city}>{city}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
             <div className="flex space-x-3 pt-4">
               <Button variant="outline" onClick={resetFilters} className="flex-1">

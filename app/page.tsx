@@ -47,7 +47,7 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
             </div>
             <Button 
               onClick={onStart}
-              className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold px-4 sm:px-6 rounded-full shadow-lg"
+              className="bg-gradient-to-r from-[#73370c] text-white font-semibold px-4 sm:px-6 rounded-full shadow-lg"
             >
               <span className="hidden sm:inline">さっそく始める</span>
               <span className="sm:hidden">始める</span>
@@ -103,7 +103,7 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
                   className="text-3xl sm:text-4xl lg:text-6xl font-bold leading-tight"
                 >
                   あなたの街の<br className="sm:hidden" />
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#73370c] to-[#8B4513]">イベント情報</span>が、<br />
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#73370c]">イベント情報</span>が、<br />
                   今すぐ見つかる
                 </motion.h1>
 

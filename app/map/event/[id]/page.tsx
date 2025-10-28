@@ -341,7 +341,7 @@ export default function EventDetailPage() {
             {/* 投稿内容 */}
             <div className="px-4 py-5 border-b">
               <div className="bg-blue-50 border-l-4 border-[#73370c] p-4 rounded-r-lg">
-                <p className="text-gray-800 leading-relaxed whitespace-pre-wrap">
+                <p className="text-gray-500 leading-relaxed whitespace-pre-wrap">
                   {displayContent}
                 </p>
                 {shouldTruncate && (
@@ -505,13 +505,24 @@ export default function EventDetailPage() {
 
             {/* アクションボタン */}
             <div className="px-4 py-6 space-y-3">
-              <Button
-                onClick={openGoogleMaps}
-                className="w-full bg-[#73370c] text-white py-6 text-lg shadow-lg rounded-xl font-bold"
-              >
-                <Map className="h-5 w-5 mr-2" />
-                地図でイベントを確認
-              </Button>
+              {/* 🔥 メディア情報（URL）へのリンクに変更 */}
+              {event.url ? (
+                <Button
+                  onClick={() => window.open(event.url!, '_blank')}
+                  className="w-full bg-[#73370c] text-white py-6 text-lg shadow-lg rounded-xl font-bold"
+                >
+                  <ExternalLink className="h-5 w-5 mr-2" />
+                  詳細情報を確認
+                </Button>
+              ) : (
+                <Button
+                  onClick={openGoogleMaps}
+                  className="w-full bg-[#73370c] text-white py-6 text-lg shadow-lg rounded-xl font-bold"
+                >
+                  <Map className="h-5 w-5 mr-2" />
+                  地図でイベントを確認
+                </Button>
+              )}
 
               <Button
                 onClick={() => router.push('/map')}

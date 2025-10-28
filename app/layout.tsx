@@ -31,10 +31,11 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
   const isLoginPage = pathname === '/login';
   const isRegisterPage = pathname === '/register';
   const isLandingPage = pathname === '/';
-  const isEventDetailPage = pathname?.startsWith('/map/event/'); // 🔥 イベント詳細ページを追加
+  const isEventPage = pathname === '/events';
+  const isEventDetailPage = pathname?.startsWith('/map/event/');
   
   // ヘッダーを表示しないページ
-  const hideHeader = isMapPage || isLoginPage || isRegisterPage || isLandingPage || isEventDetailPage; // 🔥 追加
+  const hideHeader = isMapPage || isLoginPage || isRegisterPage || isLandingPage || isEventDetailPage || isEventPage;
 
   useEffect(() => {
     // マップページの場合、bodyのスクロールを無効化
