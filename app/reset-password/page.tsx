@@ -138,7 +138,7 @@ export default function ResetPasswordPage() {
   // トークン検証中の表示
   if (isValidating) {
     return (
-      <AppLayout showHeader={false} showNav={false}>
+      <AppLayout>
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -157,7 +157,7 @@ export default function ResetPasswordPage() {
   // 無効なトークンの場合
   if (!isValidToken && tokenError) {
     return (
-      <AppLayout showHeader={false} showNav={false}>
+      <AppLayout>
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -204,7 +204,7 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <AppLayout showHeader={false} showNav={false}>
+    <AppLayout>
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
