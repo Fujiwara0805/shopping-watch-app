@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Disc as Discount, ShoppingBag, User, Loader2, Trash2, MailCheck, Square, CheckSquare } from 'lucide-react';
-import AppLayout from '@/components/layout/app-layout';
+import AppLayout from '@/app/layout';
 import { Button } from '@/components/ui/button';
 import { Notification } from '@/types/notification';
 import { supabase } from '@/lib/supabaseClient';

@@ -1,6 +1,6 @@
 "use client";
 
-import AppLayout from '@/components/layout/app-layout';
+import AppLayout from '@/app/layout';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 

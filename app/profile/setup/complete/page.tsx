@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import AppLayout from '@/components/layout/app-layout';
+import AppLayout from '@/app/layout';
 import { Button } from '@/components/ui/button';
 import { CheckCircle } from 'lucide-react';
 

@@ -4,7 +4,7 @@ import { useSession, signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import AppLayout from "@/components/layout/app-layout";
+import AppLayout from "@/app/layout";
 import { GoogleIcon } from "@/components/common/icons/GoogleIcon";
 import { LineConsentModal } from "@/components/common/LineConsentModal";
 import { Loader2, AlertTriangle, ArrowRight, Eye, EyeOff } from "lucide-react";

@@ -19,7 +19,7 @@ import {
   Gift,
   Wrench
 } from 'lucide-react';
-import AppLayout from '@/components/layout/app-layout';
+import AppLayout from '@/app/layout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';

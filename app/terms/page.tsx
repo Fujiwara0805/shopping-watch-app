@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from 'framer-motion';
-import AppLayout from '@/components/layout/app-layout';
+import AppLayout from '@/app/layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Shield, FileText, Lock, ChevronRight, ArrowLeft } from 'lucide-react';
