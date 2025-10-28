@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import AppLayout from '@/app/layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -225,7 +224,7 @@ export default function LineConnectPage() {
 
   if (status === 'loading' || loading) {
     return (
-      <AppLayout>
+      <div className="container mx-auto p-4 md:p-8">
         <div className="flex items-center justify-center min-h-[50vh]">
           <motion.div
             animate={{ rotate: 360 }}
@@ -233,12 +232,12 @@ export default function LineConnectPage() {
             className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full"
           />
         </div>
-      </AppLayout>
+      </div>
     );
   }
 
   return (
-    <AppLayout>
+    <div className="container mx-auto p-4 md:p-8">
       <div className="container mx-auto px-4 py-6 max-w-2xl">
         <div className="space-y-6">
           <Card>
@@ -457,6 +456,6 @@ export default function LineConnectPage() {
           </div>
         </div>
       </div>
-    </AppLayout>
+    </div>
   );
 }

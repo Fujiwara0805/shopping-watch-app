@@ -7,7 +7,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { Upload, X, Store as StoreIcon, ClipboardList, Image as ImageIcon, ClockIcon, Tag, MapPin, CheckCircle, ChevronDown, ChevronUp, Settings, Link as LinkIcon, FileText, Phone, CalendarDays } from 'lucide-react';
-import AppLayout from '@/app/layout';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -692,17 +691,15 @@ export default function PostPage() {
 
   if (status === "loading") {
     return (
-      <AppLayout>
-        <div className="flex items-center justify-center min-h-screen">
-          <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        </div>
-      </AppLayout>
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      </div>
     );
   }
 
   if (session) {
     return (
-      <AppLayout>
+      <div>
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -1326,7 +1323,7 @@ export default function PostPage() {
             </div>
           </CustomModal>
         </motion.div>
-      </AppLayout>
+      </div>
     );
   }
 
@@ -1366,7 +1363,7 @@ function PlaceAutocompleteField({
 
     const options: google.maps.places.AutocompleteOptions = {
       componentRestrictions: { country: 'jp' },
-      fields: ['place_id', 'name', 'formatted_address', 'geometry', 'address_components'],
+      fields: ['place_id', 'name', 'geometry'],
       types: ['establishment']
     };
 
@@ -1397,9 +1394,12 @@ function PlaceAutocompleteField({
 
       const lat = place.geometry.location.lat();
       const lng = place.geometry.location.lng();
+      
+      // 場所名のみを使用（住所は含めない）
+      const placeName = place.name || '';
 
       form.setValue('storeId', place.place_id || '', { shouldValidate: true });
-      form.setValue('storeName', place.name || place.formatted_address || '', { shouldValidate: true });
+      form.setValue('storeName', placeName, { shouldValidate: true });
       form.setValue('store_latitude', lat, { shouldValidate: true });
       form.setValue('store_longitude', lng, { shouldValidate: true });
 

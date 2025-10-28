@@ -1,7 +1,6 @@
 "use client";
 
 import { motion } from 'framer-motion';
-import AppLayout from '@/app/layout';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 import { TrainFront, Clock, MapPin, ChevronLeft, BusFront } from 'lucide-react';
@@ -196,7 +195,7 @@ export default function TrainSchedulePage() {
   };
 
   return (
-    <AppLayout>
+    <div className="container mx-auto p-4 md:p-8">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -371,6 +370,6 @@ export default function TrainSchedulePage() {
           </motion.div>
         </div>
       </motion.div>
-    </AppLayout>
+    </div>
   );
 }

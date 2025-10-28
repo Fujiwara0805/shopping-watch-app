@@ -1,7 +1,6 @@
 "use client";
 
 import { motion } from 'framer-motion';
-import AppLayout from '@/app/layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -107,7 +106,7 @@ export default function ContactPage() {
   ];
 
   return (
-    <AppLayout>
+    <div className="container mx-auto p-4 md:p-8">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -298,6 +297,6 @@ export default function ContactPage() {
           </CardContent>
         </Card>
       </motion.div>
-    </AppLayout>
+    </div>
   );
 }

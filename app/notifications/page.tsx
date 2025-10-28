@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Disc as Discount, ShoppingBag, User, Loader2, Trash2, MailCheck, Square, CheckSquare } from 'lucide-react';
-import AppLayout from '@/app/layout';
 import { Button } from '@/components/ui/button';
 import { Notification } from '@/types/notification';
 import { supabase } from '@/lib/supabaseClient';
@@ -339,26 +338,26 @@ export default function NotificationsPage() {
 
   if (sessionStatus === 'loading') {
     return (
-      <AppLayout>
+      <div className="container mx-auto p-4 md:p-8">
         <div className="flex items-center justify-center min-h-[calc(100vh-var(--header-height)-var(--footer-height))]">
           <Loader2 className="h-12 w-12 animate-spin text-primary" />
         </div>
-      </AppLayout>
+      </div>
     );
   }
   
   if (sessionStatus === 'unauthenticated') {
      return (
-      <AppLayout>
+      <div className="container mx-auto p-4 md:p-8">
         <div className="p-8 text-center">
           <p className="text-muted-foreground">通知を表示するにはログインしてください。</p>
         </div>
-      </AppLayout>
+      </div>
     );
   }
 
   return (
-    <AppLayout>
+    <div className="container mx-auto p-4 md:p-8">
       <div className="flex items-center justify-between p-4 border-b">
         {notifications.length > 0 && (
           <Button 
@@ -412,6 +411,6 @@ export default function NotificationsPage() {
           <Button variant="destructive" onClick={handleConfirmDelete}>削除</Button>
         </div>
       </CustomModal>
-    </AppLayout>
+    </div>
   );
 }

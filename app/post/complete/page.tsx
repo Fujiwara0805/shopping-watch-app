@@ -2,7 +2,6 @@
 
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import AppLayout from '@/app/layout';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, FileText } from 'lucide-react';
 
@@ -10,7 +9,7 @@ export default function PostCompletePage() {
   const router = useRouter();
 
   return (
-    <AppLayout>
+    <div className="container mx-auto p-4 md:p-8">
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -60,6 +59,6 @@ export default function PostCompletePage() {
             トップページへ戻る
          </Button>
       </motion.div>
-    </AppLayout>
+    </div>
   );
 }

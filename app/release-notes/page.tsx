@@ -19,7 +19,6 @@ import {
   Gift,
   Wrench
 } from 'lucide-react';
-import AppLayout from '@/app/layout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -1019,7 +1018,7 @@ export default function ReleaseNotesPage() {
   };
 
   return (
-    <AppLayout>
+    <div className="container mx-auto p-4 md:p-8">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -1112,6 +1111,6 @@ export default function ReleaseNotesPage() {
           </Button>
         </motion.div>
       </motion.div>
-    </AppLayout>
+    </div>
   );
 }

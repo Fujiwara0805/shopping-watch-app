@@ -1,6 +1,5 @@
 "use client";
 
-import AppLayout from '@/app/layout';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 
@@ -8,7 +7,7 @@ export default function TermsOfServicePage() {
   const router = useRouter();
 
   return (
-    <AppLayout>
+    <div className="container mx-auto p-4 md:p-8">
       <div className="container mx-auto px-4 py-6 max-w-3xl">
         <div className="bg-white">
           <div className="text-center mb-8">
@@ -395,6 +394,6 @@ export default function TermsOfServicePage() {
           </div>
         </div>
       </div>
-    </AppLayout>
+    </div>
   );
 }

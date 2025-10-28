@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check, Plus, Trash2, History, WifiOff, Loader2, Edit, LogIn, X, CheckSquare, Sparkles, PackageCheck, ShoppingBag, TrainFront, Info, Map } from 'lucide-react';
-import AppLayout from '@/app/layout';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -273,7 +272,7 @@ export default function MemoPage() {
   }, [latitude, longitude, storedLocation, effectiveLatitude, effectiveLongitude, hasValidLocation, showTrainScheduleButton, permissionState]);
 
   return (
-    <AppLayout>
+    <div className="container mx-auto p-4 md:p-8">
       <div className="p-4 max-w-2xl mx-auto">
         <header className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-4">
@@ -505,6 +504,6 @@ export default function MemoPage() {
           </div>
         </div>
       </CustomModal>
-    </AppLayout>
+    </div>
   );
 }
