@@ -1105,7 +1105,7 @@ export default function ReleaseNotesPage() {
         >
           <Button
             variant="outline"
-            onClick={() => router.push('/timeline')}
+            onClick={() => router.push('/map')}
             className="px-6 py-2 text-base"
           >
             戻る

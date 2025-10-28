@@ -82,7 +82,7 @@ export default function TermsGatewayPage() {
       <div className="mt-12 pt-8 border-t border-gray-200 text-center">
             <Button
               variant="outline"
-              onClick={() => router.push('/timeline')}
+              onClick={() => router.push('/map')}
               className="flex items-center space-x-2 mx-auto"
             >
               <span>戻る</span>

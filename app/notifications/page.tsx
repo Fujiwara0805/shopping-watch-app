@@ -314,7 +314,7 @@ export default function NotificationsPage() {
                   onClick={() => {
                     !notification.is_read && markAsRead(notification.id);
                     if (notification.reference_post_id) {
-                      router.push(`/timeline?highlightPostId=${notification.reference_post_id}`);
+                      router.push(`/map/event/${notification.reference_post_id}`);
                     }
                   }}
                 >

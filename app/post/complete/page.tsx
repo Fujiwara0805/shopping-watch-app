@@ -34,7 +34,7 @@ export default function PostCompletePage() {
         <div className="flex flex-col sm:flex-row gap-4 w-full max-w-xs">
           <motion.div whileTap={{ scale: 0.98 }} className="w-full">
             <Button
-              onClick={() => router.push('/timeline')}
+              onClick={() => router.push('/map')}
               className="w-full text-lg py-3 px-6"
               size="lg"
             >

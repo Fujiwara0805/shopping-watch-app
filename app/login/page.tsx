@@ -103,7 +103,7 @@ export default function LoginPage() {
       setError("メールアドレスまたはパスワードが正しくありません。");
       console.error("Credentials login error:", result.error);
     } else {
-      const callbackUrl = searchParams.get("callbackUrl") || "/timeline";
+      const callbackUrl = searchParams.get("callbackUrl") || "/map";
       router.replace(callbackUrl);
     }
     setIsLoading(false);

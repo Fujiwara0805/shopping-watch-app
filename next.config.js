@@ -86,7 +86,7 @@ const nextConfig = {
         ]
       },
       {
-        source: '/timeline',
+        source: '/map',
         headers: [
           {
             key: 'Cache-Control',
