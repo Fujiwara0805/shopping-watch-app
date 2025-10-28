@@ -3,14 +3,15 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
-import { ArrowRight, MapPin, Users, Sparkles, Calendar } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ArrowRight, MapPin, Users, Sparkles, Calendar, Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CustomModal } from '@/components/ui/custom-modal';
 
 // イベント特化型ランディングページ
 const EventLP = ({ onStart }: { onStart: () => void }) => {
   const [scrollPosition, setScrollPosition] = useState(0);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -22,38 +23,122 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-pink-50 relative overflow-x-hidden">
-      {/* 背景装飾 */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute inset-0 bg-gradient-to-br from-purple-100/30 via-blue-100/30 to-pink-100/30" />
-        <div className="absolute inset-0 opacity-[0.02]" style={{
-          backgroundImage: `radial-gradient(circle at 1px 1px, rgba(0,0,0,0.15) 1px, transparent 0)`,
-          backgroundSize: '40px 40px'
-        }} />
-      </div>
-
+    <div className="min-h-screen bg-white relative overflow-x-hidden">
       <div className="relative">
         {/* ヘッダー */}
         <nav className={`fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm transition-all duration-300 ${
           scrollPosition > 10 ? 'shadow-md' : ''
         }`}>
           <div className="container mx-auto px-4 sm:px-8 h-16 sm:h-20 flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <img 
-                src="https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png" 
-                alt="トクドク" 
-                className="h-10 w-10 sm:h-12 sm:w-12"
-              />
-            </div>
+            <button 
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              aria-label="メニュー"
+            >
+              <Menu className="h-6 w-6 text-[#73370c]" />
+            </button>
+            
+
+            
             <Button 
               onClick={onStart}
-              className="bg-gradient-to-r from-[#73370c] text-white font-semibold px-4 sm:px-6 rounded-full shadow-lg"
+              className="bg-[#73370c] hover:bg-[#5c2a0a] text-white font-semibold px-4 sm:px-6 rounded-full shadow-lg"
             >
               <span className="hidden sm:inline">さっそく始める</span>
               <span className="sm:hidden">始める</span>
             </Button>
           </div>
         </nav>
+
+        {/* ハンバーガーメニュー */}
+        <AnimatePresence>
+          {isMenuOpen && (
+            <>
+              {/* 背景オーバーレイ */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setIsMenuOpen(false)}
+                className="fixed inset-0 bg-black/50 z-[60]"
+              />
+              
+              {/* メニューパネル */}
+              <motion.div
+                initial={{ x: '-100%' }}
+                animate={{ x: 0 }}
+                exit={{ x: '-100%' }}
+                transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                className="fixed left-0 top-0 bottom-0 w-72 bg-white shadow-2xl z-[70] overflow-y-auto"
+              >
+                <div className="p-6">
+                  <div className="flex items-center justify-between mb-8">
+                    <div className="flex items-center space-x-3">
+                      <img 
+                        src="https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png" 
+                        alt="トクドク" 
+                        className="h-10 w-10"
+                      />
+                      <span className="text-xl font-bold text-[#73370c]">トクドク</span>
+                    </div>
+                    <button
+                      onClick={() => setIsMenuOpen(false)}
+                      className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                      aria-label="閉じる"
+                    >
+                      <X className="h-5 w-5 text-gray-600" />
+                    </button>
+                  </div>
+
+                  <nav className="space-y-2">
+                    <Link
+                      href="/profile"
+                      className="block px-4 py-3 text-gray-700 hover:bg-[#fef3e8] hover:text-[#73370c] rounded-lg transition-colors font-medium"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      マイページ
+                    </Link>
+                    <Link
+                      href="/terms/terms-of-service"
+                      className="block px-4 py-3 text-gray-700 hover:bg-[#fef3e8] hover:text-[#73370c] rounded-lg transition-colors"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      利用規約
+                    </Link>
+                    <Link
+                      href="/terms/privacy-policy"
+                      className="block px-4 py-3 text-gray-700 hover:bg-[#fef3e8] hover:text-[#73370c] rounded-lg transition-colors"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      プライバシーポリシー
+                    </Link>
+                    <Link
+                      href="/terms/service-policy"
+                      className="block px-4 py-3 text-gray-700 hover:bg-[#fef3e8] hover:text-[#73370c] rounded-lg transition-colors"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      サービスポリシー
+                    </Link>
+                    <Link
+                      href="/contact"
+                      className="block px-4 py-3 text-gray-700 hover:bg-[#fef3e8] hover:text-[#73370c] rounded-lg transition-colors"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      問い合わせ
+                    </Link>
+                    <Link
+                      href="/release-notes"
+                      className="block px-4 py-3 text-gray-700 hover:bg-[#fef3e8] hover:text-[#73370c] rounded-lg transition-colors"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      リリースノート
+                    </Link>
+                  </nav>
+                </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
 
         {/* ヒーローセクション */}
         <section className="min-h-screen flex items-center justify-center px-4 sm:px-8 py-20 pt-32">
@@ -103,7 +188,7 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
                   className="text-3xl sm:text-4xl lg:text-6xl font-bold leading-tight"
                 >
                   あなたの街の<br className="sm:hidden" />
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#73370c]">イベント情報</span>が、<br />
+                  <span className="text-[#73370c] font-bold">イベント情報</span>が、<br />
                   今すぐ見つかる
                 </motion.h1>
 
@@ -137,7 +222,7 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
                 <Button 
                   size="lg" 
                   onClick={onStart}
-                  className="h-14 sm:h-16 px-8 sm:px-12 text-lg sm:text-xl font-semibold rounded-full shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-300 bg-gradient-to-r from-[#73370c] to-[#8B4513] hover:from-[#5c2a0a] hover:to-[#73370c]"
+                  className="h-14 sm:h-16 px-8 sm:px-12 text-lg sm:text-xl font-semibold rounded-full shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-300 bg-[#73370c] hover:bg-[#5c2a0a]"
                 >
                   <motion.span
                     animate={{ scale: [1, 1.05, 1] }}
@@ -145,7 +230,6 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
                   >
                     イベントを探す
                   </motion.span>
-                  <ArrowRight className="ml-3 h-5 w-5 sm:h-6 sm:w-6" />
                 </Button>
                 <p className="text-sm sm:text-lg text-gray-600 mt-4 font-medium">
                   登録・利用料金完全無料
@@ -201,7 +285,7 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
                   className="flex flex-col items-center text-center p-6 sm:p-8 lg:p-10 rounded-3xl bg-white border-2 border-[#73370c]/20 shadow-lg hover:shadow-2xl transition-all duration-300"
                 >
                   <motion.div 
-                    className="bg-gradient-to-br from-[#73370c]/10 to-[#8B4513]/10 p-5 sm:p-6 rounded-2xl mb-4 sm:mb-6"
+                    className="bg-[#fef3e8] p-5 sm:p-6 rounded-2xl mb-4 sm:mb-6"
                     whileHover={{ rotate: 5, scale: 1.1 }}
                   >
                     <feature.icon className="h-10 w-10 sm:h-12 sm:w-12 text-[#73370c]" />
@@ -245,7 +329,7 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
                 <Button
                   size="lg"
                   onClick={onStart}
-                  className="h-14 sm:h-16 px-10 sm:px-16 text-lg sm:text-2xl font-bold rounded-full shadow-2xl hover:shadow-3xl transform transition-all duration-300 bg-gradient-to-r from-[#73370c] to-[#8B4513] hover:from-[#5c2a0a] hover:to-[#73370c]"
+                  className="h-14 sm:h-16 px-10 sm:px-16 text-lg sm:text-2xl font-bold rounded-full shadow-2xl hover:shadow-3xl transform transition-all duration-300 bg-[#73370c] hover:bg-[#5c2a0a]"
                 >
                   <Sparkles className="mr-2 sm:mr-3 h-5 w-5 sm:h-6 sm:w-6" />
                   <motion.span
@@ -254,7 +338,6 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
                   >
                     今すぐ探す
                   </motion.span>
-                  <ArrowRight className="ml-2 sm:ml-4 h-5 w-5 sm:h-6 sm:w-6" />
                 </Button>
               </motion.div>
 
@@ -305,8 +388,6 @@ export default function Home() {
   const handleAllowLocation = async () => {
     if ('geolocation' in navigator) {
       try {
-        console.log('位置情報を取得中...');
-        
         // 位置情報を取得
         const position = await new Promise<GeolocationPosition>((resolve, reject) => {
           navigator.geolocation.getCurrentPosition(resolve, reject, {
@@ -316,7 +397,6 @@ export default function Home() {
           });
         });
 
-        console.log('位置情報取得成功:', position.coords);
 
         // 位置情報をlocalStorageに保存（map-view.tsxが読み込むキー）
         const locationData = {
@@ -328,7 +408,7 @@ export default function Home() {
         localStorage.setItem('userLocation', JSON.stringify(locationData));
         console.log('位置情報を保存:', locationData);
 
-        // �� LocationPermissionManagerが使用する許可フラグも保存
+        // LocationPermissionManagerが使用する許可フラグも保存
         localStorage.setItem('locationPermission', JSON.stringify({
           isGranted: true,
           timestamp: Date.now()
@@ -351,7 +431,7 @@ export default function Home() {
     }
   };
 
-  // �� 位置情報を許可しない場合もマップ画面へ
+  //  位置情報を許可しない場合もマップ画面へ
   const handleDenyLocation = () => {
     setShowLocationModal(false);
     router.push('/map');
@@ -390,7 +470,7 @@ export default function Home() {
           <div className="space-y-3">
             <Button
               onClick={handleAllowLocation}
-              className="w-full bg-gradient-to-r from-[#73370c] to-[#8B4513] hover:from-[#5c2a0a] hover:to-[#73370c] text-white font-semibold"
+              className="w-full bg-[#73370c] hover:bg-[#5c2a0a] text-white font-semibold"
             >
               <MapPin className="mr-2 h-4 w-4" />
               位置情報を許可してイベントを探す

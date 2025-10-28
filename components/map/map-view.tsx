@@ -190,6 +190,8 @@ export function MapView() {
   const [postMarkers, setPostMarkers] = useState<google.maps.Marker[]>([]);
   const [loadingPosts, setLoadingPosts] = useState(false);
   const [selectedPost, setSelectedPost] = useState<PostMarkerData | null>(null);
+  const [currentCardIndex, setCurrentCardIndex] = useState(0); // 🔥 カードインデックス
+  const [nearbyPosts, setNearbyPosts] = useState<PostMarkerData[]>([]); // 🔥 近くのイベント
   const router = useRouter();
 
   // 🔥 保存された位置情報を読み込む
@@ -402,7 +404,7 @@ export function MapView() {
     // 🔥 同じ場所の投稿をグループ化
     const locationGroups = groupPostsByLocation(posts);
 
-    // �� 近い順に処理（既に距離順にソートされている）
+    // 近い順に処理（既に距離順にソートされている）
     let batchIndex = 0;
     const batchSize = 10; // 一度に10個ずつ処理
     
@@ -437,6 +439,11 @@ export function MapView() {
         marker.addListener('click', () => {
           console.log(`MapView: イベント情報マーカーがクリックされました - ID: ${post.id}`);
           setSelectedPost(post);
+          setCurrentCardIndex(0); // 🔥 カードインデックスをリセット
+          
+          // 🔥 近くのイベント(距離順で最大10件)を設定
+          const nearEvents = posts.slice(0, 10);
+          setNearbyPosts(nearEvents);
         });
 
         return marker;
@@ -541,14 +548,6 @@ export function MapView() {
     }
   }, [posts, map]); // �� createPostMarkers を依存配列から削除
 
-  // �� 投稿がある場合は範囲円を非表示にするuseEffectを削除
-  // useEffect(() => {
-  //   if (posts.length > 0) {
-  //     setShowRangeCircle(false);
-  //   } else {
-  //     setShowRangeCircle(true);
-  //   }
-  // }, [posts.length]);
 
   // ユーザー位置マーカーの設置（ズームレベルを調整）
   useEffect(() => {
@@ -809,80 +808,127 @@ export function MapView() {
         </div>
       )}
 
-      {/* イベント詳細カード（下部に表示） */}
+      {/* イベント詳細カード（下部にスライド表示） */}
       <AnimatePresence>
-        {selectedPost && (
+        {selectedPost && nearbyPosts.length > 0 && (
           <motion.div
             initial={{ y: 100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 100, opacity: 0 }}
             transition={{ duration: 0.3, ease: "easeOut" }}
-            className="absolute bottom-4 left-4 right-4 z-40"
+            className="absolute bottom-4 left-0 right-0 z-40"
           >
+            <div className="relative px-4">
+              {/* スライドコンテナ */}
+              <div className="overflow-x-auto hide-scrollbar snap-x snap-mandatory flex gap-4 pb-2">
+                {nearbyPosts.map((post, index) => (
+                  <motion.div
+                    key={post.id}
+                    initial={{ opacity: 0, x: 50 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.3, delay: index * 0.05 }}
+                    className="flex-shrink-0 w-[320px] snap-center"
+                  >
             <div className="bg-white rounded-2xl shadow-2xl overflow-hidden border-2 border-gray-200">
               {/* カードヘッダー */}
               <div className="relative">
-                {/* 画像表示 */}
-                {selectedPost.image_urls && selectedPost.image_urls.length > 0 ? (
+                {/* 画像表示 - 🔥 品質向上 */}
+                {post.image_urls && post.image_urls.length > 0 ? (
                   <div className="relative h-48 w-full overflow-hidden bg-gray-100">
                     <img
-                      src={selectedPost.image_urls[0]}
-                      alt={selectedPost.store_name}
+                      src={post.image_urls[0]}
+                      alt={post.store_name}
                       className="w-full h-full object-cover"
+                      loading="eager"
+                      decoding="async"
+                      fetchPriority="high"
                     />
                   </div>
                 ) : (
-                  <div className="relative h-48 w-full bg-gradient-to-br from-[#73370c] to-[#8B4513] flex items-center justify-center">
-                    <Calendar className="h-20 w-20 text-white opacity-50" />
+                  <div className="relative h-48 w-full bg-[#fef3e8] flex items-center justify-center">
+                    <Calendar className="h-20 w-20 text-[#73370c] opacity-30" />
                   </div>
                 )}
                 
-                {/* 閉じるボタン */}
-                <Button
-                  onClick={() => setSelectedPost(null)}
-                  size="icon"
-                  className="absolute top-2 right-2 h-8 w-8 rounded-full bg-white/90 hover:bg-white shadow-lg"
-                >
-                  <X className="h-4 w-4 text-gray-700" />
-                </Button>
+                {/* カード番号インジケーター */}
+                {index === 0 && nearbyPosts.length > 1 && (
+                  <div className="absolute top-2 left-2 bg-white/90 px-2 py-1 rounded-full text-xs font-bold text-[#73370c]">
+                    {index + 1} / {nearbyPosts.length}
+                  </div>
+                )}
               </div>
 
-              {/* カード内容 - イベントカードの表示内容を修正 */}
+              {/* カード内容 */}
               <div className="p-4 space-y-3">
-                {/* 🔥 イベント名 */}
+                {/* イベント名 */}
                 <h3 className="text-lg font-bold text-gray-900 line-clamp-2">
-                  {selectedPost.event_name || selectedPost.content}
+                  {post.event_name || post.content}
                 </h3>
 
-                {/* 🔥 開催場所 */}
+                {/* 開催場所 */}
                 <div className="flex items-start gap-2 text-sm text-gray-600">
                   <MapPinIcon className="h-4 w-4 mt-0.5 flex-shrink-0 text-red-500" />
-                  <span className="line-clamp-1">{selectedPost.store_name}</span>
+                  <span className="line-clamp-1">{post.store_name}</span>
                 </div>
 
-                {/* �� 開催期日 - event_start_dateから取得 */}
-                {selectedPost.expires_at && (
+                {/* 開催期日 */}
+                {post.expires_at && (
                   <div className="flex items-start gap-2 text-sm text-gray-600">
                     <Calendar className="h-4 w-4 mt-0.5 flex-shrink-0 text-blue-500" />
                     <span>
-                      {new Date(selectedPost.expires_at).toLocaleDateString('ja-JP', {
+                      {new Date(post.expires_at).toLocaleDateString('ja-JP', {
                         year: 'numeric',
                         month: 'long',
                         day: 'numeric'
-                      })}まで
+                      })}
                     </span>
                   </div>
                 )}
 
                 {/* 詳細を見るボタン */}
                 <Button
-                  onClick={() => router.push(`/map/event/${selectedPost.id}`)}
-                  className="w-full mt-2 bg-[#73370c] text-white shadow-lg"
+                  onClick={() => router.push(`/map/event/${post.id}`)}
+                  className="w-full mt-2 bg-[#73370c] hover:bg-[#5c2a0a] text-white shadow-lg"
                 >
                   詳細を見る
                 </Button>
               </div>
             </div>
+                  </motion.div>
+                ))}
+              </div>
+
+              {/* 閉じるボタン（右上） */}
+              <Button
+                onClick={() => {
+                  setSelectedPost(null);
+                  setNearbyPosts([]);
+                  setCurrentCardIndex(0);
+                }}
+                size="icon"
+                className="absolute -top-2 right-6 h-10 w-10 rounded-full bg-white/95 hover:bg-white shadow-2xl border-2 border-gray-200"
+              >
+                <X className="h-5 w-5 text-gray-700" />
+              </Button>
+
+              {/* スライドヒント */}
+              {nearbyPosts.length > 1 && (
+                <div className="text-center mt-2 text-xs text-gray-500">
+                  ← 横にスワイプして他のイベントを見る →
+                </div>
+              )}
+            </div>
+
+            {/* スクロールバーを隠すCSS */}
+            <style jsx>{`
+              .hide-scrollbar::-webkit-scrollbar {
+                display: none;
+              }
+              .hide-scrollbar {
+                -ms-overflow-style: none;
+                scrollbar-width: none;
+              }
+            `}</style>
           </motion.div>
         )}
       </AnimatePresence>

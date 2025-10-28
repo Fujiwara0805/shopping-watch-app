@@ -46,11 +46,13 @@ export default function EventDetailPage() {
     const fetchEventDetail = async () => {
       setLoading(true);
       try {
+        const now = new Date().toISOString();
         const { data, error } = await supabase
           .from('posts')
           .select('*')
           .eq('id', eventId)
           .eq('is_deleted', false)
+          .gt('expires_at', now) // 🔥 掲載期限フィルター追加
           .single();
 
         if (error) {
@@ -60,7 +62,7 @@ export default function EventDetailPage() {
         }
 
         if (!data) {
-          setError('イベントが見つかりませんでした。');
+          setError('イベントが見つかりませんでした。または掲載期限が切れています。');
           return;
         }
 
@@ -256,6 +258,9 @@ export default function EventDetailPage() {
                 src={event.image_urls[currentImageIndex]}
                 alt={event.event_name || event.store_name}
                 className="w-full h-full object-cover"
+                loading="eager"
+                decoding="async"
+                fetchPriority="high"
               />
               
               {/* 右上の閉じるボタン */}

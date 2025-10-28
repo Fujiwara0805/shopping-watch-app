@@ -273,6 +273,7 @@ function ProfilePageContent() {
     const fetchProfileAndPostsCount = async () => {
       if (!session?.user?.id) {
         console.warn('ProfilePageContent: No session user ID available');
+        setLoading(false); // 🔥 セッションがない場合もローディング解除
         return;
       }
 
@@ -300,6 +301,7 @@ function ProfilePageContent() {
 
         if (profileError) {
           console.error('ProfilePageContent: Error fetching profile:', profileError);
+          setLoading(false); // 🔥 エラー時もローディング解除
           return;
         }
 

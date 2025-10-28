@@ -76,19 +76,21 @@ const EventCard = ({
     >
       {/* カードヘッダー */}
       <div className="relative">
-        {/* 画像表示 */}
+        {/* 画像表示 - 🔥 品質向上 */}
         {imageUrls && imageUrls.length > 0 ? (
           <div className="relative h-48 w-full overflow-hidden bg-gray-100">
             <img
               src={imageUrls[0]}
               alt={post.store_name}
               className="w-full h-full object-cover"
-              loading="lazy"
+              loading="eager"
+              decoding="async"
+              fetchPriority="high"
             />
           </div>
         ) : (
-          <div className="relative h-48 w-full bg-gradient-to-br from-[#73370c] to-[#8B4513] flex items-center justify-center">
-            <Calendar className="h-20 w-20 text-white opacity-50" />
+          <div className="relative h-48 w-full bg-[#fef3e8] flex items-center justify-center">
+            <Calendar className="h-20 w-20 text-[#73370c] opacity-30" />
           </div>
         )}
         
