@@ -21,7 +21,6 @@ import { supabase } from '@/lib/supabaseClient';
 import { v4 as uuidv4 } from 'uuid';
 import FavoriteStoreInput from '@/components/profile/FavoriteStoreInput';
 import { useLoading } from '@/contexts/loading-context';
-import OnboardingModal from '@/components/onboarding/onboardingModal';
 import { AnimatePresence} from 'framer-motion';
 
 // app_profiles テーブルの型定義（bioを削除）
@@ -72,7 +71,6 @@ function ProfileSetupContent() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
-  const [showOnboarding, setShowOnboarding] = useState(true);
 
   // データ利活用項目の状態
   const [ageGroup, setAgeGroup] = useState('');
@@ -132,10 +130,6 @@ function ProfileSetupContent() {
       });
     }
   }, [session, status]);
-
-  const handleOnboardingClose = () => {
-    setShowOnboarding(false);
-  };
 
   const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -242,7 +236,6 @@ function ProfileSetupContent() {
         throw new Error(`プロフィールの保存に失敗しました: ${saveError.message}`);
       }
 
-      setShowOnboarding(false);
       router.push('/profile/setup/complete');
 
     } catch (error: any) {
@@ -264,10 +257,7 @@ function ProfileSetupContent() {
   }
 
   return (
-    <>
-      <OnboardingModal isOpen={showOnboarding} onClose={handleOnboardingClose} />
-
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 p-4">
         <div className="max-w-2xl mx-auto space-y-6">
           {/* 完成度表示 */}
           <motion.div
@@ -873,8 +863,7 @@ function ProfileSetupContent() {
             </form>
           </Form>
         </div>
-      </div>
-    </>
+    </div>
   );
 }
 
