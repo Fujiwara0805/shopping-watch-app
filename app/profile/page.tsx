@@ -417,6 +417,13 @@ function ProfilePageContent() {
     { id: profile.favorite_store_3_id, name: profile.favorite_store_3_name },
   ].filter(store => store.id && store.name) as { id: string; name: string }[] : [];
 
+  // 🔥 プロフィール情報がない場合はログイン画面へ遷移（useEffectを条件外に移動）
+  useEffect(() => {
+    if (!loading && !profile) {
+      router.push('/login');
+    }
+  }, [loading, profile, router]);
+
   if (loading) {
     return (
       <div 
@@ -436,12 +443,7 @@ function ProfilePageContent() {
     );
   }
   
-  // 🔥 プロフィール情報がない場合はログイン画面へ遷移
   if (!profile) {
-    useEffect(() => {
-      router.push('/login');
-    }, [router]);
-    
     return (
       <div 
         className="h-screen flex items-center justify-center" 
