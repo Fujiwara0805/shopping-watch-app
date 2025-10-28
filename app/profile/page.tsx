@@ -436,7 +436,12 @@ function ProfilePageContent() {
     );
   }
   
+  // 🔥 プロフィール情報がない場合はログイン画面へ遷移
   if (!profile) {
+    useEffect(() => {
+      router.push('/login');
+    }, [router]);
+    
     return (
       <div 
         className="h-screen flex items-center justify-center" 
@@ -452,7 +457,7 @@ function ProfilePageContent() {
           className="text-center"
         >
           <User className="h-16 w-16 mx-auto text-white/60 mb-4" />
-          <p className="text-lg text-white">プロフィール情報を読み込めませんでした。</p>
+          <p className="text-lg text-white">ログイン画面へ遷移します...</p>
         </motion.div>
       </div>
     );

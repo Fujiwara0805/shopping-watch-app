@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { Loader2, X, Calendar, MapPin, Eye, MessageSquare, Footprints, SlidersHorizontal,  Map } from 'lucide-react';
+import { Loader2, X, Calendar, MapPin, Eye, MessageSquare, Footprints, SlidersHorizontal,  Map, Trash2 } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
@@ -41,12 +41,43 @@ interface EventPost {
 // イベントカードコンポーネント
 const EventCard = ({ 
   post, 
-  currentUserId 
+  currentUserId,
+  onDelete 
 }: { 
   post: EventPost; 
   currentUserId?: string | null;
+  onDelete?: (postId: string) => void;
 }) => {
   const router = useRouter();
+  const [isDeleting, setIsDeleting] = useState(false);
+  
+  // 削除処理
+  const handleDelete = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    if (!confirm('この投稿を削除してもよろしいですか？')) {
+      return;
+    }
+    
+    setIsDeleting(true);
+    try {
+      const { error } = await supabase
+        .from('posts')
+        .update({ is_deleted: true })
+        .eq('id', post.id);
+      
+      if (error) throw error;
+      
+      if (onDelete) {
+        onDelete(post.id);
+      }
+    } catch (error) {
+      console.error('削除エラー:', error);
+      alert('投稿の削除に失敗しました');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
   
   // 画像URLの取得
   const getImageUrls = () => {
@@ -102,20 +133,39 @@ const EventCard = ({
         )}
 
         {/* 🔥 市町村バッジ（距離の代わりに表示） */}
-        {post.city && (
-          <div className="absolute top-2 right-2">
+        <div className="absolute top-2 right-2 flex flex-col gap-2">
+          {post.city && (
             <Badge className="text-xs bg-green-600">
               {post.city}
             </Badge>
-          </div>
-        )}
+          )}
+          
+          {/* 🔥 自分の投稿の場合は削除ボタンを表示 */}
+          {post.author_user_id === currentUserId && (
+            <Button
+              onClick={handleDelete}
+              disabled={isDeleting}
+              size="icon"
+              variant="destructive"
+              className="h-8 w-8 rounded-full shadow-lg"
+            >
+              {isDeleting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Trash2 className="h-4 w-4" />
+              )}
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* カード内容 */}
       <div className="p-4 space-y-3">
-        {/* 🔥 イベント名 */}
-        <h3 className="text-lg font-bold text-gray-900 line-clamp-2 min-h-[3.5rem]">
-          {post.event_name || post.content}
+        {/* 🔥 イベント名 - 20文字制限、テキストカラー変更 */}
+        <h3 className="text-lg font-bold line-clamp-2 min-h-[3.5rem]" style={{ color: '#73370c' }}>
+          {(post.event_name || post.content).length > 20 
+            ? `${(post.event_name || post.content).substring(0, 20)}...` 
+            : (post.event_name || post.content)}
         </h3>
 
         {/* 🔥 開催場所 */}
@@ -184,6 +234,16 @@ export default function EventsPage() {
   // 都道府県・市町村リスト
   const [prefectureList, setPrefectureList] = useState<string[]>([]);
   const [cityList, setCityList] = useState<string[]>([]);
+  
+  // 削除処理
+  const handleDeletePost = (postId: string) => {
+    setPosts(prev => prev.filter(post => post.id !== postId));
+    toast({
+      title: "✅ 削除完了",
+      description: "投稿を削除しました",
+      duration: 2000,
+    });
+  };
 
   // 位置情報
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
@@ -572,7 +632,11 @@ export default function EventsPage() {
                         exit={{ opacity: 0, y: -20 }}
                         transition={{ duration: 0.3, delay: index * 0.05 }}
                       >
-                        <EventCard post={post} currentUserId={currentUserId} />
+                        <EventCard 
+                          post={post} 
+                          currentUserId={currentUserId} 
+                          onDelete={handleDeletePost}
+                        />
                       </motion.div>
                     ))}
                   </AnimatePresence>
@@ -594,7 +658,11 @@ export default function EventsPage() {
                 {!hasMore && posts.length > 0 && (
                   <div className="text-center py-8">
                     <p className="text-gray-600">すべてのイベントを表示しました</p>
-                    <p className="text-sm text-gray-500 mt-1">{posts.length}件</p>
+                    <p className="text-sm mt-1">
+                      <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full font-medium">
+                        {posts.length}件
+                      </span>
+                    </p>
                   </div>
                 )}
               </>

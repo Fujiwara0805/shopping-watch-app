@@ -16,7 +16,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
-import { Loader2, User as UserIcon, Info, Image as ImageIcon, X, Upload, Store, Baby, MapPin, Briefcase, ShoppingCart, Check, ChevronDown, ChevronUp } from 'lucide-react';
+import { Loader2, User as UserIcon, Info, Image as ImageIcon, X, Upload, Store, Check } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { v4 as uuidv4 } from 'uuid';
 import FavoriteStoreInput from '@/components/profile/FavoriteStoreInput';
@@ -73,23 +73,7 @@ function ProfileSetupContent() {
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
 
   // データ利活用項目の状態
-  const [ageGroup, setAgeGroup] = useState('');
-  const [gender, setGender] = useState('');
-  const [prefecture, setPrefecture] = useState('');
-  const [city, setCity] = useState('');
-  const [familyStructure, setFamilyStructure] = useState('');
-  const [childrenCount, setChildrenCount] = useState('');
-  const [childrenAgeGroups, setChildrenAgeGroups] = useState<string[]>([]);
-  const [occupation, setOccupation] = useState('');
-  const [householdIncome, setHouseholdIncome] = useState('');
-  const [shoppingFrequency, setShoppingFrequency] = useState('');
-  const [primaryShoppingTime, setPrimaryShoppingTime] = useState('');
-  const [averageSpending, setAverageSpending] = useState('');
-  const [shoppingStyle, setShoppingStyle] = useState('');
   const [dataConsent, setDataConsent] = useState(false);
-
-  // 🔥 追加：任意項目の開閉状態
-  const [showOptionalFields, setShowOptionalFields] = useState(false);
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
@@ -104,17 +88,11 @@ function ProfileSetupContent() {
 
   const { isValid } = form.formState;
 
-  // 完成度計算（bioを除外）
+  // 完成度計算（基本項目のみ）
   const calculateCompleteness = () => {
     const basicFields = [form.watch('username')].filter(field => field && field.trim() !== '').length;
-    const dataFields = [
-      ageGroup, gender, prefecture, city, familyStructure, occupation,
-      shoppingFrequency, primaryShoppingTime, averageSpending, shoppingStyle
-    ].filter(field => field !== '').length;
-    
-    const totalFields = 11; // 基本1項目 + データ利活用10項目
-    const filledFields = basicFields + dataFields;
-    return Math.round((filledFields / totalFields) * 100);
+    const totalFields = 1; // 基本1項目のみ
+    return Math.round((basicFields / totalFields) * 100);
   };
 
   const completeness = calculateCompleteness();
@@ -198,7 +176,7 @@ function ProfileSetupContent() {
 
       const newAppProfileId = uuidv4();
 
-      // bioフィールドを削除
+      // プロフィールデータ（任意項目を削除）
       const profileDataToSave = {
         id: newAppProfileId,
         user_id: session.user.id,
@@ -211,20 +189,6 @@ function ProfileSetupContent() {
         favorite_store_2_name: values.favoriteStore2?.name || null,
         favorite_store_3_id: values.favoriteStore3?.id || null,
         favorite_store_3_name: values.favoriteStore3?.name || null,
-        // データ利活用項目
-        age_group: ageGroup || null,
-        gender: gender || null,
-        prefecture: prefecture || null,
-        city: city || null,
-        family_structure: familyStructure || null,
-        children_count: childrenCount || null,
-        children_age_groups: childrenAgeGroups.length > 0 ? childrenAgeGroups : null,
-        occupation: occupation || null,
-        household_income: householdIncome || null,
-        shopping_frequency: shoppingFrequency || null,
-        primary_shopping_time: primaryShoppingTime || null,
-        average_spending: averageSpending || null,
-        shopping_style: shoppingStyle || null,
         data_consent: dataConsent,
       };
 
@@ -474,370 +438,6 @@ function ProfileSetupContent() {
                     )}
                   />
                 </CardContent>
-              </Card>
-
-              {/* 🔥 追加：任意項目のトグルボタン */}
-              <Card>
-                <CardHeader 
-                  className="cursor-pointer hover:bg-gray-50 transition-colors"
-                  onClick={() => setShowOptionalFields(!showOptionalFields)}
-                >
-                  <CardTitle className="flex items-center justify-between text-lg">
-                    <div className="flex items-center">
-                      <Info className="h-5 w-5 mr-2 text-gray-600" />
-                      任意項目
-                      <Badge variant="secondary" className="ml-2 text-xs">
-                        より詳しく
-                      </Badge>
-                    </div>
-                    {showOptionalFields ? (
-                      <ChevronUp className="h-5 w-5 text-gray-500" />
-                    ) : (
-                      <ChevronDown className="h-5 w-5 text-gray-500" />
-                    )}
-                  </CardTitle>
-                  <p className="text-sm text-gray-600 mt-1">
-                    より詳細な情報を入力することで、パーソナライズされたサービスを提供できます
-                  </p>
-                </CardHeader>
-                
-                <AnimatePresence>
-                  {showOptionalFields && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.3 }}
-                    >
-                      <CardContent className="space-y-6 pt-0">
-                        {/* 基本情報 */}
-                        <div className="space-y-4">
-                          <div className="flex items-center space-x-2 pt-4 border-t">
-                            <UserIcon className="h-4 w-4 text-blue-600" />
-                            <h3 className="font-medium text-blue-900">基本情報</h3>
-                          </div>
-                          
-                          {/* 年齢層 */}
-                          <div className="space-y-2">
-                            <Label className="text-sm font-medium">年齢層</Label>
-                            <Select value={ageGroup} onValueChange={setAgeGroup}>
-                              <SelectTrigger>
-                                <SelectValue placeholder="年齢層を選択してください" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="10代">10代</SelectItem>
-                                <SelectItem value="20代">20代</SelectItem>
-                                <SelectItem value="30代">30代</SelectItem>
-                                <SelectItem value="40代">40代</SelectItem>
-                                <SelectItem value="50代">50代</SelectItem>
-                                <SelectItem value="60代">60代</SelectItem>
-                                <SelectItem value="70代">70代</SelectItem>
-                                <SelectItem value="80代以上">80代以上</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-
-                          {/* 性別 */}
-                          <div className="space-y-2">
-                            <Label className="text-sm font-medium">性別</Label>
-                            <RadioGroup value={gender} onValueChange={setGender}>
-                              <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="男性" id="male" />
-                                <Label htmlFor="male" className="text-sm">男性</Label>
-                              </div>
-                              <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="女性" id="female" />
-                                <Label htmlFor="female" className="text-sm">女性</Label>
-                              </div>
-                              <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="その他" id="other" />
-                                <Label htmlFor="other" className="text-sm">その他</Label>
-                              </div>
-                              <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="回答しない" id="no_answer" />
-                                <Label htmlFor="no_answer" className="text-sm">回答しない</Label>
-                              </div>
-                            </RadioGroup>
-                          </div>
-
-                          {/* 居住地域 */}
-                          <div className="space-y-2">
-                            <Label className="text-sm font-medium">居住地域</Label>
-                            <div className="grid grid-cols-2 gap-3">
-                              <Select value={prefecture} onValueChange={setPrefecture}>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="都道府県" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="北海道">北海道</SelectItem>
-                                  <SelectItem value="青森県">青森県</SelectItem>
-                                  <SelectItem value="岩手県">岩手県</SelectItem>
-                                  <SelectItem value="宮城県">宮城県</SelectItem>
-                                  <SelectItem value="秋田県">秋田県</SelectItem>
-                                  <SelectItem value="山形県">山形県</SelectItem>
-                                  <SelectItem value="福島県">福島県</SelectItem>
-                                  <SelectItem value="茨城県">茨城県</SelectItem>
-                                  <SelectItem value="栃木県">栃木県</SelectItem>
-                                  <SelectItem value="群馬県">群馬県</SelectItem>
-                                  <SelectItem value="埼玉県">埼玉県</SelectItem>
-                                  <SelectItem value="千葉県">千葉県</SelectItem>
-                                  <SelectItem value="東京都">東京都</SelectItem>
-                                  <SelectItem value="神奈川県">神奈川県</SelectItem>
-                                  <SelectItem value="新潟県">新潟県</SelectItem>
-                                  <SelectItem value="富山県">富山県</SelectItem>
-                                  <SelectItem value="石川県">石川県</SelectItem>
-                                  <SelectItem value="福井県">福井県</SelectItem>
-                                  <SelectItem value="山梨県">山梨県</SelectItem>
-                                  <SelectItem value="長野県">長野県</SelectItem>
-                                  <SelectItem value="岐阜県">岐阜県</SelectItem>
-                                  <SelectItem value="静岡県">静岡県</SelectItem>
-                                  <SelectItem value="愛知県">愛知県</SelectItem>
-                                  <SelectItem value="三重県">三重県</SelectItem>
-                                  <SelectItem value="滋賀県">滋賀県</SelectItem>
-                                  <SelectItem value="京都府">京都府</SelectItem>
-                                  <SelectItem value="大阪府">大阪府</SelectItem>
-                                  <SelectItem value="兵庫県">兵庫県</SelectItem>
-                                  <SelectItem value="奈良県">奈良県</SelectItem>
-                                  <SelectItem value="和歌山県">和歌山県</SelectItem>
-                                  <SelectItem value="鳥取県">鳥取県</SelectItem>
-                                  <SelectItem value="島根県">島根県</SelectItem>
-                                  <SelectItem value="岡山県">岡山県</SelectItem>
-                                  <SelectItem value="広島県">広島県</SelectItem>
-                                  <SelectItem value="山口県">山口県</SelectItem>
-                                  <SelectItem value="徳島県">徳島県</SelectItem>
-                                  <SelectItem value="香川県">香川県</SelectItem>
-                                  <SelectItem value="愛媛県">愛媛県</SelectItem>
-                                  <SelectItem value="高知県">高知県</SelectItem>
-                                  <SelectItem value="福岡県">福岡県</SelectItem>
-                                  <SelectItem value="佐賀県">佐賀県</SelectItem>
-                                  <SelectItem value="長崎県">長崎県</SelectItem>
-                                  <SelectItem value="熊本県">熊本県</SelectItem>
-                                  <SelectItem value="大分県">大分県</SelectItem>
-                                  <SelectItem value="宮崎県">宮崎県</SelectItem>
-                                  <SelectItem value="鹿児島県">鹿児島県</SelectItem>
-                                  <SelectItem value="沖縄県">沖縄県</SelectItem>
-                                </SelectContent>
-                              </Select>
-                              <Input
-                                placeholder="市区町村"
-                                value={city}
-                                onChange={(e) => setCity(e.target.value)}
-                                style={{ fontSize: '16px' }}
-                              />
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* 家族構成 */}
-                        <div className="space-y-4">
-                          <div className="flex items-center space-x-2 pt-4 border-t">
-                            <Baby className="h-4 w-4 text-green-600" />
-                            <h3 className="font-medium text-green-900">家族構成</h3>
-                          </div>
-                          
-                          <RadioGroup value={familyStructure} onValueChange={setFamilyStructure}>
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="単身" id="single" />
-                              <Label htmlFor="single" className="text-sm">単身</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="夫婦のみ" id="couple" />
-                              <Label htmlFor="couple" className="text-sm">夫婦のみ</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="子どもがいる家庭" id="family_with_children" />
-                              <Label htmlFor="family_with_children" className="text-sm">子どもがいる家庭</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="ひとり親世帯" id="single_parent" />
-                              <Label htmlFor="single_parent" className="text-sm">ひとり親世帯</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="三世代同居" id="three_generation" />
-                              <Label htmlFor="three_generation" className="text-sm">三世代同居</Label>
-                            </div>
-                          </RadioGroup>
-
-                          {/* 子どもの詳細情報 */}
-                          {(familyStructure === '子どもがいる家庭' || familyStructure === 'ひとり親世帯' || familyStructure === '三世代同居') && (
-                            <motion.div
-                              initial={{ opacity: 0, height: 0 }}
-                              animate={{ opacity: 1, height: 'auto' }}
-                              className="space-y-4 p-4 bg-green-50 border border-green-200 rounded-lg"
-                            >
-                              <h4 className="font-medium text-green-900">お子さまについて</h4>
-                              
-                              <div className="space-y-2">
-                                <Label className="text-sm font-medium">お子さまの人数</Label>
-                                <Select value={childrenCount} onValueChange={setChildrenCount}>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="人数を選択" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="1人">1人</SelectItem>
-                                    <SelectItem value="2人">2人</SelectItem>
-                                    <SelectItem value="3人">3人</SelectItem>
-                                    <SelectItem value="4人">4人</SelectItem>
-                                    <SelectItem value="5人以上">5人以上</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </div>
-
-                              <div className="space-y-2">
-                                <Label className="text-sm font-medium">お子さまの年齢層（複数選択可）</Label>
-                                <div className="grid grid-cols-2 gap-2">
-                                  {[
-                                    { value: '乳児（0-1歳）', label: '乳児（0-1歳）' },
-                                    { value: '幼児（2-3歳）', label: '幼児（2-3歳）' },
-                                    { value: '未就学児（4-6歳）', label: '未就学児（4-6歳）' },
-                                    { value: '小学生（7-12歳）', label: '小学生（7-12歳）' },
-                                    { value: '中学生（13-15歳）', label: '中学生（13-15歳）' },
-                                    { value: '高校生（16-18歳）', label: '高校生（16-18歳）' },
-                                    { value: '成人（19歳以上）', label: '成人（19歳以上）' }
-                                  ].map((ageGroup) => (
-                                    <div key={ageGroup.value} className="flex items-center space-x-2">
-                                      <Checkbox
-                                        id={ageGroup.value}
-                                        checked={childrenAgeGroups.includes(ageGroup.value)}
-                                        onCheckedChange={(checked) => {
-                                          if (checked) {
-                                            setChildrenAgeGroups([...childrenAgeGroups, ageGroup.value]);
-                                          } else {
-                                            setChildrenAgeGroups(childrenAgeGroups.filter(g => g !== ageGroup.value));
-                                          }
-                                        }}
-                                      />
-                                      <Label htmlFor={ageGroup.value} className="text-xs">
-                                        {ageGroup.label}
-                                      </Label>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            </motion.div>
-                          )}
-                        </div>
-
-                        {/* 職業・収入 */}
-                        <div className="space-y-4">
-                          <div className="flex items-center space-x-2 pt-4 border-t">
-                            <Briefcase className="h-4 w-4 text-purple-600" />
-                            <h3 className="font-medium text-purple-900">職業・収入</h3>
-                          </div>
-                          
-                          <div className="space-y-2">
-                            <Label className="text-sm font-medium">職業</Label>
-                            <Select value={occupation} onValueChange={setOccupation}>
-                              <SelectTrigger>
-                                <SelectValue placeholder="職業を選択してください" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="会社員（正社員）">会社員（正社員）</SelectItem>
-                                <SelectItem value="契約社員・派遣社員">契約社員・派遣社員</SelectItem>
-                                <SelectItem value="公務員">公務員</SelectItem>
-                                <SelectItem value="自営業・フリーランス">自営業・フリーランス</SelectItem>
-                                <SelectItem value="パート・アルバイト">パート・アルバイト</SelectItem>
-                                <SelectItem value="学生">学生</SelectItem>
-                                <SelectItem value="主婦・主夫">主婦・主夫</SelectItem>
-                                <SelectItem value="退職・年金受給者">退職・年金受給者</SelectItem>
-                                <SelectItem value="その他">その他</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-
-                          <div className="space-y-2">
-                            <Label className="text-sm font-medium">世帯年収</Label>
-                            <Select value={householdIncome} onValueChange={setHouseholdIncome}>
-                              <SelectTrigger>
-                                <SelectValue placeholder="世帯年収を選択してください" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="300万円未満">300万円未満</SelectItem>
-                                <SelectItem value="300万円～500万円未満">300万円～500万円未満</SelectItem>
-                                <SelectItem value="500万円～700万円未満">500万円～700万円未満</SelectItem>
-                                <SelectItem value="700万円～1000万円未満">700万円～1000万円未満</SelectItem>
-                                <SelectItem value="1000万円～1500万円未満">1000万円～1500万円未満</SelectItem>
-                                <SelectItem value="1500万円以上">1500万円以上</SelectItem>
-                                <SelectItem value="回答しない">回答しない</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
-
-                        {/* 買い物行動 */}
-                        <div className="space-y-4">
-                          <div className="flex items-center space-x-2 pt-4 border-t">
-                            <ShoppingCart className="h-4 w-4 text-orange-600" />
-                            <h3 className="font-medium text-orange-900">買い物行動</h3>
-                          </div>
-                          
-                          <div className="space-y-2">
-                            <Label className="text-sm font-medium">買い物頻度</Label>
-                            <Select value={shoppingFrequency} onValueChange={setShoppingFrequency}>
-                              <SelectTrigger>
-                                <SelectValue placeholder="頻度を選択してください" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="週1回未満">週1回未満</SelectItem>
-                                <SelectItem value="週1-2回">週1-2回</SelectItem>
-                                <SelectItem value="週3-4回">週3-4回</SelectItem>
-                                <SelectItem value="ほぼ毎日">ほぼ毎日</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-
-                          <div className="space-y-2">
-                            <Label className="text-sm font-medium">主な買い物時間</Label>
-                            <Select value={primaryShoppingTime} onValueChange={setPrimaryShoppingTime}>
-                              <SelectTrigger>
-                                <SelectValue placeholder="時間帯を選択してください" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="朝（6-9時）">朝（6-9時）</SelectItem>
-                                <SelectItem value="午前（9-12時）">午前（9-12時）</SelectItem>
-                                <SelectItem value="午後（12-18時）">午後（12-18時）</SelectItem>
-                                <SelectItem value="夜（18-22時）">夜（18-22時）</SelectItem>
-                                <SelectItem value="深夜（22時以降）">深夜（22時以降）</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-
-                          <div className="space-y-2">
-                            <Label className="text-sm font-medium">1回の平均買い物金額</Label>
-                            <Select value={averageSpending} onValueChange={setAverageSpending}>
-                              <SelectTrigger>
-                                <SelectValue placeholder="金額を選択してください" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="1,000円未満">1,000円未満</SelectItem>
-                                <SelectItem value="1,000円～3,000円">1,000円～3,000円</SelectItem>
-                                <SelectItem value="3,000円～5,000円">3,000円～5,000円</SelectItem>
-                                <SelectItem value="5,000円～10,000円">5,000円～10,000円</SelectItem>
-                                <SelectItem value="10,000円以上">10,000円以上</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-
-                          <div className="space-y-2">
-                            <Label className="text-sm font-medium">買い物スタイル</Label>
-                            <Select value={shoppingStyle} onValueChange={setShoppingStyle}>
-                              <SelectTrigger>
-                                <SelectValue placeholder="スタイルを選択してください" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="計画的（リストを作成）">計画的（リストを作成）</SelectItem>
-                                <SelectItem value="衝動的（その場で判断）">衝動的（その場で判断）</SelectItem>
-                                <SelectItem value="セール重視">セール重視</SelectItem>
-                                <SelectItem value="品質重視">品質重視</SelectItem>
-                                <SelectItem value="利便性重視">利便性重視</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
               </Card>
 
               {submitError && (

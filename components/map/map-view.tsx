@@ -860,9 +860,11 @@ export function MapView() {
 
               {/* カード内容 */}
               <div className="p-4 space-y-3">
-                {/* イベント名 */}
-                <h3 className="text-lg font-bold text-gray-900 line-clamp-2">
-                  {post.event_name || post.content}
+                {/* イベント名 - 🔥 20文字制限、テキストカラー変更 */}
+                <h3 className="text-lg font-bold line-clamp-2" style={{ color: '#73370c' }}>
+                  {(post.event_name || post.content).length > 20 
+                    ? `${(post.event_name || post.content).substring(0, 20)}...` 
+                    : (post.event_name || post.content)}
                 </h3>
 
                 {/* 開催場所 */}
