@@ -23,7 +23,7 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-white relative overflow-x-hidden">
+    <div className="min-h-screen bg-[#fef3e7] relative overflow-x-hidden">
       {/* 背景装飾 - 祭り・マルシェをイメージした装飾パターン */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden opacity-40">
         {/* グリッドパターン */}
@@ -70,7 +70,7 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
               <img 
                 src="https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png" 
                 alt="トクドク" 
-                className="h-10 w-10 sm:h-12 sm:w-12 drop-shadow-md"
+                className="h-12 w-12 sm:h-14 sm:w-14 drop-shadow-md"
               />
             </div>
             
@@ -173,6 +173,17 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
 
         {/* ヒーローセクション */}
         <section className="relative min-h-screen flex items-center justify-center px-4 sm:px-8 overflow-hidden">
+          {/* 背景画像（60%ぼかし） */}
+          <div 
+            className="absolute inset-0 bg-cover bg-center"
+            style={{
+              backgroundImage: 'url(https://res.cloudinary.com/dz9trbwma/image/upload/v1761712808/11_%E7%A5%AD%E3%82%8A_%E5%A4%8F%E7%A5%AD%E3%82%8A%E3%81%AE%E6%A7%98%E5%AD%90_oxlvol.jpg)',
+              filter: 'blur(8px)',
+            }}
+          />
+          {/* オーバーレイ（テキストの可読性向上） */}
+          <div className="absolute inset-0 bg-[#fef3e7]/60" />
+          
           <div className="container mx-auto max-w-6xl relative z-10 pt-24 pb-16">
             <motion.div
               initial={{ opacity: 0, y: 30 }}
@@ -185,21 +196,21 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.8, delay: 0.2 }}
-                  className="text-base sm:text-lg text-[#73370c] font-bold tracking-wider"
-                >
-                  いつもの街に、新しい発見を
+                  className="text-2xl sm:text-3xl text-[#73370c] font-bold tracking-wider"
+                > 
+                  いつもの街に、<br/>新しい発見を
                 </motion.p>
 
                 <motion.h1 
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.8, delay: 0.4 }}
-                  className="text-4xl sm:text-6xl lg:text-8xl font-extrabold leading-tight tracking-tight"
+                  className="text-2xl sm:text-4xl lg:text-6xl font-extrabold leading-tight tracking-tight"
                 >
-                  週末を、もっと
+                  わくわくする毎日を
                   <br />
                   <span className="text-[#73370c] relative inline-block">
-                    ワクワクに
+                    あなたにお届け
                     <motion.div
                       className="absolute -bottom-2 sm:-bottom-3 left-0 right-0 h-4 sm:h-6 bg-[#fef3e8] -z-10"
                       initial={{ scaleX: 0 }}
@@ -213,10 +224,9 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.8, delay: 0.8 }}
-                  className="text-xl sm:text-2xl lg:text-3xl text-gray-700 max-w-3xl mx-auto leading-relaxed font-semibold"
-                >
-                  地域のお祭り、マルシェ、ワークショップ。<br className="hidden sm:block" />
-                  近くで今開催中のイベントを、地図で見つけよう。
+                  className="text-xl sm:text-3xl lg:text-4xl text-gray-700 max-w-3xl mx-auto leading-relaxed font-semibold"
+                >     
+                  地図上でイベントが見つかるアプリ
                 </motion.p>
               </div>
 
@@ -232,9 +242,8 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
                   className="h-16 sm:h-20 px-12 sm:px-16 text-lg sm:text-2xl font-extrabold rounded-full shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 bg-[#73370c] hover:bg-[#5c2a0a]"
                 >
                   イベントを探す
-                  <ArrowRight className="ml-3 h-6 w-6 sm:h-7 sm:w-7" strokeWidth={3} />
                 </Button>
-                <p className="text-base sm:text-lg text-gray-600 mt-4 font-bold">
+                <p className="text-lg sm:text-xl text-gray-600 mt-4 font-bold">
                   無料で今すぐ始められます
                 </p>
               </motion.div>
@@ -306,11 +315,11 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
                   className="bg-white p-8 sm:p-10 rounded-3xl text-center shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100"
                 >
                   <div className="flex justify-center mb-6 sm:mb-8">
-                    <div className={`${item.iconBg} w-20 h-20 sm:w-24 sm:h-24 rounded-2xl flex items-center justify-center shadow-lg`}>
-                      <item.icon className={`h-10 w-10 sm:h-12 sm:w-12 ${item.iconColor}`} strokeWidth={2.5} />
+                    <div className={`${item.iconBg} w-24 h-24 sm:w-28 sm:h-28 rounded-2xl flex items-center justify-center shadow-lg`}>
+                      <item.icon className={`h-12 w-12 sm:h-14 sm:w-14 ${item.iconColor}`} strokeWidth={2.5} />
                     </div>
                   </div>
-                  <p className="text-lg sm:text-xl md:text-2xl text-gray-800 font-bold leading-relaxed">
+                  <p className="text-xl sm:text-2xl md:text-3xl text-gray-800 font-bold leading-relaxed">
                     {item.title}
                     <br />
                     {item.subtitle}
@@ -335,11 +344,11 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
                 <img 
                   src="https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png" 
                   alt="トクドク" 
-                  className="inline-block h-12 w-12 sm:h-16 sm:w-16 mr-3 mb-2"
+                  className="inline-block h-14 w-14 sm:h-18 sm:w-18 mr-3 mb-2"
                 />
                 が、<br className="sm:hidden" />その悩みを解決します
               </h2>
-              <p className="text-xl sm:text-2xl text-gray-600 mt-6 font-bold">
+              <p className="text-2xl sm:text-3xl text-gray-600 mt-6 font-bold">
                 地図でかんたん、イベント探し
               </p>
             </motion.div>
@@ -351,21 +360,21 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
                   icon: Search,
                   title: "地図で探す",
                   description: "現在地周辺のイベントが地図上に表示されます。タップで詳細を確認。",
-                  color: "bg-gradient-to-br from-blue-50 to-blue-100"
+                  imageUrl: "https://res.cloudinary.com/dz9trbwma/image/upload/v1761713420/9D142430-B6AB-4E56-A149-0F339DFFA4E9_1_201_a_hrl67s.jpg"
                 },
                 {
                   step: "02",
                   icon: MapPin,
                   title: "気になるイベントを発見",
                   description: "開催日時、場所、内容を一目で確認。気になるイベントをチェック。",
-                  color: "bg-gradient-to-br from-green-50 to-green-100"
+                  imageUrl: "https://res.cloudinary.com/dz9trbwma/image/upload/v1761713419/143311AB-FEF2-41C0-A0ED-26F02EF21D8A_1_201_a_qoxexk.jpg"
                 },
                 {
                   step: "03",
                   icon: Heart,
                   title: "週末を楽しむ",
                   description: "新しい出会い、発見、体験。いつもの街が特別な場所に。",
-                  color: "bg-gradient-to-br from-pink-50 to-pink-100"
+                  imageUrl: "https://res.cloudinary.com/dz9trbwma/image/upload/v1761712807/08_%E7%A5%AD%E3%82%8A_%E5%B1%8B%E5%8F%B0%E9%A2%A8%E6%99%AF_gen7np.jpg"
                 }
               ].map((item, index) => (
                 <motion.div
@@ -381,19 +390,20 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
                       STEP {item.step}
                     </div>
                     <h3 className="text-3xl sm:text-4xl font-extrabold mb-4 flex items-center justify-center md:justify-start gap-3">
-                      <item.icon className="h-9 w-9 sm:h-10 sm:w-10 text-[#73370c]" strokeWidth={2.5} />
+                      <item.icon className="h-11 w-11 sm:h-12 sm:w-12 text-[#73370c]" strokeWidth={2.5} />
                       {item.title}
                     </h3>
-                    <p className="text-lg sm:text-xl text-gray-600 leading-relaxed font-semibold">
+                    <p className="text-xl sm:text-2xl text-gray-600 leading-relaxed font-semibold">
                       {item.description}
                     </p>
                   </div>
                   
-                  <div className={`flex-1 ${item.color} rounded-3xl p-10 sm:p-14 flex items-center justify-center min-h-[320px] shadow-lg border border-gray-200`}>
-                    <div className="text-center">
-                      <item.icon className="h-28 w-28 sm:h-36 sm:w-36 text-gray-400 mx-auto" strokeWidth={1.5} />
-                      <p className="text-sm sm:text-base text-gray-500 mt-6 font-bold">※実際の画面イメージ</p>
-                    </div>
+                  <div className="flex-1 relative rounded-3xl overflow-hidden min-h-[320px] shadow-lg border border-gray-200">
+                    <img 
+                      src={item.imageUrl} 
+                      alt={item.title}
+                      className="w-full h-full object-cover"
+                    />
                   </div>
                 </motion.div>
               ))}
@@ -402,8 +412,18 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
         </section>
 
         {/* 特徴 */}
-        <section className="py-16 sm:py-24 px-4 sm:px-8 bg-gradient-to-b from-gray-50 to-white">
-          <div className="container mx-auto max-w-6xl">
+        <section className="relative py-16 sm:py-24 px-4 sm:px-8 overflow-hidden">
+          {/* 背景画像 */}
+          <div 
+            className="absolute inset-0 bg-cover bg-center opacity-20"
+            style={{
+              backgroundImage: 'url(https://res.cloudinary.com/dz9trbwma/image/upload/v1761712807/07_%E7%A5%AD%E3%82%8A_%E5%B1%8B%E5%8F%B0%E3%82%AF%E3%82%99%E3%83%AB%E3%83%A1_wwmiek.jpg)',
+            }}
+          />
+          {/* オーバーレイ */}
+          <div className="absolute inset-0 bg-gradient-to-b from-white/90 to-[#fef3e7]/90" />
+          
+          <div className="container mx-auto max-w-6xl relative z-10">
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -415,7 +435,7 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
                 <img 
                   src="https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png" 
                   alt="トクドク" 
-                  className="inline-block h-12 w-12 sm:h-16 sm:w-16 mr-3 mb-2"
+                  className="inline-block h-14 w-14 sm:h-18 sm:w-18 mr-3 mb-2"
                 />
                 の特徴
               </h2>
@@ -462,13 +482,13 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
                   viewport={{ once: true }}
                   className="bg-white p-8 sm:p-10 rounded-3xl hover:shadow-xl transition-all duration-300 border border-gray-100 text-center flex flex-col items-center"
                 >
-                  <div className="bg-[#fef3e8] w-16 h-16 sm:w-18 sm:h-18 rounded-2xl flex items-center justify-center mb-5 shadow-md">
-                    <feature.icon className="h-8 w-8 sm:h-9 sm:w-9 text-[#73370c]" strokeWidth={2.5} />
+                  <div className="bg-[#fef3e8] w-20 h-20 sm:w-22 sm:h-22 rounded-2xl flex items-center justify-center mb-5 shadow-md">
+                    <feature.icon className="h-10 w-10 sm:h-11 sm:w-11 text-[#73370c]" strokeWidth={2.5} />
                   </div>
                   <h3 className="text-xl sm:text-2xl font-extrabold mb-3">
                     {feature.title}
                   </h3>
-                  <p className="text-base sm:text-lg text-gray-600 font-semibold">
+                  <p className="text-lg sm:text-xl text-gray-600 font-semibold">
                     {feature.description}
                   </p>
                 </motion.div>
@@ -496,11 +516,11 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
                 いつもの街が、<br className="sm:hidden" />
                 もっと好きになる
               </h2>
-              <p className="text-xl sm:text-2xl lg:text-3xl text-gray-800 leading-relaxed max-w-3xl mx-auto font-bold">
+              <p className="text-2xl sm:text-3xl lg:text-4xl text-gray-800 leading-relaxed max-w-3xl mx-auto font-bold">
                 <img 
                   src="https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png" 
                   alt="トクドク" 
-                  className="inline-block h-10 w-10 sm:h-12 sm:w-12 mr-2 mb-1"
+                  className="inline-block h-12 w-12 sm:h-14 sm:w-14 mr-2 mb-1"
                 />
                 は、地域のイベントを通じて、<br className="hidden sm:block" />
                 人と人、人と街をつなぐプラットフォームです。<br />
@@ -512,8 +532,18 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
         </section>
 
         {/* 最終CTA */}
-        <section className="py-16 sm:py-24 px-4 sm:px-8 bg-white">
-          <div className="container mx-auto max-w-4xl text-center">
+        <section className="relative py-16 sm:py-24 px-4 sm:px-8 overflow-hidden">
+          {/* 背景画像 */}
+          <div 
+            className="absolute inset-0 bg-cover bg-center opacity-30"
+            style={{
+              backgroundImage: 'url(https://res.cloudinary.com/dz9trbwma/image/upload/v1761712807/10_%E5%9C%B0%E5%9F%9F%E3%81%AE%E5%A4%8F%E7%A5%AD%E3%82%8A_zi3gse.jpg)',
+            }}
+          />
+          {/* オーバーレイ */}
+          <div className="absolute inset-0 bg-gradient-to-br from-white/85 via-[#fef3e7]/85 to-white/85" />
+          
+          <div className="container mx-auto max-w-4xl text-center relative z-10">
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -535,11 +565,11 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
                   className="h-18 sm:h-24 px-14 sm:px-20 text-xl sm:text-3xl font-extrabold rounded-full shadow-2xl hover:shadow-3xl transform transition-all duration-300 bg-[#73370c] hover:bg-[#5c2a0a]"
                 >
                   無料で始める
-                  <ArrowRight className="ml-4 h-7 w-7 sm:h-9 sm:w-9" strokeWidth={3} />
+                  <ArrowRight className="ml-4 h-8 w-8 sm:h-10 sm:w-10" strokeWidth={3} />
                 </Button>
               </motion.div>
 
-              <p className="text-base sm:text-lg text-gray-600 font-bold">
+              <p className="text-lg sm:text-xl text-gray-600 font-bold">
                 アカウント登録不要 / 今すぐ使えます
               </p>
             </motion.div>
@@ -558,48 +588,48 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
                     className="h-12 w-12"
                   />
                 </div>
-                <p className="text-base text-gray-600 leading-relaxed font-semibold">
+                <p className="text-lg text-gray-600 leading-relaxed font-semibold">
                   地域のイベントを通じて、<br />
                   人と人、人と街をつなぐプラットフォーム
                 </p>
               </div>
               
-              <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <h4 className="font-extrabold mb-3 text-[#73370c] text-base">サービス</h4>
+                  <h4 className="font-extrabold mb-3 text-[#73370c] text-base sm:text-lg">サービス</h4>
                   <ul className="space-y-2">
                     <li>
-                      <Link href="/profile" className="text-gray-600 hover:text-[#73370c] transition-colors font-semibold">
+                      <Link href="/profile" className="text-gray-600 hover:text-[#73370c] transition-colors font-semibold text-sm sm:text-base">
                         マイページ
                       </Link>
                     </li>
                     <li>
-                      <Link href="/contact" className="text-gray-600 hover:text-[#73370c] transition-colors font-semibold">
+                      <Link href="/contact" className="text-gray-600 hover:text-[#73370c] transition-colors font-semibold text-sm sm:text-base">
                         問い合わせ
                       </Link>
                     </li>
                     <li>
-                      <Link href="/release-notes" className="text-gray-600 hover:text-[#73370c] transition-colors font-semibold">
+                      <Link href="/release-notes" className="text-gray-600 hover:text-[#73370c] transition-colors font-semibold text-sm sm:text-base">
                         リリースノート
                       </Link>
                     </li>
                   </ul>
                 </div>
                 <div>
-                  <h4 className="font-extrabold mb-3 text-[#73370c] text-base">規約</h4>
+                  <h4 className="font-extrabold mb-3 text-[#73370c] text-base sm:text-lg">規約</h4>
                   <ul className="space-y-2">
                     <li>
-                      <Link href="/terms/terms-of-service" className="text-gray-600 hover:text-[#73370c] transition-colors font-semibold">
+                      <Link href="/terms/terms-of-service" className="text-gray-600 hover:text-[#73370c] transition-colors font-semibold text-sm sm:text-base">
                         利用規約
                       </Link>
                     </li>
                     <li>
-                      <Link href="/terms/privacy-policy" className="text-gray-600 hover:text-[#73370c] transition-colors font-semibold">
+                      <Link href="/terms/privacy-policy" className="text-gray-600 hover:text-[#73370c] transition-colors font-semibold text-sm sm:text-base">
                         プライバシーポリシー
                       </Link>
                     </li>
                     <li>
-                      <Link href="/terms/service-policy" className="text-gray-600 hover:text-[#73370c] transition-colors font-semibold">
+                      <Link href="/terms/service-policy" className="text-gray-600 hover:text-[#73370c] transition-colors font-semibold text-sm sm:text-base">
                         サービスポリシー
                       </Link>
                     </li>
@@ -609,7 +639,7 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
             </div>
             
             <div className="pt-8 border-t text-center">
-              <p className="text-sm text-gray-500 font-semibold">
+              <p className="text-sm sm:text-base text-gray-500 font-semibold">
                 © 2025 トクドク All rights reserved.
               </p>
             </div>
@@ -685,16 +715,16 @@ export default function Home() {
         <div className="space-y-6">
           <div className="space-y-4">
             <div className="flex items-start gap-3">
-              <MapPin className="h-5 w-5 text-[#73370c] mt-0.5 flex-shrink-0" strokeWidth={2.5} />
-              <div className="text-sm text-gray-700">
+              <MapPin className="h-6 w-6 text-[#73370c] mt-0.5 flex-shrink-0" strokeWidth={2.5} />
+              <div className="text-sm sm:text-base text-gray-700">
                 <p className="font-bold mb-1">現在地周辺のイベントを表示</p>
                 <p className="text-gray-600 font-semibold">あなたの位置情報を使って、近くで開催中のイベントを地図上に表示します。</p>
               </div>
             </div>
             
             <div className="flex items-start gap-3">
-              <Calendar className="h-5 w-5 text-[#73370c] mt-0.5 flex-shrink-0" strokeWidth={2.5} />
-              <div className="text-sm text-gray-700">
+              <Calendar className="h-6 w-6 text-[#73370c] mt-0.5 flex-shrink-0" strokeWidth={2.5} />
+              <div className="text-sm sm:text-base text-gray-700">
                 <p className="font-bold mb-1">プライバシーを保護</p>
                 <p className="text-gray-600 font-semibold">位置情報はイベント検索のみに使用し、外部に共有されることはありません。</p>
               </div>
@@ -704,22 +734,22 @@ export default function Home() {
           <div className="space-y-3">
             <Button
               onClick={handleAllowLocation}
-              className="w-full bg-[#73370c] hover:bg-[#5c2a0a] text-white font-bold text-base"
+              className="w-full bg-[#73370c] hover:bg-[#5c2a0a] text-white font-bold text-base sm:text-lg py-6"
             >
-              <MapPin className="mr-2 h-5 w-5" strokeWidth={2.5} />
+              <MapPin className="mr-2 h-6 w-6" strokeWidth={2.5} />
               位置情報を許可してイベントを探す
             </Button>
             
             <Button
               onClick={handleDenyLocation}
               variant="outline"
-              className="w-full font-bold"
+              className="w-full font-bold text-base sm:text-lg py-6"
             >
               今はスキップ
             </Button>
           </div>
           
-          <p className="text-xs text-gray-500 text-center font-semibold">
+          <p className="text-xs sm:text-sm text-gray-500 text-center font-semibold">
             ※ブラウザの設定で位置情報の許可をONにしてください
           </p>
         </div>
