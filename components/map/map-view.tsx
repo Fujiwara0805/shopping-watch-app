@@ -196,6 +196,10 @@ export function MapView() {
   // 🔥 保存された位置情報を読み込む
   const [savedLocation, setSavedLocation] = useState<{lat: number, lng: number} | null>(null);
 
+  // 🔥 初回ロードフラグを追加（785行目付近）
+  const hasInitialLoadedRef = useRef(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
   useEffect(() => {
     // localStorageから位置情報を読み込む
     try {
@@ -528,15 +532,70 @@ export function MapView() {
     }
   }, [googleMapsLoaded, containerDimensions, mapInitialized, initializeMap]);
 
-  // 🔥 位置情報が取得できたら投稿データを取得（保存された位置情報も考慮）
+  // 🔥 初回ロード時に自動更新（fetchPostsの後に追加）
   useEffect(() => {
     const userLat = savedLocation?.lat || latitude;
     const userLng = savedLocation?.lng || longitude;
     
-    if (userLat && userLng && mapInitialized) {
+    if (userLat && userLng && mapInitialized && !hasInitialLoadedRef.current) {
+      hasInitialLoadedRef.current = true;
       fetchPosts();
     }
   }, [latitude, longitude, savedLocation, mapInitialized, fetchPosts]);
+
+  // 🔥 手動更新の処理（位置情報取得を含む）
+  const handleManualRefresh = async () => {
+    setIsRefreshing(true);
+    
+    // 位置情報を再取得
+    if ('geolocation' in navigator) {
+      try {
+        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
+          });
+        });
+
+        const locationData = {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          timestamp: Date.now(),
+          expiresAt: Date.now() + (60 * 60 * 1000)
+        };
+        localStorage.setItem('userLocation', JSON.stringify(locationData));
+        
+        setSavedLocation({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude
+        });
+
+        // 地図の中心を更新
+        if (map) {
+          const newCenter = new window.google.maps.LatLng(
+            position.coords.latitude,
+            position.coords.longitude
+          );
+          map.panTo(newCenter);
+          
+          // ユーザーマーカーも更新
+          if (userLocationMarker) {
+            userLocationMarker.setPosition(newCenter);
+          }
+        }
+      } catch (error) {
+        console.error('位置情報の取得に失敗:', error);
+      }
+    }
+    
+    // イベント情報を更新
+    await fetchPosts();
+    
+    setTimeout(() => {
+      setIsRefreshing(false);
+    }, 500);
+  };
 
   //  投稿データが更新されたらマーカーを作成（修正版）
   useEffect(() => {
@@ -787,15 +846,14 @@ export function MapView() {
             className="flex flex-col items-center"
           >
             <Button
-              onClick={() => {
-                fetchPosts();
-              }}
+              onClick={handleManualRefresh}
               size="icon"
-              className="h-12 w-12 rounded-full shadow-lg bg-[#73370c] hover:bg-[#5c2a0a] border-2 border-white"
+              disabled={isRefreshing || loadingPosts}
+              className="h-12 w-12 rounded-full shadow-lg bg-[#73370c] hover:bg-[#5c2a0a] border-2 border-white disabled:opacity-50"
             >
-              <RefreshCw className="h-6 w-6 text-white" />
+              <RefreshCw className={`h-6 w-6 text-white ${(isRefreshing || loadingPosts) ? 'animate-spin' : ''}`} />
             </Button>
-            <span className="text-sm font-bold text-gray-700 ">更新</span>
+            <span className="text-sm font-bold text-gray-700">更新</span>
           </motion.div>
 
           {/* 🔥 メモアイコン（新規追加） */}
@@ -816,6 +874,23 @@ export function MapView() {
           </motion.div>
         </div>
       )}
+
+      {/* �� 更新中の表示を追加（745行目付近、右上ボタンの前） */}
+      <AnimatePresence>
+        {(isRefreshing || loadingPosts) && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="absolute top-20 left-1/2 transform -translate-x-1/2 z-40 bg-white/95 backdrop-blur-sm px-6 py-3 rounded-full shadow-lg border border-gray-200"
+          >
+            <div className="flex items-center gap-2">
+              <RefreshCw className="h-4 w-4 text-[#73370c] animate-spin" />
+              <span className="text-sm font-bold text-[#73370c]">更新中...</span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {map && mapInitialized && (
         <div className="absolute bottom-8 left-2 z-30 space-y-2">

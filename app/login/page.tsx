@@ -2,12 +2,12 @@
 
 import { useSession, signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import AppLayout from "@/app/layout";
 import { GoogleIcon } from "@/components/common/icons/GoogleIcon";
 import { LineConsentModal } from "@/components/common/LineConsentModal";
-import { Loader2, AlertTriangle, Eye, EyeOff, ArrowLeft } from "lucide-react";
+import { Loader2, AlertTriangle, Eye, EyeOff, ArrowLeft, RefreshCw } from "lucide-react";
 import { motion } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
+import { AnimatePresence } from "framer-motion";
 
 const loginFormSchema = z.object({
   email: z.string().email({ message: "有効なメールアドレスを入力してください。" }),
@@ -109,15 +110,10 @@ export default function LoginPage() {
     setIsLoading(false);
   };
 
-  // 🔥 戻るボタンの処理
+  // 🔥 戻るボタンの処理を修正（112行目付近）
   const handleGoBack = () => {
-    // 履歴がある場合は前のページに戻る
-    if (window.history.length > 1) {
-      router.back();
-    } else {
-      // 履歴がない場合はトップページへ
-      router.push('/');
-    }
+    // 常にトップページ（LP画面）に遷移
+    router.push('/');
   };
 
   if (status === "loading" && !isLoading) {
@@ -282,7 +278,7 @@ export default function LoginPage() {
               </Link>
             </motion.div>
 
-            {/* 🔥 戻るボタン（修正） */}
+            {/* 🔥 戻るボタン（285行目付近） */}
             <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="mb-6">
               <Button
                 onClick={handleGoBack}
@@ -290,6 +286,7 @@ export default function LoginPage() {
                 className="w-full text-[#73370c]/70 hover:text-[#73370c] hover:bg-[#73370c]/5 text-sm sm:text-base py-4 flex items-center justify-center space-x-2 rounded-lg transition-colors border border-[#73370c]/10"
                 style={{ fontSize: '16px' }}
               >
+                <ArrowLeft className="h-4 w-4" />
                 <span>戻る</span>
               </Button>
             </motion.div>
