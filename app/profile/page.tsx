@@ -13,8 +13,7 @@ import { useSession, signOut } from 'next-auth/react';
 import { supabase } from '@/lib/supabaseClient';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
-import { getHunterLevel} from '@/lib/hunter-level';
-
+import { getHunterLevel } from '@/lib/hunter-level';
 
 interface AppProfile {
   id: string;
@@ -611,7 +610,7 @@ function ProfilePageContent() {
         </div>
       </div>
 
-      {/* �� 右下のボタングループ（マップと買い物メモ） */}
+      {/* 右下のボタングループ（マップと買い物メモ） */}
       <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-3">
         {/* マップボタン */}
         <motion.div
@@ -625,21 +624,6 @@ function ProfilePageContent() {
             className="h-14 w-14 rounded-full shadow-2xl bg-[#73370c]  text-white border-2 border-white"
           >
             <Map className="h-6 w-6" />
-          </Button>
-        </motion.div>
-
-        {/* 🔥 買い物メモボタン */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.3, delay: 0.2 }}
-        >
-          <Button
-            onClick={() => router.push('/memo')}
-            size="icon"
-            className="h-14 w-14 rounded-full shadow-2xl bg-[#73370c] ] text-white border-2 border-white"
-          >
-            <ShoppingBag className="h-6 w-6" />
           </Button>
         </motion.div>
       </div>
