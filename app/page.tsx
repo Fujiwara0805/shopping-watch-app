@@ -196,23 +196,24 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.8, delay: 0.2 }}
-                  className="text-2xl sm:text-3xl text-[#73370c] font-bold tracking-wider"
+                  className="text-xl sm:text-2xl md:text-3xl text-white font-bold tracking-wider drop-shadow-lg"
                 > 
-                  いつもの街に、<br/>新しい発見を
+                  大分県内のイベント情報を<br/>
+                  多数掲載中
                 </motion.p>
 
                 <motion.h1 
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.8, delay: 0.4 }}
-                  className="text-2xl sm:text-4xl lg:text-6xl font-extrabold leading-tight tracking-tight"
+                  className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl text-white font-bold leading-tight tracking-tight drop-shadow-lg"
                 >
-                  わくわくする毎日を
-                  <br />
-                  <span className="text-[#73370c] relative inline-block">
-                    あなたにお届け
+                  わくわくする日常を<br className="sm:hidden" />
+                  <br className="hidden sm:block" />
+                  <span className="text-white relative inline-block">
+                    あなたにお届けします
                     <motion.div
-                      className="absolute -bottom-2 sm:-bottom-3 left-0 right-0 h-4 sm:h-6 bg-[#fef3e8] -z-10"
+                      className="absolute -bottom-2 sm:-bottom-3 left-0 right-0 h-4 sm:h-6 bg-[#db2777] -z-10"
                       initial={{ scaleX: 0 }}
                       animate={{ scaleX: 1 }}
                       transition={{ duration: 0.8, delay: 1 }}
@@ -224,9 +225,9 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.8, delay: 0.8 }}
-                  className="text-xl sm:text-3xl lg:text-4xl text-gray-700 max-w-3xl mx-auto leading-relaxed font-semibold"
+                  className="text-xl sm:text-2xl md:text-3xl lg:text-4xl text-gray-800 max-w-3xl mx-auto leading-relaxed font-bold drop-shadow-md"
                 >     
-                  地図上でイベントが見つかるアプリ
+                  地図上で<br className="sm:hidden" />イベント情報が見つかる
                 </motion.p>
               </div>
 
@@ -277,7 +278,7 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
               viewport={{ once: true }}
               className="text-center mb-12 sm:mb-16"
             >
-              <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold mb-4 sm:mb-6 px-4">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold mb-4 sm:mb-6 px-4 text-gray-900">
                 こんな経験、<br className="sm:hidden" />ありませんか？
               </h2>
             </motion.div>
@@ -315,8 +316,8 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
                   className="bg-white p-8 sm:p-10 rounded-3xl text-center shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100"
                 >
                   <div className="flex justify-center mb-6 sm:mb-8">
-                    <div className={`${item.iconBg} w-24 h-24 sm:w-28 sm:h-28 rounded-2xl flex items-center justify-center shadow-lg`}>
-                      <item.icon className={`h-12 w-12 sm:h-14 sm:w-14 ${item.iconColor}`} strokeWidth={2.5} />
+                    <div className={`${item.iconBg} w-28 h-28 sm:w-32 sm:h-32 rounded-2xl flex items-center justify-center shadow-lg`}>
+                      <item.icon className={`h-14 w-14 sm:h-16 sm:w-16 ${item.iconColor}`} strokeWidth={2.5} />
                     </div>
                   </div>
                   <p className="text-xl sm:text-2xl md:text-3xl text-gray-800 font-bold leading-relaxed">
@@ -340,16 +341,16 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
               viewport={{ once: true }}
               className="text-center mb-12 sm:mb-20"
             >
-              <h2 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold mb-6">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold mb-6 text-gray-900">
                 <img 
                   src="https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png" 
                   alt="トクドク" 
-                  className="inline-block h-14 w-14 sm:h-18 sm:w-18 mr-3 mb-2"
+                  className="inline-block h-14 w-14 sm:h-16 sm:w-16 mr-3 mb-2"
                 />
                 が、<br className="sm:hidden" />その悩みを解決します
               </h2>
-              <p className="text-2xl sm:text-3xl text-gray-600 mt-6 font-bold">
-                地図でかんたん、イベント探し
+              <p className="text-xl sm:text-2xl md:text-3xl text-gray-600 mt-6 font-bold">
+                地図でかんたん、<br className="sm:hidden" />イベント探し
               </p>
             </motion.div>
 
@@ -389,16 +390,16 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
                     <div className="inline-block px-5 py-2 bg-[#fef3e8] text-[#73370c] rounded-full text-base font-extrabold mb-4 shadow-sm">
                       STEP {item.step}
                     </div>
-                    <h3 className="text-3xl sm:text-4xl font-extrabold mb-4 flex items-center justify-center md:justify-start gap-3">
+                    <h3 className="text-2xl sm:text-3xl font-extrabold mb-4 flex items-center justify-center md:justify-start gap-3 text-gray-900">
                       <item.icon className="h-11 w-11 sm:h-12 sm:w-12 text-[#73370c]" strokeWidth={2.5} />
                       {item.title}
                     </h3>
-                    <p className="text-xl sm:text-2xl text-gray-600 leading-relaxed font-semibold">
+                    <p className="text-lg sm:text-xl text-gray-600 leading-relaxed font-semibold">
                       {item.description}
                     </p>
                   </div>
                   
-                  <div className="flex-1 relative rounded-3xl overflow-hidden min-h-[320px] shadow-lg border border-gray-200">
+                  <div className="flex-1 relative rounded-3xl overflow-hidden min-h-[240px] sm:min-h-[280px] max-w-md mx-auto shadow-lg border border-gray-200">
                     <img 
                       src={item.imageUrl} 
                       alt={item.title}
@@ -431,11 +432,11 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
               viewport={{ once: true }}
               className="text-center mb-12 sm:mb-16"
             >
-              <h2 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold mb-4">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold mb-4 text-gray-900">
                 <img 
                   src="https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png" 
                   alt="トクドク" 
-                  className="inline-block h-14 w-14 sm:h-18 sm:w-18 mr-3 mb-2"
+                  className="inline-block h-14 w-14 sm:h-16 sm:w-16 mr-3 mb-2"
                 />
                 の特徴
               </h2>
@@ -446,32 +447,17 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
                 {
                   icon: MapPin,
                   title: "地図で見やすい",
-                  description: "現在地から近いイベントを地図上で一目で確認"
+                  description: "現在地から近いイベントを地図上で一目で確認できます"
                 },
                 {
                   icon: Calendar,
                   title: "リアルタイム更新",
-                  description: "今日・明日開催のイベントが常に最新状態"
-                },
-                {
-                  icon: Users,
-                  title: "地域とつながる",
-                  description: "地域の人と人をつなぐイベント情報が満載"
-                },
-                {
-                  icon: Bell,
-                  title: "見逃さない",
-                  description: "気になるイベントを通知でお知らせ"
+                  description: "今開催中のイベントが常に最新の状態で表示されます"
                 },
                 {
                   icon: Heart,
-                  title: "お気に入り登録",
-                  description: "気になるイベントを保存して後で確認"
-                },
-                {
-                  icon: Sparkles,
                   title: "完全無料",
-                  description: "登録も利用も完全無料で始められます"
+                  description: "登録も利用も完全無料で今すぐ始められます"
                 }
               ].map((feature, index) => (
                 <motion.div
@@ -482,13 +468,13 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
                   viewport={{ once: true }}
                   className="bg-white p-8 sm:p-10 rounded-3xl hover:shadow-xl transition-all duration-300 border border-gray-100 text-center flex flex-col items-center"
                 >
-                  <div className="bg-[#fef3e8] w-20 h-20 sm:w-22 sm:h-22 rounded-2xl flex items-center justify-center mb-5 shadow-md">
-                    <feature.icon className="h-10 w-10 sm:h-11 sm:w-11 text-[#73370c]" strokeWidth={2.5} />
+                  <div className="bg-[#fef3e8] w-24 h-24 sm:w-28 sm:h-28 rounded-2xl flex items-center justify-center mb-5 shadow-md">
+                    <feature.icon className="h-12 w-12 sm:h-14 sm:w-14 text-[#73370c]" strokeWidth={2.5} />
                   </div>
-                  <h3 className="text-xl sm:text-2xl font-extrabold mb-3">
+                  <h3 className="text-xl sm:text-2xl font-extrabold mb-3 text-gray-900">
                     {feature.title}
                   </h3>
-                  <p className="text-lg sm:text-xl text-gray-600 font-semibold">
+                  <p className="text-base sm:text-lg text-gray-600 font-semibold">
                     {feature.description}
                   </p>
                 </motion.div>
@@ -510,22 +496,15 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
               viewport={{ once: true }}
-              className="text-center space-y-8"
+              className="text-center space-y-6"
             >
-              <h2 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-tight">
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold leading-tight text-gray-900">
                 いつもの街が、<br className="sm:hidden" />
                 もっと好きになる
               </h2>
-              <p className="text-2xl sm:text-3xl lg:text-4xl text-gray-800 leading-relaxed max-w-3xl mx-auto font-bold">
-                <img 
-                  src="https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png" 
-                  alt="トクドク" 
-                  className="inline-block h-12 w-12 sm:h-14 sm:w-14 mr-2 mb-1"
-                />
-                は、地域のイベントを通じて、<br className="hidden sm:block" />
-                人と人、人と街をつなぐプラットフォームです。<br />
-                <br />
-                あなたの週末が、もっとワクワクする場所へ。
+              <p className="text-xl sm:text-2xl lg:text-3xl text-gray-800 leading-relaxed max-w-2xl mx-auto font-bold">
+                地域のイベントで、<br className="sm:hidden" />
+                人と街をつなぐ
               </p>
             </motion.div>
           </div>
@@ -551,7 +530,7 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
               viewport={{ once: true }}
               className="space-y-8"
             >
-              <h2 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-tight">
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold leading-tight text-gray-900">
                 さあ、新しい週末を<br className="sm:hidden" />始めよう
               </h2>
 

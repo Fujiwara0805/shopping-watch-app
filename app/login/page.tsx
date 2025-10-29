@@ -4,7 +4,6 @@ import { useSession, signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import AppLayout from "@/app/layout";
 import { GoogleIcon } from "@/components/common/icons/GoogleIcon";
 import { LineConsentModal } from "@/components/common/LineConsentModal";
 import { Loader2, AlertTriangle, Eye, EyeOff, ArrowLeft, RefreshCw } from "lucide-react";
@@ -118,7 +117,7 @@ export default function LoginPage() {
 
   if (status === "loading" && !isLoading) {
     return (
-      <AppLayout>
+      <>
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -127,13 +126,13 @@ export default function LoginPage() {
           <Loader2 className="h-16 w-16 animate-spin text-primary mb-6" />
           <p className="text-lg text-muted-foreground">読み込み中...</p>
         </motion.div>
-      </AppLayout>
+      </>
     );
   }
 
   if (status === "unauthenticated") {
     return (
-      <AppLayout>
+      <>
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -308,12 +307,12 @@ export default function LoginPage() {
           }}
           onConfirm={handleConfirmLineLogin}
         />
-      </AppLayout>
+      </>
     );
   }
 
   return (
-     <AppLayout>
+     <>
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -323,6 +322,6 @@ export default function LoginPage() {
           <p className="text-lg text-muted-foreground">ようこそ、{session?.user?.name || 'ユーザー'}さん</p>
           <p className="text-sm text-muted-foreground mt-2">まもなくリダイレクトします...</p>
         </motion.div>
-      </AppLayout>
+      </>
   );
 }
