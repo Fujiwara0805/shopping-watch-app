@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import AppLayout from "@/app/layout";
 import { GoogleIcon } from "@/components/common/icons/GoogleIcon";
 import { LineConsentModal } from "@/components/common/LineConsentModal";
-import { Loader2, AlertTriangle, Eye, EyeOff } from "lucide-react";
+import { Loader2, AlertTriangle, Eye, EyeOff, ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -109,8 +109,15 @@ export default function LoginPage() {
     setIsLoading(false);
   };
 
-  const handleContinueWithoutLogin = () => {
-    router.push("/map");
+  // 🔥 戻るボタンの処理
+  const handleGoBack = () => {
+    // 履歴がある場合は前のページに戻る
+    if (window.history.length > 1) {
+      router.back();
+    } else {
+      // 履歴がない場合はトップページへ
+      router.push('/');
+    }
   };
 
   if (status === "loading" && !isLoading) {
@@ -275,14 +282,15 @@ export default function LoginPage() {
               </Link>
             </motion.div>
 
+            {/* 🔥 戻るボタン（修正） */}
             <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="mb-6">
               <Button
-                onClick={handleContinueWithoutLogin}
+                onClick={handleGoBack}
                 variant="ghost"
                 className="w-full text-[#73370c]/70 hover:text-[#73370c] hover:bg-[#73370c]/5 text-sm sm:text-base py-4 flex items-center justify-center space-x-2 rounded-lg transition-colors border border-[#73370c]/10"
                 style={{ fontSize: '16px' }}
               >
-                <span>ログインせず続ける</span>
+                <span>戻る</span>
               </Button>
             </motion.div>
 

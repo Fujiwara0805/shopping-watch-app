@@ -4,7 +4,7 @@ import { useRef, useEffect, useState, useCallback } from 'react';
 import { useGeolocation } from '@/lib/hooks/use-geolocation';
 import { useGoogleMapsApi } from '@/components/providers/GoogleMapsApiProvider';
 import { Button } from '@/components/ui/button';
-import { MapPin, AlertTriangle, RefreshCw,  Calendar, Newspaper, User, MapPinIcon, X } from 'lucide-react';
+import { MapPin, AlertTriangle, RefreshCw,  Calendar, Newspaper, User, MapPinIcon, X, ShoppingBag } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
@@ -779,7 +779,7 @@ export function MapView() {
             <span className="text-sm font-bold text-gray-700 ">マイページ</span>
           </motion.div>
 
-          {/* 🔥 更新アイコン */}
+          {/* 更新アイコン */}
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -796,6 +796,23 @@ export function MapView() {
               <RefreshCw className="h-6 w-6 text-white" />
             </Button>
             <span className="text-sm font-bold text-gray-700 ">更新</span>
+          </motion.div>
+
+          {/* 🔥 メモアイコン（新規追加） */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.3, delay: 0.4 }}
+            className="flex flex-col items-center"
+          >
+            <Button
+              onClick={() => router.push('/memo')}
+              size="icon"
+              className="h-12 w-12 rounded-full shadow-lg bg-[#73370c] hover:bg-[#5c2a0a] border-2 border-white"
+            >
+              <ShoppingBag className="h-6 w-6 text-white" />
+            </Button>
+            <span className="text-sm font-bold text-gray-700 ">メモ</span>
           </motion.div>
         </div>
       )}
