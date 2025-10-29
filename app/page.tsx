@@ -182,7 +182,7 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
             }}
           />
           {/* オーバーレイ（テキストの可読性向上） */}
-          <div className="absolute inset-0 bg-[#73370c]/40" />
+          <div className="absolute inset-0 bg-[#73370c]/30" />
           
           <div className="container mx-auto max-w-6xl relative z-10 pt-24 pb-16">
             <motion.div
@@ -213,7 +213,7 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
                   <span className="text-[#fef3e7] relative inline-block">
                     あなたにお届けします
                     <motion.div
-                      className="absolute -bottom-2 sm:-bottom-3 left-0 right-0 h-4 sm:h-6 bg-[#db2777] -z-10"
+                      className="absolute -bottom-1 sm:-bottom-2 left-0 right-0 h-3 sm:h-4 bg-[#ec95b6] -z-10"
                       initial={{ scaleX: 0 }}
                       animate={{ scaleX: 1 }}
                       transition={{ duration: 0.8, delay: 1 }}
@@ -227,7 +227,7 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
                   transition={{ duration: 0.8, delay: 0.8 }}
                   className="text-xl sm:text-2xl md:text-3xl lg:text-4xl text-[#fef3e7] max-w-3xl mx-auto leading-relaxed font-bold drop-shadow-md"
                 >     
-                  地図上で<br className="sm:hidden" />イベント情報が見つかる
+                  マップ上で<br className="sm:hidden" />イベント情報が見つかる
                 </motion.p>
               </div>
 
@@ -286,25 +286,27 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
               {[
                 {
-                  icon: Calendar,
                   iconBg: "bg-gradient-to-br from-blue-100 to-blue-200",
                   iconColor: "text-blue-600",
                   title: "週末の予定が",
-                  subtitle: "いつも同じ"
+                  subtitle: "いつも同じ",
+                  imageUrl: "https://res.cloudinary.com/dz9trbwma/image/upload/v1761742896/4B7817B2-F6CE-432F-BEF1-36BA7C241197_cmkfyd.jpg"
                 },
                 {
                   icon: Search,
                   iconBg: "bg-gradient-to-br from-orange-100 to-orange-200",
                   iconColor: "text-orange-600",
                   title: "近所のイベント情報を",
-                  subtitle: "見逃してしまう"
+                  subtitle: "見逃してしまう",
+                  imageUrl: "https://res.cloudinary.com/dz9trbwma/image/upload/v1761742897/C3DB2F5B-BB68-4010-B661-57E46B377645_bkflgl.jpg"
                 },
                 {
                   icon: MapPin,
                   iconBg: "bg-gradient-to-br from-purple-100 to-purple-200",
                   iconColor: "text-purple-600",
                   title: "イベント情報が",
-                  subtitle: "バラバラで探しづらい"
+                  subtitle: "バラバラで探しづらい",
+                  imageUrl: "https://res.cloudinary.com/dz9trbwma/image/upload/v1761742897/4EC421D1-15B1-4598-827A-0AFD45700794_wux4rh.jpg"
                 }
               ].map((item, index) => (
                 <motion.div
@@ -316,8 +318,8 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
                   className="bg-[#fef3e7] p-8 sm:p-10 rounded-3xl text-center shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100"
                 >
                   <div className="flex justify-center mb-6 sm:mb-8">
-                    <div className={`${item.iconBg} w-28 h-28 sm:w-32 sm:h-32 rounded-2xl flex items-center justify-center shadow-lg`}>
-                      <item.icon className={`h-14 w-14 sm:h-16 sm:w-16 ${item.iconColor}`} strokeWidth={2.5} />
+                    <div className={`${item.iconBg} w-40 h-40 sm:w-48 sm:h-48 rounded-2xl flex items-center justify-center shadow-lg`}>
+                      <img src={item.imageUrl} alt={item.title} className="h-full w-full object-cover" />
                     </div>
                   </div>
                   <p className="text-xl sm:text-2xl md:text-3xl text-[#73370c] font-bold leading-relaxed">
@@ -361,14 +363,14 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
                   icon: Search,
                   title: "地図で探す",
                   description: "地図上でイベント情報を確認",
-                  imageUrl: "https://res.cloudinary.com/dz9trbwma/image/upload/v1761713420/9D142430-B6AB-4E56-A149-0F339DFFA4E9_1_201_a_hrl67s.jpg"
+                  imageUrl: "https://res.cloudinary.com/dz9trbwma/image/upload/v1761742897/1A7F75AD-84B0-45C6-87EF-1EC6EEF1A4EB_1_201_a_gulzoo.jpg"
                 },
                 {
                   step: "02",
                   icon: MapPin,
                   title: "気になるイベントをタップ",
                   description: "タップすると画面下にイベント情報が表示",
-                  imageUrl: "https://res.cloudinary.com/dz9trbwma/image/upload/v1761713419/143311AB-FEF2-41C0-A0ED-26F02EF21D8A_1_201_a_qoxexk.jpg"
+                  imageUrl: "https://res.cloudinary.com/dz9trbwma/image/upload/v1761742896/EA2E63F9-7E6A-47EF-AF57-5EECDE999271_1_201_a_c95qf8.jpg"
                 },
                 {
                   step: "03",

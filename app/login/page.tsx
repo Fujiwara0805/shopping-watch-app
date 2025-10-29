@@ -285,8 +285,7 @@ export default function LoginPage() {
                 className="w-full text-[#73370c]/70 hover:text-[#73370c] hover:bg-[#73370c]/5 text-sm sm:text-base py-4 flex items-center justify-center space-x-2 rounded-lg transition-colors border border-[#73370c]/10"
                 style={{ fontSize: '16px' }}
               >
-                <ArrowLeft className="h-4 w-4" />
-                <span>戻る</span>
+                <span>トップページに戻る</span>
               </Button>
             </motion.div>
 
