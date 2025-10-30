@@ -496,7 +496,7 @@ export function MapView() {
         zoom: (savedLocation || (latitude && longitude)) ? 15 : 13, // 🔥 14→15, 12→13にズームアップ
         disableDefaultUI: true,
         zoomControl: true,
-        gestureHandling: 'cooperative',
+        gestureHandling: 'greedy', // 🔥 'cooperative' → 'greedy' に変更（1本指で地図操作可能に）
         mapTypeId: window.google.maps.MapTypeId.ROADMAP,
       };
 
