@@ -182,7 +182,7 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
             }}
           />
           {/* オーバーレイ（テキストの可読性向上） */}
-          <div className="absolute inset-0 bg-[#73370c]/30" />
+          <div className="absolute inset-0 bg-[black]/60" />
           
           <div className="container mx-auto max-w-6xl relative z-10 pt-24 pb-16">
             <motion.div
@@ -296,7 +296,7 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
                   icon: Search,
                   iconBg: "bg-gradient-to-br from-orange-100 to-orange-200",
                   iconColor: "text-orange-600",
-                  title: "近所のイベント情報を",
+                  title: "イベント情報を",
                   subtitle: "見逃してしまう",
                   imageUrl: "https://res.cloudinary.com/dz9trbwma/image/upload/v1761742897/C3DB2F5B-BB68-4010-B661-57E46B377645_bkflgl.jpg"
                 },
@@ -304,8 +304,8 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
                   icon: MapPin,
                   iconBg: "bg-gradient-to-br from-purple-100 to-purple-200",
                   iconColor: "text-purple-600",
-                  title: "イベント情報が",
-                  subtitle: "バラバラで探しづらい",
+                  title: "情報が煩雑で",
+                  subtitle: "探しづらい",
                   imageUrl: "https://res.cloudinary.com/dz9trbwma/image/upload/v1761742897/4EC421D1-15B1-4598-827A-0AFD45700794_wux4rh.jpg"
                 }
               ].map((item, index) => (
