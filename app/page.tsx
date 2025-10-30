@@ -269,8 +269,18 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
         </section>
 
         {/* 課題提起セクション */}
-        <section className="py-16 sm:py-24 px-4 sm:px-8 bg-gradient-to-b from-gray-50 to-white relative">
-          <div className="container mx-auto max-w-5xl">
+        <section className="py-16 sm:py-24 px-4 sm:px-8 relative overflow-hidden">
+          {/* 背景画像 */}
+          <div 
+            className="absolute inset-0 bg-cover bg-center opacity-20"
+            style={{
+              backgroundImage: 'url(https://res.cloudinary.com/dz9trbwma/image/upload/v1761796856/02_%E3%83%9E%E3%83%AB%E3%82%B7%E3%82%A7_%E9%A7%85%E5%89%8D%E3%83%86%E3%83%B3%E3%83%88%E4%BC%9A%E5%A0%B4_tr1hno.webp)',
+            }}
+          />
+          {/* オーバーレイ */}
+          <div className="absolute inset-0 bg-gradient-to-b from-gray-30/50 to-white/50" />
+          
+          <div className="container mx-auto max-w-5xl relative z-10">
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -334,8 +344,18 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
         </section>
 
         {/* 解決策提示 */}
-        <section className="py-16 sm:py-24 px-4 sm:px-8 bg-white">
-          <div className="container mx-auto max-w-6xl">
+        <section className="py-16 sm:py-24 px-4 sm:px-8 relative overflow-hidden">
+          {/* 背景画像 */}
+          <div 
+            className="absolute inset-0 bg-cover bg-center opacity-20"
+            style={{
+              backgroundImage: 'url(https://res.cloudinary.com/dz9trbwma/image/upload/v1761796856/01_%E3%83%9E%E3%83%AB%E3%82%B7%E3%82%A7_%E5%B1%8B%E5%A4%96%E5%B8%82%E5%A0%B4%E5%BB%BA%E7%AF%89_cljqy8.jpg)',
+            }}
+          />
+          {/* オーバーレイ */}
+          <div className="absolute inset-0 bg-white/40" />
+          
+          <div className="container mx-auto max-w-6xl relative z-10">
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
