@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, MapPin, Users, Sparkles, Calendar, Menu, X, Heart, Search, Bell } from 'lucide-react';
+import { MapPin,  Calendar, Menu, X, Heart, Search, Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CustomModal } from '@/components/ui/custom-modal';
 
@@ -182,7 +182,7 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
             }}
           />
           {/* オーバーレイ（テキストの可読性向上） */}
-          <div className="absolute inset-0 bg-[black]/60" />
+          <div className="absolute inset-0 bg-[black]/20" />
           
           <div className="container mx-auto max-w-6xl relative z-10 pt-24 pb-16">
             <motion.div
