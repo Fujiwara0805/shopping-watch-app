@@ -268,81 +268,6 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
           </div>
         </section>
 
-        {/* 課題提起セクション */}
-        <section className="py-16 sm:py-24 px-4 sm:px-8 relative overflow-hidden">
-          {/* 背景画像 */}
-          <div 
-            className="absolute inset-0 bg-cover bg-center opacity-20"
-            style={{
-              backgroundImage: 'url(https://res.cloudinary.com/dz9trbwma/image/upload/v1761796856/02_%E3%83%9E%E3%83%AB%E3%82%B7%E3%82%A7_%E9%A7%85%E5%89%8D%E3%83%86%E3%83%B3%E3%83%88%E4%BC%9A%E5%A0%B4_tr1hno.webp)',
-            }}
-          />
-          {/* オーバーレイ */}
-          <div className="absolute inset-0 bg-gradient-to-b from-gray-30/50 to-white/50" />
-          
-          <div className="container mx-auto max-w-5xl relative z-10">
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8 }}
-              viewport={{ once: true }}
-              className="text-center mb-12 sm:mb-16"
-            >
-              <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold mb-4 sm:mb-6 px-4 text-[#73370c]">
-                こんな経験、<br className="sm:hidden" />ありませんか？
-              </h2>
-            </motion.div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
-              {[
-                {
-                  iconBg: "bg-gradient-to-br from-blue-100 to-blue-200",
-                  iconColor: "text-blue-600",
-                  title: "週末の予定が",
-                  subtitle: "いつも同じ",
-                  imageUrl: "https://res.cloudinary.com/dz9trbwma/image/upload/v1761742896/4B7817B2-F6CE-432F-BEF1-36BA7C241197_cmkfyd.jpg"
-                },
-                {
-                  icon: Search,
-                  iconBg: "bg-gradient-to-br from-orange-100 to-orange-200",
-                  iconColor: "text-orange-600",
-                  title: "イベント情報を",
-                  subtitle: "見逃してしまう",
-                  imageUrl: "https://res.cloudinary.com/dz9trbwma/image/upload/v1761742897/C3DB2F5B-BB68-4010-B661-57E46B377645_bkflgl.jpg"
-                },
-                {
-                  icon: MapPin,
-                  iconBg: "bg-gradient-to-br from-purple-100 to-purple-200",
-                  iconColor: "text-purple-600",
-                  title: "情報が煩雑で",
-                  subtitle: "探しづらい",
-                  imageUrl: "https://res.cloudinary.com/dz9trbwma/image/upload/v1761742897/4EC421D1-15B1-4598-827A-0AFD45700794_wux4rh.jpg"
-                }
-              ].map((item, index) => (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: index * 0.1 }}
-                  viewport={{ once: true }}
-                  className="bg-[#fef3e7] p-8 sm:p-10 rounded-3xl text-center shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100"
-                >
-                  <div className="flex justify-center mb-6 sm:mb-8">
-                    <div className={`${item.iconBg} w-40 h-40 sm:w-48 sm:h-48 rounded-2xl flex items-center justify-center shadow-lg`}>
-                      <img src={item.imageUrl} alt={item.title} className="h-full w-full object-cover" />
-                    </div>
-                  </div>
-                  <p className="text-xl sm:text-2xl md:text-3xl text-[#73370c] font-bold leading-relaxed">
-                    {item.title}
-                    <br />
-                    {item.subtitle}
-                  </p>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </section>
-
         {/* 解決策提示 */}
         <section className="py-16 sm:py-24 px-4 sm:px-8 relative overflow-hidden">
           {/* 背景画像 */}
@@ -369,7 +294,7 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
                   alt="トクドク" 
                   className="inline-block h-20 w-20 sm:h-20 sm:w-20 mr-3 mb-2"
                 />
-                が、<br className="sm:hidden" />その悩みを解決します
+                使い方
               </h2>
               <p className="text-xl sm:text-2xl md:text-3xl text-gray-600 mt-6 font-bold">
                 地図でかんたん、イベント探し
