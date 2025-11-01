@@ -261,7 +261,7 @@ export function FAQStructuredData() {
       },
       {
         '@type': 'Question',
-        name': 'アカウント登録は必要ですか？',
+        name: 'アカウント登録は必要ですか？',
         acceptedAnswer: {
           '@type': 'Answer',
           text: 'イベント検索にアカウント登録は不要です。今すぐマップを開いてイベントを探し始めることができます。ただし、イベント情報の投稿やお気に入り機能を使用する場合は、アカウント登録が必要です。',
