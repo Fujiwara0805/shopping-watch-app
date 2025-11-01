@@ -1,22 +1,70 @@
 {
   "name": "トクドク - 地域イベント発見アプリ",
   "short_name": "トクドク",
-  "description": "地域のお祭り、マルシェ、ワークショップを地図で発見！現在地から近いイベントをかんたん検索。週末の予定探しに最適な、完全無料の地域密着イベントアプリです。",
+  "description": "大分県内のお祭り、マルシェ、ワークショップを地図で発見！現在地から近いイベントをかんたん検索。週末の予定探しに最適な、完全無料の地域密着イベントアプリです。リアルタイムで更新される最新イベント情報をチェックしよう。",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "orientation": "portrait",
   "background_color": "#ffffff",
   "theme_color": "#73370c",
+  "lang": "ja",
+  "dir": "ltr",
+  "categories": ["lifestyle", "events", "local", "community"],
   "icons": [
     {
       "src": "https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png",
       "type": "image/png",
-      "sizes": "192x192"
+      "sizes": "192x192",
+      "purpose": "any"
     },
     {
       "src": "https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "https://res.cloudinary.com/dz9trbwma/image/upload/v1761742897/1A7F75AD-84B0-45C6-87EF-1EC6EEF1A4EB_1_201_a_gulzoo.jpg",
+      "type": "image/jpeg",
+      "sizes": "1170x2532",
+      "form_factor": "narrow"
+    },
+    {
+      "src": "https://res.cloudinary.com/dz9trbwma/image/upload/v1761742896/EA2E63F9-7E6A-47EF-AF57-5EECDE999271_1_201_a_c95qf8.jpg",
+      "type": "image/jpeg",
+      "sizes": "1170x2532",
+      "form_factor": "narrow"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "イベントマップを開く",
+      "short_name": "マップ",
+      "description": "地図でイベントを探す",
+      "url": "/map",
+      "icons": [
+        {
+          "src": "https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "イベント一覧",
+      "short_name": "一覧",
+      "description": "最新のイベント情報",
+      "url": "/events",
+      "icons": [
+        {
+          "src": "https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
     }
   ]
 }

@@ -54,6 +54,24 @@
 | バックエンド | Supabase / PostgreSQL（PostGIS） / NextAuth.js |
 | 外部API | Google Maps API |
 | インフラ | Vercel（ホスティング） / Supabase（DB・認証・ストレージ） |
+| SEO・最適化 | 構造化データ(JSON-LD) / AI検索対応 / PWA |
+
+---
+
+## 🔍 SEO・AI検索エンジン最適化
+
+トクドクは、AI検索エンジン（ChatGPT、Claude、Gemini、Perplexity等）での検索にも最適化されています。
+
+### 実装内容
+
+- **構造化データ(JSON-LD)**: Organization, WebSite, WebApplication, LocalBusiness, FAQ スキーマ
+- **AI検索ボット対応**: GPTBot, ClaudeBot, Google-Extended, PerplexityBot などを明示的に許可
+- **リッチメタデータ**: 地理情報、カテゴリー、詳細な説明文など、AI が理解しやすいコンテキスト情報
+- **FAQページ**: 10個の構造化されたQ&A（AI が理解しやすい形式）
+- **サイトマップ最適化**: 時間単位での更新頻度設定（hourly）
+- **PWA対応**: オフライン機能、ホーム画面追加、プッシュ通知対応
+
+詳細は [SEO-OPTIMIZATION.md](./SEO-OPTIMIZATION.md) をご覧ください。
 
 ---
 

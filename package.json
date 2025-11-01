@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "seo:check": "echo 'SEO設定を確認しています...' && curl -s https://tokudoku.com/sitemap.xml | head -20",
+    "seo:robots": "echo 'robots.txt を確認しています...' && curl -s https://tokudoku.com/robots.txt"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",

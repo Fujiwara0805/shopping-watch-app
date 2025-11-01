@@ -82,6 +82,11 @@ const nextConfig = {
           {
             key: 'Referrer-Policy',
             value: 'origin-when-cross-origin'
+          },
+          // AI検索エンジン向けのヒント
+          {
+            key: 'X-Robots-Tag',
+            value: 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1'
           }
         ]
       },
@@ -93,7 +98,53 @@ const nextConfig = {
             value: 'public, max-age=0, must-revalidate'
           }
         ]
+      },
+      // AI検索エンジンがクロールしやすいように静的ファイルのキャッシュ設定
+      {
+        source: '/sitemap.xml',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=3600, s-maxage=3600'
+          },
+          {
+            key: 'Content-Type',
+            value: 'application/xml'
+          }
+        ]
+      },
+      {
+        source: '/robots.txt',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=3600, s-maxage=3600'
+          },
+          {
+            key: 'Content-Type',
+            value: 'text/plain'
+          }
+        ]
       }
+    ];
+  },
+  // SEO最適化: トレーリングスラッシュの統一
+  trailingSlash: false,
+  // SEO最適化: リダイレクト設定
+  async redirects() {
+    return [
+      // wwwなしに統一（SEOでの重複コンテンツ回避）
+      {
+        source: '/:path*',
+        has: [
+          {
+            type: 'host',
+            value: 'www.tokudoku.com',
+          },
+        ],
+        destination: 'https://tokudoku.com/:path*',
+        permanent: true,
+      },
     ];
   }
 };
