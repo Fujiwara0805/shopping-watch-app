@@ -411,7 +411,7 @@ export default function EventDetailPage() {
                       {event.store_name}
                     </p>
                     <p className="text-xs text-gray-500 mb-2">
-                      ※開催場所は未定、又は複数会場で行われる可能性有<br />
+                      ※開催場所が不明、又は複数会場で行われる場合は、<br />
                       詳細情報をご確認ください！
                     </p>
                     <Button
