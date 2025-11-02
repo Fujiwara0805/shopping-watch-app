@@ -294,7 +294,7 @@ export default function EventsPage() {
     }
 
     try {
-      const now = new Date().toISOString();
+      const now = new Date();
 
       let query = supabase
         .from('posts')
@@ -322,8 +322,7 @@ export default function EventsPage() {
           )
         `)
         .eq('is_deleted', false)
-        .eq('category', 'イベント情報')
-        .gt('expires_at', now);
+        .eq('category', 'イベント情報');
 
       // 検索フィルター
       if (search && search.trim()) {
@@ -378,6 +377,24 @@ export default function EventsPage() {
           author_user_id: authorUserId,
           distance
         };
+      });
+
+      // 🔥 終了したイベントを除外 - event_end_dateの23:59:59またはevent_start_dateの23:59:59で判定
+      processedPosts = processedPosts.filter((post: any) => {
+        // event_end_dateがある場合はその日の23:59:59まで表示
+        if (post.event_end_date) {
+          const endDate = new Date(post.event_end_date);
+          endDate.setHours(23, 59, 59, 999);
+          return now <= endDate;
+        }
+        // event_end_dateがない場合は、event_start_dateの23:59:59まで表示
+        if (post.event_start_date) {
+          const startDate = new Date(post.event_start_date);
+          startDate.setHours(23, 59, 59, 999);
+          return now <= startDate;
+        }
+        // どちらもない場合はexpires_atで判定
+        return now <= new Date(post.expires_at);
       });
 
       // 距離順ソート

@@ -46,13 +46,12 @@ export default function EventDetailPage() {
     const fetchEventDetail = async () => {
       setLoading(true);
       try {
-        const now = new Date().toISOString();
+        const now = new Date();
         const { data, error } = await supabase
           .from('posts')
           .select('*')
           .eq('id', eventId)
           .eq('is_deleted', false)
-          .gt('expires_at', now) // 🔥 掲載期限フィルター追加
           .single();
 
         if (error) {
@@ -62,7 +61,26 @@ export default function EventDetailPage() {
         }
 
         if (!data) {
-          setError('イベントが見つかりませんでした。または掲載期限が切れています。');
+          setError('イベントが見つかりませんでした。');
+          return;
+        }
+
+        // 🔥 終了判定 - event_end_dateの23:59:59またはevent_start_dateの23:59:59で判定
+        let isEventEnded = false;
+        if (data.event_end_date) {
+          const endDate = new Date(data.event_end_date);
+          endDate.setHours(23, 59, 59, 999);
+          isEventEnded = now > endDate;
+        } else if (data.event_start_date) {
+          const startDate = new Date(data.event_start_date);
+          startDate.setHours(23, 59, 59, 999);
+          isEventEnded = now > startDate;
+        } else {
+          isEventEnded = now > new Date(data.expires_at);
+        }
+
+        if (isEventEnded) {
+          setError('このイベントは終了しました。');
           return;
         }
 
@@ -110,7 +128,17 @@ export default function EventDetailPage() {
 
     const now = new Date();
     const startDate = event.event_start_date ? new Date(event.event_start_date) : null;
-    const endDate = event.event_end_date ? new Date(event.event_end_date) : new Date(event.expires_at);
+    // 🔥 event_end_dateの23:59:59まで、またはevent_start_dateの23:59:59まで
+    let endDate: Date;
+    if (event.event_end_date) {
+      endDate = new Date(event.event_end_date);
+      endDate.setHours(23, 59, 59, 999);
+    } else if (event.event_start_date) {
+      endDate = new Date(event.event_start_date);
+      endDate.setHours(23, 59, 59, 999);
+    } else {
+      endDate = new Date(event.expires_at);
+    }
 
     // 開催開始前
     if (startDate && now < startDate) {
@@ -145,7 +173,8 @@ export default function EventDetailPage() {
       };
     }
 
-    // 終了
+    // 🔥 この関数が呼ばれる時点で終了イベントは除外されているはず
+    // 念のため終了判定を残す
     return { 
       status: '終了', 
       color: 'gray',

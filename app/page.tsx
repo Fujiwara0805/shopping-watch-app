@@ -212,12 +212,6 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
                   <br className="hidden sm:block" />
                   <span className="text-[#fef3e7] relative inline-block">
                     あなたにお届けします
-                    <motion.div
-                      className="absolute -bottom-1 sm:-bottom-2 left-0 right-0 h-3 sm:h-4 bg-[#ec95b6] -z-10"
-                      initial={{ scaleX: 0 }}
-                      animate={{ scaleX: 1 }}
-                      transition={{ duration: 0.8, delay: 1 }}
-                    />
                   </span>
                 </motion.h1>
 

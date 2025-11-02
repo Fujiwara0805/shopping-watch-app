@@ -282,7 +282,7 @@ export function MapView() {
     try {
       console.log('MapView: イベント情報を取得中...', { lat: userLat, lng: userLng });
       
-      const now = new Date().toISOString();
+      const now = new Date();
       
       // 🔥 イベント情報のみを取得（距離制限なし）
       const { data, error } = await supabase
@@ -304,7 +304,6 @@ export function MapView() {
         `)
         .eq('is_deleted', false)
         .eq('category', 'イベント情報')
-        .gt('expires_at', now)
         .not('store_latitude', 'is', null)
         .not('store_longitude', 'is', null)
         .not('store_name', 'is', null);
@@ -320,8 +319,26 @@ export function MapView() {
         return;
       }
 
-      // �� 現在地からの距離を計算して近い順にソート
-      const postsWithDistance = data.map((post: any) => {
+      // 🔥 終了したイベントを除外 - event_end_dateの23:59:59またはevent_start_dateの23:59:59で判定
+      const filteredData = data.filter((post) => {
+        // event_end_dateがある場合はその日の23:59:59まで表示
+        if (post.event_end_date) {
+          const endDate = new Date(post.event_end_date);
+          endDate.setHours(23, 59, 59, 999);
+          return now <= endDate;
+        }
+        // event_end_dateがない場合は、event_start_dateの23:59:59まで表示
+        if (post.event_start_date) {
+          const startDate = new Date(post.event_start_date);
+          startDate.setHours(23, 59, 59, 999);
+          return now <= startDate;
+        }
+        // どちらもない場合はexpires_atで判定
+        return now <= new Date(post.expires_at);
+      });
+
+      // 🔥 現在地からの距離を計算して近い順にソート
+      const postsWithDistance = filteredData.map((post: any) => {
         let imageUrls = post.image_urls;
         if (typeof imageUrls === 'string') {
           try {
