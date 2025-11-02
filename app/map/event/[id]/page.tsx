@@ -411,7 +411,8 @@ export default function EventDetailPage() {
                       {event.store_name}
                     </p>
                     <p className="text-xs text-gray-500 mb-2">
-                      ※詳細はメディア情報をご確認ください
+                      ※開催場所は未定、又は複数会場で行われる可能性有<br />
+                      詳細情報をご確認ください！
                     </p>
                     <Button
                       onClick={openGoogleMaps}
@@ -432,19 +433,24 @@ export default function EventDetailPage() {
                   <div className="flex-1">
                     <p className="font-bold text-gray-900 mb-1">開催期間</p>
                     {event.event_start_date ? (
-                      <p className="text-gray-700 font-bold">
-                        {new Date(event.event_start_date).toLocaleDateString('ja-JP', {
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric'
-                        })}
-                        {event.event_end_date && event.event_end_date !== event.event_start_date && (
-                          <> 〜 {new Date(event.event_end_date).toLocaleDateString('ja-JP', {
+                      <>
+                        <p className="text-gray-700 font-bold mb-2">
+                          {new Date(event.event_start_date).toLocaleDateString('ja-JP', {
+                            year: 'numeric',
                             month: 'long',
                             day: 'numeric'
-                          })}</>
-                        )}
-                      </p>
+                          })}
+                          {event.event_end_date && event.event_end_date !== event.event_start_date && (
+                            <> 〜 {new Date(event.event_end_date).toLocaleDateString('ja-JP', {
+                              month: 'long',
+                              day: 'numeric'
+                            })}</>
+                          )}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          ※開催日、開催終了日の23時59分まで投稿は表示されます
+                        </p>
+                      </>
                     ) : (
                       <p className="text-gray-700 font-bold">{formatDate(event.expires_at)}まで</p>
                     )}
