@@ -286,16 +286,15 @@ export default function EventsPage() {
 
   // イベント情報取得
   const fetchPosts = useCallback(async (offset = 0, isInitial = false, search = '') => {
-    if (isInitial) {
-      setLoading(true);
-      setPosts([]);
-    } else {
-      setLoadingMore(true);
-    }
+    console.log('🔥 fetchPosts呼び出し:', { offset, isInitial, search, timestamp: new Date().toISOString() });
+    
+    setLoading(true);
+    setPosts([]); // 常にリセット
 
     try {
       const now = new Date();
 
+      // 🔥 マップ画面と同じロジック：全件取得（ページネーションなし）
       let query = supabase
         .from('posts')
         .select(`
@@ -340,15 +339,6 @@ export default function EventsPage() {
         query = query.eq('city', selectedCity);
       }
 
-      // ソート（開催日順）
-      if (sortBy === 'date') {
-        query = query.order('event_start_date', { ascending: true, nullsFirst: false });
-      } else {
-        // 距離順の場合は後でソート
-        query = query.order('created_at', { ascending: false });
-      }
-
-      query = query.range(offset, offset + 19);
 
       const { data, error } = await query;
 
@@ -356,7 +346,6 @@ export default function EventsPage() {
         console.error('データ取得エラー:', error);
         throw error;
       }
-
       // データ加工
       let processedPosts = (data || []).map((post: any) => {
         const authorData = Array.isArray(post.author) ? post.author[0] : post.author;
@@ -397,20 +386,63 @@ export default function EventsPage() {
         return now <= new Date(post.expires_at);
       });
 
-      // 距離順ソート
-      if (sortBy === 'distance' && userLocation) {
+      // 🔥 座標が有効なイベントのみを対象にする（マップ画面と同じロジック）
+      processedPosts = processedPosts.filter((post: any) => {
+        const hasValidCoordinates = 
+          post.store_latitude !== null && 
+          post.store_latitude !== undefined &&
+          post.store_longitude !== null && 
+          post.store_longitude !== undefined &&
+          !isNaN(post.store_latitude) &&
+          !isNaN(post.store_longitude);
+        
+        if (!hasValidCoordinates) {
+          console.warn('⚠️ 無効な座標のイベント（一覧画面）:', post.id, post.event_name, {
+            lat: post.store_latitude,
+            lng: post.store_longitude
+          });
+        }
+        
+        return hasValidCoordinates;
+      });
+
+      console.log('3. 座標フィルタリング後:', processedPosts.length, '件');
+
+      // 🔥 event_nameで重複排除（同じイベント名の投稿は1件のみ表示）
+      const uniqueEventNames = new Set<string>();
+      processedPosts = processedPosts.filter((post: any) => {
+        if (!post.event_name) return true; // event_nameがない場合はそのまま通す
+        
+        if (uniqueEventNames.has(post.event_name)) {
+          console.log('🔄 重複イベント除外:', post.event_name, '(ID:', post.id, ')');
+          return false; // 既に存在する場合は除外
+        }
+        
+        uniqueEventNames.add(post.event_name);
+        return true;
+      });
+
+      console.log('4. event_name重複除外後:', processedPosts.length, '件');
+
+      // 🔥 ソート処理
+      if (sortBy === 'date') {
+        // 開催日順（event_start_dateでソート）
+        processedPosts = processedPosts.sort((a, b) => {
+          const aDate = a.event_start_date ? new Date(a.event_start_date).getTime() : new Date(a.created_at).getTime();
+          const bDate = b.event_start_date ? new Date(b.event_start_date).getTime() : new Date(b.created_at).getTime();
+          return aDate - bDate;
+        });
+      } else if (sortBy === 'distance' && userLocation) {
+        // 距離順
         processedPosts = processedPosts
           .filter((p: EventPost) => p.distance !== undefined)
           .sort((a: EventPost, b: EventPost) => (a.distance || 0) - (b.distance || 0));
       }
-
-      if (isInitial) {
-        setPosts(processedPosts);
-      } else {
-        setPosts(prev => [...prev, ...processedPosts]);
-      }
-
-      setHasMore(data.length === 20);
+      // 🔥 常に全件を上書き（マップ画面と同じ）
+      setPosts(processedPosts);
+      
+      // 🔥 無限スクロール無効化
+      setHasMore(false);
     } catch (error) {
       console.error('投稿取得エラー:', error);
       toast({
@@ -423,7 +455,7 @@ export default function EventsPage() {
       setLoadingMore(false);
       setIsSearching(false);
     }
-  }, [selectedPrefecture, selectedCity, sortBy, userLocation, toast]);
+  }, [selectedPrefecture, selectedCity, sortBy, userLocation, searchTerm, toast]);
 
   fetchPostsRef.current = fetchPosts;
 
@@ -465,11 +497,41 @@ export default function EventsPage() {
   }, [selectedPrefecture]);
 
   // 初回データ取得
+  const hasInitialized = useRef(false);
+  
   useEffect(() => {
+    console.log('🔔 初回データ取得useEffect呼び出し（hasInitialized:', hasInitialized.current, ')');
+    
+    // 🔥 React Strict Modeでの2重実行を防ぐ
+    if (hasInitialized.current) {
+      console.log('⏭️ 既に初期化済みのためスキップ');
+      return;
+    }
+    
+    console.log('🎬 初回データ取得useEffect実行');
+    hasInitialized.current = true;
+    
+    if (fetchPostsRef.current) {
+      fetchPostsRef.current(0, true, '');
+    }
+  }, []); // 空の依存配列で初回のみ実行
+
+  // 🔥 フィルター変更時の再取得（初回マウント時は実行しない）
+  const isFirstMount = useRef(true);
+  
+  useEffect(() => {
+    // 初回マウント時はスキップ
+    if (isFirstMount.current) {
+      isFirstMount.current = false;
+      console.log('⏭️ 初回マウント時はスキップ（フィルター監視useEffect）');
+      return;
+    }
+    
+    console.log('🔄 フィルター変更検知 → 再取得', { selectedPrefecture, selectedCity, sortBy });
     if (fetchPostsRef.current) {
       fetchPostsRef.current(0, true, searchTerm);
     }
-  }, []);
+  }, [selectedPrefecture, selectedCity, sortBy, searchTerm]); // フィルター項目とsearchTermを監視
 
   // 検索処理
   const handleSearch = useCallback(() => {
@@ -497,29 +559,6 @@ export default function EventsPage() {
     }
   }, [searchTerm]);
 
-  // 追加読み込み
-  const loadMore = useCallback(() => {
-    if (!loadingMore && hasMore && fetchPostsRef.current) {
-      fetchPostsRef.current(posts.length, false, searchTerm);
-    }
-  }, [posts.length, loadingMore, hasMore, searchTerm]);
-
-  // 無限スクロール
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && hasMore && !loadingMore) {
-          loadMore();
-        }
-      },
-      { rootMargin: '100px', threshold: 0.1 }
-    );
-
-    const trigger = document.getElementById('load-more-trigger');
-    if (trigger) observer.observe(trigger);
-
-    return () => observer.disconnect();
-  }, [loadMore, hasMore, loadingMore]);
 
   // フィルター適用
   const applyFilters = () => {
@@ -527,13 +566,7 @@ export default function EventsPage() {
     setSelectedPrefecture(tempSelectedPrefecture);
     setSelectedCity(tempSelectedCity);
     setShowFilterModal(false);
-
-    // フィルター適用後に再取得
-    setTimeout(() => {
-      if (fetchPostsRef.current) {
-        fetchPostsRef.current(0, true, searchTerm);
-      }
-    }, 100);
+    // 🔥 setTimeoutを削除：useEffectで監視する方式に変更
   };
 
   // フィルターリセット

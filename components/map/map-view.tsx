@@ -303,10 +303,7 @@ export function MapView() {
           image_urls
         `)
         .eq('is_deleted', false)
-        .eq('category', 'イベント情報')
-        .not('store_latitude', 'is', null)
-        .not('store_longitude', 'is', null)
-        .not('store_name', 'is', null);
+        .eq('category', 'イベント情報');
 
       if (error) {
         console.error('MapView: 投稿データの取得に失敗:', error);
@@ -337,39 +334,61 @@ export function MapView() {
         return now <= new Date(post.expires_at);
       });
 
+      console.log('2. 終了判定フィルタリング後:', filteredData.length, '件');
+
       // 🔥 現在地からの距離を計算して近い順にソート
-      const postsWithDistance = filteredData.map((post: any) => {
-        let imageUrls = post.image_urls;
-        if (typeof imageUrls === 'string') {
-          try {
-            imageUrls = JSON.parse(imageUrls);
-          } catch (e) {
-            console.error('画像URLのパースに失敗:', e);
-            imageUrls = null;
+      const postsWithDistance = filteredData
+        .filter((post: any) => {
+          // 🔥 座標が有効なイベントのみを対象にする
+          const hasValidCoordinates = 
+            post.store_latitude !== null && 
+            post.store_latitude !== undefined &&
+            post.store_longitude !== null && 
+            post.store_longitude !== undefined &&
+            !isNaN(post.store_latitude) &&
+            !isNaN(post.store_longitude);
+          
+          if (!hasValidCoordinates) {
+            console.warn('⚠️ 無効な座標のイベント:', post.id, post.event_name, {
+              lat: post.store_latitude,
+              lng: post.store_longitude
+            });
           }
-        }
-        
-        // 距離計算（Haversine formula）
-        const R = 6371; // 地球の半径（km）
-        const dLat = (post.store_latitude - userLat) * Math.PI / 180;
-        const dLng = (post.store_longitude - userLng) * Math.PI / 180;
-        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                  Math.cos(userLat * Math.PI / 180) * Math.cos(post.store_latitude * Math.PI / 180) *
-                  Math.sin(dLng / 2) * Math.sin(dLng / 2);
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        const distance = R * c; // km単位
-        
-        return {
-          ...post,
-          image_urls: imageUrls,
-          distance: distance
-        };
-      });
+          
+          return hasValidCoordinates;
+        })
+        .map((post: any) => {
+          let imageUrls = post.image_urls;
+          if (typeof imageUrls === 'string') {
+            try {
+              imageUrls = JSON.parse(imageUrls);
+            } catch (e) {
+              console.error('画像URLのパースに失敗:', e);
+              imageUrls = null;
+            }
+          }
+          
+          // 距離計算（Haversine formula）
+          const R = 6371; // 地球の半径（km）
+          const dLat = (post.store_latitude - userLat) * Math.PI / 180;
+          const dLng = (post.store_longitude - userLng) * Math.PI / 180;
+          const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                    Math.cos(userLat * Math.PI / 180) * Math.cos(post.store_latitude * Math.PI / 180) *
+                    Math.sin(dLng / 2) * Math.sin(dLng / 2);
+          const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+          const distance = R * c; // km単位
+          
+          return {
+            ...post,
+            image_urls: imageUrls,
+            distance: distance
+          };
+        });
+
+      console.log('3. 座標フィルタリング後:', postsWithDistance.length, '件');
 
       // 距離が近い順にソート
       const sortedPosts = postsWithDistance.sort((a, b) => a.distance - b.distance);
-
-      console.log(`MapView: ${sortedPosts.length}件のイベント情報を取得しました（距離順）`);
       setPosts(sortedPosts);
       
     } catch (error) {
@@ -421,16 +440,13 @@ export function MapView() {
     
     const newMarkers: google.maps.Marker[] = [];
 
-    // 🔥 同じ場所の投稿をグループ化
-    const locationGroups = groupPostsByLocation(posts);
-
     // 近い順に処理（既に距離順にソートされている）
     let batchIndex = 0;
     const batchSize = 10; // 一度に10個ずつ処理
     
     const processNextBatch = async () => {
-      const entries = Object.entries(locationGroups);
-      const batch = entries.slice(batchIndex, batchIndex + batchSize);
+      // 🔥 全投稿を個別に処理（グループ化しない）
+      const batch = posts.slice(batchIndex, batchIndex + batchSize);
       
       if (batch.length === 0) {
         setPostMarkers(newMarkers);
@@ -438,11 +454,10 @@ export function MapView() {
       }
       
       // バッチ内のマーカーを並列処理
-      const batchPromises = batch.map(async ([locationKey, groupPosts]) => {
-        const [lat, lng] = locationKey.split(',').map(Number);
-        const position = new window.google.maps.LatLng(lat, lng);
+      const batchPromises = batch.map(async (post) => {
+        if (!post.store_latitude || !post.store_longitude) return;
         
-        const post = groupPosts[0];
+        const position = new window.google.maps.LatLng(post.store_latitude, post.store_longitude);
         const markerTitle = `${post.store_name} - イベント情報`;
 
         // 🔥 画像アイコンを作成
@@ -468,7 +483,8 @@ export function MapView() {
       });
       
       const batchMarkers = await Promise.all(batchPromises);
-      newMarkers.push(...batchMarkers);
+      // 🔥 nullを除外してマーカーを追加
+      newMarkers.push(...batchMarkers.filter((m): m is google.maps.Marker => m !== null && m !== undefined));
       
       batchIndex += batchSize;
       
