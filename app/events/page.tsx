@@ -531,7 +531,7 @@ export default function EventsPage() {
     if (fetchPostsRef.current) {
       fetchPostsRef.current(0, true, searchTerm);
     }
-  }, [selectedPrefecture, selectedCity, sortBy, searchTerm]); // フィルター項目とsearchTermを監視
+  }, [selectedPrefecture, selectedCity, sortBy]); // フィルター項目のみを監視（searchTermを削除）
 
   // 検索処理
   const handleSearch = useCallback(() => {
