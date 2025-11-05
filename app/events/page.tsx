@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import PullToRefresh from 'react-simple-pull-to-refresh';
 import { CustomModal } from '@/components/ui/custom-modal';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { cn } from '@/lib/utils';
 
 // 型定義
 interface EventPost {
@@ -541,6 +542,10 @@ export default function EventsPage() {
     }
   }, [searchTerm]);
 
+  const handleSearchTermChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+  }, []);
+
   const handleKeyPress = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       handleSearch();
@@ -608,27 +613,35 @@ export default function EventsPage() {
                   type="text"
                   placeholder="イベント名で検索"
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={handleSearchTermChange}
                   onKeyPress={handleKeyPress}
                   className="w-full text-base pr-10"
-                  style={{ fontSize: '16px' }}
+                  style={{ 
+                    fontSize: '16px',
+                    touchAction: 'manipulation',
+                  }}
+                  autoComplete="off"
+                  autoCorrect="off"
+                  spellCheck="false"
                 />
                 
-                {searchTerm && (
-                  <Button
-                    onClick={() => {
-                      setSearchTerm('');
-                      if (fetchPostsRef.current) {
-                        fetchPostsRef.current(0, true, '');
-                      }
-                    }}
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-1 top-1/2 -translate-y-1/2 h-8 px-2"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                )}
+                <Button
+                  onClick={() => {
+                    setSearchTerm('');
+                    if (fetchPostsRef.current) {
+                      fetchPostsRef.current(0, true, '');
+                    }
+                  }}
+                  variant="ghost"
+                  size="sm"
+                  className={cn(
+                    "absolute right-1 top-1/2 -translate-y-1/2 h-8 px-2 transition-opacity",
+                    searchTerm ? "opacity-100" : "opacity-0 pointer-events-none"
+                  )}
+                  tabIndex={searchTerm ? 0 : -1}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
               </div>
               <Button
                 onClick={() => setShowFilterModal(true)}
