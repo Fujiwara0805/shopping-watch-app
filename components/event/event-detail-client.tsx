@@ -214,7 +214,7 @@ export function EventDetailClient({ eventId }: EventDetailClientProps) {
           <AlertCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
           <h2 className="text-xl font-bold text-gray-900 mb-2">エラー</h2>
           <p className="text-gray-600 font-bold mb-6">{error || 'イベントが見つかりませんでした。'}</p>
-          <Button onClick={() => router.push('/map')} className="w-full font-bold">
+          <Button onClick={() => router.back()} className="w-full font-bold">
             戻る
           </Button>
         </div>
@@ -295,7 +295,7 @@ export function EventDetailClient({ eventId }: EventDetailClientProps) {
               
               {/* 右上の閉じるボタン */}
               <Button
-                onClick={() => router.push('/map')}
+                onClick={() => router.back()}
                 size="icon"
                 className="absolute top-4 right-4 h-10 w-10 rounded-full bg-black/50 hover:bg-black/70 text-white border-2 border-white shadow-lg z-10 font-bold"
               >
@@ -340,7 +340,7 @@ export function EventDetailClient({ eventId }: EventDetailClientProps) {
               
               {/* 右上の閉じるボタン（画像なしの場合） */}
               <Button
-                onClick={() => router.push('/map')}
+                onClick={() => router.back()}
                 size="icon"
                 className="absolute top-4 right-4 h-10 w-10 rounded-full bg-black/50 hover:bg-black/70 text-white border-2 border-white shadow-lg font-bold"
               >
@@ -566,7 +566,7 @@ export function EventDetailClient({ eventId }: EventDetailClientProps) {
               )}
 
               <Button
-                onClick={() => router.push('/map')}
+                onClick={() => router.back()}
                 variant="outline"
                 className="w-full py-6 text-lg rounded-xl border-2 font-bold"
               >

@@ -41,6 +41,8 @@ export function AppHeader() {
         return '新規投稿';
       case '/events':
         return 'イベント一覧';
+      case '/calendar':
+        return 'カレンダー';
       case '/profile':
         return 'マイページ';
       case '/profile/edit':

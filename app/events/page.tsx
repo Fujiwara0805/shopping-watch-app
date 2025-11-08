@@ -733,21 +733,42 @@ export default function EventsPage() {
           </div>
         </PullToRefresh>
 
-        {/* マップアイコン（右下固定） */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.3 }}
-          className="fixed bottom-6 right-6 z-50"
-        >
-          <Button
-            onClick={() => router.push('/map')}
-            size="icon"
-            className="h-14 w-14 rounded-full shadow-2xl bg-[#73370c] hover:bg-[#5c2a0a] text-white border-2 border-white"
+        {/* 右下のナビゲーションボタン */}
+        <div className="fixed bottom-4 right-4 z-30 flex flex-col gap-2">
+          {/* マップアイコン */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.3, delay: 0.1 }}
+            className="flex flex-col items-center"
           >
-            <Map className="h-6 w-6" />
-          </Button>
-        </motion.div>
+            <Button
+              onClick={() => router.push('/map')}
+              size="icon"
+              className="h-14 w-14 rounded-full shadow-lg bg-[#73370c] hover:bg-[#5c2a0a] border-2 border-white"
+            >
+              <Map className="h-7 w-7 text-white" />
+            </Button>
+            <span className="text-xs font-bold text-gray-700 mt-1">マップ</span>
+          </motion.div>
+
+          {/* カレンダーアイコン */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.3, delay: 0.2 }}
+            className="flex flex-col items-center"
+          >
+            <Button
+              onClick={() => router.push('/calendar')}
+              size="icon"
+              className="h-14 w-14 rounded-full shadow-lg bg-[#73370c] hover:bg-[#5c2a0a] border-2 border-white"
+            >
+              <Calendar className="h-7 w-7 text-white" />
+            </Button>
+            <span className="text-xs font-bold text-gray-700 mt-1">カレンダー</span>
+          </motion.div>
+        </div>
 
         {/* フィルター・ソートモーダル */}
         <CustomModal
