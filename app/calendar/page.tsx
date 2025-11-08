@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, MapPin, Map, Newspaper, ChevronDown, ChevronUp } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, MapPin, Map, Newspaper, ChevronDown, ChevronUp, RefreshCw } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -40,6 +40,7 @@ export default function CalendarPage() {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [isLongTermEventsOpen, setIsLongTermEventsOpen] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // イベントデータの取得
   useEffect(() => {
@@ -141,6 +142,16 @@ export default function CalendarPage() {
       console.error('イベント取得エラー:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // 更新処理
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await fetchEvents();
+    } finally {
+      setTimeout(() => setIsRefreshing(false), 800);
     }
   };
 
@@ -269,11 +280,7 @@ export default function CalendarPage() {
 
         {/* 長期間イベント情報セクション（トグル式） */}
         {longTermEvents.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-6 bg-white rounded-2xl shadow-lg overflow-hidden"
-          >
+          <div className="mb-6 bg-white rounded-2xl shadow-lg overflow-hidden">
             <button
               onClick={() => setIsLongTermEventsOpen(!isLongTermEventsOpen)}
               className="w-full p-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
@@ -289,46 +296,33 @@ export default function CalendarPage() {
               )}
             </button>
 
-            <AnimatePresence>
-              {isLongTermEventsOpen && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.3 }}
-                  className="overflow-hidden"
-                >
-                  <div className="p-4 pt-0 space-y-2">
-                    {longTermEvents.map((event, index) => (
-                      <motion.div
-                        key={event.id}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: index * 0.05 }}
-                        className="bg-[#fef3e8] rounded-xl p-3 border-2 border-[#73370c]/10 hover:shadow-md transition-shadow cursor-pointer"
-                        onClick={() => handleEventClick(event.id)}
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex-1">
-                            <h4 className="font-bold text-base mb-1" style={{ color: '#73370c' }}>
-                              {event.name}
-                            </h4>
-                            <div className="flex items-center gap-2 text-sm text-gray-600">
-                              <MapPin className="h-3 w-3 text-red-500" />
-                              <span>{event.fullData.city || '場所未設定'}</span>
-                            </div>
-                          </div>
-                          <div className="text-sm text-gray-600 whitespace-nowrap">
-                            {format(event.startDate, 'M/d', { locale: ja })} 〜 {format(event.endDate, 'M/d', { locale: ja })}
-                          </div>
+            {isLongTermEventsOpen && (
+              <div className="p-4 pt-0 space-y-2">
+                {longTermEvents.map((event) => (
+                  <div
+                    key={event.id}
+                    className="bg-[#fef3e8] rounded-xl p-3 border-2 border-[#73370c]/10 hover:shadow-md transition-shadow cursor-pointer"
+                    onClick={() => handleEventClick(event.id)}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1">
+                        <h4 className="font-bold text-base mb-1" style={{ color: '#73370c' }}>
+                          {event.name}
+                        </h4>
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <MapPin className="h-3 w-3 text-red-500" />
+                          <span>{event.fullData.city || '場所未設定'}</span>
                         </div>
-                      </motion.div>
-                    ))}
+                      </div>
+                      <div className="text-sm text-gray-600 whitespace-nowrap">
+                        {format(event.startDate, 'M/d', { locale: ja })} 〜 {format(event.endDate, 'M/d', { locale: ja })}
+                      </div>
+                    </div>
                   </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </motion.div>
+                ))}
+              </div>
+            )}
+          </div>
         )}
 
         {/* カレンダーグリッド */}
@@ -337,36 +331,25 @@ export default function CalendarPage() {
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#73370c]"></div>
           </div>
         ) : daysWithEvents.length === 0 && longTermEvents.length === 0 ? (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-white rounded-2xl shadow-xl p-8 text-center"
-          >
+          <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
             <CalendarIcon className="h-16 w-16 mx-auto mb-4 text-gray-300" />
             <p className="text-lg text-gray-500">この月にイベントはありません</p>
-          </motion.div>
+          </div>
         ) : (
           <>
             {daysWithEvents.length > 0 && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="bg-white rounded-2xl shadow-xl overflow-hidden"
-              >
+              <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
                 {/* イベントがある日付のみ表示 */}
                 <div className="divide-y divide-gray-200">
-                  {daysWithEvents.map((day, dayIndex) => {
+                  {daysWithEvents.map((day) => {
                     const dayEvents = getEventsForDay(day);
                     const isToday = isSameDay(day, new Date());
                     const dayOfWeek = getDayOfWeek(day);
                     const dayColor = getDayColor(day);
 
                     return (
-                      <motion.div
+                      <div
                         key={day.toISOString()}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: dayIndex * 0.05 }}
                         className={`p-4 bg-white ${isToday ? 'border-l-4 border-[#73370c]' : ''}`}
                       >
                         {/* 日付と曜日 - 中央揃え */}
@@ -378,26 +361,23 @@ export default function CalendarPage() {
 
                         {/* イベント一覧 */}
                         <div className="space-y-2">
-                          {dayEvents.map((event, eventIndex) => (
-                            <motion.div
+                          {dayEvents.map((event) => (
+                            <div
                               key={event.id}
-                              initial={{ opacity: 0, x: -10 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              transition={{ delay: dayIndex * 0.05 + eventIndex * 0.03 }}
                               className="bg-[#fef3e8] rounded-lg px-4 py-3 border-l-4 border-[#73370c] hover:shadow-md transition-all cursor-pointer hover:translate-x-1"
                               onClick={() => handleEventClick(event.id)}
                             >
                               <div className="font-semibold text-base" style={{ color: '#73370c' }}>
                                 {event.name}
                               </div>
-                            </motion.div>
+                            </div>
                           ))}
                         </div>
-                      </motion.div>
+                      </div>
                     );
                   })}
                 </div>
-              </motion.div>
+              </div>
             )}
           </>
         )}
@@ -405,6 +385,24 @@ export default function CalendarPage() {
 
       {/* 右下のナビゲーションボタン */}
       <div className="fixed bottom-4 right-4 z-30 flex flex-col gap-2">
+          {/* 更新ボタン */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.3 }}
+            className="flex flex-col items-center"
+          >
+            <Button
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              size="icon"
+              className="h-14 w-14 rounded-full shadow-lg bg-[#73370c] hover:bg-[#5c2a0a] border-2 border-white disabled:opacity-50"
+            >
+              <RefreshCw className={`h-7 w-7 text-white ${isRefreshing ? 'animate-spin' : ''}`} />
+            </Button>
+            <span className="text-xs font-bold text-gray-700 mt-1">更新</span>
+          </motion.div>
+
           {/* マップアイコン */}
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}

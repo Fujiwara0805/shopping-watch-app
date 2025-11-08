@@ -587,7 +587,7 @@ export default function EventsPage() {
                   <SelectValue placeholder="期間" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">期間</SelectItem>
+                  <SelectItem value="all">全ての期間</SelectItem>
                   <SelectItem value="1">1日</SelectItem>
                   <SelectItem value="2+">2日以上</SelectItem>
                   <SelectItem value="7+">7日以上</SelectItem>
@@ -601,7 +601,7 @@ export default function EventsPage() {
                   <SelectValue placeholder="市町村" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">市町村</SelectItem>
+                  <SelectItem value="all">全ての市町村</SelectItem>
                   {cityList.map((city) => (
                     <SelectItem key={city} value={city}>
                       {city}
