@@ -3,17 +3,14 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { Loader2, X, Calendar, MapPin, Eye, MessageSquare, Footprints, SlidersHorizontal,  Map, Trash2 } from 'lucide-react';
+import { Loader2, Calendar, MapPin, Map, Trash2 } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import PullToRefresh from 'react-simple-pull-to-refresh';
-import { CustomModal } from '@/components/ui/custom-modal';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { cn } from '@/lib/utils';
 
 // 型定義
 interface EventPost {
@@ -219,21 +216,15 @@ export default function EventsPage() {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [isSearching, setIsSearching] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   // フィルター・ソート関連
-  const [showFilterModal, setShowFilterModal] = useState(false);
   const [sortBy, setSortBy] = useState<'date' | 'distance'>('date');
-  const [selectedPrefecture, setSelectedPrefecture] = useState('all');
+  const [selectedPrefecture] = useState('大分県'); // 大分県固定
   const [selectedCity, setSelectedCity] = useState('all');
-  const [tempSortBy, setTempSortBy] = useState<'date' | 'distance'>('date');
-  const [tempSelectedPrefecture, setTempSelectedPrefecture] = useState('all');
-  const [tempSelectedCity, setTempSelectedCity] = useState('all');
+  const [selectedDuration, setSelectedDuration] = useState<'all' | '1' | '2+' | '7+' | '14+'>('all');
 
-  // 都道府県・市町村リスト
-  const [prefectureList, setPrefectureList] = useState<string[]>([]);
+  // 市町村リスト
   const [cityList, setCityList] = useState<string[]>([]);
   
   // 削除処理
@@ -330,10 +321,8 @@ export default function EventsPage() {
         query = query.or(`event_name.ilike.%${searchLower}%,content.ilike.%${searchLower}%,store_name.ilike.%${searchLower}%`);
       }
 
-      // 都道府県フィルター
-      if (selectedPrefecture !== 'all') {
-        query = query.eq('prefecture', selectedPrefecture);
-      }
+      // 都道府県フィルター（大分県固定）
+      query = query.eq('prefecture', selectedPrefecture);
 
       // 市町村フィルター
       if (selectedCity !== 'all') {
@@ -425,6 +414,33 @@ export default function EventsPage() {
 
       console.log('4. event_name重複除外後:', processedPosts.length, '件');
 
+      // 🔥 期間フィルター
+      if (selectedDuration !== 'all') {
+        processedPosts = processedPosts.filter((post: any) => {
+          if (!post.event_start_date) return false;
+          
+          const startDate = new Date(post.event_start_date);
+          const endDate = post.event_end_date ? new Date(post.event_end_date) : startDate;
+          
+          // 期間を計算（日数）
+          const durationDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+          
+          switch (selectedDuration) {
+            case '1':
+              return durationDays === 1;
+            case '2+':
+              return durationDays >= 2 && durationDays < 7;
+            case '7+':
+              return durationDays >= 7 && durationDays < 14;
+            case '14+':
+              return durationDays >= 14;
+            default:
+              return true;
+          }
+        });
+        console.log('5. 期間フィルター後:', processedPosts.length, '件');
+      }
+
       // 🔥 ソート処理
       if (sortBy === 'date') {
         // 開催日順（event_start_dateでソート）
@@ -454,48 +470,33 @@ export default function EventsPage() {
     } finally {
       setLoading(false);
       setLoadingMore(false);
-      setIsSearching(false);
     }
-  }, [selectedPrefecture, selectedCity, sortBy, userLocation, searchTerm, toast]);
+  }, [selectedPrefecture, selectedCity, selectedDuration, sortBy, userLocation, toast]);
 
   fetchPostsRef.current = fetchPosts;
 
-  // 都道府県・市町村リスト取得
+  // 市町村リスト取得（大分県のみ）
   useEffect(() => {
     const fetchLocations = async () => {
       try {
         const { data, error } = await supabase
           .from('posts')
-          .select('prefecture, city')
+          .select('city')
           .eq('category', 'イベント情報')
-          .not('city', 'is', null); // 🔥 cityカラムをフィルタリング
+          .eq('prefecture', '大分県')
+          .not('city', 'is', null);
 
         if (error) throw error;
 
-        // �� 都道府県リストの取得
-        const prefectures = Array.from(new Set(data.map(d => d.prefecture).filter(Boolean))).sort();
-        setPrefectureList(prefectures as string[]);
-
-        // �� 市町村リストの取得（全体または都道府県でフィルタ）
-        if (selectedPrefecture !== 'all') {
-          const cities = Array.from(new Set(
-            data.filter(d => d.prefecture === selectedPrefecture)
-              .map(d => d.city)
-              .filter(Boolean)
-          )).sort();
-          setCityList(cities as string[]);
-        } else {
-          // 🔥 全都道府県の市町村を表示
-          const cities = Array.from(new Set(data.map(d => d.city).filter(Boolean))).sort();
-          setCityList(cities as string[]);
-        }
+        const cities = Array.from(new Set(data.map(d => d.city).filter(Boolean))).sort();
+        setCityList(cities as string[]);
       } catch (error) {
-        console.error('地域情報の取得に失敗:', error);
+        console.error('市町村情報の取得に失敗:', error);
       }
     };
 
     fetchLocations();
-  }, [selectedPrefecture]);
+  }, []);
 
   // 初回データ取得
   const hasInitialized = useRef(false);
@@ -528,64 +529,23 @@ export default function EventsPage() {
       return;
     }
     
-    console.log('🔄 フィルター変更検知 → 再取得', { selectedPrefecture, selectedCity, sortBy });
+    console.log('🔄 フィルター変更検知 → 再取得', { selectedPrefecture, selectedCity, selectedDuration, sortBy });
     if (fetchPostsRef.current) {
-      fetchPostsRef.current(0, true, searchTerm);
+      fetchPostsRef.current(0, true, '');
     }
-  }, [selectedPrefecture, selectedCity, sortBy]); // フィルター項目のみを監視（searchTermを削除）
-
-  // 検索処理
-  const handleSearch = useCallback(() => {
-    setIsSearching(true);
-    if (fetchPostsRef.current) {
-      fetchPostsRef.current(0, true, searchTerm);
-    }
-  }, [searchTerm]);
-
-  const handleSearchTermChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(e.target.value);
-  }, []);
-
-  const handleKeyPress = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleSearch();
-    }
-  }, [handleSearch]);
+  }, [selectedPrefecture, selectedCity, selectedDuration, sortBy]);
 
   // 更新処理
   const handleRefresh = useCallback(async () => {
     setIsRefreshing(true);
     try {
       if (fetchPostsRef.current) {
-        await fetchPostsRef.current(0, true, searchTerm);
+        await fetchPostsRef.current(0, true, '');
       }
     } finally {
       setTimeout(() => setIsRefreshing(false), 800);
     }
-  }, [searchTerm]);
-
-
-  // フィルター適用
-  const applyFilters = () => {
-    setSortBy(tempSortBy);
-    setSelectedPrefecture(tempSelectedPrefecture);
-    setSelectedCity(tempSelectedCity);
-    setShowFilterModal(false);
-    // 🔥 setTimeoutを削除：useEffectで監視する方式に変更
-  };
-
-  // フィルターリセット
-  const resetFilters = () => {
-    setTempSortBy('date');
-    setTempSelectedPrefecture('all');
-    setTempSelectedCity('all');
-  };
-
-  // アクティブフィルター数
-  const activeFiltersCount = 
-    (sortBy !== 'date' ? 1 : 0) +
-    (selectedPrefecture !== 'all' ? 1 : 0) +
-    (selectedCity !== 'all' ? 1 : 0);
+  }, []);
 
   if (loading) {
     return (
@@ -603,58 +563,52 @@ export default function EventsPage() {
       <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50">
         <div className="sticky top-0 z-10 border-b bg-[#73370c]">
           <div className="p-4">
-            {/* 検索バー */}
+            {/* タイトル */}
             <div className="max-w-4xl mx-auto px-4 py-2 flex items-center justify-center">
               <h1 className="text-3xl font-bold text-white">イベント一覧</h1>
             </div>
-            <div className="flex items-center space-x-2">
-              <div className="relative flex-1">
-                <Input
-                  type="text"
-                  placeholder="イベント名で検索"
-                  value={searchTerm}
-                  onChange={handleSearchTermChange}
-                  onKeyPress={handleKeyPress}
-                  className="w-full text-base pr-10"
-                  style={{ 
-                    fontSize: '16px',
-                    touchAction: 'manipulation',
-                  }}
-                  autoComplete="off"
-                  autoCorrect="off"
-                  spellCheck="false"
-                />
-                
-                <Button
-                  onClick={() => {
-                    setSearchTerm('');
-                    if (fetchPostsRef.current) {
-                      fetchPostsRef.current(0, true, '');
-                    }
-                  }}
-                  variant="ghost"
-                  size="sm"
-                  className={cn(
-                    "absolute right-1 top-1/2 -translate-y-1/2 h-8 px-2 transition-opacity",
-                    searchTerm ? "opacity-100" : "opacity-0 pointer-events-none"
-                  )}
-                  tabIndex={searchTerm ? 0 : -1}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-              <Button
-                onClick={() => setShowFilterModal(true)}
-                variant="outline"
-                className="relative"
-              >
-                <SlidersHorizontal className="h-4 w-4" />
-                {activeFiltersCount > 0 && (
-                  <Badge className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
-                    {activeFiltersCount}
-                  </Badge>
-                )}
-              </Button>
+            
+            {/* フィルターボタン */}
+            <div className="flex items-center justify-center gap-2 mt-2">
+              {/* 並び順ボタン */}
+              <Select value={sortBy} onValueChange={(value: 'date' | 'distance') => setSortBy(value)}>
+                <SelectTrigger className="w-[130px] bg-white text-[#73370c] font-semibold">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="date">開催日順</SelectItem>
+                  <SelectItem value="distance">距離順</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {/* 期間フィルター */}
+              <Select value={selectedDuration} onValueChange={(value: 'all' | '1' | '2+' | '7+' | '14+') => setSelectedDuration(value)}>
+                <SelectTrigger className="w-[130px] bg-white text-[#73370c] font-semibold">
+                  <SelectValue placeholder="期間" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">期間</SelectItem>
+                  <SelectItem value="1">1日</SelectItem>
+                  <SelectItem value="2+">2日以上</SelectItem>
+                  <SelectItem value="7+">7日以上</SelectItem>
+                  <SelectItem value="14+">14日以上</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {/* 市町村ボタン */}
+              <Select value={selectedCity} onValueChange={setSelectedCity}>
+                <SelectTrigger className="w-[130px] bg-white text-[#73370c] font-semibold">
+                  <SelectValue placeholder="市町村" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">市町村</SelectItem>
+                  {cityList.map((city) => (
+                    <SelectItem key={city} value={city}>
+                      {city}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </div>
@@ -770,54 +724,6 @@ export default function EventsPage() {
           </motion.div>
         </div>
 
-        {/* フィルター・ソートモーダル */}
-        <CustomModal
-          isOpen={showFilterModal}
-          onClose={() => setShowFilterModal(false)}
-          title="フィルター機能"
-          description="イベントを絞り込み・並び替えます"
-        >
-          <div className="space-y-4">
-            {/* ソート */}
-            <div>
-              <label className="block text-sm font-medium mb-2">並び順</label>
-              <Select value={tempSortBy} onValueChange={(value: 'date' | 'distance') => setTempSortBy(value)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="date">開催日（早い順）</SelectItem>
-                  <SelectItem value="distance">距離（近い順）</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            {/* 🔥 市町村フィルター */}
-            <div>
-              <label className="block text-sm font-medium mb-2">市町村</label>
-              <Select value={tempSelectedCity} onValueChange={setTempSelectedCity}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">すべて</SelectItem>
-                  {cityList.map(city => (
-                    <SelectItem key={city} value={city}>{city}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="flex space-x-3 pt-4">
-              <Button variant="outline" onClick={resetFilters} className="flex-1">
-                リセット
-              </Button>
-              <Button onClick={applyFilters} className="flex-1">
-                適用
-              </Button>
-            </div>
-          </div>
-        </CustomModal>
       </div>
   );
 }
