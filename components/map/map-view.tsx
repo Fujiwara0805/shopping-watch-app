@@ -76,7 +76,7 @@ const createEventPinIcon = async (imageUrls: string[] | null): Promise<google.ma
 
   // 🔥 画像を円形・白縁で40x40サイズに
   const size = 40;
-  const borderWidth = 3; // 白い縁の幅
+  const borderWidth = 2; // 白い縁の幅
   
   return new Promise<google.maps.Icon>((resolve) => {
     const img = new Image();
@@ -131,7 +131,7 @@ const createEventPinIcon = async (imageUrls: string[] | null): Promise<google.ma
       // 白い縁を描画
       ctx.beginPath();
       ctx.arc(size / 2, size / 2, size / 2 - borderWidth / 2, 0, Math.PI * 2);
-      ctx.strokeStyle = '#73370c';
+      ctx.strokeStyle = '#404040';
       ctx.lineWidth = borderWidth;
       ctx.stroke();
       
@@ -316,25 +316,33 @@ export function MapView() {
         return;
       }
 
-      // 🔥 終了したイベントを除外 - event_end_dateの23:59:59またはevent_start_dateの23:59:59で判定
+      // 🔥 開催中のイベントのみを抽出
       const filteredData = data.filter((post) => {
-        // event_end_dateがある場合はその日の23:59:59まで表示
+        // event_start_dateがない場合は除外
+        if (!post.event_start_date) {
+          return false;
+        }
+
+        const startDate = new Date(post.event_start_date);
+        startDate.setHours(0, 0, 0, 0); // 開始日の0時0分
+
+        // event_end_dateがある場合
         if (post.event_end_date) {
           const endDate = new Date(post.event_end_date);
-          endDate.setHours(23, 59, 59, 999);
-          return now <= endDate;
+          endDate.setHours(23, 59, 59, 999); // 終了日の23時59分
+          
+          // 現在時刻が開始日以降かつ終了日以前 → 開催中
+          return now >= startDate && now <= endDate;
         }
-        // event_end_dateがない場合は、event_start_dateの23:59:59まで表示
-        if (post.event_start_date) {
-          const startDate = new Date(post.event_start_date);
-          startDate.setHours(23, 59, 59, 999);
-          return now <= startDate;
-        }
-        // どちらもない場合はexpires_atで判定
-        return now <= new Date(post.expires_at);
+        
+        // event_end_dateがない場合は、event_start_dateの当日のみ開催中とみなす
+        const startDateEnd = new Date(post.event_start_date);
+        startDateEnd.setHours(23, 59, 59, 999);
+        
+        return now >= startDate && now <= startDateEnd;
       });
 
-      console.log('2. 終了判定フィルタリング後:', filteredData.length, '件');
+      console.log('2. 開催中イベントフィルタリング後:', filteredData.length, '件');
 
       // 🔥 現在地からの距離を計算して近い順にソート
       const postsWithDistance = filteredData

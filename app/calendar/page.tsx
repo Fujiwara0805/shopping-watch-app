@@ -328,25 +328,25 @@ export default function CalendarPage() {
         </div>
       ) : (
         <>
-          {/* ヘッダー - イベント一覧画面と同じデザイン */}
+          {/* ヘッダー - コンパクトなデザイン */}
           <div className="sticky top-0 z-10 border-b bg-[#73370c]">
-            <div className="p-4">
-              <div className="max-w-4xl mx-auto px-4 py-2 flex items-center justify-center">
+            <div className="p-3">
+              <div className="max-w-4xl mx-auto px-4 py-1 flex items-center justify-center">
                 <h1 className="text-3xl font-bold text-white">イベントカレンダー</h1>
               </div>
 
               {/* 月の切り替え */}
-              <div className="flex items-center justify-center gap-4 mt-2">
+              <div className="flex items-center justify-center gap-4 mt-1">
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={handlePreviousMonth}
-                  className="text-white hover:bg-white/20"
+                  className="text-white hover:bg-white/20 h-8 w-8"
                 >
                   <ChevronLeft className="h-5 w-5" />
                 </Button>
                 
-                <h2 className="text-xl font-bold text-white min-w-[150px] text-center">
+                <h2 className="text-lg font-bold text-white min-w-[140px] text-center">
                   {format(currentDate, 'yyyy年 M月', { locale: ja })}
                 </h2>
                 
@@ -354,7 +354,7 @@ export default function CalendarPage() {
                   variant="ghost"
                   size="icon"
                   onClick={handleNextMonth}
-                  className="text-white hover:bg-white/20"
+                  className="text-white hover:bg-white/20 h-8 w-8"
                 >
                   <ChevronRight className="h-5 w-5" />
                 </Button>
