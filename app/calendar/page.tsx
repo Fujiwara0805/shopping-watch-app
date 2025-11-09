@@ -106,11 +106,22 @@ export default function CalendarPage() {
   const [loading, setLoading] = useState(true);
   const [isLongTermEventsOpen, setIsLongTermEventsOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   // イベントデータの取得
   useEffect(() => {
     fetchEvents();
   }, [currentDate]);
+
+  // ページがマウントされた時に確実にローディング状態にする
+  useEffect(() => {
+    setLoading(true);
+    return () => {
+      // アンマウント時にリセット
+      setLoading(true);
+      setIsInitialized(false);
+    };
+  }, []);
 
   const fetchEvents = async () => {
     setLoading(true);
@@ -206,7 +217,10 @@ export default function CalendarPage() {
     } catch (error) {
       console.error('イベント取得エラー:', error);
     } finally {
+      // 最低限の表示時間を確保してローディング画面を表示
+      await new Promise(resolve => setTimeout(resolve, 300));
       setLoading(false);
+      setIsInitialized(true);
     }
   };
 
