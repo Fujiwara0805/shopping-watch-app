@@ -531,6 +531,90 @@ export function MapView() {
         zoomControl: true,
         gestureHandling: 'greedy', // 🔥 'cooperative' → 'greedy' に変更（1本指で地図操作可能に）
         mapTypeId: window.google.maps.MapTypeId.ROADMAP,
+        
+        // アプリのテーマカラー（茶色）に合わせたカスタムスタイル
+        styles: [
+          {
+            featureType: "water",
+            elementType: "geometry",
+            stylers: [{ color: "#e3f2fd" }] // 爽やかな水色
+          },
+          {
+            featureType: "landscape",
+            elementType: "geometry",
+            stylers: [{ color: "#fff9f0" }] // 暖かみのあるクリーム色
+          },
+          {
+            featureType: "road.highway",
+            elementType: "geometry",
+            stylers: [{ color: "#ffd89b" }] // 優しいオレンジベージュ
+          },
+          {
+            featureType: "road.highway",
+            elementType: "geometry.stroke",
+            stylers: [{ color: "#f5c26b" }]
+          },
+          {
+            featureType: "road.arterial",
+            elementType: "geometry",
+            stylers: [{ color: "#ffffff" }] // 白い道路
+          },
+          {
+            featureType: "road.local",
+            elementType: "geometry",
+            stylers: [{ color: "#ffffff" }]
+          },
+          {
+            featureType: "road",
+            elementType: "labels.text.fill",
+            stylers: [{ color: "#73370c" }] // アプリのテーマカラー（茶色）
+          },
+          {
+            featureType: "road",
+            elementType: "labels.text.stroke",
+            stylers: [{ color: "#ffffff" }, { weight: 2 }]
+          },
+          {
+            featureType: "poi",
+            elementType: "geometry",
+            stylers: [{ color: "#fef3e8" }] // 薄いベージュ
+          },
+          {
+            featureType: "poi.park",
+            elementType: "geometry",
+            stylers: [{ color: "#e8f5e9" }] // 薄い緑（公園）
+          },
+          {
+            featureType: "poi",
+            elementType: "labels.text.fill",
+            stylers: [{ color: "#8b6332" }] // 茶色系
+          },
+          {
+            featureType: "poi",
+            elementType: "labels.icon",
+            stylers: [{ visibility: "simplified" }] // POIアイコンを簡略化
+          },
+          {
+            featureType: "transit",
+            elementType: "geometry",
+            stylers: [{ color: "#e5e5e5" }]
+          },
+          {
+            featureType: "transit.station",
+            elementType: "labels.text.fill",
+            stylers: [{ color: "#73370c" }]
+          },
+          {
+            featureType: "administrative",
+            elementType: "geometry.stroke",
+            stylers: [{ color: "#c9b2a6" }] // 境界線を薄茶色
+          },
+          {
+            featureType: "administrative.land_parcel",
+            elementType: "labels.text.fill",
+            stylers: [{ color: "#ae9e90" }]
+          }
+        ]
       };
 
       const newMap = new window.google.maps.Map(container, mapOptions);
