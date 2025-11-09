@@ -224,16 +224,6 @@ export default function CalendarPage() {
     }
   };
 
-  // 更新処理
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    try {
-      await fetchEvents();
-    } finally {
-      setTimeout(() => setIsRefreshing(false), 800);
-    }
-  };
-
   // 長期間イベント（月を跨ぐイベント）を抽出
   const longTermEvents = useMemo(() => {
     return events.filter(event => {
@@ -469,23 +459,6 @@ export default function CalendarPage() {
 
           {/* 右下のナビゲーションボタン */}
           <div className="fixed bottom-4 right-4 z-30 flex flex-col gap-2">
-          {/* 更新ボタン */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.3 }}
-            className="flex flex-col items-center"
-          >
-            <Button
-              onClick={handleRefresh}
-              disabled={isRefreshing}
-              size="icon"
-              className="h-14 w-14 rounded-full shadow-lg bg-[#73370c] hover:bg-[#5c2a0a] border-2 border-white disabled:opacity-50"
-            >
-              <RefreshCw className={`h-7 w-7 text-white ${isRefreshing ? 'animate-spin' : ''}`} />
-            </Button>
-            <span className="text-xs font-bold text-gray-700 mt-1">更新</span>
-          </motion.div>
 
           {/* マップアイコン */}
           <motion.div
