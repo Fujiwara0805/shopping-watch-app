@@ -7,8 +7,73 @@ import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, parseISO, getDay } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, parseISO, getDay, getYear, getMonth, getDate, addDays } from 'date-fns';
 import { ja } from 'date-fns/locale';
+
+// 祝日データ（日本の祝日）
+const getHolidays = (year: number): Record<string, string> => {
+  const holidays: Record<string, string> = {
+    [`${year}-01-01`]: '元日',
+    [`${year}-01-08`]: '成人の日', // 第2月曜日（簡易実装）
+    [`${year}-02-11`]: '建国記念の日',
+    [`${year}-02-23`]: '天皇誕生日',
+    [`${year}-03-20`]: '春分の日', // 概算
+    [`${year}-04-29`]: '昭和の日',
+    [`${year}-05-03`]: '憲法記念日',
+    [`${year}-05-04`]: 'みどりの日',
+    [`${year}-05-05`]: 'こどもの日',
+    [`${year}-07-15`]: '海の日', // 第3月曜日（簡易実装）
+    [`${year}-08-11`]: '山の日',
+    [`${year}-09-16`]: '敬老の日', // 第3月曜日（簡易実装）
+    [`${year}-09-23`]: '秋分の日', // 概算
+    [`${year}-10-14`]: 'スポーツの日', // 第2月曜日（簡易実装）
+    [`${year}-11-03`]: '文化の日',
+    [`${year}-11-23`]: '勤労感謝の日',
+  };
+  return holidays;
+};
+
+// 六曜を計算する関数
+const getRokuyo = (date: Date): string => {
+  const year = getYear(date);
+  const month = getMonth(date) + 1; // 0-11 → 1-12
+  const day = getDate(date);
+  
+  // 旧暦の月日の合計を6で割った余りで六曜を決定（簡易計算）
+  const rokuyoArray = ['大安', '赤口', '先勝', '友引', '先負', '仏滅'];
+  const index = (month + day) % 6;
+  
+  return rokuyoArray[index];
+};
+
+// 祝日かどうかを判定する関数
+const isHoliday = (date: Date): boolean => {
+  const year = getYear(date);
+  const holidays = getHolidays(year);
+  const dateStr = format(date, 'yyyy-MM-dd');
+  return dateStr in holidays;
+};
+
+// 振替休日かどうかを判定する関数
+const isSubstituteHoliday = (date: Date): boolean => {
+  // 月曜日でなければ振替休日ではない
+  if (getDay(date) !== 1) return false;
+  
+  // 前日（日曜日）をチェック
+  const previousDay = addDays(date, -1);
+  
+  // 前日が日曜日かつ祝日の場合、振替休日
+  if (getDay(previousDay) === 0 && isHoliday(previousDay)) {
+    return true;
+  }
+  
+  return false;
+};
+
+// 祝日または振替休日かどうかを判定する関数
+const isHolidayOrSubstitute = (date: Date): boolean => {
+  return isHoliday(date) || isSubstituteHoliday(date);
+};
 
 // イベントデータの型定義
 interface EventPost {
@@ -231,52 +296,60 @@ export default function CalendarPage() {
     return weekDays[getDay(day)];
   };
 
-  // 曜日の色を取得
+  // 曜日の色を取得（祝日・振替休日も日曜日と同じ赤色）
   const getDayColor = (day: Date): string => {
     const dayOfWeek = getDay(day);
-    if (dayOfWeek === 0) return 'text-red-600'; // 日曜日
+    if (dayOfWeek === 0 || isHolidayOrSubstitute(day)) return 'text-red-600'; // 日曜日、祝日、または振替休日
     if (dayOfWeek === 6) return 'text-blue-600'; // 土曜日
     return 'text-gray-700';
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50">
-      {/* ヘッダー - イベント一覧画面と同じデザイン */}
-      <div className="sticky top-0 z-10 border-b bg-[#73370c]">
-        <div className="p-4">
-          <div className="max-w-4xl mx-auto px-4 py-2 flex items-center justify-center">
-            <h1 className="text-3xl font-bold text-white">イベントカレンダー</h1>
-          </div>
-
-          {/* 月の切り替え */}
-          <div className="flex items-center justify-center gap-4 mt-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handlePreviousMonth}
-              className="text-white hover:bg-white/20"
-            >
-              <ChevronLeft className="h-5 w-5" />
-            </Button>
-            
-            <h2 className="text-xl font-bold text-white min-w-[150px] text-center">
-              {format(currentDate, 'yyyy年 M月', { locale: ja })}
-            </h2>
-            
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleNextMonth}
-              className="text-white hover:bg-white/20"
-            >
-              <ChevronRight className="h-5 w-5" />
-            </Button>
-          </div>
+      {/* ローディング画面 */}
+      {loading ? (
+        <div className="min-h-screen flex flex-col items-center justify-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-[#73370c] mb-4"></div>
+          <p className="text-lg font-semibold text-[#73370c]">読み込み中...</p>
         </div>
-      </div>
+      ) : (
+        <>
+          {/* ヘッダー - イベント一覧画面と同じデザイン */}
+          <div className="sticky top-0 z-10 border-b bg-[#73370c]">
+            <div className="p-4">
+              <div className="max-w-4xl mx-auto px-4 py-2 flex items-center justify-center">
+                <h1 className="text-3xl font-bold text-white">イベントカレンダー</h1>
+              </div>
 
-      {/* コンテンツエリア */}
-      <div className="container mx-auto px-4 py-6 max-w-4xl pb-24">
+              {/* 月の切り替え */}
+              <div className="flex items-center justify-center gap-4 mt-2">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handlePreviousMonth}
+                  className="text-white hover:bg-white/20"
+                >
+                  <ChevronLeft className="h-5 w-5" />
+                </Button>
+                
+                <h2 className="text-xl font-bold text-white min-w-[150px] text-center">
+                  {format(currentDate, 'yyyy年 M月', { locale: ja })}
+                </h2>
+                
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleNextMonth}
+                  className="text-white hover:bg-white/20"
+                >
+                  <ChevronRight className="h-5 w-5" />
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {/* コンテンツエリア */}
+          <div className="container mx-auto px-4 py-6 max-w-4xl pb-24">
 
         {/* 長期間イベント情報セクション（トグル式） */}
         {longTermEvents.length > 0 && (
@@ -325,66 +398,63 @@ export default function CalendarPage() {
           </div>
         )}
 
-        {/* カレンダーグリッド */}
-        {loading ? (
-          <div className="flex justify-center items-center h-96">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#73370c]"></div>
-          </div>
-        ) : daysWithEvents.length === 0 && longTermEvents.length === 0 ? (
-          <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
-            <CalendarIcon className="h-16 w-16 mx-auto mb-4 text-gray-300" />
-            <p className="text-lg text-gray-500">この月にイベントはありません</p>
-          </div>
-        ) : (
-          <>
-            {daysWithEvents.length > 0 && (
-              <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-                {/* イベントがある日付のみ表示 */}
-                <div className="divide-y divide-gray-200">
-                  {daysWithEvents.map((day) => {
-                    const dayEvents = getEventsForDay(day);
-                    const isToday = isSameDay(day, new Date());
-                    const dayOfWeek = getDayOfWeek(day);
-                    const dayColor = getDayColor(day);
+            {/* カレンダーグリッド */}
+            {daysWithEvents.length === 0 && longTermEvents.length === 0 ? (
+              <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
+                <CalendarIcon className="h-16 w-16 mx-auto mb-4 text-gray-300" />
+                <p className="text-lg text-gray-500">この月にイベントはありません</p>
+              </div>
+            ) : (
+              <>
+                {daysWithEvents.length > 0 && (
+                  <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+                    {/* イベントがある日付のみ表示 */}
+                    <div className="divide-y divide-gray-200">
+                      {daysWithEvents.map((day) => {
+                        const dayEvents = getEventsForDay(day);
+                        const isToday = isSameDay(day, new Date());
+                        const dayOfWeek = getDayOfWeek(day);
+                        const dayColor = getDayColor(day);
+                        const rokuyo = getRokuyo(day);
 
-                    return (
-                      <div
-                        key={day.toISOString()}
-                        className={`p-4 bg-white ${isToday ? 'border-l-4 border-[#73370c]' : ''}`}
-                      >
-                        {/* 日付と曜日 - 中央揃え */}
-                        <div className="mb-3 text-center">
-                          <div className={`text-xl font-bold ${dayColor}`}>
-                            {format(day, 'd')}日（{dayOfWeek}）
-                          </div>
-                        </div>
-
-                        {/* イベント一覧 */}
-                        <div className="space-y-2">
-                          {dayEvents.map((event) => (
-                            <div
-                              key={event.id}
-                              className="bg-[#fef3e8] rounded-lg px-4 py-3 border-l-4 border-[#73370c] hover:shadow-md transition-all cursor-pointer hover:translate-x-1"
-                              onClick={() => handleEventClick(event.id)}
-                            >
-                              <div className="font-semibold text-base" style={{ color: '#73370c' }}>
-                                {event.name}
+                        return (
+                          <div
+                            key={day.toISOString()}
+                            className={`p-4 bg-white ${isToday ? 'border-l-4 border-[#73370c]' : ''}`}
+                          >
+                            {/* 日付と曜日と六曜 - 中央揃え */}
+                            <div className="mb-3 text-center">
+                              <div className={`text-xl font-bold ${dayColor}`}>
+                                {format(day, 'd')}日（{dayOfWeek}）<span className="text-sm ml-2">{rokuyo}</span>
                               </div>
                             </div>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </>
-        )}
-      </div>
 
-      {/* 右下のナビゲーションボタン */}
-      <div className="fixed bottom-4 right-4 z-30 flex flex-col gap-2">
+                            {/* イベント一覧 */}
+                            <div className="space-y-2">
+                              {dayEvents.map((event) => (
+                                <div
+                                  key={event.id}
+                                  className="bg-[#fef3e8] rounded-lg px-4 py-3 border-l-4 border-[#73370c] hover:shadow-md transition-all cursor-pointer hover:translate-x-1"
+                                  onClick={() => handleEventClick(event.id)}
+                                >
+                                  <div className="font-semibold text-base" style={{ color: '#73370c' }}>
+                                    {event.name}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* 右下のナビゲーションボタン */}
+          <div className="fixed bottom-4 right-4 z-30 flex flex-col gap-2">
           {/* 更新ボタン */}
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
@@ -437,6 +507,8 @@ export default function CalendarPage() {
             <span className="text-xs font-bold text-gray-700 mt-1">一覧</span>
           </motion.div>
         </div>
+        </>
+      )}
     </div>
   );
 }
