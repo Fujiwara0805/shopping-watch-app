@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, MapPin, Calendar, Map, ExternalLink, AlertCircle, Phone, FileText, DollarSign, MapPinned, Link as LinkIcon, ChevronLeft, ChevronRight, X, ChevronDown, ChevronUp } from 'lucide-react';
+import {  MapPin, Calendar, Map, ExternalLink, AlertCircle, Phone, FileText, DollarSign, MapPinned, Link as LinkIcon, ChevronLeft, ChevronRight, X, ChevronDown, ChevronUp } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 
 interface EventDetail {
@@ -233,7 +233,7 @@ export function EventDetailClient({ eventId }: EventDetailClientProps) {
   };
 
   const openGoogleMaps = () => {
-    const url = `https://www.google.com/maps/search/?api=1&query=${event.store_latitude},${event.store_longitude}`;
+    const url = `https://www.google.com/maps/search/?api=1&query=${event.store_name}`;
     window.open(url, '_blank');
   };
 
@@ -266,13 +266,6 @@ export function EventDetailClient({ eventId }: EventDetailClientProps) {
 
   return (
     <div className="min-h-screen bg-gray-50 overflow-y-auto font-bold">
-      {/* ヘッダー */}
-      <div className="bg-[#73370c] border-b sticky top-0 z-10 shadow-sm">
-        <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-center">
-          <h1 className="text-2xl font-bold text-white">イベント詳細画面</h1>
-        </div>
-      </div>
-
       {/* メインコンテンツ */}
       <div className="max-w-4xl mx-auto pb-20">
         <motion.div
@@ -292,15 +285,6 @@ export function EventDetailClient({ eventId }: EventDetailClientProps) {
                 decoding="async"
                 fetchPriority="high"
               />
-              
-              {/* 右上の閉じるボタン */}
-              <Button
-                onClick={() => router.back()}
-                size="icon"
-                className="absolute top-4 right-4 h-10 w-10 rounded-full bg-black/50 hover:bg-black/70 text-white border-2 border-white shadow-lg z-10 font-bold"
-              >
-                <X className="h-6 w-6" />
-              </Button>
               
               {/* 画像ナビゲーション */}
               {event.image_urls.length > 1 && (
@@ -337,15 +321,6 @@ export function EventDetailClient({ eventId }: EventDetailClientProps) {
           ) : (
             <div className="relative h-80 w-full bg-gradient-to-br from-[#73370c] to-[#8B4513] flex items-center justify-center">
               <Calendar className="h-32 w-32 text-white opacity-50" />
-              
-              {/* 右上の閉じるボタン（画像なしの場合） */}
-              <Button
-                onClick={() => router.back()}
-                size="icon"
-                className="absolute top-4 right-4 h-10 w-10 rounded-full bg-black/50 hover:bg-black/70 text-white border-2 border-white shadow-lg font-bold"
-              >
-                <X className="h-6 w-6" />
-              </Button>
             </div>
           )}
 
@@ -375,8 +350,8 @@ export function EventDetailClient({ eventId }: EventDetailClientProps) {
 
             {/* 投稿内容 */}
             <div className="px-4 py-5 border-b">
-              <div className="bg-blue-50 border-l-4 border-[#73370c] p-4 rounded-r-lg">
-                <p className="text-gray-500 leading-relaxed whitespace-pre-wrap">
+              <div>
+                <p className="text-black leading-relaxed whitespace-pre-wrap font-medium">
                   {displayContent}
                 </p>
                 {shouldTruncate && (
@@ -408,7 +383,7 @@ export function EventDetailClient({ eventId }: EventDetailClientProps) {
                   <MapPin className="h-5 w-5 mt-1 flex-shrink-0 text-red-500" />
                   <div className="flex-1">
                     <p className="font-bold text-gray-900 mb-1">開催場所</p>
-                    <p className="text-gray-700 font-bold mb-2">
+                    <p className="text-gray-700 font-medium mb-2">
                       {event.store_name}
                     </p>
                     <p className="text-xs text-gray-500 mb-2">
@@ -435,7 +410,7 @@ export function EventDetailClient({ eventId }: EventDetailClientProps) {
                     <p className="font-bold text-gray-900 mb-1">開催期間</p>
                     {event.event_start_date ? (
                       <>
-                        <p className="text-gray-700 font-bold mb-2">
+                        <p className="text-gray-700 font-medium mb-2">
                           {new Date(event.event_start_date).toLocaleDateString('ja-JP', {
                             year: 'numeric',
                             month: 'long',
@@ -466,7 +441,7 @@ export function EventDetailClient({ eventId }: EventDetailClientProps) {
                     <DollarSign className="h-5 w-5 mt-1 flex-shrink-0 text-green-500" />
                     <div className="flex-1">
                       <p className="font-bold text-gray-900 mb-1">料金</p>
-                      <p className="text-gray-700 font-bold">{event.event_price}</p>
+                      <p className="text-gray-700 font-medium">{event.event_price}</p>
                     </div>
                   </div>
                 </div>
@@ -481,7 +456,7 @@ export function EventDetailClient({ eventId }: EventDetailClientProps) {
                       <p className="font-bold text-gray-900 mb-1">電話番号</p>
                       <a
                         href={`tel:${event.phone_number}`}
-                        className="text-[#73370c] hover:text-[#5c2a0a] font-bold"
+                        className="text-[#73370c] hover:text-[#5c2a0a] font-medium"
                       >
                         {event.phone_number}
                       </a>
@@ -531,7 +506,7 @@ export function EventDetailClient({ eventId }: EventDetailClientProps) {
                             className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
                           >
                             <FileText className="h-4 w-4 text-gray-600" />
-                            <span className="text-sm text-gray-700 flex-1 font-bold">
+                            <span className="text-sm text-gray-700 flex-1 font-medium">
                               ファイル {index + 1}
                             </span>
                             <ExternalLink className="h-4 w-4 text-gray-400" />

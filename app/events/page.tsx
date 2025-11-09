@@ -286,7 +286,7 @@ export default function EventsPage() {
     try {
       const now = new Date();
 
-      // 🔥 マップ画面と同じロジック：全件取得（ページネーションなし）
+      // 🔥 開催中、開催予定のイベント全件取得（ページネーションなし）
       let query = supabase
         .from('posts')
         .select(`
@@ -564,8 +564,8 @@ export default function EventsPage() {
         <div className="sticky top-0 z-10 border-b bg-[#73370c]">
           <div className="p-4">
             {/* タイトル */}
-            <div className="max-w-4xl mx-auto px-4 py-2 flex items-center justify-center">
-              <h1 className="text-3xl font-bold text-white">イベント一覧</h1>
+            <div className="max-w-4xl mx-auto px-4  flex items-center justify-center">
+              <h1 className="text-2xl font-bold text-white">イベント一覧</h1>
             </div>
             
             {/* フィルターボタン */}

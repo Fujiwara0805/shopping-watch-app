@@ -36,6 +36,7 @@
     padding: 0;
     width: 100%;
     height: 100%;
+    font-family: 'Yu Gothic', YuGothic, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
   }
 
   /* モバイルでのズーム防止 */

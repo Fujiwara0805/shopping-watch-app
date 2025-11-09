@@ -632,24 +632,6 @@ export default function Home() {
         description="近くのイベントを地図上で表示するために位置情報を使用します"
       >
         <div className="space-y-6">
-          <div className="space-y-4">
-            <div className="flex items-start gap-3">
-              <MapPin className="h-6 w-6 text-[#73370c] mt-0.5 flex-shrink-0" strokeWidth={2.5} />
-              <div className="text-sm sm:text-base text-gray-700">
-                <p className="font-bold mb-1">現在地周辺のイベントを表示</p>
-                <p className="text-gray-600 font-semibold">あなたの位置情報を使って、近くで開催中のイベントを地図上に表示します。</p>
-              </div>
-            </div>
-            
-            <div className="flex items-start gap-3">
-              <Calendar className="h-6 w-6 text-[#73370c] mt-0.5 flex-shrink-0" strokeWidth={2.5} />
-              <div className="text-sm sm:text-base text-gray-700">
-                <p className="font-bold mb-1">プライバシーを保護</p>
-                <p className="text-gray-600 font-semibold">位置情報はイベント検索のみに使用し、外部に共有されることはありません。</p>
-              </div>
-            </div>
-          </div>
-
           <div className="space-y-3">
             <Button
               onClick={handleAllowLocation}

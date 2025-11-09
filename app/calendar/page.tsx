@@ -320,9 +320,9 @@ export default function CalendarPage() {
         <>
           {/* ヘッダー - コンパクトなデザイン */}
           <div className="sticky top-0 z-10 border-b bg-[#73370c]">
-            <div className="p-3">
-              <div className="max-w-4xl mx-auto px-4 py-1 flex items-center justify-center">
-                <h1 className="text-3xl font-bold text-white">イベントカレンダー</h1>
+            <div className="px-4 py-1">
+              <div className="max-w-4xl mx-auto px-4 flex items-center justify-center">
+                <h1 className="text-2xl font-bold text-white">イベントカレンダー</h1>
               </div>
 
               {/* 月の切り替え */}
