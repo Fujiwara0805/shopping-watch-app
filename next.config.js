@@ -12,7 +12,7 @@ const nextConfig = {
     dangerouslyAllowSVG: true,
     contentDispositionType: 'attachment',
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
-    domains: ['res.cloudinary.com'], // Cloudinary画像の最適化
+    domains: ['res.cloudinary.com', 'fuanykkpsjiynzzkkhtv.supabase.co'], // Cloudinary画像とSupabase Storage画像の最適化
   },
   // LCP改善：コンパイル最適化
   compiler: {
