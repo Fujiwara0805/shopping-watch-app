@@ -54,8 +54,8 @@ const createSimpleEventIcon = () => {
   };
 };
 
-// 🔥 画像付きイベント情報用のアイコンを作成（円形・白縁・40x40）
-const createEventPinIcon = async (imageUrls: string[] | null): Promise<google.maps.Icon> => {
+// 🔥 画像付きイベント情報用のアイコンを作成（円形・白縁・40x40 + イベント名テキスト）
+const createEventPinIcon = async (imageUrls: string[] | null, eventName: string | null): Promise<google.maps.Icon> => {
   // 🔥 image_urlsが文字列の場合はパースを試みる
   let parsedUrls = imageUrls;
   if (typeof imageUrls === 'string') {
@@ -74,53 +74,80 @@ const createEventPinIcon = async (imageUrls: string[] | null): Promise<google.ma
     return createSimpleEventIcon();
   }
 
-  // 🔥 画像を円形・白縁で40x40サイズに
-  const size = 40;
+  // 🔥 画像を円形・白縁で40x40サイズに + イベント名を下に表示
+  const imageSize = 40;
   const borderWidth = 2; // 白い縁の幅
+  const textPadding = 4; // 画像とテキストの間のパディング
+  
+  // イベント名を10文字に制限（11文字目以降は...）
+  const truncatedEventName = eventName && eventName.length > 10 
+    ? `${eventName.substring(0, 10)}...` 
+    : (eventName || '');
   
   return new Promise<google.maps.Icon>((resolve) => {
     const img = new Image();
     img.crossOrigin = 'anonymous';
     
     img.onload = () => {
-      // Canvasで円形画像を作成
+      // 一時的なCanvasでテキストの幅を測定
+      const tempCanvas = document.createElement('canvas');
+      const tempCtx = tempCanvas.getContext('2d');
+      if (!tempCtx) {
+        resolve(createSimpleEventIcon());
+        return;
+      }
+      
+      // テキスト幅を測定
+      tempCtx.font = 'bold 11px sans-serif';
+      const textMetrics = tempCtx.measureText(truncatedEventName);
+      const textWidth = textMetrics.width;
+      const textHeight = 14; // フォントサイズ + 余白
+      
+      // Canvasサイズを決定（画像とテキストの幅の大きい方）
+      const canvasWidth = Math.max(imageSize, Math.ceil(textWidth)) + 4; // 左右に2pxずつ余白
+      const canvasHeight = imageSize + textPadding + textHeight;
+      
+      // 実際の描画用Canvas
       const canvas = document.createElement('canvas');
-      canvas.width = size;
-      canvas.height = size;
+      canvas.width = canvasWidth;
+      canvas.height = canvasHeight;
       const ctx = canvas.getContext('2d');
       
       if (!ctx) {
-        // Canvas が使えない場合は簡易アイコン
         resolve(createSimpleEventIcon());
         return;
       }
 
       // 背景を透明に
-      ctx.clearRect(0, 0, size, size);
+      ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+      
+      // 円形画像を中央に描画するためのオフセット
+      const imageOffsetX = (canvasWidth - imageSize) / 2;
       
       // 円形のクリッピングパスを作成
       ctx.save();
+      ctx.translate(imageOffsetX, 0);
       ctx.beginPath();
-      ctx.arc(size / 2, size / 2, size / 2 - borderWidth, 0, Math.PI * 2);
+      ctx.arc(imageSize / 2, imageSize / 2, imageSize / 2 - borderWidth, 0, Math.PI * 2);
       ctx.closePath();
       ctx.clip();
       
       // 画像を円形に描画（中央に配置してトリミング）
       // 画像のアスペクト比を保ちながら円形にフィット
       const imgAspect = img.width / img.height;
-      let drawWidth = size;
-      let drawHeight = size;
+      let drawWidth = imageSize;
+      let drawHeight = imageSize;
       let offsetX = 0;
       let offsetY = 0;
       
       if (imgAspect > 1) {
         // 横長の画像
         drawWidth = drawHeight * imgAspect;
-        offsetX = -(drawWidth - size) / 2;
+        offsetX = -(drawWidth - imageSize) / 2;
       } else {
         // 縦長の画像
         drawHeight = drawWidth / imgAspect;
-        offsetY = -(drawHeight - size) / 2;
+        offsetY = -(drawHeight - imageSize) / 2;
       }
       
       ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
@@ -129,19 +156,34 @@ const createEventPinIcon = async (imageUrls: string[] | null): Promise<google.ma
       ctx.restore();
       
       // 白い縁を描画
+      ctx.save();
+      ctx.translate(imageOffsetX, 0);
       ctx.beginPath();
-      ctx.arc(size / 2, size / 2, size / 2 - borderWidth / 2, 0, Math.PI * 2);
+      ctx.arc(imageSize / 2, imageSize / 2, imageSize / 2 - borderWidth / 2, 0, Math.PI * 2);
       ctx.strokeStyle = '#404040';
       ctx.lineWidth = borderWidth;
       ctx.stroke();
+      ctx.restore();
+      
+      // イベント名を描画（一覧アイコンやマイページアイコンと同じスタイル）
+      if (truncatedEventName) {
+        ctx.font = 'bold 11px sans-serif';
+        ctx.fillStyle = '#374151'; // text-gray-700
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        
+        // テキストを描画（中央に配置）
+        const textY = imageSize + textPadding;
+        ctx.fillText(truncatedEventName, canvasWidth / 2, textY);
+      }
       
       // CanvasをData URLに変換
       const dataUrl = canvas.toDataURL('image/png');
       
       resolve({
         url: dataUrl,
-        scaledSize: new window.google.maps.Size(size, size),
-        anchor: new window.google.maps.Point(size / 2, size),
+        scaledSize: new window.google.maps.Size(canvasWidth, canvasHeight),
+        anchor: new window.google.maps.Point(canvasWidth / 2, imageSize),
       });
     };
     
@@ -468,8 +510,8 @@ export function MapView() {
         const position = new window.google.maps.LatLng(post.store_latitude, post.store_longitude);
         const markerTitle = `${post.store_name} - イベント情報`;
 
-        // 🔥 画像アイコンを作成
-        const markerIcon = await createEventPinIcon(post.image_urls);
+        // 🔥 画像アイコンを作成（イベント名も渡す）
+        const markerIcon = await createEventPinIcon(post.image_urls, post.event_name);
 
         const marker = new window.google.maps.Marker({
           position,
