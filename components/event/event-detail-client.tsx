@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import {  MapPin, Calendar, Map, ExternalLink, AlertCircle, Phone, FileText, DollarSign, MapPinned, Link as LinkIcon, ChevronLeft, ChevronRight, X, ChevronDown, ChevronUp } from 'lucide-react';
+import {  MapPin, Calendar, Map, ExternalLink, AlertCircle, Phone, FileText, DollarSign, MapPinned, Link as LinkIcon, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 
 interface EventDetail {
@@ -39,7 +39,6 @@ export function EventDetailClient({ eventId }: EventDetailClientProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [isContentExpanded, setIsContentExpanded] = useState(false);
 
   useEffect(() => {
     if (!eventId) return;
@@ -257,13 +256,6 @@ export function EventDetailClient({ eventId }: EventDetailClientProps) {
   };
   const colors = statusColors[eventStatus.color as keyof typeof statusColors];
 
-  // 投稿内容の表示制御
-  const contentText = event.content;
-  const shouldTruncate = contentText.length > 100;
-  const displayContent = shouldTruncate && !isContentExpanded 
-    ? contentText.slice(0, 100) 
-    : contentText;
-
   return (
     <div className="min-h-screen bg-gray-50 overflow-y-auto font-bold">
       {/* メインコンテンツ */}
@@ -352,26 +344,8 @@ export function EventDetailClient({ eventId }: EventDetailClientProps) {
             <div className="px-4 py-5 border-b">
               <div>
                 <p className="text-black leading-relaxed whitespace-pre-wrap font-medium">
-                  {displayContent}
+                  {event.content}
                 </p>
-                {shouldTruncate && (
-                  <button
-                    onClick={() => setIsContentExpanded(!isContentExpanded)}
-                    className="mt-2 flex items-center gap-1 text-[#73370c] hover:text-[#5c2a0a] font-bold text-sm"
-                  >
-                    {isContentExpanded ? (
-                      <>
-                        <ChevronUp className="h-4 w-4" />
-                        閉じる
-                      </>
-                    ) : (
-                      <>
-                        <ChevronDown className="h-4 w-4" />
-                        続きを読む
-                      </>
-                    )}
-                  </button>
-                )}
               </div>
             </div>
 
