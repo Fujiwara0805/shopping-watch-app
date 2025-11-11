@@ -389,10 +389,13 @@ export default function CalendarPage() {
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50">
       {/* ローディング画面 */}
       {loading ? (
-        <div className="min-h-screen flex flex-col items-center justify-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-[#73370c] mb-4"></div>
-          <p className="text-lg font-semibold text-[#73370c]">読み込み中...</p>
-        </div>
+        <>
+          <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50">
+            <div className="flex items-center justify-center pt-20">
+              <div className="w-6 h-6 border-2 border-gray-300 border-t-orange-500 rounded-full animate-spin"></div>
+            </div>
+          </div>
+        </>
       ) : (
         <>
           {/* ヘッダー - コンパクトなデザイン */}
