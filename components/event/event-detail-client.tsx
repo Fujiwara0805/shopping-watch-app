@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import {  MapPin, Calendar, Map, ExternalLink, AlertCircle, Phone, FileText, DollarSign, MapPinned, Link as LinkIcon, ChevronLeft, ChevronRight, X } from 'lucide-react';
@@ -35,10 +35,35 @@ interface EventDetailClientProps {
 
 export function EventDetailClient({ eventId }: EventDetailClientProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [event, setEvent] = useState<EventDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  // 戻るボタンの処理
+  const handleBack = () => {
+    const from = searchParams.get('from');
+    
+    if (from === 'events') {
+      // イベント一覧から来た場合は、フィルター状態を保持して戻る
+      const city = searchParams.get('city');
+      const sort = searchParams.get('sort');
+      const duration = searchParams.get('duration');
+      
+      const params = new URLSearchParams();
+      if (city) params.set('city', city);
+      if (sort) params.set('sort', sort);
+      if (duration) params.set('duration', duration);
+      
+      const queryString = params.toString();
+      const url = queryString ? `/events?${queryString}` : '/events';
+      router.push(url);
+    } else {
+      // その他の場合はブラウザの履歴で戻る
+      router.back();
+    }
+  };
 
   useEffect(() => {
     if (!eventId) return;
@@ -213,7 +238,7 @@ export function EventDetailClient({ eventId }: EventDetailClientProps) {
           <AlertCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
           <h2 className="text-xl font-bold text-gray-900 mb-2">エラー</h2>
           <p className="text-gray-600 font-bold mb-6">{error || 'イベントが見つかりませんでした。'}</p>
-          <Button onClick={() => router.back()} className="w-full font-bold">
+          <Button onClick={handleBack} className="w-full font-bold">
             戻る
           </Button>
         </div>
@@ -515,7 +540,7 @@ export function EventDetailClient({ eventId }: EventDetailClientProps) {
               )}
 
               <Button
-                onClick={() => router.back()}
+                onClick={handleBack}
                 variant="outline"
                 className="w-full py-6 text-lg rounded-xl border-2 font-bold"
               >

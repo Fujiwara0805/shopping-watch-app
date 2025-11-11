@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, MapPin, Map, Newspaper, ChevronDown, ChevronUp, RefreshCw, ArrowUp, Trash2, Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -108,6 +108,7 @@ interface CalendarEvent {
 
 export default function CalendarPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
   const { data: session } = useSession();
   const currentUserId = session?.user?.id;
@@ -119,7 +120,7 @@ export default function CalendarPage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
   
-  // フィルター・ソート関連
+  // フィルター・ソート関連（URLパラメータまたはsessionStorageから復元）
   const [sortBy, setSortBy] = useState<'date' | 'distance'>('date');
   const [selectedPrefecture] = useState('大分県'); // 大分県固定
   const [selectedCity, setSelectedCity] = useState('all');
@@ -133,6 +134,46 @@ export default function CalendarPage() {
   
   // 削除中のイベントIDを管理
   const [deletingEventId, setDeletingEventId] = useState<string | null>(null);
+
+  // URLパラメータまたはsessionStorageからフィルター状態を復元
+  useEffect(() => {
+    const cityParam = searchParams.get('city');
+    const sortParam = searchParams.get('sort');
+    const durationParam = searchParams.get('duration');
+    
+    if (cityParam) {
+      setSelectedCity(cityParam);
+    } else {
+      // URLパラメータがない場合はsessionStorageから復元
+      const savedCity = sessionStorage.getItem('eventFilterCity');
+      if (savedCity) setSelectedCity(savedCity);
+    }
+    
+    if (sortParam && (sortParam === 'date' || sortParam === 'distance')) {
+      setSortBy(sortParam);
+    } else {
+      const savedSort = sessionStorage.getItem('eventFilterSort');
+      if (savedSort && (savedSort === 'date' || savedSort === 'distance')) {
+        setSortBy(savedSort as 'date' | 'distance');
+      }
+    }
+    
+    if (durationParam && ['all', '1', '2+', '7+', '14+'].includes(durationParam)) {
+      setSelectedDuration(durationParam as 'all' | '1' | '2+' | '7+' | '14+');
+    } else {
+      const savedDuration = sessionStorage.getItem('eventFilterDuration');
+      if (savedDuration && ['all', '1', '2+', '7+', '14+'].includes(savedDuration)) {
+        setSelectedDuration(savedDuration as 'all' | '1' | '2+' | '7+' | '14+');
+      }
+    }
+  }, [searchParams]);
+
+  // フィルター変更時にsessionStorageに保存
+  useEffect(() => {
+    sessionStorage.setItem('eventFilterCity', selectedCity);
+    sessionStorage.setItem('eventFilterSort', sortBy);
+    sessionStorage.setItem('eventFilterDuration', selectedDuration);
+  }, [selectedCity, sortBy, selectedDuration]);
 
   // 位置情報取得
   useEffect(() => {
@@ -447,9 +488,17 @@ export default function CalendarPage() {
     });
   };
 
-  // イベントクリック時の処理
+  // イベントクリック時の処理（フィルター状態を保存してから遷移）
   const handleEventClick = (eventId: string) => {
-    router.push(`/map/event/${eventId}`);
+    // 現在のフィルター状態をクエリパラメータとして渡す
+    const params = new URLSearchParams();
+    if (selectedCity !== 'all') params.set('city', selectedCity);
+    if (sortBy !== 'date') params.set('sort', sortBy);
+    if (selectedDuration !== 'all') params.set('duration', selectedDuration);
+    
+    const queryString = params.toString();
+    const url = queryString ? `/map/event/${eventId}?from=events&${queryString}` : `/map/event/${eventId}?from=events`;
+    router.push(url);
   };
 
   // 月の切り替え
