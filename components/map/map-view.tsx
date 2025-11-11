@@ -1130,7 +1130,7 @@ export function MapView() {
           </motion.div>
 
           {/* 🔥 メモアイコン（新規追加） */}
-          {/* <motion.div
+           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.3, delay: 0.3 }}
@@ -1144,7 +1144,7 @@ export function MapView() {
               <ShoppingBag className="h-6 w-6 text-white" />
             </Button>
             <span className="text-sm font-bold text-gray-700 ">メモ</span>
-          </motion.div> */}
+          </motion.div> 
         </div>
       )}
 
