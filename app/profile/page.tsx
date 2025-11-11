@@ -640,13 +640,31 @@ function ProfilePageContent() {
         </div>
       </div>
 
-      {/* 右下のボタングループ（マップと買い物メモ） */}
+      {/* 右下のボタングループ（マップとメモ） */}
       <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-3">
+        {/* メモボタン */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.3, delay: 0.2 }}
+          className="flex flex-col items-center"
+        >
+          <Button
+            onClick={() => router.push('/memo')}
+            size="icon"
+            className="h-14 w-14 rounded-full shadow-2xl bg-[#73370c] text-white border-2 border-white"
+          >
+            <ShoppingBag className="h-6 w-6" />
+          </Button>
+          <span className="text-xs font-bold text-gray-700 mt-1">メモ</span>
+        </motion.div>
+        
         {/* マップボタン */}
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.3, delay: 0.1 }}
+          className="flex flex-col items-center"
         >
           <Button
             onClick={() => router.push('/map')}
@@ -655,6 +673,7 @@ function ProfilePageContent() {
           >
             <Map className="h-6 w-6" />
           </Button>
+          <span className="text-xs font-bold text-gray-700 mt-1">Map</span>
         </motion.div>
       </div>
 

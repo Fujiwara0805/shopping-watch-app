@@ -1154,7 +1154,7 @@ export function MapView() {
               </div>
               <div className="text-xs text-gray-600">
                 {posts.length > 0 
-                  ? `${posts.length}件のイベント情報有`
+                  ? `開催中のイベント:${posts.length}件`
                   : "イベント情報を検索中..."
                 }
               </div>

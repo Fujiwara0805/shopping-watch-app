@@ -885,7 +885,7 @@ export default function CalendarPage() {
             >
               <Map className="h-7 w-7 text-white" />
             </Button>
-            <span className="text-xs font-bold text-gray-700 mt-1">マップ</span>
+            <span className="text-xs font-bold text-gray-700 mt-1">Map</span>
           </motion.div>
         </div>
         </>
