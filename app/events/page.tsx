@@ -120,11 +120,39 @@ export default function CalendarPage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
   
-  // フィルター・ソート関連（URLパラメータまたはsessionStorageから復元）
-  const [sortBy, setSortBy] = useState<'date' | 'distance'>('date');
+  // フィルター・ソート関連（初期値をURLパラメータまたはsessionStorageから取得）
+  const getInitialCity = () => {
+    const cityParam = searchParams.get('city');
+    if (cityParam) return cityParam;
+    
+    const savedCity = sessionStorage.getItem('eventFilterCity');
+    return savedCity || 'all';
+  };
+  
+  const getInitialSort = () => {
+    const sortParam = searchParams.get('sort');
+    if (sortParam && (sortParam === 'date' || sortParam === 'distance')) return sortParam;
+    
+    const savedSort = sessionStorage.getItem('eventFilterSort');
+    return (savedSort === 'date' || savedSort === 'distance') ? savedSort as 'date' | 'distance' : 'date';
+  };
+  
+  const getInitialDuration = () => {
+    const durationParam = searchParams.get('duration');
+    if (durationParam && ['all', '1', '2+', '7+', '14+'].includes(durationParam)) {
+      return durationParam as 'all' | '1' | '2+' | '7+' | '14+';
+    }
+    
+    const savedDuration = sessionStorage.getItem('eventFilterDuration');
+    return (savedDuration && ['all', '1', '2+', '7+', '14+'].includes(savedDuration)) 
+      ? savedDuration as 'all' | '1' | '2+' | '7+' | '14+'
+      : 'all';
+  };
+  
+  const [sortBy, setSortBy] = useState<'date' | 'distance'>(getInitialSort);
   const [selectedPrefecture] = useState('大分県'); // 大分県固定
-  const [selectedCity, setSelectedCity] = useState('all');
-  const [selectedDuration, setSelectedDuration] = useState<'all' | '1' | '2+' | '7+' | '14+'>('all');
+  const [selectedCity, setSelectedCity] = useState(getInitialCity);
+  const [selectedDuration, setSelectedDuration] = useState<'all' | '1' | '2+' | '7+' | '14+'>(getInitialDuration);
   
   // 市町村リスト
   const [cityList, setCityList] = useState<string[]>([]);
@@ -134,39 +162,6 @@ export default function CalendarPage() {
   
   // 削除中のイベントIDを管理
   const [deletingEventId, setDeletingEventId] = useState<string | null>(null);
-
-  // URLパラメータまたはsessionStorageからフィルター状態を復元
-  useEffect(() => {
-    const cityParam = searchParams.get('city');
-    const sortParam = searchParams.get('sort');
-    const durationParam = searchParams.get('duration');
-    
-    if (cityParam) {
-      setSelectedCity(cityParam);
-    } else {
-      // URLパラメータがない場合はsessionStorageから復元
-      const savedCity = sessionStorage.getItem('eventFilterCity');
-      if (savedCity) setSelectedCity(savedCity);
-    }
-    
-    if (sortParam && (sortParam === 'date' || sortParam === 'distance')) {
-      setSortBy(sortParam);
-    } else {
-      const savedSort = sessionStorage.getItem('eventFilterSort');
-      if (savedSort && (savedSort === 'date' || savedSort === 'distance')) {
-        setSortBy(savedSort as 'date' | 'distance');
-      }
-    }
-    
-    if (durationParam && ['all', '1', '2+', '7+', '14+'].includes(durationParam)) {
-      setSelectedDuration(durationParam as 'all' | '1' | '2+' | '7+' | '14+');
-    } else {
-      const savedDuration = sessionStorage.getItem('eventFilterDuration');
-      if (savedDuration && ['all', '1', '2+', '7+', '14+'].includes(savedDuration)) {
-        setSelectedDuration(savedDuration as 'all' | '1' | '2+' | '7+' | '14+');
-      }
-    }
-  }, [searchParams]);
 
   // フィルター変更時にsessionStorageに保存
   useEffect(() => {
