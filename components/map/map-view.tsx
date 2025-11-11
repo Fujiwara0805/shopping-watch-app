@@ -1095,26 +1095,8 @@ export function MapView() {
           >
             {nearbyPosts.map((post) => (
               <div key={post.id} className="bg-white rounded-2xl shadow-2xl overflow-hidden border-2 border-gray-200">
-                {/* カードヘッダー */}
+                {/* カードヘッダー（閉じるボタンのみ） */}
                 <div className="relative">
-                  {/* 画像表示 - 🔥 品質向上 */}
-                  {post.image_urls && post.image_urls.length > 0 ? (
-                    <div className="relative h-48 w-full overflow-hidden bg-gray-100">
-                      <img
-                        src={post.image_urls[0]}
-                        alt={post.store_name}
-                        className="w-full h-full object-cover"
-                        loading="eager"
-                        decoding="async"
-                        fetchPriority="high"
-                      />
-                    </div>
-                  ) : (
-                    <div className="relative h-48 w-full bg-[#fef3e8] flex items-center justify-center">
-                      <Calendar className="h-20 w-20 text-[#73370c] opacity-30" />
-                    </div>
-                  )}
-                  
                   {/* 閉じるボタン */}
                   <Button
                     onClick={() => {
@@ -1122,51 +1104,72 @@ export function MapView() {
                       setNearbyPosts([]);
                     }}
                     size="icon"
-                    className="absolute top-2 right-2 h-8 w-8 rounded-full bg-white/90 hover:bg-white shadow-lg"
+                    className="absolute top-2 right-2 h-8 w-8 rounded-full bg-white/90 hover:bg-white shadow-lg z-10"
                   >
                     <X className="h-4 w-4 text-gray-700" />
                   </Button>
                 </div>
 
-                {/* カード内容 */}
-                <div className="p-4 space-y-3">
-                  {/* イベント名 - 🔥 15文字制限、テキストカラー変更 */}
-                  <h3 className="text-lg font-bold line-clamp-2" style={{ color: '#73370c' }}>
-                    {(post.event_name || post.content).length > 15 
-                      ? `${(post.event_name || post.content).substring(0, 15)}...` 
-                      : (post.event_name || post.content)}
-                  </h3>
+                {/* カード内容（横並びレイアウト） */}
+                <div className="p-4">
+                  <div className="flex gap-3 mb-3">
+                    {/* イベント画像 */}
+                    {post.image_urls && post.image_urls.length > 0 ? (
+                      <div className="flex-shrink-0 relative w-24 h-24 overflow-hidden rounded-lg bg-gray-100">
+                        <img
+                          src={post.image_urls[0]}
+                          alt={post.store_name}
+                          className="w-full h-full object-cover"
+                          loading="eager"
+                          decoding="async"
+                          fetchPriority="high"
+                        />
+                      </div>
+                    ) : (
+                      <div className="flex-shrink-0 w-24 h-24 bg-[#fef3e8] rounded-lg flex items-center justify-center">
+                        <Calendar className="h-12 w-12 text-[#73370c] opacity-30" />
+                      </div>
+                    )}
 
-                  {/* 開催場所 */}
-                  <div className="flex items-start gap-2 text-sm text-gray-600">
-                    <MapPinIcon className="h-4 w-4 mt-0.5 flex-shrink-0 text-red-500" />
-                    <span className="line-clamp-1">{post.store_name}</span>
-                  </div>
+                    {/* イベント情報 */}
+                    <div className="flex-1 min-w-0">
+                      {/* イベント名 */}
+                      <h3 className="text-base font-bold line-clamp-2 mb-2" style={{ color: '#73370c' }}>
+                        {post.event_name || post.content}
+                      </h3>
 
-                  {/* 開催期日 */}
-                  {post.expires_at && (
-                    <div className="flex items-start gap-2 text-sm text-gray-600">
-                      <Calendar className="h-4 w-4 mt-0.5 flex-shrink-0 text-blue-500" />
-                      <span>
-                      {post.event_start_date && new Date(post.event_start_date).toLocaleDateString('ja-JP', {
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric'
-                        })}
-                        {post.event_end_date && post.event_end_date !== post.event_start_date && (
-                          <> 〜 {new Date(post.event_end_date).toLocaleDateString('ja-JP', {
-                            month: 'long',
-                            day: 'numeric'
-                          })}</>
-                        )}
-                      </span>
+                      {/* 開催場所 */}
+                      <div className="flex items-start gap-2 text-sm text-gray-600 mb-1">
+                        <MapPinIcon className="h-4 w-4 mt-0.5 flex-shrink-0 text-red-500" />
+                        <span className="line-clamp-1">{post.store_name}</span>
+                      </div>
+
+                      {/* 開催期間 */}
+                      {post.event_start_date && (
+                        <div className="flex items-start gap-2 text-sm text-gray-600">
+                          <Calendar className="h-4 w-4 mt-0.5 flex-shrink-0 text-blue-500" />
+                          <span className="line-clamp-1">
+                            {new Date(post.event_start_date).toLocaleDateString('ja-JP', {
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric'
+                            })}
+                            {post.event_end_date && post.event_end_date !== post.event_start_date && (
+                              <> 〜 {new Date(post.event_end_date).toLocaleDateString('ja-JP', {
+                                month: 'long',
+                                day: 'numeric'
+                              })}</>
+                            )}
+                          </span>
+                        </div>
+                      )}
                     </div>
-                  )}
+                  </div>
 
                   {/* 詳細を見るボタン */}
                   <Button
                     onClick={() => router.push(`/map/event/${post.id}`)}
-                    className="w-full mt-2 bg-[#73370c] hover:bg-[#5c2a0a] text-white shadow-lg"
+                    className="w-full bg-[#73370c] hover:bg-[#5c2a0a] text-white shadow-lg"
                   >
                     詳細を見る
                   </Button>
