@@ -1193,35 +1193,50 @@ export function MapView() {
               const isCheckedIn = checkedInPosts.has(post.id);
               
               return (
-                <div key={post.id} className="bg-white rounded-2xl shadow-2xl overflow-hidden border-2 border-gray-200">
-                  {/* カードヘッダー（閉じるボタンとチェックインボタン） */}
-                  <div className="relative">
-                    <div className="absolute top-2 right-2 z-10 flex gap-2">
-                      {/* チェックインボタン */}
-                      {canCheckIn && (
-                        <Button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleCheckIn(post);
-                          }}
-                          disabled={checkingIn === post.id || isCheckedIn}
-                          size="sm"
-                          className={`${
-                            isCheckedIn
-                              ? 'bg-green-600 hover:bg-green-700'
-                              : 'bg-[#73370c] hover:bg-[#5c2a0a]'
-                          } text-white shadow-lg`}
-                        >
+                <div key={post.id} className="relative bg-white rounded-2xl shadow-2xl overflow-hidden border-2 border-gray-200">
+                  {/* しおり型チェックインボタン（カード外側左上） */}
+                  {canCheckIn && (
+                    <div 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (!isCheckedIn && checkingIn !== post.id) {
+                          handleCheckIn(post);
+                        }
+                      }}
+                      className={`absolute -top-2 -left-2 z-20 cursor-pointer transition-all duration-300 ${
+                        isCheckedIn || checkingIn === post.id ? 'cursor-default' : 'hover:scale-105'
+                      }`}
+                    >
+                      {/* しおり本体 */}
+                      <div className={`relative ${
+                        isCheckedIn 
+                          ? 'bg-green-600' 
+                          : 'bg-[#73370c]'
+                      } text-white px-3 py-2 rounded-t-lg shadow-lg`}>
+                        <div className="flex items-center gap-1.5 text-xs font-bold whitespace-nowrap">
                           {checkingIn === post.id ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
                           ) : isCheckedIn ? (
                             <>完了☑️</>
                           ) : (
-                            'チェックイン'
+                            'Check In'
                           )}
-                        </Button>
-                      )}
-                      
+                        </div>
+                        {/* しおりの三角形の切り込み（下部） */}
+                        <div className={`absolute -bottom-2 left-0 w-full h-2 ${
+                          isCheckedIn 
+                            ? 'bg-green-600' 
+                            : 'bg-[#73370c]'
+                        }`}>
+                          <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-[20px] border-l-transparent border-r-[20px] border-r-transparent border-t-[8px] border-t-white"></div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* カードヘッダー（閉じるボタンのみ） */}
+                  <div className="relative">
+                    <div className="absolute top-2 right-2 z-10">
                       {/* 閉じるボタン */}
                       <Button
                         onClick={() => {
