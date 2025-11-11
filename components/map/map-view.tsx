@@ -303,11 +303,31 @@ export function MapView() {
 
   // チェックイン処理
   const handleCheckIn = async (post: PostMarkerData) => {
-    if (!session?.user?.id || !latitude || !longitude) return;
+    if (!session?.user?.id || !latitude || !longitude) {
+      console.error('チェックイン失敗: セッションまたは位置情報が不足', {
+        hasSession: !!session?.user?.id,
+        hasLatitude: !!latitude,
+        hasLongitude: !!longitude
+      });
+      toast({
+        title: 'エラー',
+        description: 'ログインまたは位置情報が取得できません',
+        variant: 'destructive',
+      });
+      return;
+    }
     
     setCheckingIn(post.id);
     
     try {
+      console.log('チェックイン試行:', {
+        userId: session.user.id,
+        postId: post.id,
+        eventName: post.event_name,
+        userLat: latitude,
+        userLng: longitude,
+      });
+      
       const { error } = await supabase
         .from('check_ins')
         .insert({
@@ -319,6 +339,7 @@ export function MapView() {
         });
       
       if (error) {
+        console.error('Supabaseエラー:', error);
         if (error.code === '23505') { // Unique constraint violation
           toast({
             title: '既にチェックイン済みです',
@@ -334,11 +355,16 @@ export function MapView() {
           description: 'スタンプを獲得しました',
         });
       }
-    } catch (error) {
-      console.error('チェックインエラー:', error);
+    } catch (error: any) {
+      console.error('チェックインエラー詳細:', {
+        error,
+        message: error?.message,
+        code: error?.code,
+        details: error?.details,
+      });
       toast({
-        title: 'エラー',
-        description: 'チェックインに失敗しました',
+        title: 'チェックインエラー',
+        description: error?.message || 'データベースへの保存に失敗しました',
         variant: 'destructive',
       });
     } finally {
@@ -1193,7 +1219,7 @@ export function MapView() {
               const isCheckedIn = checkedInPosts.has(post.id);
               
               return (
-                <div key={post.id} className="relative bg-white rounded-2xl shadow-2xl overflow-hidden border-2 border-gray-200">
+                <div key={post.id} className="relative">
                   {/* しおり型チェックインボタン（カード外側左上） */}
                   {canCheckIn && (
                     <div 
@@ -1203,7 +1229,7 @@ export function MapView() {
                           handleCheckIn(post);
                         }
                       }}
-                      className={`absolute -top-2 -left-2 z-20 cursor-pointer transition-all duration-300 ${
+                      className={`absolute -top-3 left-2 z-30 cursor-pointer transition-all duration-300 ${
                         isCheckedIn || checkingIn === post.id ? 'cursor-default' : 'hover:scale-105'
                       }`}
                     >
@@ -1212,10 +1238,10 @@ export function MapView() {
                         isCheckedIn 
                           ? 'bg-green-600' 
                           : 'bg-[#73370c]'
-                      } text-white px-3 py-2 rounded-t-lg shadow-lg`}>
-                        <div className="flex items-center gap-1.5 text-xs font-bold whitespace-nowrap">
+                      } text-white px-4 py-2 rounded-t-md shadow-xl`}>
+                        <div className="flex items-center gap-1.5 text-sm font-bold whitespace-nowrap">
                           {checkingIn === post.id ? (
-                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            <Loader2 className="h-4 w-4 animate-spin" />
                           ) : isCheckedIn ? (
                             <>完了☑️</>
                           ) : (
@@ -1228,94 +1254,97 @@ export function MapView() {
                             ? 'bg-green-600' 
                             : 'bg-[#73370c]'
                         }`}>
-                          <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-[20px] border-l-transparent border-r-[20px] border-r-transparent border-t-[8px] border-t-white"></div>
+                          <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-[24px] border-l-transparent border-r-[24px] border-r-transparent border-t-[10px] border-t-white"></div>
                         </div>
                       </div>
                     </div>
                   )}
                   
-                  {/* カードヘッダー（閉じるボタンのみ） */}
-                  <div className="relative">
-                    <div className="absolute top-2 right-2 z-10">
-                      {/* 閉じるボタン */}
+                  {/* イベントカード */}
+                  <div className="bg-white rounded-2xl shadow-2xl overflow-hidden border-2 border-gray-200 mt-3">
+                    {/* カードヘッダー（閉じるボタンのみ） */}
+                    <div className="relative">
+                      <div className="absolute top-2 right-2 z-10">
+                        {/* 閉じるボタン */}
+                        <Button
+                          onClick={() => {
+                            setSelectedPost(null);
+                            setNearbyPosts([]);
+                          }}
+                          size="icon"
+                          className="h-8 w-8 rounded-full bg-white/90 hover:bg-white shadow-lg"
+                        >
+                          <X className="h-4 w-4 text-gray-700" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* カード内容（横並びレイアウト） */}
+                    <div className="p-4">
+                      <div className="flex gap-3 mb-3">
+                        {/* イベント画像 */}
+                        {post.image_urls && post.image_urls.length > 0 ? (
+                          <div className="flex-shrink-0 relative w-24 h-24 overflow-hidden rounded-lg bg-gray-100">
+                            <img
+                              src={post.image_urls[0]}
+                              alt={post.store_name}
+                              className="w-full h-full object-cover"
+                              loading="eager"
+                              decoding="async"
+                              fetchPriority="high"
+                            />
+                          </div>
+                        ) : (
+                          <div className="flex-shrink-0 w-24 h-24 bg-[#fef3e8] rounded-lg flex items-center justify-center">
+                            <Calendar className="h-12 w-12 text-[#73370c] opacity-30" />
+                          </div>
+                        )}
+
+                        {/* イベント情報 */}
+                        <div className="flex-1 min-w-0">
+                          {/* イベント名 */}
+                          <h3 className="text-base font-bold line-clamp-2 mb-2" style={{ color: '#73370c' }}>
+                            {post.event_name || post.content}
+                          </h3>
+
+                          {/* 開催場所 */}
+                          <div className="flex items-start gap-2 text-sm text-gray-600 mb-1">
+                            <MapPinIcon className="h-4 w-4 mt-0.5 flex-shrink-0 text-red-500" />
+                            <span className="line-clamp-1">{post.store_name}</span>
+                          </div>
+
+                          {/* 開催期間 */}
+                          {post.event_start_date && (
+                            <div className="flex items-start gap-2 text-sm text-gray-600">
+                              <Calendar className="h-4 w-4 mt-0.5 flex-shrink-0 text-blue-500" />
+                              <span className="line-clamp-1">
+                                {new Date(post.event_start_date).toLocaleDateString('ja-JP', {
+                                  year: 'numeric',
+                                  month: 'long',
+                                  day: 'numeric'
+                                })}
+                                {post.event_end_date && post.event_end_date !== post.event_start_date && (
+                                  <> 〜 {new Date(post.event_end_date).toLocaleDateString('ja-JP', {
+                                    month: 'long',
+                                    day: 'numeric'
+                                  })}</>
+                                )}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* 詳細を見るボタン */}
                       <Button
-                        onClick={() => {
-                          setSelectedPost(null);
-                          setNearbyPosts([]);
-                        }}
-                        size="icon"
-                        className="h-8 w-8 rounded-full bg-white/90 hover:bg-white shadow-lg"
+                        onClick={() => router.push(`/map/event/${post.id}`)}
+                        className="w-full bg-[#73370c] hover:bg-[#5c2a0a] text-white shadow-lg"
                       >
-                        <X className="h-4 w-4 text-gray-700" />
+                        詳細を見る
                       </Button>
                     </div>
                   </div>
-
-                {/* カード内容（横並びレイアウト） */}
-                <div className="p-4">
-                  <div className="flex gap-3 mb-3">
-                    {/* イベント画像 */}
-                    {post.image_urls && post.image_urls.length > 0 ? (
-                      <div className="flex-shrink-0 relative w-24 h-24 overflow-hidden rounded-lg bg-gray-100">
-                        <img
-                          src={post.image_urls[0]}
-                          alt={post.store_name}
-                          className="w-full h-full object-cover"
-                          loading="eager"
-                          decoding="async"
-                          fetchPriority="high"
-                        />
-                      </div>
-                    ) : (
-                      <div className="flex-shrink-0 w-24 h-24 bg-[#fef3e8] rounded-lg flex items-center justify-center">
-                        <Calendar className="h-12 w-12 text-[#73370c] opacity-30" />
-                      </div>
-                    )}
-
-                    {/* イベント情報 */}
-                    <div className="flex-1 min-w-0">
-                      {/* イベント名 */}
-                      <h3 className="text-base font-bold line-clamp-2 mb-2" style={{ color: '#73370c' }}>
-                        {post.event_name || post.content}
-                      </h3>
-
-                      {/* 開催場所 */}
-                      <div className="flex items-start gap-2 text-sm text-gray-600 mb-1">
-                        <MapPinIcon className="h-4 w-4 mt-0.5 flex-shrink-0 text-red-500" />
-                        <span className="line-clamp-1">{post.store_name}</span>
-                      </div>
-
-                      {/* 開催期間 */}
-                      {post.event_start_date && (
-                        <div className="flex items-start gap-2 text-sm text-gray-600">
-                          <Calendar className="h-4 w-4 mt-0.5 flex-shrink-0 text-blue-500" />
-                          <span className="line-clamp-1">
-                            {new Date(post.event_start_date).toLocaleDateString('ja-JP', {
-                              year: 'numeric',
-                              month: 'long',
-                              day: 'numeric'
-                            })}
-                            {post.event_end_date && post.event_end_date !== post.event_start_date && (
-                              <> 〜 {new Date(post.event_end_date).toLocaleDateString('ja-JP', {
-                                month: 'long',
-                                day: 'numeric'
-                              })}</>
-                            )}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* 詳細を見るボタン */}
-                  <Button
-                    onClick={() => router.push(`/map/event/${post.id}`)}
-                    className="w-full bg-[#73370c] hover:bg-[#5c2a0a] text-white shadow-lg"
-                  >
-                    詳細を見る
-                  </Button>
                 </div>
-              </div>
             );
             })}
           </motion.div>
