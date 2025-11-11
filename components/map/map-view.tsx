@@ -988,28 +988,11 @@ export function MapView() {
             <span className="text-sm font-bold text-gray-700 ">一覧</span>
           </motion.div>
 
-          {/* カレンダー画面 */}
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.3, delay: 0.15 }}
-            className="flex flex-col items-center"
-          >
-            <Button
-              onClick={() => router.push('/calendar')}
-              size="icon"
-              className="h-12 w-12 rounded-full shadow-lg bg-[#73370c] hover:bg-[#5c2a0a] border-2 border-white"
-            >
-              <Calendar className="h-6 w-6 text-white" />
-            </Button>
-            <span className="text-sm font-bold text-gray-700 ">カレンダー</span>
-          </motion.div>
-
           {/* プロフィールアイコン（マイページ画面へ） */}
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.3, delay: 0.2 }}
+            transition={{ duration: 0.3, delay: 0.15 }}
             className="flex flex-col items-center"
           >
             <Button
@@ -1026,7 +1009,7 @@ export function MapView() {
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.3, delay: 0.25 }}
+            transition={{ duration: 0.3, delay: 0.2 }}
             className="flex flex-col items-center"
           >
             <Button
