@@ -14,6 +14,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { getHunterLevel } from '@/lib/hunter-level';
+import { StampBoardModal } from '@/components/stamp-board/stamp-board-modal';
 
 interface AppProfile {
   id: string;
@@ -228,6 +229,9 @@ function ProfilePageContent() {
   // ボタンローディング状態の管理
   const [accountSettingsLoading, setAccountSettingsLoading] = useState(false);
   const [logoutLoading, setLogoutLoading] = useState(false);
+  
+  // スタンプボードモーダルの管理
+  const [stampBoardOpen, setStampBoardOpen] = useState(false);
 
   // PWA viewport height fix
   const [viewportHeight, setViewportHeight] = useState('100vh');
@@ -576,6 +580,32 @@ function ProfilePageContent() {
             </h3>
             
             <div className="space-y-2">
+              {/* 🎫 スタンプボードボタン */}
+              <motion.div
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="group"
+              >
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start p-3 h-auto rounded-lg border border-gray-100 hover:shadow-sm transition-all duration-300 bg-gradient-to-r from-orange-50 to-amber-50 hover:from-orange-100 hover:to-amber-100"
+                  onClick={() => setStampBoardOpen(true)}
+                >
+                  <div className="flex items-center space-x-3 w-full">
+                    <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-[#73370c] to-[#a04d14] flex items-center justify-center">
+                      <Trophy className="h-5 w-5 text-white" />
+                    </div>
+                    <div className="flex-1 text-left min-w-0">
+                      <p className="font-medium text-sm group-hover:translate-x-1 transition-transform duration-200 text-[#73370c]">
+                        スタンプボード
+                      </p>
+                      <p className="text-xs text-gray-600 truncate">チェックインスタンプを確認</p>
+                    </div>
+                    <ArrowRight className="h-4 w-4 text-[#73370c] opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-200" />
+                  </div>
+                </Button>
+              </motion.div>
+
               {/* 🔥 adminユーザーの場合は投稿ボタンを表示 */}
               {userRole === 'admin' && (
                 <SettingItem
@@ -627,6 +657,12 @@ function ProfilePageContent() {
           </Button>
         </motion.div>
       </div>
+
+      {/* スタンプボードモーダル */}
+      <StampBoardModal
+        isOpen={stampBoardOpen}
+        onClose={() => setStampBoardOpen(false)}
+      />
 
     </div>
   );

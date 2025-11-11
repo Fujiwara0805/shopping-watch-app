@@ -46,6 +46,7 @@ const postSchema = z.object({
   eventPrice: z.string().max(50).optional(),
   prefecture: z.string().max(20).optional(),
   city: z.string().max(50).optional(),
+  enableCheckin: z.boolean().default(false),
 }).refine((data) => {
   if (data.eventEndDate && data.eventEndDate.trim() !== '' && data.eventStartDate && data.eventStartDate.trim() !== '') {
     const startDate = new Date(data.eventStartDate);
@@ -86,7 +87,7 @@ const calculateEventExpiryDays = (startDate: string, endDate?: string): number =
 };
 
 // イベント情報の表示項目（簡素化）
-const eventFields = ['location', 'eventName', 'eventDate', 'eventPrice', 'eventArea', 'url', 'image', 'phoneNumber', 'file'];
+const eventFields = ['location', 'eventName', 'eventDate', 'eventPrice', 'eventArea', 'url', 'image', 'phoneNumber', 'file', 'enableCheckin'];
 
 // イベント情報用フィールドの表示名とアイコン
 const getFieldDisplayInfo = (field: string) => {
@@ -100,6 +101,7 @@ const getFieldDisplayInfo = (field: string) => {
     eventDate: { label: '開催期日', icon: CalendarDays },
     eventPrice: { label: '料金', icon: Tag },
     eventArea: { label: 'エリア情報', icon: MapPin },
+    enableCheckin: { label: 'GPSチェックイン', icon: MapPin },
   };
   
   return fieldMap[field as keyof typeof fieldMap] || { label: field, icon: StoreIcon };
@@ -156,6 +158,7 @@ export default function PostPage() {
       eventPrice: '',
       prefecture: '',
       city: '',
+      enableCheckin: false,
     },
     mode: 'onChange',
   });
@@ -349,6 +352,7 @@ export default function PostPage() {
         prefecture: values.prefecture && values.prefecture.trim() !== '' ? values.prefecture : null,
         city: values.city && values.city.trim() !== '' ? values.city : null,
         author_role: session?.user?.role === 'admin' ? 'admin' : 'user',
+        enable_checkin: values.enableCheckin || false,
       };
 
       // 🔥 店舗の位置情報を設定
@@ -393,6 +397,7 @@ export default function PostPage() {
         eventPrice: '',
         prefecture: '',
         city: '',
+        enableCheckin: false,
       });
       
       setImageFiles([]);
@@ -1164,6 +1169,38 @@ export default function PostPage() {
                                       </div>
                                       )}
                                     </div>
+                              )}
+
+                              {/* チェックイン対象フラグ */}
+                              {field === 'enableCheckin' && (
+                                <FormField
+                                  control={form.control}
+                                  name="enableCheckin"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <div className="p-4 bg-gradient-to-r from-orange-50 to-amber-50 rounded-lg border-2 border-[#73370c]/20">
+                                        <div className="flex items-start space-x-3">
+                                          <input
+                                            type="checkbox"
+                                            id="enable-checkin"
+                                            checked={field.value}
+                                            onChange={(e) => field.onChange(e.target.checked)}
+                                            className="mt-1 h-5 w-5 rounded border-gray-300 text-[#73370c] focus:ring-[#73370c]"
+                                          />
+                                          <div className="flex-1">
+                                            <Label htmlFor="enable-checkin" className="cursor-pointer text-base font-semibold text-[#73370c]">
+                                              📍 GPSチェックイン対象にする
+                                            </Label>
+                                            <p className="text-sm text-gray-600 mt-1">
+                                              有効にすると、ユーザーが現地でGPSチェックインできるようになります。（500m以内）
+                                            </p>
+                                          </div>
+                                        </div>
+                                      </div>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
                               )}
                         </motion.div>
                       )}

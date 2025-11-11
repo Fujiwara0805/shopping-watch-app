@@ -4,10 +4,13 @@ import { useRef, useEffect, useState, useCallback } from 'react';
 import { useGeolocation } from '@/lib/hooks/use-geolocation';
 import { useGoogleMapsApi } from '@/components/providers/GoogleMapsApiProvider';
 import { Button } from '@/components/ui/button';
-import { MapPin, AlertTriangle, RefreshCw,  Calendar, Newspaper, User, MapPinIcon, X, ShoppingBag } from 'lucide-react';
+import { MapPin, AlertTriangle, RefreshCw,  Calendar, Newspaper, User, MapPinIcon, X, ShoppingBag, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
+import { useToast } from '@/hooks/use-toast';
+import { isWithinRange } from '@/lib/utils/distance';
 
 declare global {
   interface Window {
@@ -30,6 +33,7 @@ interface PostMarkerData {
   event_name: string | null;
   event_start_date?: string | null; // 🔥 追加
   event_end_date?: string | null;   // 🔥 追加
+  enable_checkin?: boolean | null;  // 🔥 チェックイン対象フラグ
 }
 
 // 🔥 簡易的なイベントアイコンを作成（サイズを40x40に統一）
@@ -198,6 +202,9 @@ const createEventPinIcon = async (imageUrls: string[] | null, eventName: string 
 };
 
 export function MapView() {
+  const router = useRouter();
+  const { data: session } = useSession();
+  const { toast } = useToast();
   
   const { isLoaded: googleMapsLoaded, loadError: googleMapsLoadError, isLoading: googleMapsLoading } = useGoogleMapsApi();
   
@@ -233,7 +240,6 @@ export function MapView() {
   const [loadingPosts, setLoadingPosts] = useState(false);
   const [selectedPost, setSelectedPost] = useState<PostMarkerData | null>(null);
   const [nearbyPosts, setNearbyPosts] = useState<PostMarkerData[]>([]); // タップしたイベント情報
-  const router = useRouter();
 
   // 🔥 保存された位置情報を読み込む
   const [savedLocation, setSavedLocation] = useState<{lat: number, lng: number} | null>(null);
@@ -241,6 +247,10 @@ export function MapView() {
   // 🔥 初回ロードフラグを追加（785行目付近）
   const hasInitialLoadedRef = useRef(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // チェックイン関連の状態
+  const [checkingIn, setCheckingIn] = useState<string | null>(null);
+  const [checkedInPosts, setCheckedInPosts] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     // localStorageから位置情報を読み込む
@@ -266,6 +276,75 @@ export function MapView() {
       console.error('MapView: 位置情報の読み込みに失敗:', error);
     }
   }, []);
+
+  // チェックイン済みイベントを取得
+  useEffect(() => {
+    const fetchCheckedInPosts = async () => {
+      if (!session?.user?.id) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('check_ins')
+          .select('post_id')
+          .eq('user_id', session.user.id);
+        
+        if (error) throw error;
+        
+        if (data) {
+          setCheckedInPosts(new Set(data.map(c => c.post_id)));
+        }
+      } catch (error) {
+        console.error('チェックイン取得エラー:', error);
+      }
+    };
+    
+    fetchCheckedInPosts();
+  }, [session?.user?.id]);
+
+  // チェックイン処理
+  const handleCheckIn = async (post: PostMarkerData) => {
+    if (!session?.user?.id || !latitude || !longitude) return;
+    
+    setCheckingIn(post.id);
+    
+    try {
+      const { error } = await supabase
+        .from('check_ins')
+        .insert({
+          user_id: session.user.id,
+          post_id: post.id,
+          event_name: post.event_name || post.content,
+          latitude: latitude,
+          longitude: longitude,
+        });
+      
+      if (error) {
+        if (error.code === '23505') { // Unique constraint violation
+          toast({
+            title: '既にチェックイン済みです',
+            description: 'このイベントには既にチェックインしています',
+          });
+        } else {
+          throw error;
+        }
+      } else {
+        setCheckedInPosts(prev => new Set(prev).add(post.id));
+        toast({
+          title: '🎉 チェックイン完了！',
+          description: 'スタンプを獲得しました',
+        });
+      }
+    } catch (error) {
+      console.error('チェックインエラー:', error);
+      toast({
+        title: 'エラー',
+        description: 'チェックインに失敗しました',
+        variant: 'destructive',
+      });
+    } finally {
+      setCheckingIn(null);
+    }
+  };
 
   // コンテナ寸法の取得（シンプル化）
   const updateContainerDimensions = useCallback(() => {
@@ -342,7 +421,8 @@ export function MapView() {
           created_at,
           expires_at,
           remaining_slots,
-          image_urls
+          image_urls,
+          enable_checkin
         `)
         .eq('is_deleted', false)
         .eq('category', 'イベント情報');
@@ -1093,22 +1173,68 @@ export function MapView() {
             transition={{ duration: 0.3, ease: "easeOut" }}
             className="absolute bottom-4 left-4 right-4 z-40"
           >
-            {nearbyPosts.map((post) => (
-              <div key={post.id} className="bg-white rounded-2xl shadow-2xl overflow-hidden border-2 border-gray-200">
-                {/* カードヘッダー（閉じるボタンのみ） */}
-                <div className="relative">
-                  {/* 閉じるボタン */}
-                  <Button
-                    onClick={() => {
-                      setSelectedPost(null);
-                      setNearbyPosts([]);
-                    }}
-                    size="icon"
-                    className="absolute top-2 right-2 h-8 w-8 rounded-full bg-white/90 hover:bg-white shadow-lg z-10"
-                  >
-                    <X className="h-4 w-4 text-gray-700" />
-                  </Button>
-                </div>
+            {nearbyPosts.map((post) => {
+              // チェックイン可能かどうかを判定
+              const canCheckIn = 
+                session?.user?.id && 
+                post.enable_checkin === true &&
+                latitude && 
+                longitude && 
+                post.store_latitude && 
+                post.store_longitude &&
+                isWithinRange(
+                  latitude,
+                  longitude,
+                  post.store_latitude,
+                  post.store_longitude,
+                  500 // 500m以内
+                );
+              
+              const isCheckedIn = checkedInPosts.has(post.id);
+              
+              return (
+                <div key={post.id} className="bg-white rounded-2xl shadow-2xl overflow-hidden border-2 border-gray-200">
+                  {/* カードヘッダー（閉じるボタンとチェックインボタン） */}
+                  <div className="relative">
+                    <div className="absolute top-2 right-2 z-10 flex gap-2">
+                      {/* チェックインボタン */}
+                      {canCheckIn && (
+                        <Button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleCheckIn(post);
+                          }}
+                          disabled={checkingIn === post.id || isCheckedIn}
+                          size="sm"
+                          className={`${
+                            isCheckedIn
+                              ? 'bg-green-600 hover:bg-green-700'
+                              : 'bg-[#73370c] hover:bg-[#5c2a0a]'
+                          } text-white shadow-lg`}
+                        >
+                          {checkingIn === post.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : isCheckedIn ? (
+                            <>完了☑️</>
+                          ) : (
+                            'チェックイン'
+                          )}
+                        </Button>
+                      )}
+                      
+                      {/* 閉じるボタン */}
+                      <Button
+                        onClick={() => {
+                          setSelectedPost(null);
+                          setNearbyPosts([]);
+                        }}
+                        size="icon"
+                        className="h-8 w-8 rounded-full bg-white/90 hover:bg-white shadow-lg"
+                      >
+                        <X className="h-4 w-4 text-gray-700" />
+                      </Button>
+                    </div>
+                  </div>
 
                 {/* カード内容（横並びレイアウト） */}
                 <div className="p-4">
@@ -1175,7 +1301,8 @@ export function MapView() {
                   </Button>
                 </div>
               </div>
-            ))}
+            );
+            })}
           </motion.div>
         )}
       </AnimatePresence>
