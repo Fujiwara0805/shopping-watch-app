@@ -10,7 +10,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { useToast } from '@/hooks/use-toast';
-import { isWithinRange } from '@/lib/utils/distance';
+import { isWithinRange, calculateDistance } from '@/lib/utils/distance';
 
 declare global {
   interface Window {
@@ -303,12 +303,11 @@ export function MapView() {
 
   // チェックイン処理
   const handleCheckIn = async (post: PostMarkerData) => {
-    if (!session?.user?.id || !latitude || !longitude) {
-      console.error('チェックイン失敗: セッションまたは位置情報が不足', {
-        hasSession: !!session?.user?.id,
-        hasLatitude: !!latitude,
-        hasLongitude: !!longitude
-      });
+    // savedLocationを優先的に使用（チェックイン判定と同じロジック）
+    const effectiveLatitude = savedLocation?.lat || latitude;
+    const effectiveLongitude = savedLocation?.lng || longitude;
+    
+    if (!session?.user?.id || !effectiveLatitude || !effectiveLongitude) {
       toast({
         title: 'エラー',
         description: 'ログインまたは位置情報が取得できません',
@@ -320,26 +319,17 @@ export function MapView() {
     setCheckingIn(post.id);
     
     try {
-      console.log('チェックイン試行:', {
-        userId: session.user.id,
-        postId: post.id,
-        eventName: post.event_name,
-        userLat: latitude,
-        userLng: longitude,
-      });
-      
       const { error } = await supabase
         .from('check_ins')
         .insert({
           user_id: session.user.id,
           post_id: post.id,
           event_name: post.event_name || post.content,
-          latitude: latitude,
-          longitude: longitude,
+          latitude: effectiveLatitude,
+          longitude: effectiveLongitude,
         });
       
       if (error) {
-        console.error('Supabaseエラー:', error);
         if (error.code === '23505') { // Unique constraint violation
           toast({
             title: '既にチェックイン済みです',
@@ -356,12 +346,6 @@ export function MapView() {
         });
       }
     } catch (error: any) {
-      console.error('チェックインエラー詳細:', {
-        error,
-        message: error?.message,
-        code: error?.code,
-        details: error?.details,
-      });
       toast({
         title: 'チェックインエラー',
         description: error?.message || 'データベースへの保存に失敗しました',
@@ -1201,20 +1185,44 @@ export function MapView() {
           >
             {nearbyPosts.map((post) => {
               // チェックイン可能かどうかを判定
-              const canCheckIn = 
-                session?.user?.id && 
-                post.enable_checkin === true &&
-                latitude && 
-                longitude && 
-                post.store_latitude && 
-                post.store_longitude &&
-                isWithinRange(
-                  latitude,
-                  longitude,
-                  post.store_latitude,
-                  post.store_longitude,
-                  500 // 500m以内
+              // savedLocationを優先的に使用（fetchPostsと同じロジック）
+              const effectiveLatitude = savedLocation?.lat || latitude;
+              const effectiveLongitude = savedLocation?.lng || longitude;
+              
+              const hasSession = !!session?.user?.id;
+              const hasEnableCheckin = post.enable_checkin === true;
+              const hasLatitude = !!effectiveLatitude;
+              const hasLongitude = !!effectiveLongitude;
+              const hasStoreLat = !!post.store_latitude;
+              const hasStoreLng = !!post.store_longitude;
+              
+              // 距離計算（デバッグ用）
+              let distance: number | null = null;
+              let isWithinRangeResult = false;
+              if (hasLatitude && hasLongitude && hasStoreLat && hasStoreLng) {
+                distance = calculateDistance(
+                  effectiveLatitude!,
+                  effectiveLongitude!,
+                  post.store_latitude!,
+                  post.store_longitude!
                 );
+                isWithinRangeResult = isWithinRange(
+                  effectiveLatitude!,
+                  effectiveLongitude!,
+                  post.store_latitude!,
+                  post.store_longitude!,
+                  1000 // 1000m以内
+                );
+              }
+              
+              const canCheckIn = 
+                hasSession && 
+                hasEnableCheckin &&
+                hasLatitude && 
+                hasLongitude && 
+                hasStoreLat && 
+                hasStoreLng &&
+                isWithinRangeResult;
               
               const isCheckedIn = checkedInPosts.has(post.id);
               
@@ -1238,10 +1246,10 @@ export function MapView() {
                         isCheckedIn 
                           ? 'bg-green-600' 
                           : 'bg-[#73370c]'
-                      } text-white px-4 py-2 rounded-t-md shadow-xl`}>
-                        <div className="flex items-center gap-1.5 text-sm font-bold whitespace-nowrap">
+                      } text-white px-3 py-1.5 rounded-t-md shadow-xl`}>
+                        <div className="flex items-center gap-1 text-xs font-bold whitespace-nowrap">
                           {checkingIn === post.id ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
+                            <Loader2 className="h-3 w-3 animate-spin" />
                           ) : isCheckedIn ? (
                             <>完了☑️</>
                           ) : (
@@ -1249,12 +1257,12 @@ export function MapView() {
                           )}
                         </div>
                         {/* しおりの三角形の切り込み（下部） */}
-                        <div className={`absolute -bottom-2 left-0 w-full h-2 ${
+                        <div className={`absolute -bottom-1.5 left-0 w-full h-1.5 ${
                           isCheckedIn 
                             ? 'bg-green-600' 
                             : 'bg-[#73370c]'
                         }`}>
-                          <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-[24px] border-l-transparent border-r-[24px] border-r-transparent border-t-[10px] border-t-white"></div>
+                          <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-[18px] border-l-transparent border-r-[18px] border-r-transparent border-t-[8px] border-t-white"></div>
                         </div>
                       </div>
                     </div>
