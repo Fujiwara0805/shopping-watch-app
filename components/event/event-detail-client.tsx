@@ -261,6 +261,49 @@ export function EventDetailClient({ eventId }: EventDetailClientProps) {
     window.open(url, '_blank');
   };
 
+  // Googleカレンダーに追加する関数
+  const addToGoogleCalendar = () => {
+    if (!event.event_start_date) return;
+
+    const eventName = event.event_name || event.store_name || 'イベント';
+    const startDate = new Date(event.event_start_date);
+    const endDate = event.event_end_date ? new Date(event.event_end_date) : startDate;
+    
+    // 終日イベントとして設定（YYYYMMDD形式）
+    const formatDateForCalendar = (date: Date): string => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}${month}${day}`;
+    };
+
+    const startDateStr = formatDateForCalendar(startDate);
+    // 終了日は翌日にする（終日イベントの場合、終了日は含まれないため）
+    const endDateForCalendar = new Date(endDate);
+    endDateForCalendar.setDate(endDateForCalendar.getDate() + 1);
+    const endDateStr = formatDateForCalendar(endDateForCalendar);
+
+    // 開催場所の文字列を作成
+    const location = event.store_name || '';
+    const address = event.prefecture && event.city && event.address
+      ? `${event.prefecture}${event.city}${event.address}`
+      : event.prefecture && event.city
+      ? `${event.prefecture}${event.city}`
+      : '';
+    const locationStr = address ? `${location} ${address}`.trim() : location;
+
+    // GoogleカレンダーURLを作成（投稿内容は含めない）
+    const params = new URLSearchParams({
+      action: 'TEMPLATE',
+      text: eventName,
+      dates: `${startDateStr}/${endDateStr}`,
+      location: locationStr,
+    });
+
+    const calendarUrl = `https://calendar.google.com/calendar/render?${params.toString()}`;
+    window.open(calendarUrl, '_blank');
+  };
+
   const nextImage = () => {
     if (event?.image_urls && event.image_urls.length > 0) {
       setCurrentImageIndex((prev) => (prev + 1) % event.image_urls!.length);
@@ -352,15 +395,30 @@ export function EventDetailClient({ eventId }: EventDetailClientProps) {
 
             {/* ステータスバッジと残り時間 */}
             <div className="px-4 py-3 border-b">
-              <div className="flex items-center gap-3">
-                <div className={`inline-flex items-center gap-2 px-3 py-1.5 ${colors.bg} ${colors.text} rounded-lg text-sm font-bold`}>
-                  <div className={`w-2 h-2 ${colors.dot} rounded-full`}></div>
-                  {eventStatus.status}
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className={`inline-flex items-center gap-2 px-3 py-1.5 ${colors.bg} ${colors.text} rounded-lg text-sm font-bold`}>
+                    <div className={`w-2 h-2 ${colors.dot} rounded-full`}></div>
+                    {eventStatus.status}
+                  </div>
+                  {eventStatus.remainingTime && (
+                    <span className="text-red-600 font-bold text-sm">
+                      {eventStatus.remainingTime}
+                    </span>
+                  )}
                 </div>
-                {eventStatus.remainingTime && (
-                  <span className="text-red-600 font-bold text-sm">
-                    {eventStatus.remainingTime}
-                  </span>
+                {/* Googleカレンダー追加ボタン */}
+                {event.event_start_date && (
+                  <Button
+                    onClick={addToGoogleCalendar}
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center gap-1.5 text-[#73370c] border-[#73370c] hover:bg-[#73370c] hover:text-white font-bold flex-shrink-0"
+                  >
+                    <Calendar className="h-4 w-4" />
+                    に追加
+                    <ExternalLink className="h-3 w-3" />
+                  </Button>
                 )}
               </div>
             </div>

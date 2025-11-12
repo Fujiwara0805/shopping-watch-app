@@ -137,22 +137,22 @@ export default function CalendarPage() {
     return (savedSort === 'date' || savedSort === 'distance') ? savedSort as 'date' | 'distance' : 'date';
   };
   
-  const getInitialDuration = () => {
-    const durationParam = searchParams.get('duration');
-    if (durationParam && ['all', '1', '2+', '7+', '14+'].includes(durationParam)) {
-      return durationParam as 'all' | '1' | '2+' | '7+' | '14+';
+  const getInitialEnableCheckin = () => {
+    const enableCheckinParam = searchParams.get('enable_checkin');
+    if (enableCheckinParam && ['all', 'true', 'false'].includes(enableCheckinParam)) {
+      return enableCheckinParam as 'all' | 'true' | 'false';
     }
     
-    const savedDuration = sessionStorage.getItem('eventFilterDuration');
-    return (savedDuration && ['all', '1', '2+', '7+', '14+'].includes(savedDuration)) 
-      ? savedDuration as 'all' | '1' | '2+' | '7+' | '14+'
+    const savedEnableCheckin = sessionStorage.getItem('eventFilterEnableCheckin');
+    return (savedEnableCheckin && ['all', 'true', 'false'].includes(savedEnableCheckin)) 
+      ? savedEnableCheckin as 'all' | 'true' | 'false'
       : 'all';
   };
   
   const [sortBy, setSortBy] = useState<'date' | 'distance'>(getInitialSort);
   const [selectedPrefecture] = useState('大分県'); // 大分県固定
   const [selectedCity, setSelectedCity] = useState(getInitialCity);
-  const [selectedDuration, setSelectedDuration] = useState<'all' | '1' | '2+' | '7+' | '14+'>(getInitialDuration);
+  const [selectedEnableCheckin, setSelectedEnableCheckin] = useState<'all' | 'true' | 'false'>(getInitialEnableCheckin);
   
   // 市町村リスト
   const [cityList, setCityList] = useState<string[]>([]);
@@ -167,8 +167,8 @@ export default function CalendarPage() {
   useEffect(() => {
     sessionStorage.setItem('eventFilterCity', selectedCity);
     sessionStorage.setItem('eventFilterSort', sortBy);
-    sessionStorage.setItem('eventFilterDuration', selectedDuration);
-  }, [selectedCity, sortBy, selectedDuration]);
+    sessionStorage.setItem('eventFilterEnableCheckin', selectedEnableCheckin);
+  }, [selectedCity, sortBy, selectedEnableCheckin]);
 
   // 位置情報取得
   useEffect(() => {
@@ -251,6 +251,7 @@ export default function CalendarPage() {
           store_latitude,
           store_longitude,
           image_urls,
+          enable_checkin,
           author:app_profiles!posts_app_profile_id_fkey (
             user_id
           )
@@ -334,29 +335,16 @@ export default function CalendarPage() {
         return true;
       });
 
-      // 🔥 4. 期間フィルター
-      if (selectedDuration !== 'all') {
+      // 🔥 4. enable_checkinフィルター
+      if (selectedEnableCheckin !== 'all') {
         processedPosts = processedPosts.filter((post: any) => {
-          if (!post.event_start_date) return false;
-          
-          const startDate = new Date(post.event_start_date);
-          const endDate = post.event_end_date ? new Date(post.event_end_date) : startDate;
-          
-          // 期間を計算（日数）
-          const durationDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-          
-          switch (selectedDuration) {
-            case '1':
-              return durationDays === 1;
-            case '2+':
-              return durationDays >= 2 && durationDays < 7;
-            case '7+':
-              return durationDays >= 7 && durationDays < 14;
-            case '14+':
-              return durationDays >= 14;
-            default:
-              return true;
+          const enableCheckin = post.enable_checkin === true;
+          if (selectedEnableCheckin === 'true') {
+            return enableCheckin;
+          } else if (selectedEnableCheckin === 'false') {
+            return !enableCheckin;
           }
+          return true;
         });
       }
 
@@ -410,7 +398,7 @@ export default function CalendarPage() {
       setLoading(false);
       setIsInitialized(true);
     }
-  }, [currentDate, selectedPrefecture, selectedCity, selectedDuration, sortBy, userLocation]);
+  }, [currentDate, selectedPrefecture, selectedCity, selectedEnableCheckin, sortBy, userLocation]);
 
   // イベントデータの取得
   useEffect(() => {
@@ -489,7 +477,7 @@ export default function CalendarPage() {
     const params = new URLSearchParams();
     if (selectedCity !== 'all') params.set('city', selectedCity);
     if (sortBy !== 'date') params.set('sort', sortBy);
-    if (selectedDuration !== 'all') params.set('duration', selectedDuration);
+    if (selectedEnableCheckin !== 'all') params.set('enable_checkin', selectedEnableCheckin);
     
     const queryString = params.toString();
     const url = queryString ? `/map/event/${eventId}?from=events&${queryString}` : `/map/event/${eventId}?from=events`;
@@ -688,17 +676,15 @@ export default function CalendarPage() {
                   </SelectContent>
                 </Select>
 
-                {/* 期間フィルター */}
-                <Select value={selectedDuration} onValueChange={(value: 'all' | '1' | '2+' | '7+' | '14+') => setSelectedDuration(value)}>
+                {/* enable_checkinフィルター */}
+                <Select value={selectedEnableCheckin} onValueChange={(value: 'all' | 'true' | 'false') => setSelectedEnableCheckin(value)}>
                   <SelectTrigger className="w-[130px] bg-white text-[#73370c] font-semibold">
-                    <SelectValue placeholder="期間" />
+                    <SelectValue placeholder="チェックイン" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">全ての期間</SelectItem>
-                    <SelectItem value="1">1日</SelectItem>
-                    <SelectItem value="2+">2日以上</SelectItem>
-                    <SelectItem value="7+">7日以上</SelectItem>
-                    <SelectItem value="14+">14日以上</SelectItem>
+                    <SelectItem value="all">全てのイベント</SelectItem>
+                    <SelectItem value="true">Check In可</SelectItem>
+                    <SelectItem value="false">Check In不可</SelectItem>
                   </SelectContent>
                 </Select>
 
