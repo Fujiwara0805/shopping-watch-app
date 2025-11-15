@@ -172,13 +172,50 @@ const createEventPinIcon = async (imageUrls: string[] | null, eventName: string 
       // イベント名を描画（一覧アイコンやマイページアイコンと同じスタイル）
       if (truncatedEventName) {
         ctx.font = 'bold 11px sans-serif';
-        ctx.fillStyle = '#2b271a'; // text-black
         ctx.textAlign = 'center';
         ctx.textBaseline = 'top';
         
         // テキストを描画（中央に配置）
         const textY = imageSize + textPadding;
-        ctx.fillText(truncatedEventName, canvasWidth / 2, textY);
+        const textX = canvasWidth / 2;
+        
+        // 白色の背景を描画（テキストの周りに少しパディングを追加）
+        const bgPadding = 4; // 上下左右のパディング
+        const bgWidth = textWidth + bgPadding * 2;
+        const bgHeight = textHeight + bgPadding * 2;
+        const bgX = textX - bgWidth / 2;
+        const bgY = textY - bgPadding;
+        
+        // 角丸の背景を描画
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        const borderRadius = 4;
+        if (typeof ctx.roundRect === 'function') {
+          // roundRectが利用可能な場合
+          ctx.roundRect(bgX, bgY, bgWidth, bgHeight, borderRadius);
+        } else {
+          // 互換性のため手動で角丸矩形を描画
+          const x = bgX;
+          const y = bgY;
+          const w = bgWidth;
+          const h = bgHeight;
+          const r = borderRadius;
+          ctx.moveTo(x + r, y);
+          ctx.lineTo(x + w - r, y);
+          ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+          ctx.lineTo(x + w, y + h - r);
+          ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+          ctx.lineTo(x + r, y + h);
+          ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+          ctx.lineTo(x, y + r);
+          ctx.quadraticCurveTo(x, y, x + r, y);
+          ctx.closePath();
+        }
+        ctx.fill();
+        
+        // テキストを描画
+        ctx.fillStyle = '#2b271a'; // text-black
+        ctx.fillText(truncatedEventName, textX, textY);
       }
       
       // CanvasをData URLに変換
