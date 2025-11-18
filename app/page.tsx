@@ -327,7 +327,7 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
                   description:
                     'ピンを押すと、画面下にイベントの詳細・開催時間・場所がまとまって表示されます。',
                   imageUrl:
-                    'https://res.cloudinary.com/dz9trbwma/image/upload/v1761742896/EA2E63F9-7E6A-47EF-AF57-5EECDE999271_1_201_a_c95qf8.jpg'
+'https://res.cloudinary.com/dz9trbwma/image/upload/v1763465785/%E3%82%B9%E3%82%AF%E3%83%AA%E3%83%BC%E3%83%B3%E3%82%B7%E3%83%A7%E3%83%83%E3%83%88_2025-11-18_20.35.26_hofjao.png'
                 },
                 {
                   step: '03',
@@ -452,7 +452,7 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
                   label: 'FREE & EASY',
                   title: '完全無料で、今すぐ使える',
                   description:
-                    '会員登録もクレジットカードも不要。アプリを開くだけで、今日の予定づくりに使える「地元イベントカタログ」が手に入ります。'
+                    '会員登録もクレジットカードも不要。アプリを開くだけで、週末どこいく？といった悩みを解決します。'
                 }
               ].map((feature, index) => (
                 <motion.div
