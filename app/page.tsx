@@ -164,6 +164,19 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
                     >
                       リリースノート
                     </Link>
+                    <a
+                      href="https://www.instagram.com/tokudoku_nobody/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-start justify-start px-4 py-3 text-gray-700 hover:bg-[#fef3e8] hover:text-[#73370c] rounded-lg transition-colors"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <img 
+                        src="https://res.cloudinary.com/dz9trbwma/image/upload/v1759308496/icons8-%E3%82%A4%E3%83%B3%E3%82%B9%E3%82%BF%E3%82%AF%E3%82%99%E3%83%A9%E3%83%A0-100_idedfz.png" 
+                        alt="Instagram" 
+                        className="h-8 w-8"
+                      />
+                    </a>
                   </nav>
                 </div>
               </motion.div>
