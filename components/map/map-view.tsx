@@ -169,7 +169,7 @@ const createEventPinIcon = async (imageUrls: string[] | null, eventName: string 
       ctx.stroke();
       ctx.restore();
       
-      // イベント名を描画（一覧アイコンやマイページアイコンと同じスタイル）
+      // イベント名を描画（白縁付きテキスト、背景なし）
       if (truncatedEventName) {
         ctx.font = 'bold 11px sans-serif';
         ctx.textAlign = 'center';
@@ -179,39 +179,12 @@ const createEventPinIcon = async (imageUrls: string[] | null, eventName: string 
         const textY = imageSize + textPadding;
         const textX = canvasWidth / 2;
         
-        // 白色の背景を描画（テキストの周りに少しパディングを追加）
-        const bgPadding = 4; // 上下左右のパディング
-        const bgWidth = textWidth + bgPadding * 2;
-        const bgHeight = textHeight + bgPadding * 2;
-        const bgX = textX - bgWidth / 2;
-        const bgY = textY - bgPadding;
-        
-        // 角丸の背景を描画
-        ctx.fillStyle = '#ffffff';
-        ctx.beginPath();
-        const borderRadius = 4;
-        if (typeof ctx.roundRect === 'function') {
-          // roundRectが利用可能な場合
-          ctx.roundRect(bgX, bgY, bgWidth, bgHeight, borderRadius);
-        } else {
-          // 互換性のため手動で角丸矩形を描画
-          const x = bgX;
-          const y = bgY;
-          const w = bgWidth;
-          const h = bgHeight;
-          const r = borderRadius;
-          ctx.moveTo(x + r, y);
-          ctx.lineTo(x + w - r, y);
-          ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-          ctx.lineTo(x + w, y + h - r);
-          ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-          ctx.lineTo(x + r, y + h);
-          ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-          ctx.lineTo(x, y + r);
-          ctx.quadraticCurveTo(x, y, x + r, y);
-          ctx.closePath();
-        }
-        ctx.fill();
+        // テキストに白い縁を追加
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 3;
+        ctx.lineJoin = 'round';
+        ctx.miterLimit = 2;
+        ctx.strokeText(truncatedEventName, textX, textY);
         
         // テキストを描画
         ctx.fillStyle = '#2b271a'; // text-black
@@ -706,92 +679,8 @@ export function MapView() {
         zoom: (savedLocation || (latitude && longitude)) ? 15 : 13, // 🔥 14→15, 12→13にズームアップ
         disableDefaultUI: true,
         zoomControl: true,
-        gestureHandling: 'greedy', // 🔥 'cooperative' → 'greedy' に変更（1本指で地図操作可能に）
-        mapTypeId: window.google.maps.MapTypeId.ROADMAP,
-        
-        // アプリのテーマカラー（茶色）に合わせたカスタムスタイル
-        styles: [
-          {
-            featureType: "water",
-            elementType: "geometry",
-            stylers: [{ color: "#e3f2fd" }] // 爽やかな水色
-          },
-          {
-            featureType: "landscape",
-            elementType: "geometry",
-            stylers: [{ color: "#fff9f0" }] // 暖かみのあるクリーム色
-          },
-          {
-            featureType: "road.highway",
-            elementType: "geometry",
-            stylers: [{ color: "#ffd89b" }] // 優しいオレンジベージュ
-          },
-          {
-            featureType: "road.highway",
-            elementType: "geometry.stroke",
-            stylers: [{ color: "#f5c26b" }]
-          },
-          {
-            featureType: "road.arterial",
-            elementType: "geometry",
-            stylers: [{ color: "#ffffff" }] // 白い道路
-          },
-          {
-            featureType: "road.local",
-            elementType: "geometry",
-            stylers: [{ color: "#ffffff" }]
-          },
-          {
-            featureType: "road",
-            elementType: "labels.text.fill",
-            stylers: [{ color: "#73370c" }] // アプリのテーマカラー（茶色）
-          },
-          {
-            featureType: "road",
-            elementType: "labels.text.stroke",
-            stylers: [{ color: "#ffffff" }, { weight: 2 }]
-          },
-          {
-            featureType: "poi",
-            elementType: "geometry",
-            stylers: [{ color: "#fef3e8" }] // 薄いベージュ
-          },
-          {
-            featureType: "poi.park",
-            elementType: "geometry",
-            stylers: [{ color: "#e8f5e9" }] // 薄い緑（公園）
-          },
-          {
-            featureType: "poi",
-            elementType: "labels.text.fill",
-            stylers: [{ color: "#8b6332" }] // 茶色系
-          },
-          {
-            featureType: "poi",
-            elementType: "labels.icon",
-            stylers: [{ visibility: "simplified" }] // POIアイコンを簡略化
-          },
-          {
-            featureType: "transit",
-            elementType: "geometry",
-            stylers: [{ color: "#e5e5e5" }]
-          },
-          {
-            featureType: "transit.station",
-            elementType: "labels.text.fill",
-            stylers: [{ color: "#73370c" }]
-          },
-          {
-            featureType: "administrative",
-            elementType: "geometry.stroke",
-            stylers: [{ color: "#c9b2a6" }] // 境界線を薄茶色
-          },
-          {
-            featureType: "administrative.land_parcel",
-            elementType: "labels.text.fill",
-            stylers: [{ color: "#ae9e90" }]
-          }
-        ]
+        gestureHandling: 'greedy',
+        mapTypeId: window.google.maps.MapTypeId.ROADMAP
       };
 
       const newMap = new window.google.maps.Map(container, mapOptions);
@@ -873,10 +762,6 @@ export function MapView() {
           );
           map.panTo(newCenter);
           
-          // ユーザーマーカーも更新
-          if (userLocationMarker) {
-            userLocationMarker.setPosition(newCenter);
-          }
         }
       } catch (error) {
         console.error('位置情報の取得に失敗:', error);
@@ -1108,7 +993,7 @@ export function MapView() {
             <Button
               onClick={() => router.push('/events')}
               size="icon"
-              className="h-12 w-12 rounded-full shadow-lg bg-[#73370c] hover:bg-[#5c2a0a] border-2 border-white"
+              className="h-12 w-12 rounded-lg shadow-lg bg-[#73370c] hover:bg-[#5c2a0a] border-2 border-white"
             >
               <Newspaper className="h-6 w-6 text-white" />
             </Button>
@@ -1125,7 +1010,7 @@ export function MapView() {
             <Button
               onClick={() => router.push('/profile')}
               size="icon"
-              className="h-12 w-12 rounded-full shadow-lg bg-[#73370c] hover:bg-[#5c2a0a] border-2 border-white"
+              className="h-12 w-12 rounded-lg shadow-lg bg-[#73370c] hover:bg-[#5c2a0a] border-2 border-white"
             >
               <User className="h-6 w-6 text-white" />
             </Button>
@@ -1143,7 +1028,7 @@ export function MapView() {
               onClick={handleManualRefresh}
               size="icon"
               disabled={isRefreshing || loadingPosts}
-              className="h-12 w-12 rounded-full shadow-lg bg-[#73370c] hover:bg-[#5c2a0a] border-2 border-white disabled:opacity-50"
+              className="h-12 w-12 rounded-lg shadow-lg bg-[#73370c] hover:bg-[#5c2a0a] border-2 border-white disabled:opacity-50"
             >
               <RefreshCw className={`h-6 w-6 text-white ${(isRefreshing || loadingPosts) ? 'animate-spin' : ''}`} />
             </Button>
@@ -1160,7 +1045,7 @@ export function MapView() {
             <Button
               onClick={() => router.push('/memo')}
               size="icon"
-              className="h-12 w-12 rounded-full shadow-lg bg-[#73370c] hover:bg-[#5c2a0a] border-2 border-white"
+              className="h-12 w-12 rounded-lg shadow-lg bg-[#73370c] hover:bg-[#5c2a0a] border-2 border-white"
             >
               <ShoppingBag className="h-6 w-6 text-white" />
             </Button>
