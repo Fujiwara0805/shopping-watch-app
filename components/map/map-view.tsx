@@ -36,9 +36,9 @@ interface PostMarkerData {
   enable_checkin?: boolean | null;  // 🔥 チェックイン対象フラグ
 }
 
-// 🔥 簡易的なイベントアイコンを作成（サイズを40x40に統一）
+// 🔥 簡易的なイベントアイコンを作成（サイズを50x50に統一）
 const createSimpleEventIcon = () => {
-  const size = 40;
+  const size = 50;
   const svgIcon = `
     <svg width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg">
       <circle cx="${size/2}" cy="${size/2}" r="${size/2 - 3}" fill="#73370c" stroke="#ffffff" stroke-width="3"/>
@@ -78,10 +78,10 @@ const createEventPinIcon = async (imageUrls: string[] | null, eventName: string 
     return createSimpleEventIcon();
   }
 
-  // 🔥 画像を円形・白縁で40x40サイズに + イベント名を下に表示
-  const imageSize = 40;
+  // 🔥 画像を円形・白縁で50x50サイズに + イベント名を下に表示
+  const imageSize = 50;
   const borderWidth = 2; // 白い縁の幅
-  const textPadding = 4; // 画像とテキストの間のパディング
+  const textPadding = 6; // 画像とテキストの間のパディング
   
   // イベント名を10文字に制限（11文字目以降は...）
   const truncatedEventName = eventName && eventName.length > 10 
@@ -102,10 +102,10 @@ const createEventPinIcon = async (imageUrls: string[] | null, eventName: string 
       }
       
       // テキスト幅を測定
-      tempCtx.font = 'bold 11px sans-serif';
+      tempCtx.font = 'bold 13px sans-serif';
       const textMetrics = tempCtx.measureText(truncatedEventName);
       const textWidth = textMetrics.width;
-      const textHeight = 14; // フォントサイズ + 余白
+      const textHeight = 16; // フォントサイズ + 余白
       
       // Canvasサイズを決定（画像とテキストの幅の大きい方）
       const canvasWidth = Math.max(imageSize, Math.ceil(textWidth)) + 4; // 左右に2pxずつ余白
@@ -171,7 +171,7 @@ const createEventPinIcon = async (imageUrls: string[] | null, eventName: string 
       
       // イベント名を描画（白縁付きテキスト、背景なし）
       if (truncatedEventName) {
-        ctx.font = 'bold 11px sans-serif';
+        ctx.font = 'bold 13px sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'top';
         

@@ -652,7 +652,7 @@ function ProfilePageContent() {
           <Button
             onClick={() => router.push('/memo')}
             size="icon"
-            className="h-14 w-14 rounded-full shadow-2xl bg-[#73370c] text-white border-2 border-white"
+            className="h-14 w-14 rounded-lg shadow-2xl bg-[#73370c] text-white border-2 border-white"
           >
             <ShoppingBag className="h-6 w-6" />
           </Button>
@@ -669,7 +669,7 @@ function ProfilePageContent() {
           <Button
             onClick={() => router.push('/map')}
             size="icon"
-            className="h-14 w-14 rounded-full shadow-2xl bg-[#73370c]  text-white border-2 border-white"
+            className="h-14 w-14 rounded-lg shadow-2xl bg-[#73370c]  text-white border-2 border-white"
           >
             <Map className="h-6 w-6" />
           </Button>

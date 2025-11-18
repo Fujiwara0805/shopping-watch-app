@@ -894,7 +894,7 @@ export default function CalendarPage() {
             <Button
               onClick={scrollToTop}
               size="icon"
-              className="h-14 w-14 rounded-full shadow-lg bg-[#73370c] hover:bg-[#5c2a0a] border-2 border-white"
+              className="h-14 w-14 rounded-lg shadow-lg bg-[#73370c] hover:bg-[#5c2a0a] border-2 border-white"
             >
               <ArrowUp className="h-7 w-7 text-white" />
             </Button>
@@ -911,7 +911,7 @@ export default function CalendarPage() {
             <Button
               onClick={() => router.push('/map')}
               size="icon"
-              className="h-14 w-14 rounded-full shadow-lg bg-[#73370c] hover:bg-[#5c2a0a] border-2 border-white"
+              className="h-14 w-14 rounded-lg shadow-lg bg-[#73370c] hover:bg-[#5c2a0a] border-2 border-white"
             >
               <Map className="h-7 w-7 text-white" />
             </Button>
