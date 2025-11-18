@@ -997,7 +997,7 @@ export function MapView() {
             >
               <Newspaper className="h-6 w-6 text-white" />
             </Button>
-            <span className="text-sm font-bold text-gray-700 ">一覧</span>
+            <span className="text-sm font-bold text-gray-700 ">イベント一覧</span>
           </motion.div>
 
           {/* プロフィールアイコン（マイページ画面へ） */}
