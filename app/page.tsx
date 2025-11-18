@@ -250,6 +250,19 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
                 <p className="text-lg sm:text-xl text-white mt-4 font-bold">
                   無料で今すぐ始められます
                 </p>
+                <motion.a
+                  href="https://forms.gle/KBSd4xoWsp5bvDJ7A"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.8, delay: 1.4 }}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="inline-block mt-6 px-8 sm:px-12 py-3 sm:py-4 text-base sm:text-lg font-bold text-white bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full border-2 border-white/50 hover:border-white transition-all duration-300 shadow-lg hover:shadow-xl"
+                >
+                  イベント情報募集中！
+                </motion.a>
               </motion.div>
 
               <motion.div
