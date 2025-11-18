@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MapPin,  Calendar, Menu, X, Heart, Search, Bell } from 'lucide-react';
+import { MapPin, Menu, X, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CustomModal } from '@/components/ui/custom-modal';
 
@@ -24,22 +24,13 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
 
   return (
     <div className="min-h-screen bg-[#fef3e7] relative overflow-x-hidden">
-      {/* 背景装飾 - 祭り・マルシェをイメージした装飾パターン */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden opacity-40">
-        {/* グリッドパターン */}
+      {/* 背景装飾 - よりシンプルに */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden opacity-30">
+        {/* ドットパターン */}
         <div className="absolute inset-0" style={{
-          backgroundImage: `
-            linear-gradient(to right, #fef3e8 1px, transparent 1px),
-            linear-gradient(to bottom, #fef3e8 1px, transparent 1px)
-          `,
-          backgroundSize: '60px 60px'
+          backgroundImage: 'radial-gradient(circle, #e8d4bf 1px, transparent 1px)',
+          backgroundSize: '40px 40px'
         }} />
-        
-        {/* 装飾的な円形 - 祭りの提灯やマルシェのテントをイメージ */}
-        <div className="absolute top-20 left-10 w-32 h-32 rounded-full bg-gradient-to-br from-orange-200/30 to-yellow-200/30 blur-2xl" />
-        <div className="absolute top-40 right-20 w-48 h-48 rounded-full bg-gradient-to-br from-red-200/30 to-pink-200/30 blur-2xl" />
-        <div className="absolute bottom-40 left-1/4 w-40 h-40 rounded-full bg-gradient-to-br from-blue-200/30 to-purple-200/30 blur-2xl" />
-        <div className="absolute bottom-20 right-1/3 w-36 h-36 rounded-full bg-gradient-to-br from-green-200/30 to-teal-200/30 blur-2xl" />
         
         {/* 祭りの旗をイメージした三角形パターン */}
         <div className="absolute top-0 left-0 right-0 h-16 flex justify-around items-start">
@@ -47,7 +38,7 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
             <motion.div
               key={i}
               initial={{ y: -20, opacity: 0 }}
-              animate={{ y: 0, opacity: 0.6 }}
+              animate={{ y: 0, opacity: 0.8 }}
               transition={{ delay: i * 0.1, duration: 0.5 }}
               className="w-0 h-0"
               style={{
@@ -195,7 +186,7 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
             }}
           />
           {/* オーバーレイ（テキストの可読性向上） */}
-          <div className="absolute inset-0 bg-[black]/80" />
+          <div className="absolute inset-0 bg-black/75" />
           
           <div className="container mx-auto max-w-6xl relative z-10 pt-24 pb-16">
             <motion.div
@@ -247,7 +238,7 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
                 <Button 
                   size="lg" 
                   onClick={onStart}
-                  className="h-16 sm:h-20 px-12 sm:px-16 text-lg sm:text-2xl font-extrabold rounded-full shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 bg-[#fa8238] hover:bg-[#fa8238]"
+                  className="h-16 sm:h-20 px-12 sm:px-16 text-lg sm:text-2xl font-extrabold rounded-full shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 bg-[#fa8238] hover:bg-[#e67529]"
                 >
                   イベントを探す
                 </Button>
@@ -265,99 +256,206 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
                 <motion.div
                   animate={{ y: [0, 10, 0] }}
                   transition={{ duration: 2, repeat: Infinity }}
-                  className="flex flex-col items-center text-gray-400 text-sm font-semibold"
+                  className="flex flex-col items-center text-gray-300 text-sm font-semibold"
                 >
                   <span className="mb-2">Scroll</span>
-                  <div className="w-px h-12 bg-gradient-to-b from-gray-400 to-transparent" />
+                  <div className="w-px h-12 bg-white/40" />
                 </motion.div>
               </motion.div>
             </motion.div>
           </div>
         </section>
 
-        {/* 解決策提示 */}
-        <section className="py-16 sm:py-24 px-4 sm:px-8 relative overflow-hidden">
-          {/* 背景画像 */}
-          <div 
-            className="absolute inset-0 bg-cover bg-center opacity-20"
-            style={{
-              backgroundImage: 'url(https://res.cloudinary.com/dz9trbwma/image/upload/v1761796856/01_%E3%83%9E%E3%83%AB%E3%82%B7%E3%82%A7_%E5%B1%8B%E5%A4%96%E5%B8%82%E5%A0%B4%E5%BB%BA%E7%AF%89_cljqy8.jpg)',
-            }}
-          />
-          {/* オーバーレイ */}
-          <div className="absolute inset-0 bg-white/40" />
-          
-          <div className="container mx-auto max-w-6xl relative z-10">
+        {/* 使い方セクション - 大幅改善 */}
+        <section className="py-20 sm:py-32 px-4 sm:px-8 bg-white">
+          <div className="container mx-auto max-w-7xl">
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
               viewport={{ once: true }}
-              className="text-center mb-12 sm:mb-20"
+              className="text-center mb-16 sm:mb-24"
             >
-              <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold mb-6 text-[#73370c]">
+              <div className="inline-flex items-center gap-3 mb-6">
                 <img 
                   src="https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png" 
                   alt="トクドク" 
-                  className="inline-block h-20 w-20 sm:h-20 sm:w-20 mr-3 mb-2"
+                  className="h-16 w-16 sm:h-20 sm:w-20"
                 />
-                使い方
-              </h2>
-              <p className="text-xl sm:text-2xl md:text-3xl text-gray-600 mt-6 font-bold">
-                地図でかんたん、イベント探し
+                <h2 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-[#73370c]">
+                  使い方
+                </h2>
+              </div>
+              <p className="text-xl sm:text-2xl md:text-3xl text-[#73370c] mt-6 font-bold">
+                3ステップで簡単にイベントを探せます
               </p>
             </motion.div>
 
-            <div className="space-y-16 sm:space-y-24">
+            <div className="relative">
+              {/* 縦線 - ステップをつなぐ */}
+              <div className="hidden lg:block absolute left-1/2 top-0 bottom-0 w-1 bg-[#fef3e8] -translate-x-1/2" />
+              
+              <div className="space-y-20 sm:space-y-32">
+                {[
+                  {
+                    step: "01",
+                    title: "地図で探す",
+                    description: "あなたの周辺や気になるエリアのイベント情報を地図上で一目で確認できます。ピンをタップするだけで詳細をチェック。",
+                    imageUrl: "https://res.cloudinary.com/dz9trbwma/image/upload/v1761742897/1A7F75AD-84B0-45C6-87EF-1EC6EEF1A4EB_1_201_a_gulzoo.jpg",
+                    color: "#ff6b6b"
+                  },
+                  {
+                    step: "02",
+                    title: "気になるイベントをタップ",
+                    description: "マップ上のピンをタップすると、イベントの詳細情報が画面下にスライド表示されます。開催日時や場所を素早く確認。",
+                    imageUrl: "https://res.cloudinary.com/dz9trbwma/image/upload/v1761742896/EA2E63F9-7E6A-47EF-AF57-5EECDE999271_1_201_a_c95qf8.jpg",
+                    color: "#4d96ff"
+                  },
+                  {
+                    step: "03",
+                    title: "イベントを楽しむ",
+                    description: "気になるイベントを見つけたら、あとは現地へ。いつもの街が特別な場所に変わる瞬間を体験してください。",
+                    imageUrl: "https://res.cloudinary.com/dz9trbwma/image/upload/v1761712807/08_%E7%A5%AD%E3%82%8A_%E5%B1%8B%E5%8F%B0%E9%A2%A8%E6%99%AF_gen7np.jpg",
+                    color: "#6bcf7f"
+                  }
+                ].map((item, index) => (
+                  <motion.div
+                    key={item.step}
+                    initial={{ opacity: 0, y: 50 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.8, delay: index * 0.2 }}
+                    viewport={{ once: true }}
+                    className="relative"
+                  >
+                    <div className={`flex flex-col ${index % 2 === 0 ? 'lg:flex-row' : 'lg:flex-row-reverse'} items-center gap-8 lg:gap-16`}>
+                      {/* テキストエリア */}
+                      <div className="flex-1 w-full">
+                        <div className="bg-[#fef3e8] rounded-3xl p-8 sm:p-12 shadow-lg border-4 border-white hover:shadow-2xl transition-all duration-300">
+                          {/* ステップ番号バッジ */}
+                          <div className="flex justify-center mb-6">
+                            <div 
+                              className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center shadow-md"
+                              style={{ backgroundColor: item.color }}
+                            >
+                              <span className="text-2xl sm:text-3xl font-extrabold text-white">
+                                {item.step}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* タイトル */}
+                          <h3 className="text-3xl sm:text-4xl font-extrabold mb-4 text-[#73370c] text-center">
+                            {item.title}
+                          </h3>
+
+                          {/* 説明文 */}
+                          <p className="text-lg sm:text-xl text-gray-700 leading-relaxed font-medium">
+                            {item.description}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* 画像エリア */}
+                      <div className="flex-1 w-full">
+                        <div className="relative group">
+                          <div className="absolute -inset-4 bg-[#fef3e8] rounded-3xl transform rotate-3 group-hover:rotate-6 transition-transform duration-300" />
+                          <div className="relative rounded-3xl overflow-hidden shadow-2xl border-4 border-white">
+                            <img 
+                              src={item.imageUrl} 
+                              alt={item.title}
+                              className="w-full h-[300px] sm:h-[400px] object-cover transform group-hover:scale-105 transition-transform duration-500"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* 特徴セクション - 大幅改善 */}
+        <section className="py-20 sm:py-32 px-4 sm:px-8 bg-[#fef3e8]">
+          <div className="container mx-auto max-w-7xl">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8 }}
+              viewport={{ once: true }}
+              className="text-center mb-16 sm:mb-24"
+            >
+              <div className="inline-flex items-center gap-3 mb-6">
+                <img 
+                  src="https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png" 
+                  alt="トクドク" 
+                  className="h-16 w-16 sm:h-20 sm:w-20"
+                />
+                <h2 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-[#73370c]">
+                  の特徴
+                </h2>
+              </div>
+              <p className="text-xl sm:text-2xl md:text-3xl text-[#73370c] mt-6 font-bold">
+                シンプルで使いやすい、3つの魅力
+              </p>
+            </motion.div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-12">
               {[
                 {
-                  step: "01",
-                  icon: Search,
-                  title: "地図で探す",
-                  description: "地図上でイベント情報を確認",
-                  imageUrl: "https://res.cloudinary.com/dz9trbwma/image/upload/v1761742897/1A7F75AD-84B0-45C6-87EF-1EC6EEF1A4EB_1_201_a_gulzoo.jpg"
+                  title: "地図で探しやすい",
+                  description: "視覚的に分かりやすい地図インターフェースで、周辺のイベント情報を一目で確認。気になるエリアを自由に探索できます。",
+                  color: "#ff6b6b",
+                  number: "01"
                 },
                 {
-                  step: "02",
-                  icon: MapPin,
-                  title: "気になるイベントをタップ",
-                  description: "タップすると画面下にイベント情報が表示",
-                  imageUrl: "https://res.cloudinary.com/dz9trbwma/image/upload/v1761742896/EA2E63F9-7E6A-47EF-AF57-5EECDE999271_1_201_a_c95qf8.jpg"
+                  title: "リアルタイム更新",
+                  description: "常に最新のイベント情報を提供。終了したイベントは自動的に非表示になるので、見たい情報だけが表示されます。",
+                  color: "#4d96ff",
+                  number: "02"
                 },
                 {
-                  step: "03",
-                  icon: Heart,
-                  title: "イベントを楽しむ",
-                  description: "いつもの街が特別な場所に。",
-                  imageUrl: "https://res.cloudinary.com/dz9trbwma/image/upload/v1761712807/08_%E7%A5%AD%E3%82%8A_%E5%B1%8B%E5%8F%B0%E9%A2%A8%E6%99%AF_gen7np.jpg"
+                  title: "完全無料",
+                  description: "アカウント登録不要で、すべての機能を無料で利用可能。今すぐブラウザで開くだけで、イベント探しを始められます。",
+                  color: "#6bcf7f",
+                  number: "03"
                 }
-              ].map((item, index) => (
+              ].map((feature, index) => (
                 <motion.div
-                  key={item.step}
+                  key={feature.title}
                   initial={{ opacity: 0, y: 30 }}
                   whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.8 }}
+                  transition={{ duration: 0.6, delay: index * 0.15 }}
                   viewport={{ once: true }}
-                  className={`flex flex-col ${index % 2 === 0 ? 'md:flex-row' : 'md:flex-row-reverse'} items-center gap-8 sm:gap-12`}
+                  className="relative group"
                 >
-                  <div className="flex-1 text-center md:text-left">
-                    <div className="inline-block px-5 py-2 bg-[#fef3e8] text-[#73370c] rounded-full text-base font-extrabold mb-4 shadow-sm">
-                      STEP {item.step}
-                    </div>
-                    <h3 className="text-2xl sm:text-3xl font-extrabold mb-4 flex items-center justify-center md:justify-start gap-3 text-[#73370c]">
-                      <item.icon className="h-11 w-11 sm:h-12 sm:w-12 text-[#73370c]" strokeWidth={2.5} />
-                      {item.title}
-                    </h3>
-                    <p className="text-lg sm:text-xl text-gray-600 leading-relaxed font-semibold">
-                      {item.description}
-                    </p>
-                  </div>
+                  {/* 背景カード */}
+                  <div className="absolute inset-0 bg-white rounded-3xl transform group-hover:scale-105 transition-transform duration-300 shadow-lg" />
                   
-                  <div className="flex-1 relative rounded-3xl overflow-hidden min-h-[200px] sm:min-h-[240px] max-w-sm mx-auto shadow-lg border border-gray-200">
-                    <img 
-                      src={item.imageUrl} 
-                      alt={item.title}
-                      className="w-full h-full object-cover"
+                  {/* メインコンテンツ */}
+                  <div className="relative bg-white rounded-3xl p-8 sm:p-10 border-4 border-white hover:border-[#fef3e8] transition-all duration-300 h-full flex flex-col">
+                    {/* ナンバー */}
+                    <div className="flex justify-end mb-6">
+                      <span className="text-5xl sm:text-6xl font-extrabold text-[#fef3e8]">
+                        {feature.number}
+                      </span>
+                    </div>
+
+                    {/* タイトル */}
+                    <h3 className="text-2xl sm:text-3xl font-extrabold mb-4 text-[#73370c]">
+                      {feature.title}
+                    </h3>
+
+                    {/* 説明文 */}
+                    <p className="text-base sm:text-lg text-gray-600 leading-relaxed font-medium flex-grow">
+                      {feature.description}
+                    </p>
+
+                    {/* アクセント線 */}
+                    <div 
+                      className="mt-6 h-1 w-16 rounded-full"
+                      style={{ backgroundColor: feature.color }}
                     />
                   </div>
                 </motion.div>
@@ -366,82 +464,12 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
           </div>
         </section>
 
-        {/* 特徴 */}
-        <section className="relative py-16 sm:py-24 px-4 sm:px-8 overflow-hidden">
-          {/* 背景画像 */}
-          <div 
-            className="absolute inset-0 bg-cover bg-center opacity-20"
-            style={{
-              backgroundImage: 'url(https://res.cloudinary.com/dz9trbwma/image/upload/v1761712807/07_%E7%A5%AD%E3%82%8A_%E5%B1%8B%E5%8F%B0%E3%82%AF%E3%82%99%E3%83%AB%E3%83%A1_wwmiek.jpg)',
-            }}
-          />
-          {/* オーバーレイ */}
-          <div className="absolute inset-0 bg-gradient-to-b from-white/40 to-[#fef3e7]/40" />
-          
-          <div className="container mx-auto max-w-6xl relative z-10">
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8 }}
-              viewport={{ once: true }}
-              className="text-center mb-12 sm:mb-16"
-            >
-              <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold mb-4 text-[#73370c]">
-                <img 
-                  src="https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png" 
-                  alt="トクドク" 
-                  className="inline-block h-20 w-20 sm:h-20 sm:w-20 mr-3 mb-2"
-                />
-                の特徴
-              </h2>
-            </motion.div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-              {[
-                {
-                  icon: MapPin,
-                  title: "地図で探しやすい",
-                  description: "イベント情報が一目で確認できます"
-                },
-                {
-                  icon: Calendar,
-                  title: "リアルタイム更新",
-                  description: "終了したイベント情報は表示されません"
-                },
-                {
-                  icon: Heart,
-                  title: "完全無料",
-                  description: "基本無料で今すぐ始められます"
-                }
-              ].map((feature, index) => (
-                <motion.div
-                  key={feature.title}
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: index * 0.05 }}
-                  viewport={{ once: true }}
-                  className="bg-white p-8 sm:p-10 rounded-3xl hover:shadow-xl transition-all duration-300 border border-gray-100 text-center flex flex-col items-center"
-                >
-                  <div className="bg-[#fef3e8] w-24 h-24 sm:w-28 sm:h-28 rounded-2xl flex items-center justify-center mb-5 shadow-md">
-                    <feature.icon className="h-12 w-12 sm:h-14 sm:w-14 text-[#73370c]" strokeWidth={2.5} />
-                  </div>
-                  <h3 className="text-2xl sm:text-3xl font-extrabold mb-3 text-[#73370c]">
-                     {feature.title}
-                  </h3>
-                  <p className="text-base sm:text-lg text-gray-600 font-semibold">
-                    {feature.description}
-                  </p>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </section>
-
         {/* メッセージセクション */}
-        <section className="py-20 sm:py-32 px-4 sm:px-8 bg-gradient-to-br from-[#fef3e8] via-[#fff5eb] to-[#fef3e8] relative overflow-hidden">
-          <div className="absolute inset-0 opacity-10">
-            <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#fef3e7] rounded-full blur-3xl" />
-            <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-[#fef3e7] rounded-full blur-3xl" />
+        <section className="py-20 sm:py-32 px-4 sm:px-8 bg-white relative overflow-hidden">
+          {/* シンプルな背景装飾 */}
+          <div className="absolute inset-0 opacity-5">
+            <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#73370c] rounded-full blur-3xl" />
+            <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-[#fa8238] rounded-full blur-3xl" />
           </div>
           
           <div className="container mx-auto max-w-4xl relative z-10">
@@ -450,7 +478,7 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
               viewport={{ once: true }}
-              className="text-center space-y-6"
+              className="text-center space-y-8"
             >
               <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold leading-tight text-[#73370c]">
                 いつもの街が、<br className="sm:hidden" />
@@ -460,21 +488,34 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
                 地域のイベントで、<br className="sm:hidden" />
                 人と街をつなぐ
               </p>
+              
+              {/* 装飾的な要素 */}
+              <div className="flex justify-center gap-4 pt-8">
+                {['#ff6b6b', '#ffd93d', '#6bcf7f', '#4d96ff', '#ff8fab'].map((color, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ scale: 0 }}
+                    whileInView={{ scale: 1 }}
+                    transition={{ duration: 0.5, delay: i * 0.1 }}
+                    viewport={{ once: true }}
+                    className="w-4 h-4 rounded-full"
+                    style={{ backgroundColor: color }}
+                  />
+                ))}
+              </div>
             </motion.div>
           </div>
         </section>
 
         {/* 最終CTA */}
-        <section className="relative py-16 sm:py-24 px-4 sm:px-8 overflow-hidden">
-          {/* 背景画像 */}
-          <div 
-            className="absolute inset-0 bg-cover bg-center opacity-30"
-            style={{
-              backgroundImage: 'url(https://res.cloudinary.com/dz9trbwma/image/upload/v1761712807/10_%E5%9C%B0%E5%9F%9F%E3%81%AE%E5%A4%8F%E7%A5%AD%E3%82%8A_zi3gse.jpg)',
-            }}
-          />
-          {/* オーバーレイ */}
-          <div className="absolute inset-0 bg-gradient-to-br from-white/60 via-[#fef3e7]/60 to-white/60" />
+        <section className="py-20 sm:py-32 px-4 sm:px-8 bg-[#73370c] relative overflow-hidden">
+          {/* 背景パターン */}
+          <div className="absolute inset-0 opacity-10">
+            <div className="absolute inset-0" style={{
+              backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)',
+              backgroundSize: '30px 30px'
+            }} />
+          </div>
           
           <div className="container mx-auto max-w-4xl text-center relative z-10">
             <motion.div
@@ -484,24 +525,31 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
               viewport={{ once: true }}
               className="space-y-8"
             >
-              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold leading-tight text-[#73370c]">
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold leading-tight text-white">
                 さあ、出掛けよう！
               </h2>
+
+              <p className="text-xl sm:text-2xl text-white/90 font-bold">
+                あなたの街で開催される<br className="sm:hidden" />
+                素敵なイベントが待っています
+              </p>
 
               <motion.div
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
+                className="pt-4"
               >
                 <Button
                   size="lg"
                   onClick={onStart}
-                  className="h-18 sm:h-24 px-14 sm:px-20 text-xl sm:text-3xl font-extrabold rounded-full shadow-2xl hover:shadow-3xl transform transition-all duration-300 bg-[#73370c] hover:bg-[#5c2a0a]"
+                  className="h-18 sm:h-24 px-14 sm:px-20 text-xl sm:text-3xl font-extrabold rounded-full shadow-2xl hover:shadow-3xl transform transition-all duration-300 bg-white text-[#73370c] hover:bg-[#fef3e8]"
                 >
                   マップを見る
+                  <ArrowRight className="ml-3 h-8 w-8" strokeWidth={3} />
                 </Button>
               </motion.div>
 
-              <p className="text-lg sm:text-xl text-gray-600 font-bold">
+              <p className="text-lg sm:text-xl text-white/80 font-bold">
                 アカウント登録不要 / 今すぐ使えます
               </p>
             </motion.div>
@@ -509,7 +557,7 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
         </section>
 
         {/* フッター */}
-        <footer className="py-12 sm:py-16 px-4 sm:px-8 border-t bg-gray-50">
+        <footer className="py-12 sm:py-16 px-4 sm:px-8 border-t bg-white">
           <div className="container mx-auto max-w-6xl">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
               <div>
