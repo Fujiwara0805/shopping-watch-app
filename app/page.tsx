@@ -1,14 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MapPin, Calendar, Menu, X, Heart, Search } from 'lucide-react';
+import { MapPin, Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CustomModal } from '@/components/ui/custom-modal';
 
-// イベント特化型ランディングページ
+// --- メイン実装 ---
+
 const EventLP = ({ onStart }: { onStart: () => void }) => {
   const [scrollPosition, setScrollPosition] = useState(0);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -23,53 +23,53 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#fef3e7] relative overflow-x-hidden">
-      {/* 背景装飾（シンプルなフラッグのみで上質寄せ） */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden opacity-40">
-        {/* 祭りの旗をイメージした三角形パターン */}
-        <div className="absolute top-0 left-0 right-0 h-16 flex justify-around items-start">
-          {[...Array(12)].map((_, i) => (
-            <motion.div
-              key={i}
-              initial={{ y: -20, opacity: 0 }}
-              animate={{ y: 0, opacity: 0.6 }}
-              transition={{ delay: i * 0.05, duration: 0.4 }}
-              className="w-0 h-0"
-              style={{
-                borderLeft: '12px solid transparent',
-                borderRight: '12px solid transparent',
-                borderTop: `20px solid ${['#ff6b6b', '#ffd93d', '#6bcf7f', '#4d96ff', '#ff8fab'][i % 5]}`
-              }}
-            />
-          ))}
-        </div>
+    <div className="min-h-screen bg-[#0f172a] relative overflow-x-hidden font-sans">
+      {/* 背景装飾（ゴールドのラインで高級感を演出） */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+        <svg className="absolute top-0 right-0 w-full h-full opacity-10" viewBox="0 0 100 100" preserveAspectRatio="none">
+          <path d="M0 0 C 30 40 70 40 100 0 L 100 100 L 0 100 Z" fill="url(#gold-gradient)" />
+          <defs>
+            <linearGradient id="gold-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#b49026" />
+              <stop offset="50%" stopColor="#fcf6ba" />
+              <stop offset="100%" stopColor="#b49026" />
+            </linearGradient>
+          </defs>
+        </svg>
       </div>
 
       <div className="relative z-10">
         {/* ヘッダー */}
         <nav
-          className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+          className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 border-b border-white/5 ${
             scrollPosition > 10
-              ? 'bg-white/95 backdrop-blur-md shadow-sm'
-              : 'bg-transparent'
+              ? 'bg-[#0f172a]/90 backdrop-blur-md shadow-lg'
+              : 'bg-transparent border-transparent'
           }`}
         >
           <div className="container mx-auto px-4 sm:px-8 h-16 sm:h-20 flex items-center justify-between">
-            <div className="flex items-center">
-              <img
-                src="https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png"
-                alt="トクドク"
-                className="h-12 w-12 sm:h-14 sm:w-14 drop-shadow-md"
-              />
+            <div className="flex items-center gap-3">
+              {/* ロゴアイコン */}
+              <div className="relative">
+                <div className="absolute inset-0 bg-[#ffffff] blur opacity-30 rounded-full"></div>
+                <img
+src="https://res.cloudinary.com/dz9trbwma/image/upload/v1763822849/ChatGPT_Image_2025%E5%B9%B411%E6%9C%8822%E6%97%A5_23_46_11_-_%E7%B7%A8%E9%9B%86%E6%B8%88%E3%81%BF_n1uf53.png"
+                  alt="トクドク"
+                  className="h-12 w-12 sm:h-14 sm:w-14 relative z-10 drop-shadow-md"
+                />
+              </div>
+              <span className={`font-bold text-xl tracking-widest hidden sm:block ${scrollPosition > 10 ? 'text-white' : 'text-white'}`}>
+                TOKU<span className="text-[#d4af37]">DOKU</span>
+              </span>
             </div>
 
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 hover:bg-white/10 rounded-lg transition-colors"
               aria-label="メニュー"
             >
               <Menu
-                className="h-6 w-6 sm:h-7 sm:w-7 text-[#73370c] font-bold"
+                className="h-6 w-6 sm:h-7 sm:w-7 text-[#d4af37]"
                 strokeWidth={2.5}
               />
             </button>
@@ -85,7 +85,7 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 onClick={() => setIsMenuOpen(false)}
-                className="fixed inset-0 bg-black/50 z-[60] backdrop-blur-sm"
+                className="fixed inset-0 bg-black/60 z-[60] backdrop-blur-sm"
               />
 
               <motion.div
@@ -93,7 +93,7 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
                 animate={{ x: 0 }}
                 exit={{ x: '-100%' }}
                 transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                className="fixed left-0 top-0 bottom-0 w-72 bg-white shadow-2xl z-[70] overflow-y-auto"
+                className="fixed left-0 top-0 bottom-0 w-72 bg-[#0f172a] border-r border-[#d4af37]/30 shadow-2xl z-[70] overflow-y-auto"
               >
                 <div className="p-6">
                   <div className="flex items-center justify-between mb-8">
@@ -106,68 +106,45 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
                     </div>
                     <button
                       onClick={() => setIsMenuOpen(false)}
-                      className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                      className="p-2 hover:bg-white/10 rounded-lg transition-colors"
                       aria-label="閉じる"
                     >
-                      <X className="h-6 w-6 text-gray-600" strokeWidth={2.5} />
+                      <X className="h-6 w-6 text-[#d4af37]" strokeWidth={2.5} />
                     </button>
                   </div>
 
                   <nav className="space-y-2">
-                    <Link
-                      href="/profile"
-                      className="block px-4 py-3 text-gray-700 hover:bg-[#fef3e8] hover:text-[#73370c] rounded-lg transition-colors font-bold text-base"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      マイページ
-                    </Link>
-                    <Link
-                      href="/terms/terms-of-service"
-                      className="block px-4 py-3 text-gray-700 hover:bg-[#fef3e8] hover:text-[#73370c] rounded-lg transition-colors font-semibold"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      利用規約
-                    </Link>
-                    <Link
-                      href="/terms/privacy-policy"
-                      className="block px-4 py-3 text-gray-700 hover:bg-[#fef3e8] hover:text-[#73370c] rounded-lg transition-colors font-semibold"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      プライバシーポリシー
-                    </Link>
-                    <Link
-                      href="/terms/service-policy"
-                      className="block px-4 py-3 text-gray-700 hover:bg-[#fef3e8] hover:text-[#73370c] rounded-lg transition-colors font-semibold"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      サービスポリシー
-                    </Link>
-                    <Link
-                      href="/contact"
-                      className="block px-4 py-3 text-gray-700 hover:bg-[#fef3e8] hover:text-[#73370c] rounded-lg transition-colors font-semibold"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      問い合わせ
-                    </Link>
-                    <Link
-                      href="/release-notes"
-                      className="block px-4 py-3 text-gray-700 hover:bg-[#fef3e8] hover:text-[#73370c] rounded-lg transition-colors font-semibold"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      リリースノート
-                    </Link>
+                    {[
+                      { href: '/profile', label: 'マイページ' },
+                      { href: '/terms/terms-of-service', label: '利用規約' },
+                      { href: '/terms/privacy-policy', label: 'プライバシーポリシー' },
+                      { href: '/terms/service-policy', label: 'サービスポリシー' },
+                      { href: '/contact', label: '問い合わせ' },
+                      { href: '/release-notes', label: 'リリースノート' },
+                    ].map((item) => (
+                      <a
+                        key={item.href}
+                        href={item.href}
+                        className="block px-4 py-3 text-gray-300 hover:bg-[#d4af37]/10 hover:text-[#d4af37] rounded-lg transition-colors font-semibold border-b border-white/5"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        {item.label}
+                      </a>
+                    ))}
+                    
                     <a
                       href="https://www.instagram.com/tokudoku_nobody/"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-start justify-start px-4 py-3 text-gray-700 hover:bg-[#fef3e8] hover:text-[#73370c] rounded-lg transition-colors"
+                      className="flex items-center px-4 py-3 text-gray-300 hover:bg-[#d4af37]/10 hover:text-[#d4af37] rounded-lg transition-colors mt-4"
                       onClick={() => setIsMenuOpen(false)}
                     >
                       <img
                         src="https://res.cloudinary.com/dz9trbwma/image/upload/v1759308496/icons8-%E3%82%A4%E3%83%B3%E3%82%B9%E3%82%BF%E3%82%AF%E3%82%99%E3%83%A9%E3%83%A0-100_idedfz.png"
                         alt="Instagram"
-                        className="h-8 w-8"
+                        className="h-8 w-8 brightness-0 invert"
                       />
+                      <span className="ml-2 font-bold">Instagram</span>
                     </a>
                   </nav>
                 </div>
@@ -178,17 +155,17 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
 
         {/* ヒーローセクション */}
         <section className="relative min-h-screen flex items-center justify-center px-4 sm:px-8 overflow-hidden">
-          {/* 背景画像（ぼかし） */}
+          {/* 背景画像（城・花火・祭りのイメージ） */}
           <div
             className="absolute inset-0 bg-cover bg-center"
             style={{
               backgroundImage:
                 'url(https://res.cloudinary.com/dz9trbwma/image/upload/v1761712808/11_%E7%A5%AD%E3%82%8A_%E5%A4%8F%E7%A5%AD%E3%82%8A%E3%81%AE%E6%A7%98%E5%AD%90_oxlvol.jpg)',
-              filter: 'blur(8px)'
             }}
           />
-          {/* オーバーレイ */}
-          <div className="absolute inset-0 bg-black/75" />
+          {/* オーバーレイ（濃紺のグラデーションでリッチに） */}
+          <div className="absolute inset-0 bg-gradient-to-b from-[#0f172a]/80 via-[#0f172a]/60 to-[#0f172a]" />
+          <div className="absolute inset-0 bg-black/30" />
 
           <div className="container mx-auto max-w-6xl relative z-10 pt-24 pb-16">
             <motion.div
@@ -202,7 +179,7 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.8, delay: 0.2 }}
-                  className="text-xl sm:text-2xl md:text-3xl text-[#fef3e7] font-bold tracking-wider drop-shadow-lg"
+                  className="text-xl sm:text-2xl md:text-3xl text-[#d4af37] font-bold tracking-wider drop-shadow-lg"
                 >
                   大分県内のイベント情報を
                   <br />
@@ -213,11 +190,11 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.8, delay: 0.4 }}
-                  className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl text-[#fef3e7] font-bold leading-tight tracking-tight drop-shadow-lg"
+                  className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl text-white font-bold leading-tight tracking-tight drop-shadow-xl"
                 >
                   わくわくする日常を
                   <br className="hidden sm:block" />
-                  <span className="text-[#fef3e7] relative inline-block mt-3">
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#fcf6ba] via-[#d4af37] to-[#b49026] relative inline-block mt-3 pb-2">
                     あなたにお届けします
                   </span>
                 </motion.h1>
@@ -226,7 +203,7 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.8, delay: 0.8 }}
-                  className="text-xl sm:text-2xl md:text-3xl lg:text-4xl text-[#fef3e7] max-w-3xl mx-auto leading-relaxed font-bold drop-shadow-md"
+                  className="text-xl sm:text-2xl md:text-3xl lg:text-4xl text-gray-200 max-w-3xl mx-auto leading-relaxed font-bold drop-shadow-md"
                 >
                   マップ上で
                   <br className="sm:hidden" />
@@ -243,11 +220,11 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
                 <Button
                   size="lg"
                   onClick={onStart}
-                  className="h-16 sm:h-20 px-12 sm:px-16 text-lg sm:text-2xl font-extrabold rounded-full shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 bg-[#fa8238] hover:bg-[#fa8238]"
+                  className="h-16 sm:h-20 px-12 sm:px-16 text-lg sm:text-2xl font-extrabold rounded-full shadow-[0_0_20px_rgba(212,175,55,0.4)] hover:shadow-[0_0_30px_rgba(212,175,55,0.6)] transform hover:scale-105 transition-all duration-300 bg-gradient-to-b from-[#d4af37] to-[#8a6e1c] border border-[#fcf6ba]/40"
                 >
                   イベントを探す
                 </Button>
-                <p className="text-lg sm:text-xl text-white mt-4 font-bold">
+                <p className="text-lg sm:text-xl text-gray-300 mt-4 font-bold">
                   無料で今すぐ始められます
                 </p>
                 <motion.a
@@ -259,7 +236,7 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
                   transition={{ duration: 0.8, delay: 1.4 }}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  className="inline-block mt-6 px-8 sm:px-12 py-3 sm:py-4 text-base sm:text-lg font-bold text-white bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full border-2 border-white/50 hover:border-white transition-all duration-300 shadow-lg hover:shadow-xl"
+                  className="inline-block mt-6 px-8 sm:px-12 py-3 sm:py-4 text-base sm:text-lg font-bold text-white bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full border border-[#d4af37]/50 hover:border-[#d4af37] transition-all duration-300 shadow-lg"
                 >
                   イベント情報募集中！
                 </motion.a>
@@ -274,29 +251,18 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
                 <motion.div
                   animate={{ y: [0, 10, 0] }}
                   transition={{ duration: 2, repeat: Infinity }}
-                  className="flex flex-col items-center text-gray-300 text-sm font-semibold"
+                  className="flex flex-col items-center text-[#d4af37] text-sm font-semibold"
                 >
                   <span className="mb-2">Scroll</span>
-                  <div className="w-px h-12 bg-gray-400/80" />
+                  <div className="w-px h-12 bg-gradient-to-b from-[#d4af37] to-transparent" />
                 </motion.div>
               </motion.div>
             </motion.div>
           </div>
         </section>
 
-        {/* 使い方セクション（構造を整理してプレミアム感アップ） */}
-        <section className="py-20 sm:py-24 px-4 sm:px-8 bg-[#fff7ef] relative overflow-hidden">
-          {/* 背景画像（うっすら） */}
-          <div
-            className="absolute inset-0 bg-cover bg-center opacity-15"
-            style={{
-              backgroundImage:
-                'url(https://res.cloudinary.com/dz9trbwma/image/upload/v1761796856/01_%E3%83%9E%E3%83%AB%E3%82%B7%E3%82%A7_%E5%B1%8B%E5%A4%96%E5%B8%82%E5%A0%B4%E5%BB%BA%E7%AF%89_cljqy8.jpg)'
-            }}
-          />
-          {/* ソリッドオーバーレイ */}
-          <div className="absolute inset-0 bg-[#fff7ef]/90" />
-
+        {/* 使い方セクション（白背景で清潔感を出す） */}
+        <section className="py-20 sm:py-24 px-4 sm:px-8 bg-white relative overflow-hidden">
           <div className="container mx-auto max-w-6xl relative z-10">
             <motion.div
               initial={{ opacity: 0, y: 30 }}
@@ -305,51 +271,38 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
               viewport={{ once: true }}
               className="text-center mb-12 sm:mb-20"
             >
-              <p className="inline-block px-5 py-1 mb-4 text-xs sm:text-sm tracking-[0.18em] font-semibold text-[#b47433] border border-[#f0d0ac] rounded-full bg-white/70">
+              <p className="inline-block px-5 py-1 mb-4 text-xs sm:text-sm tracking-[0.18em] font-bold text-[#0f172a] border-b-2 border-[#d4af37]">
                 HOW TO USE
               </p>
-              <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold text-[#73370c] tracking-tight">
-                <img
-                  src="https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png"
-                  alt="トクドク"
-                  className="inline-block h-16 w-16 sm:h-20 sm:w-20 mr-3 mb-2 align-middle"
-                />
+              <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold text-[#0f172a] tracking-tight mt-2">
                 かんたん3ステップ
               </h2>
-              <p className="text-lg sm:text-xl md:text-2xl text-gray-700 mt-5 font-semibold">
-                直感的なマップで、
-                <span className="ml-1">今日行きたいイベントがすぐ見つかる</span>
+              <p className="text-lg sm:text-xl md:text-2xl text-gray-600 mt-5 font-semibold">
+                直感的なマップで、<br />
+                <span className="ml-1 text-[#0f172a] border-b-2 border-[#d4af37]/50">今日行きたいイベントがすぐ見つかる</span>
               </p>
             </motion.div>
 
             {/* STEP カード */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 sm:gap-10">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 sm:gap-12">
               {[
                 {
                   step: '01',
-                  icon: Search,
                   title: '地図をひらく',
-                  description: 'アプリを開くと、イベントが地図上にピンで表示されます。',
-                  imageUrl:
-                    'https://res.cloudinary.com/dz9trbwma/image/upload/v1761742897/1A7F75AD-84B0-45C6-87EF-1EC6EEF1A4EB_1_201_a_gulzoo.jpg'
+                  description: 'イベント情報が地図上にピンで表示されます。',
+                  imageUrl: 'https://res.cloudinary.com/dz9trbwma/image/upload/v1761742897/1A7F75AD-84B0-45C6-87EF-1EC6EEF1A4EB_1_201_a_gulzoo.jpg'
                 },
                 {
                   step: '02',
-                  icon: MapPin,
-                  title: '気になるピンをタップ',
-                  description:
-                    'ピンを押すと、画面下にイベントの詳細・開催時間・場所がまとまって表示されます。',
-                  imageUrl:
-'https://res.cloudinary.com/dz9trbwma/image/upload/v1763465785/%E3%82%B9%E3%82%AF%E3%83%AA%E3%83%BC%E3%83%B3%E3%82%B7%E3%83%A7%E3%83%83%E3%83%88_2025-11-18_20.35.26_hofjao.png'
+                  title: 'ピンをタップ',
+                  description: 'ピンを押すと、画面下に\nイベント情報が表示されます。',
+                  imageUrl: 'https://res.cloudinary.com/dz9trbwma/image/upload/v1763465785/%E3%82%B9%E3%82%AF%E3%83%AA%E3%83%BC%E3%83%B3%E3%82%B7%E3%83%A7%E3%83%83%E3%83%88_2025-11-18_20.35.26_hofjao.png'
                 },
                 {
                   step: '03',
-                  icon: Heart,
                   title: 'あとは出掛けるだけ',
-                  description:
-                    '気になったイベントに足を運んで、いつもの街をもっと楽しみましょう。',
-                  imageUrl:
-                    'https://res.cloudinary.com/dz9trbwma/image/upload/v1761712807/08_%E7%A5%AD%E3%82%8A_%E5%B1%8B%E5%8F%B0%E9%A2%A8%E6%99%AF_gen7np.jpg'
+                  description: '気になったイベントに足を運んで、\nいつもの街をもっと楽しみましょう。',
+                  imageUrl: 'https://res.cloudinary.com/dz9trbwma/image/upload/v1761712807/08_%E7%A5%AD%E3%82%8A_%E5%B1%8B%E5%8F%B0%E9%A2%A8%E6%99%AF_gen7np.jpg'
                 }
               ].map((item, index) => (
                 <motion.div
@@ -358,67 +311,55 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
                   whileInView={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.7, delay: index * 0.08 }}
                   viewport={{ once: true }}
-                  className="flex flex-col bg-white/95 rounded-3xl border border-[#f0d0ac] shadow-[0_18px_45px_rgba(115,55,12,0.08)] overflow-hidden"
+                  className="flex flex-col items-center text-center group"
                 >
-                  <div className="flex items-center justify-between px-6 sm:px-7 pt-6 sm:pt-7 pb-3">
-                    <div className="flex items-center gap-3">
-                      <div className="h-11 w-11 sm:h-12 sm:w-12 rounded-2xl bg-[#fef3e8] flex items-center justify-center">
-                        <item.icon
-                          className="h-6 w-6 sm:h-7 sm:w-7 text-[#73370c]"
-                          strokeWidth={2.5}
-                        />
+                  <div className="mb-6 relative">
+                    {/* ステップ番号の装飾 */}
+                    <span className="text-sm font-bold tracking-[0.2em] text-[#d4af37] block mb-2">STEP {item.step}</span>
+                    {index < 2 && (
+                      <div className="hidden md:block absolute top-1/2 -right-2/3 w-1/2 border-t-2 border-dashed border-gray-300 text-gray-300">
+                        <span className="absolute -top-2.5 right-0 transform rotate-45 border-t-2 border-r-2 border-dashed border-gray-300 w-4 h-4"></span>
                       </div>
-                      <div className="space-y-1">
-                        <p className="text-xs font-bold tracking-[0.18em] text-[#b47433]">
-                          STEP {item.step}
-                        </p>
-                        <h3 className="text-xl sm:text-2xl font-extrabold text-[#73370c] leading-tight">
-                          {item.title}
-                        </h3>
-                      </div>
-                    </div>
+                    )}
                   </div>
 
-                  <div className="px-6 sm:px-7 pb-6">
-                    <p className="text-sm sm:text-base text-gray-700 leading-relaxed font-semibold">
-                      {item.description}
-                    </p>
-                  </div>
+                  <h3 className="text-xl sm:text-2xl font-bold text-[#0f172a] mb-3">
+                    {item.title}
+                  </h3>
 
-                  <div className="relative mt-auto">
-                    <div className="mx-4 mb-5 rounded-2xl overflow-hidden border border-[#ead2b6] bg-[#fef7ef]">
-                      <img
+                  <p className="text-base sm:text-base text-gray-600 leading-relaxed font-medium mb-6 whitespace-pre-line">
+                    {item.description}
+                  </p>
+
+                  <div className="w-full rounded-2xl overflow-hidden shadow-lg border border-gray-100">
+                     <img
                         src={item.imageUrl}
                         alt={item.title}
-                        className="w-full h-56 sm:h-64 object-cover"
+                        className="w-full h-48 object-cover"
                       />
-                    </div>
                   </div>
                 </motion.div>
               ))}
             </div>
 
             {/* ミニ補足 */}
-            <div className="mt-12 text-center">
-              <p className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/80 border border-[#f0d0ac] text-xs sm:text-sm font-semibold text-gray-700">
-                アカウント登録不要で、開いてすぐこの画面からスタートできます
+            <div className="mt-16 text-center">
+              <p className="inline-block py-2 px-6 bg-[#f1f5f9] rounded-full text-xs sm:text-sm font-bold text-gray-600">
+                アカウント登録不要で、すぐご利用できます
               </p>
             </div>
           </div>
         </section>
 
-        {/* 特徴セクション（カードを整理して高級感のあるレイアウトに） */}
-        <section className="relative py-20 sm:py-24 px-4 sm:px-8 bg-[#fdf2e6] overflow-hidden">
-          {/* 背景画像（ごく薄く） */}
-          <div
-            className="absolute inset-0 bg-cover bg-center opacity-10"
-            style={{
-              backgroundImage:
-                'url(https://res.cloudinary.com/dz9trbwma/image/upload/v1761712807/07_%E7%A5%AD%E3%82%8A_%E5%B1%8B%E5%8F%B0%E3%82%AF%E3%82%99%E3%83%AB%E3%83%A1_wwmiek.jpg)'
-            }}
-          />
-          {/* ソリッドオーバーレイ */}
-          <div className="absolute inset-0 bg-[#fdf2e6]/90" />
+        {/* 特徴セクション（濃紺背景で引き締める） */}
+        <section className="relative py-20 sm:py-24 px-4 sm:px-8 bg-[#0f172a] overflow-hidden">
+          {/* 金色の装飾ライン */}
+          <div className="absolute top-0 left-0 w-full h-full overflow-hidden opacity-20 pointer-events-none">
+             <svg className="absolute -top-20 -left-20 w-[150%] h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+               <path d="M0 50 Q 25 30 50 50 T 100 50" fill="none" stroke="#d4af37" strokeWidth="0.2"/>
+               <path d="M0 60 Q 25 40 50 60 T 100 60" fill="none" stroke="#d4af37" strokeWidth="0.2"/>
+             </svg>
+          </div>
 
           <div className="container mx-auto max-w-6xl relative z-10">
             <motion.div
@@ -428,44 +369,33 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
               viewport={{ once: true }}
               className="text-center mb-12 sm:mb-16"
             >
-              <p className="inline-block px-5 py-1 mb-4 text-xs sm:text-sm tracking-[0.18em] font-semibold text-[#b47433] border border-[#f0d0ac] rounded-full bg-white/70">
+              <p className="inline-block px-5 py-1 mb-4 text-xs sm:text-sm tracking-[0.18em] font-bold text-[#d4af37]">
                 FEATURES
               </p>
-              <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold mb-4 text-[#73370c] tracking-tight">
-                <img
-                  src="https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png"
-                  alt="トクドク"
-                  className="inline-block h-16 w-16 sm:h-20 sm:w-20 mr-3 mb-2 align-middle"
-                />
-                のこだわり
+              <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold mb-4 text-white tracking-tight">
+                <span className="text-[#d4af37]">こだわり</span>の機能
               </h2>
-              <p className="text-lg sm:text-xl md:text-2xl text-gray-700 font-semibold mt-2">
+              <p className="text-lg sm:text-xl md:text-2xl text-gray-300 font-semibold mt-2">
                 「探しやすさ」「確かさ」「気軽さ」に<br />徹底的にこだわりました
               </p>
             </motion.div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 sm:gap-10">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
               {[
                 {
-                  icon: MapPin,
                   label: 'FINDABILITY',
                   title: '地図で一目でわかる',
-                  description:
-                    'どこで何が開催されているか、ピンを見るだけで直感的に把握できます。文字だけの一覧よりも、移動ルートまでイメージしやすくなります。'
+                  description: 'どこで何が開催されているか、ピンを見るだけで直感的に把握できます。'
                 },
                 {
-                  icon: Calendar,
                   label: 'REAL-TIME',
                   title: '開催中の情報だけ表示',
-                  description:
-                    '終了したイベント情報は自動で非表示。今日～近日のイベントだけが並ぶので、「行ったらもう終わっていた…」を防ぎます。'
+                  description: '終了したイベント情報は自動で非表示。今日～近日のイベントだけが並びます。'
                 },
                 {
-                  icon: Heart,
                   label: 'FREE & EASY',
-                  title: '完全無料で、今すぐ使える',
-                  description:
-                    '会員登録もクレジットカードも不要。アプリを開くだけで、週末どこいく？といった悩みを解決します。'
+                  title: '完全無料で、今すぐ',
+                  description: '会員登録もクレジットカードも不要。アプリを開くだけで使えます。'
                 }
               ].map((feature, index) => (
                 <motion.div
@@ -474,25 +404,15 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
                   whileInView={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.6, delay: index * 0.08 }}
                   viewport={{ once: true }}
-                  className="bg-white/95 p-8 sm:p-9 rounded-3xl border border-[#f0d0ac] shadow-[0_18px_45px_rgba(115,55,12,0.08)] flex flex-col"
+                  className="bg-white p-8 rounded-lg border border-gray-200 shadow-xl flex flex-col items-center text-center hover:-translate-y-1 transition-transform duration-300"
                 >
-                  <div className="flex items-center justify-between mb-5">
-                    <div className="flex items-center gap-3">
-                      <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-[#fef3e8] flex items-center justify-center">
-                        <feature.icon
-                          className="h-8 w-8 sm:h-9 sm:w-9 text-[#73370c]"
-                          strokeWidth={2.5}
-                        />
-                      </div>
-                      <span className="text-[10px] sm:text-xs font-bold tracking-[0.22em] text-[#b47433] uppercase">
-                        {feature.label}
-                      </span>
-                    </div>
-                  </div>
-                  <h3 className="text-xl sm:text-2xl font-extrabold mb-3 text-[#73370c]">
+                  <span className="text-xs font-bold tracking-[0.15em] text-[#d4af37] uppercase mb-2">
+                    {feature.label}
+                  </span>
+                  <h3 className="text-xl sm:text-2xl font-bold mb-3 text-[#0f172a]">
                     {feature.title}
                   </h3>
-                  <p className="text-sm sm:text-base text-gray-700 leading-relaxed font-semibold">
+                  <p className="text-sm sm:text-base text-gray-600 leading-relaxed font-medium whitespace-pre-line">
                     {feature.description}
                   </p>
                 </motion.div>
@@ -501,47 +421,49 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
           </div>
         </section>
 
-        {/* メッセージセクション */}
-        <section className="py-20 sm:py-32 px-4 sm:px-8 bg-[#fef3e8] relative overflow-hidden">
-          <div className="absolute inset-0 opacity-35">
-            <div className="absolute top-[-40px] left-1/4 w-80 h-80 bg-[#fef3e7] rounded-full blur-3xl" />
-            <div className="absolute bottom-[-40px] right-1/4 w-80 h-80 bg-[#fef3e7] rounded-full blur-3xl" />
-          </div>
+        {/* エモーショナルセクション（写真背景） */}
+        <section className="py-20 sm:py-32 px-4 sm:px-8 relative overflow-hidden flex items-center justify-center">
+          {/* 背景画像 */}
+          <div 
+            className="absolute inset-0 bg-cover bg-center"
+            style={{
+              backgroundImage: 'url(https://res.cloudinary.com/dz9trbwma/image/upload/v1761712807/07_%E7%A5%AD%E3%82%8A_%E5%B1%8B%E5%8F%B0%E3%82%AF%E3%82%99%E3%83%AB%E3%83%A1_wwmiek.jpg)',
+            }}
+          />
+          <div className="absolute inset-0 bg-[#0f172a]/70" />
 
-          <div className="container mx-auto max-w-4xl relative z-10">
+          <div className="container mx-auto max-w-4xl relative z-10 text-center">
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
               viewport={{ once: true }}
-              className="text-center space-y-6"
+              className="space-y-8"
             >
-              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold leading-tight text-[#73370c]">
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold leading-tight text-white drop-shadow-lg">
                 いつもの街が、
-                <br className="sm:hidden" />
+                <br />
                 もっと好きになる
               </h2>
-              <p className="text-2xl sm:text-3xl lg:text-4xl text-[#73370c] leading-relaxed max-w-2xl mx-auto font-bold">
+              <p className="text-xl sm:text-2xl lg:text-3xl text-gray-200 leading-relaxed font-bold">
                 地域のイベントで、
-                <br className="sm:hidden" />
-                人と街をつなぐ
+                <span className="border-b-2 border-[#d4af37]">人と街をつなぐ</span>
               </p>
             </motion.div>
           </div>
         </section>
 
         {/* 最終CTA */}
-        <section className="relative py-16 sm:py-24 px-4 sm:px-8 overflow-hidden bg-[#fffaf5]">
-          {/* 背景画像 */}
+        <section className="relative py-16 sm:py-24 px-4 sm:px-8 overflow-hidden bg-[#0f172a]">
+           {/* 背景：花火イメージ */}
           <div
-            className="absolute inset-0 bg-cover bg-center opacity-25"
+            className="absolute inset-0 bg-cover bg-center opacity-30"
             style={{
               backgroundImage:
                 'url(https://res.cloudinary.com/dz9trbwma/image/upload/v1761712807/10_%E5%9C%B0%E5%9F%9F%E3%81%AE%E5%A4%8F%E7%A5%AD%E3%82%8A_zi3gse.jpg)'
             }}
           />
-          {/* ソリッドオーバーレイ */}
-          <div className="absolute inset-0 bg-[#fffaf5]/85" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0f172a] via-[#0f172a]/80 to-transparent" />
 
           <div className="container mx-auto max-w-4xl text-center relative z-10">
             <motion.div
@@ -551,7 +473,7 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
               viewport={{ once: true }}
               className="space-y-8"
             >
-              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold leading-tight text-[#73370c]">
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold leading-tight text-white">
                 さあ、出掛けよう！
               </h2>
 
@@ -559,13 +481,13 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
                 <Button
                   size="lg"
                   onClick={onStart}
-                  className="h-18 sm:h-20 px-14 sm:px-20 text-xl sm:text-3xl font-extrabold rounded-full shadow-2xl hover:shadow-[0_24px_50px_rgba(92,42,10,0.45)] transform transition-all duration-300 bg-[#73370c] hover:bg-[#5c2a0a]"
+                  className="h-18 sm:h-20 px-14 sm:px-20 text-xl sm:text-3xl font-extrabold rounded-full shadow-[0_0_30px_rgba(212,175,55,0.5)] transform transition-all duration-300 bg-gradient-to-r from-[#d4af37] to-[#8a6e1c] text-white border border-[#fcf6ba]/30"
                 >
                   マップを見る
                 </Button>
               </motion.div>
 
-              <p className="text-lg sm:text-xl text-gray-700 font-bold">
+              <p className="text-lg sm:text-xl text-gray-400 font-bold">
                 アカウント登録不要 / 今すぐ使えます
               </p>
             </motion.div>
@@ -573,18 +495,19 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
         </section>
 
         {/* フッター */}
-        <footer className="py-12 sm:py-16 px-4 sm:px-8 border-t bg-gray-50">
+        <footer className="py-12 sm:py-16 px-4 sm:px-8 border-t border-white/10 bg-[#0b1120]">
           <div className="container mx-auto max-w-6xl">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
               <div>
-                <div className="flex items-center mb-4">
+                <div className="flex items-center mb-4 gap-2">
                   <img
                     src="https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png"
                     alt="トクドク"
-                    className="h-12 w-12"
+                    className="h-10 w-10"
                   />
+                  <span className="text-white font-bold text-xl">TOKUDOKU</span>
                 </div>
-                <p className="text-lg text-gray-600 leading-relaxed font-semibold">
+                <p className="text-lg text-gray-400 leading-relaxed font-semibold">
                   地域のイベントを通じて、
                   <br />
                   人と人、人と街をつなぐプラットフォーム
@@ -593,71 +516,41 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <h4 className="font-extrabold mb-3 text-[#73370c] text-base sm:text-lg">
+                  <h4 className="font-extrabold mb-3 text-[#d4af37] text-base sm:text-lg">
                     サービス
                   </h4>
                   <ul className="space-y-2">
                     <li>
-                      <Link
-                        href="/profile"
-                        className="text-gray-600 hover:text-[#73370c] transition-colors font-semibold text-sm sm:text-base"
-                      >
-                        マイページ
-                      </Link>
+                      <a href="/profile" className="text-gray-400 hover:text-white transition-colors font-semibold text-sm sm:text-base">マイページ</a>
                     </li>
                     <li>
-                      <Link
-                        href="/contact"
-                        className="text-gray-600 hover:text-[#73370c] transition-colors font-semibold text-sm sm:text-base"
-                      >
-                        問い合わせ
-                      </Link>
+                      <a href="/contact" className="text-gray-400 hover:text-white transition-colors font-semibold text-sm sm:text-base">問い合わせ</a>
                     </li>
                     <li>
-                      <Link
-                        href="/release-notes"
-                        className="text-gray-600 hover:text-[#73370c] transition-colors font-semibold text-sm sm:text-base"
-                      >
-                        リリースノート
-                      </Link>
+                      <a href="/release-notes" className="text-gray-400 hover:text-white transition-colors font-semibold text-sm sm:text-base">リリースノート</a>
                     </li>
                   </ul>
                 </div>
                 <div>
-                  <h4 className="font-extrabold mb-3 text-[#73370c] text-base sm:text-lg">
+                  <h4 className="font-extrabold mb-3 text-[#d4af37] text-base sm:text-lg">
                     規約
                   </h4>
                   <ul className="space-y-2">
                     <li>
-                      <Link
-                        href="/terms/terms-of-service"
-                        className="text-gray-600 hover:text-[#73370c] transition-colors font-semibold text-sm sm:text-base"
-                      >
-                        利用規約
-                      </Link>
+                      <a href="/terms/terms-of-service" className="text-gray-400 hover:text-white transition-colors font-semibold text-sm sm:text-base">利用規約</a>
                     </li>
                     <li>
-                      <Link
-                        href="/terms/privacy-policy"
-                        className="text-gray-600 hover:text-[#73370c] transition-colors font-semibold text-sm sm:text-base"
-                      >
-                        プライバシーポリシー
-                      </Link>
+                      <a href="/terms/privacy-policy" className="text-gray-400 hover:text-white transition-colors font-semibold text-sm sm:text-base">プライバシーポリシー</a>
                     </li>
                     <li>
-                      <Link
-                        href="/terms/service-policy"
-                        className="text-gray-600 hover:text-[#73370c] transition-colors font-semibold text-sm sm:text-base"
-                      >
-                        サービスポリシー
-                      </Link>
+                      <a href="/terms/service-policy" className="text-gray-400 hover:text-white transition-colors font-semibold text-sm sm:text-base">サービスポリシー</a>
                     </li>
                   </ul>
                 </div>
               </div>
             </div>
 
-            <div className="pt-8 border-t text-center">
+            <div className="pt-8 border-t border-white/10 text-center">
               <p className="text-sm sm:text-base text-gray-500 font-semibold">
                 © 2025 トクドク All rights reserved.
               </p>
@@ -669,7 +562,8 @@ const EventLP = ({ onStart }: { onStart: () => void }) => {
   );
 };
 
-// メインコンポーネント
+// --- メインコンポーネント (エントリポイント) ---
+
 export default function Home() {
   const router = useRouter();
   const [showLocationModal, setShowLocationModal] = useState(false);
