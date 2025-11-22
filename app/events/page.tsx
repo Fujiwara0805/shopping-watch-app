@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, MapPin, Map, Newspaper, ChevronDown, ChevronUp, RefreshCw, ArrowUp, Trash2, Loader2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, MapPin, Map, Newspaper, ChevronDown, ChevronUp, RefreshCw, ArrowUp, Trash2, Loader2, ExternalLink } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, parseISO, getDay, getYear, getMonth, getDate, addDays } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import Image from 'next/image';
+import { Ad } from '@/types/ad';
 
 // 祝日データ（日本の祝日）
 const getHolidays = (year: number): Record<string, string> => {
@@ -106,6 +107,76 @@ interface CalendarEvent {
   fullData: EventPost & { distance?: number };
 }
 
+// 広告カードコンポーネント
+interface AdCardProps {
+  ad: Ad;
+  onView?: () => void;
+  onClick?: () => void;
+}
+
+const AdCard = ({ ad, onView, onClick }: AdCardProps) => {
+  useEffect(() => {
+    // 広告が表示されたら視聴を記録
+    if (onView) {
+      onView();
+    }
+  }, [onView]);
+
+  const handleClick = () => {
+    if (onClick) {
+      onClick();
+    }
+    
+    // リンクに遷移
+    if (ad.link_url || ad.affiliate_url) {
+      if (ad.ad_type === 'affiliate' && ad.affiliate_url) {
+        window.open(ad.affiliate_url, '_blank', 'noopener,noreferrer');
+      } else if (ad.link_url) {
+        window.open(ad.link_url, '_blank', 'noopener,noreferrer');
+      }
+    }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      className="relative w-full rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity flex justify-center"
+      onClick={handleClick}
+    >
+      {ad.image_url ? (
+        <div className="relative" style={{ width: '320px', height: '50px' }}>
+          <Image
+            src={ad.image_url}
+            alt="広告"
+            fill
+            className="object-cover"
+            sizes="320px"
+            unoptimized={ad.image_url.includes('a8.net')}
+          />
+          {/* 広告ラベル */}
+          <div className="absolute top-1 left-1">
+            <span className="bg-white/90 text-[#73370c] text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide">
+              広告
+            </span>
+          </div>
+        </div>
+      ) : (
+        <div className="relative bg-gray-100 flex items-center justify-center" style={{ width: '320px', height: '50px' }}>
+          <Newspaper className="h-6 w-6 text-[#73370c] opacity-30" />
+          {/* 広告ラベル */}
+          <div className="absolute top-1 left-1">
+            <span className="bg-white/90 text-[#73370c] text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide">
+              広告
+            </span>
+          </div>
+        </div>
+      )}
+    </motion.div>
+  );
+};
+
 export default function CalendarPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -115,6 +186,7 @@ export default function CalendarPage() {
   
   const [currentDate, setCurrentDate] = useState(new Date());
   const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [ads, setAds] = useState<Ad[]>([]);
   const [loading, setLoading] = useState(true);
   const [isLongTermEventsOpen, setIsLongTermEventsOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -225,6 +297,58 @@ export default function CalendarPage() {
     };
 
     fetchLocations();
+  }, []);
+
+  // 広告データの取得
+  const fetchAds = useCallback(async () => {
+    try {
+      const now = new Date().toISOString();
+      const { data, error } = await supabase
+        .from('ads')
+        .select('*')
+        .eq('placement', 'events_list')
+        .eq('is_active', true)
+        .or(`start_date.is.null,start_date.lte.${now}`)
+        .or(`end_date.is.null,end_date.gte.${now}`)
+        .order('priority', { ascending: false })
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('広告取得エラー:', error);
+        setAds([]);
+      } else {
+        setAds(data || []);
+      }
+    } catch (error) {
+      console.error('広告取得エラー:', error);
+      setAds([]);
+    }
+  }, []);
+
+  // 広告の視聴を記録
+  const trackAdView = useCallback(async (adId: string) => {
+    try {
+      await fetch('/api/ads/track', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ adId, action: 'view' }),
+      });
+    } catch (error) {
+      console.error('広告視聴記録エラー:', error);
+    }
+  }, []);
+
+  // 広告のクリックを記録
+  const trackAdClick = useCallback(async (adId: string) => {
+    try {
+      await fetch('/api/ads/track', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ adId, action: 'click' }),
+      });
+    } catch (error) {
+      console.error('広告クリック記録エラー:', error);
+    }
   }, []);
 
   // イベントデータの取得
@@ -400,6 +524,11 @@ export default function CalendarPage() {
     }
   }, [currentDate, selectedPrefecture, selectedCity, selectedEnableCheckin, sortBy, userLocation]);
 
+  // 広告データの取得
+  useEffect(() => {
+    fetchAds();
+  }, [fetchAds]);
+
   // イベントデータの取得
   useEffect(() => {
     fetchEvents();
@@ -430,6 +559,14 @@ export default function CalendarPage() {
       return isSameMonth(event.startDate, event.endDate);
     });
   }, [events]);
+
+  // 特定の日のイベントを取得（月内のイベントのみ）
+  const getEventsForDay = useCallback((day: Date): CalendarEvent[] => {
+    return shortTermEvents.filter(event => {
+      // その日がイベント期間内かチェック
+      return day >= event.startDate && day <= event.endDate;
+    });
+  }, [shortTermEvents]);
 
   // イベントがある日付のみを取得（本日から）
   const daysWithEvents = useMemo(() => {
@@ -463,13 +600,39 @@ export default function CalendarPage() {
     return sortedDays;
   }, [shortTermEvents, currentDate]);
 
-  // 特定の日のイベントを取得（月内のイベントのみ）
-  const getEventsForDay = (day: Date): CalendarEvent[] => {
-    return shortTermEvents.filter(event => {
-      // その日がイベント期間内かチェック
-      return day >= event.startDate && day <= event.endDate;
+  // 月全体のイベントリスト（広告を含む）を生成
+  const eventsWithAds = useMemo(() => {
+    // 日付ごとにグループ化されたイベントをフラットなリストに変換
+    const flatEvents: Array<{ type: 'event'; event: CalendarEvent; day: Date }> = [];
+    
+    daysWithEvents.forEach(day => {
+      const dayEvents = getEventsForDay(day);
+      dayEvents.forEach(event => {
+        flatEvents.push({ type: 'event', event, day });
+      });
     });
-  };
+
+    // 月全体で通しカウントで7件ごとに広告を挿入
+    const result: Array<{ type: 'event' | 'ad'; event?: CalendarEvent; ad?: Ad; day?: Date }> = [];
+    let eventCount = 0;
+
+    flatEvents.forEach((item) => {
+      // 7件ごとに広告を挿入（7件目、14件目、21件目...の後に）
+      if (eventCount > 0 && eventCount % 7 === 0 && ads.length > 0) {
+        // 利用可能な広告を循環的に選択
+        const adIndex = Math.floor((eventCount / 7 - 1) % ads.length);
+        const ad = ads[adIndex];
+        if (ad) {
+          result.push({ type: 'ad', ad, day: item.day });
+        }
+      }
+      
+      result.push(item);
+      eventCount++;
+    });
+
+    return result;
+  }, [daysWithEvents, ads, getEventsForDay]);
 
   // イベントクリック時の処理（フィルター状態を保存してから遷移）
   const handleEventClick = (eventId: string) => {
@@ -780,102 +943,148 @@ export default function CalendarPage() {
               </div>
             ) : (
               <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-                {/* イベントがある日付のみ表示 */}
+                {/* イベントと広告を日付ごとにグループ化して表示 */}
                 <div className="divide-y divide-gray-200">
-                  {daysWithEvents.map((day) => {
-                    const dayEvents = getEventsForDay(day);
-                    const isToday = isSameDay(day, new Date());
-                    const dayOfWeek = getDayOfWeek(day);
-                    const dayColor = getDayColor(day);
-                    const bgColor = getDayBgColor(day);
-                    const rokuyo = getRokuyo(day);
+                  {(() => {
+                    // 日付ごとにグループ化
+                    type EventOrAd = { type: 'event' | 'ad'; event?: CalendarEvent; ad?: Ad; day?: Date };
+                    const groupedByDay: Record<string, EventOrAd[]> = {};
+                    
+                    eventsWithAds.forEach(item => {
+                      const dayKey = item.day ? format(item.day, 'yyyy-MM-dd') : 'no-date';
+                      if (!groupedByDay[dayKey]) {
+                        groupedByDay[dayKey] = [];
+                      }
+                      groupedByDay[dayKey].push(item);
+                    });
 
-                    return (
-                      <div
-                        key={day.toISOString()}
-                        id={getDayId(day)}
-                        className={`p-4 scroll-mt-20 ${isToday ? 'border-l-4 border-[#fa8238]' : ''}`}
-                        style={{ backgroundColor: bgColor }}
-                      >
-                        {/* 日付と曜日と六曜 - 左詰め、小さめのテキスト */}
-                        <div className="mb-3">
-                          <div className={`text-sm font-bold ${dayColor}`}>
-                            {format(day, 'M月d日', { locale: ja })}（{dayOfWeek}）{rokuyo}
+                    // 日付順にソート
+                    const sortedDays = Object.keys(groupedByDay).sort();
+
+                    return sortedDays.map((dayKey: string) => {
+                      const dayItems = groupedByDay[dayKey];
+                      const firstItem = dayItems[0];
+                      let day: Date | null = null;
+                      if (firstItem?.day) {
+                        try {
+                          day = parseISO(dayKey);
+                        } catch {
+                          day = null;
+                        }
+                      }
+                      
+                      if (!day) return null;
+
+                      const isToday = isSameDay(day, new Date());
+                      const dayOfWeek = getDayOfWeek(day);
+                      const dayColor = getDayColor(day);
+                      const bgColor = getDayBgColor(day);
+                      const rokuyo = getRokuyo(day);
+
+                      return (
+                        <div
+                          key={dayKey}
+                          id={getDayId(day)}
+                          className={`p-4 scroll-mt-20 ${isToday ? 'border-l-4 border-[#fa8238]' : ''}`}
+                          style={{ backgroundColor: bgColor }}
+                        >
+                          {/* 日付と曜日と六曜 - 左詰め、小さめのテキスト */}
+                          <div className="mb-3">
+                            <div className={`text-sm font-bold ${dayColor}`}>
+                              {format(day, 'M月d日', { locale: ja })}（{dayOfWeek}）{rokuyo}
+                            </div>
+                          </div>
+
+                          {/* イベントと広告の一覧 */}
+                          <div className="space-y-2">
+                            {dayItems.map((item: { type: 'event' | 'ad'; event?: CalendarEvent; ad?: Ad; day?: Date }, index: number) => {
+                              if (item.type === 'ad' && item.ad) {
+                                return (
+                                  <AdCard
+                                    key={`ad-${dayKey}-${index}`}
+                                    ad={item.ad}
+                                    onView={() => trackAdView(item.ad!.id)}
+                                    onClick={() => trackAdClick(item.ad!.id)}
+                                  />
+                                );
+                              }
+
+                              if (item.type === 'event' && item.event) {
+                                const event = item.event;
+                                const imageUrl = getImageUrl(event);
+                                const isAuthor = event.fullData.author_user_id === currentUserId;
+
+                                return (
+                                  <div
+                                    key={event.id}
+                                    className={`bg-white rounded-lg border-2 hover:shadow-md transition-all ${
+                                      isToday ? 'border-[#fa8238]' : 'border-[#73370c]/10'
+                                    }`}
+                                  >
+                                    {/* ヘッダー部分（バッジと削除ボタン） */}
+                                    {isAuthor && (
+                                      <div className="flex items-center justify-between p-2 border-b border-gray-100">
+                                        <Badge variant="default" className="text-xs bg-blue-600">自分の投稿</Badge>
+                                        <Button
+                                          onClick={(e) => handleDeleteEvent(event.id, e)}
+                                          disabled={deletingEventId === event.id}
+                                          size="icon"
+                                          variant="destructive"
+                                          className="h-8 w-8 rounded-full shadow-lg"
+                                        >
+                                          {deletingEventId === event.id ? (
+                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                          ) : (
+                                            <Trash2 className="h-4 w-4" />
+                                          )}
+                                        </Button>
+                                      </div>
+                                    )}
+                                    
+                                    {/* コンテンツ部分（クリッカブル） */}
+                                    <div
+                                      className="flex gap-3 p-3 cursor-pointer"
+                                      onClick={() => handleEventClick(event.id)}
+                                    >
+                                      {/* イベント画像 */}
+                                      {imageUrl ? (
+                                        <div className="flex-shrink-0 relative w-16 h-16">
+                                          <Image
+                                            src={imageUrl}
+                                            alt={event.name}
+                                            fill
+                                            className="object-cover rounded-md"
+                                            sizes="64px"
+                                          />
+                                        </div>
+                                      ) : (
+                                        <div className="flex-shrink-0 w-16 h-16 bg-[#fef3e8] rounded-md flex items-center justify-center">
+                                          <CalendarIcon className="h-8 w-8 text-[#73370c] opacity-30" />
+                                        </div>
+                                      )}
+
+                                      {/* イベント情報 */}
+                                      <div className="flex-1 min-w-0">
+                                        <div className="font-semibold text-base mb-1" style={{ color: '#73370c' }}>
+                                          {event.name}
+                                        </div>
+                                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                                          <MapPin className="h-3 w-3 text-red-500 flex-shrink-0" />
+                                          <span className="truncate">{event.fullData.store_name}</span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              }
+
+                              return null;
+                            })}
                           </div>
                         </div>
-
-                        {/* イベント一覧 */}
-                        <div className="space-y-2">
-                          {dayEvents.map((event) => {
-                            const imageUrl = getImageUrl(event);
-                            const isAuthor = event.fullData.author_user_id === currentUserId;
-                            return (
-                              <div
-                                key={event.id}
-                                className={`bg-white rounded-lg border-2 hover:shadow-md transition-all ${
-                                  isToday ? 'border-[#fa8238]' : 'border-[#73370c]/10'
-                                }`}
-                              >
-                                {/* ヘッダー部分（バッジと削除ボタン） */}
-                                {isAuthor && (
-                                  <div className="flex items-center justify-between p-2 border-b border-gray-100">
-                                    <Badge variant="default" className="text-xs bg-blue-600">自分の投稿</Badge>
-                                    <Button
-                                      onClick={(e) => handleDeleteEvent(event.id, e)}
-                                      disabled={deletingEventId === event.id}
-                                      size="icon"
-                                      variant="destructive"
-                                      className="h-8 w-8 rounded-full shadow-lg"
-                                    >
-                                      {deletingEventId === event.id ? (
-                                        <Loader2 className="h-4 w-4 animate-spin" />
-                                      ) : (
-                                        <Trash2 className="h-4 w-4" />
-                                      )}
-                                    </Button>
-                                  </div>
-                                )}
-                                
-                                {/* コンテンツ部分（クリッカブル） */}
-                                <div
-                                  className="flex gap-3 p-3 cursor-pointer"
-                                  onClick={() => handleEventClick(event.id)}
-                                >
-                                  {/* イベント画像 */}
-                                  {imageUrl ? (
-                                    <div className="flex-shrink-0 relative w-16 h-16">
-                                      <Image
-                                        src={imageUrl}
-                                        alt={event.name}
-                                        fill
-                                        className="object-cover rounded-md"
-                                        sizes="64px"
-                                      />
-                                    </div>
-                                  ) : (
-                                    <div className="flex-shrink-0 w-16 h-16 bg-[#fef3e8] rounded-md flex items-center justify-center">
-                                      <CalendarIcon className="h-8 w-8 text-[#73370c] opacity-30" />
-                                    </div>
-                                  )}
-
-                                  {/* イベント情報 */}
-                                  <div className="flex-1 min-w-0">
-                                    <div className="font-semibold text-base mb-1" style={{ color: '#73370c' }}>
-                                      {event.name}
-                                    </div>
-                                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                                      <MapPin className="h-3 w-3 text-red-500 flex-shrink-0" />
-                                      <span className="truncate">{event.fullData.store_name}</span>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    });
+                  })()}
                 </div>
               </div>
             )}

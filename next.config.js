@@ -12,7 +12,19 @@ const nextConfig = {
     dangerouslyAllowSVG: true,
     contentDispositionType: 'attachment',
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
-    domains: ['res.cloudinary.com', 'fuanykkpsjiynzzkkhtv.supabase.co'], // Cloudinary画像とSupabase Storage画像の最適化
+    domains: [
+      'res.cloudinary.com', 
+      'fuanykkpsjiynzzkkhtv.supabase.co', // Cloudinary画像とSupabase Storage画像の最適化
+      'www22.a8.net', // A8.netバナー画像
+      'www23.a8.net', // A8.netバナー画像
+      'www17.a8.net', // A8.netトラッキングピクセル
+    ],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'www*.a8.net', // A8.netのすべてのサブドメインを許可
+      },
+    ],
   },
   // LCP改善：コンパイル最適化
   compiler: {

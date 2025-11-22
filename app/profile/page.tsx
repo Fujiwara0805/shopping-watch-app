@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Bell, LogOut, Settings, Edit,  Store as StoreIcon, Calendar,  User, CheckCircle,  ArrowRight, Trophy, Map, ShoppingBag } from 'lucide-react';
+import { Bell, LogOut, Settings, Edit,  Store as StoreIcon, Calendar,  User, CheckCircle,  ArrowRight, Trophy, Map, ShoppingBag, Megaphone } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -606,14 +606,22 @@ function ProfilePageContent() {
                 </Button>
               </motion.div>
 
-              {/* 🔥 adminユーザーの場合は投稿ボタンを表示 */}
+              {/* 🔥 adminユーザーの場合は投稿ボタンと広告作成ボタンを表示 */}
               {userRole === 'admin' && (
-                <SettingItem
-                  icon={Edit}
-                  title="投稿する"
-                  description="新しいイベント情報を投稿"
-                  action={() => router.push('/post')}
-                />
+                <>
+                  <SettingItem
+                    icon={Edit}
+                    title="投稿する"
+                    description="新しいイベント情報を投稿"
+                    action={() => router.push('/post')}
+                  />
+                  <SettingItem
+                    icon={Megaphone}
+                    title="広告を作成"
+                    description="新しい広告を登録・管理"
+                    action={() => router.push('/ads/new')}
+                  />
+                </>
               )}
               
               <SettingItem

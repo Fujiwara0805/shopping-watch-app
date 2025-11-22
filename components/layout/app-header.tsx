@@ -9,11 +9,15 @@ import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { useNotification } from '@/contexts/NotificationContext';
 import { useEffect, useState } from 'react';
+import { useSession } from 'next-auth/react';
+import { supabase } from '@/lib/supabaseClient';
 
 export function AppHeader() {
   const pathname = usePathname();
   const { unreadCount, isLoading } = useNotification();
+  const { data: session } = useSession();
   const [isMobile, setIsMobile] = useState(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
   
   // デバイス判定
   useEffect(() => {
@@ -33,6 +37,32 @@ export function AppHeader() {
       window.removeEventListener('resize', checkDevice);
     };
   }, []);
+
+  // ユーザーの役割を取得
+  useEffect(() => {
+    const fetchUserRole = async () => {
+      if (!session?.user?.id) {
+        setUserRole(null);
+        return;
+      }
+
+      try {
+        const { data: userData, error } = await supabase
+          .from('app_users')
+          .select('role')
+          .eq('id', session.user.id)
+          .single();
+
+        if (!error && userData) {
+          setUserRole(userData.role);
+        }
+      } catch (error) {
+        console.error('Error fetching user role:', error);
+      }
+    };
+
+    fetchUserRole();
+  }, [session?.user?.id]);
   
   // Get page title based on current path
   const getPageTitle = () => {
@@ -69,6 +99,8 @@ export function AppHeader() {
         return '設定';
       case '/release-notes':
         return 'リリースノート';
+      case '/ads/new':
+        return '広告作成';
       default:
         return '';
     }
@@ -96,7 +128,7 @@ export function AppHeader() {
           <h1 className="font-bold text-3xl text-center">{title}</h1>
         )}
         
-        {/* PC版では通知アイコンを非表示 */}
+        {/* 右側のアイコン（通知と広告作成） */}
         <div className={`absolute right-4 flex items-center space-x-2 ${!isMobile ? 'hidden' : ''}`}>
           <Button variant="ghost" size="icon" className="relative" asChild>
             <Link href="/notifications">
