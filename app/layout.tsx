@@ -113,7 +113,7 @@ export default function RootLayout({
         <meta name="bingbot" content="index, follow" />
         
         {/* Open Graph */}
-        <meta property="og:title" content="トクドク - 地域イベント発見アプリ | 大分県のお祭り・マルシェ情報" />
+        <meta property="og:title" content="トクドク - 地域イベント発見アプリ" />
         <meta property="og:description" content="大分県内のお祭り、マルシェ、ワークショップを地図で発見！現在地から近いイベントをかんたん検索。週末の予定探しに最適な、完全無料の地域密着イベントアプリです。" />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://tokudoku.com" />
