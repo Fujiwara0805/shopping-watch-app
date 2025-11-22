@@ -134,7 +134,6 @@ src="https://res.cloudinary.com/dz9trbwma/image/upload/v1763822849/ChatGPT_Image
                     
                     <a
                       href="https://www.instagram.com/tokudoku_nobody/"
-                      target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center px-4 py-3 text-gray-300 hover:bg-[#d4af37]/10 hover:text-[#d4af37] rounded-lg transition-colors mt-4"
                       onClick={() => setIsMenuOpen(false)}
@@ -142,7 +141,7 @@ src="https://res.cloudinary.com/dz9trbwma/image/upload/v1763822849/ChatGPT_Image
                       <img
                         src="https://res.cloudinary.com/dz9trbwma/image/upload/v1759308496/icons8-%E3%82%A4%E3%83%B3%E3%82%B9%E3%82%BF%E3%82%AF%E3%82%99%E3%83%A9%E3%83%A0-100_idedfz.png"
                         alt="Instagram"
-                        className="h-8 w-8 brightness-0 invert"
+                        className="h-8 w-8 "
                       />
                       <span className="ml-2 font-bold">Instagram</span>
                     </a>
