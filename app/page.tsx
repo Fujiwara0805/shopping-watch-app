@@ -219,7 +219,7 @@ src="https://res.cloudinary.com/dz9trbwma/image/upload/v1763822849/ChatGPT_Image
                 <Button
                   size="lg"
                   onClick={onStart}
-                  className="h-16 sm:h-20 px-12 sm:px-16 text-lg sm:text-2xl font-extrabold rounded-full shadow-[0_0_20px_rgba(212,175,55,0.4)] hover:shadow-[0_0_30px_rgba(212,175,55,0.6)] transform hover:scale-105 transition-all duration-300 bg-gradient-to-b from-[#d4af37] to-[#8a6e1c] border border-[#fcf6ba]/40"
+                  className="h-16 sm:h-20 px-12 sm:px-16 text-lg sm:text-2xl font-extrabold rounded-full shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 bg-[#73370c] hover:bg-[#5c2a0a] text-white"
                 >
                   イベントを探す
                 </Button>
@@ -480,7 +480,7 @@ src="https://res.cloudinary.com/dz9trbwma/image/upload/v1763822849/ChatGPT_Image
                 <Button
                   size="lg"
                   onClick={onStart}
-                  className="h-18 sm:h-20 px-14 sm:px-20 text-xl sm:text-3xl font-extrabold rounded-full shadow-[0_0_30px_rgba(212,175,55,0.5)] transform transition-all duration-300 bg-gradient-to-r from-[#d4af37] to-[#8a6e1c] text-white border border-[#fcf6ba]/30"
+                  className="h-18 sm:h-20 px-14 sm:px-20 text-xl sm:text-3xl font-extrabold rounded-full shadow-2xl hover:shadow-[0_24px_50px_rgba(92,42,10,0.45)] transform transition-all duration-300 bg-[#73370c] hover:bg-[#5c2a0a] text-white"
                 >
                   マップを見る
                 </Button>
