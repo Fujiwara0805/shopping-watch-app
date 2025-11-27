@@ -48,7 +48,7 @@ type PostCategory = 'イベント情報' | '聖地巡礼' | '観光スポット'
 const getCategoryConfig = (category: PostCategory) => {
   const configs = {
     'イベント情報': { color: '#73370c', icon: 'calendar' },
-    '聖地巡礼': { color: '#8B4513', icon: 'shrine' },
+    '聖地巡礼': { color: '#3ecf8e', icon: 'shrine' },
     '観光スポット': { color: '#0066CC', icon: 'camera' },
     '温泉': { color: '#FF6B6B', icon: 'hotspring' },
     'グルメ': { color: '#FF8C00', icon: 'food' },
@@ -56,16 +56,17 @@ const getCategoryConfig = (category: PostCategory) => {
   return configs[category] || configs['イベント情報'];
 };
 
-// 🔥 簡易的なアイコンを作成（カテゴリ別、サイズを50x50に統一）
+// 🔥 簡易的なアイコンを作成（カテゴリ別、サイズを40x40に縮小 - mapzineスタイル）
 const createSimpleCategoryIcon = (category: PostCategory) => {
-  const size = 50;
+  const size = 40;
   const config = getCategoryConfig(category);
   
   let iconSvg = '';
+  const iconScale = 0.75;
   switch (config.icon) {
     case 'calendar':
       iconSvg = `
-        <g transform="translate(${size/2 - 8}, ${size/2 - 8})">
+        <g transform="translate(${size/2 - 5}, ${size/2 - 5}) scale(${iconScale})">
           <rect x="2" y="4" width="12" height="10" rx="1" fill="none" stroke="white" stroke-width="1.5"/>
           <line x1="2" y1="7" x2="14" y2="7" stroke="white" stroke-width="1.5"/>
           <line x1="5" y1="2" x2="5" y2="5" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
@@ -75,7 +76,7 @@ const createSimpleCategoryIcon = (category: PostCategory) => {
       break;
     case 'shrine':
       iconSvg = `
-        <g transform="translate(${size/2 - 8}, ${size/2 - 6})">
+        <g transform="translate(${size/2 - 5}, ${size/2 - 4}) scale(${iconScale})">
           <path d="M 8 2 L 4 6 L 4 10 L 12 10 L 12 6 Z" fill="none" stroke="white" stroke-width="1.5"/>
           <line x1="8" y1="2" x2="8" y2="10" stroke="white" stroke-width="1.5"/>
           <circle cx="8" cy="12" r="2" fill="none" stroke="white" stroke-width="1.5"/>
@@ -84,7 +85,7 @@ const createSimpleCategoryIcon = (category: PostCategory) => {
       break;
     case 'camera':
       iconSvg = `
-        <g transform="translate(${size/2 - 8}, ${size/2 - 6})">
+        <g transform="translate(${size/2 - 5}, ${size/2 - 4}) scale(${iconScale})">
           <rect x="3" y="4" width="10" height="8" rx="1" fill="none" stroke="white" stroke-width="1.5"/>
           <circle cx="8" cy="8" r="2.5" fill="none" stroke="white" stroke-width="1.5"/>
           <circle cx="8" cy="8" r="1" fill="white"/>
@@ -93,7 +94,7 @@ const createSimpleCategoryIcon = (category: PostCategory) => {
       break;
     case 'hotspring':
       iconSvg = `
-        <g transform="translate(${size/2 - 8}, ${size/2 - 6})">
+        <g transform="translate(${size/2 - 5}, ${size/2 - 4}) scale(${iconScale})">
           <circle cx="6" cy="8" r="2" fill="none" stroke="white" stroke-width="1.5"/>
           <circle cx="10" cy="8" r="2" fill="none" stroke="white" stroke-width="1.5"/>
           <path d="M 4 10 Q 8 12 12 10" fill="none" stroke="white" stroke-width="1.5"/>
@@ -102,7 +103,7 @@ const createSimpleCategoryIcon = (category: PostCategory) => {
       break;
     case 'food':
       iconSvg = `
-        <g transform="translate(${size/2 - 8}, ${size/2 - 6})">
+        <g transform="translate(${size/2 - 5}, ${size/2 - 4}) scale(${iconScale})">
           <circle cx="8" cy="8" r="4" fill="none" stroke="white" stroke-width="1.5"/>
           <path d="M 6 6 L 10 10 M 10 6 L 6 10" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
         </g>
@@ -112,7 +113,7 @@ const createSimpleCategoryIcon = (category: PostCategory) => {
   
   const svgIcon = `
     <svg width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="${size/2}" cy="${size/2}" r="${size/2 - 3}" fill="${config.color}" stroke="#ffffff" stroke-width="3"/>
+      <circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="${config.color}" stroke="#ffffff" stroke-width="2"/>
       ${iconSvg}
     </svg>
   `;
@@ -151,7 +152,7 @@ const optimizeCloudinaryImageUrl = (url: string): string => {
   return url;
 };
 
-// 🔥 画像付きカテゴリ用のアイコンを作成（円形・白縁・50x50 + タイトルテキスト）
+// 🔥 画像付きカテゴリ用のアイコンを作成（mapzineスタイル - 40x40円形 + 鮮明テキスト）
 const createCategoryPinIcon = async (
   imageUrls: string[] | null, 
   title: string | null, 
@@ -178,15 +179,15 @@ const createCategoryPinIcon = async (
   // 🔥 高品質な画像URLに変換
   const optimizedImageUrl = optimizeCloudinaryImageUrl(imageUrl);
 
-  // 🔥 画像を円形・白縁で50x50サイズに + タイトルを下に表示
-  const imageSize = 50;
-  const borderWidth = 2; // 白い縁の幅
-  const textPadding = 6; // 画像とテキストの間のパディング
+  // 🔥 mapzineスタイル: 40x40サイズに縮小 + 鮮明なテキスト
+  const imageSize = 40;
+  const borderWidth = 2;
+  const textPadding = 4;
   const config = getCategoryConfig(category);
   
-  // タイトルを10文字に制限（11文字目以降は...）
-  const truncatedTitle = title && title.length > 10 
-    ? `${title.substring(0, 10)}...` 
+  // タイトルを8文字に制限（mapzineスタイルに合わせて短く）
+  const truncatedTitle = title && title.length > 8 
+    ? `${title.substring(0, 8)}...` 
     : (title || '');
   
   return new Promise<google.maps.Icon>((resolve) => {
@@ -202,20 +203,23 @@ const createCategoryPinIcon = async (
         return;
       }
       
-      // テキスト幅を測定
-      tempCtx.font = 'bold 13px sans-serif';
+      // 🔥 テキスト幅を測定（フォントサイズを10pxに縮小）
+      tempCtx.font = '600 10px "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif';
       const textMetrics = tempCtx.measureText(truncatedTitle);
       const textWidth = textMetrics.width;
-      const textHeight = 16; // フォントサイズ + 余白
+      const textHeight = 14;
       
-      // Canvasサイズを決定（画像とテキストの幅の大きい方）
-      const canvasWidth = Math.max(imageSize, Math.ceil(textWidth)) + 4; // 左右に2pxずつ余白
+      // Canvasサイズを決定
+      const canvasWidth = Math.max(imageSize, Math.ceil(textWidth) + 8) + 4;
       const canvasHeight = imageSize + textPadding + textHeight;
       
-      // 実際の描画用Canvas
+      // 🔥 高解像度Canvas（Retina対応）
+      const scale = 2;
       const canvas = document.createElement('canvas');
-      canvas.width = canvasWidth;
-      canvas.height = canvasHeight;
+      canvas.width = canvasWidth * scale;
+      canvas.height = canvasHeight * scale;
+      canvas.style.width = `${canvasWidth}px`;
+      canvas.style.height = `${canvasHeight}px`;
       const ctx = canvas.getContext('2d');
       
       if (!ctx) {
@@ -223,6 +227,9 @@ const createCategoryPinIcon = async (
         return;
       }
 
+      // 高解像度スケール
+      ctx.scale(scale, scale);
+      
       // 背景を透明に
       ctx.clearRect(0, 0, canvasWidth, canvasHeight);
       
@@ -238,7 +245,6 @@ const createCategoryPinIcon = async (
       ctx.clip();
       
       // 画像を円形に描画（中央に配置してトリミング）
-      // 画像のアスペクト比を保ちながら円形にフィット
       const imgAspect = img.width / img.height;
       let drawWidth = imageSize;
       let drawHeight = imageSize;
@@ -246,11 +252,9 @@ const createCategoryPinIcon = async (
       let offsetY = 0;
       
       if (imgAspect > 1) {
-        // 横長の画像
         drawWidth = drawHeight * imgAspect;
         offsetX = -(drawWidth - imageSize) / 2;
       } else {
-        // 縦長の画像
         drawHeight = drawWidth / imgAspect;
         offsetY = -(drawHeight - imageSize) / 2;
       }
@@ -260,35 +264,40 @@ const createCategoryPinIcon = async (
       // クリップを解除
       ctx.restore();
       
-      // カテゴリ色の縁を描画
+      // 🔥 白い縁を描画（mapzineスタイル）
       ctx.save();
       ctx.translate(imageOffsetX, 0);
       ctx.beginPath();
       ctx.arc(imageSize / 2, imageSize / 2, imageSize / 2 - borderWidth / 2, 0, Math.PI * 2);
-      ctx.strokeStyle = config.color;
+      ctx.strokeStyle = '#ffffff';
       ctx.lineWidth = borderWidth;
       ctx.stroke();
       ctx.restore();
       
-      // タイトルを描画（白縁付きテキスト、背景なし）
+      // 🔥 テキストを描画（鮮明に - mapzineスタイル）
       if (truncatedTitle) {
-        ctx.font = 'bold 13px sans-serif';
+        ctx.font = '600 10px "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'top';
         
-        // テキストを描画（中央に配置）
         const textY = imageSize + textPadding;
         const textX = canvasWidth / 2;
         
-        // テキストに白い縁を追加
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 3;
-        ctx.lineJoin = 'round';
-        ctx.miterLimit = 2;
-        ctx.strokeText(truncatedTitle, textX, textY);
+        // 🔥 白い背景（角丸長方形）を描画
+        const bgPadding = 3;
+        const bgHeight = 12;
+        const bgWidth = textWidth + bgPadding * 2;
+        const bgX = textX - bgWidth / 2;
+        const bgY = textY - 1;
+        const bgRadius = 3;
         
-        // テキストを描画
-        ctx.fillStyle = '#2b271a'; // text-black
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+        ctx.beginPath();
+        ctx.roundRect(bgX, bgY, bgWidth, bgHeight, bgRadius);
+        ctx.fill();
+        
+        // 🔥 テキストを描画（黒、鮮明）
+        ctx.fillStyle = '#333333';
         ctx.fillText(truncatedTitle, textX, textY);
       }
       
@@ -665,8 +674,6 @@ export function MapView() {
     }
   }, [latitude, longitude, savedLocation, selectedCategory]);
 
-  // �� クラスター機能は不要なので削除
-
   // 🔥 同じ場所の投稿をグループ化する関数
   const groupPostsByLocation = (posts: PostMarkerData[]) => {
     const locationGroups: { [key: string]: PostMarkerData[] } = {};
@@ -688,7 +695,7 @@ export function MapView() {
     return locationGroups;
   };
 
-  // �� 投稿マーカーを作成する関数（段階的に表示）
+  // 🔥 投稿マーカーを作成する関数（段階的に表示）
   const createPostMarkers = useCallback(async () => {
     if (!map || !posts.length || !window.google?.maps) {
       console.log('MapView: マーカー作成の条件が揃っていません');
@@ -984,8 +991,8 @@ export function MapView() {
             title: "あなたの現在地",
             icon: {
               url: "https://res.cloudinary.com/dz9trbwma/image/upload/v1749098791/%E9%B3%A9_azif4f.png",
-              scaledSize: new window.google.maps.Size(50, 50),
-              anchor: new window.google.maps.Point(25, 25),
+              scaledSize: new window.google.maps.Size(40, 40), // 🔥 50→40に縮小
+              anchor: new window.google.maps.Point(20, 20),
             },
             animation: window.google.maps.Animation.DROP,
           });
@@ -1235,7 +1242,7 @@ export function MapView() {
         </div>
       )}
 
-      {/* �� 更新中の表示を追加（745行目付近、右上ボタンの前） */}
+      {/* 🔥 更新中の表示を追加（745行目付近、右上ボタンの前） */}
       <AnimatePresence>
         {(isRefreshing || loadingPosts) && (
           <motion.div
@@ -1263,10 +1270,14 @@ export function MapView() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
-                  className="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-lg px-4 py-2 text-sm font-semibold text-gray-800 shadow-lg hover:bg-white transition-colors flex items-center gap-2"
+                  className="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-lg px-4 py-2 text-sm font-semibold shadow-lg hover:bg-white transition-colors flex items-center gap-2"
+                  style={{ 
+                    color: getCategoryConfig(selectedCategory).color,
+                    borderColor: getCategoryConfig(selectedCategory).color + '40' // 透明度40%のボーダー
+                  }}
                 >
-                  <span>{selectedCategory}</span>
-                  <ChevronDown className="h-4 w-4 text-gray-600" />
+                  <span style={{ color: getCategoryConfig(selectedCategory).color }}>{selectedCategory}</span>
+                  <ChevronDown className="h-4 w-4" style={{ color: getCategoryConfig(selectedCategory).color }} />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-40">
@@ -1335,11 +1346,22 @@ export function MapView() {
                 />
                 <span className="text-xs font-medium">現在地</span>
               </div>
-              <div className="text-xs text-gray-600">
-                {posts.length > 0 
-                  ? `${selectedCategory}:${posts.length}件`
-                  : `${selectedCategory}を検索中...`
-                }
+              <div className="text-xs">
+                {posts.length > 0 ? (
+                  <>
+                    <span style={{ color: getCategoryConfig(selectedCategory).color, fontWeight: 'bold' }}>
+                      {selectedCategory}
+                    </span>
+                    <span className="text-gray-600">:{posts.length}件</span>
+                  </>
+                ) : (
+                  <>
+                    <span style={{ color: getCategoryConfig(selectedCategory).color, fontWeight: 'bold' }}>
+                      {selectedCategory}
+                    </span>
+                    <span className="text-gray-600">を検索中...</span>
+                  </>
+                )}
               </div>
             </div>
           </div>
