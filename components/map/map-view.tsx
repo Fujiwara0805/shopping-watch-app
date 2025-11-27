@@ -4,7 +4,13 @@ import { useRef, useEffect, useState, useCallback } from 'react';
 import { useGeolocation } from '@/lib/hooks/use-geolocation';
 import { useGoogleMapsApi } from '@/components/providers/GoogleMapsApiProvider';
 import { Button } from '@/components/ui/button';
-import { MapPin, AlertTriangle, RefreshCw,  Calendar, Newspaper, User, MapPinIcon, X, ShoppingBag, Loader2 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { MapPin, AlertTriangle, RefreshCw,  Calendar, Newspaper, User, MapPinIcon, X, ShoppingBag, Loader2, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
@@ -35,18 +41,79 @@ interface PostMarkerData {
   enable_checkin?: boolean | null;  // 🔥 チェックイン対象フラグ
 }
 
-// 🔥 簡易的なイベントアイコンを作成（サイズを50x50に統一）
-const createSimpleEventIcon = () => {
+// カテゴリの型定義
+type PostCategory = 'イベント情報' | '聖地巡礼' | '観光スポット' | '温泉' | 'グルメ';
+
+// 🔥 カテゴリごとの色とアイコンを定義
+const getCategoryConfig = (category: PostCategory) => {
+  const configs = {
+    'イベント情報': { color: '#73370c', icon: 'calendar' },
+    '聖地巡礼': { color: '#8B4513', icon: 'shrine' },
+    '観光スポット': { color: '#0066CC', icon: 'camera' },
+    '温泉': { color: '#FF6B6B', icon: 'hotspring' },
+    'グルメ': { color: '#FF8C00', icon: 'food' },
+  };
+  return configs[category] || configs['イベント情報'];
+};
+
+// 🔥 簡易的なアイコンを作成（カテゴリ別、サイズを50x50に統一）
+const createSimpleCategoryIcon = (category: PostCategory) => {
   const size = 50;
+  const config = getCategoryConfig(category);
+  
+  let iconSvg = '';
+  switch (config.icon) {
+    case 'calendar':
+      iconSvg = `
+        <g transform="translate(${size/2 - 8}, ${size/2 - 8})">
+          <rect x="2" y="4" width="12" height="10" rx="1" fill="none" stroke="white" stroke-width="1.5"/>
+          <line x1="2" y1="7" x2="14" y2="7" stroke="white" stroke-width="1.5"/>
+          <line x1="5" y1="2" x2="5" y2="5" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="11" y1="2" x2="11" y2="5" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+        </g>
+      `;
+      break;
+    case 'shrine':
+      iconSvg = `
+        <g transform="translate(${size/2 - 8}, ${size/2 - 6})">
+          <path d="M 8 2 L 4 6 L 4 10 L 12 10 L 12 6 Z" fill="none" stroke="white" stroke-width="1.5"/>
+          <line x1="8" y1="2" x2="8" y2="10" stroke="white" stroke-width="1.5"/>
+          <circle cx="8" cy="12" r="2" fill="none" stroke="white" stroke-width="1.5"/>
+        </g>
+      `;
+      break;
+    case 'camera':
+      iconSvg = `
+        <g transform="translate(${size/2 - 8}, ${size/2 - 6})">
+          <rect x="3" y="4" width="10" height="8" rx="1" fill="none" stroke="white" stroke-width="1.5"/>
+          <circle cx="8" cy="8" r="2.5" fill="none" stroke="white" stroke-width="1.5"/>
+          <circle cx="8" cy="8" r="1" fill="white"/>
+        </g>
+      `;
+      break;
+    case 'hotspring':
+      iconSvg = `
+        <g transform="translate(${size/2 - 8}, ${size/2 - 6})">
+          <circle cx="6" cy="8" r="2" fill="none" stroke="white" stroke-width="1.5"/>
+          <circle cx="10" cy="8" r="2" fill="none" stroke="white" stroke-width="1.5"/>
+          <path d="M 4 10 Q 8 12 12 10" fill="none" stroke="white" stroke-width="1.5"/>
+        </g>
+      `;
+      break;
+    case 'food':
+      iconSvg = `
+        <g transform="translate(${size/2 - 8}, ${size/2 - 6})">
+          <circle cx="8" cy="8" r="4" fill="none" stroke="white" stroke-width="1.5"/>
+          <path d="M 6 6 L 10 10 M 10 6 L 6 10" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+        </g>
+      `;
+      break;
+  }
+  
   const svgIcon = `
     <svg width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="${size/2}" cy="${size/2}" r="${size/2 - 3}" fill="#73370c" stroke="#ffffff" stroke-width="3"/>
-      <g transform="translate(${size/2 - 8}, ${size/2 - 8})">
-        <rect x="2" y="4" width="12" height="10" rx="1" fill="none" stroke="white" stroke-width="1.5"/>
-        <line x1="2" y1="7" x2="14" y2="7" stroke="white" stroke-width="1.5"/>
-        <line x1="5" y1="2" x2="5" y2="5" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
-        <line x1="11" y1="2" x2="11" y2="5" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
-      </g>
+      <circle cx="${size/2}" cy="${size/2}" r="${size/2 - 3}" fill="${config.color}" stroke="#ffffff" stroke-width="3"/>
+      ${iconSvg}
     </svg>
   `;
   
@@ -84,8 +151,12 @@ const optimizeCloudinaryImageUrl = (url: string): string => {
   return url;
 };
 
-// 🔥 画像付きイベント情報用のアイコンを作成（円形・白縁・40x40 + イベント名テキスト）
-const createEventPinIcon = async (imageUrls: string[] | null, eventName: string | null): Promise<google.maps.Icon> => {
+// 🔥 画像付きカテゴリ用のアイコンを作成（円形・白縁・50x50 + タイトルテキスト）
+const createCategoryPinIcon = async (
+  imageUrls: string[] | null, 
+  title: string | null, 
+  category: PostCategory
+): Promise<google.maps.Icon> => {
   // 🔥 image_urlsが文字列の場合はパースを試みる
   let parsedUrls = imageUrls;
   if (typeof imageUrls === 'string') {
@@ -101,21 +172,22 @@ const createEventPinIcon = async (imageUrls: string[] | null, eventName: string 
   
   // 画像がない、またはURLが不正な場合は簡易的なアイコンを返す
   if (!imageUrl || typeof imageUrl !== 'string' || !imageUrl.startsWith('http')) {
-    return createSimpleEventIcon();
+    return createSimpleCategoryIcon(category);
   }
   
   // 🔥 高品質な画像URLに変換
   const optimizedImageUrl = optimizeCloudinaryImageUrl(imageUrl);
 
-  // 🔥 画像を円形・白縁で50x50サイズに + イベント名を下に表示
+  // 🔥 画像を円形・白縁で50x50サイズに + タイトルを下に表示
   const imageSize = 50;
   const borderWidth = 2; // 白い縁の幅
   const textPadding = 6; // 画像とテキストの間のパディング
+  const config = getCategoryConfig(category);
   
-  // イベント名を10文字に制限（11文字目以降は...）
-  const truncatedEventName = eventName && eventName.length > 10 
-    ? `${eventName.substring(0, 10)}...` 
-    : (eventName || '');
+  // タイトルを10文字に制限（11文字目以降は...）
+  const truncatedTitle = title && title.length > 10 
+    ? `${title.substring(0, 10)}...` 
+    : (title || '');
   
   return new Promise<google.maps.Icon>((resolve) => {
     const img = new Image();
@@ -126,13 +198,13 @@ const createEventPinIcon = async (imageUrls: string[] | null, eventName: string 
       const tempCanvas = document.createElement('canvas');
       const tempCtx = tempCanvas.getContext('2d');
       if (!tempCtx) {
-        resolve(createSimpleEventIcon());
+        resolve(createSimpleCategoryIcon(category));
         return;
       }
       
       // テキスト幅を測定
       tempCtx.font = 'bold 13px sans-serif';
-      const textMetrics = tempCtx.measureText(truncatedEventName);
+      const textMetrics = tempCtx.measureText(truncatedTitle);
       const textWidth = textMetrics.width;
       const textHeight = 16; // フォントサイズ + 余白
       
@@ -147,7 +219,7 @@ const createEventPinIcon = async (imageUrls: string[] | null, eventName: string 
       const ctx = canvas.getContext('2d');
       
       if (!ctx) {
-        resolve(createSimpleEventIcon());
+        resolve(createSimpleCategoryIcon(category));
         return;
       }
 
@@ -188,18 +260,18 @@ const createEventPinIcon = async (imageUrls: string[] | null, eventName: string 
       // クリップを解除
       ctx.restore();
       
-      // 白い縁を描画
+      // カテゴリ色の縁を描画
       ctx.save();
       ctx.translate(imageOffsetX, 0);
       ctx.beginPath();
       ctx.arc(imageSize / 2, imageSize / 2, imageSize / 2 - borderWidth / 2, 0, Math.PI * 2);
-      ctx.strokeStyle = '#404040';
+      ctx.strokeStyle = config.color;
       ctx.lineWidth = borderWidth;
       ctx.stroke();
       ctx.restore();
       
-      // イベント名を描画（白縁付きテキスト、背景なし）
-      if (truncatedEventName) {
+      // タイトルを描画（白縁付きテキスト、背景なし）
+      if (truncatedTitle) {
         ctx.font = 'bold 13px sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'top';
@@ -213,11 +285,11 @@ const createEventPinIcon = async (imageUrls: string[] | null, eventName: string 
         ctx.lineWidth = 3;
         ctx.lineJoin = 'round';
         ctx.miterLimit = 2;
-        ctx.strokeText(truncatedEventName, textX, textY);
+        ctx.strokeText(truncatedTitle, textX, textY);
         
         // テキストを描画
         ctx.fillStyle = '#2b271a'; // text-black
-        ctx.fillText(truncatedEventName, textX, textY);
+        ctx.fillText(truncatedTitle, textX, textY);
       }
       
       // CanvasをData URLに変換
@@ -232,8 +304,8 @@ const createEventPinIcon = async (imageUrls: string[] | null, eventName: string 
     
     img.onerror = () => {
       // 画像読み込みエラー時は簡易アイコンを返す
-      console.error('createEventPinIcon: 画像の読み込みに失敗:', optimizedImageUrl);
-      resolve(createSimpleEventIcon());
+      console.error('createCategoryPinIcon: 画像の読み込みに失敗:', optimizedImageUrl);
+      resolve(createSimpleCategoryIcon(category));
     };
     
     img.src = optimizedImageUrl;
@@ -278,7 +350,7 @@ export function MapView() {
   const [postMarkers, setPostMarkers] = useState<google.maps.Marker[]>([]);
   const [loadingPosts, setLoadingPosts] = useState(false);
   const [selectedPost, setSelectedPost] = useState<PostMarkerData | null>(null);
-  const [nearbyPosts, setNearbyPosts] = useState<PostMarkerData[]>([]); // タップしたイベント情報
+  const [nearbyPosts, setNearbyPosts] = useState<PostMarkerData[]>([]); // タップした投稿
 
   // 🔥 保存された位置情報を読み込む
   const [savedLocation, setSavedLocation] = useState<{lat: number, lng: number} | null>(null);
@@ -286,6 +358,9 @@ export function MapView() {
   // 🔥 初回ロードフラグを追加（785行目付近）
   const hasInitialLoadedRef = useRef(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // 🔥 カテゴリフィルターの状態管理（単一選択）
+  const [selectedCategory, setSelectedCategory] = useState<PostCategory>('イベント情報');
 
   // チェックイン関連の状態
   const [checkingIn, setCheckingIn] = useState<string | null>(null);
@@ -454,7 +529,7 @@ export function MapView() {
       
       const now = new Date();
       
-      // 🔥 イベント情報のみを取得（距離制限なし）
+      // 🔥 選択されたカテゴリの投稿を取得（距離制限なし）
       const { data, error } = await supabase
         .from('posts')
         .select(`
@@ -473,7 +548,7 @@ export function MapView() {
           enable_checkin
         `)
         .eq('is_deleted', false)
-        .eq('category', 'イベント情報');
+        .eq('category', selectedCategory);
 
       if (error) {
         console.error('MapView: 投稿データの取得に失敗:', error);
@@ -512,10 +587,24 @@ export function MapView() {
         return now >= startDate && now <= startDateEnd;
       });
 
-      console.log('2. 開催中イベントフィルタリング後:', filteredData.length, '件');
+      console.log(`2. ${selectedCategory}フィルタリング後:`, filteredData.length, '件');
+
+      // 🔥 カテゴリごとにフィルタリング
+      let finalFilteredData = filteredData.filter((post) => {
+        // イベント情報の場合は開催中のみ
+        if (post.category === 'イベント情報') {
+          // 既に開催中のフィルタリング済みなのでそのまま
+          return true;
+        } else {
+          // その他のカテゴリは有効期限内のみ
+          if (!post.expires_at) return true; // expires_atがない場合は有効とみなす
+          const expiresAt = new Date(post.expires_at);
+          return now <= expiresAt;
+        }
+      });
 
       // 🔥 現在地からの距離を計算して近い順にソート
-      const postsWithDistance = filteredData
+      const postsWithDistance = finalFilteredData
         .filter((post: any) => {
           // 🔥 座標が有効なイベントのみを対象にする
           const hasValidCoordinates = 
@@ -574,7 +663,7 @@ export function MapView() {
     } finally {
       setLoadingPosts(false);
     }
-  }, [latitude, longitude, savedLocation]);
+  }, [latitude, longitude, savedLocation, selectedCategory]);
 
   // �� クラスター機能は不要なので削除
 
@@ -636,10 +725,19 @@ export function MapView() {
         if (!post.store_latitude || !post.store_longitude) return;
         
         const position = new window.google.maps.LatLng(post.store_latitude, post.store_longitude);
-        const markerTitle = `${post.store_name} - イベント情報`;
+        const markerTitle = `${post.store_name} - ${post.category || '投稿'}`;
+        
+        // タイトルを決定（イベント情報の場合はevent_name、その他はcontent）
+        const title = post.category === 'イベント情報' 
+          ? (post.event_name || post.content)
+          : post.content;
 
-        // 🔥 画像アイコンを作成（イベント名も渡す）
-        const markerIcon = await createEventPinIcon(post.image_urls, post.event_name);
+        // 🔥 画像アイコンを作成（カテゴリとタイトルを渡す）
+        const markerIcon = await createCategoryPinIcon(
+          post.image_urls, 
+          title, 
+          (post.category as PostCategory) || 'イベント情報'
+        );
 
         const marker = new window.google.maps.Marker({
           position,
@@ -650,10 +748,10 @@ export function MapView() {
         });
 
         marker.addListener('click', () => {
-          console.log(`MapView: イベント情報マーカーがクリックされました - ID: ${post.id}`);
+          console.log(`MapView: ${post.category}マーカーがクリックされました - ID: ${post.id}`);
           setSelectedPost(post);
           
-          // 🔥 タップしたイベントのみを表示（従来の方法に戻す）
+          // 🔥 タップした投稿のみを表示
           setNearbyPosts([post]);
         });
 
@@ -825,12 +923,46 @@ export function MapView() {
     }, 500);
   };
 
+  // 🔥 カテゴリ変更時にマーカーをクリアして投稿データを再取得
+  useEffect(() => {
+    if (map && window.google?.maps) {
+      // 既存のマーカーを削除
+      const markersToClean = [...postMarkers];
+      markersToClean.forEach(marker => {
+        if (marker && marker.setMap) {
+          marker.setMap(null);
+        }
+      });
+      setPostMarkers([]);
+      setSelectedPost(null);
+      setNearbyPosts([]);
+      
+      // カテゴリ変更時に投稿データを再取得
+      const userLat = savedLocation?.lat || latitude;
+      const userLng = savedLocation?.lng || longitude;
+      if (userLat && userLng) {
+        fetchPosts();
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCategory]); // カテゴリ変更時に実行
+
   //  投稿データが更新されたらマーカーを作成（修正版）
   useEffect(() => {
     if (posts.length > 0 && map && window.google?.maps) {
       createPostMarkers();
+    } else if (posts.length === 0 && map && window.google?.maps) {
+      // 投稿が0件の場合は既存のマーカーをクリア
+      const markersToClean = [...postMarkers];
+      markersToClean.forEach(marker => {
+        if (marker && marker.setMap) {
+          marker.setMap(null);
+        }
+      });
+      setPostMarkers([]);
     }
-  }, [posts, map]); // �� createPostMarkers を依存配列から削除
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [posts, map]); // createPostMarkers を依存配列から削除
 
 
   // ユーザー位置マーカーの設置（ズームレベルを調整）
@@ -1084,7 +1216,7 @@ export function MapView() {
             <span className="text-sm font-bold text-gray-700">更新</span>
           </motion.div>
 
-          {/* 🔥 メモアイコン（新規追加） */}
+          {/* 🔥 メモアイコン */}
            <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -1099,7 +1231,7 @@ export function MapView() {
               <ShoppingBag className="h-6 w-6 text-white" />
             </Button>
             <span className="text-sm font-bold text-gray-700 ">メモ</span>
-          </motion.div> 
+          </motion.div>
         </div>
       )}
 
@@ -1122,6 +1254,76 @@ export function MapView() {
 
       {map && mapInitialized && (
         <div className="absolute bottom-8 left-2 z-30 space-y-2">
+          {/* カテゴリ選択ボタン */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  className="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-lg px-4 py-2 text-sm font-semibold text-gray-800 shadow-lg hover:bg-white transition-colors flex items-center gap-2"
+                >
+                  <span>{selectedCategory}</span>
+                  <ChevronDown className="h-4 w-4 text-gray-600" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-40">
+                <DropdownMenuItem
+                  onClick={() => {
+                    setSelectedCategory('イベント情報');
+                    setSelectedPost(null);
+                    setNearbyPosts([]);
+                  }}
+                  className={selectedCategory === 'イベント情報' ? 'bg-accent' : ''}
+                >
+                  イベント情報
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => {
+                    setSelectedCategory('聖地巡礼');
+                    setSelectedPost(null);
+                    setNearbyPosts([]);
+                  }}
+                  className={selectedCategory === '聖地巡礼' ? 'bg-accent' : ''}
+                >
+                  聖地巡礼
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => {
+                    setSelectedCategory('観光スポット');
+                    setSelectedPost(null);
+                    setNearbyPosts([]);
+                  }}
+                  className={selectedCategory === '観光スポット' ? 'bg-accent' : ''}
+                >
+                  観光スポット
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => {
+                    setSelectedCategory('温泉');
+                    setSelectedPost(null);
+                    setNearbyPosts([]);
+                  }}
+                  className={selectedCategory === '温泉' ? 'bg-accent' : ''}
+                >
+                  温泉
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => {
+                    setSelectedCategory('グルメ');
+                    setSelectedPost(null);
+                    setNearbyPosts([]);
+                  }}
+                  className={selectedCategory === 'グルメ' ? 'bg-accent' : ''}
+                >
+                  グルメ
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </motion.div>
+
           {/* 現在地の説明テキスト */}
           <div className="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-800 shadow-lg max-w-xs">
             <div className="space-y-1">
@@ -1135,8 +1337,8 @@ export function MapView() {
               </div>
               <div className="text-xs text-gray-600">
                 {posts.length > 0 
-                  ? `開催中のイベント:${posts.length}件`
-                  : "イベント情報を検索中..."
+                  ? `${selectedCategory}:${posts.length}件`
+                  : `${selectedCategory}を検索中...`
                 }
               </div>
             </div>
@@ -1144,7 +1346,7 @@ export function MapView() {
         </div>
       )}
 
-      {/* イベント詳細カード（下部に表示） */}
+      {/* 投稿詳細カード（下部に表示） */}
       <AnimatePresence>
         {selectedPost && nearbyPosts.length > 0 && (
           <motion.div
@@ -1155,6 +1357,10 @@ export function MapView() {
             className="absolute bottom-4 left-4 right-4 z-40"
           >
             {nearbyPosts.map((post) => {
+              // タイトルを決定（イベント情報の場合はevent_name、その他はcontent）
+              const displayTitle = post.category === 'イベント情報' 
+                ? (post.event_name || post.content)
+                : post.content;
               // チェックイン可能かどうかを判定
               // savedLocationを優先的に使用（fetchPostsと同じロジック）
               const effectiveLatitude = savedLocation?.lat || latitude;
@@ -1261,7 +1467,7 @@ export function MapView() {
                     {/* カード内容（横並びレイアウト） */}
                     <div className="p-4">
                       <div className="flex gap-3 mb-3">
-                        {/* イベント画像 */}
+                        {/* 投稿画像 */}
                         {post.image_urls && post.image_urls.length > 0 ? (
                           <div className="flex-shrink-0 relative w-24 h-24 overflow-hidden rounded-lg bg-gray-100">
                             <img
@@ -1279,11 +1485,11 @@ export function MapView() {
                           </div>
                         )}
 
-                        {/* イベント情報 */}
+                        {/* 投稿情報 */}
                         <div className="flex-1 min-w-0">
-                          {/* イベント名 */}
-                          <h3 className="text-base font-bold line-clamp-2 mb-2" style={{ color: '#73370c' }}>
-                            {post.event_name || post.content}
+                          {/* タイトル */}
+                          <h3 className="text-base font-bold line-clamp-2 mb-2" style={{ color: getCategoryConfig((post.category as PostCategory) || 'イベント情報').color }}>
+                            {displayTitle}
                           </h3>
 
                           {/* 開催場所 */}
@@ -1292,8 +1498,8 @@ export function MapView() {
                             <span className="line-clamp-1">{post.store_name}</span>
                           </div>
 
-                          {/* 開催期間 */}
-                          {post.event_start_date && (
+                          {/* 開催期間（イベント情報の場合のみ） */}
+                          {post.category === 'イベント情報' && post.event_start_date && (
                             <div className="flex items-start gap-2 text-sm text-gray-600">
                               <Calendar className="h-4 w-4 mt-0.5 flex-shrink-0 text-blue-500" />
                               <span className="line-clamp-1">
