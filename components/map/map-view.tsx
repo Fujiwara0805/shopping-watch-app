@@ -152,6 +152,37 @@ const optimizeCloudinaryImageUrl = (url: string): string => {
   return url;
 };
 
+// 🔥 テキストを適切な幅で改行する関数
+const wrapText = (text: string, maxWidth: number, ctx: CanvasRenderingContext2D): string[] => {
+  const lines: string[] = [];
+  let currentLine = '';
+  
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i];
+    const testLine = currentLine + char;
+    const metrics = ctx.measureText(testLine);
+    
+    if (metrics.width > maxWidth && currentLine.length > 0) {
+      lines.push(currentLine);
+      currentLine = char;
+    } else {
+      currentLine = testLine;
+    }
+  }
+  
+  if (currentLine.length > 0) {
+    lines.push(currentLine);
+  }
+  
+  // 最大3行まで
+  if (lines.length > 3) {
+    lines.length = 3;
+    lines[2] = lines[2].slice(0, -1) + '…';
+  }
+  
+  return lines;
+};
+
 // 🔥 画像付きカテゴリ用のアイコンを作成（mapzineスタイル - 40x40円形 + 鮮明テキスト）
 const createCategoryPinIcon = async (
   imageUrls: string[] | null, 
@@ -183,12 +214,11 @@ const createCategoryPinIcon = async (
   const imageSize = 40;
   const borderWidth = 2;
   const textPadding = 4;
-  const config = getCategoryConfig(category);
+  const maxTextWidth = 80; // テキストの最大幅
+  const lineHeight = 12; // 行の高さ
   
-  // タイトルを8文字に制限（mapzineスタイルに合わせて短く）
-  const truncatedTitle = title && title.length > 8 
-    ? `${title.substring(0, 8)}...` 
-    : (title || '');
+  // タイトルは制限なし（全て表示）
+  const displayTitle = title || '';
   
   return new Promise<google.maps.Icon>((resolve) => {
     const img = new Image();
@@ -203,14 +233,26 @@ const createCategoryPinIcon = async (
         return;
       }
       
-      // 🔥 テキスト幅を測定（フォントサイズを10pxに縮小）
+      // 🔥 テキスト幅を測定（フォントサイズを10pxに）
       tempCtx.font = '600 10px "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif';
-      const textMetrics = tempCtx.measureText(truncatedTitle);
-      const textWidth = textMetrics.width;
-      const textHeight = 14;
+      
+      // テキストを改行処理
+      const textLines = wrapText(displayTitle, maxTextWidth, tempCtx);
+      const numLines = textLines.length;
+      
+      // 各行の最大幅を計算
+      let maxLineWidth = 0;
+      textLines.forEach(line => {
+        const lineWidth = tempCtx.measureText(line).width;
+        if (lineWidth > maxLineWidth) {
+          maxLineWidth = lineWidth;
+        }
+      });
+      
+      const textHeight = numLines * lineHeight + 4;
       
       // Canvasサイズを決定
-      const canvasWidth = Math.max(imageSize, Math.ceil(textWidth) + 8) + 4;
+      const canvasWidth = Math.max(imageSize, Math.ceil(maxLineWidth) + 12) + 4;
       const canvasHeight = imageSize + textPadding + textHeight;
       
       // 🔥 高解像度Canvas（Retina対応）
@@ -274,31 +316,29 @@ const createCategoryPinIcon = async (
       ctx.stroke();
       ctx.restore();
       
-      // 🔥 テキストを描画（鮮明に - mapzineスタイル）
-      if (truncatedTitle) {
+      // 🔥 テキストを描画（複数行対応・白縁付き）
+      if (textLines.length > 0) {
         ctx.font = '600 10px "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'top';
         
-        const textY = imageSize + textPadding;
+        const textStartY = imageSize + textPadding;
         const textX = canvasWidth / 2;
         
-        // 🔥 白い背景（角丸長方形）を描画
-        const bgPadding = 3;
-        const bgHeight = 12;
-        const bgWidth = textWidth + bgPadding * 2;
-        const bgX = textX - bgWidth / 2;
-        const bgY = textY - 1;
-        const bgRadius = 3;
-        
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
-        ctx.beginPath();
-        ctx.roundRect(bgX, bgY, bgWidth, bgHeight, bgRadius);
-        ctx.fill();
-        
-        // 🔥 テキストを描画（黒、鮮明）
+        // 🔥 各行のテキストを描画（白縁 + 黒文字）
+        ctx.lineWidth = 3;
+        ctx.lineJoin = 'round';
+        ctx.miterLimit = 2;
+        ctx.strokeStyle = '#ffffff';
         ctx.fillStyle = '#333333';
-        ctx.fillText(truncatedTitle, textX, textY);
+        
+        textLines.forEach((line, index) => {
+          const lineY = textStartY + index * lineHeight;
+          // 白い縁を先に描画
+          ctx.strokeText(line, textX, lineY);
+          // テキスト本体を描画
+          ctx.fillText(line, textX, lineY);
+        });
       }
       
       // CanvasをData URLに変換
