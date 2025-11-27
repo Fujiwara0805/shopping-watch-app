@@ -28,7 +28,6 @@ interface PostMarkerData {
   store_longitude: number;
   created_at: string;
   expires_at: string;
-  remaining_slots: number | null;
   image_urls: string[] | null; // 画像URLの配列に変更
   event_name: string | null;
   event_start_date?: string | null; // 🔥 追加
@@ -470,7 +469,6 @@ export function MapView() {
           event_end_date,
           created_at,
           expires_at,
-          remaining_slots,
           image_urls,
           enable_checkin
         `)

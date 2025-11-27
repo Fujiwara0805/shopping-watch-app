@@ -391,7 +391,7 @@ const releaseNotes: ReleaseNote[] = [
       {
         type: 'improvement',
         title: 'データベース構造の最適化',
-        description: 'postsテーブルに新しいフィールド（remaining_slots、coupon_code、customer_situation、custom_expiry_minutes）を追加し、新機能に対応しました。'
+        description: 'postsテーブルに新しいフィールド（coupon_code、customer_situation、custom_expiry_minutes）を追加し、新機能に対応しました。'
       },
       {
         type: 'fix',

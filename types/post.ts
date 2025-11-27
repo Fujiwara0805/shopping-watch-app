@@ -6,7 +6,6 @@ export interface Post {
   category: string | null; 
   content: string;
   image_urls: string | null; // JSON文字列
-  rating?: number | null;
   expiry_option: '15m' | '30m' | '45m' | '60m' | 'custom';
   custom_expiry_minutes?: number | null;
   created_at: string;
@@ -30,14 +29,8 @@ export interface Post {
   url?: string | null;
   file_urls?: string | null; // JSON文字列
   is_deleted?: boolean;
-  support_purchase_enabled?: boolean;
-  support_purchase_options?: string | null; // JSON文字列
   author_role?: string;
   
-  // 🔥 新規追加フィールド
-  remaining_slots?: number | null; // 残りの数（席、在庫）
-  coupon_code?: string | null; // クーポン
-  customer_situation?: string | null; // 来客状況
   phone_number?: string | null; // 🔥 電話番号を追加（データベースにまだ存在しないため、コメントアウトまたは将来用）
   
   // 🔥 イベント情報フィールド
