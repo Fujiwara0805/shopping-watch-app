@@ -1,12 +1,12 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { Upload, X, Store as StoreIcon, ClipboardList, Image as ImageIcon, ClockIcon, Tag, MapPin, CheckCircle, ChevronDown, ChevronUp, Settings, Link as LinkIcon, FileText, Phone, CalendarDays } from 'lucide-react';
+import { Upload, X, Store as StoreIcon, ClipboardList, Image as ImageIcon, ClockIcon, Tag, MapPin, CheckCircle, ChevronDown, ChevronUp, Settings, Link as LinkIcon, FileText, Phone, CalendarDays, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -30,36 +30,61 @@ declare global {
   }
 }
 
-// 🔥 イベント情報専用のバリデーションスキーマ（簡素化）
-const postSchema = z.object({
-  storeId: z.string().min(1, { message: '場所の選択は必須です' }),
-  storeName: z.string().min(1, { message: '場所の選択は必須です' }),
-  content: z.string().min(5, { message: '5文字以上入力してください' }).max(400, { message: '400文字以内で入力してください' }),
-  url: z.string().url({ message: '有効なURLを入力してください' }).optional().or(z.literal('')),
-  customExpiryDays: z.number().min(1, { message: '1日以上を設定してください' }).max(90, { message: '90日以下を設定してください' }),
-  store_latitude: z.number(),
-  store_longitude: z.number(),
-  phoneNumber: z.string().max(15).optional(),
-  eventName: z.string().min(1, { message: 'イベント名の入力は必須です' }).max(100),
-  eventStartDate: z.string().min(1, { message: '開催開始日の入力は必須です' }),
-  eventEndDate: z.string().optional(),
-  eventPrice: z.string().max(50).optional(),
-  prefecture: z.string().max(20).optional(),
-  city: z.string().max(50).optional(),
-  enableCheckin: z.boolean().default(false),
-}).refine((data) => {
-  if (data.eventEndDate && data.eventEndDate.trim() !== '' && data.eventStartDate && data.eventStartDate.trim() !== '') {
-    const startDate = new Date(data.eventStartDate);
-    const endDate = new Date(data.eventEndDate);
-    return endDate >= startDate;
-  }
-  return true;
-}, {
-  message: '開催終了日は開始日以降の日付を選択してください',
-  path: ['eventEndDate'],
-});
+// カテゴリーの型定義
+export type PostCategory = 'イベント情報' | '聖地巡礼' | '観光スポット' | '温泉' | 'グルメ';
 
-type PostFormValues = z.infer<typeof postSchema>;
+// カテゴリーごとのバリデーションスキーマ
+const createPostSchema = (category: PostCategory) => {
+  const baseSchema = {
+    // z.enum()に変更して、すべてのカテゴリを許可（カテゴリ変更時のバリデーションエラーを防ぐ）
+    category: z.enum(['イベント情報', '聖地巡礼', '観光スポット', '温泉', 'グルメ'], {
+      required_error: 'カテゴリを選択してください',
+    }),
+    storeId: z.string().min(1, { message: '場所の選択は必須です' }),
+    storeName: z.string().min(1, { message: '場所の選択は必須です' }),
+    content: z.string().min(5, { message: '5文字以上入力してください' }).max(800, { message: '800文字以内で入力してください' }),
+    url: z.string().url({ message: '有効なURLを入力してください' }).optional().or(z.literal('')),
+    store_latitude: z.number().optional(),
+    store_longitude: z.number().optional(),
+    phoneNumber: z.string().max(15).optional(),
+    prefecture: z.string().max(20).optional(),
+    city: z.string().max(50).optional(),
+    enableCheckin: z.boolean().default(false),
+    collaboration: z.string().max(200).optional(),
+  };
+
+  // イベント情報の場合
+  if (category === 'イベント情報') {
+    return z.object({
+      ...baseSchema,
+      customExpiryDays: z.number().min(1, { message: '1日以上を設定してください' }).max(90, { message: '90日以下を設定してください' }),
+      eventName: z.string().min(1, { message: 'イベント名の入力は必須です' }).max(100),
+      eventStartDate: z.string().min(1, { message: '開催開始日の入力は必須です' }),
+      eventEndDate: z.string().optional(),
+      eventPrice: z.string().max(50).optional(),
+      expiryOption: z.enum(['90days', 'unlimited']).optional(),
+    }).refine((data) => {
+      if (data.eventEndDate && data.eventEndDate.trim() !== '' && data.eventStartDate && data.eventStartDate.trim() !== '') {
+        const startDate = new Date(data.eventStartDate);
+        const endDate = new Date(data.eventEndDate);
+        return endDate >= startDate;
+      }
+      return true;
+    }, {
+      message: '開催終了日は開始日以降の日付を選択してください',
+      path: ['eventEndDate'],
+    });
+  }
+
+  // その他のカテゴリー（聖地巡礼、観光スポット、温泉、グルメ）
+  return z.object({
+    ...baseSchema,
+    expiryOption: z.enum(['90days', 'unlimited'], { required_error: '掲載期間を選択してください' }),
+  });
+};
+
+// フォームの型定義（カテゴリーごとに異なるためanyを使用）
+type PostFormValues = any;
 
 // 🔥 イベント情報専用定型文データ
 const templateTexts = [
@@ -86,10 +111,16 @@ const calculateEventExpiryDays = (startDate: string, endDate?: string): number =
   return Math.max(1, Math.min(90, diffDays));
 };
 
-// イベント情報の表示項目（簡素化）
-const eventFields = ['location', 'eventName', 'eventDate', 'eventPrice', 'eventArea', 'url', 'image', 'phoneNumber', 'file', 'enableCheckin'];
+// カテゴリーごとの表示項目
+const getCategoryFields = (category: PostCategory): string[] => {
+  if (category === 'イベント情報') {
+    return ['location', 'eventName', 'eventDate', 'eventPrice', 'eventArea', 'url', 'image', 'phoneNumber', 'file', 'enableCheckin'];
+  }
+  // 聖地巡礼、観光スポット、温泉、グルメ
+  return ['location', 'eventArea', 'url', 'image', 'phoneNumber', 'enableCheckin', 'collaboration'];
+};
 
-// イベント情報用フィールドの表示名とアイコン
+// フィールドの表示名とアイコン
 const getFieldDisplayInfo = (field: string) => {
   const fieldMap = {
     location: { label: '場所', icon: StoreIcon },
@@ -102,6 +133,7 @@ const getFieldDisplayInfo = (field: string) => {
     eventPrice: { label: '料金', icon: Tag },
     eventArea: { label: 'エリア情報', icon: MapPin },
     enableCheckin: { label: 'GPSチェックイン', icon: MapPin },
+    collaboration: { label: 'コラボ', icon: Users },
   };
   
   return fieldMap[field as keyof typeof fieldMap] || { label: field, icon: StoreIcon };
@@ -112,13 +144,16 @@ export default function PostPage() {
   const router = useRouter();
   const { toast } = useToast();
   
+  // 🔥 カテゴリー選択状態
+  const [selectedCategory, setSelectedCategory] = useState<PostCategory>('イベント情報');
+  
   // 🔥 複数画像対応
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviewUrls, setImagePreviewUrls] = useState<string[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [formDataToSubmit, setFormDataToSubmit] = useState<PostFormValues | null>(null);
+  const [formDataToSubmit, setFormDataToSubmit] = useState<any | null>(null);
   
   // 🔥 複数ファイル対応を追加
   const [fileFiles, setFileFiles] = useState<File[]>([]);
@@ -140,15 +175,20 @@ export default function PostPage() {
 
   const { isLoaded, loadError } = useGoogleMapsApi();
 
-  // イベント情報専用フォーム設定
-  const form = useForm<PostFormValues>({
-    resolver: zodResolver(postSchema),
+  // カテゴリーごとのフォーム設定
+  // resolverをuseMemoでラップして、selectedCategoryが変更されたときに再計算されるようにする
+  const resolver = useMemo(() => zodResolver(createPostSchema(selectedCategory)), [selectedCategory]);
+  
+  const form = useForm<any>({
+    resolver: resolver,
     defaultValues: {
+      category: selectedCategory,
       storeId: '',
       storeName: '',
       content: '',
       url: '',
       customExpiryDays: 7,
+      expiryOption: '90days' as '90days' | 'unlimited',
       store_latitude: undefined,
       store_longitude: undefined,
       phoneNumber: '',
@@ -159,9 +199,49 @@ export default function PostPage() {
       prefecture: '',
       city: '',
       enableCheckin: false,
+      collaboration: '',
     },
     mode: 'onChange',
   });
+
+  // カテゴリー変更時のフォーム再初期化とresolver更新
+  useEffect(() => {
+    // resolverを更新
+    const newSchema = createPostSchema(selectedCategory);
+    form.clearErrors();
+    
+    const resetValues: any = {
+      category: selectedCategory,
+      storeId: '',
+      storeName: '',
+      content: '',
+      url: '',
+      expiryOption: '90days' as '90days' | 'unlimited',
+      store_latitude: undefined,
+      store_longitude: undefined,
+      phoneNumber: '',
+      prefecture: '',
+      city: '',
+      enableCheckin: false,
+      collaboration: '',
+    };
+
+    if (selectedCategory === 'イベント情報') {
+      resetValues.customExpiryDays = 7;
+      resetValues.eventName = '';
+      resetValues.eventStartDate = '';
+      resetValues.eventEndDate = '';
+      resetValues.eventPrice = '';
+    }
+
+    form.reset(resetValues);
+    setImageFiles([]);
+    setImagePreviewUrls([]);
+    setFileFiles([]);
+    setSelectedPlace(null);
+    setLocationStatus('none');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCategory]);
   
   const { formState: { isValid, isSubmitting } } = form;
   
@@ -202,24 +282,19 @@ export default function PostPage() {
     }
   }, [imageFiles]);
 
-  // イベント情報の必須フィールドを自動展開（全項目を開いた状態に）
+  // カテゴリーごとの必須フィールドを自動展開
   useEffect(() => {
     setShowOptionalFields(true);
-    setOptionalFieldsExpanded({
-      image: true,
-      location: true,
-      url: true,
-      phoneNumber: true,
-      file: true,
-      eventName: true,
-      eventDate: true,
-      eventPrice: true,
-      eventArea: true,
+    const fields = getCategoryFields(selectedCategory);
+    const expanded: Record<string, boolean> = {};
+    fields.forEach(field => {
+      expanded[field] = true;
     });
-  }, []);
+    setOptionalFieldsExpanded(expanded);
+  }, [selectedCategory]);
   
-  // イベント情報投稿処理
-  const handleActualSubmit = async (values: PostFormValues) => {
+  // 投稿処理
+  const handleActualSubmit = async (values: any) => {
     if (!session?.user?.id) {
       router.push(`/login?callbackUrl=${encodeURIComponent(window.location.pathname)}`);
       return;
@@ -231,19 +306,26 @@ export default function PostPage() {
       return;
     }
 
-    if (!values.customExpiryDays || values.customExpiryDays < 1 || values.customExpiryDays > 90) {
-      setSubmitError("掲載期間は1日〜90日の範囲で設定してください。");
-      return;
-    }
-
-    if (!values.eventName) {
-      setSubmitError("イベント名を入力してください。");
-      return;
-    }
-
-    if (!values.eventStartDate) {
-      setSubmitError("開催開始日を入力してください。");
-      return;
+    // イベント情報の場合の追加検証
+    if (selectedCategory === 'イベント情報') {
+      if (values.customExpiryDays && (values.customExpiryDays < 1 || values.customExpiryDays > 90)) {
+        setSubmitError("掲載期間は1日〜90日の範囲で設定してください。");
+        return;
+      }
+      if (!values.eventName) {
+        setSubmitError("イベント名を入力してください。");
+        return;
+      }
+      if (!values.eventStartDate) {
+        setSubmitError("開催開始日を入力してください。");
+        return;
+      }
+    } else {
+      // その他のカテゴリーの場合、掲載期間の選択を確認
+      if (!values.expiryOption) {
+        setSubmitError("掲載期間を選択してください。");
+        return;
+      }
     }
 
     form.clearErrors("root.serverError");
@@ -327,38 +409,73 @@ export default function PostPage() {
         fileUrls = uploadedUrls.filter(url => url !== null) as string[];
       }
 
-      // イベント情報投稿データを準備
+      // 投稿データを準備
       const postData: any = {
         app_profile_id: appProfileId,
         store_id: values.storeId || null,
-        store_name: values.storeName || 'イベント情報',
-        category: 'イベント情報',
+        store_name: values.storeName || selectedCategory,
+        category: selectedCategory,
         content: values.content,
         image_urls: imageUrls.length > 0 ? JSON.stringify(imageUrls) : null,
         file_urls: fileUrls.length > 0 ? JSON.stringify(fileUrls) : null,
         url: values.url && values.url.trim() !== '' ? values.url : null,
-        expiry_option: 'days',
-        custom_expiry_minutes: (values.customExpiryDays || 7) * 24 * 60,
-        expires_at: calculateExpiresAt('days', undefined, values.customExpiryDays).toISOString(),
         likes_count: 0,
         views_count: 0,
         comments_count: 0,
         is_deleted: false,
         phone_number: values.phoneNumber && values.phoneNumber.trim() !== '' ? values.phoneNumber : null,
-        event_name: values.eventName,
-        event_start_date: values.eventStartDate,
-        event_end_date: values.eventEndDate && values.eventEndDate.trim() !== '' ? values.eventEndDate : null,
-        event_price: values.eventPrice && values.eventPrice.trim() !== '' ? values.eventPrice : null,
         prefecture: values.prefecture && values.prefecture.trim() !== '' ? values.prefecture : null,
         city: values.city && values.city.trim() !== '' ? values.city : null,
         author_role: session?.user?.role === 'admin' ? 'admin' : 'user',
         enable_checkin: values.enableCheckin || false,
       };
 
+      // イベント情報の場合の追加フィールド
+      if (selectedCategory === 'イベント情報') {
+        postData.event_name = values.eventName;
+        postData.event_start_date = values.eventStartDate;
+        postData.event_end_date = values.eventEndDate && values.eventEndDate.trim() !== '' ? values.eventEndDate : null;
+        postData.event_price = values.eventPrice && values.eventPrice.trim() !== '' ? values.eventPrice : null;
+        
+        // 掲載期間の設定
+        if (values.customExpiryDays) {
+          postData.expiry_option = 'days';
+          postData.custom_expiry_minutes = values.customExpiryDays * 24 * 60;
+          postData.expires_at = calculateExpiresAt('days', undefined, values.customExpiryDays).toISOString();
+        } else {
+          // イベント日付から自動計算
+          const calculatedDays = calculateEventExpiryDays(values.eventStartDate, values.eventEndDate);
+          postData.expiry_option = 'days';
+          postData.custom_expiry_minutes = calculatedDays * 24 * 60;
+          postData.expires_at = calculateExpiresAt('days', undefined, calculatedDays).toISOString();
+        }
+      } else {
+        // その他のカテゴリーの場合
+        if (values.expiryOption === '90days') {
+          postData.expiry_option = '90d';
+          postData.custom_expiry_minutes = 90 * 24 * 60;
+          postData.expires_at = calculateExpiresAt('90d').toISOString();
+        } else if (values.expiryOption === 'unlimited') {
+          // 期間を設けない場合（手動削除まで表示）
+          // 非常に遠い未来の日付を設定（2099-12-31）
+          postData.expiry_option = 'days';
+          postData.custom_expiry_minutes = null;
+          const farFuture = new Date();
+          farFuture.setFullYear(2099, 11, 31); // 2099年12月31日
+          farFuture.setHours(23, 59, 59, 999);
+          postData.expires_at = farFuture.toISOString();
+        }
+      }
+
+      // コラボフィールド（新規カテゴリーのみ）
+      if (selectedCategory !== 'イベント情報' && values.collaboration) {
+        postData.collaboration = values.collaboration.trim();
+      }
+
       // 🔥 店舗の位置情報を設定
-      const storeLatitude = form.getValues("store_latitude");
-      const storeLongitude = form.getValues("store_longitude");
-      if (storeLatitude && storeLongitude) {
+      const storeLatitude = form.getValues("store_latitude") as number | undefined;
+      const storeLongitude = form.getValues("store_longitude") as number | undefined;
+      if (storeLatitude !== undefined && storeLongitude !== undefined && !isNaN(storeLatitude) && !isNaN(storeLongitude)) {
         postData.store_latitude = Number(storeLatitude);
         postData.store_longitude = Number(storeLongitude);
         postData.location_geom = `POINT(${storeLongitude} ${storeLatitude})`;
@@ -382,23 +499,29 @@ export default function PostPage() {
       }
 
       // フォームリセット
-      form.reset({
+      const resetValues: any = {
+        category: selectedCategory,
         storeId: '',
         storeName: '',
         content: '',
         url: '',
-        customExpiryDays: 7,
-        store_latitude: undefined,
-        store_longitude: undefined,
+        expiryOption: '90days' as '90days' | 'unlimited',
         phoneNumber: '',
-        eventName: '',
-        eventStartDate: '',
-        eventEndDate: '',
-        eventPrice: '',
         prefecture: '',
         city: '',
         enableCheckin: false,
-      });
+        collaboration: '',
+      };
+
+      if (selectedCategory === 'イベント情報') {
+        resetValues.customExpiryDays = 7;
+        resetValues.eventName = '';
+        resetValues.eventStartDate = '';
+        resetValues.eventEndDate = '';
+        resetValues.eventPrice = '';
+      }
+
+      form.reset(resetValues);
       
       setImageFiles([]);
         setImagePreviewUrls([]);
@@ -416,7 +539,7 @@ export default function PostPage() {
     }
   };
 
-  const triggerConfirmationModal = (values: PostFormValues) => {
+  const triggerConfirmationModal = (values: any) => {
     setFormDataToSubmit(values);
     setShowConfirmModal(true);
   };
@@ -553,10 +676,10 @@ export default function PostPage() {
 
   // 位置情報状況表示コンポーネント
   const LocationStatusIndicator = () => {
-    const lat = form.watch('store_latitude');
-    const lng = form.watch('store_longitude');
+    const lat = form.watch('store_latitude') as number | undefined;
+    const lng = form.watch('store_longitude') as number | undefined;
     
-    if (lat && lng) {
+    if (lat !== undefined && lng !== undefined && !isNaN(lat) && !isNaN(lng)) {
       return (
         <div className="flex items-center space-x-2 p-2 bg-green-50 border border-green-200 rounded-md">
           <CheckCircle className="h-5 w-5 text-green-600" />
@@ -591,7 +714,7 @@ export default function PostPage() {
 
   // オプション項目の表示状態管理
   const [showOptionalFields, setShowOptionalFields] = useState(false);
-  const [optionalFieldsExpanded, setOptionalFieldsExpanded] = useState({
+  const [optionalFieldsExpanded, setOptionalFieldsExpanded] = useState<Record<string, boolean>>({
     image: false,
     location: false,
     url: false,
@@ -601,6 +724,8 @@ export default function PostPage() {
     eventDate: false,
     eventPrice: false,
     eventArea: false,
+    enableCheckin: false,
+    collaboration: false,
   });
 
   // オプションフィールドの切り替え
@@ -620,8 +745,8 @@ export default function PostPage() {
           case 'location':
             form.setValue('storeId', '', { shouldValidate: true });
             form.setValue('storeName', '', { shouldValidate: true });
-            form.setValue('store_latitude', 0, { shouldValidate: true });
-            form.setValue('store_longitude', 0, { shouldValidate: true });
+            form.setValue('store_latitude', undefined, { shouldValidate: true });
+            form.setValue('store_longitude', undefined, { shouldValidate: true });
             setLocationStatus('none');
             setSelectedPlace(null);
             break;
@@ -647,6 +772,12 @@ export default function PostPage() {
           case 'eventArea':
             form.setValue('prefecture', '', { shouldValidate: true });
             form.setValue('city', '', { shouldValidate: true });
+            break;
+          case 'enableCheckin':
+            form.setValue('enableCheckin', false, { shouldValidate: true });
+            break;
+          case 'collaboration':
+            form.setValue('collaboration', '', { shouldValidate: true });
             break;
           default:
             break;
@@ -713,6 +844,40 @@ export default function PostPage() {
         >
           <Form {...form}>
             <form onSubmit={form.handleSubmit(triggerConfirmationModal)} className="space-y-6 pb-20">
+              {/* カテゴリー選択 */}
+              <FormField
+                control={form.control}
+                name="category"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-xl flex font-semibold items-center">
+                      <Tag className="mr-2 h-6 w-6" /> カテゴリー<span className="text-destructive ml-1">※</span>
+                    </FormLabel>
+                    <FormControl>
+                      <Select
+                        value={selectedCategory}
+                        onValueChange={(value: PostCategory) => {
+                          setSelectedCategory(value);
+                          field.onChange(value);
+                        }}
+                      >
+                        <SelectTrigger className="mt-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="イベント情報">イベント情報</SelectItem>
+                          <SelectItem value="聖地巡礼">聖地巡礼</SelectItem>
+                          <SelectItem value="観光スポット">観光スポット</SelectItem>
+                          <SelectItem value="温泉">温泉</SelectItem>
+                          <SelectItem value="グルメ">グルメ</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               {/* 投稿内容（必須） */}
               <FormField
                 control={form.control}
@@ -723,24 +888,26 @@ export default function PostPage() {
                       <div className="flex items-center">
                         <ClipboardList className="mr-2 h-6 w-6" /> 投稿内容<span className="text-destructive ml-1">※</span>
                       </div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setShowTemplateModal(true)}
-                        className="text-[#73370c] hover:text-[#5c2b0a] hover:bg-[#fef3e8] text-sm font-normal"
-                      >
-                        定型文
-                      </Button>
+                      {selectedCategory === 'イベント情報' && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setShowTemplateModal(true)}
+                          className="text-[#73370c] hover:text-[#5c2b0a] hover:bg-[#fef3e8] text-sm font-normal"
+                        >
+                          定型文
+                        </Button>
+                      )}
                     </FormLabel>
                     <FormControl>
                       <div className="relative">
                         <Textarea
-                          placeholder="イベント情報を投稿してみよう。（400文字以内）"
+                          placeholder={`${selectedCategory}を投稿してみよう。（800文字以内）`}
                           className="resize-none"
                           style={{ fontSize: '16px', minHeight: '140px' }}
                           rows={7}
-                          maxLength={400}
+                          maxLength={800}
                           autoComplete="off"
                           autoCorrect="off"
                           autoCapitalize="off"
@@ -748,7 +915,7 @@ export default function PostPage() {
                           {...field}
                         />
                         <div className="absolute bottom-2 right-2 text-xs text-gray-500 bg-white px-1 rounded">
-                          {field.value?.length || 0}/400
+                          {field.value?.length || 0}/800
                         </div>
                       </div>
                     </FormControl>
@@ -758,56 +925,85 @@ export default function PostPage() {
               />
 
               {/* 掲載期間 */}
-              <FormField
-                control={form.control}
-                name="customExpiryDays"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xl flex font-semibold items-center">
-                      <ClockIcon className="mr-2 h-6 w-6" /> 掲載期間<span className="text-destructive ml-1">※</span>
-                    </FormLabel>
-                    {form.getValues('customExpiryDays') ? (
-                      <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1">
-                            <span className="text-sm text-blue-800">
-                              設定期間: {form.getValues('customExpiryDays')}日間
-                            </span>
-                            {eventStartDate && (
-                              <div className="text-xs text-blue-600 mt-1">
-                                📅 開催日に基づいて自動計算されました
-                                {eventEndDate ? 
-                                  ` (本日〜${eventEndDate})` : 
-                                  ` (本日〜${eventStartDate})`
-                                }
-                              </div>
-                            )}
+              {selectedCategory === 'イベント情報' ? (
+                <FormField
+                  control={form.control}
+                  name="customExpiryDays"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xl flex font-semibold items-center">
+                        <ClockIcon className="mr-2 h-6 w-6" /> 掲載期間<span className="text-destructive ml-1">※</span>
+                      </FormLabel>
+                      {form.getValues('customExpiryDays') ? (
+                        <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1">
+                              <span className="text-sm text-blue-800">
+                                設定期間: {form.getValues('customExpiryDays')}日間
+                              </span>
+                              {eventStartDate && (
+                                <div className="text-xs text-blue-600 mt-1">
+                                  📅 開催日に基づいて自動計算されました
+                                  {eventEndDate ? 
+                                    ` (本日〜${eventEndDate})` : 
+                                    ` (本日〜${eventStartDate})`
+                                  }
+                                </div>
+                              )}
+                            </div>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setShowCustomDaysModal(true)}
+                              disabled={Boolean(eventStartDate)}
+                            >
+                              {eventStartDate ? '自動計算' : '変更'}
+                            </Button>
                           </div>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setShowCustomDaysModal(true)}
-                            disabled={Boolean(eventStartDate)}
-                          >
-                            {eventStartDate ? '自動計算' : '変更'}
-                          </Button>
                         </div>
-                      </div>
-                    ) : (
-                      <div className="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                        <div className="flex items-center space-x-2">
-                          <ClockIcon className="h-4 w-4 text-amber-600" />
-                          <span className="text-sm text-amber-800">
-                            開催期日を入力すると掲載期間が自動計算されます
-                          </span>
+                      ) : (
+                        <div className="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                          <div className="flex items-center space-x-2">
+                            <ClockIcon className="h-4 w-4 text-amber-600" />
+                            <span className="text-sm text-amber-800">
+                              開催期日を入力すると掲載期間が自動計算されます
+                            </span>
+                          </div>
                         </div>
-                      </div>
-                    )}
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                      )}
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              ) : (
+                <FormField
+                  control={form.control}
+                  name="expiryOption"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xl flex font-semibold items-center">
+                        <ClockIcon className="mr-2 h-6 w-6" /> 掲載期間<span className="text-destructive ml-1">※</span>
+                      </FormLabel>
+                      <FormControl>
+                        <Select
+                          value={field.value}
+                          onValueChange={field.onChange}
+                        >
+                          <SelectTrigger className="mt-1">
+                            <SelectValue placeholder="掲載期間を選択" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="90days">90日間</SelectItem>
+                            <SelectItem value="unlimited">期間を設けない（手動削除まで表示）</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
 
               {/* 詳細情報セクション */}
               <motion.div
@@ -839,11 +1035,12 @@ export default function PostPage() {
                         transition={{ duration: 0.3 }}
                     className="space-y-3"
                       >
-                        {eventFields.map((field) => {
+                        {getCategoryFields(selectedCategory).map((field) => {
                       const fieldInfo = getFieldDisplayInfo(field);
                       const Icon = fieldInfo.icon;
-                          const isExpanded = optionalFieldsExpanded[field as keyof typeof optionalFieldsExpanded];
-                      const isRequired = field === 'eventName' || field === 'eventDate' || field === 'location';
+                          const isExpanded = optionalFieldsExpanded[field] || false;
+                      const isRequired = (selectedCategory === 'イベント情報' && (field === 'eventName' || field === 'eventDate' || field === 'location')) || 
+                                        (selectedCategory !== 'イベント情報' && field === 'location');
                           
                           return (
                         <motion.div
@@ -895,8 +1092,8 @@ export default function PostPage() {
                                 />
                               )}
 
-                              {/* イベント名フィールド */}
-                              {field === 'eventName' && (
+                              {/* イベント名フィールド（イベント情報のみ） */}
+                              {field === 'eventName' && selectedCategory === 'イベント情報' && (
                           <FormField
                             control={form.control}
                             name="eventName"
@@ -919,8 +1116,8 @@ export default function PostPage() {
                           />
                               )}
 
-                              {/* 開催期日フィールド */}
-                              {field === 'eventDate' && (
+                              {/* 開催期日フィールド（イベント情報のみ） */}
+                              {field === 'eventDate' && selectedCategory === 'イベント情報' && (
                                 <div className="space-y-4">
                                   <FormField
                                     control={form.control}
@@ -959,8 +1156,8 @@ export default function PostPage() {
                                 </div>
                               )}
 
-                              {/* 料金フィールド */}
-                              {field === 'eventPrice' && (
+                              {/* 料金フィールド（イベント情報のみ） */}
+                              {field === 'eventPrice' && selectedCategory === 'イベント情報' && (
                           <FormField
                             control={form.control}
                             name="eventPrice"
@@ -1124,8 +1321,8 @@ export default function PostPage() {
                           />
                               )}
 
-                              {/* ファイルフィールド */}
-                              {field === 'file' && (
+                              {/* ファイルフィールド（イベント情報のみ） */}
+                              {field === 'file' && selectedCategory === 'イベント情報' && (
                               <div className="space-y-4">
                                   <div>
                                     <Label className="text-sm font-medium mb-2 block">ファイルをアップロード（最大3つ）</Label>
@@ -1197,6 +1394,30 @@ export default function PostPage() {
                                           </div>
                                         </div>
                                       </div>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                              )}
+
+                              {/* コラボフィールド（新規カテゴリーのみ） */}
+                              {field === 'collaboration' && selectedCategory !== 'イベント情報' && (
+                                <FormField
+                                  control={form.control}
+                                  name="collaboration"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>コラボ</FormLabel>
+                                      <FormControl>
+                                        <Textarea
+                                          placeholder="コラボ情報を入力してください"
+                                          className="resize-none"
+                                          style={{ fontSize: '16px' }}
+                                          rows={3}
+                                          maxLength={200}
+                                          {...field}
+                                        />
+                                      </FormControl>
                                       <FormMessage />
                                     </FormItem>
                                   )}

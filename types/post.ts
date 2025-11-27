@@ -6,10 +6,10 @@ export interface Post {
   category: string | null; 
   content: string;
   image_urls: string | null; // JSON文字列
-  expiry_option: '15m' | '30m' | '45m' | '60m' | 'custom';
+  expiry_option: '15m' | '30m' | '45m' | '60m' | '12h' | '24h' | 'days' | '90d' | 'custom';
   custom_expiry_minutes?: number | null;
   created_at: string;
-  expires_at?: string;
+  expires_at?: string | null;
   likes_count: number;
   views_count: number;
   comments_count: number;
@@ -31,7 +31,7 @@ export interface Post {
   is_deleted?: boolean;
   author_role?: string;
   
-  phone_number?: string | null; // 🔥 電話番号を追加（データベースにまだ存在しないため、コメントアウトまたは将来用）
+  phone_number?: string | null;
   
   // 🔥 イベント情報フィールド
   event_name?: string | null; // イベント名
@@ -42,6 +42,10 @@ export interface Post {
   // 🔥 住所情報フィールド
   prefecture?: string | null; // 都道府県
   city?: string | null; // 市町村
+  
+  // 🔥 新規カテゴリーフィールド
+  collaboration?: string | null; // コラボ情報
+  enable_checkin?: boolean | null; // GPSチェックイン対象フラグ
 }
 
 export interface AuthorProfile {
