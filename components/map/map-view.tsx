@@ -58,6 +58,33 @@ const createSimpleEventIcon = () => {
   };
 };
 
+// 🔥 CloudinaryのURLを高品質化する関数
+const optimizeCloudinaryImageUrl = (url: string): string => {
+  if (!url || typeof url !== 'string') return url;
+  
+  // CloudinaryのURLの場合、品質パラメータを追加
+  if (url.includes('res.cloudinary.com') && url.includes('/upload/')) {
+    // 既に品質パラメータが含まれているかチェック
+    if (url.includes('q_auto') || url.includes('q_')) {
+      // 既に品質パラメータがある場合はそのまま返す
+      return url;
+    }
+    
+    // /upload/の後に品質パラメータを追加
+    const uploadIndex = url.indexOf('/upload/');
+    if (uploadIndex !== -1) {
+      const beforeUpload = url.substring(0, uploadIndex + '/upload/'.length);
+      const afterUpload = url.substring(uploadIndex + '/upload/'.length);
+      
+      // 高品質パラメータを追加（q_auto:best, f_auto）
+      const qualityParams = 'q_auto:best,f_auto';
+      return `${beforeUpload}${qualityParams}/${afterUpload}`;
+    }
+  }
+  
+  return url;
+};
+
 // 🔥 画像付きイベント情報用のアイコンを作成（円形・白縁・40x40 + イベント名テキスト）
 const createEventPinIcon = async (imageUrls: string[] | null, eventName: string | null): Promise<google.maps.Icon> => {
   // 🔥 image_urlsが文字列の場合はパースを試みる
@@ -77,6 +104,9 @@ const createEventPinIcon = async (imageUrls: string[] | null, eventName: string 
   if (!imageUrl || typeof imageUrl !== 'string' || !imageUrl.startsWith('http')) {
     return createSimpleEventIcon();
   }
+  
+  // 🔥 高品質な画像URLに変換
+  const optimizedImageUrl = optimizeCloudinaryImageUrl(imageUrl);
 
   // 🔥 画像を円形・白縁で50x50サイズに + イベント名を下に表示
   const imageSize = 50;
@@ -203,11 +233,11 @@ const createEventPinIcon = async (imageUrls: string[] | null, eventName: string 
     
     img.onerror = () => {
       // 画像読み込みエラー時は簡易アイコンを返す
-      console.error('createEventPinIcon: 画像の読み込みに失敗:', imageUrl);
+      console.error('createEventPinIcon: 画像の読み込みに失敗:', optimizedImageUrl);
       resolve(createSimpleEventIcon());
     };
     
-    img.src = imageUrl;
+    img.src = optimizedImageUrl;
   });
 };
 
@@ -674,13 +704,34 @@ export function MapView() {
 
       console.log('MapView: 地図の中心座標:', center);
 
+      // 🔥 モノトーン（グレースケール）スタイルを定義
+      const monochromeStyle: google.maps.MapTypeStyle[] = [
+        {
+          featureType: 'all',
+          stylers: [{ saturation: -100 }, { lightness: 0 }]
+        },
+        {
+          featureType: 'road',
+          stylers: [{ lightness: 100 }]
+        },
+        {
+          featureType: 'water',
+          stylers: [{ lightness: -10 }]
+        },
+        {
+          featureType: 'landscape',
+          stylers: [{ lightness: -5 }]
+        }
+      ];
+
       const mapOptions: google.maps.MapOptions = {
         center,
         zoom: (savedLocation || (latitude && longitude)) ? 15 : 13, // 🔥 14→15, 12→13にズームアップ
         disableDefaultUI: true,
         zoomControl: true,
         gestureHandling: 'greedy',
-        mapTypeId: window.google.maps.MapTypeId.ROADMAP
+        mapTypeId: window.google.maps.MapTypeId.ROADMAP,
+        styles: monochromeStyle // 🔥 モノトーンスタイルを適用
       };
 
       const newMap = new window.google.maps.Map(container, mapOptions);
@@ -1216,7 +1267,7 @@ export function MapView() {
                         {post.image_urls && post.image_urls.length > 0 ? (
                           <div className="flex-shrink-0 relative w-24 h-24 overflow-hidden rounded-lg bg-gray-100">
                             <img
-                              src={post.image_urls[0]}
+                              src={optimizeCloudinaryImageUrl(post.image_urls[0])}
                               alt={post.store_name}
                               className="w-full h-full object-cover"
                               loading="eager"
