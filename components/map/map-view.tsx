@@ -807,34 +807,13 @@ export function MapView() {
 
       console.log('MapView: 地図の中心座標:', center);
 
-      // 🔥 モノトーン（グレースケール）スタイルを定義
-      const monochromeStyle: google.maps.MapTypeStyle[] = [
-        {
-          featureType: 'all',
-          stylers: [{ saturation: -100 }, { lightness: 0 }]
-        },
-        {
-          featureType: 'road',
-          stylers: [{ lightness: 100 }]
-        },
-        {
-          featureType: 'water',
-          stylers: [{ lightness: -10 }]
-        },
-        {
-          featureType: 'landscape',
-          stylers: [{ lightness: -5 }]
-        }
-      ];
-
       const mapOptions: google.maps.MapOptions = {
         center,
-        zoom: (savedLocation || (latitude && longitude)) ? 15 : 13, // 🔥 14→15, 12→13にズームアップ
+        zoom: (savedLocation || (latitude && longitude)) ? 15 : 13,
         disableDefaultUI: true,
         zoomControl: true,
         gestureHandling: 'greedy',
         mapTypeId: window.google.maps.MapTypeId.ROADMAP,
-        styles: monochromeStyle // 🔥 モノトーンスタイルを適用
       };
 
       const newMap = new window.google.maps.Map(container, mapOptions);
