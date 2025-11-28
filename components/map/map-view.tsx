@@ -847,6 +847,98 @@ export function MapView() {
 
       console.log('MapView: 地図の中心座標:', center);
 
+      // 🔥 本や雑誌をイメージしたモノトーンスタイル
+      const monochromeMapStyles: google.maps.MapTypeStyle[] = [
+        // 全体をグレースケール化
+        {
+          featureType: "all",
+          stylers: [
+            { saturation: -100 }, // 彩度を完全に除去
+            { lightness: 10 }      // 少し明るくして紙のような質感に
+          ]
+        },
+        // 背景（土地）を紙のような色に
+        {
+          featureType: "landscape",
+          stylers: [
+            { color: "#d3bea0" },  // 薄いベージュ/クリーム色
+            { lightness: 50 }
+          ]
+        },
+        // 水を薄いグレーに
+        {
+          featureType: "water",
+          elementType: "geometry",
+          stylers: [
+            { color: "#e8e8e3" },  // 薄いグレー
+            { lightness: 60 }
+          ]
+        },
+        // 道路を薄いグレーに（読みやすく）
+        {
+          featureType: "road",
+          elementType: "geometry",
+          stylers: [
+            { color: "#d0d0cb" },  // 薄いグレー
+            { lightness: 70 }
+          ]
+        },
+        // 主要道路を少し濃いグレーに
+        {
+          featureType: "road.highway",
+          elementType: "geometry",
+          stylers: [
+            { color: "#b8b8b3" },
+            { lightness: 50 }
+          ]
+        },
+        // 公園・緑地を薄いグレーに
+        {
+          featureType: "poi.park",
+          elementType: "geometry",
+          stylers: [
+            { color: "#e0e0db" },
+            { lightness: 55 }
+          ]
+        },
+        // 建物を薄いグレーに
+        {
+          featureType: "poi",
+          elementType: "geometry",
+          stylers: [
+            { color: "#d8d8d3" },
+            { lightness: 60 }
+          ]
+        },
+        // ラベルを読みやすく（黒に近いグレー）
+        {
+          featureType: "all",
+          elementType: "labels.text.fill",
+          stylers: [
+            { color: "#4a4a45" },  // 濃いグレー
+            { lightness: -20 }
+          ]
+        },
+        {
+          featureType: "all",
+          elementType: "labels.text.stroke",
+          stylers: [
+            { color: "#ffffff" },  // 白い縁取り
+            { lightness: 100 },
+            { visibility: "on" }
+          ]
+        },
+        // アイコンを読みやすく
+        {
+          featureType: "poi",
+          elementType: "labels.icon",
+          stylers: [
+            { saturation: -100 },
+            { lightness: 0 }
+          ]
+        }
+      ];
+
       const mapOptions: google.maps.MapOptions = {
         center,
         zoom: (savedLocation || (latitude && longitude)) ? 15 : 13,
@@ -854,6 +946,7 @@ export function MapView() {
         zoomControl: true,
         gestureHandling: 'greedy',
         mapTypeId: window.google.maps.MapTypeId.ROADMAP,
+        styles: monochromeMapStyles, // 🔥 モノトーンスタイルを適用
       };
 
       const newMap = new window.google.maps.Map(container, mapOptions);
