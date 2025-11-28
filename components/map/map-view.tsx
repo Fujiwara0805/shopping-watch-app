@@ -735,7 +735,32 @@ export function MapView() {
     return locationGroups;
   };
 
-  // 🔥 投稿マーカーを作成する関数（段階的に表示）
+  // 🔥 同一座標のマーカーをオフセットする関数
+  const getOffsetPosition = (
+    baseLat: number, 
+    baseLng: number, 
+    index: number, 
+    total: number
+  ): { lat: number; lng: number } => {
+    // 1つだけの場合はオフセットなし
+    if (total <= 1) {
+      return { lat: baseLat, lng: baseLng };
+    }
+    
+    // オフセット量（約20〜30m程度のずれ）
+    const offsetDistance = 0.0003; // 約30m
+    
+    // 円形に配置（360度を均等に分割）
+    const angle = (2 * Math.PI * index) / total;
+    
+    // 緯度経度の補正（経度は緯度によって距離が変わる）
+    const offsetLat = baseLat + offsetDistance * Math.cos(angle);
+    const offsetLng = baseLng + offsetDistance * Math.sin(angle) / Math.cos(baseLat * Math.PI / 180);
+    
+    return { lat: offsetLat, lng: offsetLng };
+  };
+
+  // 🔥 投稿マーカーを作成する関数（同一座標をオフセット対応）
   const createPostMarkers = useCallback(async () => {
     if (!map || !posts.length || !window.google?.maps) {
       console.log('MapView: マーカー作成の条件が揃っていません');
@@ -754,12 +779,14 @@ export function MapView() {
     
     const newMarkers: google.maps.Marker[] = [];
 
+    // 🔥 同一座標の投稿をグループ化
+    const locationGroups = groupPostsByLocation(posts);
+    
     // 近い順に処理（既に距離順にソートされている）
     let batchIndex = 0;
     const batchSize = 10; // 一度に10個ずつ処理
     
     const processNextBatch = async () => {
-      // 🔥 全投稿を個別に処理（グループ化しない）
       const batch = posts.slice(batchIndex, batchIndex + batchSize);
       
       if (batch.length === 0) {
@@ -771,7 +798,23 @@ export function MapView() {
       const batchPromises = batch.map(async (post) => {
         if (!post.store_latitude || !post.store_longitude) return;
         
-        const position = new window.google.maps.LatLng(post.store_latitude, post.store_longitude);
+        // 🔥 同一座標グループ内でのインデックスを取得
+        const lat = Math.round(post.store_latitude * 10000) / 10000;
+        const lng = Math.round(post.store_longitude * 10000) / 10000;
+        const locationKey = `${lat},${lng}`;
+        const groupPosts = locationGroups[locationKey] || [post];
+        const indexInGroup = groupPosts.findIndex(p => p.id === post.id);
+        const totalInGroup = groupPosts.length;
+        
+        // 🔥 オフセット位置を計算
+        const offsetPosition = getOffsetPosition(
+          post.store_latitude,
+          post.store_longitude,
+          indexInGroup,
+          totalInGroup
+        );
+        
+        const position = new window.google.maps.LatLng(offsetPosition.lat, offsetPosition.lng);
         const markerTitle = `${post.store_name} - ${post.category || '投稿'}`;
         
         // タイトルを決定（イベント情報の場合はevent_name、その他はcontent）
@@ -792,6 +835,8 @@ export function MapView() {
           title: markerTitle,
           icon: markerIcon,
           animation: window.google.maps.Animation.DROP,
+          // 🔥 同一グループ内のzIndexを調整（後のものが上に表示）
+          zIndex: indexInGroup + 1,
         });
 
         marker.addListener('click', () => {
