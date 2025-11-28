@@ -1004,16 +1004,19 @@ export function MapView() {
         userLocationMarker.setPosition(userPosition);
       } else {
         try {
+          // 🔥 修正箇所: Google Mapsの現在地風の青い丸アイコンを設定
           const marker = new window.google.maps.Marker({
             position: userPosition,
             map: map,
             title: "あなたの現在地",
             icon: {
-              url: "https://res.cloudinary.com/dz9trbwma/image/upload/v1749098791/%E9%B3%A9_azif4f.png",
-              scaledSize: new window.google.maps.Size(40, 40), // 🔥 50→40に縮小
-              anchor: new window.google.maps.Point(20, 20),
+              path: window.google.maps.SymbolPath.CIRCLE,
+              scale: 8, // 丸のサイズ
+              fillColor: "#4285F4", // Google Mapsの現在地カラー（青）
+              fillOpacity: 1,
+              strokeColor: "#ffffff", // 白い縁取り
+              strokeWeight: 2,
             },
-            animation: window.google.maps.Animation.DROP,
           });
           setUserLocationMarker(marker);
           console.log(`MapView ${browserInfo.name}: User location marker created successfully`);
@@ -1358,10 +1361,14 @@ export function MapView() {
           <div className="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-800 shadow-lg max-w-xs">
             <div className="space-y-1">
               <div className="flex items-center">
-                <img 
-                  src="https://res.cloudinary.com/dz9trbwma/image/upload/v1749098791/%E9%B3%A9_azif4f.png" 
-                  alt="現在地" 
-                  className="h-4 w-4 mr-2" 
+                {/* 青色マーカーと同じスタイルのアイコン */}
+                <div 
+                  className="h-4 w-4 mr-2 rounded-full flex-shrink-0"
+                  style={{
+                    backgroundColor: '#4285F4',
+                    border: '2px solid #ffffff',
+                    boxShadow: '0 0 0 1px rgba(0,0,0,0.1)'
+                  }}
                 />
                 <span className="text-xs font-medium">現在地</span>
               </div>
