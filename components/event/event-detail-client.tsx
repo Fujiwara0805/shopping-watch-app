@@ -393,35 +393,37 @@ export function EventDetailClient({ eventId }: EventDetailClientProps) {
               </h2>
             </div>
 
-            {/* ステータスバッジと残り時間 */}
-            <div className="px-4 py-3 border-b">
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <div className={`inline-flex items-center gap-2 px-3 py-1.5 ${colors.bg} ${colors.text} rounded-lg text-sm font-bold`}>
-                    <div className={`w-2 h-2 ${colors.dot} rounded-full`}></div>
-                    {eventStatus.status}
+            {/* ステータスバッジと残り時間（イベント情報のみ表示） */}
+            {event.category === 'イベント情報' && (
+              <div className="px-4 py-3 border-b">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className={`inline-flex items-center gap-2 px-3 py-1.5 ${colors.bg} ${colors.text} rounded-lg text-sm font-bold`}>
+                      <div className={`w-2 h-2 ${colors.dot} rounded-full`}></div>
+                      {eventStatus.status}
+                    </div>
+                    {eventStatus.remainingTime && (
+                      <span className="text-red-600 font-bold text-sm">
+                        {eventStatus.remainingTime}
+                      </span>
+                    )}
                   </div>
-                  {eventStatus.remainingTime && (
-                    <span className="text-red-600 font-bold text-sm">
-                      {eventStatus.remainingTime}
-                    </span>
+                  {/* Googleカレンダー追加ボタン */}
+                  {event.event_start_date && (
+                    <Button
+                      onClick={addToGoogleCalendar}
+                      variant="outline"
+                      size="sm"
+                      className="flex items-center gap-1.5 text-[#73370c] border-[#73370c] hover:bg-[#73370c] hover:text-white font-bold flex-shrink-0"
+                    >
+                      <Calendar className="h-4 w-4" />
+                      に追加
+                      <ExternalLink className="h-3 w-3" />
+                    </Button>
                   )}
                 </div>
-                {/* Googleカレンダー追加ボタン */}
-                {event.event_start_date && (
-                  <Button
-                    onClick={addToGoogleCalendar}
-                    variant="outline"
-                    size="sm"
-                    className="flex items-center gap-1.5 text-[#73370c] border-[#73370c] hover:bg-[#73370c] hover:text-white font-bold flex-shrink-0"
-                  >
-                    <Calendar className="h-4 w-4" />
-                    に追加
-                    <ExternalLink className="h-3 w-3" />
-                  </Button>
-                )}
               </div>
-            </div>
+            )}
 
             {/* 投稿内容 */}
             <div className="px-4 py-5 border-b">
@@ -459,37 +461,39 @@ export function EventDetailClient({ eventId }: EventDetailClientProps) {
                 </div>
               </div>
 
-              {/* 開催期日 */}
-              <div className="px-4 py-4">
-                <div className="flex items-start gap-3">
-                  <Calendar className="h-5 w-5 mt-1 flex-shrink-0 text-[#73370c]" />
-                  <div className="flex-1">
-                    <p className="font-bold text-gray-900 mb-1">開催期間</p>
-                    {event.event_start_date ? (
-                      <>
-                        <p className="text-gray-700 font-medium mb-2">
-                          {new Date(event.event_start_date).toLocaleDateString('ja-JP', {
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric'
-                          })}
-                          {event.event_end_date && event.event_end_date !== event.event_start_date && (
-                            <> 〜 {new Date(event.event_end_date).toLocaleDateString('ja-JP', {
+              {/* 開催期日（イベント情報のみ表示） */}
+              {event.category === 'イベント情報' && (
+                <div className="px-4 py-4">
+                  <div className="flex items-start gap-3">
+                    <Calendar className="h-5 w-5 mt-1 flex-shrink-0 text-[#73370c]" />
+                    <div className="flex-1">
+                      <p className="font-bold text-gray-900 mb-1">開催期間</p>
+                      {event.event_start_date ? (
+                        <>
+                          <p className="text-gray-700 font-medium mb-2">
+                            {new Date(event.event_start_date).toLocaleDateString('ja-JP', {
+                              year: 'numeric',
                               month: 'long',
                               day: 'numeric'
-                            })}</>
-                          )}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          ※開催日、開催終了日の23時59分まで投稿は表示されます
-                        </p>
-                      </>
-                    ) : (
-                      <p className="text-gray-700 font-bold">{formatDate(event.expires_at)}まで</p>
-                    )}
+                            })}
+                            {event.event_end_date && event.event_end_date !== event.event_start_date && (
+                              <> 〜 {new Date(event.event_end_date).toLocaleDateString('ja-JP', {
+                                month: 'long',
+                                day: 'numeric'
+                              })}</>
+                            )}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            ※開催日、開催終了日の23時59分まで投稿は表示されます
+                          </p>
+                        </>
+                      ) : (
+                        <p className="text-gray-700 font-bold">{formatDate(event.expires_at)}まで</p>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
 
               {/* 料金 */}
               {event.event_price && (

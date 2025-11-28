@@ -610,47 +610,46 @@ export function MapView() {
         return;
       }
 
-      // 🔥 開催中のイベントのみを抽出
-      const filteredData = data.filter((post) => {
-        // event_start_dateがない場合は除外
-        if (!post.event_start_date) {
-          return false;
-        }
-
-        const startDate = new Date(post.event_start_date);
-        startDate.setHours(0, 0, 0, 0); // 開始日の0時0分
-
-        // event_end_dateがある場合
-        if (post.event_end_date) {
-          const endDate = new Date(post.event_end_date);
-          endDate.setHours(23, 59, 59, 999); // 終了日の23時59分
-          
-          // 現在時刻が開始日以降かつ終了日以前 → 開催中
-          return now >= startDate && now <= endDate;
-        }
-        
-        // event_end_dateがない場合は、event_start_dateの当日のみ開催中とみなす
-        const startDateEnd = new Date(post.event_start_date);
-        startDateEnd.setHours(23, 59, 59, 999);
-        
-        return now >= startDate && now <= startDateEnd;
-      });
-
-      console.log(`2. ${selectedCategory}フィルタリング後:`, filteredData.length, '件');
-
       // 🔥 カテゴリごとにフィルタリング
-      let finalFilteredData = filteredData.filter((post) => {
-        // イベント情報の場合は開催中のみ
-        if (post.category === 'イベント情報') {
-          // 既に開催中のフィルタリング済みなのでそのまま
-          return true;
-        } else {
-          // その他のカテゴリは有効期限内のみ
+      let finalFilteredData: typeof data = [];
+      
+      if (selectedCategory === 'イベント情報') {
+        // イベント情報の場合は開催中のイベントのみを抽出
+        finalFilteredData = data.filter((post) => {
+          // event_start_dateがない場合は除外
+          if (!post.event_start_date) {
+            return false;
+          }
+
+          const startDate = new Date(post.event_start_date);
+          startDate.setHours(0, 0, 0, 0); // 開始日の0時0分
+
+          // event_end_dateがある場合
+          if (post.event_end_date) {
+            const endDate = new Date(post.event_end_date);
+            endDate.setHours(23, 59, 59, 999); // 終了日の23時59分
+            
+            // 現在時刻が開始日以降かつ終了日以前 → 開催中
+            return now >= startDate && now <= endDate;
+          }
+          
+          // event_end_dateがない場合は、event_start_dateの当日のみ開催中とみなす
+          const startDateEnd = new Date(post.event_start_date);
+          startDateEnd.setHours(23, 59, 59, 999);
+          
+          return now >= startDate && now <= startDateEnd;
+        });
+      } else {
+        // 🔥 イベント情報以外のカテゴリー（聖地巡礼、観光スポット、温泉、グルメ）
+        // expires_atのみでフィルタリング（期限がなければ常に表示）
+        finalFilteredData = data.filter((post) => {
           if (!post.expires_at) return true; // expires_atがない場合は有効とみなす
           const expiresAt = new Date(post.expires_at);
           return now <= expiresAt;
-        }
-      });
+        });
+      }
+
+      console.log(`2. ${selectedCategory}フィルタリング後:`, finalFilteredData.length, '件');
 
       // 🔥 現在地からの距離を計算して近い順にソート
       const postsWithDistance = finalFilteredData
@@ -817,10 +816,8 @@ export function MapView() {
         const position = new window.google.maps.LatLng(offsetPosition.lat, offsetPosition.lng);
         const markerTitle = `${post.store_name} - ${post.category || '投稿'}`;
         
-        // タイトルを決定（イベント情報の場合はevent_name、その他はcontent）
-        const title = post.category === 'イベント情報' 
-          ? (post.event_name || post.content)
-          : post.content;
+        // 🔥 タイトルを決定（すべてのカテゴリでevent_nameを優先、なければcontent）
+        const title = post.event_name || post.content;
 
         // 🔥 画像アイコンを作成（カテゴリとタイトルを渡す）
         const markerIcon = await createCategoryPinIcon(
@@ -1543,10 +1540,8 @@ export function MapView() {
             className="absolute bottom-4 left-4 right-4 z-40"
           >
             {nearbyPosts.map((post) => {
-              // タイトルを決定（イベント情報の場合はevent_name、その他はcontent）
-              const displayTitle = post.category === 'イベント情報' 
-                ? (post.event_name || post.content)
-                : post.content;
+              // 🔥 タイトルを決定（すべてのカテゴリでevent_nameを優先、なければcontent）
+              const displayTitle = post.event_name || post.content;
               // チェックイン可能かどうかを判定
               // savedLocationを優先的に使用（fetchPostsと同じロジック）
               const effectiveLatitude = savedLocation?.lat || latitude;
