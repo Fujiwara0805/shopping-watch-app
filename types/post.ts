@@ -44,8 +44,9 @@ export interface Post {
   city?: string | null; // 市町村
   
   // 🔥 新規カテゴリーフィールド
-  collaboration?: string | null; // コラボ情報
+  campaign?: string | null; // キャンペーン情報（旧：collaboration）
   enable_checkin?: boolean | null; // GPSチェックイン対象フラグ
+  hashtags?: string[] | null; // ハッシュタグ配列
 }
 
 export interface AuthorProfile {

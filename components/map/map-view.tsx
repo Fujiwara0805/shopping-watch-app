@@ -42,13 +42,12 @@ interface PostMarkerData {
 }
 
 // カテゴリの型定義
-type PostCategory = 'イベント情報' | '聖地巡礼' | '観光スポット' | '温泉' | 'グルメ';
+type PostCategory = 'イベント情報' | '観光スポット' | '温泉' | 'グルメ';
 
 // 🔥 カテゴリごとの色とアイコンを定義
 const getCategoryConfig = (category: PostCategory) => {
   const configs = {
     'イベント情報': { color: '#73370c', icon: 'calendar' },
-    '聖地巡礼': { color: '#3ecf8e', icon: 'shrine' },
     '観光スポット': { color: '#0066CC', icon: 'camera' },
     '温泉': { color: '#FF6B6B', icon: 'hotspring' },
     'グルメ': { color: '#FF8C00', icon: 'food' },
@@ -71,15 +70,6 @@ const createSimpleCategoryIcon = (category: PostCategory) => {
           <line x1="2" y1="7" x2="14" y2="7" stroke="white" stroke-width="1.5"/>
           <line x1="5" y1="2" x2="5" y2="5" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
           <line x1="11" y1="2" x2="11" y2="5" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
-        </g>
-      `;
-      break;
-    case 'shrine':
-      iconSvg = `
-        <g transform="translate(${size/2 - 5}, ${size/2 - 4}) scale(${iconScale})">
-          <path d="M 8 2 L 4 6 L 4 10 L 12 10 L 12 6 Z" fill="none" stroke="white" stroke-width="1.5"/>
-          <line x1="8" y1="2" x2="8" y2="10" stroke="white" stroke-width="1.5"/>
-          <circle cx="8" cy="12" r="2" fill="none" stroke="white" stroke-width="1.5"/>
         </g>
       `;
       break;
@@ -640,7 +630,7 @@ export function MapView() {
           return now >= startDate && now <= startDateEnd;
         });
       } else {
-        // 🔥 イベント情報以外のカテゴリー（聖地巡礼、観光スポット、温泉、グルメ）
+        // 🔥 イベント情報以外のカテゴリー（観光スポット、温泉、グルメ）
         // expires_atのみでフィルタリング（期限がなければ常に表示）
         finalFilteredData = data.filter((post) => {
           if (!post.expires_at) return true; // expires_atがない場合は有効とみなす
@@ -1453,16 +1443,6 @@ export function MapView() {
                   className={selectedCategory === 'イベント情報' ? 'bg-accent' : ''}
                 >
                   イベント情報
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => {
-                    setSelectedCategory('聖地巡礼');
-                    setSelectedPost(null);
-                    setNearbyPosts([]);
-                  }}
-                  className={selectedCategory === '聖地巡礼' ? 'bg-accent' : ''}
-                >
-                  聖地巡礼
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => {

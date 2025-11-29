@@ -1,5 +1,5 @@
 export const calculateExpiresAt = (
-  expiryOption: '15m' | '30m' | '45m' | '60m' | '12h' | '24h' | 'days' | '90d',
+  expiryOption: '15m' | '30m' | '45m' | '60m' | '12h' | '24h' | 'days' | '30d' | '90d',
   customMinutes?: number,
   customDays?: number
 ): Date => {
@@ -24,6 +24,9 @@ export const calculateExpiresAt = (
       break;
     case '24h':
       minutesToAdd = 24 * 60; // 24時間 = 1440分
+      break;
+    case '30d':
+      minutesToAdd = 30 * 24 * 60; // 30日間 = 43,200分
       break;
     case '90d':
       minutesToAdd = 90 * 24 * 60; // 90日間 = 129,600分

@@ -31,13 +31,13 @@ declare global {
 }
 
 // カテゴリーの型定義
-export type PostCategory = 'イベント情報' | '聖地巡礼' | '観光スポット' | '温泉' | 'グルメ';
+export type PostCategory = 'イベント情報' | '観光スポット' | '温泉' | 'グルメ';
 
 // カテゴリーごとのバリデーションスキーマ
 const createPostSchema = (category: PostCategory) => {
   const baseSchema = {
     // z.enum()に変更して、すべてのカテゴリを許可（カテゴリ変更時のバリデーションエラーを防ぐ）
-    category: z.enum(['イベント情報', '聖地巡礼', '観光スポット', '温泉', 'グルメ'], {
+    category: z.enum(['イベント情報', '観光スポット', '温泉', 'グルメ'], {
       required_error: 'カテゴリを選択してください',
     }),
     storeId: z.string().min(1, { message: '場所の選択は必須です' }),
@@ -50,7 +50,8 @@ const createPostSchema = (category: PostCategory) => {
     prefecture: z.string().max(20).optional(),
     city: z.string().max(50).optional(),
     enableCheckin: z.boolean().default(false),
-    collaboration: z.string().max(200).optional(),
+    campaign: z.string().max(200).optional(),
+    hashtags: z.string().max(200).optional(), // カンマ区切りのハッシュタグ
   };
 
   // イベント情報の場合
@@ -76,10 +77,10 @@ const createPostSchema = (category: PostCategory) => {
     });
   }
 
-  // その他のカテゴリー（聖地巡礼、観光スポット、温泉、グルメ）
+  // その他のカテゴリー（観光スポット、温泉、グルメ）
   return z.object({
     ...baseSchema,
-    expiryOption: z.enum(['90days', 'unlimited'], { required_error: '掲載期間を選択してください' }),
+    expiryOption: z.enum(['30days', '90days', 'unlimited'], { required_error: '掲載期間を選択してください' }),
   });
 };
 
@@ -114,10 +115,10 @@ const calculateEventExpiryDays = (startDate: string, endDate?: string): number =
 // カテゴリーごとの表示項目
 const getCategoryFields = (category: PostCategory): string[] => {
   if (category === 'イベント情報') {
-    return ['location', 'eventName', 'eventDate', 'eventPrice', 'eventArea', 'url', 'image', 'phoneNumber', 'file', 'enableCheckin'];
+    return ['location', 'eventName', 'eventDate', 'eventPrice', 'eventArea', 'url', 'image', 'phoneNumber', 'file', 'enableCheckin', 'hashtags'];
   }
-  // 聖地巡礼、観光スポット、温泉、グルメ
-  return ['location', 'eventArea', 'url', 'image', 'phoneNumber', 'enableCheckin', 'collaboration'];
+  // 観光スポット、温泉、グルメ
+  return ['location', 'eventArea', 'url', 'image', 'phoneNumber', 'enableCheckin', 'campaign', 'hashtags'];
 };
 
 // フィールドの表示名とアイコン
@@ -133,7 +134,8 @@ const getFieldDisplayInfo = (field: string) => {
     eventPrice: { label: '料金', icon: Tag },
     eventArea: { label: 'エリア情報', icon: MapPin },
     enableCheckin: { label: 'GPSチェックイン', icon: MapPin },
-    collaboration: { label: 'コラボ', icon: Users },
+    campaign: { label: 'キャンペーン', icon: Users },
+    hashtags: { label: 'ハッシュタグ', icon: Tag },
   };
   
   return fieldMap[field as keyof typeof fieldMap] || { label: field, icon: StoreIcon };
@@ -188,7 +190,7 @@ export default function PostPage() {
       content: '',
       url: '',
       customExpiryDays: 7,
-      expiryOption: '90days' as '90days' | 'unlimited',
+      expiryOption: '30days' as '30days' | '90days' | 'unlimited',
       store_latitude: undefined,
       store_longitude: undefined,
       phoneNumber: '',
@@ -199,7 +201,8 @@ export default function PostPage() {
       prefecture: '',
       city: '',
       enableCheckin: false,
-      collaboration: '',
+      campaign: '',
+      hashtags: '',
     },
     mode: 'onChange',
   });
@@ -216,14 +219,15 @@ export default function PostPage() {
       storeName: '',
       content: '',
       url: '',
-      expiryOption: '90days' as '90days' | 'unlimited',
+      expiryOption: '30days' as '30days' | '90days' | 'unlimited',
       store_latitude: undefined,
       store_longitude: undefined,
       phoneNumber: '',
       prefecture: '',
       city: '',
       enableCheckin: false,
-      collaboration: '',
+      campaign: '',
+      hashtags: '',
     };
 
     if (selectedCategory === 'イベント情報') {
@@ -451,7 +455,11 @@ export default function PostPage() {
         }
       } else {
         // その他のカテゴリーの場合
-        if (values.expiryOption === '90days') {
+        if (values.expiryOption === '30days') {
+          postData.expiry_option = '30d';
+          postData.custom_expiry_minutes = 30 * 24 * 60;
+          postData.expires_at = calculateExpiresAt('30d').toISOString();
+        } else if (values.expiryOption === '90days') {
           postData.expiry_option = '90d';
           postData.custom_expiry_minutes = 90 * 24 * 60;
           postData.expires_at = calculateExpiresAt('90d').toISOString();
@@ -467,9 +475,19 @@ export default function PostPage() {
         }
       }
 
-      // コラボフィールド（新規カテゴリーのみ）
-      if (selectedCategory !== 'イベント情報' && values.collaboration) {
-        postData.collaboration = values.collaboration.trim();
+      // キャンペーンフィールド（新規カテゴリーのみ）
+      if (selectedCategory !== 'イベント情報' && values.campaign) {
+        postData.campaign = values.campaign.trim();
+      }
+
+      // ハッシュタグの処理
+      if (values.hashtags && values.hashtags.trim() !== '') {
+        // カンマ区切りのハッシュタグを配列に変換
+        const hashtagArray = values.hashtags
+          .split(',')
+          .map((tag: string) => tag.trim())
+          .filter((tag: string) => tag.length > 0);
+        postData.hashtags = hashtagArray.length > 0 ? hashtagArray : null;
       }
 
       // 🔥 店舗の位置情報を設定
@@ -505,12 +523,13 @@ export default function PostPage() {
         storeName: '',
         content: '',
         url: '',
-        expiryOption: '90days' as '90days' | 'unlimited',
+        expiryOption: '30days' as '30days' | '90days' | 'unlimited',
         phoneNumber: '',
         prefecture: '',
         city: '',
         enableCheckin: false,
-        collaboration: '',
+        campaign: '',
+        hashtags: '',
       };
 
       if (selectedCategory === 'イベント情報') {
@@ -725,7 +744,8 @@ export default function PostPage() {
     eventPrice: false,
     eventArea: false,
     enableCheckin: false,
-    collaboration: false,
+    campaign: false,
+    hashtags: false,
   });
 
   // オプションフィールドの切り替え
@@ -776,8 +796,11 @@ export default function PostPage() {
           case 'enableCheckin':
             form.setValue('enableCheckin', false, { shouldValidate: true });
             break;
-          case 'collaboration':
-            form.setValue('collaboration', '', { shouldValidate: true });
+          case 'campaign':
+            form.setValue('campaign', '', { shouldValidate: true });
+            break;
+          case 'hashtags':
+            form.setValue('hashtags', '', { shouldValidate: true });
             break;
           default:
             break;
@@ -866,7 +889,6 @@ export default function PostPage() {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="イベント情報">イベント情報</SelectItem>
-                          <SelectItem value="聖地巡礼">聖地巡礼</SelectItem>
                           <SelectItem value="観光スポット">観光スポット</SelectItem>
                           <SelectItem value="温泉">温泉</SelectItem>
                           <SelectItem value="グルメ">グルメ</SelectItem>
@@ -994,8 +1016,9 @@ export default function PostPage() {
                             <SelectValue placeholder="掲載期間を選択" />
                           </SelectTrigger>
                           <SelectContent>
+                            <SelectItem value="30days">30日間</SelectItem>
                             <SelectItem value="90days">90日間</SelectItem>
-                            <SelectItem value="unlimited">期間を設けない（手動削除まで表示）</SelectItem>
+                            <SelectItem value="unlimited">無期限</SelectItem>
                           </SelectContent>
                         </Select>
                       </FormControl>
@@ -1400,17 +1423,17 @@ export default function PostPage() {
                                 />
                               )}
 
-                              {/* コラボフィールド（新規カテゴリーのみ） */}
-                              {field === 'collaboration' && selectedCategory !== 'イベント情報' && (
+                              {/* キャンペーンフィールド（新規カテゴリーのみ） */}
+                              {field === 'campaign' && selectedCategory !== 'イベント情報' && (
                                 <FormField
                                   control={form.control}
-                                  name="collaboration"
+                                  name="campaign"
                                   render={({ field }) => (
                                     <FormItem>
-                                      <FormLabel>コラボ</FormLabel>
+                                      <FormLabel>キャンペーン</FormLabel>
                                       <FormControl>
                                         <Textarea
-                                          placeholder="コラボ情報を入力してください"
+                                          placeholder="キャンペーン情報を入力してください"
                                           className="resize-none"
                                           style={{ fontSize: '16px' }}
                                           rows={3}
@@ -1418,6 +1441,33 @@ export default function PostPage() {
                                           {...field}
                                         />
                                       </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                              )}
+
+                              {/* ハッシュタグフィールド */}
+                              {field === 'hashtags' && (
+                                <FormField
+                                  control={form.control}
+                                  name="hashtags"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>ハッシュタグ</FormLabel>
+                                      <FormControl>
+                                        <Textarea
+                                          placeholder="カンマ区切りで入力（例: 観光, グルメ, 温泉）"
+                                          className="resize-none"
+                                          style={{ fontSize: '16px' }}
+                                          rows={2}
+                                          maxLength={200}
+                                          {...field}
+                                        />
+                                      </FormControl>
+                                      <p className="text-xs text-gray-500 mt-1">
+                                        💡 複数のハッシュタグを入力する場合は、カンマ（,）で区切ってください
+                                      </p>
                                       <FormMessage />
                                     </FormItem>
                                   )}
