@@ -952,6 +952,21 @@ export function MapView() {
             { lightness: 60 }
           ]
         },
+        // 🔥 POI（店舗・施設）のラベルを非表示
+        {
+          featureType: "poi",
+          elementType: "labels",
+          stylers: [
+            { visibility: "off" }
+          ]
+        },
+        // 🔥 ビジネス（店舗）のラベルを非表示
+        {
+          featureType: "poi.business",
+          stylers: [
+            { visibility: "off" }
+          ]
+        },
         // ラベルを読みやすく（黒に近いグレー）
         {
           featureType: "all",
@@ -968,15 +983,6 @@ export function MapView() {
             { color: "#ffffff" },  // 白い縁取り
             { lightness: 100 },
             { visibility: "on" }
-          ]
-        },
-        // アイコンを読みやすく
-        {
-          featureType: "poi",
-          elementType: "labels.icon",
-          stylers: [
-            { saturation: -100 },
-            { lightness: 0 }
           ]
         }
       ];
