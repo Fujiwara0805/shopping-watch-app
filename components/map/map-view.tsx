@@ -211,7 +211,7 @@ const createCategoryPinIcon = async (
   const optimizedImageUrl = optimizeCloudinaryImageUrl(imageUrl);
 
   // 🔥 mapzineスタイル: 40x40サイズに縮小 + 鮮明なテキスト
-  const imageSize = 40;
+  const imageSize = 45;
   const borderWidth = 2;
   const textPadding = 4;
   const maxTextWidth = 80; // テキストの最大幅
