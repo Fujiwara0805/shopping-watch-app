@@ -973,7 +973,40 @@ export function MapView() {
             { visibility: "on" }
           ]
         },
-        // アイコンを読みやすく
+        // 🔥 POI（施設）全般のラベルを非表示（施設名・番号表記を含む）
+        // この設定をallのラベル設定の後に配置して優先度を上げる
+        {
+          featureType: "poi",
+          elementType: "labels",
+          stylers: [
+            { visibility: "off" }
+          ]
+        },
+        // 🔥 店舗名のラベルを非表示（念のため明示的に指定）
+        {
+          featureType: "poi.business",
+          elementType: "labels",
+          stylers: [
+            { visibility: "off" }
+          ]
+        },
+        // 🔥 建物番号・エリア番号などの番号ラベルを非表示
+        {
+          featureType: "poi",
+          elementType: "labels.text",
+          stylers: [
+            { visibility: "off" }
+          ]
+        },
+        // 🔥 行政区域の番号ラベルも非表示
+        {
+          featureType: "administrative",
+          elementType: "labels",
+          stylers: [
+            { visibility: "off" }
+          ]
+        },
+        // アイコンを読みやすく（ラベル非表示設定の後に配置）
         {
           featureType: "poi",
           elementType: "labels.icon",
