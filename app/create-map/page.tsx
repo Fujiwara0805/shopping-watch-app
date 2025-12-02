@@ -276,7 +276,7 @@ export default function CreateMapPage() {
       
       // 掲載期限を計算
       const expiresAt = values.expiryOption === '30days' 
-        ? calculateExpiresAt('30d')
+        ? calculateExpiresAt('days', undefined, 30)
         : values.expiryOption === '90days'
         ? calculateExpiresAt('90d')
         : (() => {
