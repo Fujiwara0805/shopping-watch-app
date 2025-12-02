@@ -9,7 +9,7 @@ import { z } from 'zod';
 import { 
   Upload, X, MapPin, Plus, Trash2, 
   Loader2, Image as ImageIcon, Link as LinkIcon, Tag, ClockIcon,
-  FileText, CheckCircle
+  MapIcon, CheckCircle, ChevronUp, ChevronDown, Home, User, ArrowLeft
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -75,6 +75,7 @@ export default function CreateMapPage() {
   // ハッシュタグ管理
   const [hashtags, setHashtags] = useState<string[]>([]);
   const [hashtagInput, setHashtagInput] = useState('');
+  const prevHashtagsLengthRef = useRef(0);
   
   // 複数場所の管理
   const [locations, setLocations] = useState<LocationData[]>([{
@@ -92,6 +93,23 @@ export default function CreateMapPage() {
   const [currentLocationIndex, setCurrentLocationIndex] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  // 必須項目の入力チェック
+  const isFormValid = () => {
+    // タイトルが入力されているか
+    const hasTitle = form.watch('title').trim().length > 0;
+    
+    // 少なくとも1つのスポットが完全に入力されているか
+    const hasValidLocation = locations.some(location => 
+      location.storeName && 
+      location.storeId && 
+      location.content && 
+      location.content.length >= 5 && 
+      location.imageFiles.length > 0
+    );
+    
+    return hasTitle && hasValidLocation;
+  };
   
   // ログインチェック
   useEffect(() => {
@@ -105,7 +123,7 @@ export default function CreateMapPage() {
     const tag = hashtagInput.trim().replace(/^#/, '');
     if (tag && !hashtags.includes(tag) && hashtags.length < 10) {
       setHashtags([...hashtags, tag]);
-      setHashtagInput(''); // 🔥 入力フォームをリセット
+      setHashtagInput(''); // 入力フォームをリセット
     }
   };
   
@@ -113,6 +131,15 @@ export default function CreateMapPage() {
   const removeHashtag = (tagToRemove: string) => {
     setHashtags(hashtags.filter(tag => tag !== tagToRemove));
   };
+
+  // ハッシュタグが追加されたら入力フォームをリセット
+  useEffect(() => {
+    // ハッシュタグが追加された場合（長さが増えた場合）のみ入力フォームをリセット
+    if (hashtags.length > prevHashtagsLengthRef.current) {
+      setHashtagInput('');
+    }
+    prevHashtagsLengthRef.current = hashtags.length;
+  }, [hashtags.length]);
   
   // 場所を追加
   const addLocation = () => {
@@ -146,6 +173,27 @@ export default function CreateMapPage() {
     
     if (currentLocationIndex >= newLocations.length) {
       setCurrentLocationIndex(newLocations.length - 1);
+    }
+  };
+
+  // 場所の順番を入れ替え
+  const moveLocation = (index: number, direction: 'up' | 'down') => {
+    if (direction === 'up' && index === 0) return;
+    if (direction === 'down' && index === locations.length - 1) return;
+    
+    const newLocations = [...locations];
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    
+    // 配列の要素を入れ替え
+    [newLocations[index], newLocations[targetIndex]] = [newLocations[targetIndex], newLocations[index]];
+    
+    setLocations(newLocations);
+    
+    // 現在選択中のインデックスも更新
+    if (currentLocationIndex === index) {
+      setCurrentLocationIndex(targetIndex);
+    } else if (currentLocationIndex === targetIndex) {
+      setCurrentLocationIndex(index);
     }
   };
   
@@ -355,13 +403,8 @@ export default function CreateMapPage() {
         throw new Error(`マップの作成に失敗しました: ${mapError?.message}`);
       }
       
-      toast({
-        title: "🎉 マップ作成完了！",
-        description: `「${values.title}」を作成しました`,
-        duration: 3000,
-      });
-      
-      router.push('/my-maps');
+      // 完了画面に遷移
+      router.push('/create-map/complete');
       
     } catch (error: any) {
       console.error("マップ作成エラー:", error);
@@ -399,12 +442,12 @@ export default function CreateMapPage() {
                 name="title"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-sm font-semibold">
-                      マップのタイトル<span className="text-destructive ml-1">*</span>
+                    <FormLabel className="text-base font-semibold">
+                      Mapのタイトル<span className="text-destructive ml-1">*</span>
                     </FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="例: 2025年冬の温泉巡り"
+                        placeholder="例: 温泉巡りマップ"
                         className="text-base h-12"
                         maxLength={100}
                         {...field}
@@ -499,9 +542,9 @@ export default function CreateMapPage() {
             {/* スポットリスト */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <h2 className="text-base font-bold text-[#73370c] flex items-center">
-                  <MapPin className="mr-2 h-5 w-5" />
-                  スポット
+                <h2 className="text-lg font-bold text-[#73370c] flex items-center">
+                  <MapIcon className="mr-2 h-5 w-5" />
+                  スポットの追加
                 </h2>
                 <Button
                   type="button"
@@ -513,41 +556,6 @@ export default function CreateMapPage() {
                   <Plus className="h-4 w-4" />
                   追加
                 </Button>
-              </div>
-              
-              {/* スポットのタブ */}
-              <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1">
-                {locations.map((location, index) => (
-                  <div key={location.id} className="flex-shrink-0 flex items-center gap-1">
-                    <button
-                      type="button"
-                      onClick={() => setCurrentLocationIndex(index)}
-                      className={cn(
-                        "min-w-[64px] px-4 py-2.5 rounded-full font-bold text-sm transition-all",
-                        currentLocationIndex === index
-                          ? "bg-[#73370c] text-white shadow-md"
-                          : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                      )}
-                    >
-                      {toCircledNumber(index + 1)}
-                      {location.storeName && (
-                        <span className="ml-1.5 font-normal opacity-90">
-                          {location.storeName.slice(0, 4)}{location.storeName.length > 4 ? '...' : ''}
-                        </span>
-                      )}
-                    </button>
-                    {locations.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => removeLocation(index)}
-                        className="flex-shrink-0 p-1.5 rounded-full bg-red-100 hover:bg-red-200 text-red-600 transition-colors"
-                        aria-label={`スポット${toCircledNumber(index + 1)}を削除`}
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                    )}
-                  </div>
-                ))}
               </div>
               
               {/* 現在選択されているスポットのフォーム */}
@@ -579,25 +587,110 @@ export default function CreateMapPage() {
                 <p className="text-sm text-red-800">{submitError}</p>
               </div>
             )}
+
+            {/* スポットリスト */}
+            {locations.some(loc => loc.storeName) && (
+              <div style={{ backgroundColor: '#99623b' }} className="rounded-xl border border-amber-800 p-4 shadow-sm">
+                <h3 className="text-base font-bold mb-3 flex items-center" style={{ color: '#fef3e7' }}>
+                  <MapPin className="mr-2 h-5 w-5" />
+                  スポット一覧
+                </h3>
+                <div className="space-y-2">
+                  {locations.map((location, index) => (
+                    <motion.div
+                      key={location.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      style={{ backgroundColor: '#72370d' }}
+                      className="flex items-center gap-2 p-3 rounded-lg border border-amber-800 hover:bg-amber-900 transition-colors"
+                    >
+                      {/* 順番表示 */}
+                      <span className="text-base font-bold min-w-[32px]" style={{ color: '#fef3e7' }}>
+                        {toCircledNumber(index + 1)}
+                      </span>
+                      
+                      {/* スポット名（フルネーム） */}
+                      <span className="flex-1 text-base font-medium" style={{ color: '#fef3e7' }}>
+                        {location.storeName || `スポット${index + 1}`}
+                      </span>
+                      
+                      {/* 順番入れ替えと削除ボタン */}
+                      <div className="flex items-center gap-1">
+                        {/* 順番入れ替えボタン */}
+                        <div className="flex flex-col gap-1">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 p-0 hover:bg-amber-900"
+                            onClick={() => moveLocation(index, 'up')}
+                            disabled={index === 0}
+                          >
+                            <ChevronUp className="h-4 w-4" style={{ color: '#fef3e7' }} />
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 p-0 hover:bg-amber-900"
+                            onClick={() => moveLocation(index, 'down')}
+                            disabled={index === locations.length - 1}
+                          >
+                            <ChevronDown className="h-4 w-4" style={{ color: '#fef3e7' }} />
+                          </Button>
+                        </div>
+                        
+                        {/* 削除ボタン */}
+                        {locations.length > 1 && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 p-0 hover:bg-red-500 text-red-200"
+                            onClick={() => removeLocation(index)}
+                          >
+                            <Trash2 className="h-5 w-5 text-red-200" />
+                          </Button>
+                        )}
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            )}
             
             {/* 投稿ボタン */}
-            <Button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full h-14 text-lg font-bold rounded-xl shadow-lg bg-[#73370c] hover:bg-[#8b4513]"
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  作成中...
-                </>
-              ) : (
-                <>
-                  <CheckCircle className="mr-2 h-5 w-5" />
-                  マップを作成する
-                </>
-              )}
-            </Button>
+            <div className="space-y-2">
+              <Button
+                type="submit"
+                disabled={isSubmitting || !isFormValid()}
+                className="w-full h-14 text-lg font-bold rounded-xl shadow-lg bg-[#73370c] hover:bg-[#8b4513] disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    作成中...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="mr-2 h-5 w-5" />
+                    マップを作成する
+                  </>
+                )}
+              </Button>
+              <p className="text-xs text-gray-500 text-center">
+                <span className="text-red-600">※は必須項目です</span>
+              </p>
+              
+              {/* 戻るボタン */}
+              <Button
+                type="button"
+                onClick={() => router.push('/my-maps')}
+                className="w-full h-12 text-base font-semibold rounded-xl shadow-md bg-gray-200 hover:bg-gray-300 text-gray-700"
+              >
+                戻る
+              </Button>
+            </div>
           </form>
         </Form>
       </motion.div>
@@ -702,14 +795,14 @@ function LocationForm({
         )}
       </div>
       
-      {/* 説明 */}
+      {/* スポット説明 */}
       <div>
         <Label className="text-sm font-semibold mb-2 block">
-          説明<span className="text-destructive ml-1">*</span>
+          スポット説明<span className="text-destructive ml-1">*</span>
         </Label>
         <Textarea
           placeholder="このスポットについて説明してください（5文字以上）"
-          className="resize-none text-base rounded-xl min-h-[100px]"
+          className="resize-none text-base rounded-xl min-h-[180px]"
           maxLength={800}
           value={location.content}
           onChange={(e) => updateLocation(locationIndex, 'content', e.target.value)}
