@@ -202,17 +202,17 @@ export function SpotDetailClient({ spotId }: SpotDetailClientProps) {
   // ローディング中
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           className="text-center"
         >
           <div className="relative">
-            <div className="w-16 h-16 border-4 border-amber-200 rounded-full animate-spin border-t-amber-600 mx-auto" />
-            <MapPin className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-6 w-6 text-amber-600" />
+            <div className="w-16 h-16 border-4 border-gray-200 rounded-full animate-spin mx-auto" style={{ borderTopColor: '#73370c' }} />
+            <MapPin className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-6 w-6 text-[#73370c]" />
           </div>
-          <p className="mt-4 text-amber-800 font-medium">読み込み中...</p>
+          <p className="mt-4 text-[#73370c] font-medium">読み込み中...</p>
         </motion.div>
       </div>
     );
@@ -221,7 +221,7 @@ export function SpotDetailClient({ spotId }: SpotDetailClientProps) {
   // エラー表示
   if (error || !mapData) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50 p-4">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -230,7 +230,7 @@ export function SpotDetailClient({ spotId }: SpotDetailClientProps) {
           <AlertCircle className="h-12 w-12 text-red-400 mx-auto mb-3" />
           <h2 className="text-xl font-bold text-gray-800 mb-2">エラー</h2>
           <p className="text-gray-600 text-sm mb-4">{error || '場所が見つかりませんでした。'}</p>
-          <Button onClick={handleClose} size="sm" className="bg-amber-600 hover:bg-amber-700">
+          <Button onClick={handleClose} size="sm" style={{ backgroundColor: '#73370c' }} className="text-white hover:opacity-90">
             戻る
           </Button>
         </motion.div>
@@ -239,21 +239,18 @@ export function SpotDetailClient({ spotId }: SpotDetailClientProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50">
+    <div className="min-h-screen bg-gray-50">
       {/* 固定ヘッダー */}
       <motion.header
         variants={headerVariants}
         initial="hidden"
         animate="visible"
-        className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-amber-100 shadow-sm"
+        className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-200 shadow-sm"
       >
-        <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
-          <h1 className="text-lg font-bold text-gray-800 truncate pr-4 flex-1">
-            {mapData.title}
-          </h1>
+        <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-end">
           <button
             onClick={handleClose}
-            className="p-2 rounded-full hover:bg-amber-100 transition-colors flex-shrink-0"
+            className="p-2 rounded-full hover:bg-gray-100 transition-colors flex-shrink-0"
             aria-label="閉じる"
           >
             <X className="h-5 w-5 text-gray-600" />
@@ -272,17 +269,7 @@ export function SpotDetailClient({ spotId }: SpotDetailClientProps) {
           {/* タイトルセクション */}
           <motion.section variants={itemVariants} className="py-6">
             <div className="text-center">
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ type: "spring", delay: 0.3 }}
-                className="inline-flex items-center gap-2 px-3 py-1.5 bg-amber-100 text-amber-700 rounded-full text-sm font-medium mb-4"
-              >
-                <MapPin className="h-4 w-4" />
-                {mapData.total_locations}スポット
-              </motion.div>
-              
-              <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4 leading-tight">
+              <h2 className="text-2xl md:text-3xl font-bold mb-4 leading-tight" style={{ color: '#73370c' }}>
                 {mapData.title}
               </h2>
 
@@ -295,7 +282,8 @@ export function SpotDetailClient({ spotId }: SpotDetailClientProps) {
                       initial={{ opacity: 0, scale: 0.8 }}
                       animate={{ opacity: 1, scale: 1 }}
                       transition={{ delay: 0.4 + index * 0.05 }}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 bg-white text-amber-700 text-xs font-medium rounded-full shadow-sm border border-amber-100"
+                      className="inline-flex items-center gap-1 px-2.5 py-1 bg-white text-xs font-medium rounded-full shadow-sm border border-gray-200"
+                      style={{ color: '#73370c' }}
                     >
                       <Tag className="h-3 w-3" />
                       {tag}
@@ -312,79 +300,70 @@ export function SpotDetailClient({ spotId }: SpotDetailClientProps) {
               <motion.article
                 key={index}
                 variants={itemVariants}
-                className="bg-white rounded-2xl shadow-lg overflow-hidden border border-amber-50"
+                className="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-200"
               >
-                {/* 画像セクション */}
-                {location.image_urls && location.image_urls.length > 0 && (
-                  <div className="relative aspect-[16/10] bg-gray-100">
-                    <img
-                      src={optimizeCloudinaryImageUrl(location.image_urls[currentImageIndices[index] || 0])}
-                      alt={location.store_name}
-                      className="w-full h-full object-cover cursor-pointer transition-transform hover:scale-[1.02]"
-                      onClick={() => setExpandedImageIndex({ spotIndex: index, imageIndex: currentImageIndices[index] || 0 })}
-                    />
-                    
-                    {/* 画像ナビゲーション */}
-                    {location.image_urls.length > 1 && (
-                      <>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); handleImageNav(index, 'prev', location.image_urls.length); }}
-                          className="absolute left-2 top-1/2 -translate-y-1/2 p-1.5 bg-black/40 hover:bg-black/60 rounded-full transition-colors"
-                        >
-                          <ChevronLeft className="h-5 w-5 text-white" />
-                        </button>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); handleImageNav(index, 'next', location.image_urls.length); }}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-black/40 hover:bg-black/60 rounded-full transition-colors"
-                        >
-                          <ChevronRight className="h-5 w-5 text-white" />
-                        </button>
-                        
-                        {/* 画像カウンター */}
-                        <div className="absolute bottom-2 right-2 flex items-center gap-1 px-2 py-1 bg-black/50 rounded-full text-white text-xs">
-                          <ImageIcon className="h-3 w-3" />
-                          {(currentImageIndices[index] || 0) + 1}/{location.image_urls.length}
-                        </div>
-                      </>
-                    )}
-                  </div>
-                )}
-
                 {/* コンテンツセクション */}
                 <div className="p-5">
                   {/* 場所名（番号付き） */}
-                  <h3 className="text-xl font-bold text-gray-900 mb-3 flex items-start gap-2">
-                    <span className="text-amber-600 flex-shrink-0">{toCircledNumber(index + 1)}</span>
-                    <span className="leading-tight">{location.store_name}</span>
+                  <h3 className="text-xl font-bold mb-4 flex items-start gap-2">
+                    <span className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm" style={{ backgroundColor: '#73370c' }}>
+                      {toCircledNumber(index + 1)}
+                    </span>
+                    <span className="leading-tight pt-1" style={{ color: '#73370c' }}>{location.store_name}</span>
                   </h3>
 
+                  {/* 画像セクション */}
+                  {location.image_urls && location.image_urls.length > 0 && (
+                    <div className="relative aspect-[16/10] bg-gray-100 rounded-lg overflow-hidden mb-4">
+                      <img
+                        src={optimizeCloudinaryImageUrl(location.image_urls[currentImageIndices[index] || 0])}
+                        alt={location.store_name}
+                        className="w-full h-full object-cover cursor-pointer transition-transform hover:scale-[1.02]"
+                        onClick={() => setExpandedImageIndex({ spotIndex: index, imageIndex: currentImageIndices[index] || 0 })}
+                      />
+                      
+                      {/* 画像ナビゲーション */}
+                      {location.image_urls.length > 1 && (
+                        <>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleImageNav(index, 'prev', location.image_urls.length); }}
+                            className="absolute left-2 top-1/2 -translate-y-1/2 p-1.5 bg-black/40 hover:bg-black/60 rounded-full transition-colors"
+                          >
+                            <ChevronLeft className="h-5 w-5 text-white" />
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleImageNav(index, 'next', location.image_urls.length); }}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-black/40 hover:bg-black/60 rounded-full transition-colors"
+                          >
+                            <ChevronRight className="h-5 w-5 text-white" />
+                          </button>
+                          
+                          {/* 画像カウンター */}
+                          <div className="absolute bottom-2 right-2 flex items-center gap-1 px-2 py-1 bg-black/50 rounded-full text-white text-xs">
+                            <ImageIcon className="h-3 w-3" />
+                            {(currentImageIndices[index] || 0) + 1}/{location.image_urls.length}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
+
                   {/* 説明文 */}
-                  <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-wrap mb-4">
+                  <p className="text-gray-700 text-base leading-relaxed whitespace-pre-wrap mb-4">
                     {location.content}
                   </p>
 
                   {/* アクションボタン */}
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex justify-center">
                     {location.store_latitude && location.store_longitude && (
                       <Button
                         onClick={() => openInGoogleMaps(location)}
                         size="sm"
-                        className="bg-amber-600 hover:bg-amber-700 text-white text-xs px-3 py-2 h-auto rounded-lg shadow-sm"
+                        className="text-white text-sm px-4 py-2 h-auto rounded-lg shadow-sm"
+                        style={{ backgroundColor: '#73370c' }}
                       >
-                        <Navigation className="mr-1.5 h-3.5 w-3.5" />
+                        <Navigation className="mr-1.5 h-4 w-4" />
                         地図で見る
-                      </Button>
-                    )}
-                    
-                    {location.url && (
-                      <Button
-                        onClick={() => window.open(location.url!, '_blank')}
-                        variant="outline"
-                        size="sm"
-                        className="border-amber-300 text-amber-700 hover:bg-amber-50 text-xs px-3 py-2 h-auto rounded-lg"
-                      >
-                        <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
-                        詳細を見る
                       </Button>
                     )}
                   </div>
