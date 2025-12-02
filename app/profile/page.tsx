@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Bell, LogOut, Settings, Edit,  Store as StoreIcon, Calendar,  User, CheckCircle,  ArrowRight, Trophy, Map, ShoppingBag, Megaphone } from 'lucide-react';
+import { Bell, LogOut, Settings, Edit,  Store as StoreIcon, Calendar,  User, CheckCircle,  ArrowRight, Trophy, Map, ShoppingBag, Megaphone, Plus } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -324,19 +324,13 @@ function ProfilePageContent() {
           }
 
           // 総いいね数を取得してハンターレベルを計算
-          const { data: likesData, error: likesError } = await supabase
-            .from('post_likes')
-            .select('post_id')
-            .in('post_id', 
-              await supabase
-                .from('posts')
-                .select('id')
-                .eq('app_profile_id', appProfileData.id)
-                .then(result => result.data?.map(post => post.id) || [])
-            );
+          const { data: postsWithLikes, error: likesError } = await supabase
+            .from('posts')
+            .select('likes_count')
+            .eq('app_profile_id', appProfileData.id);
 
-          if (!likesError && likesData) {
-            const totalLikes = likesData.length;
+          if (!likesError && postsWithLikes) {
+            const totalLikes = postsWithLikes.reduce((sum, post) => sum + (post.likes_count || 0), 0);
             const level = getHunterLevel(totalLikes);
             setCurrentUserLevel(level);
           }
@@ -563,6 +557,39 @@ function ProfilePageContent() {
               onNavigateToLineConnect={handleNavigateToLineConnect}
               onRefreshConnection={() => checkLineConnection(true)}
             />
+          </motion.div>
+          
+          <Separator className="my-3" />
+          
+          {/* マイマップセクション */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}
+            className="space-y-2"
+          >
+            <h3 className="text-lg font-bold text-gray-600 flex items-center mb-2">
+              <Map className="h-5 w-5 mr-2 text-green-600" />
+              マイマップ設定
+            </h3>
+            
+            <div className="space-y-2">
+              {/* マイマップ作成ボタン */}
+              <SettingItem
+                icon={Plus}
+                title="マイマップを作成"
+                description="新しいマイマップを作成"
+                action={() => router.push('/create-map')}
+              />
+              
+              {/* マイマップ編集ボタン */}
+              <SettingItem
+                icon={Map}
+                title="マイマップを編集"
+                description="既存のマイマップを編集・管理"
+                action={() => router.push('/my-maps')}
+              />
+            </div>
           </motion.div>
           
           <Separator className="my-3" />

@@ -3,13 +3,232 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MapPin, Menu, X } from 'lucide-react';
+import { MapPin, Menu, X, ChevronRight, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CustomModal } from '@/components/ui/custom-modal';
+import { supabase } from '@/lib/supabaseClient';
+
+// --- 公開マップ一覧セクション ---
+const PublicMapsSection = ({ onMapClick }: { onMapClick: (mapId: string) => void }) => {
+  const [publicMaps, setPublicMaps] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  useEffect(() => {
+    fetchPublicMaps();
+  }, []);
+
+  const fetchPublicMaps = async () => {
+    try {
+      // 基本情報とlocationsを取得
+      const { data, error } = await supabase
+        .from('maps')
+        .select('id, title, locations, created_at, hashtags')
+        .eq('is_deleted', false)
+        .eq('is_public', true) // 公開されているマップのみ
+        .order('created_at', { ascending: false })
+        .limit(12);
+
+      if (error) {
+        console.error('公開マップ取得エラー（詳細）:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
+        throw error;
+      }
+      
+      // locationsから最初の画像をカバー画像として、スポット数を計算
+      const mapsWithMetadata = (data || []).map(map => {
+        const locations = Array.isArray(map.locations) ? map.locations : [];
+        const totalLocations = locations.length;
+        
+        // 最初のロケーションの最初の画像をカバー画像として使用
+        let coverImageUrl = null;
+        for (const location of locations) {
+          if (location.image_urls && Array.isArray(location.image_urls) && location.image_urls.length > 0) {
+            coverImageUrl = location.image_urls[0];
+            break;
+          }
+        }
+        
+        return {
+          ...map,
+          cover_image_url: coverImageUrl,
+          total_locations: totalLocations
+        };
+      });
+      
+      setPublicMaps(mapsWithMetadata);
+    } catch (error: any) {
+      console.error('公開マップ取得エラー:', error);
+      console.error('エラーの詳細:', JSON.stringify(error, null, 2));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePrev = () => {
+    setCurrentIndex((prev) => (prev === 0 ? publicMaps.length - 1 : prev - 1));
+  };
+
+  const handleNext = () => {
+    setCurrentIndex((prev) => (prev === publicMaps.length - 1 ? 0 : prev + 1));
+  };
+
+  return (
+    <section className="py-20 sm:py-24 px-4 sm:px-8 bg-white relative overflow-hidden">
+      <div className="container mx-auto max-w-6xl relative z-10">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          viewport={{ once: true }}
+          className="text-center mb-12 sm:mb-20"
+        >
+          <p className="inline-block px-5 py-1 mb-4 text-xs sm:text-sm tracking-[0.18em] font-bold text-[#0f172a] border-b-2 border-[#d4af37]">
+            MY MAPS
+          </p>
+          <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold text-[#0f172a] tracking-tight mt-2">
+            みんなのマップ
+          </h2>
+          <p className="text-lg sm:text-xl md:text-2xl text-gray-600 mt-5 font-semibold">
+            ユーザーが作成した<br />
+            <span className="ml-1 text-[#0f172a] border-b-2 border-[#d4af37]/50">おすすめスポットマップ</span>
+          </p>
+        </motion.div>
+
+        {loading ? (
+          <div className="flex items-center justify-center py-20">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#d4af37]"></div>
+          </div>
+        ) : publicMaps.length === 0 ? (
+          <div className="text-center py-16">
+            <MapPin className="h-16 w-16 mx-auto mb-4 text-gray-400" />
+            <p className="text-gray-600">まだマップが投稿されていません</p>
+          </div>
+        ) : (
+          <div className="relative">
+            {/* カルーセル */}
+            <div className="overflow-hidden">
+              <motion.div
+                className="flex"
+                animate={{ x: `-${currentIndex * 100}%` }}
+                transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+              >
+                {publicMaps.map((map, index) => (
+                  <div
+                    key={map.id}
+                    className="min-w-full px-2 sm:px-4"
+                  >
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.5 }}
+                      viewport={{ once: true }}
+                      className="bg-white rounded-xl border-2 border-gray-200 hover:border-[#d4af37] overflow-hidden transition-all hover:shadow-xl cursor-pointer group mx-auto max-w-2xl"
+                      onClick={() => onMapClick(map.id)}
+                    >
+                      {/* カバー画像 */}
+                      <div className="h-64 sm:h-80 bg-gradient-to-br from-[#fef3e8] to-[#f5e6d3] relative overflow-hidden">
+                        {map.cover_image_url ? (
+                          <img
+                            src={map.cover_image_url}
+                            alt={map.title}
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                          />
+                        ) : (
+                          <div className="flex items-center justify-center h-full">
+                            <MapPin className="h-20 w-20 text-[#73370c]/30" />
+                          </div>
+                        )}
+                        <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-sm font-medium text-[#73370c] flex items-center gap-1">
+                          <MapPin className="h-4 w-4" />
+                          {map.total_locations || 0}箇所
+                        </div>
+                      </div>
+
+                      {/* コンテンツ */}
+                      <div className="p-6">
+                        <h3 className="text-2xl font-bold text-gray-800 mb-3 line-clamp-2 group-hover:text-[#73370c] transition-colors">
+                          {map.title}
+                        </h3>
+
+                        {/* ハッシュタグ */}
+                        {map.hashtags && map.hashtags.length > 0 && (
+                          <div className="flex flex-wrap gap-2 mb-3">
+                            {map.hashtags.slice(0, 3).map((tag: string, i: number) => (
+                              <span key={i} className="text-xs bg-[#fef3e8] text-[#73370c] px-2 py-1 rounded-full">
+                                #{tag}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* 日付 */}
+                        <div className="flex items-center text-sm text-gray-500">
+                          <Calendar className="h-4 w-4 mr-1" />
+                          {new Date(map.created_at).toLocaleDateString('ja-JP', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                          })}
+                        </div>
+                      </div>
+                    </motion.div>
+                  </div>
+                ))}
+              </motion.div>
+            </div>
+
+            {/* ナビゲーションボタン */}
+            {publicMaps.length > 1 && (
+              <>
+                <button
+                  onClick={handlePrev}
+                  className="absolute left-0 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white p-3 rounded-full shadow-lg transition-all z-10 -ml-2 sm:-ml-4"
+                  aria-label="前へ"
+                >
+                  <ChevronRight className="h-6 w-6 text-[#73370c] rotate-180" />
+                </button>
+                <button
+                  onClick={handleNext}
+                  className="absolute right-0 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white p-3 rounded-full shadow-lg transition-all z-10 -mr-2 sm:-mr-4"
+                  aria-label="次へ"
+                >
+                  <ChevronRight className="h-6 w-6 text-[#73370c]" />
+                </button>
+              </>
+            )}
+
+            {/* インジケーター */}
+            {publicMaps.length > 1 && (
+              <div className="flex justify-center gap-2 mt-6">
+                {publicMaps.map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setCurrentIndex(index)}
+                    className={`h-2 rounded-full transition-all ${
+                      index === currentIndex
+                        ? 'w-8 bg-[#73370c]'
+                        : 'w-2 bg-gray-300 hover:bg-gray-400'
+                    }`}
+                    aria-label={`マップ ${index + 1} へ移動`}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+};
 
 // --- メイン実装 ---
 
-const EventLP = ({ onStart }: { onStart: () => void }) => {
+const EventLP = ({ onStart, onMapClick }: { onStart: () => void; onMapClick: (mapId: string) => void }) => {
   const [scrollPosition, setScrollPosition] = useState(0);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
@@ -260,95 +479,8 @@ src="https://res.cloudinary.com/dz9trbwma/image/upload/v1763822849/ChatGPT_Image
           </div>
         </section>
 
-        {/* 使い方セクション（白背景で清潔感を出す） */}
-        <section className="py-20 sm:py-24 px-4 sm:px-8 bg-white relative overflow-hidden">
-          <div className="container mx-auto max-w-6xl relative z-10">
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8 }}
-              viewport={{ once: true }}
-              className="text-center mb-12 sm:mb-20"
-            >
-              <p className="inline-block px-5 py-1 mb-4 text-xs sm:text-sm tracking-[0.18em] font-bold text-[#0f172a] border-b-2 border-[#d4af37]">
-                HOW TO USE
-              </p>
-              <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold text-[#0f172a] tracking-tight mt-2">
-                かんたん3ステップ
-              </h2>
-              <p className="text-lg sm:text-xl md:text-2xl text-gray-600 mt-5 font-semibold">
-                直感的なマップで、<br />
-                <span className="ml-1 text-[#0f172a] border-b-2 border-[#d4af37]/50">今日行きたいイベントがすぐ見つかる</span>
-              </p>
-            </motion.div>
-
-            {/* STEP カード */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 sm:gap-12">
-              {[
-                {
-                  step: '01',
-                  title: '地図をひらく',
-                  description: 'イベント情報が地図上にピンで表示されます。',
-                  imageUrl: 'https://res.cloudinary.com/dz9trbwma/image/upload/v1761742897/1A7F75AD-84B0-45C6-87EF-1EC6EEF1A4EB_1_201_a_gulzoo.jpg'
-                },
-                {
-                  step: '02',
-                  title: 'ピンをタップ',
-                  description: 'ピンを押すと、画面下に\nイベント情報が表示されます。',
-                  imageUrl: 'https://res.cloudinary.com/dz9trbwma/image/upload/v1763465785/%E3%82%B9%E3%82%AF%E3%83%AA%E3%83%BC%E3%83%B3%E3%82%B7%E3%83%A7%E3%83%83%E3%83%88_2025-11-18_20.35.26_hofjao.png'
-                },
-                {
-                  step: '03',
-                  title: 'あとは出掛けるだけ',
-                  description: '気になったイベントに足を運んで、\nいつもの街をもっと楽しみましょう。',
-                  imageUrl: 'https://res.cloudinary.com/dz9trbwma/image/upload/v1761712807/08_%E7%A5%AD%E3%82%8A_%E5%B1%8B%E5%8F%B0%E9%A2%A8%E6%99%AF_gen7np.jpg'
-                }
-              ].map((item, index) => (
-                <motion.div
-                  key={item.step}
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.7, delay: index * 0.08 }}
-                  viewport={{ once: true }}
-                  className="flex flex-col items-center text-center group"
-                >
-                  <div className="mb-6 relative">
-                    {/* ステップ番号の装飾 */}
-                    <span className="text-sm font-bold tracking-[0.2em] text-[#d4af37] block mb-2">STEP {item.step}</span>
-                    {index < 2 && (
-                      <div className="hidden md:block absolute top-1/2 -right-2/3 w-1/2 border-t-2 border-dashed border-gray-300 text-gray-300">
-                        <span className="absolute -top-2.5 right-0 transform rotate-45 border-t-2 border-r-2 border-dashed border-gray-300 w-4 h-4"></span>
-                      </div>
-                    )}
-                  </div>
-
-                  <h3 className="text-xl sm:text-2xl font-bold text-[#0f172a] mb-3">
-                    {item.title}
-                  </h3>
-
-                  <p className="text-base sm:text-base text-gray-600 leading-relaxed font-medium mb-6 whitespace-pre-line">
-                    {item.description}
-                  </p>
-
-                  <div className="w-full rounded-2xl overflow-hidden shadow-lg border border-gray-100">
-                     <img
-                        src={item.imageUrl}
-                        alt={item.title}
-                        className="w-full h-48 object-cover"
-                      />
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-
-            {/* ミニ補足 */}
-            <div className="mt-16 text-center">
-              <p className="inline-block py-2 px-6 bg-[#f1f5f9] rounded-full text-xs sm:text-sm font-bold text-gray-600">
-                アカウント登録不要で、すぐご利用できます
-              </p>
-            </div>
-          </div>
-        </section>
+        {/* 🗺️ マイマップ一覧セクション（PointMapスタイル） */}
+        <PublicMapsSection onMapClick={onMapClick} />
 
         {/* 特徴セクション（濃紺背景で引き締める） */}
         <section className="relative py-20 sm:py-24 px-4 sm:px-8 bg-[#0f172a] overflow-hidden">
@@ -566,8 +698,15 @@ src="https://res.cloudinary.com/dz9trbwma/image/upload/v1763822849/ChatGPT_Image
 export default function Home() {
   const router = useRouter();
   const [showLocationModal, setShowLocationModal] = useState(false);
+  const [selectedMapId, setSelectedMapId] = useState<string | null>(null);
 
   const handleStart = () => {
+    setSelectedMapId(null); // イベント探すボタンの場合はnull
+    setShowLocationModal(true);
+  };
+
+  const handleMapClick = (mapId: string) => {
+    setSelectedMapId(mapId);
     setShowLocationModal(true);
   };
 
@@ -599,27 +738,51 @@ export default function Home() {
         );
 
         setShowLocationModal(false);
-        router.push('/map');
+        
+        // selectedMapIdがある場合はtitle_idを付けて遷移
+        if (selectedMapId) {
+          router.push(`/map?title_id=${selectedMapId}`);
+        } else {
+          router.push('/map');
+        }
       } catch (error) {
         console.error('位置情報の取得に失敗:', error);
         setShowLocationModal(false);
-        router.push('/map');
+        
+        // エラー時も遷移する
+        if (selectedMapId) {
+          router.push(`/map?title_id=${selectedMapId}`);
+        } else {
+          router.push('/map');
+        }
       }
     } else {
       console.warn('位置情報が利用できません');
       setShowLocationModal(false);
-      router.push('/map');
+      
+      // 位置情報が利用できない場合も遷移
+      if (selectedMapId) {
+        router.push(`/map?title_id=${selectedMapId}`);
+      } else {
+        router.push('/map');
+      }
     }
   };
 
   const handleDenyLocation = () => {
     setShowLocationModal(false);
-    router.push('/map');
+    
+    // 拒否時も遷移する
+    if (selectedMapId) {
+      router.push(`/map?title_id=${selectedMapId}`);
+    } else {
+      router.push('/map');
+    }
   };
 
   return (
     <main className="min-h-screen bg-background">
-      <EventLP onStart={handleStart} />
+      <EventLP onStart={handleStart} onMapClick={handleMapClick} />
 
       <CustomModal
         isOpen={showLocationModal}

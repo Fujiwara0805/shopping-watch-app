@@ -71,6 +71,10 @@ export function AppHeader() {
         return '新規投稿';
       case '/events':
         return 'イベント一覧';
+      case '/create-map':
+        return 'My Map作成';
+      case '/my-maps':
+        return 'My Map編集';
       case '/profile':
         return 'マイページ';
       case '/profile/edit':

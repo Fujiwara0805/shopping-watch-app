@@ -10,13 +10,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { MapPin, AlertTriangle, RefreshCw,  Calendar, Newspaper, User, MapPinIcon, X, ShoppingBag, Loader2, ChevronDown } from 'lucide-react';
+import { MapPin, AlertTriangle, RefreshCw,  Calendar, Newspaper, User, MapPinIcon, X, ShoppingBag, Loader2, ChevronDown, Home } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabaseClient';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { useToast } from '@/hooks/use-toast';
 import { isWithinRange, calculateDistance } from '@/lib/utils/distance';
+import { Map as MapData, MapLocation } from '@/types/map';
 
 declare global {
   interface Window {
@@ -41,8 +42,25 @@ interface PostMarkerData {
   enable_checkin?: boolean | null;  // 🔥 チェックイン対象フラグ
 }
 
+// マイマップのロケーションデータ型（マーカー表示用）
+interface MapLocationMarkerData {
+  id: string; // location自体のユニークID（map_id + order）
+  map_id: string;
+  map_title: string;
+  store_name: string;
+  content: string;
+  store_latitude: number;
+  store_longitude: number;
+  image_urls: string[];
+  url: string | null;
+  order: number;
+}
+
 // カテゴリの型定義
 type PostCategory = 'イベント情報' | '聖地巡礼' | '観光スポット' | '温泉' | 'グルメ';
+
+// 表示モードの型定義
+type ViewMode = 'events' | 'myMaps';
 
 // 🔥 カテゴリごとの色とアイコンを定義
 const getCategoryConfig = (category: PostCategory) => {
@@ -363,6 +381,7 @@ const createCategoryPinIcon = async (
 
 export function MapView() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { data: session } = useSession();
   const { toast } = useToast();
   
@@ -401,12 +420,22 @@ export function MapView() {
   const [selectedPost, setSelectedPost] = useState<PostMarkerData | null>(null);
   const [nearbyPosts, setNearbyPosts] = useState<PostMarkerData[]>([]); // タップした投稿
 
+  // 🔥 マイマップデータとマーカー関連の状態を追加
+  const [mapLocations, setMapLocations] = useState<MapLocationMarkerData[]>([]);
+  const [mapMarkers, setMapMarkers] = useState<google.maps.Marker[]>([]);
+  const [loadingMaps, setLoadingMaps] = useState(false);
+  const [selectedMapLocation, setSelectedMapLocation] = useState<MapLocationMarkerData | null>(null);
+
   // 🔥 保存された位置情報を読み込む
   const [savedLocation, setSavedLocation] = useState<{lat: number, lng: number} | null>(null);
 
   // 🔥 初回ロードフラグを追加（785行目付近）
   const hasInitialLoadedRef = useRef(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // 🔥 URLパラメータから表示モードを決定（title_idがある場合はマイマップモード）
+  const titleId = searchParams.get('title_id');
+  const [viewMode, setViewMode] = useState<ViewMode>(titleId ? 'myMaps' : 'events');
 
   // 🔥 カテゴリフィルターの状態管理（単一選択）
   const [selectedCategory, setSelectedCategory] = useState<PostCategory>('イベント情報');
@@ -561,6 +590,140 @@ export function MapView() {
     };
   }, [updateContainerDimensions]);
 
+
+  // 🔥 マイマップデータを取得する関数（特定のマップIDまたは全マップ）
+  const fetchMapLocations = useCallback(async () => {
+    const currentTitleId = searchParams.get('title_id');
+    
+    // title_idがある場合は公開マップとして扱う（ログイン不要）
+    if (currentTitleId) {
+      setLoadingMaps(true);
+      try {
+        console.log('MapView: 公開マップデータを取得中...', currentTitleId);
+        
+        // 指定されたマップIDのデータを取得
+        const { data: mapData, error: mapError } = await supabase
+          .from('maps')
+          .select('id, title, locations')
+          .eq('id', currentTitleId)
+          .eq('is_deleted', false)
+          .single();
+        
+        if (mapError || !mapData) {
+          console.error('MapView: マップデータの取得に失敗:', mapError);
+          setMapLocations([]);
+          setLoadingMaps(false);
+          return;
+        }
+
+        // ロケーションを展開
+        const allLocations: MapLocationMarkerData[] = [];
+        if (mapData.locations && Array.isArray(mapData.locations)) {
+          mapData.locations.forEach((location: MapLocation) => {
+            if (location.store_latitude && location.store_longitude) {
+              allLocations.push({
+                id: `${mapData.id}_${location.order}`,
+                map_id: mapData.id,
+                map_title: mapData.title,
+                store_name: location.store_name,
+                content: location.content,
+                store_latitude: location.store_latitude,
+                store_longitude: location.store_longitude,
+                image_urls: location.image_urls,
+                url: location.url || null,
+                order: location.order,
+              });
+            }
+          });
+        }
+
+        console.log(`MapView: ${allLocations.length}件の公開マップロケーションを取得`);
+        setMapLocations(allLocations);
+        
+      } catch (error) {
+        console.error('MapView: 公開マップデータの取得中にエラー:', error);
+      } finally {
+        setLoadingMaps(false);
+      }
+      return;
+    }
+
+    // title_idがない場合はユーザーのマイマップを取得（ログイン必須）
+    if (!session?.user?.id) {
+      console.log('MapView: ログインしていないためマイマップデータの取得をスキップ');
+      setMapLocations([]);
+      return;
+    }
+
+    setLoadingMaps(true);
+    try {
+      console.log('MapView: マイマップデータを取得中...');
+      
+      // ユーザーのプロフィールIDを取得
+      const { data: profile, error: profileError } = await supabase
+        .from('app_profiles')
+        .select('id')
+        .eq('user_id', session.user.id)
+        .single();
+      
+      if (profileError || !profile) {
+        console.error('MapView: プロフィール情報が見つかりません');
+        setLoadingMaps(false);
+        return;
+      }
+      
+      // マップ一覧を取得
+      const { data: maps, error: mapsError } = await supabase
+        .from('maps')
+        .select('id, title, locations')
+        .eq('app_profile_id', profile.id)
+        .eq('is_deleted', false);
+      
+      if (mapsError) {
+        console.error('MapView: マイマップデータの取得に失敗:', mapsError);
+        setLoadingMaps(false);
+        return;
+      }
+
+      if (!maps || maps.length === 0) {
+        console.log('MapView: マイマップデータがありません');
+        setMapLocations([]);
+        setLoadingMaps(false);
+        return;
+      }
+
+      // 全てのマップのロケーションを展開
+      const allLocations: MapLocationMarkerData[] = [];
+      maps.forEach((map: any) => {
+        if (map.locations && Array.isArray(map.locations)) {
+          map.locations.forEach((location: MapLocation) => {
+            if (location.store_latitude && location.store_longitude) {
+              allLocations.push({
+                id: `${map.id}_${location.order}`,
+                map_id: map.id,
+                map_title: map.title,
+                store_name: location.store_name,
+                content: location.content,
+                store_latitude: location.store_latitude,
+                store_longitude: location.store_longitude,
+                image_urls: location.image_urls,
+                url: location.url || null,
+                order: location.order,
+              });
+            }
+          });
+        }
+      });
+
+      console.log(`MapView: ${allLocations.length}件のマイマップロケーションを取得`);
+      setMapLocations(allLocations);
+      
+    } catch (error) {
+      console.error('MapView: マイマップデータの取得中にエラー:', error);
+    } finally {
+      setLoadingMaps(false);
+    }
+  }, [session?.user?.id, searchParams]);
 
   // 🔥 投稿データを取得する関数を修正（現在地の近い順にソート）
   const fetchPosts = useCallback(async () => {
@@ -760,6 +923,82 @@ export function MapView() {
     return { lat: offsetLat, lng: offsetLng };
   };
 
+  // 🔥 マイマップマーカーを作成する関数
+  const createMapMarkers = useCallback(async () => {
+    if (!map || !mapLocations.length || !window.google?.maps) {
+      console.log('MapView: マイマップマーカー作成の条件が揃っていません');
+      return;
+    }
+
+    console.log(`MapView: ${mapLocations.length}件のマイマップマーカーを作成中...`);
+
+    // 🔥 既存のマーカーを削除
+    const markersToClean = [...mapMarkers];
+    markersToClean.forEach(marker => {
+      if (marker && marker.setMap) {
+        marker.setMap(null);
+      }
+    });
+    
+    const newMarkers: google.maps.Marker[] = [];
+
+    // 🔥 同一座標のロケーションをグループ化
+    const locationGroups = groupPostsByLocation(mapLocations as any);
+    
+    // 一度に処理
+    const markerPromises = mapLocations.map(async (location, index) => {
+      if (!location.store_latitude || !location.store_longitude) return;
+      
+      // 🔥 同一座標グループ内でのインデックスを取得
+      const lat = Math.round(location.store_latitude * 10000) / 10000;
+      const lng = Math.round(location.store_longitude * 10000) / 10000;
+      const locationKey = `${lat},${lng}`;
+      const groupLocations = locationGroups[locationKey] || [location];
+      const indexInGroup = groupLocations.findIndex((l: any) => l.id === location.id);
+      const totalInGroup = groupLocations.length;
+      
+      // 🔥 オフセット位置を計算
+      const offsetPosition = getOffsetPosition(
+        location.store_latitude,
+        location.store_longitude,
+        indexInGroup,
+        totalInGroup
+      );
+      
+      const position = new window.google.maps.LatLng(offsetPosition.lat, offsetPosition.lng);
+      const markerTitle = `${location.store_name} - ${location.map_title}`;
+      
+      // 🔥 マイマップ用の画像アイコンを作成（カテゴリは「観光スポット」として扱う）
+      const markerIcon = await createCategoryPinIcon(
+        location.image_urls,
+        location.store_name,
+        '観光スポット'
+      );
+
+      const marker = new window.google.maps.Marker({
+        position,
+        map,
+        title: markerTitle,
+        icon: markerIcon,
+        animation: window.google.maps.Animation.DROP,
+        zIndex: indexInGroup + 1,
+      });
+
+      marker.addListener('click', () => {
+        console.log(`MapView: マイマップマーカーがクリックされました - ID: ${location.id}`);
+        setSelectedMapLocation(location);
+      });
+
+      return marker;
+    });
+    
+    const markers = await Promise.all(markerPromises);
+    // 🔥 nullを除外してマーカーを追加
+    newMarkers.push(...markers.filter((m): m is google.maps.Marker => m !== null && m !== undefined));
+    
+    setMapMarkers(newMarkers);
+  }, [map, mapLocations]);
+
   // 🔥 投稿マーカーを作成する関数（同一座標をオフセット対応）
   const createPostMarkers = useCallback(async () => {
     if (!map || !posts.length || !window.google?.maps) {
@@ -861,7 +1100,8 @@ export function MapView() {
     };
     
     processNextBatch();
-  }, [map, posts, router]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map, posts]);
 
   // 地図初期化（ズームレベルを調整）
   const initializeMap = useCallback(() => {
@@ -1061,21 +1301,30 @@ export function MapView() {
 
   // 🔥 初回ロード時に自動更新（fetchPostsの後に追加）
   useEffect(() => {
-    const userLat = savedLocation?.lat || latitude;
-    const userLng = savedLocation?.lng || longitude;
-    
-    if (userLat && userLng && mapInitialized && !hasInitialLoadedRef.current) {
-      hasInitialLoadedRef.current = true;
-      fetchPosts();
+    if (mapInitialized && !hasInitialLoadedRef.current) {
+      const userLat = savedLocation?.lat || latitude;
+      const userLng = savedLocation?.lng || longitude;
+      
+      // 位置情報がある、または位置情報取得を待った後に実行
+      if (viewMode === 'events') {
+        if (userLat && userLng) {
+          hasInitialLoadedRef.current = true;
+          fetchPosts();
+        }
+      } else {
+        // マイマップモードでも位置情報があれば実行（なくても実行）
+        hasInitialLoadedRef.current = true;
+        fetchMapLocations();
+      }
     }
-  }, [latitude, longitude, savedLocation, mapInitialized, fetchPosts]);
+  }, [latitude, longitude, savedLocation, mapInitialized, viewMode, fetchPosts, fetchMapLocations]);
 
   // 🔥 手動更新の処理（位置情報取得を含む）
   const handleManualRefresh = async () => {
     setIsRefreshing(true);
     
-    // 位置情報を再取得
-    if ('geolocation' in navigator) {
+    // 位置情報を再取得（イベント情報モードの場合のみ）
+    if (viewMode === 'events' && 'geolocation' in navigator) {
       try {
         const position = await new Promise<GeolocationPosition>((resolve, reject) => {
           navigator.geolocation.getCurrentPosition(resolve, reject, {
@@ -1105,24 +1354,34 @@ export function MapView() {
             position.coords.longitude
           );
           map.panTo(newCenter);
-          
         }
       } catch (error) {
         console.error('位置情報の取得に失敗:', error);
       }
     }
     
-    // イベント情報を更新
-    await fetchPosts();
+    // データを更新
+    if (viewMode === 'events') {
+      await fetchPosts();
+    } else {
+      // マイマップモードでは位置情報不要でデータを再取得
+      await fetchMapLocations();
+    }
     
     setTimeout(() => {
       setIsRefreshing(false);
     }, 500);
   };
 
+  // 🔥 URLパラメータが変更されたら表示モードを更新
+  useEffect(() => {
+    const newTitleId = searchParams.get('title_id');
+    setViewMode(newTitleId ? 'myMaps' : 'events');
+  }, [searchParams]);
+
   // 🔥 カテゴリ変更時にマーカーをクリアして投稿データを再取得
   useEffect(() => {
-    if (map && window.google?.maps) {
+    if (map && window.google?.maps && viewMode === 'events') {
       // 既存のマーカーを削除
       const markersToClean = [...postMarkers];
       markersToClean.forEach(marker => {
@@ -1146,9 +1405,9 @@ export function MapView() {
 
   //  投稿データが更新されたらマーカーを作成（修正版）
   useEffect(() => {
-    if (posts.length > 0 && map && window.google?.maps) {
+    if (viewMode === 'events' && posts.length > 0 && map && window.google?.maps) {
       createPostMarkers();
-    } else if (posts.length === 0 && map && window.google?.maps) {
+    } else if (viewMode === 'events' && posts.length === 0 && map && window.google?.maps) {
       // 投稿が0件の場合は既存のマーカーをクリア
       const markersToClean = [...postMarkers];
       markersToClean.forEach(marker => {
@@ -1159,10 +1418,27 @@ export function MapView() {
       setPostMarkers([]);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [posts, map]); // createPostMarkers を依存配列から削除
+  }, [posts, map, viewMode]); // createPostMarkers を依存配列から削除
+
+  //  マイマップデータが更新されたらマーカーを作成
+  useEffect(() => {
+    if (viewMode === 'myMaps' && mapLocations.length > 0 && map && window.google?.maps) {
+      createMapMarkers();
+    } else if (viewMode === 'myMaps' && mapLocations.length === 0 && map && window.google?.maps) {
+      // マップロケーションが0件の場合は既存のマーカーをクリア
+      const markersToClean = [...mapMarkers];
+      markersToClean.forEach(marker => {
+        if (marker && marker.setMap) {
+          marker.setMap(null);
+        }
+      });
+      setMapMarkers([]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mapLocations, map, viewMode]);
 
 
-  // ユーザー位置マーカーの設置（ズームレベルを調整）
+  // ユーザー位置マーカーの設置（両モードで表示、マイマップモードでは地図の中心は移動しない）
   useEffect(() => {
     const userLat = savedLocation?.lat || latitude;
     const userLng = savedLocation?.lng || longitude;
@@ -1173,6 +1449,7 @@ export function MapView() {
       
       if (userLocationMarker) {
         userLocationMarker.setPosition(userPosition);
+        userLocationMarker.setMap(map);
       } else {
         try {
           // 🔥 修正箇所: Google Mapsの現在地風の青い丸アイコンを設定
@@ -1196,13 +1473,16 @@ export function MapView() {
         }
       }
 
-      map.panTo(userPosition);
-      const currentZoom = map.getZoom();
-      if (currentZoom !== undefined && currentZoom < 15) { // 🔥 14→15に変更
-        map.setZoom(15);
+      // イベント情報モードの場合のみ地図の中心を移動
+      if (viewMode === 'events') {
+        map.panTo(userPosition);
+        const currentZoom = map.getZoom();
+        if (currentZoom !== undefined && currentZoom < 15) {
+          map.setZoom(15);
+        }
       }
     }
-  }, [map, latitude, longitude, savedLocation, mapInitialized, userLocationMarker, browserInfo.name]);
+  }, [map, latitude, longitude, savedLocation, mapInitialized, userLocationMarker, browserInfo.name, viewMode]);
 
 
   // 再試行機能（円のクリーンアップを削除）
@@ -1364,6 +1644,23 @@ export function MapView() {
       {/* 右上のナビゲーションボタン（縦並び） */}
       {map && mapInitialized && (
         <div className="absolute top-4 right-4 z-30 flex flex-col gap-2">
+          {/* ホームアイコン */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.3, delay: 0.05 }}
+            className="flex flex-col items-center"
+          >
+            <Button
+              onClick={() => router.push('/')}
+              size="icon"
+              className="h-12 w-12 rounded-lg shadow-lg bg-[#73370c] hover:bg-[#5c2a0a] border-2 border-white"
+            >
+              <Home className="h-6 w-6 text-white" />
+            </Button>
+            <span className="text-sm font-bold text-gray-700 ">ホーム</span>
+          </motion.div>
+
           {/* イベントリスト画面 */}
           <motion.div
             initial={{ opacity: 0, x: 20 }}
@@ -1408,10 +1705,10 @@ export function MapView() {
             <Button
               onClick={handleManualRefresh}
               size="icon"
-              disabled={isRefreshing || loadingPosts}
+              disabled={isRefreshing || loadingPosts || loadingMaps}
               className="h-12 w-12 rounded-lg shadow-lg bg-[#73370c] hover:bg-[#5c2a0a] border-2 border-white disabled:opacity-50"
             >
-              <RefreshCw className={`h-6 w-6 text-white ${(isRefreshing || loadingPosts) ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`h-6 w-6 text-white ${(isRefreshing || loadingPosts || loadingMaps) ? 'animate-spin' : ''}`} />
             </Button>
             <span className="text-sm font-bold text-gray-700">更新</span>
           </motion.div>
@@ -1437,7 +1734,7 @@ export function MapView() {
 
       {/* 🔥 更新中の表示を追加（745行目付近、右上ボタンの前） */}
       <AnimatePresence>
-        {(isRefreshing || loadingPosts) && (
+        {(isRefreshing || loadingPosts || loadingMaps) && (
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -1454,114 +1751,154 @@ export function MapView() {
 
       {map && mapInitialized && (
         <div className="absolute bottom-8 left-2 z-30 space-y-2">
-          {/* カテゴリ選択ボタン */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-          >
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  className="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-lg px-4 py-2 text-sm font-semibold shadow-lg hover:bg-white transition-colors flex items-center gap-2"
-                  style={{ 
-                    color: getCategoryConfig(selectedCategory).color,
-                    borderColor: getCategoryConfig(selectedCategory).color + '40' // 透明度40%のボーダー
-                  }}
-                >
-                  <span style={{ color: getCategoryConfig(selectedCategory).color }}>{selectedCategory}</span>
-                  <ChevronDown className="h-4 w-4" style={{ color: getCategoryConfig(selectedCategory).color }} />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-40">
-                <DropdownMenuItem
-                  onClick={() => {
-                    setSelectedCategory('イベント情報');
-                    setSelectedPost(null);
-                    setNearbyPosts([]);
-                  }}
-                  className={selectedCategory === 'イベント情報' ? 'bg-accent' : ''}
-                >
-                  イベント情報
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => {
-                    setSelectedCategory('聖地巡礼');
-                    setSelectedPost(null);
-                    setNearbyPosts([]);
-                  }}
-                  className={selectedCategory === '聖地巡礼' ? 'bg-accent' : ''}
-                >
-                  聖地巡礼
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => {
-                    setSelectedCategory('観光スポット');
-                    setSelectedPost(null);
-                    setNearbyPosts([]);
-                  }}
-                  className={selectedCategory === '観光スポット' ? 'bg-accent' : ''}
-                >
-                  観光スポット
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => {
-                    setSelectedCategory('温泉');
-                    setSelectedPost(null);
-                    setNearbyPosts([]);
-                  }}
-                  className={selectedCategory === '温泉' ? 'bg-accent' : ''}
-                >
-                  温泉
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => {
-                    setSelectedCategory('グルメ');
-                    setSelectedPost(null);
-                    setNearbyPosts([]);
-                  }}
-                  className={selectedCategory === 'グルメ' ? 'bg-accent' : ''}
-                >
-                  グルメ
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </motion.div>
 
-          {/* 現在地の説明テキスト */}
-          <div className="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-800 shadow-lg max-w-xs">
-            <div className="space-y-1">
-              <div className="flex items-center">
-                {/* 青色マーカーと同じスタイルのアイコン */}
-                <div 
-                  className="h-4 w-4 mr-2 rounded-full flex-shrink-0"
-                  style={{
-                    backgroundColor: '#4285F4',
-                    border: '2px solid #ffffff',
-                    boxShadow: '0 0 0 1px rgba(0,0,0,0.1)'
-                  }}
-                />
-                <span className="text-xs font-medium">現在地</span>
+
+          {/* カテゴリフィルターと情報表示 */}
+          {viewMode === 'events' && (
+            <>
+              {/* カテゴリ選択ドロップダウン */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      className="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-lg px-4 py-2 text-sm font-semibold shadow-lg hover:bg-white transition-colors flex items-center gap-2"
+                      style={{ 
+                        color: getCategoryConfig(selectedCategory).color,
+                        borderColor: getCategoryConfig(selectedCategory).color + '40' // 透明度40%のボーダー
+                      }}
+                    >
+                      <span style={{ color: getCategoryConfig(selectedCategory).color }}>{selectedCategory}</span>
+                      <ChevronDown className="h-4 w-4" style={{ color: getCategoryConfig(selectedCategory).color }} />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-40">
+                    <DropdownMenuItem
+                      onClick={() => {
+                        setSelectedCategory('イベント情報');
+                        setSelectedPost(null);
+                        setNearbyPosts([]);
+                      }}
+                      className={selectedCategory === 'イベント情報' ? 'bg-accent' : ''}
+                    >
+                      イベント情報
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => {
+                        setSelectedCategory('聖地巡礼');
+                        setSelectedPost(null);
+                        setNearbyPosts([]);
+                      }}
+                      className={selectedCategory === '聖地巡礼' ? 'bg-accent' : ''}
+                    >
+                      聖地巡礼
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => {
+                        setSelectedCategory('観光スポット');
+                        setSelectedPost(null);
+                        setNearbyPosts([]);
+                      }}
+                      className={selectedCategory === '観光スポット' ? 'bg-accent' : ''}
+                    >
+                      観光スポット
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => {
+                        setSelectedCategory('温泉');
+                        setSelectedPost(null);
+                        setNearbyPosts([]);
+                      }}
+                      className={selectedCategory === '温泉' ? 'bg-accent' : ''}
+                    >
+                      温泉
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => {
+                        setSelectedCategory('グルメ');
+                        setSelectedPost(null);
+                        setNearbyPosts([]);
+                      }}
+                      className={selectedCategory === 'グルメ' ? 'bg-accent' : ''}
+                    >
+                      グルメ
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </motion.div>
+
+              {/* 現在地の説明テキスト */}
+              <div className="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-800 shadow-lg max-w-xs">
+                <div className="space-y-1">
+                  <div className="flex items-center">
+                    {/* 青色マーカーと同じスタイルのアイコン */}
+                    <div 
+                      className="h-4 w-4 mr-2 rounded-full flex-shrink-0"
+                      style={{
+                        backgroundColor: '#4285F4',
+                        border: '2px solid #ffffff',
+                        boxShadow: '0 0 0 1px rgba(0,0,0,0.1)'
+                      }}
+                    />
+                    <span className="text-xs font-medium">現在地</span>
+                  </div>
+                  <div className="text-xs">
+                    {posts.length > 0 ? (
+                      <>
+                        <span style={{ color: getCategoryConfig(selectedCategory).color, fontWeight: 'bold' }}>
+                          {selectedCategory}
+                        </span>
+                        <span className="text-gray-600">:{posts.length}件</span>
+                      </>
+                    ) : (
+                      <>
+                        <span style={{ color: getCategoryConfig(selectedCategory).color, fontWeight: 'bold' }}>
+                          {selectedCategory}
+                        </span>
+                        <span className="text-gray-600">を検索中...</span>
+                      </>
+                    )}
+                  </div>
+                </div>
               </div>
-              <div className="text-xs">
-                {posts.length > 0 ? (
-                  <>
-                    <span style={{ color: getCategoryConfig(selectedCategory).color, fontWeight: 'bold' }}>
-                      {selectedCategory}
-                    </span>
-                    <span className="text-gray-600">:{posts.length}件</span>
-                  </>
-                ) : (
-                  <>
-                    <span style={{ color: getCategoryConfig(selectedCategory).color, fontWeight: 'bold' }}>
-                      {selectedCategory}
-                    </span>
-                    <span className="text-gray-600">を検索中...</span>
-                  </>
-                )}
+            </>
+          )}
+
+          {/* マイマップモード時の情報表示 */}
+          {viewMode === 'myMaps' && (
+            <div className="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-800 shadow-lg max-w-xs">
+              <div className="space-y-1">
+                <div className="flex items-center">
+                  {/* 青色マーカーと同じスタイルのアイコン */}
+                  <div 
+                    className="h-4 w-4 mr-2 rounded-full flex-shrink-0"
+                    style={{
+                      backgroundColor: '#4285F4',
+                      border: '2px solid #ffffff',
+                      boxShadow: '0 0 0 1px rgba(0,0,0,0.1)'
+                    }}
+                  />
+                  <span className="text-xs font-medium">現在地</span>
+                </div>
+                <div className="text-xs">
+                  {mapLocations.length > 0 ? (
+                    <>
+                      <span className="text-[#73370c] font-bold">マップスポット</span>
+                      <span className="text-gray-600">:{mapLocations.length}箇所</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-[#73370c] font-bold">マップスポット</span>
+                      <span className="text-gray-600">:データがありません</span>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
       )}
 
@@ -1751,6 +2088,89 @@ export function MapView() {
                 </div>
             );
             })}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* マイマップロケーション詳細カード（下部に表示） */}
+      <AnimatePresence>
+        {selectedMapLocation && viewMode === 'myMaps' && (
+          <motion.div
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 100, opacity: 0 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+            className="absolute bottom-4 left-4 right-4 z-40"
+          >
+            <div className="relative">
+              {/* マイマップカード */}
+              <div className="bg-white rounded-2xl shadow-2xl overflow-hidden border-2 border-gray-200">
+                {/* カードヘッダー（閉じるボタンのみ） */}
+                <div className="relative">
+                  <div className="absolute top-2 right-2 z-10">
+                    {/* 閉じるボタン */}
+                    <Button
+                      onClick={() => {
+                        setSelectedMapLocation(null);
+                      }}
+                      size="icon"
+                      className="h-8 w-8 rounded-full bg-white/90 hover:bg-white shadow-lg"
+                    >
+                      <X className="h-4 w-4 text-gray-700" />
+                    </Button>
+                  </div>
+                </div>
+
+                {/* カード内容（横並びレイアウト） */}
+                <div className="p-4">
+                  <div className="flex gap-3 mb-3">
+                    {/* ロケーション画像 */}
+                    {selectedMapLocation.image_urls && selectedMapLocation.image_urls.length > 0 ? (
+                      <div className="flex-shrink-0 relative w-24 h-24 overflow-hidden rounded-lg bg-gray-100">
+                        <img
+                          src={optimizeCloudinaryImageUrl(selectedMapLocation.image_urls[0])}
+                          alt={selectedMapLocation.store_name}
+                          className="w-full h-full object-cover"
+                          loading="eager"
+                          decoding="async"
+                          fetchPriority="high"
+                        />
+                      </div>
+                    ) : (
+                      <div className="flex-shrink-0 w-24 h-24 bg-[#fef3e8] rounded-lg flex items-center justify-center">
+                        <MapPin className="h-12 w-12 text-[#73370c] opacity-30" />
+                      </div>
+                    )}
+
+                    {/* ロケーション情報 */}
+                    <div className="flex-1 min-w-0">
+                      {/* マップタイトル */}
+                      <div className="text-xs text-gray-500 mb-1">
+                        {selectedMapLocation.map_title}
+                      </div>
+                      
+                      {/* スポット名 */}
+                      <h3 className="text-base font-bold line-clamp-2 mb-2 text-[#73370c]">
+                        {selectedMapLocation.store_name}
+                      </h3>
+
+                      {/* 説明（最大2行） */}
+                      <p className="text-sm text-gray-600 line-clamp-2">
+                        {selectedMapLocation.content}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* 詳細を見るボタン */}
+                  <Button
+                    onClick={() => router.push(`/map/spot/${selectedMapLocation.id}`)}
+                    className="w-full bg-[#73370c] hover:bg-[#5c2a0a] text-white shadow-lg"
+                  >
+                    詳細を見る
+                  </Button>
+                </div>
+              </div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
