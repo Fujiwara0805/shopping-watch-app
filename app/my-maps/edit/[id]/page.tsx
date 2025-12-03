@@ -699,8 +699,8 @@ export default function EditMapPage() {
 
             {/* スポットリスト */}
             {locations.some(loc => loc.storeName) && (
-              <div style={{ backgroundColor: '#99623b' }} className="rounded-xl border border-amber-800 p-4 shadow-sm">
-                <h3 className="text-base font-bold mb-3 flex items-center" style={{ color: '#fef3e7' }}>
+              <div style={{ backgroundColor: '#fafafa' }} className="rounded-xl border border-amber-700 p-4 shadow-sm">
+                <h3 className="text-base font-bold mb-3 flex items-center" style={{ color: '#73370c' }}>
                   <MapPin className="mr-2 h-5 w-5" />
                   スポット一覧
                 </h3>
@@ -711,7 +711,7 @@ export default function EditMapPage() {
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       style={{ backgroundColor: '#72370d' }}
-                      className="flex items-center gap-2 p-3 rounded-lg border border-amber-800 hover:bg-amber-900 transition-colors cursor-pointer"
+                        className="flex items-center gap-2 p-3 rounded-lg border border-amber-500 hover:bg-amber-500 transition-colors cursor-pointer"
                       onClick={() => setCurrentLocationIndex(index)}
                     >
                       {/* 順番表示 */}

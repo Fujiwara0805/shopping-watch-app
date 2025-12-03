@@ -122,7 +122,13 @@ const PublicMapsSection = ({ onMapClick }: { onMapClick: (mapId: string) => void
   };
 
   return (
-    <section className="py-16 sm:py-20 px-4 sm:px-8 bg-white relative overflow-hidden">
+    <section className="py-16 sm:py-20 px-4 sm:px-8 bg-[#f5e6d3] relative overflow-hidden">
+      {/* 羊皮紙風テクスチャオーバーレイ */}
+      <div className="absolute inset-0 opacity-30 pointer-events-none"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
+        }}
+      />
       <div className="container mx-auto max-w-6xl relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
@@ -131,26 +137,26 @@ const PublicMapsSection = ({ onMapClick }: { onMapClick: (mapId: string) => void
           viewport={{ once: true }}
           className="text-center mb-10 sm:mb-16"
         >
-          <p className="inline-block px-5 py-1 mb-4 text-xs sm:text-sm tracking-[0.18em] font-bold text-[#0f172a] border-b-2 border-[#d4af37]">
+          <p className="inline-block px-5 py-1 mb-4 text-xs sm:text-sm tracking-[0.18em] font-bold text-[#5c3a21] border-b-2 border-[#8b6914]">
             MY MAPS
           </p>
-          <h2 className="text-xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold text-[#0f172a] tracking-tight mt-2">
+          <h2 className="text-xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold text-[#3d2914] tracking-tight mt-2">
             世界で一つだけのデジタルマップ
           </h2>
-          <p className="text-base sm:text-lg md:text-xl text-gray-600 mt-4 font-semibold">
+          <p className="text-base sm:text-lg md:text-xl text-[#5c3a21] mt-4 font-semibold">
             ユーザーが作成した<br />
-            <span className="ml-1 text-[#0f172a] border-b-2 border-[#d4af37]/50">あなただけのデジタルマップ</span>
+            <span className="ml-1 text-[#3d2914] border-b-2 border-[#8b6914]/50">あなただけのデジタルマップ</span>
           </p>
         </motion.div>
 
         {loading ? (
           <div className="flex items-center justify-center py-16">
-            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#d4af37]"></div>
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#8b6914]"></div>
           </div>
         ) : publicMaps.length === 0 ? (
           <div className="text-center py-12">
-            <MapPin className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-            <p className="text-gray-600">まだマップが投稿されていません</p>
+            <MapPin className="h-12 w-12 mx-auto mb-4 text-[#8b6914]/50" />
+            <p className="text-[#5c3a21]">まだマップが投稿されていません</p>
           </div>
         ) : (
           <div className="relative">
@@ -171,11 +177,11 @@ const PublicMapsSection = ({ onMapClick }: { onMapClick: (mapId: string) => void
                       whileInView={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.5 }}
                       viewport={{ once: true }}
-                      className="bg-white rounded-xl border-2 border-gray-200 hover:border-[#d4af37] overflow-hidden transition-all hover:shadow-xl cursor-pointer group mx-auto max-w-md"
+                      className="bg-[#fff8f0] rounded-xl border-2 border-[#d4c4a8] hover:border-[#8b6914] overflow-hidden transition-all hover:shadow-xl cursor-pointer group mx-auto max-w-md"
                       onClick={() => onMapClick(map.id)}
                     >
                       {/* 🔥 カバー画像（サイズ縮小） */}
-                      <div className="h-48 sm:h-56 bg-gradient-to-br from-[#fef3e8] to-[#f5e6d3] relative overflow-hidden">
+                      <div className="h-48 sm:h-56 bg-gradient-to-br from-[#e8f4e5] to-[#d4ecd1] relative overflow-hidden">
                         {map.cover_image_url ? (
                           <img
                             src={map.cover_image_url}
@@ -184,30 +190,30 @@ const PublicMapsSection = ({ onMapClick }: { onMapClick: (mapId: string) => void
                           />
                         ) : (
                           <div className="flex items-center justify-center h-full">
-                            <MapPin className="h-16 w-16 text-[#73370c]/30" />
+                            <MapPin className="h-16 w-16 text-[#5c3a21]/30" />
                           </div>
                         )}
                         
                         {/* 🔥 作成者情報（右上に配置）- Avatarコンポーネント使用 */}
-                        <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-sm px-2.5 py-1.5 rounded-full flex items-center gap-2">
-                          <Avatar className="h-6 w-6 border border-white/50">
+                        <div className="absolute top-3 right-3 bg-[#3d2914]/80 backdrop-blur-sm px-2.5 py-1.5 rounded-full flex items-center gap-2">
+                          <Avatar className="h-6 w-6 border border-[#ffecd2]/50">
                             {map.author_avatar_path ? (
                               <AvatarImage
                                 src={getAvatarPublicUrl(map.author_avatar_path) || ''}
                                 alt={map.author_name}
                               />
                             ) : null}
-                            <AvatarFallback className="text-xs font-bold bg-gradient-to-br from-[#73370c] to-[#a85c1b] text-white">
+                            <AvatarFallback className="text-xs font-bold bg-gradient-to-br from-[#5c3a21] to-[#8b6914] text-[#fff8f0]">
                               {map.author_name.charAt(0).toUpperCase()}
                             </AvatarFallback>
                           </Avatar>
-                          <span className="text-xs font-semibold text-white max-w-[80px] truncate">
+                          <span className="text-xs font-semibold text-[#fff8f0] max-w-[80px] truncate">
                             {map.author_name}
                           </span>
                         </div>
 
                         {/* スポット数（左上） */}
-                        <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm px-2.5 py-1 rounded-full text-xs font-medium text-[#73370c] flex items-center gap-1">
+                        <div className="absolute top-3 left-3 bg-[#fff8f0]/90 backdrop-blur-sm px-2.5 py-1 rounded-full text-xs font-medium text-[#5c3a21] flex items-center gap-1">
                           <MapPin className="h-3.5 w-3.5" />
                           {map.total_locations || 0}箇所
                         </div>
@@ -215,7 +221,7 @@ const PublicMapsSection = ({ onMapClick }: { onMapClick: (mapId: string) => void
 
                       {/* 🔥 コンテンツ（コンパクト化） */}
                       <div className="p-4">
-                        <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-2 line-clamp-2 group-hover:text-[#73370c] transition-colors">
+                        <h3 className="text-lg sm:text-xl font-bold text-[#3d2914] mb-2 line-clamp-2 group-hover:text-[#5c3a21] transition-colors">
                           {map.title}
                         </h3>
 
@@ -223,7 +229,7 @@ const PublicMapsSection = ({ onMapClick }: { onMapClick: (mapId: string) => void
                         {map.hashtags && map.hashtags.length > 0 && (
                           <div className="flex flex-wrap gap-1.5 mb-2">
                             {map.hashtags.slice(0, 3).map((tag: string, i: number) => (
-                              <span key={i} className="text-xs bg-[#fef3e8] text-[#73370c] px-2 py-0.5 rounded-full">
+                              <span key={i} className="text-xs bg-[#e8f4e5] text-[#5c3a21] px-2 py-0.5 rounded-full">
                                 #{tag}
                               </span>
                             ))}
@@ -231,7 +237,7 @@ const PublicMapsSection = ({ onMapClick }: { onMapClick: (mapId: string) => void
                         )}
 
                         {/* 日付 */}
-                        <div className="flex items-center text-xs text-gray-500">
+                        <div className="flex items-center text-xs text-[#8b7355]">
                           <Calendar className="h-3.5 w-3.5 mr-1" />
                           {new Date(map.created_at).toLocaleDateString('ja-JP', {
                             year: 'numeric',
@@ -251,17 +257,17 @@ const PublicMapsSection = ({ onMapClick }: { onMapClick: (mapId: string) => void
               <>
                 <button
                   onClick={handlePrev}
-                  className="absolute left-0 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white p-2.5 rounded-full shadow-lg transition-all z-10 -ml-1 sm:-ml-3"
+                  className="absolute left-0 top-1/2 -translate-y-1/2 bg-[#fff8f0]/90 hover:bg-[#fff8f0] p-2.5 rounded-full shadow-lg transition-all z-10 -ml-1 sm:-ml-3 border border-[#d4c4a8]"
                   aria-label="前へ"
                 >
-                  <ChevronRight className="h-5 w-5 text-[#73370c] rotate-180" />
+                  <ChevronRight className="h-5 w-5 text-[#5c3a21] rotate-180" />
                 </button>
                 <button
                   onClick={handleNext}
-                  className="absolute right-0 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white p-2.5 rounded-full shadow-lg transition-all z-10 -mr-1 sm:-mr-3"
+                  className="absolute right-0 top-1/2 -translate-y-1/2 bg-[#fff8f0]/90 hover:bg-[#fff8f0] p-2.5 rounded-full shadow-lg transition-all z-10 -mr-1 sm:-mr-3 border border-[#d4c4a8]"
                   aria-label="次へ"
                 >
-                  <ChevronRight className="h-5 w-5 text-[#73370c]" />
+                  <ChevronRight className="h-5 w-5 text-[#5c3a21]" />
                 </button>
               </>
             )}
@@ -275,8 +281,8 @@ const PublicMapsSection = ({ onMapClick }: { onMapClick: (mapId: string) => void
                     onClick={() => setCurrentIndex(index)}
                     className={`h-1.5 rounded-full transition-all ${
                       index === currentIndex
-                        ? 'w-6 bg-[#73370c]'
-                        : 'w-1.5 bg-gray-300 hover:bg-gray-400'
+                        ? 'w-6 bg-[#5c3a21]'
+                        : 'w-1.5 bg-[#d4c4a8] hover:bg-[#8b7355]'
                     }`}
                     aria-label={`マップ ${index + 1} へ移動`}
                   />
@@ -296,7 +302,7 @@ const PublicMapsSection = ({ onMapClick }: { onMapClick: (mapId: string) => void
         >
           <button
             onClick={() => router.push('/public-maps')}
-            className="inline-flex items-center gap-2 px-6 py-3 text-base font-bold text-[#73370c] hover:text-[#5c2a0a] border-2 border-[#73370c] hover:border-[#5c2a0a] rounded-full transition-all hover:bg-[#fef3e8] group"
+            className="inline-flex items-center gap-2 px-6 py-3 text-base font-bold text-[#5c3a21] hover:text-[#3d2914] border-2 border-[#5c3a21] hover:border-[#3d2914] rounded-full transition-all hover:bg-[#ffecd2] group"
           >
             他のMy Mapをみる
             <ChevronRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
@@ -323,16 +329,16 @@ const EventLP = ({ onStart, onMapClick }: { onStart: () => void; onMapClick: (ma
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#0f172a] relative overflow-x-hidden font-sans">
-      {/* 背景装飾（ゴールドのラインで高級感を演出） */}
+    <div className="min-h-screen bg-[#f5e6d3] relative overflow-x-hidden font-sans">
+      {/* 背景装飾（古地図風の装飾ライン） */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
         <svg className="absolute top-0 right-0 w-full h-full opacity-10" viewBox="0 0 100 100" preserveAspectRatio="none">
-          <path d="M0 0 C 30 40 70 40 100 0 L 100 100 L 0 100 Z" fill="url(#gold-gradient)" />
+          <path d="M0 0 C 30 40 70 40 100 0 L 100 100 L 0 100 Z" fill="url(#parchment-gradient)" />
           <defs>
-            <linearGradient id="gold-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#b49026" />
-              <stop offset="50%" stopColor="#fcf6ba" />
-              <stop offset="100%" stopColor="#b49026" />
+            <linearGradient id="parchment-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#8b6914" />
+              <stop offset="50%" stopColor="#d4c4a8" />
+              <stop offset="100%" stopColor="#8b6914" />
             </linearGradient>
           </defs>
         </svg>
@@ -341,9 +347,9 @@ const EventLP = ({ onStart, onMapClick }: { onStart: () => void; onMapClick: (ma
       <div className="relative z-10">
         {/* ヘッダー */}
         <nav
-          className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 border-b border-white/5 ${
+          className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 border-b ${
             scrollPosition > 10
-              ? 'bg-[#0f172a]/90 backdrop-blur-md shadow-lg'
+              ? 'bg-[#f5e6d3]/95 backdrop-blur-md shadow-lg border-[#d4c4a8]'
               : 'bg-transparent border-transparent'
           }`}
         >
@@ -351,25 +357,25 @@ const EventLP = ({ onStart, onMapClick }: { onStart: () => void; onMapClick: (ma
             <div className="flex items-center gap-3">
               {/* ロゴアイコン */}
               <div className="relative">
-                <div className="absolute inset-0 bg-[#ffffff] blur opacity-30 rounded-full"></div>
+                <div className="absolute inset-0 bg-[#8b6914] blur opacity-20 rounded-full"></div>
                 <img
 src="https://res.cloudinary.com/dz9trbwma/image/upload/v1763822849/ChatGPT_Image_2025%E5%B9%B411%E6%9C%8822%E6%97%A5_23_46_11_-_%E7%B7%A8%E9%9B%86%E6%B8%88%E3%81%BF_n1uf53.png"
                   alt="トクドク"
                   className="h-12 w-12 sm:h-14 sm:w-14 relative z-10 drop-shadow-md"
                 />
               </div>
-              <span className={`font-bold text-xl tracking-widest hidden sm:block ${scrollPosition > 10 ? 'text-white' : 'text-white'}`}>
-                TOKU<span className="text-[#d4af37]">DOKU</span>
+              <span className={`font-bold text-xl tracking-widest hidden sm:block ${scrollPosition > 10 ? 'text-[#3d2914]' : 'text-[#3d2914]'}`}>
+                TOKU<span className="text-[#8b6914]">DOKU</span>
               </span>
             </div>
 
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+              className="p-2 hover:bg-[#d4c4a8]/30 rounded-lg transition-colors"
               aria-label="メニュー"
             >
               <Menu
-                className="h-6 w-6 sm:h-7 sm:w-7 text-[#d4af37]"
+                className="h-6 w-6 sm:h-7 sm:w-7 text-[#5c3a21]"
                 strokeWidth={2.5}
               />
             </button>
@@ -385,7 +391,7 @@ src="https://res.cloudinary.com/dz9trbwma/image/upload/v1763822849/ChatGPT_Image
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 onClick={() => setIsMenuOpen(false)}
-                className="fixed inset-0 bg-black/60 z-[60] backdrop-blur-sm"
+                className="fixed inset-0 bg-[#3d2914]/50 z-[60] backdrop-blur-sm"
               />
 
               <motion.div
@@ -393,7 +399,7 @@ src="https://res.cloudinary.com/dz9trbwma/image/upload/v1763822849/ChatGPT_Image
                 animate={{ x: 0 }}
                 exit={{ x: '-100%' }}
                 transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                className="fixed left-0 top-0 bottom-0 w-72 bg-[#0f172a] border-r border-[#d4af37]/30 shadow-2xl z-[70] overflow-y-auto"
+                className="fixed left-0 top-0 bottom-0 w-72 bg-[#f5e6d3] border-r border-[#8b6914]/30 shadow-2xl z-[70] overflow-y-auto"
               >
                 <div className="p-6">
                   <div className="flex items-center justify-between mb-8">
@@ -406,10 +412,10 @@ src="https://res.cloudinary.com/dz9trbwma/image/upload/v1763822849/ChatGPT_Image
                     </div>
                     <button
                       onClick={() => setIsMenuOpen(false)}
-                      className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                      className="p-2 hover:bg-[#d4c4a8]/30 rounded-lg transition-colors"
                       aria-label="閉じる"
                     >
-                      <X className="h-6 w-6 text-[#d4af37]" strokeWidth={2.5} />
+                      <X className="h-6 w-6 text-[#5c3a21]" strokeWidth={2.5} />
                     </button>
                   </div>
 
@@ -425,7 +431,7 @@ src="https://res.cloudinary.com/dz9trbwma/image/upload/v1763822849/ChatGPT_Image
                       <a
                         key={item.href}
                         href={item.href}
-                        className="block px-4 py-3 text-gray-300 hover:bg-[#d4af37]/10 hover:text-[#d4af37] rounded-lg transition-colors font-semibold border-b border-white/5"
+                        className="block px-4 py-3 text-[#5c3a21] hover:bg-[#8b6914]/10 hover:text-[#3d2914] rounded-lg transition-colors font-semibold border-b border-[#d4c4a8]/50"
                         onClick={() => setIsMenuOpen(false)}
                       >
                         {item.label}
@@ -435,7 +441,7 @@ src="https://res.cloudinary.com/dz9trbwma/image/upload/v1763822849/ChatGPT_Image
                     <a
                       href="https://www.instagram.com/tokudoku_nobody/"
                       rel="noopener noreferrer"
-                      className="flex items-center px-4 py-3 text-gray-300 hover:bg-[#d4af37]/10 hover:text-[#d4af37] rounded-lg transition-colors mt-4"
+                      className="flex items-center px-4 py-3 text-[#5c3a21] hover:bg-[#8b6914]/10 hover:text-[#3d2914] rounded-lg transition-colors mt-4"
                       onClick={() => setIsMenuOpen(false)}
                     >
                       <img
@@ -454,17 +460,24 @@ src="https://res.cloudinary.com/dz9trbwma/image/upload/v1763822849/ChatGPT_Image
 
         {/* ヒーローセクション */}
         <section className="relative min-h-screen flex items-center justify-center px-4 sm:px-8 overflow-hidden">
-          {/* 背景画像（城・花火・祭りのイメージ） */}
+          {/* 背景画像（冒険・地図のイメージ） */}
           <div
             className="absolute inset-0 bg-cover bg-center"
             style={{
               backgroundImage:
-                'url(https://res.cloudinary.com/dz9trbwma/image/upload/v1761712808/11_%E7%A5%AD%E3%82%8A_%E5%A4%8F%E7%A5%AD%E3%82%8A%E3%81%AE%E6%A7%98%E5%AD%90_oxlvol.jpg)',
+                'url(https://res.cloudinary.com/dz9trbwma/image/upload/v1764768098/photo-1524661135-423995f22d0b_myc9u9.jpg)',
             }}
           />
-          {/* オーバーレイ（濃紺のグラデーションでリッチに） */}
-          <div className="absolute inset-0 bg-gradient-to-b from-[#0f172a]/80 via-[#0f172a]/60 to-[#0f172a]" />
+          {/* オーバーレイ（読みやすさのための暗めのグラデーション） */}
+          <div className="absolute inset-0 bg-gradient-to-b from-[#3d2914]/60 via-[#3d2914]/50 to-[#f5e6d3]" />
           <div className="absolute inset-0 bg-black/30" />
+          
+          {/* 羊皮紙テクスチャ */}
+          <div className="absolute inset-0 opacity-10 pointer-events-none"
+            style={{
+              backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
+            }}
+          />
 
           <div className="container mx-auto max-w-6xl relative z-10 pt-24 pb-16">
             <motion.div
@@ -478,11 +491,11 @@ src="https://res.cloudinary.com/dz9trbwma/image/upload/v1763822849/ChatGPT_Image
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.8, delay: 0.2 }}
-                  className="text-xl sm:text-2xl md:text-3xl text-[#d4af37] font-bold tracking-wider drop-shadow-lg"
+                  className="text-xl sm:text-2xl md:text-3xl text-[#ffecd2] font-bold tracking-wider drop-shadow-lg"
                 >
-                  大分県内のイベント情報を
+                  あなただけのマップを作成し
                   <br />
-                  多数掲載中!!!
+                  みんなとシェアしよう
                 </motion.p>
 
                 <motion.h1
@@ -491,10 +504,10 @@ src="https://res.cloudinary.com/dz9trbwma/image/upload/v1763822849/ChatGPT_Image
                   transition={{ duration: 0.8, delay: 0.4 }}
                   className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl text-white font-bold leading-tight tracking-tight drop-shadow-xl"
                 >
-                  わくわくする日常を
+                  デジタルマップで
                   <br className="hidden sm:block" />
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#fcf6ba] via-[#d4af37] to-[#b49026] relative inline-block mt-3 pb-2">
-                    あなたにお届けします
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#ffecd2] via-[#fff8f0] to-[#ffecd2] relative inline-block mt-3 pb-2">
+                    新しい発見を
                   </span>
                 </motion.h1>
 
@@ -502,11 +515,11 @@ src="https://res.cloudinary.com/dz9trbwma/image/upload/v1763822849/ChatGPT_Image
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.8, delay: 0.8 }}
-                  className="text-xl sm:text-2xl md:text-3xl lg:text-4xl text-gray-200 max-w-3xl mx-auto leading-relaxed font-bold drop-shadow-md"
+                  className="text-xl sm:text-2xl md:text-3xl lg:text-4xl text-gray-100 max-w-3xl mx-auto leading-relaxed font-bold drop-shadow-md"
                 >
-                  マップ上で
+                  マップの作成・閲覧
                   <br className="sm:hidden" />
-                  イベント情報が見つかる
+                  イベント情報もまとめて表示
                 </motion.p>
               </div>
 
@@ -519,11 +532,11 @@ src="https://res.cloudinary.com/dz9trbwma/image/upload/v1763822849/ChatGPT_Image
                 <Button
                   size="lg"
                   onClick={onStart}
-                  className="h-16 sm:h-20 px-12 sm:px-16 text-lg sm:text-2xl font-extrabold rounded-full shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 bg-[#73370c] hover:bg-[#5c2a0a] text-white"
+                  className="h-16 sm:h-20 px-12 sm:px-16 text-lg sm:text-2xl font-extrabold rounded-full shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 bg-[#ffecd2] hover:bg-[#fff8f0] text-[#3d2914]"
                 >
-                  イベントを探す
+                  マップを探索する
                 </Button>
-                <p className="text-lg sm:text-xl text-gray-300 mt-4 font-bold">
+                <p className="text-lg sm:text-xl text-gray-200 mt-4 font-bold">
                   無料で今すぐ始められます
                 </p>
                 <motion.a
@@ -535,7 +548,7 @@ src="https://res.cloudinary.com/dz9trbwma/image/upload/v1763822849/ChatGPT_Image
                   transition={{ duration: 0.8, delay: 1.4 }}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  className="inline-block mt-6 px-8 sm:px-12 py-3 sm:py-4 text-base sm:text-lg font-bold text-white bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full border border-[#d4af37]/50 hover:border-[#d4af37] transition-all duration-300 shadow-lg"
+                  className="inline-block mt-6 px-8 sm:px-12 py-3 sm:py-4 text-base sm:text-lg font-bold text-white bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full border border-[#ffecd2]/50 hover:border-[#ffecd2] transition-all duration-300 shadow-lg"
                 >
                   イベント情報募集中！
                 </motion.a>
@@ -550,10 +563,10 @@ src="https://res.cloudinary.com/dz9trbwma/image/upload/v1763822849/ChatGPT_Image
                 <motion.div
                   animate={{ y: [0, 10, 0] }}
                   transition={{ duration: 2, repeat: Infinity }}
-                  className="flex flex-col items-center text-[#d4af37] text-sm font-semibold"
+                  className="flex flex-col items-center text-[#ffecd2] text-sm font-semibold"
                 >
                   <span className="mb-2">Scroll</span>
-                  <div className="w-px h-12 bg-gradient-to-b from-[#d4af37] to-transparent" />
+                  <div className="w-px h-12 bg-gradient-to-b from-[#ffecd2] to-transparent" />
                 </motion.div>
               </motion.div>
             </motion.div>
@@ -563,13 +576,13 @@ src="https://res.cloudinary.com/dz9trbwma/image/upload/v1763822849/ChatGPT_Image
         {/* 🗺️ マイマップ一覧セクション（PointMapスタイル） */}
         <PublicMapsSection onMapClick={onMapClick} />
 
-        {/* 特徴セクション（濃紺背景で引き締める） */}
-        <section className="relative py-20 sm:py-24 px-4 sm:px-8 bg-[#0f172a] overflow-hidden">
-          {/* 金色の装飾ライン */}
+        {/* 特徴セクション（ミントグリーン背景） */}
+        <section className="relative py-20 sm:py-24 px-4 sm:px-8 bg-[#e8f4e5] overflow-hidden">
+          {/* 装飾ライン */}
           <div className="absolute top-0 left-0 w-full h-full overflow-hidden opacity-20 pointer-events-none">
              <svg className="absolute -top-20 -left-20 w-[150%] h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-               <path d="M0 50 Q 25 30 50 50 T 100 50" fill="none" stroke="#d4af37" strokeWidth="0.2"/>
-               <path d="M0 60 Q 25 40 50 60 T 100 60" fill="none" stroke="#d4af37" strokeWidth="0.2"/>
+               <path d="M0 50 Q 25 30 50 50 T 100 50" fill="none" stroke="#5c3a21" strokeWidth="0.2"/>
+               <path d="M0 60 Q 25 40 50 60 T 100 60" fill="none" stroke="#5c3a21" strokeWidth="0.2"/>
              </svg>
           </div>
 
@@ -581,33 +594,33 @@ src="https://res.cloudinary.com/dz9trbwma/image/upload/v1763822849/ChatGPT_Image
               viewport={{ once: true }}
               className="text-center mb-12 sm:mb-16"
             >
-              <p className="inline-block px-5 py-1 mb-4 text-xs sm:text-sm tracking-[0.18em] font-bold text-[#d4af37]">
+              <p className="inline-block px-5 py-1 mb-4 text-xs sm:text-sm tracking-[0.18em] font-bold text-[#5c3a21]">
                 FEATURES
               </p>
-              <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold mb-4 text-white tracking-tight">
-                <span className="text-[#d4af37]">こだわり</span>の機能
+              <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold mb-4 text-[#3d2914] tracking-tight">
+                <span className="text-[#5c3a21]">こだわり</span>の機能
               </h2>
-              <p className="text-lg sm:text-xl md:text-2xl text-gray-300 font-semibold mt-2">
-                「探しやすさ」「確かさ」「気軽さ」に<br />徹底的にこだわりました
+              <p className="text-lg sm:text-xl md:text-2xl text-[#5c3a21] font-semibold mt-2">
+                「マップ作成」「イベント発見」「シェア」に<br />徹底的にこだわりました
               </p>
             </motion.div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
               {[
                 {
-                  label: 'FINDABILITY',
-                  title: '地図で一目でわかる',
-                  description: 'どこで何が開催されているか、ピンを見るだけで直感的に把握できます。'
+                  label: 'CREATE',
+                  title: 'あなただけのマップを作成',
+                  description: 'お気に入りのスポットを登録して、世界で一つだけのオリジナルマップを作成できます。'
                 },
                 {
-                  label: 'REAL-TIME',
-                  title: '開催中の情報だけ表示',
-                  description: '終了したイベント情報は自動で非表示。今日～近日のイベントだけが並びます。'
+                  label: 'DISCOVER',
+                  title: 'イベント情報をマップで発見',
+                  description: '地域のイベント情報がマップ上に表示。今日～近日のイベントをひと目で把握できます。'
                 },
                 {
-                  label: 'FREE & EASY',
-                  title: '完全無料で、今すぐ',
-                  description: '会員登録もクレジットカードも不要。アプリを開くだけで使えます。'
+                  label: 'SHARE',
+                  title: 'みんなとシェア',
+                  description: '作成したマップは公開・共有OK。友達や家族とお気に入りスポットをシェアしよう。'
                 }
               ].map((feature, index) => (
                 <motion.div
@@ -616,15 +629,15 @@ src="https://res.cloudinary.com/dz9trbwma/image/upload/v1763822849/ChatGPT_Image
                   whileInView={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.6, delay: index * 0.08 }}
                   viewport={{ once: true }}
-                  className="bg-white p-8 rounded-lg border border-gray-200 shadow-xl flex flex-col items-center text-center hover:-translate-y-1 transition-transform duration-300"
+                  className="bg-[#fff8f0] p-8 rounded-lg border border-[#d4c4a8] shadow-xl flex flex-col items-center text-center hover:-translate-y-1 transition-transform duration-300"
                 >
-                  <span className="text-xs font-bold tracking-[0.15em] text-[#d4af37] uppercase mb-2">
+                  <span className="text-xs font-bold tracking-[0.15em] text-[#8b6914] uppercase mb-2">
                     {feature.label}
                   </span>
-                  <h3 className="text-xl sm:text-2xl font-bold mb-3 text-[#0f172a]">
+                  <h3 className="text-xl sm:text-2xl font-bold mb-3 text-[#3d2914]">
                     {feature.title}
                   </h3>
-                  <p className="text-sm sm:text-base text-gray-600 leading-relaxed font-medium whitespace-pre-line">
+                  <p className="text-sm sm:text-base text-[#5c3a21] leading-relaxed font-medium whitespace-pre-line">
                     {feature.description}
                   </p>
                 </motion.div>
@@ -639,10 +652,17 @@ src="https://res.cloudinary.com/dz9trbwma/image/upload/v1763822849/ChatGPT_Image
           <div 
             className="absolute inset-0 bg-cover bg-center"
             style={{
-              backgroundImage: 'url(https://res.cloudinary.com/dz9trbwma/image/upload/v1761712807/07_%E7%A5%AD%E3%82%8A_%E5%B1%8B%E5%8F%B0%E3%82%AF%E3%82%99%E3%83%AB%E3%83%A1_wwmiek.jpg)',
+              backgroundImage: 'url(https://res.cloudinary.com/dz9trbwma/image/upload/v1761712808/11_%E7%A5%AD%E3%82%8A_%E5%A4%8F%E7%A5%AD%E3%82%8A%E3%81%AE%E6%A7%98%E5%AD%90_oxlvol.jpg)',
             }}
           />
-          <div className="absolute inset-0 bg-[#0f172a]/70" />
+          <div className="absolute inset-0 bg-[#f5e6d3]/60" />
+          
+          {/* 羊皮紙テクスチャ */}
+          <div className="absolute inset-0 opacity-30 pointer-events-none"
+            style={{
+              backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
+            }}
+          />
 
           <div className="container mx-auto max-w-4xl relative z-10 text-center">
             <motion.div
@@ -652,30 +672,36 @@ src="https://res.cloudinary.com/dz9trbwma/image/upload/v1763822849/ChatGPT_Image
               viewport={{ once: true }}
               className="space-y-8"
             >
-              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold leading-tight text-white drop-shadow-lg">
-                いつもの街が、
-                <br />
-                もっと好きになる
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold leading-tight text-[#3d2914] drop-shadow-lg">
+                他では出会えない体験に<br />
+                出会えるのは「トクドク」だけ<br />
               </h2>
-              <p className="text-xl sm:text-2xl lg:text-3xl text-gray-200 leading-relaxed font-bold">
-                地域のイベントで、
-                <span className="border-b-2 border-[#d4af37]">人と街をつなぐ</span>
+              <p className="text-xl sm:text-2xl lg:text-3xl text-[#5c3a21] leading-relaxed font-bold">
+                デジタルマップで、<br />
+                <span className="border-b-2 border-[#8b6914]">思い出と発見をシェア</span>
               </p>
             </motion.div>
           </div>
         </section>
 
         {/* 最終CTA */}
-        <section className="relative py-16 sm:py-24 px-4 sm:px-8 overflow-hidden bg-[#0f172a]">
-           {/* 背景：花火イメージ */}
+        <section className="relative py-16 sm:py-24 px-4 sm:px-8 overflow-hidden bg-[#f5e6d3]">
+           {/* 背景：コンパスイメージ */}
           <div
-            className="absolute inset-0 bg-cover bg-center opacity-30"
+            className="absolute inset-0 bg-cover bg-center opacity-20"
             style={{
               backgroundImage:
-                'url(https://res.cloudinary.com/dz9trbwma/image/upload/v1761712807/10_%E5%9C%B0%E5%9F%9F%E3%81%AE%E5%A4%8F%E7%A5%AD%E3%82%8A_zi3gse.jpg)'
+                'url(https://res.cloudinary.com/dz9trbwma/image/upload/v1764768321/photo-1516546453174-5e1098a4b4af_zwkcbo.jpg)'
             }}
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0f172a] via-[#0f172a]/80 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#f5e6d3] via-[#f5e6d3]/80 to-transparent" />
+          
+          {/* 羊皮紙テクスチャ */}
+          <div className="absolute inset-0 opacity-20 pointer-events-none"
+            style={{
+              backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
+            }}
+          />
 
           <div className="container mx-auto max-w-4xl text-center relative z-10">
             <motion.div
@@ -685,21 +711,21 @@ src="https://res.cloudinary.com/dz9trbwma/image/upload/v1763822849/ChatGPT_Image
               viewport={{ once: true }}
               className="space-y-8"
             >
-              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold leading-tight text-white">
-                さあ、出掛けよう！
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold leading-tight text-[#3d2914]">
+                さあ、冒険を始めよう！
               </h2>
 
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                 <Button
                   size="lg"
                   onClick={onStart}
-                  className="h-18 sm:h-20 px-14 sm:px-20 text-xl sm:text-3xl font-extrabold rounded-full shadow-2xl hover:shadow-[0_24px_50px_rgba(92,42,10,0.45)] transform transition-all duration-300 bg-[#73370c] hover:bg-[#5c2a0a] text-white"
+                  className="h-18 sm:h-20 px-14 sm:px-20 text-xl sm:text-3xl font-extrabold rounded-full shadow-2xl hover:shadow-[0_24px_50px_rgba(61,41,20,0.35)] transform transition-all duration-300 bg-[#5c3a21] hover:bg-[#3d2914] text-[#fff8f0]"
                 >
                   マップを見る
                 </Button>
               </motion.div>
 
-              <p className="text-lg sm:text-xl text-gray-400 font-bold">
+              <p className="text-lg sm:text-xl text-[#5c3a21] font-bold">
                 アカウント登録不要 / 今すぐ使えます
               </p>
             </motion.div>
@@ -707,7 +733,7 @@ src="https://res.cloudinary.com/dz9trbwma/image/upload/v1763822849/ChatGPT_Image
         </section>
 
         {/* フッター */}
-        <footer className="py-12 sm:py-16 px-4 sm:px-8 border-t border-white/10 bg-[#0b1120]">
+        <footer className="py-12 sm:py-16 px-4 sm:px-8 border-t border-[#d4c4a8] bg-[#ffecd2]">
           <div className="container mx-auto max-w-6xl">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
               <div>
@@ -717,53 +743,53 @@ src="https://res.cloudinary.com/dz9trbwma/image/upload/v1763822849/ChatGPT_Image
                     alt="トクドク"
                     className="h-10 w-10"
                   />
-                  <span className="text-white font-bold text-xl">TOKUDOKU</span>
+                  <span className="text-[#3d2914] font-bold text-xl">TOKUDOKU</span>
                 </div>
-                <p className="text-lg text-gray-400 leading-relaxed font-semibold">
-                  地域のイベントを通じて、
+                <p className="text-lg text-[#5c3a21] leading-relaxed font-semibold">
+                  デジタルマップで、
                   <br />
-                  人と人、人と街をつなぐプラットフォーム
+                  あなたの「お気に入り」をみんなとシェア
                 </p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <h4 className="font-extrabold mb-3 text-[#d4af37] text-base sm:text-lg">
+                  <h4 className="font-extrabold mb-3 text-[#5c3a21] text-base sm:text-lg">
                     サービス
                   </h4>
                   <ul className="space-y-2">
                     <li>
-                      <a href="/profile" className="text-gray-400 hover:text-white transition-colors font-semibold text-sm sm:text-base">マイページ</a>
+                      <a href="/profile" className="text-[#8b7355] hover:text-[#3d2914] transition-colors font-semibold text-sm sm:text-base">マイページ</a>
                     </li>
                     <li>
-                      <a href="/contact" className="text-gray-400 hover:text-white transition-colors font-semibold text-sm sm:text-base">問い合わせ</a>
+                      <a href="/contact" className="text-[#8b7355] hover:text-[#3d2914] transition-colors font-semibold text-sm sm:text-base">問い合わせ</a>
                     </li>
                     <li>
-                      <a href="/release-notes" className="text-gray-400 hover:text-white transition-colors font-semibold text-sm sm:text-base">リリースノート</a>
+                      <a href="/release-notes" className="text-[#8b7355] hover:text-[#3d2914] transition-colors font-semibold text-sm sm:text-base">リリースノート</a>
                     </li>
                   </ul>
                 </div>
                 <div>
-                  <h4 className="font-extrabold mb-3 text-[#d4af37] text-base sm:text-lg">
+                  <h4 className="font-extrabold mb-3 text-[#5c3a21] text-base sm:text-lg">
                     規約
                   </h4>
                   <ul className="space-y-2">
                     <li>
-                      <a href="/terms/terms-of-service" className="text-gray-400 hover:text-white transition-colors font-semibold text-sm sm:text-base">利用規約</a>
+                      <a href="/terms/terms-of-service" className="text-[#8b7355] hover:text-[#3d2914] transition-colors font-semibold text-sm sm:text-base">利用規約</a>
                     </li>
                     <li>
-                      <a href="/terms/privacy-policy" className="text-gray-400 hover:text-white transition-colors font-semibold text-sm sm:text-base">プライバシーポリシー</a>
+                      <a href="/terms/privacy-policy" className="text-[#8b7355] hover:text-[#3d2914] transition-colors font-semibold text-sm sm:text-base">プライバシーポリシー</a>
                     </li>
                     <li>
-                      <a href="/terms/service-policy" className="text-gray-400 hover:text-white transition-colors font-semibold text-sm sm:text-base">サービスポリシー</a>
+                      <a href="/terms/service-policy" className="text-[#8b7355] hover:text-[#3d2914] transition-colors font-semibold text-sm sm:text-base">サービスポリシー</a>
                     </li>
                   </ul>
                 </div>
               </div>
             </div>
 
-            <div className="pt-8 border-t border-white/10 text-center">
-              <p className="text-sm sm:text-base text-gray-500 font-semibold">
+            <div className="pt-8 border-t border-[#d4c4a8] text-center">
+              <p className="text-sm sm:text-base text-[#8b7355] font-semibold">
                 © 2025 トクドク All rights reserved.
               </p>
             </div>
@@ -875,22 +901,22 @@ export default function Home() {
           <div className="space-y-3">
             <Button
               onClick={handleAllowLocation}
-              className="w-full bg-[#73370c] hover:bg-[#5c2a0a] text-white font-bold text-base sm:text-lg py-6"
+              className="w-full bg-[#5c3a21] hover:bg-[#3d2914] text-[#fff8f0] font-bold text-base sm:text-lg py-6"
             >
               <MapPin className="mr-2 h-6 w-6" strokeWidth={2.5} />
-              位置情報を許可してイベントを探す
+              位置情報を許可してマップを探索
             </Button>
 
             <Button
               onClick={handleDenyLocation}
               variant="outline"
-              className="w-full font-bold text-base sm:text-lg py-6"
+              className="w-full font-bold text-base sm:text-lg py-6 border-[#d4c4a8] text-[#5c3a21] hover:bg-[#ffecd2]"
             >
               今はスキップ
             </Button>
           </div>
 
-          <p className="text-xs sm:text-sm text-gray-500 text-center font-semibold">
+          <p className="text-xs sm:text-sm text-[#8b7355] text-center font-semibold">
             ※ブラウザの設定で位置情報の許可をONにしてください
           </p>
         </div>
