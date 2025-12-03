@@ -3,14 +3,36 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MapPin, Menu, X, ChevronRight, Calendar } from 'lucide-react';
+import { MapPin, Menu, X, ChevronRight, Calendar, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { CustomModal } from '@/components/ui/custom-modal';
 import { supabase } from '@/lib/supabaseClient';
 
+// 🔥 公開マップの型定義
+interface PublicMapData {
+  id: string;
+  title: string;
+  locations: any[];
+  created_at: string;
+  hashtags: string[] | null;
+  app_profile_id: string;
+  cover_image_url: string | null;
+  total_locations: number;
+  author_name: string;
+  author_avatar_path: string | null;
+}
+
+// 🔥 avatar_urlからSupabase StorageのPublic URLを取得する関数
+const getAvatarPublicUrl = (avatarPath: string | null): string | null => {
+  if (!avatarPath) return null;
+  return supabase.storage.from('avatars').getPublicUrl(avatarPath).data.publicUrl;
+};
+
 // --- 公開マップ一覧セクション ---
 const PublicMapsSection = ({ onMapClick }: { onMapClick: (mapId: string) => void }) => {
-  const [publicMaps, setPublicMaps] = useState<any[]>([]);
+  const router = useRouter();
+  const [publicMaps, setPublicMaps] = useState<PublicMapData[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -20,12 +42,24 @@ const PublicMapsSection = ({ onMapClick }: { onMapClick: (mapId: string) => void
 
   const fetchPublicMaps = async () => {
     try {
-      // 基本情報とlocationsを取得
+      // 🔥 app_profilesテーブルとJOINして作成者情報も取得
       const { data, error } = await supabase
         .from('maps')
-        .select('id, title, locations, created_at, hashtags')
+        .select(`
+          id, 
+          title, 
+          locations, 
+          created_at, 
+          hashtags,
+          app_profile_id,
+          app_profiles (
+            id,
+            display_name,
+            avatar_url
+          )
+        `)
         .eq('is_deleted', false)
-        .eq('is_public', true) // 公開されているマップのみ
+        .eq('is_public', true)
         .order('created_at', { ascending: false })
         .limit(12);
 
@@ -40,7 +74,7 @@ const PublicMapsSection = ({ onMapClick }: { onMapClick: (mapId: string) => void
       }
       
       // locationsから最初の画像をカバー画像として、スポット数を計算
-      const mapsWithMetadata = (data || []).map(map => {
+      const mapsWithMetadata: PublicMapData[] = (data || []).map((map: any) => {
         const locations = Array.isArray(map.locations) ? map.locations : [];
         const totalLocations = locations.length;
         
@@ -53,10 +87,20 @@ const PublicMapsSection = ({ onMapClick }: { onMapClick: (mapId: string) => void
           }
         }
         
+        // 🔥 作成者情報を取得（型安全に）
+        const profile = map.app_profiles as { id: string; display_name: string | null; avatar_url: string | null } | null;
+        
         return {
-          ...map,
+          id: map.id,
+          title: map.title,
+          locations: locations,
+          created_at: map.created_at,
+          hashtags: map.hashtags,
+          app_profile_id: map.app_profile_id,
           cover_image_url: coverImageUrl,
-          total_locations: totalLocations
+          total_locations: totalLocations,
+          author_name: profile?.display_name || '匿名ユーザー',
+          author_avatar_path: profile?.avatar_url || null, // 🔥 パスとして保持
         };
       });
       
@@ -78,34 +122,34 @@ const PublicMapsSection = ({ onMapClick }: { onMapClick: (mapId: string) => void
   };
 
   return (
-    <section className="py-20 sm:py-24 px-4 sm:px-8 bg-white relative overflow-hidden">
+    <section className="py-16 sm:py-20 px-4 sm:px-8 bg-white relative overflow-hidden">
       <div className="container mx-auto max-w-6xl relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
           viewport={{ once: true }}
-          className="text-center mb-12 sm:mb-20"
+          className="text-center mb-10 sm:mb-16"
         >
           <p className="inline-block px-5 py-1 mb-4 text-xs sm:text-sm tracking-[0.18em] font-bold text-[#0f172a] border-b-2 border-[#d4af37]">
             MY MAPS
           </p>
-          <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold text-[#0f172a] tracking-tight mt-2">
-            みんなのマップ
+          <h2 className="text-xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold text-[#0f172a] tracking-tight mt-2">
+            世界で一つだけのデジタルマップ
           </h2>
-          <p className="text-lg sm:text-xl md:text-2xl text-gray-600 mt-5 font-semibold">
+          <p className="text-base sm:text-lg md:text-xl text-gray-600 mt-4 font-semibold">
             ユーザーが作成した<br />
-            <span className="ml-1 text-[#0f172a] border-b-2 border-[#d4af37]/50">おすすめスポットマップ</span>
+            <span className="ml-1 text-[#0f172a] border-b-2 border-[#d4af37]/50">あなただけのデジタルマップ</span>
           </p>
         </motion.div>
 
         {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#d4af37]"></div>
+          <div className="flex items-center justify-center py-16">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#d4af37]"></div>
           </div>
         ) : publicMaps.length === 0 ? (
-          <div className="text-center py-16">
-            <MapPin className="h-16 w-16 mx-auto mb-4 text-gray-400" />
+          <div className="text-center py-12">
+            <MapPin className="h-12 w-12 mx-auto mb-4 text-gray-400" />
             <p className="text-gray-600">まだマップが投稿されていません</p>
           </div>
         ) : (
@@ -127,11 +171,11 @@ const PublicMapsSection = ({ onMapClick }: { onMapClick: (mapId: string) => void
                       whileInView={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.5 }}
                       viewport={{ once: true }}
-                      className="bg-white rounded-xl border-2 border-gray-200 hover:border-[#d4af37] overflow-hidden transition-all hover:shadow-xl cursor-pointer group mx-auto max-w-2xl"
+                      className="bg-white rounded-xl border-2 border-gray-200 hover:border-[#d4af37] overflow-hidden transition-all hover:shadow-xl cursor-pointer group mx-auto max-w-md"
                       onClick={() => onMapClick(map.id)}
                     >
-                      {/* カバー画像 */}
-                      <div className="h-64 sm:h-80 bg-gradient-to-br from-[#fef3e8] to-[#f5e6d3] relative overflow-hidden">
+                      {/* 🔥 カバー画像（サイズ縮小） */}
+                      <div className="h-48 sm:h-56 bg-gradient-to-br from-[#fef3e8] to-[#f5e6d3] relative overflow-hidden">
                         {map.cover_image_url ? (
                           <img
                             src={map.cover_image_url}
@@ -140,26 +184,46 @@ const PublicMapsSection = ({ onMapClick }: { onMapClick: (mapId: string) => void
                           />
                         ) : (
                           <div className="flex items-center justify-center h-full">
-                            <MapPin className="h-20 w-20 text-[#73370c]/30" />
+                            <MapPin className="h-16 w-16 text-[#73370c]/30" />
                           </div>
                         )}
-                        <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-sm font-medium text-[#73370c] flex items-center gap-1">
-                          <MapPin className="h-4 w-4" />
+                        
+                        {/* 🔥 作成者情報（右上に配置）- Avatarコンポーネント使用 */}
+                        <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-sm px-2.5 py-1.5 rounded-full flex items-center gap-2">
+                          <Avatar className="h-6 w-6 border border-white/50">
+                            {map.author_avatar_path ? (
+                              <AvatarImage
+                                src={getAvatarPublicUrl(map.author_avatar_path) || ''}
+                                alt={map.author_name}
+                              />
+                            ) : null}
+                            <AvatarFallback className="text-xs font-bold bg-gradient-to-br from-[#73370c] to-[#a85c1b] text-white">
+                              {map.author_name.charAt(0).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="text-xs font-semibold text-white max-w-[80px] truncate">
+                            {map.author_name}
+                          </span>
+                        </div>
+
+                        {/* スポット数（左上） */}
+                        <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm px-2.5 py-1 rounded-full text-xs font-medium text-[#73370c] flex items-center gap-1">
+                          <MapPin className="h-3.5 w-3.5" />
                           {map.total_locations || 0}箇所
                         </div>
                       </div>
 
-                      {/* コンテンツ */}
-                      <div className="p-6">
-                        <h3 className="text-2xl font-bold text-gray-800 mb-3 line-clamp-2 group-hover:text-[#73370c] transition-colors">
+                      {/* 🔥 コンテンツ（コンパクト化） */}
+                      <div className="p-4">
+                        <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-2 line-clamp-2 group-hover:text-[#73370c] transition-colors">
                           {map.title}
                         </h3>
 
                         {/* ハッシュタグ */}
                         {map.hashtags && map.hashtags.length > 0 && (
-                          <div className="flex flex-wrap gap-2 mb-3">
+                          <div className="flex flex-wrap gap-1.5 mb-2">
                             {map.hashtags.slice(0, 3).map((tag: string, i: number) => (
-                              <span key={i} className="text-xs bg-[#fef3e8] text-[#73370c] px-2 py-1 rounded-full">
+                              <span key={i} className="text-xs bg-[#fef3e8] text-[#73370c] px-2 py-0.5 rounded-full">
                                 #{tag}
                               </span>
                             ))}
@@ -167,8 +231,8 @@ const PublicMapsSection = ({ onMapClick }: { onMapClick: (mapId: string) => void
                         )}
 
                         {/* 日付 */}
-                        <div className="flex items-center text-sm text-gray-500">
-                          <Calendar className="h-4 w-4 mr-1" />
+                        <div className="flex items-center text-xs text-gray-500">
+                          <Calendar className="h-3.5 w-3.5 mr-1" />
                           {new Date(map.created_at).toLocaleDateString('ja-JP', {
                             year: 'numeric',
                             month: 'long',
@@ -187,32 +251,32 @@ const PublicMapsSection = ({ onMapClick }: { onMapClick: (mapId: string) => void
               <>
                 <button
                   onClick={handlePrev}
-                  className="absolute left-0 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white p-3 rounded-full shadow-lg transition-all z-10 -ml-2 sm:-ml-4"
+                  className="absolute left-0 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white p-2.5 rounded-full shadow-lg transition-all z-10 -ml-1 sm:-ml-3"
                   aria-label="前へ"
                 >
-                  <ChevronRight className="h-6 w-6 text-[#73370c] rotate-180" />
+                  <ChevronRight className="h-5 w-5 text-[#73370c] rotate-180" />
                 </button>
                 <button
                   onClick={handleNext}
-                  className="absolute right-0 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white p-3 rounded-full shadow-lg transition-all z-10 -mr-2 sm:-mr-4"
+                  className="absolute right-0 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white p-2.5 rounded-full shadow-lg transition-all z-10 -mr-1 sm:-mr-3"
                   aria-label="次へ"
                 >
-                  <ChevronRight className="h-6 w-6 text-[#73370c]" />
+                  <ChevronRight className="h-5 w-5 text-[#73370c]" />
                 </button>
               </>
             )}
 
             {/* インジケーター */}
             {publicMaps.length > 1 && (
-              <div className="flex justify-center gap-2 mt-6">
+              <div className="flex justify-center gap-1.5 mt-5">
                 {publicMaps.map((_, index) => (
                   <button
                     key={index}
                     onClick={() => setCurrentIndex(index)}
-                    className={`h-2 rounded-full transition-all ${
+                    className={`h-1.5 rounded-full transition-all ${
                       index === currentIndex
-                        ? 'w-8 bg-[#73370c]'
-                        : 'w-2 bg-gray-300 hover:bg-gray-400'
+                        ? 'w-6 bg-[#73370c]'
+                        : 'w-1.5 bg-gray-300 hover:bg-gray-400'
                     }`}
                     aria-label={`マップ ${index + 1} へ移動`}
                   />
@@ -221,6 +285,23 @@ const PublicMapsSection = ({ onMapClick }: { onMapClick: (mapId: string) => void
             )}
           </div>
         )}
+
+        {/* 🔥 他のMy Mapをみるリンク */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          viewport={{ once: true }}
+          className="text-center mt-10"
+        >
+          <button
+            onClick={() => router.push('/public-maps')}
+            className="inline-flex items-center gap-2 px-6 py-3 text-base font-bold text-[#73370c] hover:text-[#5c2a0a] border-2 border-[#73370c] hover:border-[#5c2a0a] rounded-full transition-all hover:bg-[#fef3e8] group"
+          >
+            他のMy Mapをみる
+            <ChevronRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
+          </button>
+        </motion.div>
       </div>
     </section>
   );
