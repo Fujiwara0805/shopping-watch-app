@@ -534,7 +534,7 @@ src="https://res.cloudinary.com/dz9trbwma/image/upload/v1763822849/ChatGPT_Image
                   onClick={onStart}
                   className="h-16 sm:h-20 px-12 sm:px-16 text-lg sm:text-2xl font-extrabold rounded-full shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 bg-[#ffecd2] hover:bg-[#fff8f0] text-[#3d2914]"
                 >
-                  マップを探索する
+                  イベントを探す
                 </Button>
                 <p className="text-lg sm:text-xl text-gray-200 mt-4 font-bold">
                   無料で今すぐ始められます
