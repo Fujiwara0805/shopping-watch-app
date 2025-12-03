@@ -570,14 +570,14 @@ function ProfilePageContent() {
           >
             <h3 className="text-lg font-bold text-gray-600 flex items-center mb-2">
               <Map className="h-5 w-5 mr-2 text-green-600" />
-              マイマップ設定
+              My Map設定
             </h3>
             
             <div className="space-y-2">
               {/* マイマップ作成ボタン */}
               <SettingItem
                 icon={Plus}
-                title="マイマップを作成"
+                title="My Mapを作成"
                 description="新しいマイマップを作成"
                 action={() => router.push('/create-map')}
               />
@@ -585,7 +585,7 @@ function ProfilePageContent() {
               {/* マイマップ編集ボタン */}
               <SettingItem
                 icon={Map}
-                title="マイマップを編集"
+                title="My Mapを編集"
                 description="既存のマイマップを編集・管理"
                 action={() => router.push('/my-maps')}
               />

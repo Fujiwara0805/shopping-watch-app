@@ -66,6 +66,11 @@ export function AppHeader() {
   
   // Get page title based on current path
   const getPageTitle = () => {
+    // 動的ルートのチェック（先にチェックする必要がある）
+    if (pathname.startsWith('/my-maps/edit/')) {
+      return 'My Map編集';
+    }
+    
     switch (pathname) {
       case '/post':
         return '新規投稿';
@@ -74,7 +79,7 @@ export function AppHeader() {
       case '/create-map':
         return 'My Map作成';
       case '/my-maps':
-        return 'My Map編集';
+        return 'My Map画面';
       case '/profile':
         return 'マイページ';
       case '/profile/edit':

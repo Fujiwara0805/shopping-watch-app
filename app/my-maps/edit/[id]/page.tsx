@@ -9,10 +9,11 @@ import { z } from 'zod';
 import { 
   Upload, X, MapPin, Plus, Trash2, 
   Loader2, Image as ImageIcon, Link as LinkIcon, Tag, ClockIcon,
-  FileText, CheckCircle, ArrowLeft
+  MapIcon, CheckCircle, ChevronUp, ChevronDown, ArrowLeft
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -44,11 +45,17 @@ interface LocationData {
 // フォームスキーマ
 const editMapSchema = z.object({
   title: z.string().min(1, { message: 'タイトルは必須です' }).max(100, { message: '100文字以内で入力してください' }),
-  hashtags: z.string().max(200).optional(),
   expiryOption: z.enum(['30days', '90days', 'unlimited']),
 });
 
 type MapFormValues = z.infer<typeof editMapSchema>;
+
+// 丸数字変換関数
+const toCircledNumber = (num: number): string => {
+  const circled = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩', 
+                   '⑪', '⑫', '⑬', '⑭', '⑮', '⑯', '⑰', '⑱', '⑲', '⑳'];
+  return circled[num - 1] || `${num}`;
+};
 
 export default function EditMapPage() {
   const { data: session, status } = useSession();
@@ -68,16 +75,37 @@ export default function EditMapPage() {
     resolver: zodResolver(editMapSchema),
     defaultValues: {
       title: '',
-      hashtags: '',
       expiryOption: '30days',
     },
   });
+  
+  // ハッシュタグ管理
+  const [hashtags, setHashtags] = useState<string[]>([]);
+  const [hashtagInput, setHashtagInput] = useState('');
+  const prevHashtagsLengthRef = useRef(0);
   
   // 複数場所の管理
   const [locations, setLocations] = useState<LocationData[]>([]);
   const [currentLocationIndex, setCurrentLocationIndex] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  
+  // 必須項目の入力チェック
+  const isFormValid = () => {
+    // タイトルが入力されているか
+    const hasTitle = form.watch('title').trim().length > 0;
+    
+    // 少なくとも1つのスポットが完全に入力されているか
+    const hasValidLocation = locations.some(location => 
+      location.storeName && 
+      location.storeId && 
+      location.content && 
+      location.content.length >= 5 && 
+      (location.existingImageUrls.length > 0 || location.imageFiles.length > 0)
+    );
+    
+    return hasTitle && hasValidLocation;
+  };
   
   // ログインチェック
   useEffect(() => {
@@ -125,9 +153,13 @@ export default function EditMapPage() {
       // フォームに値をセット
       form.reset({
         title: mapData.title,
-        hashtags: mapData.hashtags ? mapData.hashtags.join(', ') : '',
         expiryOption: mapData.expiry_option === '30d' ? '30days' : mapData.expiry_option === '90d' ? '90days' : 'unlimited',
       });
+      
+      // ハッシュタグを配列形式で設定
+      if (mapData.hashtags && Array.isArray(mapData.hashtags)) {
+        setHashtags(mapData.hashtags);
+      }
       
       // locations配列をLocationData形式に変換
       const locationsArray = mapData.locations || [];
@@ -172,6 +204,28 @@ export default function EditMapPage() {
     }
   };
   
+  // ハッシュタグ追加
+  const addHashtag = () => {
+    const tag = hashtagInput.trim().replace(/^#/, '');
+    if (tag && !hashtags.includes(tag) && hashtags.length < 10) {
+      setHashtags([...hashtags, tag]);
+      setHashtagInput('');
+    }
+  };
+  
+  // ハッシュタグ削除
+  const removeHashtag = (tagToRemove: string) => {
+    setHashtags(hashtags.filter(tag => tag !== tagToRemove));
+  };
+
+  // ハッシュタグが追加されたら入力フォームをリセット
+  useEffect(() => {
+    if (hashtags.length > prevHashtagsLengthRef.current) {
+      setHashtagInput('');
+    }
+    prevHashtagsLengthRef.current = hashtags.length;
+  }, [hashtags.length]);
+  
   // 場所を追加
   const addLocation = () => {
     setLocations([...locations, {
@@ -195,7 +249,7 @@ export default function EditMapPage() {
     if (locations.length === 1) {
       toast({
         title: "⚠️ 削除できません",
-        description: "最低1つの場所が必要です",
+        description: "最低1つのスポットが必要です",
         duration: 2000,
       });
       return;
@@ -206,6 +260,27 @@ export default function EditMapPage() {
     
     if (currentLocationIndex >= newLocations.length) {
       setCurrentLocationIndex(newLocations.length - 1);
+    }
+  };
+
+  // 場所の順番を入れ替え
+  const moveLocation = (index: number, direction: 'up' | 'down') => {
+    if (direction === 'up' && index === 0) return;
+    if (direction === 'down' && index === locations.length - 1) return;
+    
+    const newLocations = [...locations];
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    
+    // 配列の要素を入れ替え
+    [newLocations[index], newLocations[targetIndex]] = [newLocations[targetIndex], newLocations[index]];
+    
+    setLocations(newLocations);
+    
+    // 現在選択中のインデックスも更新
+    if (currentLocationIndex === index) {
+      setCurrentLocationIndex(targetIndex);
+    } else if (currentLocationIndex === targetIndex) {
+      setCurrentLocationIndex(index);
     }
   };
   
@@ -234,7 +309,7 @@ export default function EditMapPage() {
     if (totalImages > 3) {
       toast({
         title: "⚠️ 画像枚数の上限を超えています",
-        description: "各場所に最大3枚まで画像を追加できます",
+        description: "各スポットに最大3枚まで画像を追加できます",
         duration: 3000,
       });
       return;
@@ -307,19 +382,19 @@ export default function EditMapPage() {
       const location = locations[i];
       
       if (!location.storeName || !location.storeId) {
-        setSubmitError(`場所${i + 1}: 場所を選択してください`);
+        setSubmitError(`スポット${toCircledNumber(i + 1)}: スポットを選択してください`);
         setCurrentLocationIndex(i);
         return;
       }
       
       if (!location.content || location.content.length < 5) {
-        setSubmitError(`場所${i + 1}: 説明を5文字以上入力してください`);
+        setSubmitError(`スポット${toCircledNumber(i + 1)}: 説明を5文字以上入力してください`);
         setCurrentLocationIndex(i);
         return;
       }
       
       if (location.existingImageUrls.length + location.imageFiles.length === 0) {
-        setSubmitError(`場所${i + 1}: 画像を最低1枚アップロードしてください`);
+        setSubmitError(`スポット${toCircledNumber(i + 1)}: 画像を最低1枚アップロードしてください`);
         setCurrentLocationIndex(i);
         return;
       }
@@ -352,9 +427,7 @@ export default function EditMapPage() {
             return farFuture;
           })();
       
-      const hashtags = values.hashtags 
-        ? values.hashtags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0)
-        : null;
+      const hashtagsToSave = hashtags.length > 0 ? hashtags : null;
       
       // 各場所の画像をアップロードして、locations配列を構築
       const locationsData = [];
@@ -412,7 +485,7 @@ export default function EditMapPage() {
         .update({
           title: values.title,
           locations: locationsData,
-          hashtags: hashtags,
+          hashtags: hashtagsToSave,
           expires_at: expiresAt.toISOString(),
           expiry_option: values.expiryOption === '30days' ? '30d' : values.expiryOption === '90days' ? '90d' : 'unlimited',
           updated_at: new Date().toISOString(),
@@ -461,49 +534,29 @@ export default function EditMapPage() {
   }
   
   return (
-    <div className="container mx-auto max-w-3xl p-4 md:p-8 pb-32">
+    <div className="container mx-auto max-w-3xl px-4 py-4 pb-8">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        {/* ヘッダー */}
-        <div className="mb-8">
-          <Button
-            variant="ghost"
-            onClick={() => router.push('/my-maps')}
-            className="mb-4"
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            マイマップに戻る
-          </Button>
-          <h1 className="text-3xl font-bold text-[#73370c] mb-2">📝 マップを編集</h1>
-          <p className="text-gray-600">マップの情報を更新できます</p>
-        </div>
-        
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8">
-            {/* タイトルとメタ情報 */}
-            <div className="bg-white rounded-lg border-2 border-[#73370c]/20 p-6 space-y-6">
-              <h2 className="text-xl font-bold text-[#73370c] flex items-center">
-                <FileText className="mr-2 h-6 w-6" />
-                基本情報
-              </h2>
-              
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+            {/* 基本情報 */}
+            <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-4 shadow-sm">
               {/* タイトル */}
               <FormField
                 control={form.control}
                 name="title"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-lg font-semibold">
-                      マップのタイトル<span className="text-destructive ml-1">※</span>
+                    <FormLabel className="text-base font-semibold">
+                      Mapのタイトル<span className="text-destructive ml-1">*</span>
                     </FormLabel>
                     <FormControl>
-                      <Textarea
-                        placeholder="例: 2025年冬の温泉巡り"
-                        className="resize-none text-lg"
-                        rows={2}
+                      <Input
+                        placeholder="例: 温泉巡りマップ"
+                        className="text-base h-12"
                         maxLength={100}
                         {...field}
                       />
@@ -514,31 +567,57 @@ export default function EditMapPage() {
               />
               
               {/* ハッシュタグ */}
-              <FormField
-                control={form.control}
-                name="hashtags"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-lg font-semibold flex items-center">
-                      <Tag className="mr-2 h-5 w-5" />
-                      ハッシュタグ
-                    </FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="カンマ区切りで入力（例: 温泉, 冬旅行, 癒し）"
-                        className="resize-none"
-                        rows={2}
-                        maxLength={200}
-                        {...field}
-                      />
-                    </FormControl>
-                    <p className="text-xs text-gray-500">
-                      💡 複数のハッシュタグを入力する場合は、カンマ（,）で区切ってください
-                    </p>
-                    <FormMessage />
-                  </FormItem>
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold flex items-center">
+                  <Tag className="mr-2 h-4 w-4" />
+                  ハッシュタグ
+                </Label>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="タグを入力"
+                    className="flex-1 h-12 text-base"
+                    value={hashtagInput}
+                    onChange={(e) => setHashtagInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        addHashtag();
+                      }
+                    }}
+                    maxLength={30}
+                  />
+                  <Button
+                    type="button"
+                    onClick={addHashtag}
+                    className="h-12 w-12 p-0 bg-[#73370c] hover:bg-[#8b4513]"
+                    disabled={!hashtagInput.trim()}
+                  >
+                    <Plus className="h-5 w-5" />
+                  </Button>
+                </div>
+                {hashtags.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {hashtags.map((tag, index) => (
+                      <motion.span
+                        key={index}
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.8 }}
+                        className="inline-flex items-center gap-1 px-3 py-1.5 bg-[#fef3e8] text-[#73370c] rounded-full text-sm font-medium"
+                      >
+                        #{tag}
+                        <button
+                          type="button"
+                          onClick={() => removeHashtag(tag)}
+                          className="ml-1 hover:bg-[#73370c]/10 rounded-full p-0.5"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </motion.span>
+                    ))}
+                  </div>
                 )}
-              />
+              </div>
               
               {/* 掲載期間 */}
               <FormField
@@ -546,13 +625,13 @@ export default function EditMapPage() {
                 name="expiryOption"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-lg font-semibold flex items-center">
-                      <ClockIcon className="mr-2 h-5 w-5" />
-                      掲載期間<span className="text-destructive ml-1">※</span>
+                    <FormLabel className="text-sm font-semibold flex items-center">
+                      <ClockIcon className="mr-2 h-4 w-4" />
+                      掲載期間<span className="text-destructive ml-1">*</span>
                     </FormLabel>
                     <FormControl>
                       <Select value={field.value} onValueChange={field.onChange}>
-                        <SelectTrigger>
+                        <SelectTrigger className="h-12 text-base">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -568,74 +647,35 @@ export default function EditMapPage() {
               />
             </div>
             
-            {/* 場所リスト */}
-            <div className="space-y-4">
+            {/* スポットリスト */}
+            <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-[#73370c] flex items-center">
-                  <MapPin className="mr-2 h-6 w-6" />
-                  場所 ({locations.length}箇所)
+                <h2 className="text-lg font-bold text-[#73370c] flex items-center">
+                  <MapIcon className="mr-2 h-5 w-5" />
+                  スポットの追加
                 </h2>
                 <Button
                   type="button"
                   variant="outline"
+                  size="sm"
                   onClick={addLocation}
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-1.5 h-9 text-sm border-[#73370c] text-[#73370c] hover:bg-[#fef3e8]"
                 >
                   <Plus className="h-4 w-4" />
-                  場所を追加
+                  追加
                 </Button>
               </div>
               
-              {/* 場所のタブ */}
-              <div className="flex gap-2 overflow-x-auto pb-2">
-                {locations.map((location, index) => (
-                  <button
-                    key={location.id}
-                    type="button"
-                    onClick={() => setCurrentLocationIndex(index)}
-                    className={cn(
-                      "flex-shrink-0 px-4 py-2 rounded-lg font-medium transition-all",
-                      currentLocationIndex === index
-                        ? "bg-[#73370c] text-white"
-                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                    )}
-                  >
-                    場所 {index + 1}
-                    {location.storeName && (
-                      <span className="ml-2 text-xs opacity-80">
-                        ({location.storeName.slice(0, 10)}{location.storeName.length > 10 ? '...' : ''})
-                      </span>
-                    )}
-                  </button>
-                ))}
-              </div>
-              
-              {/* 現在選択されている場所のフォーム */}
+              {/* 現在選択されているスポットのフォーム */}
               <AnimatePresence mode="wait">
                 <motion.div
                   key={currentLocationIndex}
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
-                  transition={{ duration: 0.3 }}
-                  className="bg-white rounded-lg border-2 border-[#73370c]/20 p-6 space-y-6"
+                  transition={{ duration: 0.2 }}
+                  className="bg-white rounded-xl border border-gray-200 p-4 space-y-4 shadow-sm"
                 >
-                  {/* 場所の削除ボタン */}
-                  {locations.length > 1 && (
-                    <div className="flex justify-end">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeLocation(currentLocationIndex)}
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                      >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        この場所を削除
-                      </Button>
-                    </div>
-                  )}
-                  
                   <LocationForm
                     location={locations[currentLocationIndex]}
                     locationIndex={currentLocationIndex}
@@ -652,29 +692,113 @@ export default function EditMapPage() {
             
             {/* エラーメッセージ */}
             {submitError && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <div className="bg-red-50 border border-red-200 rounded-xl p-4">
                 <p className="text-sm text-red-800">{submitError}</p>
+              </div>
+            )}
+
+            {/* スポットリスト */}
+            {locations.some(loc => loc.storeName) && (
+              <div style={{ backgroundColor: '#99623b' }} className="rounded-xl border border-amber-800 p-4 shadow-sm">
+                <h3 className="text-base font-bold mb-3 flex items-center" style={{ color: '#fef3e7' }}>
+                  <MapPin className="mr-2 h-5 w-5" />
+                  スポット一覧
+                </h3>
+                <div className="space-y-2">
+                  {locations.map((location, index) => (
+                    <motion.div
+                      key={location.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      style={{ backgroundColor: '#72370d' }}
+                      className="flex items-center gap-2 p-3 rounded-lg border border-amber-800 hover:bg-amber-900 transition-colors cursor-pointer"
+                      onClick={() => setCurrentLocationIndex(index)}
+                    >
+                      {/* 順番表示 */}
+                      <span className="text-base font-bold min-w-[32px]" style={{ color: '#fef3e7' }}>
+                        {toCircledNumber(index + 1)}
+                      </span>
+                      
+                      {/* スポット名（フルネーム） */}
+                      <span className="flex-1 text-base font-medium" style={{ color: '#fef3e7' }}>
+                        {location.storeName || `スポット${index + 1}`}
+                      </span>
+                      
+                      {/* 順番入れ替えと削除ボタン */}
+                      <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                        {/* 順番入れ替えボタン */}
+                        <div className="flex flex-col gap-1">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 p-0 hover:bg-amber-900"
+                            onClick={() => moveLocation(index, 'up')}
+                            disabled={index === 0}
+                          >
+                            <ChevronUp className="h-4 w-4" style={{ color: '#fef3e7' }} />
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 p-0 hover:bg-amber-900"
+                            onClick={() => moveLocation(index, 'down')}
+                            disabled={index === locations.length - 1}
+                          >
+                            <ChevronDown className="h-4 w-4" style={{ color: '#fef3e7' }} />
+                          </Button>
+                        </div>
+                        
+                        {/* 削除ボタン */}
+                        {locations.length > 1 && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 p-0 hover:bg-red-500 text-red-200"
+                            onClick={() => removeLocation(index)}
+                          >
+                            <Trash2 className="h-5 w-5 text-red-200" />
+                          </Button>
+                        )}
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
               </div>
             )}
             
             {/* 更新ボタン */}
-            <div className="sticky bottom-4 z-10">
+            <div className="space-y-2">
               <Button
                 type="submit"
-                disabled={isSubmitting}
-                className="w-full text-xl py-6 shadow-lg"
+                disabled={isSubmitting || !isFormValid()}
+                className="w-full h-14 text-lg font-bold rounded-xl shadow-lg bg-[#73370c] hover:bg-[#8b4513] disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed"
               >
                 {isSubmitting ? (
                   <>
-                    <Loader2 className="mr-2 h-6 w-6 animate-spin" />
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                     更新中...
                   </>
                 ) : (
                   <>
-                    <CheckCircle className="mr-2 h-6 w-6" />
+                    <CheckCircle className="mr-2 h-5 w-5" />
                     マップを更新する
                   </>
                 )}
+              </Button>
+              <p className="text-xs text-gray-500 text-center">
+                <span className="text-red-600">※は必須項目です</span>
+              </p>
+              
+              {/* 戻るボタン */}
+              <Button
+                type="button"
+                onClick={() => router.push('/my-maps')}
+                className="w-full h-12 text-base font-semibold rounded-xl shadow-md bg-gray-200 hover:bg-gray-300 text-gray-700"
+              >
+                戻る
               </Button>
             </div>
           </form>
@@ -684,7 +808,7 @@ export default function EditMapPage() {
   );
 }
 
-// 場所入力フォームコンポーネント
+// スポット入力フォームコンポーネント
 interface LocationFormProps {
   location: LocationData;
   locationIndex: number;
@@ -758,103 +882,96 @@ function LocationForm({
   }, [isLoaded, loadError, locationIndex, updateLocation, latitude, longitude]);
   
   return (
-    <div className="space-y-6">
-      {/* 場所検索 */}
+    <div className="space-y-4">
+      {/* スポット検索 */}
       <div>
-        <Label className="text-lg font-semibold mb-2 block">
-          <MapPin className="inline-block mr-2 h-5 w-5" />
-          場所を検索<span className="text-destructive ml-1">※</span>
+        <Label className="text-sm font-semibold mb-2 block">
+          <MapPin className="inline-block mr-1.5 h-4 w-4" />
+          スポットを検索<span className="text-destructive ml-1">*</span>
         </Label>
         <div className="relative">
           <input
             ref={inputRef}
             type="text"
             placeholder="店舗名や施設名で検索..."
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#73370c] text-lg"
+            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#73370c] focus:border-transparent text-base"
             defaultValue={location.storeName}
           />
-          <MapPin className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#73370c] pointer-events-none" />
+          <MapPin className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
         </div>
         {locationStatus === 'success' && (
-          <div className="mt-2 flex items-center text-sm text-green-600">
-            <CheckCircle className="h-4 w-4 mr-1" />
+          <div className="mt-1.5 flex items-center text-xs text-green-600">
+            <CheckCircle className="h-3.5 w-3.5 mr-1" />
             位置情報を取得しました
           </div>
         )}
       </div>
       
-      {/* 説明 */}
+      {/* スポット説明 */}
       <div>
-        <Label className="text-lg font-semibold mb-2 block">
-          説明<span className="text-destructive ml-1">※</span>
+        <Label className="text-sm font-semibold mb-2 block">
+          スポット説明<span className="text-destructive ml-1">*</span>
         </Label>
         <Textarea
-          placeholder="この場所について説明してください（5文字以上）"
-          className="resize-none text-lg"
-          rows={4}
+          placeholder="このスポットについて説明してください（5文字以上）"
+          className="resize-none text-base rounded-xl min-h-[180px]"
           maxLength={800}
           value={location.content}
           onChange={(e) => updateLocation(locationIndex, 'content', e.target.value)}
         />
-        <div className="text-xs text-right text-gray-500 mt-1">
+        <div className="text-xs text-right text-gray-400 mt-1">
           {location.content.length}/800
         </div>
       </div>
       
       {/* 画像アップロード */}
       <div>
-        <Label className="text-lg font-semibold mb-2 block">
-          <ImageIcon className="inline-block mr-2 h-5 w-5" />
-          画像（最大3枚）<span className="text-destructive ml-1">※</span>
+        <Label className="text-sm font-semibold mb-2 block">
+          <ImageIcon className="inline-block mr-1.5 h-4 w-4" />
+          画像（最大3枚）<span className="text-destructive ml-1">*</span>
         </Label>
         
         {/* 既存の画像 */}
         {location.existingImageUrls.length > 0 && (
-          <div className="mb-4">
-            <p className="text-sm text-gray-600 mb-2">既存の画像</p>
-            <div className="grid grid-cols-3 gap-3">
-              {location.existingImageUrls.map((url, imgIndex) => (
-                <div key={`existing-${imgIndex}`} className="relative group">
-                  <img
-                    src={url}
-                    alt={`Existing ${imgIndex + 1}`}
-                    className="w-full h-32 object-cover rounded-lg border border-gray-200"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => removeExistingImage(locationIndex, imgIndex)}
-                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
-              ))}
-            </div>
+          <div className="mb-3 grid grid-cols-3 gap-2">
+            {location.existingImageUrls.map((url, imgIndex) => (
+              <div key={`existing-${imgIndex}`} className="relative aspect-square group">
+                <img
+                  src={url}
+                  alt={`Existing ${imgIndex + 1}`}
+                  className="w-full h-full object-cover rounded-lg border border-gray-200"
+                />
+                <button
+                  type="button"
+                  onClick={() => removeExistingImage(locationIndex, imgIndex)}
+                  className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full p-1 shadow-md"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ))}
           </div>
         )}
         
         {/* 新規画像のプレビュー */}
         {location.imagePreviewUrls.length > 0 && (
-          <div className="mb-4">
-            <p className="text-sm text-gray-600 mb-2">新しく追加する画像</p>
-            <div className="grid grid-cols-3 gap-3">
-              {location.imagePreviewUrls.map((url, imgIndex) => (
-                <div key={`new-${imgIndex}`} className="relative group">
-                  <img
-                    src={url}
-                    alt={`Preview ${imgIndex + 1}`}
-                    className="w-full h-32 object-cover rounded-lg border border-gray-200"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => removeImage(locationIndex, imgIndex)}
-                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
-              ))}
-            </div>
+          <div className="mb-3 grid grid-cols-3 gap-2">
+            {location.imagePreviewUrls.map((url, imgIndex) => (
+              <div key={`new-${imgIndex}`} className="relative aspect-square group">
+                <img
+                  src={url}
+                  alt={`Preview ${imgIndex + 1}`}
+                  className="w-full h-full object-cover rounded-lg border border-gray-200"
+                />
+                <button
+                  type="button"
+                  onClick={() => removeImage(locationIndex, imgIndex)}
+                  className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full p-1 shadow-md"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ))}
           </div>
         )}
         
@@ -871,12 +988,12 @@ function LocationForm({
             />
             <label
               htmlFor={`image-upload-${locationIndex}`}
-              className="cursor-pointer flex items-center justify-center p-8 border-2 border-dashed border-gray-300 rounded-lg hover:border-[#73370c] hover:bg-[#fef3e8] transition-colors"
+              className="cursor-pointer flex items-center justify-center p-6 border-2 border-dashed border-gray-300 rounded-xl hover:border-[#73370c] hover:bg-[#fef3e8]/50 transition-colors"
             >
               <div className="text-center">
-                <Upload className="mx-auto h-12 w-12 text-gray-400" />
-                <p className="mt-2 text-sm text-gray-600">クリックして画像を選択</p>
-                <p className="text-xs text-gray-500">JPG, PNG, WEBP（各5MB以下）</p>
+                <Upload className="mx-auto h-10 w-10 text-gray-400" />
+                <p className="mt-2 text-sm text-gray-600">タップして画像を選択</p>
+                <p className="text-xs text-gray-400">JPG, PNG, WEBP（各5MB以下）</p>
               </div>
             </label>
           </>
@@ -885,14 +1002,13 @@ function LocationForm({
       
       {/* リンク */}
       <div>
-        <Label className="text-lg font-semibold mb-2 block">
-          <LinkIcon className="inline-block mr-2 h-5 w-5" />
+        <Label className="text-sm font-semibold mb-2 block">
+          <LinkIcon className="inline-block mr-1.5 h-4 w-4" />
           リンク（任意）
         </Label>
-        <Textarea
+        <Input
           placeholder="https://example.com"
-          className="resize-none"
-          rows={2}
+          className="h-12 text-base rounded-xl"
           value={location.url}
           onChange={(e) => updateLocation(locationIndex, 'url', e.target.value)}
         />
@@ -900,4 +1016,3 @@ function LocationForm({
     </div>
   );
 }
-

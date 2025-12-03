@@ -14,7 +14,8 @@ import {
   Tag,
   Image as ImageIcon,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  FileText
 } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 
@@ -39,13 +40,6 @@ const optimizeCloudinaryImageUrl = (url: string): string => {
   return url;
 };
 
-// 数字を丸数字に変換
-const toCircledNumber = (num: number): string => {
-  const circledNumbers = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩', 
-                         '⑪', '⑫', '⑬', '⑭', '⑮', '⑯', '⑰', '⑱', '⑲', '⑳'];
-  return num <= 20 ? circledNumbers[num - 1] : `(${num})`;
-};
-
 interface SpotLocation {
   order: number;
   store_id: string;
@@ -61,6 +55,7 @@ interface MapData {
   id: string;
   title: string;
   hashtags: string[] | null;
+  description?: string | null;
   locations: SpotLocation[];
   total_locations: number;
 }
@@ -121,6 +116,7 @@ export function SpotDetailClient({ spotId }: SpotDetailClientProps) {
           id: mapDataResult.id,
           title: mapDataResult.title,
           hashtags: mapDataResult.hashtags,
+          description: mapDataResult.description || null,
           locations: locations,
           total_locations: locations.length,
         });
@@ -160,7 +156,7 @@ export function SpotDetailClient({ spotId }: SpotDetailClientProps) {
   // Google Mapsで開く
   const openInGoogleMaps = (location: SpotLocation) => {
     if (location?.store_latitude && location?.store_longitude) {
-      const url = `https://www.google.com/maps/search/?api=1&query=${location.store_latitude},${location.store_longitude}`;
+      const url = `https://www.google.com/maps/search/?api=1&query=${location.store_name},`;
       window.open(url, '_blank');
     }
   };
@@ -203,17 +199,10 @@ export function SpotDetailClient({ spotId }: SpotDetailClientProps) {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="text-center"
-        >
-          <div className="relative">
-            <div className="w-16 h-16 border-4 border-gray-200 rounded-full animate-spin mx-auto" style={{ borderTopColor: '#73370c' }} />
-            <MapPin className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-6 w-6 text-[#73370c]" />
-          </div>
-          <p className="mt-4 text-[#73370c] font-medium">読み込み中...</p>
-        </motion.div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#73370c] mx-auto mb-4"></div>
+          <p className="text-gray-600 font-bold">読み込み中...</p>
+        </div>
       </div>
     );
   }
@@ -273,6 +262,28 @@ export function SpotDetailClient({ spotId }: SpotDetailClientProps) {
                 {mapData.title}
               </h2>
 
+              {/* 説明文カード */}
+              {mapData.description && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                  className="mb-4"
+                >
+                  <div className="bg-gray-100 border-l-4 border-teal-400 rounded-lg p-4 text-left">
+                    <div className="flex items-start gap-3">
+                      <FileText className="h-5 w-5 mt-0.5 flex-shrink-0 text-teal-600" />
+                      <div className="flex-1">
+                        <p className="font-bold text-gray-900 mb-2">説明</p>
+                        <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
+                          {mapData.description}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
               {/* ハッシュタグ */}
               {mapData.hashtags && mapData.hashtags.length > 0 && (
                 <div className="flex flex-wrap justify-center gap-2">
@@ -307,7 +318,7 @@ export function SpotDetailClient({ spotId }: SpotDetailClientProps) {
                   {/* 場所名（番号付き） */}
                   <h3 className="text-xl font-bold mb-4 flex items-start gap-2">
                     <span className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm" style={{ backgroundColor: '#73370c' }}>
-                      {toCircledNumber(index + 1)}
+                      {index + 1}
                     </span>
                     <span className="leading-tight pt-1" style={{ color: '#73370c' }}>{location.store_name}</span>
                   </h3>
@@ -315,47 +326,49 @@ export function SpotDetailClient({ spotId }: SpotDetailClientProps) {
                   {/* 画像セクション */}
                   {location.image_urls && location.image_urls.length > 0 && (
                     <div className="relative aspect-[16/10] bg-gray-100 rounded-lg overflow-hidden mb-4">
-                      <img
-                        src={optimizeCloudinaryImageUrl(location.image_urls[currentImageIndices[index] || 0])}
-                        alt={location.store_name}
-                        className="w-full h-full object-cover cursor-pointer transition-transform hover:scale-[1.02]"
-                        onClick={() => setExpandedImageIndex({ spotIndex: index, imageIndex: currentImageIndices[index] || 0 })}
-                      />
-                      
-                      {/* 画像ナビゲーション */}
-                      {location.image_urls.length > 1 && (
-                        <>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleImageNav(index, 'prev', location.image_urls.length); }}
-                            className="absolute left-2 top-1/2 -translate-y-1/2 p-1.5 bg-black/40 hover:bg-black/60 rounded-full transition-colors"
-                          >
-                            <ChevronLeft className="h-5 w-5 text-white" />
-                          </button>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleImageNav(index, 'next', location.image_urls.length); }}
-                            className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-black/40 hover:bg-black/60 rounded-full transition-colors"
-                          >
-                            <ChevronRight className="h-5 w-5 text-white" />
-                          </button>
-                          
-                          {/* 画像カウンター */}
-                          <div className="absolute bottom-2 right-2 flex items-center gap-1 px-2 py-1 bg-black/50 rounded-full text-white text-xs">
-                            <ImageIcon className="h-3 w-3" />
-                            {(currentImageIndices[index] || 0) + 1}/{location.image_urls.length}
-                          </div>
-                        </>
-                      )}
+                        <img
+                          src={optimizeCloudinaryImageUrl(location.image_urls[currentImageIndices[index] || 0])}
+                          alt={location.store_name}
+                          className="w-full h-full object-cover cursor-pointer transition-transform hover:scale-[1.02]"
+                          onClick={() => setExpandedImageIndex({ spotIndex: index, imageIndex: currentImageIndices[index] || 0 })}
+                        />
+                        
+                        {/* 画像ナビゲーション */}
+                        {location.image_urls.length > 1 && (
+                          <>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleImageNav(index, 'prev', location.image_urls.length); }}
+                              className="absolute left-2 top-1/2 -translate-y-1/2 p-1.5 bg-black/40 hover:bg-black/60 rounded-full transition-colors"
+                            >
+                              <ChevronLeft className="h-5 w-5 text-white" />
+                            </button>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleImageNav(index, 'next', location.image_urls.length); }}
+                              className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-black/40 hover:bg-black/60 rounded-full transition-colors"
+                            >
+                              <ChevronRight className="h-5 w-5 text-white" />
+                            </button>
+                            
+                            {/* 画像カウンター */}
+                            <div className="absolute bottom-2 right-2 flex items-center gap-1 px-2 py-1 bg-black/50 rounded-full text-white text-xs">
+                              <ImageIcon className="h-3 w-3" />
+                              {(currentImageIndices[index] || 0) + 1}/{location.image_urls.length}
+                            </div>
+                          </>
+                        )}
                     </div>
                   )}
 
                   {/* 説明文 */}
-                  <p className="text-gray-700 text-base leading-relaxed whitespace-pre-wrap mb-4">
-                    {location.content}
-                  </p>
+                  <div className="bg-gray-100 border-l-4 border-teal-400 rounded-lg p-4 mb-4">
+                    <p className="text-gray-700 text-base leading-relaxed whitespace-pre-wrap">
+                      {location.content}
+                    </p>
+                  </div>
 
                   {/* アクションボタン */}
-                  <div className="flex justify-center">
-                    {location.store_latitude && location.store_longitude && (
+                  {location.store_latitude && location.store_longitude && (
+                    <div className="flex justify-center">
                       <Button
                         onClick={() => openInGoogleMaps(location)}
                         size="sm"
@@ -365,8 +378,8 @@ export function SpotDetailClient({ spotId }: SpotDetailClientProps) {
                         <Navigation className="mr-1.5 h-4 w-4" />
                         地図で見る
                       </Button>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
               </motion.article>
             ))}
