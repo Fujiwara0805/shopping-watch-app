@@ -1259,7 +1259,7 @@ export function MapView() {
 
       const mapOptions: google.maps.MapOptions = {
         center,
-        zoom: (savedLocation || (latitude && longitude)) ? 15 : 13,
+        zoom: (savedLocation || (latitude && longitude)) ? 11 : 9,
         disableDefaultUI: true,
         zoomControl: true,
         gestureHandling: 'greedy',
@@ -1450,6 +1450,8 @@ export function MapView() {
       if (userLocationMarker) {
         userLocationMarker.setPosition(userPosition);
         userLocationMarker.setMap(map);
+        // 🔥 位置情報マーカーを常に一番上に表示
+        userLocationMarker.setZIndex(9999);
       } else {
         try {
           // 🔥 修正箇所: Google Mapsの現在地風の青い丸アイコンを設定
@@ -1465,6 +1467,7 @@ export function MapView() {
               strokeColor: "#ffffff", // 白い縁取り
               strokeWeight: 2,
             },
+            zIndex: 9999, // 🔥 位置情報マーカーを常に一番上に表示
           });
           setUserLocationMarker(marker);
           console.log(`MapView ${browserInfo.name}: User location marker created successfully`);
@@ -1477,8 +1480,8 @@ export function MapView() {
       if (viewMode === 'events') {
         map.panTo(userPosition);
         const currentZoom = map.getZoom();
-        if (currentZoom !== undefined && currentZoom < 15) {
-          map.setZoom(15);
+        if (currentZoom !== undefined && currentZoom < 11) {
+          map.setZoom(11);
         }
       }
     }
