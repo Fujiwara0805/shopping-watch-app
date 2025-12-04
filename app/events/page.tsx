@@ -1103,11 +1103,11 @@ export default function CalendarPage() {
             <Button
               onClick={scrollToTop}
               size="icon"
-              className="h-14 w-14 rounded-lg shadow-lg bg-[#73370c] hover:bg-[#5c2a0a] border-2 border-white"
+              className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg bg-[#73370c] hover:bg-[#8b4513] flex flex-col items-center justify-center gap-1"
             >
-              <ArrowUp className="h-7 w-7 text-white" />
+              <ArrowUp className="h-6 w-6 sm:h-7 sm:w-7 text-white" />
+              <span className="text-xs text-white font-medium">先頭</span>
             </Button>
-            <span className="text-xs font-bold text-gray-700 mt-1">先頭</span>
           </motion.div>
 
           {/* マップアイコン */}
@@ -1120,11 +1120,11 @@ export default function CalendarPage() {
             <Button
               onClick={() => router.push('/map')}
               size="icon"
-              className="h-14 w-14 rounded-lg shadow-lg bg-[#73370c] hover:bg-[#5c2a0a] border-2 border-white"
+              className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg bg-[#73370c] hover:bg-[#8b4513] flex flex-col items-center justify-center gap-1"
             >
-              <Map className="h-7 w-7 text-white" />
+              <Map className="h-6 w-6 sm:h-7 sm:w-7 text-white" />
+              <span className="text-xs text-white font-medium">Map</span>
             </Button>
-            <span className="text-xs font-bold text-gray-700 mt-1">Map</span>
           </motion.div>
         </div>
         </>

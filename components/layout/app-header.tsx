@@ -77,9 +77,11 @@ export function AppHeader() {
       case '/events':
         return 'イベント一覧';
       case '/create-map':
-        return 'My Map作成';
+        return 'My Map 作成';
       case '/my-maps':
-        return 'My Map画面';
+        return 'My Map 画面';
+      case '/public-maps':
+        return 'My Map 一覧';
       case '/profile':
         return 'マイページ';
       case '/profile/edit':

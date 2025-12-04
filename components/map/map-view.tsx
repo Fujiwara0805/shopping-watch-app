@@ -4,9 +4,16 @@ import { useRef, useEffect, useState, useCallback } from 'react';
 import { useGeolocation } from '@/lib/hooks/use-geolocation';
 import { useGoogleMapsApi } from '@/components/providers/GoogleMapsApiProvider';
 import { Button } from '@/components/ui/button';
-import { MapPin, AlertTriangle, RefreshCw, Calendar, Newspaper, User, MapPinIcon, X, Loader2, Home } from 'lucide-react';
+import { MapPin, AlertTriangle, RefreshCw, Calendar, Newspaper, User, MapPinIcon, X, Loader2, Home, Share2, Link2, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabaseClient';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+
+// 🔥 avatar_urlからSupabase StorageのPublic URLを取得する関数
+const getAvatarPublicUrl = (avatarPath: string | null): string | null => {
+  if (!avatarPath) return null;
+  return supabase.storage.from('avatars').getPublicUrl(avatarPath).data.publicUrl;
+};
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { useToast } from '@/hooks/use-toast';
@@ -48,6 +55,14 @@ interface MapLocationMarkerData {
   image_urls: string[];
   url: string | null;
   order: number;
+}
+
+// 🔥 マップ作成者のプロフィール型
+interface MapCreatorProfile {
+  id: string;
+  user_id: string;
+  display_name: string;
+  avatar_path: string | null;
 }
 
 type PostCategory = 'イベント情報' | '聖地巡礼' | '観光スポット' | '温泉' | 'グルメ';
@@ -249,6 +264,51 @@ const createDirectionalLocationIcon = (heading: number | null): google.maps.Icon
   };
 };
 
+// 🔥 カスタムモーダルコンポーネント
+const CustomModal = ({ isOpen, onClose, children }: { isOpen: boolean; onClose: () => void; children: React.ReactNode }) => {
+  if (!isOpen) return null;
+  
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div 
+          initial={{ opacity: 0 }} 
+          animate={{ opacity: 1 }} 
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+          onClick={onClose}
+        >
+          {/* オーバーレイ */}
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+          />
+          {/* モーダルコンテンツ */}
+          <motion.div 
+            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.9, opacity: 0, y: 20 }}
+            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* 閉じるボタン */}
+            <button 
+              onClick={onClose}
+              className="absolute top-3 right-3 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
+            >
+              <X className="w-4 h-4 text-gray-600" />
+            </button>
+            {children}
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+};
+
 export function MapView() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -282,6 +342,15 @@ export function MapView() {
   const [selectedCategory, setSelectedCategory] = useState<PostCategory>('イベント情報');
   const [checkingIn, setCheckingIn] = useState<string | null>(null);
   const [checkedInPosts, setCheckedInPosts] = useState<Set<string>>(new Set());
+
+  // 🔥 マップ作成者のプロフィール情報
+  const [mapCreatorProfile, setMapCreatorProfile] = useState<MapCreatorProfile | null>(null);
+  const [currentMapTitle, setCurrentMapTitle] = useState<string>('');
+  
+  // 🔥 モーダル制御
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
 
   // デバイスの向きを取得
   useEffect(() => {
@@ -377,10 +446,54 @@ export function MapView() {
     return () => { clearTimeout(timer); window.removeEventListener('resize', handleResize); window.removeEventListener('orientationchange', handleResize); };
   }, [updateContainerDimensions]);
 
+  // 🔥 マップ作成者のプロフィール情報を取得
+  const fetchMapCreatorProfile = useCallback(async (mapId: string) => {
+    try {
+      // mapsテーブルからapp_profile_idを取得
+      const { data: mapData, error: mapError } = await supabase
+        .from('maps')
+        .select('app_profile_id, title')
+        .eq('id', mapId)
+        .single();
+
+      if (mapError || !mapData) {
+        console.error('マップデータの取得に失敗:', mapError);
+        return;
+      }
+
+      setCurrentMapTitle(mapData.title || '');
+
+      // app_profilesテーブルからプロフィール情報を取得
+      const { data: profileData, error: profileError } = await supabase
+        .from('app_profiles')
+        .select('id, user_id, display_name, avatar_url')
+        .eq('id', mapData.app_profile_id)
+        .single();
+
+      if (profileError || !profileData) {
+        console.error('プロフィールデータの取得に失敗:', profileError);
+        return;
+      }
+
+      setMapCreatorProfile({
+        id: profileData.id,
+        user_id: profileData.user_id,
+        display_name: profileData.display_name || '匿名ユーザー',
+        avatar_path: profileData.avatar_url, // 🔥 パスとして保持
+      });
+    } catch (error) {
+      console.error('プロフィール取得エラー:', error);
+    }
+  }, []);
+
   const fetchMapLocations = useCallback(async () => {
     const currentTitleId = searchParams.get('title_id');
     if (currentTitleId) {
       setLoadingMaps(true);
+      
+      // 🔥 マップ作成者のプロフィールを取得
+      await fetchMapCreatorProfile(currentTitleId);
+      
       try {
         const { data: mapData, error: mapError } = await supabase.from('maps').select('id, title, locations').eq('id', currentTitleId).eq('is_deleted', false).single();
         if (mapError || !mapData) { setMapLocations([]); setLoadingMaps(false); return; }
@@ -417,7 +530,7 @@ export function MapView() {
       setMapLocations(allLocations);
     } catch (error) { console.error('MapView: マイマップデータの取得中にエラー:', error); }
     finally { setLoadingMaps(false); }
-  }, [session?.user?.id, searchParams]);
+  }, [session?.user?.id, searchParams, fetchMapCreatorProfile]);
 
   const fetchPosts = useCallback(async () => {
     const userLat = savedLocation?.lat || latitude;
@@ -643,6 +756,20 @@ export function MapView() {
     setTimeout(() => { updateContainerDimensions(); if (!latitude || !longitude) requestLocation(); }, 100);
   };
 
+  // 🔥 URLをコピーする関数
+  const handleCopyUrl = async () => {
+    const currentUrl = typeof window !== 'undefined' ? window.location.href : '';
+    try {
+      await navigator.clipboard.writeText(currentUrl);
+      setIsCopied(true);
+      toast({ title: 'コピー完了！', description: 'URLをクリップボードにコピーしました' });
+      setTimeout(() => setIsCopied(false), 2000);
+    } catch (error) {
+      console.error('URLのコピーに失敗:', error);
+      toast({ title: 'エラー', description: 'URLのコピーに失敗しました', variant: 'destructive' });
+    }
+  };
+
   const MessageCard = ({ icon: Icon, title, message, children, variant = 'default' }: { icon?: React.ElementType; title: string; message: string | React.ReactNode; children?: React.ReactNode; variant?: 'default' | 'destructive' | 'warning'; }) => {
     let iconColorClass = "text-primary";
     if (variant === 'destructive') iconColorClass = "text-destructive";
@@ -680,42 +807,168 @@ export function MapView() {
     <div className="w-full h-full bg-gray-50 relative">
       <div ref={mapContainerRef} className="w-full h-full" style={{ touchAction: 'manipulation', WebkitOverflowScrolling: 'touch', WebkitTouchCallout: 'none', WebkitUserSelect: 'none', userSelect: 'none' }} />
 
-      {/* 🔥 マイマップモード時のUI（左下に縦並び） */}
+      {/* 🔥 マイマップモード時のUI */}
       {map && mapInitialized && viewMode === 'myMaps' && (
-        <div className="absolute bottom-4 left-4 z-30 flex flex-col gap-2">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.05 }} className="flex flex-col items-center">
-            <Button onClick={() => router.push('/')} size="icon" className="h-12 w-12 rounded-full shadow-lg bg-white hover:bg-gray-100 border-2 border-[#73370c]"><Home className="h-6 w-6 text-[#73370c]" /></Button>
-            <span className="text-sm font-bold text-gray-700">ホーム</span>
-          </motion.div>
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.1 }} className="flex flex-col items-center">
-            <Button onClick={() => router.push('/profile')} size="icon" className="h-12 w-12 rounded-full shadow-lg bg-white hover:bg-gray-100 border-2 border-[#73370c]"><User className="h-6 w-6 text-[#73370c]" /></Button>
-            <span className="text-sm font-bold text-gray-700">マイページ</span>
-          </motion.div>
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.15 }} className="flex flex-col items-center">
-            <Button onClick={handleManualRefresh} size="icon" disabled={isRefreshing || loadingMaps} className="h-12 w-12 rounded-full shadow-lg bg-white hover:bg-gray-100 border-2 border-[#73370c] disabled:opacity-50"><RefreshCw className={`h-6 w-6 text-[#73370c] ${(isRefreshing || loadingMaps) ? 'animate-spin' : ''}`} /></Button>
-            <span className="text-sm font-bold text-gray-700">更新</span>
-          </motion.div>
-        </div>
+        <>
+          {/* 右上: プロフィールアイコンと共有アイコン */}
+          <div className="absolute top-4 right-4 z-30 flex flex-col gap-2">
+            {/* プロフィールアイコン */}
+            {mapCreatorProfile && (
+              <motion.div 
+                initial={{ opacity: 0, x: 20 }} 
+                animate={{ opacity: 1, x: 0 }} 
+                transition={{ duration: 0.3, delay: 0.05 }} 
+                className="flex flex-col items-center"
+              >
+                <Button 
+                  onClick={() => setIsProfileModalOpen(true)} 
+                  size="icon" 
+                  className="h-14 w-14 rounded-full shadow-lg bg-white hover:bg-gray-100 border-2 border-[#73370c] p-0 overflow-hidden"
+                >
+                  <Avatar className="h-full w-full">
+                    {mapCreatorProfile.avatar_path ? (
+                      <AvatarImage
+                        src={getAvatarPublicUrl(mapCreatorProfile.avatar_path) || ''}
+                        alt={mapCreatorProfile.display_name}
+                      />
+                    ) : null}
+                    <AvatarFallback className="text-lg font-bold bg-gradient-to-br from-[#5c3a21] to-[#8b6914] text-[#fff8f0]">
+                      {mapCreatorProfile.display_name.charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                </Button>
+                <span className="text-xs font-bold text-gray-700 mt-1">作成者</span>
+              </motion.div>
+            )}
+            
+            {/* 共有アイコン */}
+            <motion.div 
+              initial={{ opacity: 0, x: 20 }} 
+              animate={{ opacity: 1, x: 0 }} 
+              transition={{ duration: 0.3, delay: 0.1 }} 
+              className="flex flex-col items-center"
+            >
+              <Button 
+                onClick={() => setIsShareModalOpen(true)} 
+                size="icon" 
+                className="h-12 w-12 rounded-full shadow-lg bg-[#73370c] hover:bg-[#5c2a0a] border-2 border-white"
+              >
+                <Share2 className="h-6 w-6 text-white" />
+              </Button>
+              <span className="text-xs font-bold text-gray-700 mt-1">共有</span>
+            </motion.div>
+          </div>
+
+          {/* 左下: ナビゲーションボタン */}
+          <div className="absolute bottom-4 left-4 z-30 flex flex-col gap-2">
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.05 }} className="flex flex-col items-center">
+              <Button onClick={() => router.push('/')} size="icon" className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg bg-[#73370c] hover:bg-[#8b4513] flex flex-col items-center justify-center gap-1"><Home className="h-6 w-6 sm:h-7 sm:w-7 text-white" /><span className="text-xs text-white font-medium">ホーム</span></Button>
+            </motion.div>
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.1 }} className="flex flex-col items-center">
+              <Button onClick={() => router.push('/profile')} size="icon" className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg bg-[#73370c] hover:bg-[#8b4513] flex flex-col items-center justify-center gap-1"><User className="h-6 w-6 sm:h-7 sm:w-7 text-white" /><span className="text-xs text-white font-medium">マイページ</span></Button>
+            </motion.div>
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.15 }} className="flex flex-col items-center">
+              <Button onClick={handleManualRefresh} size="icon" disabled={isRefreshing || loadingMaps} className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg bg-[#73370c] hover:bg-[#8b4513] disabled:opacity-50 flex flex-col items-center justify-center gap-1"><RefreshCw className={`h-6 w-6 sm:h-7 sm:w-7 text-white ${(isRefreshing || loadingMaps) ? 'animate-spin' : ''}`} /><span className="text-xs text-white font-medium">更新</span></Button>
+            </motion.div>
+          </div>
+        </>
       )}
+
+      {/* 🔥 プロフィールモーダル */}
+      <CustomModal isOpen={isProfileModalOpen} onClose={() => setIsProfileModalOpen(false)}>
+        <div className="p-6 pt-10">
+          {/* プロフィールヘッダー */}
+          <div className="flex flex-col items-center mb-6">
+            <Avatar className="w-24 h-24 border-4 border-[#73370c] shadow-lg mb-4">
+              {mapCreatorProfile?.avatar_path ? (
+                <AvatarImage
+                  src={getAvatarPublicUrl(mapCreatorProfile.avatar_path) || ''}
+                  alt={mapCreatorProfile.display_name}
+                />
+              ) : null}
+              <AvatarFallback className="text-3xl font-bold bg-gradient-to-br from-[#5c3a21] to-[#8b6914] text-[#fff8f0]">
+                {mapCreatorProfile?.display_name?.charAt(0).toUpperCase() || 'U'}
+              </AvatarFallback>
+            </Avatar>
+            <h3 className="text-xl font-bold text-gray-800">
+              {mapCreatorProfile?.display_name || '匿名ユーザー'}
+            </h3>
+            <p className="text-sm text-gray-500 mt-1">マップ作成者</p>
+          </div>
+
+          {/* マップタイトル */}
+          {currentMapTitle && (
+            <div className="bg-amber-50 rounded-xl p-4">
+              <p className="text-xs text-amber-600 font-medium mb-1">📍 作成したマップ</p>
+              <p className="text-base font-bold text-gray-800">{currentMapTitle}</p>
+            </div>
+          )}
+        </div>
+      </CustomModal>
+
+      {/* 🔥 共有モーダル */}
+      <CustomModal isOpen={isShareModalOpen} onClose={() => setIsShareModalOpen(false)}>
+        <div className="p-6 pt-10">
+          {/* ヘッダー */}
+          <div className="text-center mb-6">
+            <h3 className="text-xl font-bold text-gray-800 mb-2">
+              My Mapをシェア
+            </h3>
+            <p className="text-sm text-gray-500">
+              友達や家族にこのMy Mapをシェアしよう！
+            </p>
+          </div>
+
+          {/* マップ情報 */}
+          {currentMapTitle && (
+            <div className="bg-gray-50 rounded-xl p-4 mb-6">
+              <p className="text-xs text-gray-500 font-medium mb-1">シェアするマップ</p>
+              <p className="text-base font-bold text-gray-800">{currentMapTitle}</p>
+            </div>
+          )}
+
+          {/* URLコピーボタン */}
+          <button
+            onClick={handleCopyUrl}
+            className={`flex items-center justify-center gap-3 w-full py-4 px-4 rounded-xl font-medium transition-all ${
+              isCopied 
+                ? 'bg-green-500 text-white' 
+                : 'bg-[#73370c] hover:bg-[#5c2a0a] text-white'
+            }`}
+          >
+            {isCopied ? (
+              <>
+                <Check className="h-5 w-5" />
+                コピーしました！
+              </>
+            ) : (
+              <>
+                <Link2 className="h-5 w-5" />
+                URLをコピー
+              </>
+            )}
+          </button>
+
+          <p className="text-xs text-gray-400 text-center mt-4">
+            コピーしたURLをSNSやメッセージで共有できます
+          </p>
+        </div>
+      </CustomModal>
 
       {/* 🔥 イベント情報モード時のUI（右上に縦並び） */}
       {map && mapInitialized && viewMode === 'events' && (
         <div className="absolute top-4 right-4 z-30 flex flex-col gap-2">
           <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.3, delay: 0.05 }} className="flex flex-col items-center">
-            <Button onClick={() => router.push('/')} size="icon" className="h-12 w-12 rounded-lg shadow-lg bg-[#73370c] hover:bg-[#5c2a0a] border-2 border-white"><Home className="h-6 w-6 text-white" /></Button>
-            <span className="text-sm font-bold text-gray-700">ホーム</span>
+            <Button onClick={() => router.push('/')} size="icon" className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg bg-[#73370c] hover:bg-[#8b4513] flex flex-col items-center justify-center gap-1"><Home className="h-6 w-6 sm:h-7 sm:w-7 text-white" /><span className="text-xs text-white font-medium">ホーム</span></Button>
           </motion.div>
           <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.3, delay: 0.1 }} className="flex flex-col items-center">
-            <Button onClick={() => router.push('/events')} size="icon" className="h-12 w-12 rounded-lg shadow-lg bg-[#73370c] hover:bg-[#5c2a0a] border-2 border-white"><Newspaper className="h-6 w-6 text-white" /></Button>
-            <span className="text-sm font-bold text-gray-700">イベント一覧</span>
+            <Button onClick={() => router.push('/events')} size="icon" className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg bg-[#73370c] hover:bg-[#8b4513] flex flex-col items-center justify-center gap-1"><Newspaper className="h-6 w-6 sm:h-7 sm:w-7 text-white" /><span className="text-xs text-white font-medium">イベント</span></Button>
           </motion.div>
           <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.3, delay: 0.15 }} className="flex flex-col items-center">
-            <Button onClick={() => router.push('/profile')} size="icon" className="h-12 w-12 rounded-lg shadow-lg bg-[#73370c] hover:bg-[#5c2a0a] border-2 border-white"><User className="h-6 w-6 text-white" /></Button>
-            <span className="text-sm font-bold text-gray-700">マイページ</span>
+            <Button onClick={() => router.push('/profile')} size="icon" className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg bg-[#73370c] hover:bg-[#8b4513] flex flex-col items-center justify-center gap-1"><User className="h-6 w-6 sm:h-7 sm:w-7 text-white" /><span className="text-xs text-white font-medium">マイページ</span></Button>
           </motion.div>
           <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.3, delay: 0.2 }} className="flex flex-col items-center">
-            <Button onClick={handleManualRefresh} size="icon" disabled={isRefreshing || loadingPosts} className="h-12 w-12 rounded-lg shadow-lg bg-[#73370c] hover:bg-[#5c2a0a] border-2 border-white disabled:opacity-50"><RefreshCw className={`h-6 w-6 text-white ${(isRefreshing || loadingPosts) ? 'animate-spin' : ''}`} /></Button>
-            <span className="text-sm font-bold text-gray-700">更新</span>
+            <Button onClick={handleManualRefresh} size="icon" disabled={isRefreshing || loadingPosts} className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg bg-[#73370c] hover:bg-[#8b4513] disabled:opacity-50 flex flex-col items-center justify-center gap-1"><RefreshCw className={`h-6 w-6 sm:h-7 sm:w-7 text-white ${(isRefreshing || loadingPosts) ? 'animate-spin' : ''}`} /><span className="text-xs text-white font-medium">更新</span></Button>
           </motion.div>
         </div>
       )}

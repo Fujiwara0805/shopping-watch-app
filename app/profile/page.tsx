@@ -687,11 +687,11 @@ function ProfilePageContent() {
           <Button
             onClick={() => router.push('/memo')}
             size="icon"
-            className="h-14 w-14 rounded-lg shadow-2xl bg-[#73370c] text-white border-2 border-white"
+            className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg bg-[#73370c] hover:bg-[#8b4513] flex flex-col items-center justify-center gap-1"
           >
-            <ShoppingBag className="h-6 w-6" />
+            <ShoppingBag className="h-6 w-6 sm:h-7 sm:w-7 text-white" />
+            <span className="text-xs text-white font-medium">メモ</span>
           </Button>
-          <span className="text-xs font-bold text-gray-700 mt-1">メモ</span>
         </motion.div>
         
         {/* マップボタン */}
@@ -704,11 +704,11 @@ function ProfilePageContent() {
           <Button
             onClick={() => router.push('/map')}
             size="icon"
-            className="h-14 w-14 rounded-lg shadow-2xl bg-[#73370c]  text-white border-2 border-white"
+            className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg bg-[#73370c] hover:bg-[#8b4513] flex flex-col items-center justify-center gap-1"
           >
-            <Map className="h-6 w-6" />
+            <Map className="h-6 w-6 sm:h-7 sm:w-7 text-white" />
+            <span className="text-xs text-white font-medium">Map</span>
           </Button>
-          <span className="text-xs font-bold text-gray-700 mt-1">Map</span>
         </motion.div>
       </div>
 
