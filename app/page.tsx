@@ -510,17 +510,6 @@ src="https://res.cloudinary.com/dz9trbwma/image/upload/v1763822849/ChatGPT_Image
                     新しい発見を
                   </span>
                 </motion.h1>
-
-                <motion.p
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.8, delay: 0.8 }}
-                  className="text-xl sm:text-2xl md:text-3xl lg:text-4xl text-gray-100 max-w-3xl mx-auto leading-relaxed font-bold drop-shadow-md"
-                >
-                  マップの作成・閲覧
-                  <br className="sm:hidden" />
-                  イベント情報もまとめて表示
-                </motion.p>
               </div>
 
               <motion.div
