@@ -436,6 +436,7 @@ function MarkerLocationModal({
       fullscreenControl: false,
       streetViewControl: false,
       zoomControl: true,
+      gestureHandling: 'greedy', // 指1本で地図を操作可能にする
     });
     
     mapRef.current = map;
