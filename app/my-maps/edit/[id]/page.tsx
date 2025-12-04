@@ -10,7 +10,7 @@ import {
   Upload, X, MapPin, Plus, Trash2, 
   Loader2, Image as ImageIcon, Link as LinkIcon, Tag, ClockIcon,
   MapIcon, CheckCircle, ChevronUp, ChevronDown, ArrowLeft,
-  Navigation, Crosshair, Crop, Move, ZoomIn, ZoomOut
+  Navigation, Crosshair
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -57,304 +57,6 @@ const toCircledNumber = (num: number): string => {
                    '⑪', '⑫', '⑬', '⑭', '⑮', '⑯', '⑰', '⑱', '⑲', '⑳'];
   return circled[num - 1] || `${num}`;
 };
-
-// 画像クロップモーダルコンポーネント
-interface ImageCropModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSave: (croppedFile: File, previewUrl: string) => void;
-  imageFile: File | null;
-  imageUrl?: string | null; // 既存画像のURL用
-}
-
-function ImageCropModal({
-  isOpen,
-  onClose,
-  onSave,
-  imageFile,
-  imageUrl,
-}: ImageCropModalProps) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const imageRef = useRef<HTMLImageElement | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  
-  const [imageLoaded, setImageLoaded] = useState(false);
-  const [scale, setScale] = useState(1);
-  const [position, setPosition] = useState({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  
-  // アスペクト比 16:10
-  const aspectRatio = 16 / 10;
-  const cropWidth = 320;
-  const cropHeight = cropWidth / aspectRatio;
-  
-  // 画像読み込み
-  useEffect(() => {
-    if (!isOpen) return;
-    
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => {
-      imageRef.current = img;
-      setImageLoaded(true);
-      
-      // 画像がクロップ領域に収まるように初期スケールを設定
-      const scaleX = cropWidth / img.width;
-      const scaleY = cropHeight / img.height;
-      const initialScale = Math.max(scaleX, scaleY) * 1.2;
-      setScale(initialScale);
-      setPosition({ x: 0, y: 0 });
-    };
-    
-    if (imageFile) {
-      img.src = URL.createObjectURL(imageFile);
-    } else if (imageUrl) {
-      img.src = imageUrl;
-    }
-    
-    return () => {
-      if (imageFile && img.src) URL.revokeObjectURL(img.src);
-    };
-  }, [isOpen, imageFile, imageUrl]);
-  
-  // ドラッグ開始
-  const handleMouseDown = (e: React.MouseEvent | React.TouchEvent) => {
-    e.preventDefault();
-    setIsDragging(true);
-    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
-    setDragStart({ x: clientX - position.x, y: clientY - position.y });
-  };
-  
-  // ドラッグ中
-  const handleMouseMove = (e: React.MouseEvent | React.TouchEvent) => {
-    if (!isDragging) return;
-    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
-    setPosition({
-      x: clientX - dragStart.x,
-      y: clientY - dragStart.y,
-    });
-  };
-  
-  // ドラッグ終了
-  const handleMouseUp = () => {
-    setIsDragging(false);
-  };
-  
-  // ズーム
-  const handleZoom = (delta: number) => {
-    setScale(prev => Math.max(0.5, Math.min(3, prev + delta)));
-  };
-  
-  // 保存処理
-  const handleSave = () => {
-    if (!canvasRef.current || !imageRef.current) return;
-    
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    
-    // 出力サイズ（16:10）
-    const outputWidth = 800;
-    const outputHeight = 500;
-    canvas.width = outputWidth;
-    canvas.height = outputHeight;
-    
-    const img = imageRef.current;
-    const imgWidth = img.width * scale;
-    const imgHeight = img.height * scale;
-    
-    // クロップ領域の中心からの相対位置を計算
-    const cropCenterX = cropWidth / 2;
-    const cropCenterY = cropHeight / 2;
-    
-    const imgCenterX = cropCenterX + position.x;
-    const imgCenterY = cropCenterY + position.y;
-    
-    // 描画位置を計算
-    const drawX = (outputWidth / 2) - (imgCenterX / cropWidth * outputWidth);
-    const drawY = (outputHeight / 2) - (imgCenterY / cropHeight * outputHeight);
-    const drawWidth = imgWidth / cropWidth * outputWidth;
-    const drawHeight = imgHeight / cropHeight * outputHeight;
-    
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, outputWidth, outputHeight);
-    ctx.drawImage(img, drawX, drawY, drawWidth, drawHeight);
-    
-    canvas.toBlob((blob) => {
-      if (!blob) return;
-      const fileName = imageFile?.name || 'cropped.jpg';
-      const croppedFile = new File([blob], fileName, { type: 'image/jpeg' });
-      const previewUrl = canvas.toDataURL('image/jpeg', 0.9);
-      onSave(croppedFile, previewUrl);
-      onClose();
-    }, 'image/jpeg', 0.9);
-  };
-  
-  if (!isOpen) return null;
-  
-  return (
-    <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"
-      >
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.95 }}
-          className="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl"
-        >
-          {/* ヘッダー */}
-          <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Crop className="h-5 w-5 text-violet-600" />
-              <h3 className="text-base font-bold text-gray-800">画像を調整</h3>
-            </div>
-            <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">16:10</span>
-          </div>
-          
-          {/* クロップエリア */}
-          <div 
-            ref={containerRef}
-            className="relative bg-gray-900 overflow-hidden"
-            style={{ height: '250px' }}
-            onMouseMove={handleMouseMove}
-            onMouseUp={handleMouseUp}
-            onMouseLeave={handleMouseUp}
-            onTouchMove={handleMouseMove}
-            onTouchEnd={handleMouseUp}
-          >
-            {/* 画像表示エリア */}
-            <div 
-              className="absolute inset-0 flex items-center justify-center cursor-move"
-              onMouseDown={handleMouseDown}
-              onTouchStart={handleMouseDown}
-            >
-              {imageLoaded && imageRef.current && (
-                <img
-                  src={imageRef.current.src}
-                  alt="Preview"
-                  className="pointer-events-none select-none"
-                  style={{
-                    transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
-                    maxWidth: 'none',
-                  }}
-                  draggable={false}
-                />
-              )}
-            </div>
-            
-            {/* クロップオーバーレイ */}
-            <div className="absolute inset-0 pointer-events-none">
-              {/* 上部暗幕 */}
-              <div className="absolute top-0 left-0 right-0 bg-black/50" style={{ height: `calc(50% - ${cropHeight/2}px)` }} />
-              {/* 下部暗幕 */}
-              <div className="absolute bottom-0 left-0 right-0 bg-black/50" style={{ height: `calc(50% - ${cropHeight/2}px)` }} />
-              {/* 左部暗幕 */}
-              <div className="absolute bg-black/50" style={{ 
-                top: `calc(50% - ${cropHeight/2}px)`, 
-                left: 0, 
-                width: `calc(50% - ${cropWidth/2}px)`,
-                height: `${cropHeight}px`
-              }} />
-              {/* 右部暗幕 */}
-              <div className="absolute bg-black/50" style={{ 
-                top: `calc(50% - ${cropHeight/2}px)`, 
-                right: 0, 
-                width: `calc(50% - ${cropWidth/2}px)`,
-                height: `${cropHeight}px`
-              }} />
-              {/* クロップ枠 */}
-              <div 
-                className="absolute border-2 border-white rounded-lg"
-                style={{
-                  top: '50%',
-                  left: '50%',
-                  transform: 'translate(-50%, -50%)',
-                  width: `${cropWidth}px`,
-                  height: `${cropHeight}px`,
-                }}
-              >
-                {/* グリッドライン */}
-                <div className="absolute inset-0 grid grid-cols-3 grid-rows-3">
-                  {[...Array(9)].map((_, i) => (
-                    <div key={i} className="border border-white/30" />
-                  ))}
-                </div>
-              </div>
-            </div>
-            
-            {/* 操作ヒント */}
-            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-black/60 text-white text-xs px-3 py-1 rounded-full flex items-center gap-1">
-              <Move className="h-3 w-3" />
-              ドラッグで位置調整
-            </div>
-          </div>
-          
-          {/* ズームコントロール */}
-          <div className="px-4 py-3 border-t border-gray-200 flex items-center justify-center gap-4">
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              onClick={() => handleZoom(-0.1)}
-              className="h-10 w-10 rounded-full"
-            >
-              <ZoomOut className="h-5 w-5" />
-            </Button>
-            <div className="flex-1 max-w-[150px]">
-              <input
-                type="range"
-                min="0.5"
-                max="3"
-                step="0.1"
-                value={scale}
-                onChange={(e) => setScale(parseFloat(e.target.value))}
-                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-violet-500"
-              />
-            </div>
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              onClick={() => handleZoom(0.1)}
-              className="h-10 w-10 rounded-full"
-            >
-              <ZoomIn className="h-5 w-5" />
-            </Button>
-          </div>
-          
-          {/* フッター */}
-          <div className="px-4 py-4 border-t border-gray-200 flex items-center gap-3">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onClose}
-              className="flex-1 h-12 text-base font-bold rounded-full"
-            >
-              キャンセル
-            </Button>
-            <Button
-              type="button"
-              onClick={handleSave}
-              className="flex-1 h-12 text-base font-bold rounded-full bg-violet-500 hover:bg-violet-600 text-white"
-            >
-              適用
-            </Button>
-          </div>
-          
-          {/* 隠しキャンバス */}
-          <canvas ref={canvasRef} className="hidden" />
-        </motion.div>
-      </motion.div>
-    </AnimatePresence>
-  );
-}
 
 // マーカー位置選択モーダルコンポーネント
 interface MarkerLocationModalProps {
@@ -447,6 +149,7 @@ function MarkerLocationModal({
       fullscreenControl: false,
       streetViewControl: false,
       zoomControl: true,
+      gestureHandling: 'greedy',
     });
     
     mapRef.current = map;
@@ -1381,16 +1084,8 @@ function LocationForm({
   userLongitude,
 }: LocationFormProps) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [locationStatus, setLocationStatus] = useState<'none' | 'getting' | 'success' | 'error'>('none');
   const [isMarkerModalOpen, setIsMarkerModalOpen] = useState(false);
-  
-  // 画像クロップ関連
-  const [isCropModalOpen, setIsCropModalOpen] = useState(false);
-  const [cropImageFile, setCropImageFile] = useState<File | null>(null);
-  const [cropImageUrl, setCropImageUrl] = useState<string | null>(null);
-  const [pendingImageIndex, setPendingImageIndex] = useState<number | null>(null);
-  const [isEditingExisting, setIsEditingExisting] = useState(false);
   
   useEffect(() => {
     if (!isLoaded || !inputRef.current || loadError) return;
@@ -1447,90 +1142,12 @@ function LocationForm({
     setLocationStatus('success');
   };
   
-  // 画像選択時にクロップモーダルを開く
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // 画像アップロード処理
+  const handleImageUploadLocal = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
     
-    const totalImages = location.existingImageUrls.length + location.imageFiles.length;
-    if (totalImages >= 3) {
-      alert('各スポットに最大3枚まで画像を追加できます');
-      return;
-    }
-    
-    const file = files[0];
-    const maxSize = 5 * 1024 * 1024;
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
-    
-    if (file.size > maxSize) {
-      alert('各画像は5MB以下にしてください');
-      return;
-    }
-    
-    if (!allowedTypes.includes(file.type)) {
-      alert('JPG、PNG、またはWEBP形式の画像を選択してください');
-      return;
-    }
-    
-    setCropImageFile(file);
-    setCropImageUrl(null);
-    setIsEditingExisting(false);
-    setIsCropModalOpen(true);
-    
-    // ファイル入力をリセット
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
-  
-  // クロップ後の画像を保存（新規）
-  const handleCropSave = (croppedFile: File, previewUrl: string) => {
-    if (isEditingExisting && pendingImageIndex !== null) {
-      // 既存画像の編集 → 既存画像を削除して新規として追加
-      const newExistingImages = location.existingImageUrls.filter((_, i) => i !== pendingImageIndex);
-      updateLocation(locationIndex, 'existingImageUrls', newExistingImages);
-      updateLocation(locationIndex, 'imageFiles', [...location.imageFiles, croppedFile]);
-      updateLocation(locationIndex, 'imagePreviewUrls', [...location.imagePreviewUrls, previewUrl]);
-    } else if (pendingImageIndex !== null) {
-      // 新規画像の編集
-      const newFiles = [...location.imageFiles];
-      const newUrls = [...location.imagePreviewUrls];
-      newFiles[pendingImageIndex] = croppedFile;
-      newUrls[pendingImageIndex] = previewUrl;
-      updateLocation(locationIndex, 'imageFiles', newFiles);
-      updateLocation(locationIndex, 'imagePreviewUrls', newUrls);
-    } else {
-      // 新規画像の追加
-      updateLocation(locationIndex, 'imageFiles', [...location.imageFiles, croppedFile]);
-      updateLocation(locationIndex, 'imagePreviewUrls', [...location.imagePreviewUrls, previewUrl]);
-    }
-    
-    setCropImageFile(null);
-    setCropImageUrl(null);
-    setPendingImageIndex(null);
-    setIsEditingExisting(false);
-  };
-  
-  // 既存画像の編集
-  const handleEditExistingImage = (imageIndex: number) => {
-    const url = location.existingImageUrls[imageIndex];
-    setPendingImageIndex(imageIndex);
-    setCropImageUrl(url);
-    setCropImageFile(null);
-    setIsEditingExisting(true);
-    setIsCropModalOpen(true);
-  };
-  
-  // 新規画像の編集
-  const handleEditNewImage = (imageIndex: number) => {
-    const file = location.imageFiles[imageIndex];
-    if (file) {
-      setPendingImageIndex(imageIndex);
-      setCropImageFile(file);
-      setCropImageUrl(null);
-      setIsEditingExisting(false);
-      setIsCropModalOpen(true);
-    }
+    handleImageUpload(locationIndex, e);
   };
   
   return (
@@ -1597,9 +1214,6 @@ function LocationForm({
           <ImageIcon className="inline-block mr-1.5 h-4 w-4" />
           画像（最大3枚）<span className="text-destructive ml-1">*</span>
         </Label>
-        <p className="text-xs text-gray-500 mb-2">
-          ※画像は16:10の比率で表示されます。アップロード後に調整できます。
-        </p>
         
         {/* 既存の画像 */}
         {location.existingImageUrls.length > 0 && (
@@ -1611,14 +1225,6 @@ function LocationForm({
                   alt={`Existing ${imgIndex + 1}`}
                   className="w-full h-full object-cover rounded-lg border border-gray-200"
                 />
-                {/* 編集ボタン */}
-                <button
-                  type="button"
-                  onClick={() => handleEditExistingImage(imgIndex)}
-                  className="absolute bottom-1 left-1 bg-white/90 hover:bg-white text-gray-700 rounded-full p-1.5 shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <Crop className="h-3.5 w-3.5" />
-                </button>
                 {/* 削除ボタン */}
                 <button
                   type="button"
@@ -1642,14 +1248,6 @@ function LocationForm({
                   alt={`Preview ${imgIndex + 1}`}
                   className="w-full h-full object-cover rounded-lg border border-gray-200"
                 />
-                {/* 編集ボタン */}
-                <button
-                  type="button"
-                  onClick={() => handleEditNewImage(imgIndex)}
-                  className="absolute bottom-1 left-1 bg-white/90 hover:bg-white text-gray-700 rounded-full p-1.5 shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <Crop className="h-3.5 w-3.5" />
-                </button>
                 {/* 削除ボタン */}
                 <button
                   type="button"
@@ -1667,10 +1265,10 @@ function LocationForm({
         {(location.existingImageUrls.length + location.imageFiles.length) < 3 && (
           <>
             <input
-              ref={fileInputRef}
               type="file"
               accept="image/*"
-              onChange={handleImageSelect}
+              multiple
+              onChange={handleImageUploadLocal}
               className="hidden"
               id={`image-upload-${locationIndex}`}
             />
@@ -1711,21 +1309,6 @@ function LocationForm({
         initialLng={location.store_longitude || userLongitude || undefined}
         initialSpotName={location.storeName}
         isLoaded={isLoaded}
-      />
-      
-      {/* 🔥 画像クロップモーダル */}
-      <ImageCropModal
-        isOpen={isCropModalOpen}
-        onClose={() => {
-          setIsCropModalOpen(false);
-          setCropImageFile(null);
-          setCropImageUrl(null);
-          setPendingImageIndex(null);
-          setIsEditingExisting(false);
-        }}
-        onSave={handleCropSave}
-        imageFile={cropImageFile}
-        imageUrl={cropImageUrl}
       />
     </div>
   );
