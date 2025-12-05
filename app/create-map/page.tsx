@@ -934,7 +934,7 @@ export default function CreateMapPage() {
               {/* 戻るボタン */}
               <Button
                 type="button"
-                onClick={() => router.push('/my-maps')}
+                onClick={() => router.back()}
                 className="w-full h-12 text-base font-semibold rounded-xl shadow-md bg-gray-200 hover:bg-gray-300 text-gray-700"
               >
                 戻る
