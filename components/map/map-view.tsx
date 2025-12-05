@@ -600,7 +600,10 @@ export function MapView() {
       const position = new window.google.maps.LatLng(offsetPosition.lat, offsetPosition.lng);
       const markerIcon = await createCategoryPinIcon(location.image_urls, location.store_name, '観光スポット');
       const marker = new window.google.maps.Marker({ position, map, title: `${location.store_name} - ${location.map_title}`, icon: markerIcon, animation: window.google.maps.Animation.DROP, zIndex: indexInGroup + 1 });
-      marker.addListener('click', () => { setSelectedMapLocation(location); });
+      marker.addListener('click', () => { 
+        // マーカークリック時に詳細画面に遷移し、該当箇所にフォーカス
+        router.push(`/map/spot/${location.id}?order=${location.order}&title_id=${location.map_id}`);
+      });
       return marker;
     });
     const markers = await Promise.all(markerPromises);
@@ -962,16 +965,16 @@ export function MapView() {
         </div>
       </CustomModal>
 
-      {/* 🔥 イベント情報モード時のUI（右上に縦並び） */}
+      {/* 🔥 イベント情報モード時のUI（左下に縦並び） */}
       {map && mapInitialized && viewMode === 'events' && (
-        <div className="absolute top-4 right-4 z-30 flex flex-col gap-2">
-          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.3, delay: 0.05 }} className="flex flex-col items-center">
+        <div className="absolute bottom-4 left-4 z-30 flex flex-col gap-2">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.05 }} className="flex flex-col items-center">
             <Button onClick={() => router.push('/events')} size="icon" className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg bg-[#73370c] hover:bg-[#8b4513] flex flex-col items-center justify-center gap-1"><Calendar className="h-6 w-6 sm:h-7 sm:w-7 text-white" /><span className="text-xs text-white font-medium">イベント</span></Button>
           </motion.div>
-          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.3, delay: 0.1 }} className="flex flex-col items-center">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.1 }} className="flex flex-col items-center">
             <Button onClick={() => router.push('/public-maps')} size="icon" className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg bg-[#73370c] hover:bg-[#8b4513] flex flex-col items-center justify-center gap-1"><Newspaper className="h-6 w-6 sm:h-7 sm:w-7 text-white" /><span className="text-xs text-white font-medium">MyMap</span></Button>
           </motion.div>
-          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.3, delay: 0.15 }} className="flex flex-col items-center">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.15 }} className="flex flex-col items-center">
             <Button onClick={handleManualRefresh} size="icon" disabled={isRefreshing || loadingPosts} className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg bg-[#73370c] hover:bg-[#8b4513] disabled:opacity-50 flex flex-col items-center justify-center gap-1"><RefreshCw className={`h-6 w-6 sm:h-7 sm:w-7 text-white ${(isRefreshing || loadingPosts) ? 'animate-spin' : ''}`} /><span className="text-xs text-white font-medium">更新</span></Button>
           </motion.div>
         </div>

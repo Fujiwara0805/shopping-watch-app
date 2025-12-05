@@ -72,6 +72,7 @@ export function SpotDetailClient({ spotId }: SpotDetailClientProps) {
   const [error, setError] = useState<string | null>(null);
   const [expandedImageIndex, setExpandedImageIndex] = useState<{ spotIndex: number; imageIndex: number } | null>(null);
   const [currentImageIndices, setCurrentImageIndices] = useState<{ [key: number]: number }>({});
+  const [targetOrder, setTargetOrder] = useState<number | null>(null);
 
   // 閉じるボタンの処理
   const handleClose = () => {
@@ -92,6 +93,12 @@ export function SpotDetailClient({ spotId }: SpotDetailClientProps) {
       setLoading(true);
       try {
         const [mapId] = spotId.split('_');
+
+        // URLパラメータからorderを取得
+        const orderParam = searchParams.get('order');
+        if (orderParam) {
+          setTargetOrder(parseInt(orderParam, 10));
+        }
 
         const { data: mapDataResult, error: mapError } = await supabase
           .from('maps')
@@ -137,7 +144,30 @@ export function SpotDetailClient({ spotId }: SpotDetailClientProps) {
     };
 
     fetchMapData();
-  }, [spotId]);
+  }, [spotId, searchParams]);
+
+  // orderパラメータに基づいて該当箇所にスクロール
+  useEffect(() => {
+    if (mapData && targetOrder !== null && !loading) {
+      // orderに一致する要素を探す
+      const targetIndex = mapData.locations.findIndex(loc => loc.order === targetOrder);
+      if (targetIndex !== -1) {
+        // 少し遅延してからスクロール（レンダリング完了を待つ）
+        setTimeout(() => {
+          const element = document.getElementById(`spot-${targetIndex}`);
+          if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            // ハイライト効果を追加
+            element.classList.add('highlight-flash');
+            setTimeout(() => {
+              element.classList.remove('highlight-flash');
+            }, 2000);
+          }
+        }, 300);
+      }
+      setTargetOrder(null); // スクロール後にリセット
+    }
+  }, [mapData, targetOrder, loading]);
 
   // 画像ナビゲーション
   const handleImageNav = (spotIndex: number, direction: 'prev' | 'next', totalImages: number) => {
@@ -229,6 +259,15 @@ export function SpotDetailClient({ spotId }: SpotDetailClientProps) {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <style jsx>{`
+        @keyframes highlight {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(115, 55, 12, 0); }
+          50% { box-shadow: 0 0 20px 5px rgba(115, 55, 12, 0.5); }
+        }
+        .highlight-flash {
+          animation: highlight 1s ease-in-out 2;
+        }
+      `}</style>
       {/* 固定ヘッダー */}
       <motion.header
         variants={headerVariants}
@@ -310,8 +349,9 @@ export function SpotDetailClient({ spotId }: SpotDetailClientProps) {
             {mapData.locations.map((location, index) => (
               <motion.article
                 key={index}
+                id={`spot-${index}`}
                 variants={itemVariants}
-                className="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-200"
+                className="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-200 transition-all duration-300"
               >
                 {/* コンテンツセクション */}
                 <div className="p-5">

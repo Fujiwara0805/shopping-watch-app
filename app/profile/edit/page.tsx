@@ -30,6 +30,10 @@ const profileSchema = z.object({
   favoriteStore1: z.object({ id: z.string().optional(), name: z.string().optional() }).nullable().optional(),
   favoriteStore2: z.object({ id: z.string().optional(), name: z.string().optional() }).nullable().optional(),
   favoriteStore3: z.object({ id: z.string().optional(), name: z.string().optional() }).nullable().optional(),
+  // リンクフィールド
+  link1: z.string().url('有効なURLを入力してください').optional().or(z.literal('')),
+  link2: z.string().url('有効なURLを入力してください').optional().or(z.literal('')),
+  link3: z.string().url('有効なURLを入力してください').optional().or(z.literal('')),
   // 企業設定フィールド
   businessUrl: z.string().url('有効なURLを入力してください').optional().or(z.literal('')),
   businessStoreId: z.string().optional(),
@@ -76,6 +80,10 @@ export default function ProfileEditPage() {
       favoriteStore1: null,
       favoriteStore2: null,
       favoriteStore3: null,
+      // リンクのデフォルト値
+      link1: '',
+      link2: '',
+      link3: '',
       // 企業設定のデフォルト値
       businessUrl: '',
       businessStoreId: '',
@@ -151,6 +159,20 @@ export default function ProfileEditPage() {
                 id: profile.favorite_store_3_id,
                 name: profile.favorite_store_3_name
               });
+            }
+
+            // リンクを読み込む
+            if (profile.url) {
+              try {
+                const urls = typeof profile.url === 'string' ? JSON.parse(profile.url) : profile.url;
+                if (Array.isArray(urls)) {
+                  form.setValue('link1', urls[0] || '');
+                  form.setValue('link2', urls[1] || '');
+                  form.setValue('link3', urls[2] || '');
+                }
+              } catch (e) {
+                console.error('URLのパースに失敗:', e);
+              }
             }
 
             // 企業設定（businessユーザーのみ）
@@ -430,6 +452,10 @@ export default function ProfileEditPage() {
         }
       }
 
+      // リンクを配列として保存
+      const links = [values.link1, values.link2, values.link3].filter(link => link && link.trim() !== '');
+      const urlData = links.length > 0 ? JSON.stringify(links) : null;
+
       // プロフィールデータの更新（任意項目を削除）
       const updateData = {
         display_name: values.username,
@@ -440,6 +466,7 @@ export default function ProfileEditPage() {
         favorite_store_2_name: values.favoriteStore2?.name || null,
         favorite_store_3_id: values.favoriteStore3?.id || null,
         favorite_store_3_name: values.favoriteStore3?.name || null,
+        url: urlData,
         data_consent: dataConsent,
         // 企業設定（businessユーザーのみ）
         ...(userRole === 'business' && {
@@ -661,6 +688,107 @@ export default function ProfileEditPage() {
                         <Input 
                           placeholder="例: ショッピング好き" 
                           {...field} 
+                          disabled={isSaving}
+                          className="text-base py-6"
+                          style={{ fontSize: '16px' }}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </CardContent>
+            </Card>
+
+            {/* リンク設定 */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center text-lg">
+                  <LinkIcon className="h-5 w-5 mr-2 text-blue-600" />
+                  リンク
+                </CardTitle>
+                <p className="text-sm text-gray-600 mt-2">
+                  最大3つまでリンクを追加できます。
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* リンク1 */}
+                <FormField
+                  control={form.control}
+                  name="link1"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium flex items-center space-x-2">
+                        <span>リンク 1</span>
+                        {field.value && (
+                          <Badge variant="secondary" className="bg-blue-100 text-blue-800 text-xs">
+                            <CheckCircle className="h-3 w-3 mr-1" />
+                            登録済み
+                          </Badge>
+                        )}
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="https://example.com"
+                          {...field}
+                          disabled={isSaving}
+                          className="text-base py-6"
+                          style={{ fontSize: '16px' }}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* リンク2 */}
+                <FormField
+                  control={form.control}
+                  name="link2"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium flex items-center space-x-2">
+                        <span>リンク 2</span>
+                        {field.value && (
+                          <Badge variant="secondary" className="bg-blue-100 text-blue-800 text-xs">
+                            <CheckCircle className="h-3 w-3 mr-1" />
+                            登録済み
+                          </Badge>
+                        )}
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="https://example.com"
+                          {...field}
+                          disabled={isSaving}
+                          className="text-base py-6"
+                          style={{ fontSize: '16px' }}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* リンク3 */}
+                <FormField
+                  control={form.control}
+                  name="link3"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium flex items-center space-x-2">
+                        <span>リンク 3</span>
+                        {field.value && (
+                          <Badge variant="secondary" className="bg-blue-100 text-blue-800 text-xs">
+                            <CheckCircle className="h-3 w-3 mr-1" />
+                            登録済み
+                          </Badge>
+                        )}
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="https://example.com"
+                          {...field}
                           disabled={isSaving}
                           className="text-base py-6"
                           style={{ fontSize: '16px' }}
