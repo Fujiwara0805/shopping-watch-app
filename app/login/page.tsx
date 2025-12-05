@@ -68,7 +68,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (status === "authenticated") {
-      const callbackUrl = searchParams.get("callbackUrl") || "/map";
+      const callbackUrl = searchParams.get("callbackUrl") || "/profile";
       router.replace(callbackUrl);
     }
   }, [status, router, searchParams]);
@@ -103,7 +103,7 @@ export default function LoginPage() {
       setError("メールアドレスまたはパスワードが正しくありません。");
       console.error("Credentials login error:", result.error);
     } else {
-      const callbackUrl = searchParams.get("callbackUrl") || "/map";
+      const callbackUrl = searchParams.get("callbackUrl") || "/profile";
       router.replace(callbackUrl);
     }
     setIsLoading(false);
