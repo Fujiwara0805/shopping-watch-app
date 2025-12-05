@@ -748,7 +748,7 @@ export default function CalendarPage() {
   const handleDeleteEvent = async (eventId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     
-    if (!confirm('この投稿を削除してもよろしいですか？')) {
+    if (!confirm('この投稿を削除してもよろしいですか？\nこの操作は取り消せません。')) {
       return;
     }
     
@@ -756,24 +756,24 @@ export default function CalendarPage() {
     try {
       const { error } = await supabase
         .from('posts')
-        .update({ is_deleted: true })
+        .delete()
         .eq('id', eventId);
       
       if (error) throw error;
       
-      // イベントリストから削除
-      setEvents(prevEvents => prevEvents.filter(event => event.id !== eventId));
+      // データベースから再取得して最新の状態を反映
+      await fetchEvents();
       
       toast({
         title: "✅ 削除完了",
         description: "投稿を削除しました",
         duration: 2000,
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('削除エラー:', error);
       toast({
         title: 'エラー',
-        description: '投稿の削除に失敗しました',
+        description: error?.message || '投稿の削除に失敗しました',
         variant: 'destructive'
       });
     } finally {
