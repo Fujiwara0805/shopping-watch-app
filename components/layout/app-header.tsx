@@ -129,7 +129,7 @@ export function AppHeader() {
         transition={{ duration: 0.3 }}
       >
         <div className="absolute left-4 flex items-center">
-          <Link href="/map">
+          <Link href="/">
             <img src="https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png" alt="App Icon" className="h-12 w-12 object-contain" />
           </Link>
           {showLogo && <Logo withText size="small" />}

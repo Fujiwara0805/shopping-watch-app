@@ -65,18 +65,14 @@ interface MapCreatorProfile {
   avatar_path: string | null;
 }
 
-type PostCategory = 'イベント情報' | '聖地巡礼' | '観光スポット' | '温泉' | 'グルメ';
+type PostCategory = 'イベント情報';
 type ViewMode = 'events' | 'myMaps';
 
 const getCategoryConfig = (category: PostCategory) => {
   const configs = {
     'イベント情報': { color: '#73370c', icon: 'calendar' },
-    '聖地巡礼': { color: '#3ecf8e', icon: 'shrine' },
-    '観光スポット': { color: '#0066CC', icon: 'camera' },
-    '温泉': { color: '#FF6B6B', icon: 'hotspring' },
-    'グルメ': { color: '#FF8C00', icon: 'food' },
   };
-  return configs[category] || configs['イベント情報'];
+  return configs[category as keyof typeof configs] || configs['イベント情報'];
 };
 
 const createSimpleCategoryIcon = (category: PostCategory) => {
@@ -88,18 +84,6 @@ const createSimpleCategoryIcon = (category: PostCategory) => {
   switch (config.icon) {
     case 'calendar':
       iconSvg = `<g transform="translate(${size/2 - 5}, ${size/2 - 5}) scale(${iconScale})"><rect x="2" y="4" width="12" height="10" rx="1" fill="none" stroke="white" stroke-width="1.5"/><line x1="2" y1="7" x2="14" y2="7" stroke="white" stroke-width="1.5"/><line x1="5" y1="2" x2="5" y2="5" stroke="white" stroke-width="1.5" stroke-linecap="round"/><line x1="11" y1="2" x2="11" y2="5" stroke="white" stroke-width="1.5" stroke-linecap="round"/></g>`;
-      break;
-    case 'shrine':
-      iconSvg = `<g transform="translate(${size/2 - 5}, ${size/2 - 4}) scale(${iconScale})"><path d="M 8 2 L 4 6 L 4 10 L 12 10 L 12 6 Z" fill="none" stroke="white" stroke-width="1.5"/><line x1="8" y1="2" x2="8" y2="10" stroke="white" stroke-width="1.5"/><circle cx="8" cy="12" r="2" fill="none" stroke="white" stroke-width="1.5"/></g>`;
-      break;
-    case 'camera':
-      iconSvg = `<g transform="translate(${size/2 - 5}, ${size/2 - 4}) scale(${iconScale})"><rect x="3" y="4" width="10" height="8" rx="1" fill="none" stroke="white" stroke-width="1.5"/><circle cx="8" cy="8" r="2.5" fill="none" stroke="white" stroke-width="1.5"/><circle cx="8" cy="8" r="1" fill="white"/></g>`;
-      break;
-    case 'hotspring':
-      iconSvg = `<g transform="translate(${size/2 - 5}, ${size/2 - 4}) scale(${iconScale})"><circle cx="6" cy="8" r="2" fill="none" stroke="white" stroke-width="1.5"/><circle cx="10" cy="8" r="2" fill="none" stroke="white" stroke-width="1.5"/><path d="M 4 10 Q 8 12 12 10" fill="none" stroke="white" stroke-width="1.5"/></g>`;
-      break;
-    case 'food':
-      iconSvg = `<g transform="translate(${size/2 - 5}, ${size/2 - 4}) scale(${iconScale})"><circle cx="8" cy="8" r="4" fill="none" stroke="white" stroke-width="1.5"/><path d="M 6 6 L 10 10 M 10 6 L 6 10" stroke="white" stroke-width="1.5" stroke-linecap="round"/></g>`;
       break;
   }
   
@@ -339,7 +323,7 @@ export function MapView() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const titleId = searchParams.get('title_id');
   const [viewMode, setViewMode] = useState<ViewMode>(titleId ? 'myMaps' : 'events');
-  const [selectedCategory, setSelectedCategory] = useState<PostCategory>('イベント情報');
+  const selectedCategory: PostCategory = 'イベント情報';
   const [checkingIn, setCheckingIn] = useState<string | null>(null);
   const [checkedInPosts, setCheckedInPosts] = useState<Set<string>>(new Set());
 
@@ -598,7 +582,7 @@ export function MapView() {
       const indexInGroup = groupLocations.findIndex((l: any) => l.id === location.id);
       const offsetPosition = getOffsetPosition(location.store_latitude, location.store_longitude, indexInGroup, groupLocations.length);
       const position = new window.google.maps.LatLng(offsetPosition.lat, offsetPosition.lng);
-      const markerIcon = await createCategoryPinIcon(location.image_urls, location.store_name, '観光スポット');
+      const markerIcon = await createCategoryPinIcon(location.image_urls, location.store_name, 'イベント情報');
       const marker = new window.google.maps.Marker({ position, map, title: `${location.store_name} - ${location.map_title}`, icon: markerIcon, animation: window.google.maps.Animation.DROP, zIndex: indexInGroup + 1 });
       marker.addListener('click', () => { 
         // マーカークリック時に詳細画面に遷移し、該当箇所にフォーカス
@@ -714,15 +698,6 @@ export function MapView() {
   useEffect(() => { const newTitleId = searchParams.get('title_id'); setViewMode(newTitleId ? 'myMaps' : 'events'); }, [searchParams]);
 
   useEffect(() => {
-    if (map && window.google?.maps && viewMode === 'events') {
-      postMarkers.forEach(marker => { if (marker?.setMap) marker.setMap(null); });
-      setPostMarkers([]); setSelectedPost(null); setNearbyPosts([]);
-      const userLat = savedLocation?.lat || latitude; const userLng = savedLocation?.lng || longitude;
-      if (userLat && userLng) fetchPosts();
-    }
-  }, [selectedCategory]);
-
-  useEffect(() => {
     if (viewMode === 'events' && posts.length > 0 && map && window.google?.maps) createPostMarkers();
     else if (viewMode === 'events' && posts.length === 0 && map && window.google?.maps) { postMarkers.forEach(marker => { if (marker?.setMap) marker.setMap(null); }); setPostMarkers([]); }
   }, [posts, map, viewMode]);
@@ -766,7 +741,7 @@ export function MapView() {
       await navigator.clipboard.writeText(currentUrl);
       setIsCopied(true);
       toast({ title: 'コピー完了！', description: 'URLをクリップボードにコピーしました' });
-      setTimeout(() => setIsCopied(false), 2000);
+      setTimeout(() => setIsCopied(false), 1000);
     } catch (error) {
       console.error('URLのコピーに失敗:', error);
       toast({ title: 'エラー', description: 'URLのコピーに失敗しました', variant: 'destructive' });

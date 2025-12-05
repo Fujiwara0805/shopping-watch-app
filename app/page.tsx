@@ -3,11 +3,12 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MapPin, Menu, X, ChevronRight, Calendar, User } from 'lucide-react';
+import { MapPin, Menu, X, ChevronRight, Calendar, User, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { CustomModal } from '@/components/ui/custom-modal';
 import { supabase } from '@/lib/supabaseClient';
+import { useSession, signOut } from 'next-auth/react';
 
 // 🔥 公開マップの型定義
 interface PublicMapData {
@@ -316,6 +317,7 @@ const PublicMapsSection = ({ onMapClick }: { onMapClick: (mapId: string) => void
 // --- メイン実装 ---
 
 const EventLP = ({ onStart, onMapClick }: { onStart: () => void; onMapClick: (mapId: string) => void }) => {
+  const { data: session } = useSession();
   const [scrollPosition, setScrollPosition] = useState(0);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
@@ -451,6 +453,20 @@ src="https://res.cloudinary.com/dz9trbwma/image/upload/v1763822849/ChatGPT_Image
                       />
                       <span className="ml-2 font-bold">Instagram</span>
                     </a>
+
+                    {/* ログアウトボタン（ログイン時のみ表示） */}
+                    {session && (
+                      <button
+                        onClick={async () => {
+                          setIsMenuOpen(false);
+                          await signOut({ callbackUrl: '/' });
+                        }}
+                        className="flex items-center w-full px-4 py-3 text-[#dc2626] hover:bg-red-50 hover:text-[#b91c1c] rounded-lg transition-colors font-semibold border-t border-[#d4c4a8]/50 mt-4"
+                      >
+                        <LogOut className="h-5 w-5 mr-2" />
+                        ログアウト
+                      </button>
+                    )}
                   </nav>
                 </div>
               </motion.div>
