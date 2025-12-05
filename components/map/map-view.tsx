@@ -4,7 +4,7 @@ import { useRef, useEffect, useState, useCallback } from 'react';
 import { useGeolocation } from '@/lib/hooks/use-geolocation';
 import { useGoogleMapsApi } from '@/components/providers/GoogleMapsApiProvider';
 import { Button } from '@/components/ui/button';
-import { MapPin, AlertTriangle, RefreshCw, Calendar, Newspaper, User, MapPinIcon, X, Loader2, Home, Share2, Link2, Check } from 'lucide-react';
+import { MapPin, AlertTriangle, RefreshCw, Calendar, Newspaper, User, MapPinIcon, X, Loader2, Home, Share2, Link2, Check, Map, Plus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabaseClient';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -837,7 +837,6 @@ export function MapView() {
                     </AvatarFallback>
                   </Avatar>
                 </Button>
-                <span className="text-xs font-bold text-gray-700 mt-1">作成者</span>
               </motion.div>
             )}
             
@@ -862,12 +861,20 @@ export function MapView() {
           {/* 左下: ナビゲーションボタン */}
           <div className="absolute bottom-4 left-4 z-30 flex flex-col gap-2">
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.05 }} className="flex flex-col items-center">
-              <Button onClick={() => router.push('/')} size="icon" className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg bg-[#73370c] hover:bg-[#8b4513] flex flex-col items-center justify-center gap-1"><Home className="h-6 w-6 sm:h-7 sm:w-7 text-white" /><span className="text-xs text-white font-medium">ホーム</span></Button>
+              <Button onClick={() => {
+                setViewMode('events');
+                setSelectedMapLocation(null);
+                mapMarkers.forEach(marker => { if (marker?.setMap) marker.setMap(null); });
+                setMapMarkers([]);
+                router.push('/map');
+                const userLat = savedLocation?.lat || latitude;
+                const userLng = savedLocation?.lng || longitude;
+                if (userLat && userLng) {
+                  setTimeout(() => fetchPosts(), 100);
+                }
+              }} size="icon" className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg bg-[#73370c] hover:bg-[#8b4513] flex flex-col items-center justify-center gap-1"><Map className="h-6 w-6 sm:h-7 sm:w-7 text-white" /><span className="text-xs text-white font-medium">Map</span></Button>
             </motion.div>
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.1 }} className="flex flex-col items-center">
-              <Button onClick={() => router.push('/profile')} size="icon" className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg bg-[#73370c] hover:bg-[#8b4513] flex flex-col items-center justify-center gap-1"><User className="h-6 w-6 sm:h-7 sm:w-7 text-white" /><span className="text-xs text-white font-medium">マイページ</span></Button>
-            </motion.div>
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.15 }} className="flex flex-col items-center">
               <Button onClick={handleManualRefresh} size="icon" disabled={isRefreshing || loadingMaps} className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg bg-[#73370c] hover:bg-[#8b4513] disabled:opacity-50 flex flex-col items-center justify-center gap-1"><RefreshCw className={`h-6 w-6 sm:h-7 sm:w-7 text-white ${(isRefreshing || loadingMaps) ? 'animate-spin' : ''}`} /><span className="text-xs text-white font-medium">更新</span></Button>
             </motion.div>
           </div>
@@ -959,15 +966,12 @@ export function MapView() {
       {map && mapInitialized && viewMode === 'events' && (
         <div className="absolute top-4 right-4 z-30 flex flex-col gap-2">
           <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.3, delay: 0.05 }} className="flex flex-col items-center">
-            <Button onClick={() => router.push('/')} size="icon" className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg bg-[#73370c] hover:bg-[#8b4513] flex flex-col items-center justify-center gap-1"><Home className="h-6 w-6 sm:h-7 sm:w-7 text-white" /><span className="text-xs text-white font-medium">ホーム</span></Button>
+            <Button onClick={() => router.push('/events')} size="icon" className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg bg-[#73370c] hover:bg-[#8b4513] flex flex-col items-center justify-center gap-1"><Calendar className="h-6 w-6 sm:h-7 sm:w-7 text-white" /><span className="text-xs text-white font-medium">イベント</span></Button>
           </motion.div>
           <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.3, delay: 0.1 }} className="flex flex-col items-center">
-            <Button onClick={() => router.push('/events')} size="icon" className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg bg-[#73370c] hover:bg-[#8b4513] flex flex-col items-center justify-center gap-1"><Newspaper className="h-6 w-6 sm:h-7 sm:w-7 text-white" /><span className="text-xs text-white font-medium">イベント</span></Button>
+            <Button onClick={() => router.push('/public-maps')} size="icon" className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg bg-[#73370c] hover:bg-[#8b4513] flex flex-col items-center justify-center gap-1"><Newspaper className="h-6 w-6 sm:h-7 sm:w-7 text-white" /><span className="text-xs text-white font-medium">MyMap</span></Button>
           </motion.div>
           <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.3, delay: 0.15 }} className="flex flex-col items-center">
-            <Button onClick={() => router.push('/profile')} size="icon" className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg bg-[#73370c] hover:bg-[#8b4513] flex flex-col items-center justify-center gap-1"><User className="h-6 w-6 sm:h-7 sm:w-7 text-white" /><span className="text-xs text-white font-medium">マイページ</span></Button>
-          </motion.div>
-          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.3, delay: 0.2 }} className="flex flex-col items-center">
             <Button onClick={handleManualRefresh} size="icon" disabled={isRefreshing || loadingPosts} className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg bg-[#73370c] hover:bg-[#8b4513] disabled:opacity-50 flex flex-col items-center justify-center gap-1"><RefreshCw className={`h-6 w-6 sm:h-7 sm:w-7 text-white ${(isRefreshing || loadingPosts) ? 'animate-spin' : ''}`} /><span className="text-xs text-white font-medium">更新</span></Button>
           </motion.div>
         </div>

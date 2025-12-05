@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from "next-auth/react";
 import { motion } from 'framer-motion';
-import { Loader2, MapPin, Calendar, Trash2, Edit, Eye, Plus, ChevronRight } from 'lucide-react';
+import { Loader2, MapPin, Calendar, Trash2, Edit, Eye, Plus, ChevronRight, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabaseClient';
 import { useToast } from "@/hooks/use-toast";
@@ -168,16 +168,6 @@ export default function MyMapsPage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        {/* 新規作成ボタン（中央配置） */}
-        <div className="flex justify-center mb-6">
-          <Button 
-            onClick={handleCreate} 
-            className="flex items-center gap-2 h-12 px-6 text-base font-bold rounded-xl bg-[#73370c] hover:bg-[#8b4513]"
-          >
-            <Plus className="h-5 w-5" />
-            新規作成
-          </Button>
-        </div>
         
         {/* マップ一覧 */}
         {myMaps.length === 0 ? (
@@ -289,6 +279,41 @@ export default function MyMapsPage() {
           </div>
         )}
       </motion.div>
+
+      {/* フローティングアクションボタン */}
+      <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-3">
+        {/* マイページアイコン */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.3, delay: 0.1 }}
+        >
+          <Button
+            onClick={() => router.push('/profile')}
+            size="icon"
+            className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-2xl bg-[#73370c] hover:bg-[#8b4513] flex flex-col items-center justify-center gap-1"
+          >
+            <User className="h-6 w-6 sm:h-7 sm:w-7 text-white" />
+            <span className="text-xs text-white font-medium">マイページ</span>
+          </Button>
+        </motion.div>
+
+        {/* プラスアイコン */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.3, delay: 0.2 }}
+        >
+          <Button
+            onClick={handleCreate}
+            size="icon"
+            className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-2xl bg-[#73370c] hover:bg-[#8b4513] flex flex-col items-center justify-center gap-1"
+          >
+            <Plus className="h-6 w-6 sm:h-7 sm:w-7 text-white" />
+            <span className="text-xs text-white font-medium">作成</span>
+          </Button>
+        </motion.div>
+      </div>
     </div>
   );
 }

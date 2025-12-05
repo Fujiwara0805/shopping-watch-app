@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
-import { Search, MapPin, Calendar, Map as MapIcon, Loader2 } from 'lucide-react';
+import { Search, MapPin, Calendar, Map as MapIcon, Loader2, Plus } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { Input } from '@/components/ui/input';
 
@@ -111,6 +111,10 @@ export default function PublicMapsPage() {
     router.push('/map');
   };
 
+  const handleCreateMap = () => {
+    router.push('/create-map');
+  };
+
   const getAvatarPublicUrl = (avatarPath: string | null): string | null => {
     if (!avatarPath) return null;
     return supabase.storage.from('avatars').getPublicUrl(avatarPath).data.publicUrl;
@@ -126,26 +130,27 @@ export default function PublicMapsPage() {
 
   return (
     <div className="min-h-screen bg-background pb-24">
-      {/* ステータスバー風のスペーサー（モバイル用） */}
-      {/* 検索バー */}
-      <div className="px-3 py-3">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-          <Input
-            type="text"
-            placeholder="マップ名で検索..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 pr-4 py-3 bg-white border-gray-200 text-gray-800 placeholder-gray-400 rounded-lg focus:border-[#73370c] focus:ring-1 focus:ring-[#73370c]"
-          />
+      {/* 固定検索バー */}
+      <div className="sticky top-0 z-40 bg-background border-b border-gray-200 shadow-sm">
+        <div className="px-3 py-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <Input
+              type="text"
+              placeholder="マップ名で検索..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 pr-4 py-3 bg-white border-gray-200 text-gray-800 placeholder-gray-400 rounded-lg focus:border-[#73370c] focus:ring-1 focus:ring-[#73370c]"
+            />
+          </div>
         </div>
-      </div>
 
-      {/* 件数表示 */}
-      <div className="px-4 pb-3">
-        <p className="text-sm text-gray-500">
-          {filteredMaps.length}件のマップ
-        </p>
+        {/* 件数表示 */}
+        <div className="px-4 pb-3">
+          <p className="text-sm text-gray-500">
+            {filteredMaps.length}件のマップ
+          </p>
+        </div>
       </div>
 
       {/* マップ一覧 */}
@@ -243,17 +248,32 @@ export default function PublicMapsPage() {
         )}
       </div>
 
-      {/* 右下のMapボタン（FAB） */}
-      <motion.button
-        initial={{ opacity: 0, scale: 0 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.3, delay: 0.2 }}
-        onClick={handleMapButtonClick}
-        className="fixed bottom-6 right-4 sm:bottom-8 sm:right-8 z-50 w-16 h-16 sm:w-20 sm:h-20 bg-[#73370c] hover:bg-[#8b4513] rounded-xl shadow-lg transition-colors flex flex-col items-center justify-center gap-1"
-      >
-        <MapIcon className="h-6 w-6 sm:h-7 sm:w-7 text-white" />
-        <span className="text-xs text-white font-medium">Map</span>
-      </motion.button>
+      {/* 右下のFABボタン */}
+      <div className="fixed bottom-6 right-4 sm:bottom-8 sm:right-8 z-50 flex flex-col gap-3">
+        {/* プラスアイコンボタン（MyMap作成） */}
+        <motion.button
+          initial={{ opacity: 0, scale: 0 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.3, delay: 0.1 }}
+          onClick={handleCreateMap}
+          className="w-16 h-16 sm:w-20 sm:h-20 bg-[#73370c] hover:bg-[#8b4513] rounded-xl shadow-lg transition-colors flex flex-col items-center justify-center gap-1"
+        >
+          <Plus className="h-6 w-6 sm:h-7 sm:w-7 text-white" />
+          <span className="text-xs text-white font-medium">作成</span>
+        </motion.button>
+
+        {/* Mapボタン */}
+        <motion.button
+          initial={{ opacity: 0, scale: 0 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.3, delay: 0.2 }}
+          onClick={handleMapButtonClick}
+          className="w-16 h-16 sm:w-20 sm:h-20 bg-[#73370c] hover:bg-[#8b4513] rounded-xl shadow-lg transition-colors flex flex-col items-center justify-center gap-1"
+        >
+          <MapIcon className="h-6 w-6 sm:h-7 sm:w-7 text-white" />
+          <span className="text-xs text-white font-medium">Map</span>
+        </motion.button>
+      </div>
     </div>
   );
 }

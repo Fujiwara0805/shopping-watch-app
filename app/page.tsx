@@ -465,7 +465,7 @@ src="https://res.cloudinary.com/dz9trbwma/image/upload/v1763822849/ChatGPT_Image
             className="absolute inset-0 bg-cover bg-center"
             style={{
               backgroundImage:
-                'url(https://res.cloudinary.com/dz9trbwma/image/upload/v1764768098/photo-1524661135-423995f22d0b_myc9u9.jpg)',
+'url(https://res.cloudinary.com/dz9trbwma/image/upload/v1764920377/Gemini_Generated_Image_w5u33yw5u33yw5u3_jfispg.png)',
             }}
           />
           {/* オーバーレイ（読みやすさのための暗めのグラデーション） */}
@@ -641,7 +641,7 @@ src="https://res.cloudinary.com/dz9trbwma/image/upload/v1763822849/ChatGPT_Image
           <div 
             className="absolute inset-0 bg-cover bg-center"
             style={{
-              backgroundImage: 'url(https://res.cloudinary.com/dz9trbwma/image/upload/v1761712808/11_%E7%A5%AD%E3%82%8A_%E5%A4%8F%E7%A5%AD%E3%82%8A%E3%81%AE%E6%A7%98%E5%AD%90_oxlvol.jpg)',
+              backgroundImage: 'url(https://res.cloudinary.com/dz9trbwma/image/upload/v1764768098/photo-1524661135-423995f22d0b_myc9u9.jpg)',
             }}
           />
           <div className="absolute inset-0 bg-[#f5e6d3]/60" />
@@ -680,7 +680,7 @@ src="https://res.cloudinary.com/dz9trbwma/image/upload/v1763822849/ChatGPT_Image
             className="absolute inset-0 bg-cover bg-center opacity-20"
             style={{
               backgroundImage:
-                'url(https://res.cloudinary.com/dz9trbwma/image/upload/v1764768321/photo-1516546453174-5e1098a4b4af_zwkcbo.jpg)'
+'url(https://res.cloudinary.com/dz9trbwma/image/upload/v1764768321/photo-1516546453174-5e1098a4b4af_zwkcbo.jpg)'
             }}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-[#f5e6d3] via-[#f5e6d3]/80 to-transparent" />
