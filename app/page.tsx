@@ -865,7 +865,7 @@ export default function Home() {
         if (selectedMapId) {
           router.push(`/map?title_id=${selectedMapId}`);
         } else {
-          router.push('/map');
+          router.push('/');
         }
       }
     } else {
@@ -876,7 +876,7 @@ export default function Home() {
       if (selectedMapId) {
         router.push(`/map?title_id=${selectedMapId}`);
       } else {
-        router.push('/map');
+        router.push('/');
       }
     }
   };
@@ -888,7 +888,7 @@ export default function Home() {
     if (selectedMapId) {
       router.push(`/map?title_id=${selectedMapId}`);
     } else {
-      router.push('/map');
+      router.push('/');
     }
   };
 
