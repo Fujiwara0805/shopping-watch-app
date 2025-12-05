@@ -606,7 +606,7 @@ src="https://res.cloudinary.com/dz9trbwma/image/upload/v1763822849/ChatGPT_Image
                 <span className="text-[#5c3a21]">こだわり</span>の機能
               </h2>
               <p className="text-lg sm:text-xl md:text-2xl text-[#5c3a21] font-semibold mt-2">
-                「マップ作成」「イベント発見」「シェア」に<br />徹底的にこだわりました
+                「My Map作成」「イベント情報」に<br />徹底的にこだわりました
               </p>
             </motion.div>
 

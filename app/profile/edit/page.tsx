@@ -24,12 +24,9 @@ import FavoriteStoreInput from '@/components/profile/FavoriteStoreInput';
 import { useLoading } from '@/contexts/loading-context';
 import { useToast } from '@/hooks/use-toast';
 
-// bioフィールドを削除、企業設定フィールドを追加
+// プロフィールスキーマ - お気に入り店舗機能を削除
 const profileSchema = z.object({
   username: z.string().min(2, { message: 'ニックネームは2文字以上で入力してください。' }).max(30, { message: 'ニックネームは30文字以内で入力してください。' }),
-  favoriteStore1: z.object({ id: z.string().optional(), name: z.string().optional() }).nullable().optional(),
-  favoriteStore2: z.object({ id: z.string().optional(), name: z.string().optional() }).nullable().optional(),
-  favoriteStore3: z.object({ id: z.string().optional(), name: z.string().optional() }).nullable().optional(),
   // リンクフィールド
   link1: z.string().url('有効なURLを入力してください').optional().or(z.literal('')),
   link2: z.string().url('有効なURLを入力してください').optional().or(z.literal('')),
@@ -77,9 +74,6 @@ export default function ProfileEditPage() {
     resolver: zodResolver(profileSchema),
     defaultValues: {
       username: '',
-      favoriteStore1: null,
-      favoriteStore2: null,
-      favoriteStore3: null,
       // リンクのデフォルト値
       link1: '',
       link2: '',
@@ -138,28 +132,8 @@ export default function ProfileEditPage() {
           }
 
           if (profile) {
-            // 基本情報（bioを除外）
+            // 基本情報
             form.setValue('username', profile.display_name || '');
-            
-            // お気に入り店舗
-            if (profile.favorite_store_1_id && profile.favorite_store_1_name) {
-              form.setValue('favoriteStore1', {
-                id: profile.favorite_store_1_id,
-                name: profile.favorite_store_1_name
-              });
-            }
-            if (profile.favorite_store_2_id && profile.favorite_store_2_name) {
-              form.setValue('favoriteStore2', {
-                id: profile.favorite_store_2_id,
-                name: profile.favorite_store_2_name
-              });
-            }
-            if (profile.favorite_store_3_id && profile.favorite_store_3_name) {
-              form.setValue('favoriteStore3', {
-                id: profile.favorite_store_3_id,
-                name: profile.favorite_store_3_name
-              });
-            }
 
             // リンクを読み込む
             if (profile.url) {
@@ -456,16 +430,10 @@ export default function ProfileEditPage() {
       const links = [values.link1, values.link2, values.link3].filter(link => link && link.trim() !== '');
       const urlData = links.length > 0 ? JSON.stringify(links) : null;
 
-      // プロフィールデータの更新（任意項目を削除）
+      // プロフィールデータの更新
       const updateData = {
         display_name: values.username,
         updated_at: new Date().toISOString(),
-        favorite_store_1_id: values.favoriteStore1?.id || null,
-        favorite_store_1_name: values.favoriteStore1?.name || null,
-        favorite_store_2_id: values.favoriteStore2?.id || null,
-        favorite_store_2_name: values.favoriteStore2?.name || null,
-        favorite_store_3_id: values.favoriteStore3?.id || null,
-        favorite_store_3_name: values.favoriteStore3?.name || null,
         url: urlData,
         data_consent: dataConsent,
         // 企業設定（businessユーザーのみ）
@@ -705,136 +673,35 @@ export default function ProfileEditPage() {
               <CardHeader>
                 <CardTitle className="flex items-center text-lg">
                   <LinkIcon className="h-5 w-5 mr-2 text-blue-600" />
-                  リンク
+                  リンク設定
                 </CardTitle>
                 <p className="text-sm text-gray-600 mt-2">
-                  最大3つまでリンクを追加できます。
+                  あなたのウェブサイトやSNSなどのリンクを最大3つまで登録できます。
                 </p>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* リンク1 */}
-                <FormField
-                  control={form.control}
-                  name="link1"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-sm font-medium flex items-center space-x-2">
-                        <span>リンク 1</span>
-                        {field.value && (
-                          <Badge variant="secondary" className="bg-blue-100 text-blue-800 text-xs">
-                            <CheckCircle className="h-3 w-3 mr-1" />
-                            登録済み
-                          </Badge>
-                        )}
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="https://example.com"
-                          {...field}
-                          disabled={isSaving}
-                          className="text-base py-6"
-                          style={{ fontSize: '16px' }}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {/* リンク2 */}
-                <FormField
-                  control={form.control}
-                  name="link2"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-sm font-medium flex items-center space-x-2">
-                        <span>リンク 2</span>
-                        {field.value && (
-                          <Badge variant="secondary" className="bg-blue-100 text-blue-800 text-xs">
-                            <CheckCircle className="h-3 w-3 mr-1" />
-                            登録済み
-                          </Badge>
-                        )}
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="https://example.com"
-                          {...field}
-                          disabled={isSaving}
-                          className="text-base py-6"
-                          style={{ fontSize: '16px' }}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {/* リンク3 */}
-                <FormField
-                  control={form.control}
-                  name="link3"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-sm font-medium flex items-center space-x-2">
-                        <span>リンク 3</span>
-                        {field.value && (
-                          <Badge variant="secondary" className="bg-blue-100 text-blue-800 text-xs">
-                            <CheckCircle className="h-3 w-3 mr-1" />
-                            登録済み
-                          </Badge>
-                        )}
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="https://example.com"
-                          {...field}
-                          disabled={isSaving}
-                          className="text-base py-6"
-                          style={{ fontSize: '16px' }}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </CardContent>
-            </Card>
-
-            {/* お気に入り店舗 - 企業アカウントでは非表示 */}
-            {userRole !== 'business' && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center text-lg">
-                    <Store className="h-5 w-5 mr-2 text-green-600" />
-                    お気に入り店舗
-                  </CardTitle>
-                  <p className="text-sm text-gray-600 mt-2">
-                    最大3店舗まで登録できます。
-                  </p>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {/* 店舗1 - 常に表示 */}
+                {['link1', 'link2', 'link3'].map((fieldName, index) => (
                   <FormField
+                    key={fieldName}
                     control={form.control}
-                    name="favoriteStore1"
+                    name={fieldName as "link1" | "link2" | "link3"}
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className="text-sm font-medium flex items-center space-x-2">
-                          <span>お気に入り店舗 1</span>
-                          {field.value?.id && (
-                            <Badge variant="secondary" className="bg-green-100 text-green-800 text-xs">
+                          <span>リンク {index + 1}</span>
+                          {field.value && (
+                            <Badge variant="secondary" className="bg-blue-100 text-blue-800 text-xs">
                               <CheckCircle className="h-3 w-3 mr-1" />
                               登録済み
                             </Badge>
                           )}
                         </FormLabel>
                         <FormControl>
-                          <FavoriteStoreInput
-                            placeholder="店舗を検索して選択"
-                            value={field.value === null ? undefined : field.value}
-                            onChange={field.onChange}
+                          <Input
+                            placeholder="例: https://your-website.com"
+                            {...field}
                             disabled={isSaving}
+                            className="text-base py-6"
                             style={{ fontSize: '16px' }}
                           />
                         </FormControl>
@@ -842,211 +709,11 @@ export default function ProfileEditPage() {
                       </FormItem>
                     )}
                   />
+                ))}
+              </CardContent>
+            </Card>
 
-                  {/* 店舗2 - 店舗1が登録されている場合のみ表示 */}
-                  {form.watch('favoriteStore1')?.id && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      transition={{ duration: 0.3 }}
-                    >
-                      <FormField
-                        control={form.control}
-                        name="favoriteStore2"
-                        render={({ field }) => (
-                          <FormItem>
-                            {field.value?.id ? (
-                              // 登録済みの場合は削除のみ可能
-                              <div className="space-y-2">
-                                <FormLabel className="text-sm font-medium flex items-center space-x-2">
-                                  <span>お気に入り店舗 2</span>
-                                  <Badge variant="secondary" className="bg-green-100 text-green-800 text-xs">
-                                    <CheckCircle className="h-3 w-3 mr-1" />
-                                    登録済み
-                                  </Badge>
-                                </FormLabel>
-                                <div className="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-md">
-                                  <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-medium text-gray-900 truncate">
-                                      {field.value.name}
-                                    </p>
-                                    <p className="text-xs text-gray-500">
-                                      変更する場合は一度削除してから再度追加してください
-                                    </p>
-                                  </div>
-                                  <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => {
-                                      field.onChange(null);
-                                      // 3店舗目も削除
-                                      form.setValue('favoriteStore3', null);
-                                    }}
-                                    className="ml-3 text-red-600 border-red-200 hover:bg-red-50"
-                                    disabled={isSaving}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              </div>
-                            ) : (
-                              // 未登録の場合は追加可能
-                              <>
-                                <FormLabel className="text-sm font-medium flex items-center space-x-2">
-                                  <span>お気に入り店舗 2</span>
-                                  <Badge variant="secondary" className="bg-blue-100 text-blue-800 text-xs">
-                                    <Plus className="h-3 w-3 mr-1" />
-                                    追加可能
-                                  </Badge>
-                                </FormLabel>
-                                <FormControl>
-                                  <FavoriteStoreInput
-                                    placeholder="店舗を検索して選択"
-                                    value={field.value === null ? undefined : field.value}
-                                    onChange={field.onChange}
-                                    disabled={isSaving}
-                                    style={{ fontSize: '16px' }}
-                                  />
-                                </FormControl>
-                                <FormMessage />
-                              </>
-                            )}
-                          </FormItem>
-                        )}
-                      />
-                    </motion.div>
-                  )}
-
-                  {/* 店舗3 - 店舗1と店舗2が登録されている場合のみ表示 */}
-                  {form.watch('favoriteStore1')?.id && form.watch('favoriteStore2')?.id && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      transition={{ duration: 0.3 }}
-                    >
-                      <FormField
-                        control={form.control}
-                        name="favoriteStore3"
-                        render={({ field }) => (
-                          <FormItem>
-                            {field.value?.id ? (
-                              // 登録済みの場合は削除のみ可能
-                              <div className="space-y-2">
-                                <FormLabel className="text-sm font-medium flex items-center space-x-2">
-                                  <span>お気に入り店舗 3</span>
-                                  <Badge variant="secondary" className="bg-green-100 text-green-800 text-xs">
-                                    <CheckCircle className="h-3 w-3 mr-1" />
-                                    登録済み
-                                  </Badge>
-                                </FormLabel>
-                                <div className="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-md">
-                                  <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-medium text-gray-900 truncate">
-                                      {field.value.name}
-                                    </p>
-                                    <p className="text-xs text-gray-500">
-                                      変更する場合は一度削除してから再度追加してください
-                                    </p>
-                                  </div>
-                                  <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => field.onChange(null)}
-                                    className="ml-3 text-red-600 border-red-200 hover:bg-red-50"
-                                    disabled={isSaving}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              </div>
-                            ) : (
-                              // 未登録の場合は追加可能
-                              <>
-                                <FormLabel className="text-sm font-medium flex items-center space-x-2">
-                                  <span>お気に入り店舗 3</span>
-                                  <Badge variant="secondary" className="bg-blue-100 text-blue-800 text-xs">
-                                    <Plus className="h-3 w-3 mr-1" />
-                                    追加可能
-                                  </Badge>
-                                </FormLabel>
-                                <FormControl>
-                                  <FavoriteStoreInput
-                                    placeholder="店舗を検索して選択"
-                                    value={field.value === null ? undefined : field.value}
-                                    onChange={field.onChange}
-                                    disabled={isSaving}
-                                    style={{ fontSize: '16px' }}
-                                  />
-                                </FormControl>
-                                <FormMessage />
-                              </>
-                            )}
-                          </FormItem>
-                        )}
-                      />
-                    </motion.div>
-                  )}
-
-                  {/* 完了メッセージ */}
-                  {form.watch('favoriteStore1')?.id && 
-                   form.watch('favoriteStore2')?.id && 
-                   form.watch('favoriteStore3')?.id && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.3 }}
-                      className="p-3 bg-green-50 border border-green-200 rounded-lg text-center"
-                    >
-                      <div className="flex items-center justify-center space-x-2 text-green-700">
-                        <CheckCircle className="h-4 w-4" />
-                        <span className="text-sm font-medium">最大3店舗まで登録完了しました</span>
-                      </div>
-                    </motion.div>
-                  )}
-
-                  {/* 次に追加可能な店舗の案内 */}
-                  {!form.watch('favoriteStore1')?.id && (
-                    <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                      <div className="flex items-center space-x-2 text-blue-700">
-                        <Plus className="h-4 w-4" />
-                        <span className="text-sm font-medium">最初の店舗を追加してください</span>
-                      </div>
-                      <p className="text-xs text-blue-600 mt-1">
-                        お気に入りの店舗を登録すると、その店舗の情報を優先的に受け取れます
-                      </p>
-                    </div>
-                  )}
-
-                  {form.watch('favoriteStore1')?.id && !form.watch('favoriteStore2')?.id && (
-                    <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                      <div className="flex items-center space-x-2 text-blue-700">
-                        <Plus className="h-4 w-4" />
-                        <span className="text-sm font-medium">2店舗目を追加できます</span>
-                      </div>
-
-                    </div>
-                  )}
-
-                  {form.watch('favoriteStore1')?.id && 
-                   form.watch('favoriteStore2')?.id && 
-                   !form.watch('favoriteStore3')?.id && (
-                    <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                      <div className="flex items-center space-x-2 text-blue-700">
-                        <Plus className="h-4 w-4" />
-                        <span className="text-sm font-medium">3店舗目（最後）を追加できます</span>
-                      </div>
-                      <p className="text-xs text-blue-600 mt-1">
-                        最大3店舗まで登録可能です
-                      </p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            )}
-
-            {/* 企業設定（businessユーザーのみ表示） */}
+            {/* 企業設定（businessユーザーのみ表示） - お気に入り店舗機能は削除 */}
             {userRole === 'business' && (
               <Card>
                 <CardHeader>

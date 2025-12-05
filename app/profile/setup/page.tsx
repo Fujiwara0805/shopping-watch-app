@@ -16,7 +16,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
-import { Loader2, User as UserIcon, Info, Image as ImageIcon, X, Upload, Store, Check } from 'lucide-react';
+import { Loader2, User as UserIcon, Info, Image as ImageIcon, X, Upload, Check, Link as LinkIcon, CheckCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { v4 as uuidv4 } from 'uuid';
 import FavoriteStoreInput from '@/components/profile/FavoriteStoreInput';
@@ -53,12 +53,13 @@ interface AppProfile {
   data_consent?: boolean;
 }
 
-// bioフィールドを削除
+// プロフィールスキーマ - お気に入り店舗機能を削除
 const profileSchema = z.object({
   username: z.string().min(2, { message: 'ニックネームは2文字以上で入力してください。' }).max(30, { message: 'ニックネームは30文字以内で入力してください。' }),
-  favoriteStore1: z.object({ id: z.string().optional(), name: z.string().optional() }).nullable().optional(),
-  favoriteStore2: z.object({ id: z.string().optional(), name: z.string().optional() }).nullable().optional(),
-  favoriteStore3: z.object({ id: z.string().optional(), name: z.string().optional() }).nullable().optional(),
+  // リンクフィールド
+  link1: z.string().url('有効なURLを入力してください').optional().or(z.literal('')),
+  link2: z.string().url('有効なURLを入力してください').optional().or(z.literal('')),
+  link3: z.string().url('有効なURLを入力してください').optional().or(z.literal('')),
 });
 
 type ProfileFormValues = z.infer<typeof profileSchema>;
@@ -79,9 +80,10 @@ function ProfileSetupContent() {
     resolver: zodResolver(profileSchema),
     defaultValues: {
       username: '',
-      favoriteStore1: null,
-      favoriteStore2: null,
-      favoriteStore3: null,
+      // リンクのデフォルト値
+      link1: '',
+      link2: '',
+      link3: '',
     },
     mode: 'onChange',
   });
@@ -176,19 +178,18 @@ function ProfileSetupContent() {
 
       const newAppProfileId = uuidv4();
 
-      // プロフィールデータ（任意項目を削除）
+      // リンクを配列として保存
+      const links = [values.link1, values.link2, values.link3].filter(link => link && link.trim() !== '');
+      const urlData = links.length > 0 ? JSON.stringify(links) : null;
+
+      // プロフィールデータ
       const profileDataToSave = {
         id: newAppProfileId,
         user_id: session.user.id,
         display_name: values.username,
         avatar_url: uploadedAvatarPath,
         updated_at: new Date().toISOString(),
-        favorite_store_1_id: values.favoriteStore1?.id || null,
-        favorite_store_1_name: values.favoriteStore1?.name || null,
-        favorite_store_2_id: values.favoriteStore2?.id || null,
-        favorite_store_2_name: values.favoriteStore2?.name || null,
-        favorite_store_3_id: values.favoriteStore3?.id || null,
-        favorite_store_3_name: values.favoriteStore3?.name || null,
+        url: urlData,
         data_consent: dataConsent,
       };
 
@@ -369,74 +370,48 @@ function ProfileSetupContent() {
                 </CardContent>
               </Card>
 
-              {/* お気に入り店舗 */}
+              {/* リンク設定 */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center text-lg">
-                    <Store className="h-5 w-5 mr-2 text-green-600" />
-                    お気に入り店舗
+                    <LinkIcon className="h-5 w-5 mr-2 text-blue-600" />
+                    リンク設定
                   </CardTitle>
+                  <p className="text-sm text-gray-600 mt-2">
+                    あなたのウェブサイトやSNSなどのリンクを最大3つまで登録できます。
+                  </p>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="favoriteStore1"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-sm font-medium">お気に入り店舗 1</FormLabel>
-                        <FormControl>
-                          <FavoriteStoreInput
-                            placeholder="店舗を検索して選択"
-                            value={field.value === null ? undefined : field.value}
-                            onChange={field.onChange}
-                            disabled={isSaving}
-                            style={{ fontSize: '16px' }}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="favoriteStore2"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-sm font-medium">お気に入り店舗 2</FormLabel>
-                        <FormControl>
-                          <FavoriteStoreInput
-                            placeholder="店舗を検索して選択"
-                            value={field.value === null ? undefined : field.value}
-                            onChange={field.onChange}
-                            disabled={isSaving}
-                            style={{ fontSize: '16px' }}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="favoriteStore3"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-sm font-medium">お気に入り店舗 3</FormLabel>
-                        <FormControl>
-                          <FavoriteStoreInput
-                            placeholder="店舗を検索して選択"
-                            value={field.value === null ? undefined : field.value}
-                            onChange={field.onChange}
-                            disabled={isSaving}
-                            style={{ fontSize: '16px' }}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  {['link1', 'link2', 'link3'].map((fieldName, index) => (
+                    <FormField
+                      key={fieldName}
+                      control={form.control}
+                      name={fieldName as "link1" | "link2" | "link3"}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm font-medium flex items-center space-x-2">
+                            <span>リンク {index + 1}</span>
+                            {field.value && (
+                              <Badge variant="secondary" className="bg-blue-100 text-blue-800 text-xs">
+                                <CheckCircle className="h-3 w-3 mr-1" />
+                                登録済み
+                              </Badge>
+                            )}
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="例: https://your-website.com"
+                              {...field}
+                              disabled={isSaving}
+                              className="text-base py-6"
+                              style={{ fontSize: '16px' }}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  ))}
                 </CardContent>
               </Card>
 

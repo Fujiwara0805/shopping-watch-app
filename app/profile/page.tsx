@@ -23,12 +23,6 @@ interface AppProfile {
   bio?: string | null;
   avatar_url?: string | null;
   updated_at?: string;
-  favorite_store_1_id?: string | null;
-  favorite_store_1_name?: string | null;
-  favorite_store_2_id?: string | null;
-  favorite_store_2_name?: string | null;
-  favorite_store_3_id?: string | null;
-  favorite_store_3_name?: string | null;
   stripe_account_id?: string | null;
   stripe_onboarding_completed?: boolean;
   payout_enabled?: boolean;
@@ -297,7 +291,7 @@ function ProfilePageContent() {
         const { data: appProfileData, error: profileError } = await supabase
           .from('app_profiles')
           .select(
-            '*, favorite_store_1_id, favorite_store_1_name, favorite_store_2_id, favorite_store_2_name, favorite_store_3_id, favorite_store_3_name, stripe_account_id, stripe_onboarding_completed, payout_enabled'
+            '*, stripe_account_id, stripe_onboarding_completed, payout_enabled'
           )
           .eq('user_id', session.user.id)
           .single();
@@ -407,14 +401,7 @@ function ProfilePageContent() {
     router.push('/line-connect');
   };
 
-  // お気に入り店舗のフィルタリング
-  const favoriteStores = profile ? [
-    { id: profile.favorite_store_1_id, name: profile.favorite_store_1_name },
-    { id: profile.favorite_store_2_id, name: profile.favorite_store_2_name },
-    { id: profile.favorite_store_3_id, name: profile.favorite_store_3_name },
-  ].filter(store => store.id && store.name) as { id: string; name: string }[] : [];
-
-  // 🔥 プロフィール情報がない場合はログイン画面へ遷移（useEffectを条件外に移動）
+  // プロフィール情報がない場合はログイン画面へ遷移
   useEffect(() => {
     if (!loading && !profile) {
       router.push('/login');
@@ -654,7 +641,7 @@ function ProfilePageContent() {
               <SettingItem
                 icon={Settings}
                 title="アカウント設定"
-                description="プロフィール情報とお気に入り店舗の管理"
+                description="プロフィール情報とリンク設定の管理"
                 action={handleNavigateToAccountSettings}
                 loading={accountSettingsLoading}
               />
