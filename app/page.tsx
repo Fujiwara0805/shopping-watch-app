@@ -620,7 +620,7 @@ src="https://res.cloudinary.com/dz9trbwma/image/upload/v1763822849/ChatGPT_Image
                 {
                   label: 'DISCOVER',
                   title: 'イベント情報をマップで発見',
-                  description: '地域のイベント情報がマップ上に表示。今日～近日のイベントをひと目で把握できます。'
+                  description: '地域のイベント情報がマップ上に表示。開催中のイベントをひと目で把握できます。'
                 },
                 {
                   label: 'SHARE',

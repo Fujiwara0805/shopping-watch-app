@@ -4,7 +4,7 @@ import { useRef, useEffect, useState, useCallback } from 'react';
 import { useGeolocation } from '@/lib/hooks/use-geolocation';
 import { useGoogleMapsApi } from '@/components/providers/GoogleMapsApiProvider';
 import { Button } from '@/components/ui/button';
-import { MapPin, AlertTriangle, RefreshCw, Calendar, Newspaper, User, MapPinIcon, X, Loader2, Home, Share2, Link2, Check, Map, Plus } from 'lucide-react';
+import { MapPin, AlertTriangle, RefreshCw, Calendar, Newspaper, User, MapPinIcon, X, Loader2, Home, Share2, Link2, Check, Map, Plus, MapIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabaseClient';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -585,8 +585,8 @@ export function MapView() {
       const markerIcon = await createCategoryPinIcon(location.image_urls, location.store_name, 'イベント情報');
       const marker = new window.google.maps.Marker({ position, map, title: `${location.store_name} - ${location.map_title}`, icon: markerIcon, animation: window.google.maps.Animation.DROP, zIndex: indexInGroup + 1 });
       marker.addListener('click', () => { 
-        // マーカークリック時に詳細画面に遷移し、該当箇所にフォーカス
-        router.push(`/map/spot/${location.id}?order=${location.order}&title_id=${location.map_id}`);
+        // マーカークリック時に詳細カードを表示
+        setSelectedMapLocation(location);
       });
       return marker;
     });
@@ -658,7 +658,7 @@ export function MapView() {
       const container = mapContainerRef.current;
       container.innerHTML = '';
       const center = savedLocation ? savedLocation : (latitude && longitude) ? { lat: latitude, lng: longitude } : { lat: 35.6812, lng: 139.7671 };
-      const mapOptions: google.maps.MapOptions = { center, zoom: (savedLocation || (latitude && longitude)) ? 11 : 9, disableDefaultUI: true, zoomControl: true, gestureHandling: 'greedy', mapTypeId: window.google.maps.MapTypeId.ROADMAP, styles: rpgLightMapStyles };
+      const mapOptions: google.maps.MapOptions = { center, zoom: (savedLocation || (latitude && longitude)) ? 8 : 7, disableDefaultUI: true, zoomControl: true, gestureHandling: 'greedy', mapTypeId: window.google.maps.MapTypeId.ROADMAP, styles: rpgLightMapStyles };
       const newMap = new window.google.maps.Map(container, mapOptions);
       mapInstanceRef.current = newMap;
       window.google.maps.event.addListenerOnce(newMap, 'idle', () => { setMap(newMap); setMapInitialized(true); setInitializationError(null); });
@@ -740,11 +740,11 @@ export function MapView() {
     try {
       await navigator.clipboard.writeText(currentUrl);
       setIsCopied(true);
-      toast({ title: 'コピー完了！', description: 'URLをクリップボードにコピーしました' });
+      toast({ title: '✅ コピー完了！', description: 'URLをクリップボードにコピーしました' });
       setTimeout(() => setIsCopied(false), 1000);
     } catch (error) {
       console.error('URLのコピーに失敗:', error);
-      toast({ title: 'エラー', description: 'URLのコピーに失敗しました', variant: 'destructive' });
+      toast({ title: '⚠️ エラー', description: 'URLのコピーに失敗しました', variant: 'destructive' });
     }
   };
 
@@ -878,13 +878,12 @@ export function MapView() {
             <h3 className="text-xl font-bold text-gray-800">
               {mapCreatorProfile?.display_name || '匿名ユーザー'}
             </h3>
-            <p className="text-sm text-gray-500 mt-1">マップ作成者</p>
           </div>
 
           {/* マップタイトル */}
           {currentMapTitle && (
             <div className="bg-amber-50 rounded-xl p-4">
-              <p className="text-xs text-amber-600 font-medium mb-1">📍 作成したマップ</p>
+              <p className="text-xs text-amber-600 font-medium mb-1"> 作成したMap</p>
               <p className="text-base font-bold text-gray-800">{currentMapTitle}</p>
             </div>
           )}
@@ -947,7 +946,7 @@ export function MapView() {
             <Button onClick={() => router.push('/events')} size="icon" className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg bg-[#73370c] hover:bg-[#8b4513] flex flex-col items-center justify-center gap-1"><Calendar className="h-6 w-6 sm:h-7 sm:w-7 text-white" /><span className="text-xs text-white font-medium">イベント</span></Button>
           </motion.div>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.1 }} className="flex flex-col items-center">
-            <Button onClick={() => router.push('/public-maps')} size="icon" className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg bg-[#73370c] hover:bg-[#8b4513] flex flex-col items-center justify-center gap-1"><Newspaper className="h-6 w-6 sm:h-7 sm:w-7 text-white" /><span className="text-xs text-white font-medium">MyMap</span></Button>
+            <Button onClick={() => router.push('/public-maps')} size="icon" className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg bg-[#73370c] hover:bg-[#8b4513] flex flex-col items-center justify-center gap-1"><Newspaper className="h-6 w-6 sm:h-7 sm:w-7 text-white" /><span className="text-xs text-white font-medium">Map一覧</span></Button>
           </motion.div>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.15 }} className="flex flex-col items-center">
             <Button onClick={handleManualRefresh} size="icon" disabled={isRefreshing || loadingPosts} className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg bg-[#73370c] hover:bg-[#8b4513] disabled:opacity-50 flex flex-col items-center justify-center gap-1"><RefreshCw className={`h-6 w-6 sm:h-7 sm:w-7 text-white ${(isRefreshing || loadingPosts) ? 'animate-spin' : ''}`} /><span className="text-xs text-white font-medium">更新</span></Button>

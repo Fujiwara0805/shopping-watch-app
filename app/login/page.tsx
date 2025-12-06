@@ -154,7 +154,7 @@ export default function LoginPage() {
               ログインして<br />素敵な体験を始めよう
             </motion.h1>
             <p className="text-[#73370c]/60 mb-8 text-base sm:text-base">
-              ログインすると、お気に入り機能や<br />投稿機能を使用できます
+              ログインすると、MyMapを作成できます
             </p>
 
             {error && (

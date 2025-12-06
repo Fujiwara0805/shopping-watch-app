@@ -309,11 +309,9 @@ export function SpotDetailClient({ spotId }: SpotDetailClientProps) {
                   transition={{ delay: 0.3 }}
                   className="mb-4"
                 >
-                  <div className="bg-gray-100 border-l-4 border-teal-400 rounded-lg p-4 text-left">
+                  <div className="bg-gray-100 border-l-4 border-blue-400 rounded-lg p-4 text-left">
                     <div className="flex items-start gap-3">
-                      <FileText className="h-5 w-5 mt-0.5 flex-shrink-0 text-teal-600" />
                       <div className="flex-1">
-                        <p className="font-bold text-gray-900 mb-2">説明</p>
                         <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
                           {mapData.description}
                         </p>

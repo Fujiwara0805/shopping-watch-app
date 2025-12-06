@@ -17,6 +17,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { cn } from '@/lib/utils';
 import { useSession } from "next-auth/react";
@@ -46,7 +47,9 @@ interface LocationData {
 // フォームスキーマ
 const editMapSchema = z.object({
   title: z.string().min(1, { message: 'タイトルは必須です' }).max(100, { message: '100文字以内で入力してください' }),
+  description: z.string().max(500, { message: '500文字以内で入力してください' }).optional(),
   expiryOption: z.enum(['30days', '90days', 'unlimited']),
+  isPublic: z.boolean(),
 });
 
 type MapFormValues = z.infer<typeof editMapSchema>;
@@ -321,7 +324,9 @@ export default function EditMapPage() {
     resolver: zodResolver(editMapSchema),
     defaultValues: {
       title: '',
+      description: '',
       expiryOption: '30days',
+      isPublic: true,
     },
   });
   
@@ -400,7 +405,9 @@ export default function EditMapPage() {
       // フォームに値をセット
       form.reset({
         title: mapData.title,
+        description: mapData.description || '',
         expiryOption: mapData.expiry_option === '30d' ? '30days' : mapData.expiry_option === '90d' ? '90days' : 'unlimited',
+        isPublic: mapData.is_public ?? true,
       });
       
       // ハッシュタグを配列形式で設定
@@ -732,10 +739,12 @@ export default function EditMapPage() {
         .from('maps')
         .update({
           title: values.title,
+          description: values.description || null,
           locations: locationsData,
           hashtags: hashtagsToSave,
           expires_at: expiresAt.toISOString(),
           expiry_option: values.expiryOption === '30days' ? '30d' : values.expiryOption === '90days' ? '90d' : 'unlimited',
+          is_public: values.isPublic,
           updated_at: new Date().toISOString(),
         })
         .eq('id', mapId);
@@ -745,9 +754,9 @@ export default function EditMapPage() {
       }
       
       toast({
-        title: "✅ 更新完了！",
+        title: "✅  更新完了！",
         description: `「${values.title}」を更新しました`,
-        duration: 3000,
+        duration: 1000,
       });
       
       router.push('/my-maps');
@@ -867,6 +876,33 @@ export default function EditMapPage() {
                 )}
               </div>
               
+              {/* タイトルの説明文 */}
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm font-semibold">
+                      タイトルの説明文（任意）
+                    </FormLabel>
+                    <FormControl>
+                      <Textarea
+                        {...field}
+                        placeholder="このマップの説明を入力してください（最大500文字）"
+                        className="min-h-[100px] text-base resize-none"
+                        maxLength={500}
+                      />
+                    </FormControl>
+                    <div className="flex justify-between items-center">
+                      <FormMessage />
+                      <p className="text-xs text-gray-500">
+                        {field.value?.length || 0}/500
+                      </p>
+                    </div>
+                  </FormItem>
+                )}
+              />
+
               {/* 掲載期間 */}
               <FormField
                 control={form.control}
@@ -890,6 +926,30 @@ export default function EditMapPage() {
                       </Select>
                     </FormControl>
                     <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* 公開・非公開設定 */}
+              <FormField
+                control={form.control}
+                name="isPublic"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                    <div className="space-y-0.5">
+                      <FormLabel className="text-sm font-semibold">
+                        公開設定
+                      </FormLabel>
+                      <div className="text-sm text-gray-500">
+                        {field.value ? 'このマップは公開されます' : 'このマップは非公開です'}
+                      </div>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
                   </FormItem>
                 )}
               />
