@@ -44,12 +44,39 @@ interface LocationData {
   order: number;
 }
 
+// 掲載期間を自動計算する関数
+const calculateMapExpiryDays = (startDate: string, endDate?: string): number => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  const targetDateStr = endDate && endDate.trim() !== '' ? endDate : startDate;
+  const targetDate = new Date(targetDateStr);
+  targetDate.setHours(23, 59, 59, 999);
+  
+  const diffTime = targetDate.getTime() - today.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  
+  return Math.max(1, Math.min(90, diffDays));
+};
+
 // フォームスキーマ
 const editMapSchema = z.object({
   title: z.string().min(1, { message: 'タイトルは必須です' }).max(100, { message: '100文字以内で入力してください' }),
   description: z.string().max(500, { message: '500文字以内で入力してください' }).optional(),
-  expiryOption: z.enum(['30days', '90days', 'unlimited']),
+  publicationStartDate: z.string().min(1, { message: '掲載開始日は必須です' }),
+  publicationEndDate: z.string().optional(),
+  customExpiryDays: z.number().min(1, { message: '1日以上を設定してください' }).max(90, { message: '90日以下を設定してください' }),
   isPublic: z.boolean(),
+}).refine((data) => {
+  if (data.publicationEndDate && data.publicationEndDate.trim() !== '' && data.publicationStartDate && data.publicationStartDate.trim() !== '') {
+    const startDate = new Date(data.publicationStartDate);
+    const endDate = new Date(data.publicationEndDate);
+    return endDate >= startDate;
+  }
+  return true;
+}, {
+  message: '掲載終了日は開始日以降の日付を選択してください',
+  path: ['publicationEndDate'],
 });
 
 type MapFormValues = z.infer<typeof editMapSchema>;
@@ -70,6 +97,8 @@ interface MarkerLocationModalProps {
   initialLng?: number;
   initialSpotName?: string;
   isLoaded: boolean;
+  existingLocations?: LocationData[];
+  currentLocationId?: string;
 }
 
 function MarkerLocationModal({
@@ -80,10 +109,13 @@ function MarkerLocationModal({
   initialLng,
   initialSpotName,
   isLoaded,
+  existingLocations = [],
+  currentLocationId,
 }: MarkerLocationModalProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
   const markerRef = useRef<google.maps.Marker | null>(null);
+  const existingMarkersRef = useRef<google.maps.Marker[]>([]);
   
   const [spotName, setSpotName] = useState<string>(initialSpotName || '');
   const [currentLat, setCurrentLat] = useState<number>(initialLat || 35.6762);
@@ -195,12 +227,35 @@ function MarkerLocationModal({
       }
     });
     
+    // 🔥 既存スポットのマーカーを表示
+    existingLocations.forEach((location, index) => {
+      if (location.store_latitude && location.store_longitude && location.id !== currentLocationId) {
+        const existingMarker = new google.maps.Marker({
+          position: { lat: location.store_latitude, lng: location.store_longitude },
+          map: map,
+          title: location.storeName,
+          icon: {
+            path: google.maps.SymbolPath.CIRCLE,
+            scale: 6,
+            fillColor: '#f59e0b',
+            fillOpacity: 0.8,
+            strokeColor: '#FFFFFF',
+            strokeWeight: 2,
+          }
+        });
+        existingMarkersRef.current.push(existingMarker);
+      }
+    });
+    
     return () => {
       if (markerRef.current) {
         markerRef.current.setMap(null);
       }
+      // 既存マーカーをクリーンアップ
+      existingMarkersRef.current.forEach(m => m.setMap(null));
+      existingMarkersRef.current = [];
     };
-  }, [isOpen, isLoaded, initialLat, initialLng]);
+  }, [isOpen, isLoaded, initialLat, initialLng, existingLocations, currentLocationId]);
   
   // 保存処理
   const handleSave = () => {
@@ -325,7 +380,9 @@ export default function EditMapPage() {
     defaultValues: {
       title: '',
       description: '',
-      expiryOption: '30days',
+      publicationStartDate: '',
+      publicationEndDate: '',
+      customExpiryDays: 30,
       isPublic: true,
     },
   });
@@ -403,10 +460,16 @@ export default function EditMapPage() {
       }
       
       // フォームに値をセット
+      const startDate = mapData.publication_start_date || '';
+      const endDate = mapData.publication_end_date || '';
+      const calculatedDays = startDate ? calculateMapExpiryDays(startDate, endDate) : 30;
+      
       form.reset({
         title: mapData.title,
         description: mapData.description || '',
-        expiryOption: mapData.expiry_option === '30d' ? '30days' : mapData.expiry_option === '90d' ? '90days' : 'unlimited',
+        publicationStartDate: startDate,
+        publicationEndDate: endDate,
+        customExpiryDays: calculatedDays,
         isPublic: mapData.is_public ?? true,
       });
       
@@ -672,15 +735,7 @@ export default function EditMapPage() {
       }
       
       // 掲載期限を計算
-      const expiresAt = values.expiryOption === '30days' 
-        ? calculateExpiresAt('days', undefined, 30)
-        : values.expiryOption === '90days'
-        ? calculateExpiresAt('90d')
-        : (() => {
-            const farFuture = new Date();
-            farFuture.setFullYear(2099, 11, 31);
-            return farFuture;
-          })();
+      const expiresAt = calculateExpiresAt('days', undefined, values.customExpiryDays);
       
       const hashtagsToSave = hashtags.length > 0 ? hashtags : null;
       
@@ -743,7 +798,9 @@ export default function EditMapPage() {
           locations: locationsData,
           hashtags: hashtagsToSave,
           expires_at: expiresAt.toISOString(),
-          expiry_option: values.expiryOption === '30days' ? '30d' : values.expiryOption === '90days' ? '90d' : 'unlimited',
+          expiry_option: `${values.customExpiryDays}d`,
+          publication_start_date: values.publicationStartDate,
+          publication_end_date: values.publicationEndDate || null,
           is_public: values.isPublic,
           updated_at: new Date().toISOString(),
         })
@@ -889,7 +946,7 @@ export default function EditMapPage() {
                       <Textarea
                         {...field}
                         placeholder="このマップの説明を入力してください（最大500文字）"
-                        className="min-h-[100px] text-base resize-none"
+                        className="min-h-[140px] text-base resize-none"
                         maxLength={500}
                       />
                     </FormControl>
@@ -903,32 +960,81 @@ export default function EditMapPage() {
                 )}
               />
 
-              {/* 掲載期間 */}
+              {/* 掲載開始日 */}
               <FormField
                 control={form.control}
-                name="expiryOption"
+                name="publicationStartDate"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-sm font-semibold flex items-center">
-                      <ClockIcon className="mr-2 h-4 w-4" />
-                      掲載期間<span className="text-destructive ml-1">*</span>
+                    <FormLabel className="text-sm font-semibold">
+                      掲載開始日<span className="text-destructive ml-1">*</span>
                     </FormLabel>
                     <FormControl>
-                      <Select value={field.value} onValueChange={field.onChange}>
-                        <SelectTrigger className="h-12 text-base">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="30days">30日間</SelectItem>
-                          <SelectItem value="90days">90日間</SelectItem>
-                          <SelectItem value="unlimited">無期限</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <Input
+                        type="date"
+                        className="h-12 text-base"
+                        {...field}
+                        onChange={(e) => {
+                          field.onChange(e);
+                          const startDate = e.target.value;
+                          const endDate = form.getValues('publicationEndDate');
+                          if (startDate) {
+                            const calculatedDays = calculateMapExpiryDays(startDate, endDate);
+                            form.setValue('customExpiryDays', calculatedDays);
+                          }
+                        }}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+
+              {/* 掲載終了日 */}
+              <FormField
+                control={form.control}
+                name="publicationEndDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm font-semibold">
+                      掲載終了日（任意）
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        type="date"
+                        className="h-12 text-base"
+                        {...field}
+                        onChange={(e) => {
+                          field.onChange(e);
+                          const startDate = form.getValues('publicationStartDate');
+                          const endDate = e.target.value;
+                          if (startDate) {
+                            const calculatedDays = calculateMapExpiryDays(startDate, endDate);
+                            form.setValue('customExpiryDays', calculatedDays);
+                          }
+                        }}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* 掲載期間（自動計算結果） */}
+              <div className="rounded-lg border border-gray-200 p-4 bg-gray-50">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <ClockIcon className="mr-2 h-4 w-4 text-gray-600" />
+                    <span className="text-sm font-semibold text-gray-700">掲載期間</span>
+                  </div>
+                  <span className="text-base font-bold text-[#73370c]">
+                    {form.watch('customExpiryDays')}日間
+                  </span>
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  ※掲載開始日と終了日から自動計算されます
+                </p>
+              </div>
 
               {/* 公開・非公開設定 */}
               <FormField
@@ -995,6 +1101,7 @@ export default function EditMapPage() {
                     loadError={loadError}
                     userLatitude={latitude}
                     userLongitude={longitude}
+                    allLocations={locations}
                   />
                 </motion.div>
               </AnimatePresence>
@@ -1129,6 +1236,7 @@ interface LocationFormProps {
   loadError: Error | null;
   userLatitude?: number | null;
   userLongitude?: number | null;
+  allLocations?: LocationData[];
 }
 
 function LocationForm({
@@ -1142,6 +1250,7 @@ function LocationForm({
   loadError,
   userLatitude,
   userLongitude,
+  allLocations = [],
 }: LocationFormProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [locationStatus, setLocationStatus] = useState<'none' | 'getting' | 'success' | 'error'>('none');
@@ -1369,6 +1478,8 @@ function LocationForm({
         initialLng={location.store_longitude || userLongitude || undefined}
         initialSpotName={location.storeName}
         isLoaded={isLoaded}
+        existingLocations={allLocations}
+        currentLocationId={location.id}
       />
     </div>
   );

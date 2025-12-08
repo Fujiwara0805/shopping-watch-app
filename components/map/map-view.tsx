@@ -14,6 +14,38 @@ const getAvatarPublicUrl = (avatarPath: string | null): string | null => {
   if (!avatarPath) return null;
   return supabase.storage.from('avatars').getPublicUrl(avatarPath).data.publicUrl;
 };
+
+// 🔥 URLを正規化する関数（配列やJSON形式から実際のURLを抽出）
+const normalizeUrl = (url: string | null): string | null => {
+  if (!url) return null;
+  
+  try {
+    // JSON配列形式の場合（例: ["https://example.com"]）
+    const parsed = JSON.parse(url);
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      return parsed[0];
+    }
+    return url;
+  } catch {
+    // JSONパースに失敗した場合は、そのまま返す
+    return url;
+  }
+};
+
+// 🔥 URLの種類に応じたアイコンを取得する関数
+const getSocialIconUrl = (url: string): string => {
+  const lowerUrl = url.toLowerCase();
+  
+  if (lowerUrl.includes('instagram.com') || lowerUrl.includes('instagr.am')) {
+    return 'https://res.cloudinary.com/dz9trbwma/image/upload/v1759308496/icons8-%E3%82%A4%E3%83%B3%E3%82%B9%E3%82%BF%E3%82%AF%E3%82%99%E3%83%A9%E3%83%A0-100_idedfz.png';
+  } else if (lowerUrl.includes('facebook.com') || lowerUrl.includes('fb.com')) {
+    return 'https://res.cloudinary.com/dz9trbwma/image/upload/v1759308615/icons8-facebook%E3%81%AE%E6%96%B0%E3%81%97%E3%81%84-100_2_pps86o.png';
+  } else if (lowerUrl.includes('twitter.com') || lowerUrl.includes('x.com')) {
+    return 'https://res.cloudinary.com/dz9trbwma/image/upload/v1759308507/icons8-%E3%83%84%E3%82%A4%E3%83%83%E3%82%BF%E3%83%BCx-100_x18dc0.png';
+  } else {
+    return 'https://res.cloudinary.com/dz9trbwma/image/upload/v1759366399/icons8-%E3%82%A6%E3%82%A7%E3%83%95%E3%82%99-100_a6uwwq.png';
+  }
+};
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { useToast } from '@/hooks/use-toast';
@@ -63,6 +95,7 @@ interface MapCreatorProfile {
   user_id: string;
   display_name: string;
   avatar_path: string | null;
+  url: string | null;
 }
 
 type PostCategory = 'イベント情報';
@@ -450,7 +483,7 @@ export function MapView() {
       // app_profilesテーブルからプロフィール情報を取得
       const { data: profileData, error: profileError } = await supabase
         .from('app_profiles')
-        .select('id, user_id, display_name, avatar_url')
+        .select('id, user_id, display_name, avatar_url, url')
         .eq('id', mapData.app_profile_id)
         .single();
 
@@ -464,6 +497,7 @@ export function MapView() {
         user_id: profileData.user_id,
         display_name: profileData.display_name || '匿名ユーザー',
         avatar_path: profileData.avatar_url, // 🔥 パスとして保持
+        url: profileData.url || null,
       });
     } catch (error) {
       console.error('プロフィール取得エラー:', error);
@@ -683,7 +717,7 @@ export function MapView() {
 
   const handleManualRefresh = async () => {
     setIsRefreshing(true);
-    if (viewMode === 'events' && 'geolocation' in navigator) {
+    if ('geolocation' in navigator) {
       try {
         const position = await new Promise<GeolocationPosition>((resolve, reject) => { navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }); });
         localStorage.setItem('userLocation', JSON.stringify({ latitude: position.coords.latitude, longitude: position.coords.longitude, timestamp: Date.now(), expiresAt: Date.now() + 3600000 }));
@@ -792,25 +826,25 @@ export function MapView() {
           <div className="absolute top-4 right-4 z-30 flex flex-col gap-2">
             {/* プロフィールアイコン */}
             {mapCreatorProfile && (
-              <motion.div 
-                initial={{ opacity: 0, x: 20 }} 
-                animate={{ opacity: 1, x: 0 }} 
-                transition={{ duration: 0.3, delay: 0.05 }} 
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3, delay: 0.05 }}
                 className="flex flex-col items-center"
               >
-                <Button 
-                  onClick={() => setIsProfileModalOpen(true)} 
-                  size="icon" 
-                  className="h-14 w-14 rounded-full shadow-lg bg-white hover:bg-gray-100 border-2 border-[#73370c] p-0 overflow-hidden"
+                <Button
+                  onClick={() => setIsProfileModalOpen(true)}
+                  size="icon"
+                  className="h-14 w-14 rounded-lg shadow-lg bg-white hover:bg-gray-100 border-2 border-[#73370c] p-0 overflow-hidden"
                 >
-                  <Avatar className="h-full w-full">
+                  <Avatar className="h-full w-full rounded-lg">
                     {mapCreatorProfile.avatar_path ? (
                       <AvatarImage
                         src={getAvatarPublicUrl(mapCreatorProfile.avatar_path) || ''}
                         alt={mapCreatorProfile.display_name}
                       />
                     ) : null}
-                    <AvatarFallback className="text-lg font-bold bg-gradient-to-br from-[#5c3a21] to-[#8b6914] text-[#fff8f0]">
+                    <AvatarFallback className="text-lg font-bold bg-gradient-to-br from-[#5c3a21] to-[#8b6914] text-[#fff8f0] rounded-lg">
                       {mapCreatorProfile.display_name.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
@@ -828,7 +862,7 @@ export function MapView() {
               <Button 
                 onClick={() => setIsShareModalOpen(true)} 
                 size="icon" 
-                className="h-12 w-12 rounded-full shadow-lg bg-[#73370c] hover:bg-[#5c2a0a] border-2 border-white"
+                className="h-12 w-12 rounded-lg shadow-lg bg-[#73370c] hover:bg-[#5c2a0a] border-2 border-white"
               >
                 <Share2 className="h-6 w-6 text-white" />
               </Button>
@@ -875,9 +909,31 @@ export function MapView() {
                 {mapCreatorProfile?.display_name?.charAt(0).toUpperCase() || 'U'}
               </AvatarFallback>
             </Avatar>
-            <h3 className="text-xl font-bold text-gray-800">
+            <h3 className="text-xl font-bold text-gray-800 mb-2">
               {mapCreatorProfile?.display_name || '匿名ユーザー'}
             </h3>
+            
+            {/* SNSアイコン表示 */}
+            {mapCreatorProfile?.url && (() => {
+              const normalizedUrl = normalizeUrl(mapCreatorProfile.url);
+              if (!normalizedUrl) return null;
+              
+              return (
+                <a
+                  href={normalizedUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="transition-opacity hover:opacity-80"
+                  title={normalizedUrl}
+                >
+                  <img 
+                    src={getSocialIconUrl(normalizedUrl)} 
+                    alt="SNS Icon"
+                    className="w-8 h-8 object-contain"
+                  />
+                </a>
+              );
+            })()}
           </div>
 
           {/* マップタイトル */}

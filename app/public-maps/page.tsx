@@ -34,9 +34,18 @@ export default function PublicMapsPage() {
     if (searchQuery.trim() === '') {
       setFilteredMaps(publicMaps);
     } else {
-      const filtered = publicMaps.filter(map =>
-        map.title.toLowerCase().includes(searchQuery.toLowerCase())
-      );
+      const query = searchQuery.toLowerCase();
+      const filtered = publicMaps.filter(map => {
+        // タイトルで検索
+        const matchesTitle = map.title.toLowerCase().includes(query);
+        
+        // ハッシュタグで検索
+        const matchesHashtag = map.hashtags?.some(tag => 
+          tag.toLowerCase().includes(query)
+        ) || false;
+        
+        return matchesTitle || matchesHashtag;
+      });
       setFilteredMaps(filtered);
     }
   }, [searchQuery, publicMaps]);
@@ -137,7 +146,7 @@ export default function PublicMapsPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
             <Input
               type="text"
-              placeholder="マップ名で検索..."
+              placeholder="マップ名・タグで検索..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10 pr-4 py-3 bg-white border-gray-200 text-gray-800 placeholder-gray-400 rounded-lg focus:border-[#73370c] focus:ring-1 focus:ring-[#73370c]"
