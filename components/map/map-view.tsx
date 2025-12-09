@@ -1080,7 +1080,24 @@ export function MapView() {
                     <div className="flex-1 min-w-0">
                       <div className="text-xs text-gray-500 mb-1">{selectedMapLocation.map_title}</div>
                       <h3 className="text-base font-bold line-clamp-2 mb-2 text-[#73370c]">{selectedMapLocation.store_name}</h3>
-                      <p className="text-sm text-gray-600 line-clamp-2">{selectedMapLocation.content}</p>
+                      {selectedMapLocation.url ? (
+                        <a
+                          href={normalizeUrl(selectedMapLocation.url) || '#'}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <img
+                            src={getSocialIconUrl(normalizeUrl(selectedMapLocation.url) || '')}
+                            alt="link icon"
+                            className="w-5 h-5"
+                          />
+                          <span className="line-clamp-1">リンクを開く</span>
+                        </a>
+                      ) : (
+                        <p className="text-sm text-gray-400">URLなし</p>
+                      )}
                     </div>
                   </div>
                   <Button onClick={() => router.push(`/map/spot/${selectedMapLocation.id}`)} className="w-full bg-[#73370c] hover:bg-[#5c2a0a] text-white shadow-lg">詳細を見る</Button>

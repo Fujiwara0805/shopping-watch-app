@@ -404,6 +404,36 @@ export function SpotDetailClient({ spotId }: SpotDetailClientProps) {
                     </p>
                   </div>
 
+                  {/* URL表示 */}
+                  {location.url && (
+                    <div className="mb-4">
+                      <a
+                        href={location.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-3 p-3 bg-blue-50 hover:bg-blue-100 rounded-lg border border-blue-200 transition-colors group"
+                      >
+                        <img
+                          src={
+                            location.url.toLowerCase().includes('instagram.com') || location.url.toLowerCase().includes('instagr.am')
+                              ? 'https://res.cloudinary.com/dz9trbwma/image/upload/v1759308496/icons8-%E3%82%A4%E3%83%B3%E3%82%B9%E3%82%BF%E3%82%AF%E3%82%99%E3%83%A9%E3%83%A0-100_idedfz.png'
+                              : 'https://res.cloudinary.com/dz9trbwma/image/upload/v1759366399/icons8-%E3%82%A6%E3%82%A7%E3%83%95%E3%82%99-100_a6uwwq.png'
+                          }
+                          alt="link icon"
+                          className="w-8 h-8 flex-shrink-0"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-blue-700 group-hover:text-blue-900 group-hover:underline truncate">
+                            {location.url.toLowerCase().includes('instagram.com') || location.url.toLowerCase().includes('instagr.am') 
+                              ? 'Instagramで見る' 
+                              : 'Webサイトを開く'}
+                          </p>
+                        </div>
+                        <ExternalLink className="h-5 w-5 text-blue-600 flex-shrink-0" />
+                      </a>
+                    </div>
+                  )}
+
                   {/* アクションボタン */}
                   {location.store_latitude && location.store_longitude && (
                     <div className="flex justify-center">
