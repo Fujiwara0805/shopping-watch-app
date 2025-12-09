@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
-import { Search, MapPin, Calendar, Map as MapIcon, Loader2, Plus } from 'lucide-react';
+import { Search, MapPin, Calendar, Map as MapIcon, Loader2, User } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { Input } from '@/components/ui/input';
 
@@ -120,8 +120,8 @@ export default function PublicMapsPage() {
     router.push('/map');
   };
 
-  const handleCreateMap = () => {
-    router.push('/create-map');
+  const handleMyPage = () => {
+    router.push('/profile');
   };
 
   const getAvatarPublicUrl = (avatarPath: string | null): string | null => {
@@ -259,16 +259,16 @@ export default function PublicMapsPage() {
 
       {/* 右下のFABボタン */}
       <div className="fixed bottom-6 right-4 sm:bottom-8 sm:right-8 z-50 flex flex-col gap-3">
-        {/* プラスアイコンボタン（MyMap作成） */}
+        {/* マイページボタン */}
         <motion.button
           initial={{ opacity: 0, scale: 0 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.3, delay: 0.1 }}
-          onClick={handleCreateMap}
+          onClick={handleMyPage}
           className="w-16 h-16 sm:w-20 sm:h-20 bg-[#73370c] hover:bg-[#8b4513] rounded-xl shadow-lg transition-colors flex flex-col items-center justify-center gap-1"
         >
-          <Plus className="h-6 w-6 sm:h-7 sm:w-7 text-white" />
-          <span className="text-xs text-white font-medium">作成</span>
+          <User className="h-6 w-6 sm:h-7 sm:w-7 text-white" />
+          <span className="text-xs text-white font-medium">マイページ</span>
         </motion.button>
 
         {/* Mapボタン */}
