@@ -397,6 +397,7 @@ export default function EditMapPage() {
   const [currentLocationIndex, setCurrentLocationIndex] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false); // 初回データ取得済みフラグ
   
   // currentLocationIndexが配列の範囲内に収まるようにする
   useEffect(() => {
@@ -431,12 +432,13 @@ export default function EditMapPage() {
     }
   }, [session, status, router]);
   
-  // 既存のマップデータを取得
+  // 既存のマップデータを取得（初回のみ）
   useEffect(() => {
-    if (session?.user?.id && mapId) {
+    if (session?.user?.id && mapId && !isInitialized) {
       fetchMapData();
+      setIsInitialized(true);
     }
-  }, [session, mapId]);
+  }, [session, mapId, isInitialized]);
   
   const fetchMapData = async () => {
     try {
