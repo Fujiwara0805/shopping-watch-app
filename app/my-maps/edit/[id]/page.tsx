@@ -397,6 +397,10 @@ export default function EditMapPage() {
   const [currentLocationIndex, setCurrentLocationIndex] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isDataRestored, setIsDataRestored] = useState(false);
+  
+  // sessionStorageのキー
+  const storageKey = `edit-map-draft-${mapId}`;
   
   // currentLocationIndexが配列の範囲内に収まるようにする
   useEffect(() => {
@@ -404,6 +408,57 @@ export default function EditMapPage() {
       setCurrentLocationIndex(locations.length - 1);
     }
   }, [locations.length, currentLocationIndex]);
+  
+  // 編集中のデータをsessionStorageに保存
+  useEffect(() => {
+    if (isDataRestored && locations.length > 0) {
+      try {
+        const formData = {
+          title: form.watch('title'),
+          description: form.watch('description'),
+          isPublic: form.watch('isPublic'),
+          publicationStartDate: form.watch('publicationStartDate'),
+          publicationEndDate: form.watch('publicationEndDate'),
+          hashtags,
+          locations: locations.map(loc => ({
+            ...loc,
+            imageFiles: [], // Fileオブジェクトは保存できないので除外
+            imagePreviewUrls: [], // プレビューURLも除外
+          })),
+          currentLocationIndex,
+        };
+        sessionStorage.setItem(storageKey, JSON.stringify(formData));
+      } catch (error) {
+        console.error('データ保存エラー:', error);
+      }
+    }
+  }, [form.watch('title'), form.watch('description'), form.watch('isPublic'), form.watch('publicationStartDate'), form.watch('publicationEndDate'), hashtags, locations, currentLocationIndex, isDataRestored, storageKey]);
+  
+  // ページ離脱時の保存
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (isDataRestored && locations.length > 0) {
+        const formData = {
+          title: form.watch('title'),
+          description: form.watch('description'),
+          isPublic: form.watch('isPublic'),
+          publicationStartDate: form.watch('publicationStartDate'),
+          publicationEndDate: form.watch('publicationEndDate'),
+          hashtags,
+          locations: locations.map(loc => ({
+            ...loc,
+            imageFiles: [],
+            imagePreviewUrls: [],
+          })),
+          currentLocationIndex,
+        };
+        sessionStorage.setItem(storageKey, JSON.stringify(formData));
+      }
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [form.watch('title'), form.watch('description'), form.watch('isPublic'), form.watch('publicationStartDate'), form.watch('publicationEndDate'), hashtags, locations, currentLocationIndex, isDataRestored, storageKey]);
   
   // 必須項目の入力チェック
   const isFormValid = () => {
@@ -501,19 +556,86 @@ export default function EditMapPage() {
         order: loc.order !== undefined ? loc.order : index,
       }));
       
-      setLocations(convertedLocations.length > 0 ? convertedLocations : [{
-        id: crypto.randomUUID(),
-        storeName: '',
-        storeId: '',
-        store_latitude: undefined,
-        store_longitude: undefined,
-        content: '',
-        imageFiles: [],
-        imagePreviewUrls: [],
-        existingImageUrls: [],
-        url: '',
-        order: 0,
-      }]);
+      // sessionStorageから保存されたデータを自動復元
+      const savedData = sessionStorage.getItem(storageKey);
+      if (savedData) {
+        try {
+          const parsedData = JSON.parse(savedData);
+          
+          // フォームデータを自動復元
+          form.reset({
+            title: parsedData.title || mapData.title,
+            description: parsedData.description || mapData.description || '',
+            publicationStartDate: parsedData.publicationStartDate || startDate,
+            publicationEndDate: parsedData.publicationEndDate || endDate,
+            customExpiryDays: calculatedDays,
+            isPublic: parsedData.isPublic ?? mapData.is_public ?? true,
+          });
+          
+          // ハッシュタグを復元
+          if (parsedData.hashtags && Array.isArray(parsedData.hashtags)) {
+            setHashtags(parsedData.hashtags);
+          }
+          
+          // locationsを復元
+          if (parsedData.locations && Array.isArray(parsedData.locations)) {
+            setLocations(parsedData.locations);
+          } else {
+            setLocations(convertedLocations.length > 0 ? convertedLocations : [{
+              id: crypto.randomUUID(),
+              storeName: '',
+              storeId: '',
+              store_latitude: undefined,
+              store_longitude: undefined,
+              content: '',
+              imageFiles: [],
+              imagePreviewUrls: [],
+              existingImageUrls: [],
+              url: '',
+              order: 0,
+            }]);
+          }
+          
+          // currentLocationIndexを復元
+          if (typeof parsedData.currentLocationIndex === 'number') {
+            setCurrentLocationIndex(parsedData.currentLocationIndex);
+          }
+          
+          console.log('編集中のデータを自動復元しました');
+        } catch (parseError) {
+          console.error('保存データの復元エラー:', parseError);
+          sessionStorage.removeItem(storageKey);
+          setLocations(convertedLocations.length > 0 ? convertedLocations : [{
+            id: crypto.randomUUID(),
+            storeName: '',
+            storeId: '',
+            store_latitude: undefined,
+            store_longitude: undefined,
+            content: '',
+            imageFiles: [],
+            imagePreviewUrls: [],
+            existingImageUrls: [],
+            url: '',
+            order: 0,
+          }]);
+        }
+      } else {
+        setLocations(convertedLocations.length > 0 ? convertedLocations : [{
+          id: crypto.randomUUID(),
+          storeName: '',
+          storeId: '',
+          store_latitude: undefined,
+          store_longitude: undefined,
+          content: '',
+          imageFiles: [],
+          imagePreviewUrls: [],
+          existingImageUrls: [],
+          url: '',
+          order: 0,
+        }]);
+      }
+      
+      setIsDataRestored(true);
       
     } catch (error: any) {
       console.error("マップデータ取得エラー:", error);
@@ -823,8 +945,11 @@ export default function EditMapPage() {
         duration: 1000,
       });
       
-      router.push('/my-maps');
+      // 送信成功時にsessionStorageをクリア
+      sessionStorage.removeItem(storageKey);
       
+      router.push('/my-maps');
+
     } catch (error: any) {
       console.error("マップ更新エラー:", error);
       setSubmitError(error.message || "マップ更新中にエラーが発生しました");
