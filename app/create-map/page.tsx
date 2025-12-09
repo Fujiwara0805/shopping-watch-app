@@ -227,11 +227,11 @@ function MarkerLocationModal({
     
     // 🔥 既存スポットのマーカーを表示
     existingLocations.forEach((location, index) => {
-      if (location.store_latitude && location.store_longitude && location.id !== currentLocationId) {
+      if (location && location.store_latitude && location.store_longitude && location.id !== currentLocationId) {
         const existingMarker = new google.maps.Marker({
           position: { lat: location.store_latitude, lng: location.store_longitude },
           map: map,
-          title: location.storeName,
+          title: location.storeName || 'スポット',
           icon: {
             path: google.maps.SymbolPath.CIRCLE,
             scale: 6,
