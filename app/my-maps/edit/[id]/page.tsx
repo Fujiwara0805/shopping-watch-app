@@ -398,6 +398,13 @@ export default function EditMapPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   
+  // currentLocationIndexが配列の範囲内に収まるようにする
+  useEffect(() => {
+    if (locations.length > 0 && currentLocationIndex >= locations.length) {
+      setCurrentLocationIndex(locations.length - 1);
+    }
+  }, [locations.length, currentLocationIndex]);
+  
   // 必須項目の入力チェック
   const isFormValid = () => {
     // タイトルが入力されているか
@@ -1082,28 +1089,30 @@ export default function EditMapPage() {
               
               {/* 現在選択されているスポットのフォーム */}
               <AnimatePresence mode="wait">
-                <motion.div
-                  key={currentLocationIndex}
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  transition={{ duration: 0.2 }}
-                  className="bg-white rounded-xl border border-gray-200 p-4 space-y-4 shadow-sm"
-                >
-                  <LocationForm
-                    location={locations[currentLocationIndex]}
-                    locationIndex={currentLocationIndex}
-                    updateLocation={updateLocation}
-                    handleImageUpload={handleImageUpload}
-                    removeImage={removeImage}
-                    removeExistingImage={removeExistingImage}
-                    isLoaded={isLoaded}
-                    loadError={loadError}
-                    userLatitude={latitude}
-                    userLongitude={longitude}
-                    allLocations={locations}
-                  />
-                </motion.div>
+                {locations[currentLocationIndex] && (
+                  <motion.div
+                    key={currentLocationIndex}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    transition={{ duration: 0.2 }}
+                    className="bg-white rounded-xl border border-gray-200 p-4 space-y-4 shadow-sm"
+                  >
+                    <LocationForm
+                      location={locations[currentLocationIndex]}
+                      locationIndex={currentLocationIndex}
+                      updateLocation={updateLocation}
+                      handleImageUpload={handleImageUpload}
+                      removeImage={removeImage}
+                      removeExistingImage={removeExistingImage}
+                      isLoaded={isLoaded}
+                      loadError={loadError}
+                      userLatitude={latitude}
+                      userLongitude={longitude}
+                      allLocations={locations}
+                    />
+                  </motion.div>
+                )}
               </AnimatePresence>
             </div>
             
