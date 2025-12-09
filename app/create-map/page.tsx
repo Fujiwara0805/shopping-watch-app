@@ -432,9 +432,16 @@ export default function CreateMapPage() {
           setHashtags(parsedData.hashtags);
         }
         
-        // locationsを復元
+        // locationsを復元（画像ファイルの空配列を追加）
         if (parsedData.locations && Array.isArray(parsedData.locations)) {
-          setLocations(parsedData.locations);
+          const restoredLocations = parsedData.locations.map((loc: any) => ({
+            ...loc,
+            imageFiles: [], // Fileオブジェクトは復元できないので空配列
+            imagePreviewUrls: loc.imagePreviewUrls || [], // プレビューURLを復元
+            store_latitude: loc.store_latitude,
+            store_longitude: loc.store_longitude,
+          }));
+          setLocations(restoredLocations);
         }
         
         // currentLocationIndexを復元
@@ -442,7 +449,7 @@ export default function CreateMapPage() {
           setCurrentLocationIndex(parsedData.currentLocationIndex);
         }
         
-        console.log('編集中のデータを自動復元しました');
+        console.log('編集中のデータを自動復元しました（位置情報・画像プレビュー含む）');
       } catch (parseError) {
         console.error('保存データの復元エラー:', parseError);
         sessionStorage.removeItem(storageKey);
@@ -451,7 +458,7 @@ export default function CreateMapPage() {
     setIsInitialized(true);
   }, []);
   
-  // 編集中のデータをsessionStorageに保存
+  // 編集中のデータをsessionStorageに保存（画像プレビューURLと位置情報を含む）
   useEffect(() => {
     if (isInitialized) {
       try {
@@ -463,9 +470,14 @@ export default function CreateMapPage() {
           publicationEndDate: form.watch('publicationEndDate'),
           hashtags,
           locations: locations.map(loc => ({
-            ...loc,
-            imageFiles: [],
-            imagePreviewUrls: [],
+            id: loc.id,
+            storeName: loc.storeName,
+            storeId: loc.storeId,
+            store_latitude: loc.store_latitude,
+            store_longitude: loc.store_longitude,
+            content: loc.content,
+            imagePreviewUrls: loc.imagePreviewUrls, // プレビューURLを保存
+            url: loc.url,
           })),
           currentLocationIndex,
         };
@@ -476,7 +488,7 @@ export default function CreateMapPage() {
     }
   }, [form.watch('title'), form.watch('description'), form.watch('isPublic'), form.watch('publicationStartDate'), form.watch('publicationEndDate'), hashtags, locations, currentLocationIndex, isInitialized]);
   
-  // ページ離脱時の保存
+  // ページ離脱時の保存（画像プレビューURLと位置情報を含む）
   useEffect(() => {
     const handleBeforeUnload = () => {
       if (isInitialized) {
@@ -488,9 +500,14 @@ export default function CreateMapPage() {
           publicationEndDate: form.watch('publicationEndDate'),
           hashtags,
           locations: locations.map(loc => ({
-            ...loc,
-            imageFiles: [],
-            imagePreviewUrls: [],
+            id: loc.id,
+            storeName: loc.storeName,
+            storeId: loc.storeId,
+            store_latitude: loc.store_latitude,
+            store_longitude: loc.store_longitude,
+            content: loc.content,
+            imagePreviewUrls: loc.imagePreviewUrls,
+            url: loc.url,
           })),
           currentLocationIndex,
         };
