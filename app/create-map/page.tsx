@@ -401,10 +401,6 @@ export default function CreateMapPage() {
   const [currentLocationIndex, setCurrentLocationIndex] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [isInitialized, setIsInitialized] = useState(false);
-  
-  // sessionStorageのキー
-  const storageKey = 'create-map-draft';
 
   // currentLocationIndexが配列の範囲内に収まるようにする
   useEffect(() => {
@@ -412,112 +408,6 @@ export default function CreateMapPage() {
       setCurrentLocationIndex(locations.length - 1);
     }
   }, [locations.length, currentLocationIndex]);
-  
-  // 初回マウント時に保存データを自動復元
-  useEffect(() => {
-    const savedData = sessionStorage.getItem(storageKey);
-    if (savedData) {
-      try {
-        const parsedData = JSON.parse(savedData);
-        
-        // フォームデータを自動復元
-        if (parsedData.title) form.setValue('title', parsedData.title);
-        if (parsedData.description) form.setValue('description', parsedData.description);
-        if (parsedData.isPublic !== undefined) form.setValue('isPublic', parsedData.isPublic);
-        if (parsedData.publicationStartDate) form.setValue('publicationStartDate', parsedData.publicationStartDate);
-        if (parsedData.publicationEndDate) form.setValue('publicationEndDate', parsedData.publicationEndDate);
-        
-        // ハッシュタグを復元
-        if (parsedData.hashtags && Array.isArray(parsedData.hashtags)) {
-          setHashtags(parsedData.hashtags);
-        }
-        
-        // locationsを復元（画像ファイルの空配列を追加）
-        if (parsedData.locations && Array.isArray(parsedData.locations)) {
-          const restoredLocations = parsedData.locations.map((loc: any) => ({
-            ...loc,
-            imageFiles: [], // Fileオブジェクトは復元できないので空配列
-            imagePreviewUrls: loc.imagePreviewUrls || [], // プレビューURLを復元
-            store_latitude: loc.store_latitude,
-            store_longitude: loc.store_longitude,
-          }));
-          setLocations(restoredLocations);
-        }
-        
-        // currentLocationIndexを復元
-        if (typeof parsedData.currentLocationIndex === 'number') {
-          setCurrentLocationIndex(parsedData.currentLocationIndex);
-        }
-        
-        console.log('編集中のデータを自動復元しました（位置情報・画像プレビュー含む）');
-      } catch (parseError) {
-        console.error('保存データの復元エラー:', parseError);
-        sessionStorage.removeItem(storageKey);
-      }
-    }
-    setIsInitialized(true);
-  }, []);
-  
-  // 編集中のデータをsessionStorageに保存（画像プレビューURLと位置情報を含む）
-  useEffect(() => {
-    if (isInitialized) {
-      try {
-        const formData = {
-          title: form.watch('title'),
-          description: form.watch('description'),
-          isPublic: form.watch('isPublic'),
-          publicationStartDate: form.watch('publicationStartDate'),
-          publicationEndDate: form.watch('publicationEndDate'),
-          hashtags,
-          locations: locations.map(loc => ({
-            id: loc.id,
-            storeName: loc.storeName,
-            storeId: loc.storeId,
-            store_latitude: loc.store_latitude,
-            store_longitude: loc.store_longitude,
-            content: loc.content,
-            imagePreviewUrls: loc.imagePreviewUrls, // プレビューURLを保存
-            url: loc.url,
-          })),
-          currentLocationIndex,
-        };
-        sessionStorage.setItem(storageKey, JSON.stringify(formData));
-      } catch (error) {
-        console.error('データ保存エラー:', error);
-      }
-    }
-  }, [form.watch('title'), form.watch('description'), form.watch('isPublic'), form.watch('publicationStartDate'), form.watch('publicationEndDate'), hashtags, locations, currentLocationIndex, isInitialized]);
-  
-  // ページ離脱時の保存（画像プレビューURLと位置情報を含む）
-  useEffect(() => {
-    const handleBeforeUnload = () => {
-      if (isInitialized) {
-        const formData = {
-          title: form.watch('title'),
-          description: form.watch('description'),
-          isPublic: form.watch('isPublic'),
-          publicationStartDate: form.watch('publicationStartDate'),
-          publicationEndDate: form.watch('publicationEndDate'),
-          hashtags,
-          locations: locations.map(loc => ({
-            id: loc.id,
-            storeName: loc.storeName,
-            storeId: loc.storeId,
-            store_latitude: loc.store_latitude,
-            store_longitude: loc.store_longitude,
-            content: loc.content,
-            imagePreviewUrls: loc.imagePreviewUrls,
-            url: loc.url,
-          })),
-          currentLocationIndex,
-        };
-        sessionStorage.setItem(storageKey, JSON.stringify(formData));
-      }
-    };
-    
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [form.watch('title'), form.watch('description'), form.watch('isPublic'), form.watch('publicationStartDate'), form.watch('publicationEndDate'), hashtags, locations, currentLocationIndex, isInitialized]);
 
   // 必須項目の入力チェック
   const isFormValid = () => {
@@ -826,9 +716,6 @@ export default function CreateMapPage() {
       }
       
       // 完了画面に遷移
-      // 作成成功時にsessionStorageをクリア
-      sessionStorage.removeItem(storageKey);
-      
       router.push('/create-map/complete');
 
     } catch (error: any) {
