@@ -99,7 +99,7 @@ export default function MyMapsPage() {
     }
   };
   
-  // マップを削除
+  // マップを削除（物理削除 + 画像削除）
   const handleDelete = async (mapId: string, mapTitle: string) => {
     if (!confirm(`「${mapTitle}」を削除しますか？\nこの操作は取り消せません。`)) {
       return;
@@ -108,13 +108,47 @@ export default function MyMapsPage() {
     try {
       showLoading();
       
-      const { error } = await supabase
+      // 🔥 削除前にマップデータを取得（画像URLを取得するため）
+      const { data: mapData, error: fetchError } = await supabase
         .from('maps')
-        .update({ is_deleted: true })
+        .select('locations')
+        .eq('id', mapId)
+        .single();
+      
+      if (fetchError) {
+        throw new Error(`マップデータの取得に失敗しました: ${fetchError.message}`);
+      }
+      
+      // 🔥 画像URLを抽出して削除
+      if (mapData?.locations && Array.isArray(mapData.locations)) {
+        for (const location of mapData.locations) {
+          if (location.image_urls && Array.isArray(location.image_urls)) {
+            for (const imageUrl of location.image_urls) {
+              // Supabaseストレージのパスを抽出（例: https://xxx.supabase.co/storage/v1/object/public/images/user_id/filename.jpg）
+              const match = imageUrl.match(/\/images\/(.+)$/);
+              if (match && match[1]) {
+                const imagePath = match[1];
+                const { error: deleteImageError } = await supabase.storage
+                  .from('images')
+                  .remove([imagePath]);
+                
+                if (deleteImageError) {
+                  console.error(`画像削除エラー (${imagePath}):`, deleteImageError);
+                }
+              }
+            }
+          }
+        }
+      }
+      
+      // 🔥 マップを物理削除
+      const { error: deleteError } = await supabase
+        .from('maps')
+        .delete()
         .eq('id', mapId);
       
-      if (error) {
-        throw new Error(error.message);
+      if (deleteError) {
+        throw new Error(deleteError.message);
       }
       
       toast({
