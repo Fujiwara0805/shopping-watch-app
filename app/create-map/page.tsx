@@ -862,7 +862,7 @@ export default function CreateMapPage() {
                     <FormControl>
                       <Input
                         type="date"
-                        className="h-12 text-base"
+                        className="h-12 text-base max-w-xs"
                         {...field}
                         onChange={(e) => {
                           field.onChange(e);
@@ -892,7 +892,7 @@ export default function CreateMapPage() {
                     <FormControl>
                       <Input
                         type="date"
-                        className="h-12 text-base"
+                        className="h-12 text-base max-w-xs"
                         {...field}
                         onChange={(e) => {
                           field.onChange(e);
@@ -963,7 +963,7 @@ export default function CreateMapPage() {
                   variant="outline"
                   size="sm"
                   onClick={addLocation}
-                  className="flex items-center gap-1.5 h-9 text-sm border-[#73370c] text-[#73370c] hover:bg-[#fef3e8]"
+                  className="flex items-center gap-1.5 h-9 text-sm border-[#73370c] text-[#73370c]"
                 >
                   <Plus className="h-4 w-4" />
                   追加
