@@ -444,7 +444,7 @@ export function SpotDetailClient({ spotId }: SpotDetailClientProps) {
                         style={{ backgroundColor: '#73370c' }}
                       >
                         <Navigation className="mr-1.5 h-4 w-4" />
-                        地図で見る
+                        Googleマップで見る
                       </Button>
                     </div>
                   )}
