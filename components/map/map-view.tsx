@@ -1010,6 +1010,15 @@ export function MapView() {
         </div>
       )}
 
+      {/* 🔥 MyMapモード時のアクションボタン */}
+      {map && mapInitialized && viewMode === 'myMaps' && (
+        <div className="absolute bottom-4 left-4 z-30 flex flex-col gap-2">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.05 }} className="flex flex-col items-center">
+            <Button onClick={() => router.push('/public-maps')} size="icon" className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg bg-[#73370c] hover:bg-[#8b4513] flex flex-col items-center justify-center gap-1"><Newspaper className="h-6 w-6 sm:h-7 sm:w-7 text-white" /><span className="text-xs text-white font-medium">Map一覧</span></Button>
+          </motion.div>
+        </div>
+      )}
+
       {/* 更新中の表示 */}
       <AnimatePresence>
         {(isRefreshing || loadingPosts || loadingMaps) && (
@@ -1100,7 +1109,7 @@ export function MapView() {
                       )}
                     </div>
                   </div>
-                  <Button onClick={() => router.push(`/map/spot/${selectedMapLocation.id}`)} className="w-full bg-[#73370c] hover:bg-[#5c2a0a] text-white shadow-lg">詳細を見る</Button>
+                  <Button onClick={() => router.push(`/map/spot/${selectedMapLocation.id}?from=map&title_id=${selectedMapLocation.map_id}&order=${selectedMapLocation.order}`)} className="w-full bg-[#73370c] hover:bg-[#5c2a0a] text-white shadow-lg">詳細を見る</Button>
                 </div>
               </div>
             </div>
