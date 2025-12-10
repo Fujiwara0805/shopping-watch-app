@@ -36,6 +36,18 @@ const PublicMapsSection = ({ onMapClick }: { onMapClick: (mapId: string) => void
   const [publicMaps, setPublicMaps] = useState<PublicMapData[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  // 画面サイズを監視
+  useEffect(() => {
+    const checkDesktop = () => {
+      setIsDesktop(window.innerWidth >= 768);
+    };
+    
+    checkDesktop();
+    window.addEventListener('resize', checkDesktop);
+    return () => window.removeEventListener('resize', checkDesktop);
+  }, []);
 
   useEffect(() => {
     fetchPublicMaps();
@@ -171,7 +183,7 @@ const PublicMapsSection = ({ onMapClick }: { onMapClick: (mapId: string) => void
                 {publicMaps.map((map, index) => (
                   <div
                     key={map.id}
-                    className="min-w-full px-2 sm:px-4"
+                    className="min-w-full md:min-w-[50%] px-2 sm:px-4"
                   >
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
@@ -253,8 +265,8 @@ const PublicMapsSection = ({ onMapClick }: { onMapClick: (mapId: string) => void
               </motion.div>
             </div>
 
-            {/* ナビゲーションボタン */}
-            {publicMaps.length > 1 && (
+            {/* ナビゲーションボタン（PCで2件以下の場合は非表示） */}
+            {publicMaps.length > 1 && !(isDesktop && publicMaps.length <= 2) && (
               <>
                 <button
                   onClick={handlePrev}
@@ -273,8 +285,8 @@ const PublicMapsSection = ({ onMapClick }: { onMapClick: (mapId: string) => void
               </>
             )}
 
-            {/* インジケーター */}
-            {publicMaps.length > 1 && (
+            {/* インジケーター（PCで2件以下の場合は非表示） */}
+            {publicMaps.length > 1 && !(isDesktop && publicMaps.length <= 2) && (
               <div className="flex justify-center gap-1.5 mt-5">
                 {publicMaps.map((_, index) => (
                   <button
