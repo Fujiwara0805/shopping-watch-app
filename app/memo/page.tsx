@@ -272,9 +272,9 @@ export default function MemoPage() {
   }, [latitude, longitude, storedLocation, effectiveLatitude, effectiveLongitude, hasValidLocation, showTrainScheduleButton, permissionState]);
 
   return (
-    <div className="container mx-auto p-4 md:p-8">
+    <div className="container mx-auto p-2 md:p-4">
       <div className="p-4 max-w-2xl mx-auto">
-        <header className="flex items-center justify-between mb-4">
+        <header className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             {isMutating && <Loader2 className="h-5 w-5 animate-spin text-primary" />}
             {!isOnline && (
@@ -285,7 +285,7 @@ export default function MemoPage() {
           </div>
         </header>
 
-        <div className="flex gap-2 mb-4">
+        <div className="flex gap-2 mb-2">
           <Input type="text" value={newItemName} onChange={e => setNewItemName(e.target.value)} placeholder="アイテム名を入力 (例: 牛乳)" className="text-base" />
           <Button onClick={handleAddItemFromInput} size="icon" className="shrink-0" disabled={newItemName.trim() === ''}><Plus size={20} /></Button>
         </div>
