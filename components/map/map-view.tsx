@@ -363,11 +363,14 @@ export function MapView() {
   // 🔥 マップ作成者のプロフィール情報
   const [mapCreatorProfile, setMapCreatorProfile] = useState<MapCreatorProfile | null>(null);
   const [currentMapTitle, setCurrentMapTitle] = useState<string>('');
+  const [isMapPublic, setIsMapPublic] = useState<boolean>(true); // 🔥 マップの公開設定
+  const hasShownLocationModalRef = useRef<boolean>(false); // 🔥 位置情報モーダルを一度表示したかどうか
   
   // 🔥 モーダル制御
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
+  const [isLocationPermissionModalOpen, setIsLocationPermissionModalOpen] = useState(false); // 🔥 位置情報許可モーダル
 
   // デバイスの向きを取得
   useEffect(() => {
@@ -466,10 +469,10 @@ export function MapView() {
   // 🔥 マップ作成者のプロフィール情報を取得
   const fetchMapCreatorProfile = useCallback(async (mapId: string) => {
     try {
-      // mapsテーブルからapp_profile_idを取得
+      // mapsテーブルからapp_profile_id, title, is_publicを取得
       const { data: mapData, error: mapError } = await supabase
         .from('maps')
-        .select('app_profile_id, title')
+        .select('app_profile_id, title, is_public')
         .eq('id', mapId)
         .single();
 
@@ -479,6 +482,13 @@ export function MapView() {
       }
 
       setCurrentMapTitle(mapData.title || '');
+      setIsMapPublic(mapData.is_public ?? true); // 🔥 公開設定を保存
+      
+      // 🔥 公開設定OFFの場合、一度だけ位置情報許可モーダルを表示
+      if (mapData.is_public === false && !hasShownLocationModalRef.current) {
+        setIsLocationPermissionModalOpen(true);
+        hasShownLocationModalRef.current = true; // 一度表示したらフラグを立てる
+      }
 
       // app_profilesテーブルからプロフィール情報を取得
       const { data: profileData, error: profileError } = await supabase
@@ -870,23 +880,27 @@ export function MapView() {
             </motion.div>
           </div>
 
-          {/* 左下: ナビゲーションボタン */}
+          {/* 左下: ナビゲーションボタン（公開設定OFFの場合は更新ボタンのみ） */}
           <div className="absolute bottom-4 left-4 z-30 flex flex-col gap-2">
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.05 }} className="flex flex-col items-center">
-              <Button onClick={() => {
-                setViewMode('events');
-                setSelectedMapLocation(null);
-                mapMarkers.forEach(marker => { if (marker?.setMap) marker.setMap(null); });
-                setMapMarkers([]);
-                router.push('/map');
-                const userLat = savedLocation?.lat || latitude;
-                const userLng = savedLocation?.lng || longitude;
-                if (userLat && userLng) {
-                  setTimeout(() => fetchPosts(), 100);
-                }
-              }} size="icon" className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg bg-[#73370c] hover:bg-[#8b4513] flex flex-col items-center justify-center gap-1"><Map className="h-6 w-6 sm:h-7 sm:w-7 text-white" /><span className="text-xs text-white font-medium">Map</span></Button>
-            </motion.div>
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.1 }} className="flex flex-col items-center">
+            {/* 🔥 公開設定ONの場合のみMapボタンを表示 */}
+            {isMapPublic && (
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.05 }} className="flex flex-col items-center">
+                <Button onClick={() => {
+                  setViewMode('events');
+                  setSelectedMapLocation(null);
+                  mapMarkers.forEach(marker => { if (marker?.setMap) marker.setMap(null); });
+                  setMapMarkers([]);
+                  router.push('/map');
+                  const userLat = savedLocation?.lat || latitude;
+                  const userLng = savedLocation?.lng || longitude;
+                  if (userLat && userLng) {
+                    setTimeout(() => fetchPosts(), 100);
+                  }
+                }} size="icon" className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg bg-[#73370c] hover:bg-[#8b4513] flex flex-col items-center justify-center gap-1"><Map className="h-6 w-6 sm:h-7 sm:w-7 text-white" /><span className="text-xs text-white font-medium">Map</span></Button>
+              </motion.div>
+            )}
+            {/* 更新ボタンは常に表示 */}
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: isMapPublic ? 0.1 : 0.05 }} className="flex flex-col items-center">
               <Button onClick={handleManualRefresh} size="icon" disabled={isRefreshing || loadingMaps} className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg bg-[#73370c] hover:bg-[#8b4513] disabled:opacity-50 flex flex-col items-center justify-center gap-1"><RefreshCw className={`h-6 w-6 sm:h-7 sm:w-7 text-white ${(isRefreshing || loadingMaps) ? 'animate-spin' : ''}`} /><span className="text-xs text-white font-medium">更新</span></Button>
             </motion.div>
           </div>
@@ -995,6 +1009,55 @@ export function MapView() {
         </div>
       </CustomModal>
 
+      {/* 🔥 位置情報許可モーダル（公開設定OFFのMyMap表示時） */}
+      <AnimatePresence>
+        {isLocationPermissionModalOpen && !isMapPublic && viewMode === 'myMaps' && (
+          <motion.div 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+          >
+            {/* オーバーレイ */}
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            />
+            {/* モーダルコンテンツ */}
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden"
+            >
+              <div className="p-6">
+                {/* タイトル */}
+                <h3 className="text-xl font-bold text-gray-800 text-center mb-3">
+                  位置情報を許可してください
+                </h3>
+
+                {/* 説明文 */}
+                <p className="text-sm text-gray-600 text-center mb-6 leading-relaxed">
+                  このMyMapを表示するには、<br />位置情報の許可が必要です。<br />
+                  左下の<span className="font-bold text-[#73370c]">「更新」ボタン</span>を押して、<br />
+                  位置情報を許可してください。
+                </p>
+                {/* 閉じるボタン */}
+                <Button 
+                  onClick={() => setIsLocationPermissionModalOpen(false)}
+                  className="w-full bg-[#73370c] hover:bg-[#5c2a0a] text-white py-3 rounded-xl font-medium"
+                >
+                  閉じる
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* 🔥 イベント情報モード時のUI（左下に縦並び） */}
       {map && mapInitialized && viewMode === 'events' && (
         <div className="absolute bottom-4 left-4 z-30 flex flex-col gap-2">
@@ -1006,21 +1069,6 @@ export function MapView() {
           </motion.div>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.15 }} className="flex flex-col items-center">
             <Button onClick={handleManualRefresh} size="icon" disabled={isRefreshing || loadingPosts} className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg bg-[#73370c] hover:bg-[#8b4513] disabled:opacity-50 flex flex-col items-center justify-center gap-1"><RefreshCw className={`h-6 w-6 sm:h-7 sm:w-7 text-white ${(isRefreshing || loadingPosts) ? 'animate-spin' : ''}`} /><span className="text-xs text-white font-medium">更新</span></Button>
-          </motion.div>
-        </div>
-      )}
-
-      {/* 🔥 MyMapモード時のアクションボタン */}
-      {map && mapInitialized && viewMode === 'myMaps' && (
-        <div className="absolute bottom-4 left-4 z-30 flex flex-col gap-2">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.05 }} className="flex flex-col items-center">
-            <Button onClick={() => router.push('/map')} size="icon" className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg bg-[#73370c] hover:bg-[#8b4513] flex flex-col items-center justify-center gap-1"><MapIcon className="h-6 w-6 sm:h-7 sm:w-7 text-white" /><span className="text-xs text-white font-medium">マップ</span></Button>
-          </motion.div>
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.1 }} className="flex flex-col items-center">
-            <Button onClick={() => router.push('/public-maps')} size="icon" className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg bg-[#73370c] hover:bg-[#8b4513] flex flex-col items-center justify-center gap-1"><Newspaper className="h-6 w-6 sm:h-7 sm:w-7 text-white" /><span className="text-xs text-white font-medium">Map一覧</span></Button>
-          </motion.div>
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.15 }} className="flex flex-col items-center">
-            <Button onClick={handleManualRefresh} size="icon" disabled={isRefreshing || loadingMaps} className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg bg-[#73370c] hover:bg-[#8b4513] disabled:opacity-50 flex flex-col items-center justify-center gap-1"><RefreshCw className={`h-6 w-6 sm:h-7 sm:w-7 text-white ${(isRefreshing || loadingMaps) ? 'animate-spin' : ''}`} /><span className="text-xs text-white font-medium">更新</span></Button>
           </motion.div>
         </div>
       )}
