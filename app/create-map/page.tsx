@@ -385,6 +385,10 @@ export default function CreateMapPage() {
   const [hashtagInput, setHashtagInput] = useState('');
   const prevHashtagsLengthRef = useRef(0);
   
+  // サムネイル管理
+  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
+  const [thumbnailPreviewUrl, setThumbnailPreviewUrl] = useState<string | null>(null);
+  
   // 複数場所の管理
   const [locations, setLocations] = useState<LocationData[]>([{
     id: crypto.randomUUID(),
@@ -456,6 +460,55 @@ export default function CreateMapPage() {
     }
     prevHashtagsLengthRef.current = hashtags.length;
   }, [hashtags.length]);
+  
+  // サムネイル画像アップロード処理
+  const handleThumbnailUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    const maxSize = 5 * 1024 * 1024;
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    
+    if (file.size > maxSize) {
+      toast({
+        title: "⚠️ ファイルサイズが大きすぎます",
+        description: "画像は5MB以下にしてください",
+        duration: 3000,
+      });
+      return;
+    }
+    
+    if (!allowedTypes.includes(file.type)) {
+      toast({
+        title: "⚠️ サポートされていないファイル形式です",
+        description: "JPG、PNG、またはWEBP形式の画像を選択してください",
+        duration: 3000,
+      });
+      return;
+    }
+    
+    // プレビューURL生成
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setThumbnailPreviewUrl(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+    setThumbnailFile(file);
+    
+    toast({
+      title: "✅ サムネイルを設定しました",
+      duration: 1000,
+    });
+  };
+  
+  // サムネイル削除
+  const removeThumbnail = () => {
+    if (thumbnailPreviewUrl && thumbnailPreviewUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(thumbnailPreviewUrl);
+    }
+    setThumbnailFile(null);
+    setThumbnailPreviewUrl(null);
+  };
   
   // 場所を追加
   const addLocation = () => {
@@ -644,6 +697,34 @@ export default function CreateMapPage() {
       
       const hashtagsToSave = hashtags.length > 0 ? hashtags : null;
       
+      // サムネイル画像をアップロード
+      let thumbnailUrl: string | null = null;
+      if (thumbnailFile) {
+        const fileExt = thumbnailFile.name.split('.').pop();
+        const userFolder = session.user.id;
+        const uniqueFileName = `thumbnail_${uuidv4()}.${fileExt}`;
+        const objectPath = `${userFolder}/${uniqueFileName}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('images')
+          .upload(objectPath, thumbnailFile, {
+            cacheControl: '3600',
+            upsert: true,
+          });
+        
+        if (uploadError) {
+          throw new Error(`サムネイル画像のアップロードに失敗しました: ${uploadError.message}`);
+        }
+        
+        const { data: publicUrlData } = supabase.storage
+          .from('images')
+          .getPublicUrl(objectPath);
+        
+        if (publicUrlData?.publicUrl) {
+          thumbnailUrl = publicUrlData.publicUrl;
+        }
+      }
+      
       // 🔥 各場所の画像をアップロードして、locations配列を構築
       const locationsData = [];
       
@@ -698,6 +779,7 @@ export default function CreateMapPage() {
         .insert({
           title: values.title,
           description: values.description || null,
+          thumbnail_url: thumbnailUrl,
           app_profile_id: appProfileId,
           locations: locationsData, // JSON配列として保存
           hashtags: hashtagsToSave,
@@ -820,6 +902,59 @@ export default function CreateMapPage() {
                       </motion.span>
                     ))}
                   </div>
+                )}
+              </div>
+              
+              {/* サムネイル画像 */}
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold flex items-center">
+                  <ImageIcon className="mr-2 h-4 w-4" />
+                  サムネイル画像（16:9）
+                </Label>
+                <p className="text-xs text-gray-500 mb-2">
+                  MyMapのカバー画像として表示されます
+                </p>
+                
+                {thumbnailPreviewUrl ? (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="relative w-full max-w-xs"
+                    style={{ aspectRatio: '16/9' }}
+                  >
+                    <img
+                      src={thumbnailPreviewUrl}
+                      alt="サムネイルプレビュー"
+                      className="w-full h-full object-cover rounded-xl border border-gray-200 shadow-sm"
+                    />
+                    <button
+                      type="button"
+                      onClick={removeThumbnail}
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 shadow-md hover:bg-red-600 transition-colors"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </motion.div>
+                ) : (
+                  <>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleThumbnailUpload}
+                      className="hidden"
+                      id="thumbnail-upload"
+                    />
+                    <label
+                      htmlFor="thumbnail-upload"
+                      className="cursor-pointer flex items-center justify-center p-6 border-2 border-dashed border-gray-300 rounded-xl hover:border-[#73370c] hover:bg-[#fef3e8]/50 transition-colors max-w-xs"
+                    >
+                      <div className="text-center">
+                        <Upload className="mx-auto h-8 w-8 text-gray-400" />
+                        <p className="mt-2 text-sm text-gray-600">タップして画像を選択</p>
+                        <p className="text-xs text-gray-400">JPG, PNG, WEBP（5MB以下）</p>
+                      </div>
+                    </label>
+                  </>
                 )}
               </div>
               

@@ -14,6 +14,7 @@ export interface MapLocation {
 export interface Map {
   id: string;
   title: string;
+  thumbnail_url?: string | null;
   app_profile_id: string;
   locations: MapLocation[];
   hashtags?: string[] | null;
