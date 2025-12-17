@@ -2,7 +2,19 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, MapPin, Map, Newspaper, ChevronDown, ChevronUp, RefreshCw, ArrowUp, Trash2, Loader2, ExternalLink } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, MapPin, Compass, BookOpen, ChevronDown, ChevronUp, RefreshCw, ArrowUpFromLine, Trash2, Loader2, ExternalLink } from 'lucide-react';
+
+// 🎨 LPカラーパレット
+const COLORS = {
+  primary: '#8b6914',      // ゴールドブラウン
+  primaryDark: '#3d2914',  // ダークブラウン
+  secondary: '#5c3a21',    // ミディアムブラウン
+  background: '#f5e6d3',   // ベージュ
+  surface: '#fff8f0',      // オフホワイト
+  cream: '#ffecd2',        // クリーム
+  border: '#d4c4a8',       // ライトベージュ
+  mint: '#e8f4e5',         // ミントグリーン
+};
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
@@ -164,7 +176,7 @@ const AdCard = ({ ad, onView, onClick }: AdCardProps) => {
         </div>
       ) : (
         <div className="relative bg-gray-100 flex items-center justify-center" style={{ width: '320px', height: '50px' }}>
-          <Newspaper className="h-6 w-6 text-[#73370c] opacity-30" />
+          <BookOpen className="h-6 w-6 text-[#73370c] opacity-30" />
           {/* 広告ラベル */}
           <div className="absolute top-1 left-1">
             <span className="bg-white/90 text-[#73370c] text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide">
@@ -782,20 +794,23 @@ export default function CalendarPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50">
+    <div className="min-h-screen" style={{ backgroundColor: COLORS.background }}>
       {/* ローディング画面 */}
       {loading ? (
         <>
-          <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50">
-            <div className="flex items-center justify-center pt-20">
-              <div className="w-6 h-6 border-2 border-gray-300 border-t-orange-500 rounded-full animate-spin"></div>
-            </div>
+          <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: COLORS.background }}>
+            <motion.div 
+              animate={{ rotate: 360 }}
+              transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+            >
+              <Compass className="h-12 w-12" style={{ color: COLORS.primary }} />
+            </motion.div>
           </div>
         </>
       ) : (
         <>
           {/* ヘッダー - コンパクトなデザイン */}
-          <div className="sticky top-0 z-10 border-b bg-[#73370c]">
+          <div className="sticky top-0 z-10 border-b" style={{ backgroundColor: COLORS.secondary, borderColor: COLORS.border }}>
             <div className="px-4 py-1">
               <div className="max-w-4xl mx-auto px-4 flex items-center justify-center">
                 <h1 className="text-2xl font-bold text-white">イベント一覧</h1>
@@ -830,7 +845,7 @@ export default function CalendarPage() {
               <div className="flex items-center justify-center gap-2 mt-2">
                 {/* 並び順ボタン */}
                 <Select value={sortBy} onValueChange={(value: 'date' | 'distance') => setSortBy(value)}>
-                  <SelectTrigger className="w-[130px] bg-white text-[#73370c] font-semibold">
+                  <SelectTrigger className="w-[130px] font-semibold" style={{ backgroundColor: COLORS.surface, color: COLORS.secondary, borderColor: COLORS.border }}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -841,7 +856,7 @@ export default function CalendarPage() {
 
                 {/* enable_checkinフィルター */}
                 <Select value={selectedEnableCheckin} onValueChange={(value: 'all' | 'true' | 'false') => setSelectedEnableCheckin(value)}>
-                  <SelectTrigger className="w-[130px] bg-white text-[#73370c] font-semibold">
+                  <SelectTrigger className="w-[130px] font-semibold" style={{ backgroundColor: COLORS.surface, color: COLORS.secondary, borderColor: COLORS.border }}>
                     <SelectValue placeholder="チェックイン" />
                   </SelectTrigger>
                   <SelectContent>
@@ -853,7 +868,7 @@ export default function CalendarPage() {
 
                 {/* 市町村ボタン */}
                 <Select value={selectedCity} onValueChange={setSelectedCity}>
-                  <SelectTrigger className="w-[130px] bg-white text-[#73370c] font-semibold">
+                  <SelectTrigger className="w-[130px] font-semibold" style={{ backgroundColor: COLORS.surface, color: COLORS.secondary, borderColor: COLORS.border }}>
                     <SelectValue placeholder="市町村" />
                   </SelectTrigger>
                   <SelectContent>
@@ -873,7 +888,7 @@ export default function CalendarPage() {
           <div className="container mx-auto px-4 py-6 max-w-4xl pb-24">
 
             {/* カレンダーグリッド */}
-            <div className="bg-white rounded-2xl shadow-xl overflow-hidden mb-6">
+            <div className="rounded-2xl shadow-xl overflow-hidden mb-6 border-2" style={{ backgroundColor: COLORS.surface, borderColor: COLORS.border }}>
               {/* 曜日ヘッダー */}
               <div className="grid grid-cols-7 border-b-2 bg-gray-50">
                 {['日', '月', '火', '水', '木', '金', '土'].map((day, index) => (
@@ -937,12 +952,12 @@ export default function CalendarPage() {
 
             {/* イベント詳細リスト */}
             {daysWithEvents.length === 0 ? (
-              <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
-                <CalendarIcon className="h-16 w-16 mx-auto mb-4 text-gray-300" />
-                <p className="text-lg text-gray-500">この月にイベントはありません</p>
+              <div className="rounded-2xl shadow-xl p-8 text-center border-2" style={{ backgroundColor: COLORS.surface, borderColor: COLORS.border }}>
+                <CalendarIcon className="h-16 w-16 mx-auto mb-4" style={{ color: `${COLORS.primary}50` }} />
+                <p className="text-lg" style={{ color: COLORS.secondary }}>この月にイベントはありません</p>
               </div>
             ) : (
-              <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+              <div className="rounded-2xl shadow-xl overflow-hidden border-2" style={{ backgroundColor: COLORS.surface, borderColor: COLORS.border }}>
                 {/* イベントと広告を日付ごとにグループ化して表示 */}
                 <div className="divide-y divide-gray-200">
                   {(() => {
@@ -1017,9 +1032,13 @@ export default function CalendarPage() {
                                 return (
                                   <div
                                     key={event.id}
-                                    className={`bg-white rounded-lg border-2 hover:shadow-md transition-all ${
-                                      isToday ? 'border-[#fa8238]' : 'border-[#73370c]/10'
+                                    className={`rounded-lg border-2 hover:shadow-md transition-all ${
+                                      isToday ? '' : ''
                                     }`}
+                                    style={{ 
+                                      backgroundColor: COLORS.surface,
+                                      borderColor: isToday ? COLORS.primary : COLORS.border
+                                    }}
                                   >
                                     {/* ヘッダー部分（バッジと削除ボタン） */}
                                     {isAuthor && (
@@ -1058,14 +1077,14 @@ export default function CalendarPage() {
                                           />
                                         </div>
                                       ) : (
-                                        <div className="flex-shrink-0 w-16 h-16 bg-[#fef3e8] rounded-md flex items-center justify-center">
-                                          <CalendarIcon className="h-8 w-8 text-[#73370c] opacity-30" />
+                                        <div className="flex-shrink-0 w-16 h-16 rounded-md flex items-center justify-center" style={{ backgroundColor: COLORS.cream }}>
+                                          <CalendarIcon className="h-8 w-8" style={{ color: `${COLORS.primary}50` }} />
                                         </div>
                                       )}
 
                                       {/* イベント情報 */}
                                       <div className="flex-1 min-w-0">
-                                        <div className="font-semibold text-base mb-1" style={{ color: '#73370c' }}>
+                                        <div className="font-semibold text-base mb-1" style={{ color: COLORS.primaryDark, fontFamily: "'Noto Serif JP', serif" }}>
                                           {event.name}
                                         </div>
                                         <div className="flex items-center gap-2 text-sm text-gray-600">
@@ -1093,37 +1112,43 @@ export default function CalendarPage() {
           {/* 右下のナビゲーションボタン */}
           <div className="fixed bottom-4 right-4 z-30 flex flex-col gap-2">
 
-          {/* 先頭に戻るアイコン */}
+          {/* 先頭に戻るアイコン（ホーム/出発点に戻る） */}
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
+            whileHover={{ scale: 1.05, boxShadow: "0 10px 30px rgba(61, 41, 20, 0.3)" }}
+            whileTap={{ scale: 0.95 }}
             transition={{ duration: 0.3, delay: 0.1 }}
             className="flex flex-col items-center"
           >
             <Button
               onClick={scrollToTop}
               size="icon"
-              className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg bg-[#73370c] hover:bg-[#8b4513] flex flex-col items-center justify-center gap-1"
+              className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg flex flex-col items-center justify-center gap-1"
+              style={{ backgroundColor: COLORS.primaryDark }}
             >
-              <ArrowUp className="h-6 w-6 sm:h-7 sm:w-7 text-white" />
-              <span className="text-xs text-white font-medium">先頭</span>
+              <ArrowUpFromLine className="h-6 w-6 sm:h-7 sm:w-7" style={{ color: COLORS.cream }} />
+              <span className="text-xs font-medium" style={{ color: COLORS.cream }}>先頭</span>
             </Button>
           </motion.div>
 
-          {/* マップアイコン */}
+          {/* マップアイコン（羅針盤） */}
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
+            whileHover={{ scale: 1.05, boxShadow: "0 10px 30px rgba(139, 105, 20, 0.3)" }}
+            whileTap={{ scale: 0.95 }}
             transition={{ duration: 0.3, delay: 0.2 }}
             className="flex flex-col items-center"
           >
             <Button
               onClick={() => router.push('/map')}
               size="icon"
-              className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg bg-[#73370c] hover:bg-[#8b4513] flex flex-col items-center justify-center gap-1"
+              className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg flex flex-col items-center justify-center gap-1"
+              style={{ backgroundColor: COLORS.primary }}
             >
-              <Map className="h-6 w-6 sm:h-7 sm:w-7 text-white" />
-              <span className="text-xs text-white font-medium">Map</span>
+              <Compass className="h-6 w-6 sm:h-7 sm:w-7" style={{ color: COLORS.cream }} />
+              <span className="text-xs font-medium" style={{ color: COLORS.cream }}>Map</span>
             </Button>
           </motion.div>
         </div>

@@ -3,7 +3,19 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Bell, LogOut, Settings, Edit,  Store as StoreIcon, Calendar,  User, CheckCircle,  ArrowRight, Trophy, Map, ShoppingBag, Megaphone, Plus } from 'lucide-react';
+import { Bell, LogOut, Settings, Edit,  Store as StoreIcon, Calendar,  User, CheckCircle,  ArrowRight, Trophy, Compass, ShoppingBag, Megaphone, Feather } from 'lucide-react';
+
+// 🎨 LPカラーパレット
+const COLORS = {
+  primary: '#8b6914',      // ゴールドブラウン
+  primaryDark: '#3d2914',  // ダークブラウン
+  secondary: '#5c3a21',    // ミディアムブラウン
+  background: '#f5e6d3',   // ベージュ
+  surface: '#fff8f0',      // オフホワイト
+  cream: '#ffecd2',        // クリーム
+  border: '#d4c4a8',       // ライトベージュ
+  mint: '#e8f4e5',         // ミントグリーン
+};
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -98,7 +110,7 @@ const SettingItem = ({ icon: Icon, title, description, action, variant = "defaul
           variant === "default" 
             ? "text-white" 
             : "bg-gradient-to-br from-red-500 to-pink-600 text-white"
-        )} style={variant === "default" ? { backgroundColor: '#c96342' } : {}}>
+        )} style={variant === "default" ? { backgroundColor: COLORS.primary } : {}}>
           {loading ? (
             <motion.div
               animate={{ rotate: 360 }}
@@ -378,16 +390,17 @@ function ProfilePageContent() {
       <div 
         className="h-screen flex items-center justify-center" 
         style={{ 
-          backgroundColor: '#73370c',
+          backgroundColor: COLORS.background,
           height: `calc(${viewportHeight} - 120px)`,
           minHeight: '400px'
         }}
       >
         <motion.div
           animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-          className="w-12 h-12 border-4 border-white/30 border-t-white rounded-full"
-        />
+          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+        >
+          <Compass className="h-12 w-12" style={{ color: COLORS.primary }} />
+        </motion.div>
       </div>
     );
   }
@@ -397,7 +410,7 @@ function ProfilePageContent() {
       <div 
         className="h-screen flex items-center justify-center" 
         style={{ 
-          backgroundColor: '#73370c',
+          backgroundColor: COLORS.background,
           height: `calc(${viewportHeight} - 120px)`,
           minHeight: '400px'
         }}
@@ -407,8 +420,8 @@ function ProfilePageContent() {
           animate={{ opacity: 1, scale: 1 }}
           className="text-center"
         >
-          <User className="h-16 w-16 mx-auto text-white/60 mb-4" />
-          <p className="text-lg text-white">ログイン画面へ遷移します...</p>
+          <User className="h-16 w-16 mx-auto mb-4" style={{ color: `${COLORS.primary}80` }} />
+          <p className="text-lg" style={{ color: COLORS.secondary }}>ログイン画面へ遷移します...</p>
         </motion.div>
       </div>
     );
@@ -418,14 +431,14 @@ function ProfilePageContent() {
     <div 
       className="h-screen flex flex-col" 
       style={{ 
-        backgroundColor: '#f3f4f6',
+        backgroundColor: COLORS.background,
         height: `${viewportHeight}`, // 🔥 120pxの引き算を削除
         minHeight: '500px'
       }}
     >
       {/* プロフィールヘッダー - 上部固定 */}
       <div className="flex-shrink-0 relative overflow-hidden">
-        <div className="absolute inset-0" style={{ backgroundColor: '#73370c' }} />
+        <div className="absolute inset-0" style={{ backgroundColor: COLORS.secondary }} />
         <div className="relative z-10 p-4 text-white">
           {/* ヘッダーアクション - 編集ボタンをプロフィール情報と同じ行に */}
           <div className="flex items-start justify-between mb-4">
@@ -498,8 +511,8 @@ function ProfilePageContent() {
             transition={{ delay: 0.1 }}
             className="space-y-2"
           >
-            <h3 className="text-lg font-bold text-gray-600 flex items-center mb-2">
-              <Bell className="h-5 w-5 mr-2 text-orange-600" />
+            <h3 className="text-lg font-bold flex items-center mb-2" style={{ color: COLORS.primaryDark, fontFamily: "'Noto Serif JP', serif" }}>
+              <Bell className="h-5 w-5 mr-2" style={{ color: COLORS.primary }} />
               通知設定
             </h3>
             
@@ -520,23 +533,23 @@ function ProfilePageContent() {
             transition={{ delay: 0.15 }}
             className="space-y-2"
           >
-            <h3 className="text-lg font-bold text-gray-600 flex items-center mb-2">
-              <Map className="h-5 w-5 mr-2 text-green-600" />
+            <h3 className="text-lg font-bold flex items-center mb-2" style={{ color: COLORS.primaryDark, fontFamily: "'Noto Serif JP', serif" }}>
+              <Compass className="h-5 w-5 mr-2" style={{ color: COLORS.primary }} />
               My Map設定
             </h3>
             
             <div className="space-y-2">
-              {/* マイマップ作成ボタン */}
+              {/* マイマップ作成ボタン（羽ペンアイコン） */}
               <SettingItem
-                icon={Plus}
+                icon={Feather}
                 title="My Mapを作成"
                 description="新しいマイマップを作成"
                 action={() => router.push('/create-map')}
               />
               
-              {/* マイマップ編集ボタン */}
+              {/* マイマップ編集ボタン（羅針盤アイコン） */}
               <SettingItem
-                icon={Map}
+                icon={Compass}
                 title="My Mapを編集"
                 description="既存のマイマップを編集・管理"
                 action={() => router.push('/my-maps')}
@@ -553,8 +566,8 @@ function ProfilePageContent() {
             transition={{ delay: 0.2 }}
             className="space-y-2"
           >
-            <h3 className="text-lg font-bold text-gray-600 flex items-center mb-2">
-              <User className="h-5 w-5 mr-2 text-blue-600" />
+            <h3 className="text-lg font-bold flex items-center mb-2" style={{ color: COLORS.primaryDark, fontFamily: "'Noto Serif JP', serif" }}>
+              <User className="h-5 w-5 mr-2" style={{ color: COLORS.primary }} />
               アカウント設定
             </h3>
             
@@ -580,7 +593,7 @@ function ProfilePageContent() {
                       </p>
                       <p className="text-xs text-gray-600 truncate">チェックインスタンプを確認</p>
                     </div>
-                    <ArrowRight className="h-4 w-4 text-[#73370c] opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-200" />
+                    <ArrowRight className="h-4 w-4 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-200" style={{ color: COLORS.primary }} />
                   </div>
                 </Button>
               </motion.div>
@@ -639,27 +652,31 @@ function ProfilePageContent() {
           <Button
             onClick={() => router.push('/memo')}
             size="icon"
-            className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg bg-[#73370c] hover:bg-[#8b4513] flex flex-col items-center justify-center gap-1"
+            className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg flex flex-col items-center justify-center gap-1"
+            style={{ backgroundColor: COLORS.secondary }}
           >
-            <ShoppingBag className="h-6 w-6 sm:h-7 sm:w-7 text-white" />
-            <span className="text-xs text-white font-medium">メモ</span>
+            <ShoppingBag className="h-6 w-6 sm:h-7 sm:w-7" style={{ color: COLORS.cream }} />
+            <span className="text-xs font-medium" style={{ color: COLORS.cream }}>メモ</span>
           </Button>
         </motion.div>
         
-        {/* マップボタン */}
+        {/* マップボタン（羅針盤アイコン） */}
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
+          whileHover={{ scale: 1.05, boxShadow: "0 10px 30px rgba(139, 105, 20, 0.3)" }}
+          whileTap={{ scale: 0.95 }}
           transition={{ duration: 0.3, delay: 0.1 }}
           className="flex flex-col items-center"
         >
           <Button
             onClick={() => router.push('/map')}
             size="icon"
-            className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg bg-[#73370c] hover:bg-[#8b4513] flex flex-col items-center justify-center gap-1"
+            className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg flex flex-col items-center justify-center gap-1"
+            style={{ backgroundColor: COLORS.primary }}
           >
-            <Map className="h-6 w-6 sm:h-7 sm:w-7 text-white" />
-            <span className="text-xs text-white font-medium">Map</span>
+            <Compass className="h-6 w-6 sm:h-7 sm:w-7" style={{ color: COLORS.cream }} />
+            <span className="text-xs font-medium" style={{ color: COLORS.cream }}>Map</span>
           </Button>
         </motion.div>
       </div>

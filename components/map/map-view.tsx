@@ -4,7 +4,19 @@ import { useRef, useEffect, useState, useCallback } from 'react';
 import { useGeolocation } from '@/lib/hooks/use-geolocation';
 import { useGoogleMapsApi } from '@/components/providers/GoogleMapsApiProvider';
 import { Button } from '@/components/ui/button';
-import { MapPin, AlertTriangle, RefreshCw, Calendar, Newspaper, User, MapPinIcon, X, Loader2, Home, Share2, Link2, Check, Map, Plus, MapIcon } from 'lucide-react';
+import { MapPin, AlertTriangle, RefreshCw, Calendar, BookOpen, User, MapPinIcon, X, Loader2, Home, Share2, Link2, Check, Compass, Feather } from 'lucide-react';
+
+// 🎨 LPカラーパレット
+const COLORS = {
+  primary: '#8b6914',      // ゴールドブラウン
+  primaryDark: '#3d2914',  // ダークブラウン
+  secondary: '#5c3a21',    // ミディアムブラウン
+  background: '#f5e6d3',   // ベージュ
+  surface: '#fff8f0',      // オフホワイト
+  cream: '#ffecd2',        // クリーム
+  border: '#d4c4a8',       // ライトベージュ
+  mint: '#e8f4e5',         // ミントグリーン
+};
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabaseClient';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -814,19 +826,25 @@ export function MapView() {
   if (!googleMapsLoaded || !mapInitialized) {
     if (locationError && permissionState === 'denied') return <MessageCard title="位置情報の許可が必要です" message={locationError} variant="warning" icon={MapPin}><Button onClick={requestLocation} className="mt-4"><MapPin className="mr-2 h-4 w-4" />位置情報を許可する</Button></MessageCard>;
     return (
-      <div className="w-full h-full bg-gray-50 relative">
-        <div ref={mapContainerRef} className="w-full h-full bg-gray-50" />
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/90 backdrop-blur-sm">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#73370c] mb-4"></div>
-          <p className="text-gray-600 text-center px-4 font-medium">地図を準備中...</p>
-          {(!latitude || !longitude) && permissionState !== 'denied' && <p className="text-gray-500 text-sm text-center px-4 mt-2">位置情報を取得中...</p>}
+      <div className="w-full h-full relative" style={{ backgroundColor: COLORS.background }}>
+        <div ref={mapContainerRef} className="w-full h-full" style={{ backgroundColor: COLORS.background }} />
+        <div className="absolute inset-0 flex flex-col items-center justify-center backdrop-blur-sm" style={{ backgroundColor: `${COLORS.surface}E6` }}>
+          <motion.div 
+            animate={{ rotate: 360 }}
+            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+            className="mb-4"
+          >
+            <Compass className="h-12 w-12" style={{ color: COLORS.primary }} />
+          </motion.div>
+          <p className="text-center px-4 font-medium" style={{ color: COLORS.secondary }}>地図を準備中...</p>
+          {(!latitude || !longitude) && permissionState !== 'denied' && <p className="text-sm text-center px-4 mt-2" style={{ color: COLORS.secondary }}>位置情報を取得中...</p>}
         </div>
       </div>
     );
   }
 
   return (
-    <div className="w-full h-full bg-gray-50 relative">
+    <div className="w-full h-full relative" style={{ backgroundColor: COLORS.background }}>
       <div ref={mapContainerRef} className="w-full h-full" style={{ touchAction: 'manipulation', WebkitOverflowScrolling: 'touch', WebkitTouchCallout: 'none', WebkitUserSelect: 'none', userSelect: 'none' }} />
 
       {/* 🔥 マイマップモード時のUI */}
@@ -866,17 +884,20 @@ export function MapView() {
             <motion.div 
               initial={{ opacity: 0, x: 20 }} 
               animate={{ opacity: 1, x: 0 }} 
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               transition={{ duration: 0.3, delay: 0.1 }} 
               className="flex flex-col items-center"
             >
               <Button 
                 onClick={() => setIsShareModalOpen(true)} 
                 size="icon" 
-                className="h-12 w-12 rounded-lg shadow-lg bg-[#73370c] hover:bg-[#5c2a0a] border-2 border-white"
+                className="h-12 w-12 rounded-lg shadow-lg border-2 border-white"
+                style={{ backgroundColor: COLORS.primary }}
               >
-                <Share2 className="h-6 w-6 text-white" />
+                <Share2 className="h-6 w-6" style={{ color: COLORS.cream }} />
               </Button>
-              <span className="text-xs font-bold text-gray-700 mt-1">共有</span>
+              <span className="text-xs font-bold mt-1" style={{ color: COLORS.primaryDark }}>共有</span>
             </motion.div>
           </div>
 
@@ -885,12 +906,34 @@ export function MapView() {
             {/* 🔥 公開設定ONの場合のみMap一覧アイコンとMapボタンを表示 */}
             {isMapPublic && (
               <>
-                {/* Map一覧アイコン（最上） */}
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.05 }} className="flex flex-col items-center">
-                  <Button onClick={() => router.push('/public-maps')} size="icon" className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg bg-[#73370c] hover:bg-[#8b4513] flex flex-col items-center justify-center gap-1"><Newspaper className="h-6 w-6 sm:h-7 sm:w-7 text-white" /><span className="text-xs text-white font-medium">Map一覧</span></Button>
+                {/* Map一覧アイコン（最上）- 古書/BookOpenアイコン */}
+                <motion.div 
+                  initial={{ opacity: 0, y: 20 }} 
+                  animate={{ opacity: 1, y: 0 }} 
+                  whileHover={{ scale: 1.05, boxShadow: "0 10px 30px rgba(92, 58, 33, 0.3)" }}
+                  whileTap={{ scale: 0.95 }}
+                  transition={{ duration: 0.3, delay: 0.05 }} 
+                  className="flex flex-col items-center"
+                >
+                  <Button 
+                    onClick={() => router.push('/public-maps')} 
+                    size="icon" 
+                    className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg flex flex-col items-center justify-center gap-1"
+                    style={{ backgroundColor: COLORS.secondary }}
+                  >
+                    <BookOpen className="h-6 w-6 sm:h-7 sm:w-7" style={{ color: COLORS.cream }} />
+                    <span className="text-xs font-medium" style={{ color: COLORS.cream }}>Map一覧</span>
+                  </Button>
                 </motion.div>
-                {/* Mapボタン（Map一覧の下） */}
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.1 }} className="flex flex-col items-center">
+                {/* Mapボタン（Map一覧の下）- 羅針盤/Compassアイコン */}
+                <motion.div 
+                  initial={{ opacity: 0, y: 20 }} 
+                  animate={{ opacity: 1, y: 0 }} 
+                  whileHover={{ scale: 1.05, boxShadow: "0 10px 30px rgba(139, 105, 20, 0.3)" }}
+                  whileTap={{ scale: 0.95 }}
+                  transition={{ duration: 0.3, delay: 0.1 }} 
+                  className="flex flex-col items-center"
+                >
                   <Button onClick={() => {
                     setViewMode('events');
                     setSelectedMapLocation(null);
@@ -902,13 +945,36 @@ export function MapView() {
                     if (userLat && userLng) {
                       setTimeout(() => fetchPosts(), 100);
                     }
-                  }} size="icon" className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg bg-[#73370c] hover:bg-[#8b4513] flex flex-col items-center justify-center gap-1"><Map className="h-6 w-6 sm:h-7 sm:w-7 text-white" /><span className="text-xs text-white font-medium">Map</span></Button>
+                  }} 
+                  size="icon" 
+                  className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg flex flex-col items-center justify-center gap-1"
+                  style={{ backgroundColor: COLORS.primary }}
+                  >
+                    <Compass className="h-6 w-6 sm:h-7 sm:w-7" style={{ color: COLORS.cream }} />
+                    <span className="text-xs font-medium" style={{ color: COLORS.cream }}>Map</span>
+                  </Button>
                 </motion.div>
               </>
             )}
             {/* 更新ボタンは常に表示（最下） */}
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: isMapPublic ? 0.15 : 0.05 }} className="flex flex-col items-center">
-              <Button onClick={handleManualRefresh} size="icon" disabled={isRefreshing || loadingMaps} className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg bg-[#73370c] hover:bg-[#8b4513] disabled:opacity-50 flex flex-col items-center justify-center gap-1"><RefreshCw className={`h-6 w-6 sm:h-7 sm:w-7 text-white ${(isRefreshing || loadingMaps) ? 'animate-spin' : ''}`} /><span className="text-xs text-white font-medium">更新</span></Button>
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }} 
+              animate={{ opacity: 1, y: 0 }} 
+              whileHover={{ scale: 1.05, boxShadow: "0 10px 30px rgba(61, 41, 20, 0.3)" }}
+              whileTap={{ scale: 0.95 }}
+              transition={{ duration: 0.3, delay: isMapPublic ? 0.15 : 0.05 }} 
+              className="flex flex-col items-center"
+            >
+              <Button 
+                onClick={handleManualRefresh} 
+                size="icon" 
+                disabled={isRefreshing || loadingMaps} 
+                className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg disabled:opacity-50 flex flex-col items-center justify-center gap-1"
+                style={{ backgroundColor: COLORS.primaryDark }}
+              >
+                <RefreshCw className={`h-6 w-6 sm:h-7 sm:w-7 ${(isRefreshing || loadingMaps) ? 'animate-spin' : ''}`} style={{ color: COLORS.cream }} />
+                <span className="text-xs font-medium" style={{ color: COLORS.cream }}>更新</span>
+              </Button>
             </motion.div>
           </div>
         </>
@@ -1068,14 +1134,63 @@ export function MapView() {
       {/* 🔥 イベント情報モード時のUI（左下に縦並び） */}
       {map && mapInitialized && viewMode === 'events' && (
         <div className="absolute bottom-4 left-4 z-30 flex flex-col gap-2">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.05 }} className="flex flex-col items-center">
-            <Button onClick={() => router.push('/events')} size="icon" className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg bg-[#73370c] hover:bg-[#8b4513] flex flex-col items-center justify-center gap-1"><Calendar className="h-6 w-6 sm:h-7 sm:w-7 text-white" /><span className="text-xs text-white font-medium">カレンダー</span></Button>
+          {/* カレンダーボタン */}
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }} 
+            animate={{ opacity: 1, y: 0 }} 
+            whileHover={{ scale: 1.05, boxShadow: "0 10px 30px rgba(139, 105, 20, 0.3)" }}
+            whileTap={{ scale: 0.95 }}
+            transition={{ duration: 0.3, delay: 0.05 }} 
+            className="flex flex-col items-center"
+          >
+            <Button 
+              onClick={() => router.push('/events')} 
+              size="icon" 
+              className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg flex flex-col items-center justify-center gap-1"
+              style={{ backgroundColor: COLORS.primary }}
+            >
+              <Calendar className="h-6 w-6 sm:h-7 sm:w-7" style={{ color: COLORS.cream }} />
+              <span className="text-xs font-medium" style={{ color: COLORS.cream }}>カレンダー</span>
+            </Button>
           </motion.div>
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.1 }} className="flex flex-col items-center">
-            <Button onClick={() => router.push('/public-maps')} size="icon" className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg bg-[#73370c] hover:bg-[#8b4513] flex flex-col items-center justify-center gap-1"><Newspaper className="h-6 w-6 sm:h-7 sm:w-7 text-white" /><span className="text-xs text-white font-medium">Map一覧</span></Button>
+          {/* Map一覧ボタン - 古書/BookOpenアイコン */}
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }} 
+            animate={{ opacity: 1, y: 0 }} 
+            whileHover={{ scale: 1.05, boxShadow: "0 10px 30px rgba(92, 58, 33, 0.3)" }}
+            whileTap={{ scale: 0.95 }}
+            transition={{ duration: 0.3, delay: 0.1 }} 
+            className="flex flex-col items-center"
+          >
+            <Button 
+              onClick={() => router.push('/public-maps')} 
+              size="icon" 
+              className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg flex flex-col items-center justify-center gap-1"
+              style={{ backgroundColor: COLORS.secondary }}
+            >
+              <BookOpen className="h-6 w-6 sm:h-7 sm:w-7" style={{ color: COLORS.cream }} />
+              <span className="text-xs font-medium" style={{ color: COLORS.cream }}>Map一覧</span>
+            </Button>
           </motion.div>
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.15 }} className="flex flex-col items-center">
-            <Button onClick={handleManualRefresh} size="icon" disabled={isRefreshing || loadingPosts} className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg bg-[#73370c] hover:bg-[#8b4513] disabled:opacity-50 flex flex-col items-center justify-center gap-1"><RefreshCw className={`h-6 w-6 sm:h-7 sm:w-7 text-white ${(isRefreshing || loadingPosts) ? 'animate-spin' : ''}`} /><span className="text-xs text-white font-medium">更新</span></Button>
+          {/* 更新ボタン */}
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }} 
+            animate={{ opacity: 1, y: 0 }} 
+            whileHover={{ scale: 1.05, boxShadow: "0 10px 30px rgba(61, 41, 20, 0.3)" }}
+            whileTap={{ scale: 0.95 }}
+            transition={{ duration: 0.3, delay: 0.15 }} 
+            className="flex flex-col items-center"
+          >
+            <Button 
+              onClick={handleManualRefresh} 
+              size="icon" 
+              disabled={isRefreshing || loadingPosts} 
+              className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg disabled:opacity-50 flex flex-col items-center justify-center gap-1"
+              style={{ backgroundColor: COLORS.primaryDark }}
+            >
+              <RefreshCw className={`h-6 w-6 sm:h-7 sm:w-7 ${(isRefreshing || loadingPosts) ? 'animate-spin' : ''}`} style={{ color: COLORS.cream }} />
+              <span className="text-xs font-medium" style={{ color: COLORS.cream }}>更新</span>
+            </Button>
           </motion.div>
         </div>
       )}
@@ -1083,8 +1198,17 @@ export function MapView() {
       {/* 更新中の表示 */}
       <AnimatePresence>
         {(isRefreshing || loadingPosts || loadingMaps) && (
-          <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="absolute top-20 left-1/2 transform -translate-x-1/2 z-40 bg-white/95 backdrop-blur-sm px-6 py-3 rounded-full shadow-lg border border-gray-200">
-            <div className="flex items-center gap-2"><RefreshCw className="h-4 w-4 text-[#73370c] animate-spin" /><span className="text-sm font-bold text-[#73370c]">更新中...</span></div>
+          <motion.div 
+            initial={{ opacity: 0, y: -20 }} 
+            animate={{ opacity: 1, y: 0 }} 
+            exit={{ opacity: 0, y: -20 }} 
+            className="absolute top-20 left-1/2 transform -translate-x-1/2 z-40 backdrop-blur-sm px-6 py-3 rounded-full shadow-lg"
+            style={{ backgroundColor: `${COLORS.surface}F5`, borderColor: COLORS.border, borderWidth: 1 }}
+          >
+            <div className="flex items-center gap-2">
+              <RefreshCw className="h-4 w-4 animate-spin" style={{ color: COLORS.primary }} />
+              <span className="text-sm font-bold" style={{ color: COLORS.primary }}>更新中...</span>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

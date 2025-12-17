@@ -12,6 +12,17 @@ import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { supabase } from '@/lib/supabaseClient';
 
+// 🎨 LPカラーパレット
+const COLORS = {
+  primary: '#8b6914',      // ゴールドブラウン
+  primaryDark: '#3d2914',  // ダークブラウン
+  secondary: '#5c3a21',    // ミディアムブラウン
+  background: '#f5e6d3',   // ベージュ
+  surface: '#fff8f0',      // オフホワイト
+  cream: '#ffecd2',        // クリーム
+  border: '#d4c4a8',       // ライトベージュ
+};
+
 export function AppHeader() {
   const pathname = usePathname();
   const { unreadCount, isLoading } = useNotification();
@@ -121,7 +132,13 @@ export function AppHeader() {
   const title = getPageTitle();
 
   return (
-    <header className="sticky top-0 z-10 bg-background border-b border-border">
+    <header 
+      className="sticky top-0 z-10 border-b"
+      style={{ 
+        backgroundColor: COLORS.background, 
+        borderColor: COLORS.border 
+      }}
+    >
       <motion.div 
         className="h-14 px-4 flex items-center justify-center relative"
         initial={{ y: -10, opacity: 0 }}
@@ -136,14 +153,27 @@ export function AppHeader() {
         </div>
         
         {!showLogo && title && (
-          <h1 className="font-bold text-3xl text-center">{title}</h1>
+          <h1 
+            className="font-bold text-2xl text-center"
+            style={{ 
+              color: COLORS.primaryDark,
+              fontFamily: "'Noto Serif JP', serif"
+            }}
+          >
+            {title}
+          </h1>
         )}
         
-        {/* 右側のアイコン（通知と広告作成） */}
+        {/* 右側のアイコン（通知） */}
         <div className={`absolute right-4 flex items-center space-x-2 ${!isMobile ? 'hidden' : ''}`}>
-          <Button variant="ghost" size="icon" className="relative" asChild>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="relative hover:bg-[#ffecd2]" 
+            asChild
+          >
             <Link href="/notifications">
-              <Bell className="h-8 w-8" />
+              <Bell className="h-7 w-7" style={{ color: COLORS.secondary }} />
               {!isLoading && unreadCount > 0 && (
                 <motion.div
                   initial={{ scale: 0 }}
@@ -152,8 +182,8 @@ export function AppHeader() {
                   className="absolute -top-1 -right-1"
                 >
                   <Badge 
-                    variant="destructive"
-                    className="px-1.5 py-0.5 min-w-[1.25rem] h-5 flex items-center justify-center text-xs"
+                    className="px-1.5 py-0.5 min-w-[1.25rem] h-5 flex items-center justify-center text-xs text-white"
+                    style={{ backgroundColor: '#8b2323' }}
                   >
                     {unreadCount > 9 ? '9+' : unreadCount}
                   </Badge>
