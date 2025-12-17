@@ -23,6 +23,7 @@ import { CustomModal } from '@/components/ui/custom-modal';
 import { useToast } from "@/hooks/use-toast";
 import { useLoading } from '@/contexts/loading-context';
 import { useGoogleMapsApi } from '@/components/providers/GoogleMapsApiProvider';
+import { createPost, type CreatePostInput, type PostCategory as ServerPostCategory } from '@/app/_actions/posts';
 
 declare global {
   interface Window {
@@ -293,6 +294,39 @@ export default function PostPage() {
     setOptionalFieldsExpanded(expanded);
   }, [selectedCategory]);
   
+  // 画像アップロード処理（クライアントサイド - Supabase Storage直接アップロード）
+  const uploadFileToStorage = async (
+    file: File, 
+    userId: string, 
+    bucket: 'images' | 'files',
+    index: number
+  ): Promise<string> => {
+    const fileExt = file.name.split('.').pop();
+    const uniqueFileName = `${uuidv4()}_${index}.${fileExt}`;
+    const objectPath = `${userId}/${uniqueFileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from(bucket)
+      .upload(objectPath, file, {
+        cacheControl: '3600',
+        upsert: true,
+      });
+
+    if (uploadError) {
+      throw new Error(`${bucket === 'images' ? '画像' : 'ファイル'}のアップロードに失敗しました: ${uploadError.message}`);
+    }
+
+    const { data: publicUrlData } = supabase.storage
+      .from(bucket)
+      .getPublicUrl(objectPath);
+
+    if (!publicUrlData?.publicUrl) {
+      throw new Error('URLの取得に失敗しました');
+    }
+
+    return publicUrlData.publicUrl;
+  };
+
   // 投稿処理
   const handleActualSubmit = async (values: any) => {
     if (!session?.user?.id) {
@@ -334,168 +368,91 @@ export default function PostPage() {
     setSubmitError(null);
     setShowConfirmModal(false);
 
-    let imageUrls: string[] = [];
-    let fileUrls: string[] = [];
-
     try {
-      const { data: userProfile, error: profileError } = await supabase
-        .from('app_profiles')
-        .select('id')
-        .eq('user_id', session.user.id)
-        .single();
+      const userId = session.user.id;
 
-      if (profileError || !userProfile) {
-        throw new Error("投稿者のプロフィール情報が見つかりません。");
-      }
-      const appProfileId = userProfile.id;
-
-      // 🔥 複数画像のアップロード処理
-      if (imageFiles.length > 0) {
-        const uploadPromises = imageFiles.map(async (file, index) => {
-          const fileExt = file.name.split('.').pop();
-          const userFolder = session.user.id;
-          const uniqueFileName = `${uuidv4()}_${index}.${fileExt}`;
-          const objectPath = `${userFolder}/${uniqueFileName}`;
-
-          const { error: uploadError } = await supabase.storage
-            .from('images')
-            .upload(objectPath, file, {
-              cacheControl: '3600',
-              upsert: true,
-            });
-
-          if (uploadError) {
-            throw new Error(`画像のアップロードに失敗しました: ${uploadError.message}`);
-          }
-          
-          const { data: publicUrlData } = supabase.storage
-            .from('images')
-            .getPublicUrl(objectPath);
-          
-          return publicUrlData?.publicUrl || null;
-        });
-
-        const uploadedUrls = await Promise.all(uploadPromises);
-        imageUrls = uploadedUrls.filter(url => url !== null) as string[];
+      // 🔥 複数画像のアップロード処理（クライアントサイド）
+      const imageUrls: string[] = [];
+      for (let i = 0; i < imageFiles.length; i++) {
+        const url = await uploadFileToStorage(imageFiles[i], userId, 'images', i);
+        imageUrls.push(url);
       }
 
-      // 🔥 複数ファイルのアップロード処理
-      if (fileFiles.length > 0) {
-        const uploadPromises = fileFiles.map(async (file, index) => {
-          const fileExt = file.name.split('.').pop();
-          const userFolder = session.user.id;
-          const uniqueFileName = `${uuidv4()}_${index}.${fileExt}`;
-          const objectPath = `${userFolder}/${uniqueFileName}`;
-
-          const { error: uploadError } = await supabase.storage
-            .from('files')
-            .upload(objectPath, file, {
-              cacheControl: '3600',
-              upsert: true,
-            });
-
-          if (uploadError) {
-            throw new Error(`ファイルのアップロードに失敗しました: ${uploadError.message}`);
-          }
-          
-          const { data: publicUrlData } = supabase.storage
-            .from('files')
-            .getPublicUrl(objectPath);
-          
-          return publicUrlData?.publicUrl || null;
-        });
-
-        const uploadedUrls = await Promise.all(uploadPromises);
-        fileUrls = uploadedUrls.filter(url => url !== null) as string[];
+      // 🔥 複数ファイルのアップロード処理（クライアントサイド）
+      const fileUrls: string[] = [];
+      for (let i = 0; i < fileFiles.length; i++) {
+        const url = await uploadFileToStorage(fileFiles[i], userId, 'files', i);
+        fileUrls.push(url);
       }
 
-      // 投稿データを準備
-      const postData: any = {
-        app_profile_id: appProfileId,
-        store_id: values.storeId || null,
-        store_name: values.storeName || selectedCategory,
-        category: selectedCategory,
-        content: values.content,
-        image_urls: imageUrls.length > 0 ? JSON.stringify(imageUrls) : null,
-        file_urls: fileUrls.length > 0 ? JSON.stringify(fileUrls) : null,
-        url: values.url && values.url.trim() !== '' ? values.url : null,
-        likes_count: 0,
-        views_count: 0,
-        comments_count: 0,
-        is_deleted: false,
-        phone_number: values.phoneNumber && values.phoneNumber.trim() !== '' ? values.phoneNumber : null,
-        prefecture: values.prefecture && values.prefecture.trim() !== '' ? values.prefecture : null,
-        city: values.city && values.city.trim() !== '' ? values.city : null,
-        author_role: session?.user?.role === 'admin' ? 'admin' : 'user',
-        enable_checkin: values.enableCheckin || false,
-      };
+      // 掲載期間の計算
+      let expiryOption = '';
+      let customExpiryMinutes: number | null = null;
+      let expiresAt = '';
 
-      // イベント情報の場合の追加フィールド
       if (selectedCategory === 'イベント情報') {
-        postData.event_name = values.eventName;
-        postData.event_start_date = values.eventStartDate;
-        postData.event_end_date = values.eventEndDate && values.eventEndDate.trim() !== '' ? values.eventEndDate : null;
-        postData.event_price = values.eventPrice && values.eventPrice.trim() !== '' ? values.eventPrice : null;
-        
-        // 掲載期間の設定
         if (values.customExpiryDays) {
-          postData.expiry_option = 'days';
-          postData.custom_expiry_minutes = values.customExpiryDays * 24 * 60;
-          postData.expires_at = calculateExpiresAt('days', undefined, values.customExpiryDays).toISOString();
+          expiryOption = 'days';
+          customExpiryMinutes = values.customExpiryDays * 24 * 60;
+          expiresAt = calculateExpiresAt('days', undefined, values.customExpiryDays).toISOString();
         } else {
-          // イベント日付から自動計算
           const calculatedDays = calculateEventExpiryDays(values.eventStartDate, values.eventEndDate);
-          postData.expiry_option = 'days';
-          postData.custom_expiry_minutes = calculatedDays * 24 * 60;
-          postData.expires_at = calculateExpiresAt('days', undefined, calculatedDays).toISOString();
+          expiryOption = 'days';
+          customExpiryMinutes = calculatedDays * 24 * 60;
+          expiresAt = calculateExpiresAt('days', undefined, calculatedDays).toISOString();
         }
       } else {
-        // その他のカテゴリーの場合
         if (values.expiryOption === '90days') {
-          postData.expiry_option = '90d';
-          postData.custom_expiry_minutes = 90 * 24 * 60;
-          postData.expires_at = calculateExpiresAt('90d').toISOString();
+          expiryOption = '90d';
+          customExpiryMinutes = 90 * 24 * 60;
+          expiresAt = calculateExpiresAt('90d').toISOString();
         } else if (values.expiryOption === 'unlimited') {
-          // 期間を設けない場合（手動削除まで表示）
-          // 非常に遠い未来の日付を設定（2099-12-31）
-          postData.expiry_option = 'days';
-          postData.custom_expiry_minutes = null;
+          expiryOption = 'days';
+          customExpiryMinutes = null;
           const farFuture = new Date();
-          farFuture.setFullYear(2099, 11, 31); // 2099年12月31日
+          farFuture.setFullYear(2099, 11, 31);
           farFuture.setHours(23, 59, 59, 999);
-          postData.expires_at = farFuture.toISOString();
+          expiresAt = farFuture.toISOString();
         }
       }
 
-      // コラボフィールド（新規カテゴリーのみ）
-      if (selectedCategory !== 'イベント情報' && values.collaboration) {
-        postData.collaboration = values.collaboration.trim();
-      }
-
-      // 🔥 店舗の位置情報を設定
+      // 🔥 店舗の位置情報を取得
       const storeLatitude = form.getValues("store_latitude") as number | undefined;
       const storeLongitude = form.getValues("store_longitude") as number | undefined;
-      if (storeLatitude !== undefined && storeLongitude !== undefined && !isNaN(storeLatitude) && !isNaN(storeLongitude)) {
-        postData.store_latitude = Number(storeLatitude);
-        postData.store_longitude = Number(storeLongitude);
-        postData.location_geom = `POINT(${storeLongitude} ${storeLatitude})`;
-      }
 
-      // 🔥 端末の位置情報を設定
-      if (latitude && longitude) {
-        postData.user_latitude = Number(latitude);
-        postData.user_longitude = Number(longitude);
-        postData.user_location_geom = `POINT(${longitude} ${latitude})`;
-      }
+      // 🔥 Server Actionを使用して投稿を作成
+      const postInput: CreatePostInput = {
+        userId,
+        storeId: values.storeId || null,
+        storeName: values.storeName || selectedCategory,
+        category: selectedCategory as ServerPostCategory,
+        content: values.content,
+        imageUrls,
+        fileUrls,
+        url: values.url && values.url.trim() !== '' ? values.url : null,
+        phoneNumber: values.phoneNumber && values.phoneNumber.trim() !== '' ? values.phoneNumber : null,
+        prefecture: values.prefecture && values.prefecture.trim() !== '' ? values.prefecture : null,
+        city: values.city && values.city.trim() !== '' ? values.city : null,
+        authorRole: session?.user?.role === 'admin' ? 'admin' : 'user',
+        enableCheckin: values.enableCheckin || false,
+        collaboration: selectedCategory !== 'イベント情報' && values.collaboration ? values.collaboration.trim() : null,
+        storeLatitude: storeLatitude !== undefined && !isNaN(storeLatitude) ? Number(storeLatitude) : undefined,
+        storeLongitude: storeLongitude !== undefined && !isNaN(storeLongitude) ? Number(storeLongitude) : undefined,
+        userLatitude: latitude ? Number(latitude) : undefined,
+        userLongitude: longitude ? Number(longitude) : undefined,
+        eventName: selectedCategory === 'イベント情報' ? values.eventName : undefined,
+        eventStartDate: selectedCategory === 'イベント情報' ? values.eventStartDate : undefined,
+        eventEndDate: selectedCategory === 'イベント情報' && values.eventEndDate?.trim() !== '' ? values.eventEndDate : null,
+        eventPrice: selectedCategory === 'イベント情報' && values.eventPrice?.trim() !== '' ? values.eventPrice : null,
+        expiryOption,
+        customExpiryMinutes,
+        expiresAt,
+      };
 
-      const { data: insertedPost, error: insertError } = await supabase
-        .from('posts')
-        .insert(postData)
-        .select('id, store_id, store_name, app_profile_id')
-        .single();
+      const { postId, error: createError } = await createPost(postInput);
 
-      if (insertError || !insertedPost) {
-        throw new Error(`投稿の保存に失敗しました: ${insertError?.message || "Unknown error"}`);
+      if (createError || !postId) {
+        throw new Error(createError || '投稿の保存に失敗しました');
       }
 
       // フォームリセット
@@ -524,7 +481,7 @@ export default function PostPage() {
       form.reset(resetValues);
       
       setImageFiles([]);
-        setImagePreviewUrls([]);
+      setImagePreviewUrls([]);
       setFileFiles([]);
       setSelectedPlace(null);
       setLocationStatus('none');

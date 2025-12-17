@@ -9,6 +9,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { CustomModal } from '@/components/ui/custom-modal';
 import { supabase } from '@/lib/supabaseClient';
 import { useSession, signOut } from 'next-auth/react';
+import { getPublicMaps } from '@/app/_actions/maps';
 
 // 🔥 公開マップの型定義
 interface PublicMapData {
@@ -55,75 +56,31 @@ const PublicMapsSection = ({ onMapClick }: { onMapClick: (mapId: string) => void
 
   const fetchPublicMaps = async () => {
     try {
-      // 🔥 app_profilesテーブルとJOINして作成者情報も取得
-      const { data, error } = await supabase
-        .from('maps')
-        .select(`
-          id, 
-          title, 
-          locations, 
-          created_at, 
-          hashtags,
-          app_profile_id,
-          thumbnail_url,
-          app_profiles (
-            id,
-            display_name,
-            avatar_url
-          )
-        `)
-        .eq('is_deleted', false)
-        .eq('is_public', true)
-        .order('created_at', { ascending: false })
-        .limit(12);
+      // 🔥 Server Actionを使用して公開マップ一覧を取得
+      const { maps, error } = await getPublicMaps(12);
 
       if (error) {
-        console.error('公開マップ取得エラー（詳細）:', {
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code
-        });
-        throw error;
+        console.error('公開マップ取得エラー:', error);
+        throw new Error(error);
       }
       
-      // 🔥 thumbnail_urlを優先的に使用、なければlocationsから取得
-      const mapsWithMetadata: PublicMapData[] = (data || []).map((map: any) => {
-        const locations = Array.isArray(map.locations) ? map.locations : [];
-        const totalLocations = locations.length;
-        
-        // 🔥 thumbnail_urlを優先、なければ最初のロケーションの画像を使用
-        let coverImageUrl = map.thumbnail_url || null;
-        if (!coverImageUrl) {
-          for (const location of locations) {
-            if (location.image_urls && Array.isArray(location.image_urls) && location.image_urls.length > 0) {
-              coverImageUrl = location.image_urls[0];
-              break;
-            }
-          }
-        }
-        
-        // 🔥 作成者情報を取得（型安全に）
-        const profile = map.app_profiles as { id: string; display_name: string | null; avatar_url: string | null } | null;
-        
-        return {
-          id: map.id,
-          title: map.title,
-          locations: locations,
-          created_at: map.created_at,
-          hashtags: map.hashtags,
-          app_profile_id: map.app_profile_id,
-          cover_image_url: coverImageUrl,
-          total_locations: totalLocations,
-          author_name: profile?.display_name || '匿名ユーザー',
-          author_avatar_path: profile?.avatar_url || null, // 🔥 パスとして保持
-        };
-      });
+      // Server Actionの結果をPublicMapData型に変換
+      const mapsWithMetadata: PublicMapData[] = maps.map((map: any) => ({
+        id: map.id,
+        title: map.title,
+        locations: map.locations || [],
+        created_at: map.created_at,
+        hashtags: map.hashtags,
+        app_profile_id: map.app_profile_id,
+        cover_image_url: map.cover_image_url,
+        total_locations: map.total_locations,
+        author_name: map.author_name,
+        author_avatar_path: map.author_avatar_path,
+      }));
       
       setPublicMaps(mapsWithMetadata);
     } catch (error: any) {
       console.error('公開マップ取得エラー:', error);
-      console.error('エラーの詳細:', JSON.stringify(error, null, 2));
     } finally {
       setLoading(false);
     }

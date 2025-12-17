@@ -15,6 +15,7 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { getHunterLevel } from '@/lib/hunter-level';
 import { StampBoardModal } from '@/components/stamp-board/stamp-board-modal';
+import { getProfilePageData } from '@/app/_actions/profiles';
 
 interface AppProfile {
   id: string;
@@ -270,65 +271,29 @@ function ProfilePageContent() {
     const fetchProfileAndPostsCount = async () => {
       if (!session?.user?.id) {
         console.warn('ProfilePageContent: No session user ID available');
-        setLoading(false); // 🔥 セッションがない場合もローディング解除
+        setLoading(false);
         return;
       }
 
       try {
         setLoading(true);
 
-        // ユーザーの役割を取得
-        const { data: userData, error: userError } = await supabase
-          .from('app_users')
-          .select('role')
-          .eq('id', session.user.id)
-          .single();
+        // 🔥 Server Actionを使用してプロフィールデータを取得
+        const { data, error } = await getProfilePageData(session.user.id);
 
-        if (!userError && userData) {
-          setUserRole(userData.role);
-        }
-
-        const { data: appProfileData, error: profileError } = await supabase
-          .from('app_profiles')
-          .select(
-            '*, stripe_account_id, stripe_onboarding_completed, payout_enabled'
-          )
-          .eq('user_id', session.user.id)
-          .single();
-
-        if (profileError) {
-          console.error('ProfilePageContent: Error fetching profile:', profileError);
-          setLoading(false); // 🔥 エラー時もローディング解除
+        if (error || !data) {
+          console.error('ProfilePageContent: Error fetching profile:', error);
+          setLoading(false);
           return;
         }
 
-        if (appProfileData) {
-          setProfile(appProfileData);
+        setUserRole(data.role);
+        setProfile(data.profile);
+        setUserPostsCount(data.postsCount);
 
-          // 投稿数のみを取得（リレーションシップの曖昧性を回避）
-          const { count: postsCount, error: postsCountError } = await supabase
-            .from('posts')
-            .select('id', { count: 'exact' })
-            .eq('app_profile_id', appProfileData.id);
-
-          if (postsCountError) {
-            console.error('ProfilePageContent: Error fetching posts count:', postsCountError);
-          } else {
-            setUserPostsCount(postsCount || 0);
-          }
-
-          // 総いいね数を取得してハンターレベルを計算
-          const { data: postsWithLikes, error: likesError } = await supabase
-            .from('posts')
-            .select('likes_count')
-            .eq('app_profile_id', appProfileData.id);
-
-          if (!likesError && postsWithLikes) {
-            const totalLikes = postsWithLikes.reduce((sum, post) => sum + (post.likes_count || 0), 0);
-            const level = getHunterLevel(totalLikes);
-            setCurrentUserLevel(level);
-          }
-        }
+        // ハンターレベルを計算
+        const level = getHunterLevel(data.totalLikes);
+        setCurrentUserLevel(level);
       } catch (e) {
         console.error('ProfilePageContent: Unexpected error:', e);
       } finally {

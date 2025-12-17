@@ -23,6 +23,15 @@ import { v4 as uuidv4 } from 'uuid';
 import FavoriteStoreInput from '@/components/profile/FavoriteStoreInput';
 import { useLoading } from '@/contexts/loading-context';
 import { useToast } from '@/hooks/use-toast';
+import { 
+  getUserRole, 
+  getProfile, 
+  updateProfile, 
+  deleteAvatarFromDb,
+  deleteAvatarFromStorage,
+  deleteBusinessImageFromStorage,
+  type UpdateProfileInput 
+} from '@/app/_actions/profiles';
 
 // プロフィールスキーマ - お気に入り店舗機能を削除
 const profileSchema = z.object({
@@ -109,22 +118,14 @@ export default function ProfileEditPage() {
     const loadProfile = async () => {
       if (status === "authenticated" && session?.user?.id) {
         try {
-          // ユーザーの役割を取得
-          const { data: userData, error: userError } = await supabase
-            .from('app_users')
-            .select('role')
-            .eq('id', session.user.id)
-            .single();
-
-          if (!userError && userData) {
-            setUserRole(userData.role);
+          // 🔥 Server Actionを使用してユーザーの役割を取得
+          const { role, error: roleError } = await getUserRole(session.user.id);
+          if (!roleError && role) {
+            setUserRole(role);
           }
 
-          const { data: profile, error } = await supabase
-            .from('app_profiles')
-            .select('*, business_default_content, business_default_phone, business_default_image_path, business_default_coupon')
-            .eq('user_id', session.user.id)
-            .single();
+          // 🔥 Server Actionを使用してプロフィールを取得
+          const { profile, error } = await getProfile(session.user.id);
 
           if (error) {
             console.error('プロフィール読み込みエラー:', error);
@@ -150,7 +151,7 @@ export default function ProfileEditPage() {
             }
 
             // 企業設定（businessユーザーのみ）
-            if (userData?.role === 'business') {
+            if (role === 'business') {
               form.setValue('businessUrl', profile.business_url || '');
               form.setValue('businessStoreId', profile.business_store_id || '');
               form.setValue('businessStoreName', profile.business_store_name || '');
@@ -171,7 +172,7 @@ export default function ProfileEditPage() {
 
             // アバター
             if (profile.avatar_url) {
-              setCurrentAvatarPath(profile.avatar_url); // 追加：パスを保存
+              setCurrentAvatarPath(profile.avatar_url);
               const { data: { publicUrl } } = supabase.storage
                 .from('avatars')
                 .getPublicUrl(profile.avatar_url);
@@ -263,27 +264,17 @@ export default function ProfileEditPage() {
 
   // 追加：完全なアバター削除処理
   const deleteCurrentAvatar = async () => {
-    if (!currentAvatarPath) return;
+    if (!currentAvatarPath || !session?.user?.id) return;
 
     try {
-      // Supabaseストレージから削除
-      const { error: deleteError } = await supabase.storage
-        .from('avatars')
-        .remove([currentAvatarPath]);
+      // 🔥 Server Actionを使用してストレージから削除
+      await deleteAvatarFromStorage(currentAvatarPath);
 
-      if (deleteError) {
-        console.error('アバター削除エラー:', deleteError);
-        // エラーがあっても処理を続行（ファイルが存在しない場合など）
-      }
+      // 🔥 Server Actionを使用してデータベースから削除
+      const { success, error } = await deleteAvatarFromDb(session.user.id);
 
-      // データベースのavatar_urlをnullに更新
-      const { error: updateError } = await supabase
-        .from('app_profiles')
-        .update({ avatar_url: null, updated_at: new Date().toISOString() })
-        .eq('user_id', session?.user?.id);
-
-      if (updateError) {
-        throw new Error(`アバターの削除に失敗しました: ${updateError.message}`);
+      if (!success) {
+        throw new Error(error || 'アバターの削除に失敗しました');
       }
 
       // 状態をリセット
@@ -309,6 +300,31 @@ export default function ProfileEditPage() {
     }
   };
 
+  // 画像アップロード処理（クライアントサイド）
+  const uploadImageToStorage = async (
+    file: File, 
+    userId: string, 
+    bucket: 'avatars' | 'images',
+    prefix?: string
+  ): Promise<string> => {
+    const fileExt = file.name.split('.').pop();
+    const uniqueFileName = prefix ? `${prefix}_${uuidv4()}.${fileExt}` : `${uuidv4()}.${fileExt}`;
+    const objectPath = `${userId}/${uniqueFileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from(bucket)
+      .upload(objectPath, file, {
+        cacheControl: '3600',
+        upsert: true,
+      });
+
+    if (uploadError) {
+      throw new Error(`画像のアップロードに失敗しました: ${uploadError.message}`);
+    }
+
+    return objectPath;
+  };
+
   const onSubmit = async (values: ProfileFormValues) => {
     // データ同意チェック
     if (!dataConsent) {
@@ -331,97 +347,43 @@ export default function ProfileEditPage() {
     let shouldUpdateBusinessDefaultImage = false;
 
     try {
-      // アバター処理
+      const userId = session.user.id;
+
+      // アバター処理（クライアントサイドでアップロード）
       if (isAvatarMarkedForDeletion) {
         // 既存のアバターを削除
         if (currentAvatarPath) {
-          const { error: deleteError } = await supabase.storage
-            .from('avatars')
-            .remove([currentAvatarPath]);
-          
-          if (deleteError) {
-            console.error('既存アバター削除エラー:', deleteError);
-            // エラーがあっても処理を続行
-          }
+          await deleteAvatarFromStorage(currentAvatarPath);
         }
         uploadedAvatarPath = null;
         shouldUpdateAvatar = true;
       } else if (avatarFile) {
         // 新しいアバターをアップロード
-        // 既存のアバターがある場合は先に削除
         if (currentAvatarPath) {
-          const { error: deleteError } = await supabase.storage
-            .from('avatars')
-            .remove([currentAvatarPath]);
-          
-          if (deleteError) {
-            console.error('既存アバター削除エラー:', deleteError);
-            // エラーがあっても処理を続行
-          }
+          await deleteAvatarFromStorage(currentAvatarPath);
         }
-
-        const fileExt = avatarFile.name.split('.').pop();
-        const userFolder = session.user.id;
-        const uniqueFileName = `${uuidv4()}.${fileExt}`;
-        const objectPath = `${userFolder}/${uniqueFileName}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from('avatars')
-          .upload(objectPath, avatarFile, {
-            cacheControl: '3600',
-            upsert: true,
-          });
-
-        if (uploadError) {
-          throw new Error(`アバター画像のアップロードに失敗しました: ${uploadError.message}`);
-        }
-        uploadedAvatarPath = objectPath;
+        uploadedAvatarPath = await uploadImageToStorage(avatarFile, userId, 'avatars');
         shouldUpdateAvatar = true;
       }
 
-      // 企業用デフォルト画像処理
+      // 企業用デフォルト画像処理（クライアントサイドでアップロード）
       if (userRole === 'business') {
         if (isBusinessDefaultImageMarkedForDeletion) {
-          // 既存の企業用デフォルト画像を削除
           if (currentBusinessDefaultImagePath) {
-            const { error: deleteError } = await supabase.storage
-              .from('images')
-              .remove([currentBusinessDefaultImagePath]);
-            
-            if (deleteError) {
-              console.error('既存企業デフォルト画像削除エラー:', deleteError);
-            }
+            await deleteBusinessImageFromStorage(currentBusinessDefaultImagePath);
           }
           uploadedBusinessDefaultImagePath = null;
           shouldUpdateBusinessDefaultImage = true;
         } else if (businessDefaultImageFile) {
-          // 新しい企業用デフォルト画像をアップロード
           if (currentBusinessDefaultImagePath) {
-            const { error: deleteError } = await supabase.storage
-              .from('images')
-              .remove([currentBusinessDefaultImagePath]);
-            
-            if (deleteError) {
-              console.error('既存企業デフォルト画像削除エラー:', deleteError);
-            }
+            await deleteBusinessImageFromStorage(currentBusinessDefaultImagePath);
           }
-
-          const fileExt = businessDefaultImageFile.name.split('.').pop();
-          const userFolder = session.user.id;
-          const uniqueFileName = `business_default_${uuidv4()}.${fileExt}`;
-          const objectPath = `${userFolder}/${uniqueFileName}`;
-
-          const { error: uploadError } = await supabase.storage
-            .from('images')
-            .upload(objectPath, businessDefaultImageFile, {
-              cacheControl: '3600',
-              upsert: true,
-            });
-
-          if (uploadError) {
-            throw new Error(`企業デフォルト画像のアップロードに失敗しました: ${uploadError.message}`);
-          }
-          uploadedBusinessDefaultImagePath = objectPath;
+          uploadedBusinessDefaultImagePath = await uploadImageToStorage(
+            businessDefaultImageFile, 
+            userId, 
+            'images',
+            'business_default'
+          );
           shouldUpdateBusinessDefaultImage = true;
         }
       }
@@ -430,33 +392,29 @@ export default function ProfileEditPage() {
       const links = [values.link1, values.link2, values.link3].filter(link => link && link.trim() !== '');
       const urlData = links.length > 0 ? JSON.stringify(links) : null;
 
-      // プロフィールデータの更新
-      const updateData = {
-        display_name: values.username,
-        updated_at: new Date().toISOString(),
-        url: urlData,
-        data_consent: dataConsent,
-        // 企業設定（businessユーザーのみ）
-        ...(userRole === 'business' && {
-          business_url: values.businessUrl || null,
-          business_store_id: values.businessStoreId || null,
-          business_store_name: values.businessStoreName || null,
-          // 企業用追加設定
-          business_default_content: values.businessDefaultContent || null,
-          business_default_phone: values.businessDefaultPhone || null,
-          business_default_coupon: values.businessDefaultCoupon || null,
-          ...(shouldUpdateBusinessDefaultImage && { business_default_image_path: uploadedBusinessDefaultImagePath }),
-        }),
-        ...(shouldUpdateAvatar && { avatar_url: uploadedAvatarPath }),
+      // 🔥 Server Actionを使用してプロフィールを更新
+      const updateInput: UpdateProfileInput = {
+        userId,
+        displayName: values.username,
+        avatarPath: uploadedAvatarPath,
+        shouldUpdateAvatar,
+        urlData,
+        dataConsent,
+        isBusinessUser: userRole === 'business',
+        businessUrl: values.businessUrl,
+        businessStoreId: values.businessStoreId,
+        businessStoreName: values.businessStoreName,
+        businessDefaultContent: values.businessDefaultContent,
+        businessDefaultPhone: values.businessDefaultPhone,
+        businessDefaultImagePath: uploadedBusinessDefaultImagePath,
+        shouldUpdateBusinessImage: shouldUpdateBusinessDefaultImage,
+        businessDefaultCoupon: values.businessDefaultCoupon,
       };
 
-      const { error: updateError } = await supabase
-        .from('app_profiles')
-        .update(updateData)
-        .eq('user_id', session.user.id);
+      const { success, error } = await updateProfile(updateInput);
 
-      if (updateError) {
-        throw new Error(`プロフィールの更新に失敗しました: ${updateError.message}`);
+      if (!success) {
+        throw new Error(error || 'プロフィールの更新に失敗しました');
       }
 
       toast({

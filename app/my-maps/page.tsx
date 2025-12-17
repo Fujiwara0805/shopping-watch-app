@@ -6,19 +6,9 @@ import { useSession } from "next-auth/react";
 import { motion } from 'framer-motion';
 import { Loader2, MapPin, Calendar, Trash2, Edit, Eye, Plus, ChevronRight, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { supabase } from '@/lib/supabaseClient';
 import { useToast } from "@/hooks/use-toast";
 import { useLoading } from '@/contexts/loading-context';
-
-interface MyMap {
-  id: string;
-  title: string;
-  total_locations: number;
-  cover_image_url: string | null;
-  created_at: string;
-  expires_at: string | null;
-  hashtags: string[] | null;
-}
+import { getMapsByUserId, deleteMap, type MyMapListItem } from '@/app/_actions/maps';
 
 export default function MyMapsPage() {
   const { data: session, status } = useSession();
@@ -26,7 +16,7 @@ export default function MyMapsPage() {
   const { toast } = useToast();
   const { showLoading, hideLoading } = useLoading();
   
-  const [myMaps, setMyMaps] = useState<MyMap[]>([]);
+  const [myMaps, setMyMaps] = useState<MyMapListItem[]>([]);
   const [loading, setLoading] = useState(true);
   
   // ログインチェック
@@ -45,51 +35,19 @@ export default function MyMapsPage() {
   }, [session]);
   
   const fetchMyMaps = async () => {
+    if (!session?.user?.id) return;
+    
     try {
       setLoading(true);
       
-      // ユーザーのプロフィールIDを取得
-      const { data: profile, error: profileError } = await supabase
-        .from('app_profiles')
-        .select('id')
-        .eq('user_id', session?.user?.id)
-        .single();
+      // 🔥 Server Actionを使用してマップ一覧を取得
+      const { maps, error } = await getMapsByUserId(session.user.id);
       
-      if (profileError || !profile) {
-        throw new Error("プロフィール情報が見つかりません");
+      if (error) {
+        throw new Error(error);
       }
       
-      // マップ一覧を取得（locationsとthumbnail_urlも取得）
-      const { data: maps, error: mapsError } = await supabase
-        .from('maps')
-        .select('id, title, locations, created_at, expires_at, hashtags, thumbnail_url')
-        .eq('app_profile_id', profile.id)
-        .eq('is_deleted', false)
-        .order('created_at', { ascending: false });
-      
-      if (mapsError) {
-        throw new Error(mapsError.message);
-      }
-      
-      // 🔥 total_locationsとcover_image_urlを計算（thumbnail_urlを優先）
-      const mapsWithCalculated = (maps || []).map((map: any) => {
-        const locations = map.locations || [];
-        const totalLocations = locations.length;
-        
-        // 🔥 thumbnail_urlを優先、なければ最初のロケーションの画像を使用
-        let coverImageUrl = map.thumbnail_url || null;
-        if (!coverImageUrl && locations.length > 0 && locations[0].image_urls?.length > 0) {
-          coverImageUrl = locations[0].image_urls[0];
-        }
-        
-        return {
-          ...map,
-          total_locations: totalLocations,
-          cover_image_url: coverImageUrl,
-        };
-      });
-      
-      setMyMaps(mapsWithCalculated);
+      setMyMaps(maps);
     } catch (error: any) {
       console.error("マイマップ取得エラー:", error);
       toast({
@@ -104,6 +62,8 @@ export default function MyMapsPage() {
   
   // マップを削除（物理削除 + 画像削除）
   const handleDelete = async (mapId: string, mapTitle: string) => {
+    if (!session?.user?.id) return;
+    
     if (!confirm(`「${mapTitle}」を削除しますか？\nこの操作は取り消せません。`)) {
       return;
     }
@@ -111,47 +71,11 @@ export default function MyMapsPage() {
     try {
       showLoading();
       
-      // 🔥 削除前にマップデータを取得（画像URLを取得するため）
-      const { data: mapData, error: fetchError } = await supabase
-        .from('maps')
-        .select('locations')
-        .eq('id', mapId)
-        .single();
+      // 🔥 Server Actionを使用してマップを削除
+      const { success, error } = await deleteMap(mapId, session.user.id);
       
-      if (fetchError) {
-        throw new Error(`マップデータの取得に失敗しました: ${fetchError.message}`);
-      }
-      
-      // 🔥 画像URLを抽出して削除
-      if (mapData?.locations && Array.isArray(mapData.locations)) {
-        for (const location of mapData.locations) {
-          if (location.image_urls && Array.isArray(location.image_urls)) {
-            for (const imageUrl of location.image_urls) {
-              // Supabaseストレージのパスを抽出（例: https://xxx.supabase.co/storage/v1/object/public/images/user_id/filename.jpg）
-              const match = imageUrl.match(/\/images\/(.+)$/);
-              if (match && match[1]) {
-                const imagePath = match[1];
-                const { error: deleteImageError } = await supabase.storage
-                  .from('images')
-                  .remove([imagePath]);
-                
-                if (deleteImageError) {
-                  console.error(`画像削除エラー (${imagePath}):`, deleteImageError);
-                }
-              }
-            }
-          }
-        }
-      }
-      
-      // 🔥 マップを物理削除
-      const { error: deleteError } = await supabase
-        .from('maps')
-        .delete()
-        .eq('id', mapId);
-      
-      if (deleteError) {
-        throw new Error(deleteError.message);
+      if (!success || error) {
+        throw new Error(error || '削除に失敗しました');
       }
       
       toast({

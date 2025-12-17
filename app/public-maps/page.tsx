@@ -7,6 +7,7 @@ import Image from 'next/image';
 import { Search, MapPin, Calendar, Map as MapIcon, Loader2, User } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { Input } from '@/components/ui/input';
+import { getPublicMaps } from '@/app/_actions/maps';
 
 interface PublicMap {
   id: string;
@@ -54,58 +55,24 @@ export default function PublicMapsPage() {
     try {
       setLoading(true);
       
-      const { data, error } = await supabase
-        .from('maps')
-        .select(`
-          id, 
-          title, 
-          locations, 
-          created_at, 
-          hashtags,
-          app_profile_id,
-          thumbnail_url,
-          app_profiles (
-            id,
-            display_name,
-            avatar_url
-          )
-        `)
-        .eq('is_deleted', false)
-        .eq('is_public', true)
-        .order('created_at', { ascending: false });
-
+      // 🔥 Server Actionを使用して公開マップ一覧を取得
+      const { maps, error } = await getPublicMaps();
+      
       if (error) {
-        throw error;
+        throw new Error(error);
       }
       
-      const mapsWithMetadata: PublicMap[] = (data || []).map((map: any) => {
-        const locations = Array.isArray(map.locations) ? map.locations : [];
-        const totalLocations = locations.length;
-        
-        // 🔥 thumbnail_urlを優先、なければ最初のロケーションの画像を使用
-        let coverImageUrl = map.thumbnail_url || null;
-        if (!coverImageUrl) {
-          for (const location of locations) {
-            if (location.image_urls && Array.isArray(location.image_urls) && location.image_urls.length > 0) {
-              coverImageUrl = location.image_urls[0];
-              break;
-            }
-          }
-        }
-        
-        const profile = map.app_profiles as { id: string; display_name: string | null; avatar_url: string | null } | null;
-        
-        return {
-          id: map.id,
-          title: map.title,
-          total_locations: totalLocations,
-          cover_image_url: coverImageUrl,
-          created_at: map.created_at,
-          hashtags: map.hashtags,
-          author_name: profile?.display_name || '匿名ユーザー',
-          author_avatar_path: profile?.avatar_url || null,
-        };
-      });
+      // Server Actionの結果をPublicMap型に変換
+      const mapsWithMetadata: PublicMap[] = maps.map((map: any) => ({
+        id: map.id,
+        title: map.title,
+        total_locations: map.total_locations,
+        cover_image_url: map.cover_image_url,
+        created_at: map.created_at,
+        hashtags: map.hashtags,
+        author_name: map.author_name,
+        author_avatar_path: map.author_avatar_path,
+      }));
       
       setPublicMaps(mapsWithMetadata);
       setFilteredMaps(mapsWithMetadata);

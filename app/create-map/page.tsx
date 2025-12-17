@@ -28,6 +28,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLoading } from '@/contexts/loading-context';
 import { useGoogleMapsApi } from '@/components/providers/GoogleMapsApiProvider';
 import { useGeolocation } from '@/lib/hooks/use-geolocation';
+import { createMap, type CreateMapInput, type LocationData as ServerLocationData } from '@/app/_actions/maps';
 
 // 場所のデータ型
 interface LocationData {
@@ -646,6 +647,34 @@ export default function CreateMapPage() {
     updateLocation(locationIndex, 'imagePreviewUrls', newPreviewUrls);
   };
   
+  // 画像アップロード処理（クライアントサイド - Supabase Storage直接アップロード）
+  const uploadImageToStorage = async (file: File, userId: string): Promise<string> => {
+    const fileExt = file.name.split('.').pop();
+    const uniqueFileName = `${uuidv4()}.${fileExt}`;
+    const objectPath = `${userId}/${uniqueFileName}`;
+    
+    const { error: uploadError } = await supabase.storage
+      .from('images')
+      .upload(objectPath, file, {
+        cacheControl: '3600',
+        upsert: true,
+      });
+    
+    if (uploadError) {
+      throw new Error(`画像のアップロードに失敗しました: ${uploadError.message}`);
+    }
+    
+    const { data: publicUrlData } = supabase.storage
+      .from('images')
+      .getPublicUrl(objectPath);
+    
+    if (!publicUrlData?.publicUrl) {
+      throw new Error('画像URLの取得に失敗しました');
+    }
+    
+    return publicUrlData.publicUrl;
+  };
+
   // 投稿処理
   const handleSubmit = async (values: MapFormValues) => {
     if (!session?.user?.id) return;
@@ -679,91 +708,34 @@ export default function CreateMapPage() {
     setIsSubmitting(true);
     
     try {
-      // プロフィールID取得
-      const { data: userProfile, error: profileError } = await supabase
-        .from('app_profiles')
-        .select('id')
-        .eq('user_id', session.user.id)
-        .single();
-      
-      if (profileError || !userProfile) {
-        throw new Error("投稿者のプロフィール情報が見つかりません");
-      }
-      
-      const appProfileId = userProfile.id;
+      const userId = session.user.id;
       
       // 掲載期限を計算
       const expiresAt = calculateExpiresAt('days', undefined, values.customExpiryDays);
       
-      const hashtagsToSave = hashtags.length > 0 ? hashtags : null;
-      
-      // サムネイル画像をアップロード
+      // サムネイル画像をアップロード（クライアントサイド）
       let thumbnailUrl: string | null = null;
       if (thumbnailFile) {
-        const fileExt = thumbnailFile.name.split('.').pop();
-        const userFolder = session.user.id;
-        const uniqueFileName = `thumbnail_${uuidv4()}.${fileExt}`;
-        const objectPath = `${userFolder}/${uniqueFileName}`;
-        
-        const { error: uploadError } = await supabase.storage
-          .from('images')
-          .upload(objectPath, thumbnailFile, {
-            cacheControl: '3600',
-            upsert: true,
-          });
-        
-        if (uploadError) {
-          throw new Error(`サムネイル画像のアップロードに失敗しました: ${uploadError.message}`);
-        }
-        
-        const { data: publicUrlData } = supabase.storage
-          .from('images')
-          .getPublicUrl(objectPath);
-        
-        if (publicUrlData?.publicUrl) {
-          thumbnailUrl = publicUrlData.publicUrl;
-        }
+        thumbnailUrl = await uploadImageToStorage(thumbnailFile, userId);
       }
       
-      // 🔥 各場所の画像をアップロードして、locations配列を構築
-      const locationsData = [];
+      // 🔥 各場所の画像をアップロードして、locations配列を構築（クライアントサイド）
+      const locationsData: ServerLocationData[] = [];
       
       for (let i = 0; i < locations.length; i++) {
         const location = locations[i];
         
         // 画像アップロード
         const imageUrls: string[] = [];
-        for (let j = 0; j < location.imageFiles.length; j++) {
-          const file = location.imageFiles[j];
-          const fileExt = file.name.split('.').pop();
-          const userFolder = session.user.id;
-          const uniqueFileName = `${uuidv4()}_${j}.${fileExt}`;
-          const objectPath = `${userFolder}/${uniqueFileName}`;
-          
-          const { error: uploadError } = await supabase.storage
-            .from('images')
-            .upload(objectPath, file, {
-              cacheControl: '3600',
-              upsert: true,
-            });
-          
-          if (uploadError) {
-            throw new Error(`画像のアップロードに失敗しました: ${uploadError.message}`);
-          }
-          
-          const { data: publicUrlData } = supabase.storage
-            .from('images')
-            .getPublicUrl(objectPath);
-          
-          if (publicUrlData?.publicUrl) {
-            imageUrls.push(publicUrlData.publicUrl);
-          }
+        for (const file of location.imageFiles) {
+          const url = await uploadImageToStorage(file, userId);
+          imageUrls.push(url);
         }
         
         // 場所データを配列に追加
         locationsData.push({
           order: i,
-          store_id: location.storeId || null, // 🔥 storeIdがない場合はnull
+          store_id: location.storeId || null,
           store_name: location.storeName,
           store_latitude: location.store_latitude,
           store_longitude: location.store_longitude,
@@ -773,28 +745,26 @@ export default function CreateMapPage() {
         });
       }
       
-      // 🔥 mapsテーブルに1レコードとして保存
-      const { data: mapData, error: mapError } = await supabase
-        .from('maps')
-        .insert({
-          title: values.title,
-          description: values.description || null,
-          thumbnail_url: thumbnailUrl,
-          app_profile_id: appProfileId,
-          locations: locationsData, // JSON配列として保存
-          hashtags: hashtagsToSave,
-          expires_at: expiresAt.toISOString(),
-          expiry_option: `${values.customExpiryDays}d`,
-          publication_start_date: values.publicationStartDate,
-          publication_end_date: values.publicationEndDate || null,
-          author_role: session?.user?.role === 'admin' ? 'admin' : 'user',
-          is_public: values.isPublic,
-        })
-        .select()
-        .single();
+      // 🔥 Server Actionを使用してマップを作成
+      const mapInput: CreateMapInput = {
+        userId,
+        title: values.title,
+        description: values.description || null,
+        thumbnailUrl,
+        locations: locationsData,
+        hashtags: hashtags.length > 0 ? hashtags : null,
+        expiresAt: expiresAt.toISOString(),
+        expiryOption: `${values.customExpiryDays}d`,
+        publicationStartDate: values.publicationStartDate,
+        publicationEndDate: values.publicationEndDate || null,
+        authorRole: session?.user?.role === 'admin' ? 'admin' : 'user',
+        isPublic: values.isPublic,
+      };
       
-      if (mapError || !mapData) {
-        throw new Error(`マップの作成に失敗しました: ${mapError?.message}`);
+      const { mapId, error: createError } = await createMap(mapInput);
+      
+      if (createError || !mapId) {
+        throw new Error(createError || 'マップの作成に失敗しました');
       }
       
       // 完了画面に遷移

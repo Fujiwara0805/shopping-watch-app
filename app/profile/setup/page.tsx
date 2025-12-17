@@ -22,6 +22,7 @@ import { v4 as uuidv4 } from 'uuid';
 import FavoriteStoreInput from '@/components/profile/FavoriteStoreInput';
 import { useLoading } from '@/contexts/loading-context';
 import { AnimatePresence} from 'framer-motion';
+import { createProfileSetup } from '@/app/_actions/profiles';
 
 // app_profiles テーブルの型定義（bioを削除）
 interface AppProfile {
@@ -138,6 +139,26 @@ function ProfileSetupContent() {
     if (fileInput) fileInput.value = '';
   };
 
+  // 画像アップロード処理（クライアントサイド）
+  const uploadAvatarToStorage = async (file: File, userId: string): Promise<string> => {
+    const fileExt = file.name.split('.').pop();
+    const uniqueFileName = `${uuidv4()}.${fileExt}`;
+    const objectPath = `${userId}/${uniqueFileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('avatars')
+      .upload(objectPath, file, {
+        cacheControl: '3600',
+        upsert: true,
+      });
+
+    if (uploadError) {
+      throw new Error(`アバター画像のアップロードに失敗しました: ${uploadError.message}`);
+    }
+
+    return objectPath;
+  };
+
   const onSubmit = async (values: ProfileFormValues) => {
     // データ同意チェック
     if (!dataConsent) {
@@ -154,51 +175,30 @@ function ProfileSetupContent() {
     setSubmitError(null);
     showLoading();
 
-    let uploadedAvatarPath: string | null = null;
-
     try {
+      const userId = session.user.id;
+
+      // アバター画像をアップロード（クライアントサイド）
+      let uploadedAvatarPath: string | null = null;
       if (avatarFile) {
-        const fileExt = avatarFile.name.split('.').pop();
-        const userFolder = session.user.id;
-        const uniqueFileName = `${uuidv4()}.${fileExt}`;
-        const objectPath = `${userFolder}/${uniqueFileName}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from('avatars')
-          .upload(objectPath, avatarFile, {
-            cacheControl: '3600',
-            upsert: true,
-          });
-
-        if (uploadError) {
-          throw new Error(`アバター画像のアップロードに失敗しました: ${uploadError.message}`);
-        }
-        uploadedAvatarPath = objectPath;
+        uploadedAvatarPath = await uploadAvatarToStorage(avatarFile, userId);
       }
-
-      const newAppProfileId = uuidv4();
 
       // リンクを配列として保存
       const links = [values.link1, values.link2, values.link3].filter(link => link && link.trim() !== '');
       const urlData = links.length > 0 ? JSON.stringify(links) : null;
 
-      // プロフィールデータ
-      const profileDataToSave = {
-        id: newAppProfileId,
-        user_id: session.user.id,
-        display_name: values.username,
-        avatar_url: uploadedAvatarPath,
-        updated_at: new Date().toISOString(),
-        url: urlData,
-        data_consent: dataConsent,
-      };
+      // 🔥 Server Actionを使用してプロフィールを保存
+      const { success, error } = await createProfileSetup({
+        userId,
+        displayName: values.username,
+        avatarPath: uploadedAvatarPath,
+        urlData,
+        dataConsent,
+      });
 
-      const { error: saveError } = await supabase
-        .from('app_profiles')
-        .insert(profileDataToSave);
-
-      if (saveError) {
-        throw new Error(`プロフィールの保存に失敗しました: ${saveError.message}`);
+      if (!success) {
+        throw new Error(error || 'プロフィールの保存に失敗しました');
       }
 
       router.push('/profile/setup/complete');
