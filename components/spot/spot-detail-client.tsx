@@ -15,7 +15,8 @@ import {
   Image as ImageIcon,
   ChevronLeft,
   ChevronRight,
-  FileText
+  FileText,
+  ArrowUpFromLine
 } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 
@@ -323,7 +324,7 @@ export function SpotDetailClient({ spotId }: SpotDetailClientProps) {
 
               {/* ハッシュタグ */}
               {mapData.hashtags && mapData.hashtags.length > 0 && (
-                <div className="flex flex-wrap justify-center gap-2">
+                <div className="flex flex-wrap justify-center gap-2 mb-4">
                   {mapData.hashtags.map((tag, index) => (
                     <motion.span
                       key={index}
@@ -338,6 +339,47 @@ export function SpotDetailClient({ spotId }: SpotDetailClientProps) {
                     </motion.span>
                   ))}
                 </div>
+              )}
+
+              {/* 目次 */}
+              {mapData.locations && mapData.locations.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5 }}
+                  className="mt-6 bg-white rounded-xl border border-gray-200 p-4 shadow-sm"
+                >
+                  <h3 className="text-base font-bold mb-3 text-gray-800 flex items-center">
+                    <MapPin className="h-4 w-4 mr-2" style={{ color: '#73370c' }} />
+                    目次
+                  </h3>
+                  <div className="space-y-2">
+                    {mapData.locations.map((location, index) => (
+                      <button
+                        key={index}
+                        onClick={() => {
+                          const element = document.getElementById(`spot-${index}`);
+                          if (element) {
+                            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            // ハイライト効果を追加
+                            element.classList.add('highlight-flash');
+                            setTimeout(() => {
+                              element.classList.remove('highlight-flash');
+                            }, 2000);
+                          }
+                        }}
+                        className="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2 group"
+                      >
+                        <span className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold" style={{ backgroundColor: '#73370c' }}>
+                          {index + 1}
+                        </span>
+                        <span className="text-sm font-medium text-gray-700 group-hover:text-[#73370c] transition-colors">
+                          {location.store_name}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </motion.div>
               )}
             </div>
           </motion.section>
@@ -468,6 +510,28 @@ export function SpotDetailClient({ spotId }: SpotDetailClientProps) {
           </motion.div>
         </motion.div>
       </main>
+
+      {/* 右下の先頭へ戻るボタン */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0 }}
+        animate={{ opacity: 1, scale: 1 }}
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        transition={{ duration: 0.3, delay: 0.6 }}
+        className="fixed bottom-6 right-6 z-40"
+      >
+        <Button
+          onClick={() => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+          size="icon"
+          className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg flex flex-col items-center justify-center gap-1"
+          style={{ backgroundColor: '#73370c' }}
+        >
+          <ArrowUpFromLine className="h-6 w-6 sm:h-7 sm:w-7 text-white" />
+          <span className="text-xs font-medium text-white">先頭</span>
+        </Button>
+      </motion.div>
 
       {/* 画像拡大モーダル */}
       {expandedImageIndex !== null && mapData.locations[expandedImageIndex.spotIndex]?.image_urls && (

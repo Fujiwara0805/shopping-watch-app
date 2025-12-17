@@ -1086,7 +1086,7 @@ export default function EditMapPage() {
                     <FormControl>
                       <Input
                         type="date"
-                        className="h-12 text-base max-w-xs"
+                        className="h-10 text-sm max-w-[200px]"
                         {...field}
                         onChange={(e) => {
                           field.onChange(e);
@@ -1116,7 +1116,7 @@ export default function EditMapPage() {
                     <FormControl>
                       <Input
                         type="date"
-                        className="h-12 text-base max-w-xs"
+                        className="h-10 text-sm max-w-[200px]"
                         {...field}
                         onChange={(e) => {
                           field.onChange(e);

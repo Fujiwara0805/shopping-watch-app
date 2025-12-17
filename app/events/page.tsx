@@ -1084,7 +1084,7 @@ export default function CalendarPage() {
 
                                       {/* イベント情報 */}
                                       <div className="flex-1 min-w-0">
-                                        <div className="font-semibold text-base mb-1" style={{ color: COLORS.primaryDark, fontFamily: "'Noto Serif JP', serif" }}>
+                                        <div className="font-bold text-base mb-1" style={{ color: COLORS.primaryDark }}>
                                           {event.name}
                                         </div>
                                         <div className="flex items-center gap-2 text-sm text-gray-600">
