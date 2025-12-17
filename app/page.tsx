@@ -65,6 +65,7 @@ const PublicMapsSection = ({ onMapClick }: { onMapClick: (mapId: string) => void
           created_at, 
           hashtags,
           app_profile_id,
+          thumbnail_url,
           app_profiles (
             id,
             display_name,
@@ -86,17 +87,19 @@ const PublicMapsSection = ({ onMapClick }: { onMapClick: (mapId: string) => void
         throw error;
       }
       
-      // locationsから最初の画像をカバー画像として、スポット数を計算
+      // 🔥 thumbnail_urlを優先的に使用、なければlocationsから取得
       const mapsWithMetadata: PublicMapData[] = (data || []).map((map: any) => {
         const locations = Array.isArray(map.locations) ? map.locations : [];
         const totalLocations = locations.length;
         
-        // 最初のロケーションの最初の画像をカバー画像として使用
-        let coverImageUrl = null;
-        for (const location of locations) {
-          if (location.image_urls && Array.isArray(location.image_urls) && location.image_urls.length > 0) {
-            coverImageUrl = location.image_urls[0];
-            break;
+        // 🔥 thumbnail_urlを優先、なければ最初のロケーションの画像を使用
+        let coverImageUrl = map.thumbnail_url || null;
+        if (!coverImageUrl) {
+          for (const location of locations) {
+            if (location.image_urls && Array.isArray(location.image_urls) && location.image_urls.length > 0) {
+              coverImageUrl = location.image_urls[0];
+              break;
+            }
           }
         }
         

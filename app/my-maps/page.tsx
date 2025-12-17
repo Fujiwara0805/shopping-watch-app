@@ -59,10 +59,10 @@ export default function MyMapsPage() {
         throw new Error("プロフィール情報が見つかりません");
       }
       
-      // マップ一覧を取得（locationsも取得して計算）
+      // マップ一覧を取得（locationsとthumbnail_urlも取得）
       const { data: maps, error: mapsError } = await supabase
         .from('maps')
-        .select('id, title, locations, created_at, expires_at, hashtags')
+        .select('id, title, locations, created_at, expires_at, hashtags, thumbnail_url')
         .eq('app_profile_id', profile.id)
         .eq('is_deleted', false)
         .order('created_at', { ascending: false });
@@ -71,13 +71,16 @@ export default function MyMapsPage() {
         throw new Error(mapsError.message);
       }
       
-      // total_locationsとcover_image_urlを計算
-      const mapsWithCalculated = (maps || []).map(map => {
+      // 🔥 total_locationsとcover_image_urlを計算（thumbnail_urlを優先）
+      const mapsWithCalculated = (maps || []).map((map: any) => {
         const locations = map.locations || [];
         const totalLocations = locations.length;
-        const coverImageUrl = locations.length > 0 && locations[0].image_urls?.length > 0
-          ? locations[0].image_urls[0]
-          : null;
+        
+        // 🔥 thumbnail_urlを優先、なければ最初のロケーションの画像を使用
+        let coverImageUrl = map.thumbnail_url || null;
+        if (!coverImageUrl && locations.length > 0 && locations[0].image_urls?.length > 0) {
+          coverImageUrl = locations[0].image_urls[0];
+        }
         
         return {
           ...map,

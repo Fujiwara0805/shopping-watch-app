@@ -63,6 +63,7 @@ export default function PublicMapsPage() {
           created_at, 
           hashtags,
           app_profile_id,
+          thumbnail_url,
           app_profiles (
             id,
             display_name,
@@ -81,11 +82,14 @@ export default function PublicMapsPage() {
         const locations = Array.isArray(map.locations) ? map.locations : [];
         const totalLocations = locations.length;
         
-        let coverImageUrl = null;
-        for (const location of locations) {
-          if (location.image_urls && Array.isArray(location.image_urls) && location.image_urls.length > 0) {
-            coverImageUrl = location.image_urls[0];
-            break;
+        // 🔥 thumbnail_urlを優先、なければ最初のロケーションの画像を使用
+        let coverImageUrl = map.thumbnail_url || null;
+        if (!coverImageUrl) {
+          for (const location of locations) {
+            if (location.image_urls && Array.isArray(location.image_urls) && location.image_urls.length > 0) {
+              coverImageUrl = location.image_urls[0];
+              break;
+            }
           }
         }
         
