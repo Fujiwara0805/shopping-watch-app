@@ -338,6 +338,13 @@ const CustomModal = ({ isOpen, onClose, children }: { isOpen: boolean; onClose: 
   );
 };
 
+// 🔥 ルートの色とスタイル設定
+const ROUTE_STYLES = {
+  strokeColor: '#09b562',      // ルートの色（緑）
+  strokeOpacity: 0.8,          // 透明度
+  strokeWeight: 4,             // 線の太さ
+};
+
 export function MapView() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -383,6 +390,10 @@ export function MapView() {
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
   const [isLocationPermissionModalOpen, setIsLocationPermissionModalOpen] = useState(false); // 🔥 位置情報許可モーダル
+
+  // 🔥 ルート表示用の状態
+  const [routePolylines, setRoutePolylines] = useState<google.maps.Polyline[]>([]);
+  const directionsServiceRef = useRef<google.maps.DirectionsService | null>(null);
 
   // デバイスの向きを取得
   useEffect(() => {
@@ -624,6 +635,88 @@ export function MapView() {
     return { lat: baseLat + offsetDistance * Math.cos(angle), lng: baseLng + offsetDistance * Math.sin(angle) / Math.cos(baseLat * Math.PI / 180) };
   };
 
+  // 🔥 道路に沿ったルートを計算して描画する関数
+  const calculateAndDrawRoute = useCallback(async (locations: MapLocationMarkerData[]) => {
+    if (!map || !window.google?.maps || locations.length < 2) {
+      // ルートをクリア
+      routePolylines.forEach(polyline => polyline.setMap(null));
+      setRoutePolylines([]);
+      return;
+    }
+
+    // 既存のルートをクリア
+    routePolylines.forEach(polyline => polyline.setMap(null));
+
+    // DirectionsServiceを初期化
+    if (!directionsServiceRef.current) {
+      directionsServiceRef.current = new window.google.maps.DirectionsService();
+    }
+
+    // ロケーションをorder順にソート
+    const sortedLocations = [...locations].sort((a, b) => a.order - b.order);
+
+    const newPolylines: google.maps.Polyline[] = [];
+
+    // 連続するスポット間のルートを計算
+    for (let i = 0; i < sortedLocations.length - 1; i++) {
+      const origin = sortedLocations[i];
+      const destination = sortedLocations[i + 1];
+
+      try {
+        const result = await new Promise<google.maps.DirectionsResult>((resolve, reject) => {
+          directionsServiceRef.current!.route(
+            {
+              origin: new window.google.maps.LatLng(origin.store_latitude, origin.store_longitude),
+              destination: new window.google.maps.LatLng(destination.store_latitude, destination.store_longitude),
+              travelMode: window.google.maps.TravelMode.WALKING, // 徒歩ルート（道路に沿う）
+            },
+            (response, status) => {
+              if (status === window.google.maps.DirectionsStatus.OK && response) {
+                resolve(response);
+              } else {
+                reject(new Error(`Directions request failed: ${status}`));
+              }
+            }
+          );
+        });
+
+        // ルートのパスを取得
+        const route = result.routes[0];
+        if (route && route.overview_path) {
+          // Polylineを作成して描画
+          const polyline = new window.google.maps.Polyline({
+            path: route.overview_path,
+            strokeColor: ROUTE_STYLES.strokeColor,
+            strokeOpacity: ROUTE_STYLES.strokeOpacity,
+            strokeWeight: ROUTE_STYLES.strokeWeight,
+            map: map,
+            zIndex: 1, // マーカーより下に表示
+          });
+          newPolylines.push(polyline);
+        }
+      } catch (error) {
+        console.error(`ルート計算エラー (${origin.store_name} → ${destination.store_name}):`, error);
+        
+        // エラー時はフォールバックとして直線を描画
+        const fallbackPolyline = new window.google.maps.Polyline({
+          path: [
+            new window.google.maps.LatLng(origin.store_latitude, origin.store_longitude),
+            new window.google.maps.LatLng(destination.store_latitude, destination.store_longitude),
+          ],
+          strokeColor: ROUTE_STYLES.strokeColor,
+          strokeOpacity: 0.5, // 直線は薄く
+          strokeWeight: 2,
+          strokePattern: [{ icon: { path: 'M 0,-1 0,1', strokeOpacity: 1, scale: 2 }, offset: '0', repeat: '10px' }], // 破線
+          map: map,
+          zIndex: 1,
+        });
+        newPolylines.push(fallbackPolyline);
+      }
+    }
+
+    setRoutePolylines(newPolylines);
+  }, [map, routePolylines]);
+
   const createMapMarkers = useCallback(async () => {
     if (!map || !mapLocations.length || !window.google?.maps) return;
     mapMarkers.forEach(marker => { if (marker?.setMap) marker.setMap(null); });
@@ -639,7 +732,7 @@ export function MapView() {
       const offsetPosition = getOffsetPosition(location.store_latitude, location.store_longitude, indexInGroup, groupLocations.length);
       const position = new window.google.maps.LatLng(offsetPosition.lat, offsetPosition.lng);
       const markerIcon = await createCategoryPinIcon(location.image_urls, location.store_name, 'イベント情報');
-      const marker = new window.google.maps.Marker({ position, map, title: `${location.store_name} - ${location.map_title}`, icon: markerIcon, animation: window.google.maps.Animation.DROP, zIndex: indexInGroup + 1 });
+      const marker = new window.google.maps.Marker({ position, map, title: `${location.store_name} - ${location.map_title}`, icon: markerIcon, animation: window.google.maps.Animation.DROP, zIndex: indexInGroup + 10 }); // zIndexを上げてルートより上に
       marker.addListener('click', () => { 
         // マーカークリック時に詳細カードを表示
         setSelectedMapLocation(location);
@@ -649,7 +742,10 @@ export function MapView() {
     const markers = await Promise.all(markerPromises);
     newMarkers.push(...markers.filter((m): m is google.maps.Marker => m != null));
     setMapMarkers(newMarkers);
-  }, [map, mapLocations]);
+
+    // 🔥 マーカー作成後にルートを描画
+    await calculateAndDrawRoute(mapLocations);
+  }, [map, mapLocations, calculateAndDrawRoute]);
 
   const createPostMarkers = useCallback(async () => {
     if (!map || !posts.length || !window.google?.maps) return;
@@ -760,8 +856,22 @@ export function MapView() {
 
   useEffect(() => {
     if (viewMode === 'myMaps' && mapLocations.length > 0 && map && window.google?.maps) createMapMarkers();
-    else if (viewMode === 'myMaps' && mapLocations.length === 0 && map && window.google?.maps) { mapMarkers.forEach(marker => { if (marker?.setMap) marker.setMap(null); }); setMapMarkers([]); }
+    else if (viewMode === 'myMaps' && mapLocations.length === 0 && map && window.google?.maps) { 
+      mapMarkers.forEach(marker => { if (marker?.setMap) marker.setMap(null); }); 
+      setMapMarkers([]); 
+      // 🔥 ルートもクリア
+      routePolylines.forEach(polyline => polyline.setMap(null));
+      setRoutePolylines([]);
+    }
   }, [mapLocations, map, viewMode]);
+
+  // 🔥 viewModeが変わったときにルートをクリア
+  useEffect(() => {
+    if (viewMode === 'events') {
+      routePolylines.forEach(polyline => polyline.setMap(null));
+      setRoutePolylines([]);
+    }
+  }, [viewMode]);
 
   // 方角付きユーザー位置マーカー
   useEffect(() => {
@@ -786,6 +896,9 @@ export function MapView() {
     if (userLocationMarker) { userLocationMarker.setMap(null); setUserLocationMarker(null); }
     postMarkers.forEach(marker => { if (marker?.setMap) marker.setMap(null); });
     setPostMarkers([]); setPosts([]);
+    // 🔥 ルートもクリア
+    routePolylines.forEach(polyline => polyline.setMap(null));
+    setRoutePolylines([]);
     if (mapContainerRef.current) mapContainerRef.current.innerHTML = '';
     setTimeout(() => { updateContainerDimensions(); if (!latitude || !longitude) requestLocation(); }, 100);
   };
@@ -939,6 +1052,9 @@ export function MapView() {
                     setSelectedMapLocation(null);
                     mapMarkers.forEach(marker => { if (marker?.setMap) marker.setMap(null); });
                     setMapMarkers([]);
+                    // 🔥 ルートもクリア
+                    routePolylines.forEach(polyline => polyline.setMap(null));
+                    setRoutePolylines([]);
                     router.push('/map');
                     const userLat = savedLocation?.lat || latitude;
                     const userLng = savedLocation?.lng || longitude;
