@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
-import { Search, MapPin, Calendar, Map as MapIcon, Loader2, User } from 'lucide-react';
+import { Search, MapPin, Calendar, Map as MapIcon, Loader2, User, Plus } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { Input } from '@/components/ui/input';
 import { getPublicMaps } from '@/app/_actions/maps';
@@ -242,11 +242,23 @@ export default function PublicMapsPage() {
           <span className="text-xs text-white font-medium">マイページ</span>
         </motion.button>
 
-        {/* Mapボタン */}
+        {/* 作成ボタン */}
         <motion.button
           initial={{ opacity: 0, scale: 0 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.3, delay: 0.2 }}
+          onClick={() => router.push('/create-map')}
+          className="w-16 h-16 sm:w-20 sm:h-20 bg-[#73370c] hover:bg-[#8b4513] rounded-xl shadow-lg transition-colors flex flex-col items-center justify-center gap-1"
+        >
+          <Plus className="h-6 w-6 sm:h-7 sm:w-7 text-white" />
+          <span className="text-xs text-white font-medium">作成</span>
+        </motion.button>
+
+        {/* Mapボタン */}
+        <motion.button
+          initial={{ opacity: 0, scale: 0 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.3, delay: 0.3 }}
           onClick={handleMapButtonClick}
           className="w-16 h-16 sm:w-20 sm:h-20 bg-[#73370c] hover:bg-[#8b4513] rounded-xl shadow-lg transition-colors flex flex-col items-center justify-center gap-1"
         >

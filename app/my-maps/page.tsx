@@ -4,8 +4,9 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from "next-auth/react";
 import { motion } from 'framer-motion';
-import { Loader2, MapPin, Calendar, Trash2, Edit, Eye, Plus, ChevronRight, User } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import Image from 'next/image';
+import { Search, MapPin, Calendar, Trash2, Edit, Eye, Plus, User, Loader2, Map as MapIcon } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 import { useToast } from "@/hooks/use-toast";
 import { useLoading } from '@/contexts/loading-context';
 import { getMapsByUserId, deleteMap, type MyMapListItem } from '@/app/_actions/maps';
@@ -17,7 +18,9 @@ export default function MyMapsPage() {
   const { showLoading, hideLoading } = useLoading();
   
   const [myMaps, setMyMaps] = useState<MyMapListItem[]>([]);
+  const [filteredMaps, setFilteredMaps] = useState<MyMapListItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
   
   // ログインチェック
   useEffect(() => {
@@ -33,6 +36,27 @@ export default function MyMapsPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session]);
+
+  // 検索フィルター
+  useEffect(() => {
+    if (searchQuery.trim() === '') {
+      setFilteredMaps(myMaps);
+    } else {
+      const query = searchQuery.toLowerCase();
+      const filtered = myMaps.filter(map => {
+        // タイトルで検索
+        const matchesTitle = map.title.toLowerCase().includes(query);
+        
+        // ハッシュタグで検索
+        const matchesHashtag = map.hashtags?.some(tag => 
+          tag.toLowerCase().includes(query)
+        ) || false;
+        
+        return matchesTitle || matchesHashtag;
+      });
+      setFilteredMaps(filtered);
+    }
+  }, [searchQuery, myMaps]);
   
   const fetchMyMaps = async () => {
     if (!session?.user?.id) return;
@@ -48,6 +72,7 @@ export default function MyMapsPage() {
       }
       
       setMyMaps(maps);
+      setFilteredMaps(maps);
     } catch (error: any) {
       console.error("マイマップ取得エラー:", error);
       toast({
@@ -61,7 +86,8 @@ export default function MyMapsPage() {
   };
   
   // マップを削除（物理削除 + 画像削除）
-  const handleDelete = async (mapId: string, mapTitle: string) => {
+  const handleDelete = async (e: React.MouseEvent, mapId: string, mapTitle: string) => {
+    e.stopPropagation(); // カード全体のクリックを防止
     if (!session?.user?.id) return;
     
     if (!confirm(`「${mapTitle}」を削除しますか？\nこの操作は取り消せません。`)) {
@@ -103,13 +129,19 @@ export default function MyMapsPage() {
   };
   
   // マップを編集
-  const handleEdit = (mapId: string) => {
+  const handleEdit = (e: React.MouseEvent, mapId: string) => {
+    e.stopPropagation(); // カード全体のクリックを防止
     router.push(`/my-maps/edit/${mapId}`);
   };
   
   // 新規作成
   const handleCreate = () => {
     router.push('/create-map');
+  };
+
+  // マイページへ
+  const handleMyPage = () => {
+    router.push('/profile');
   };
   
   if (status === "loading" || loading) {
@@ -123,157 +155,170 @@ export default function MyMapsPage() {
   if (!session) return null;
   
   return (
-    <div className="container mx-auto max-w-5xl px-4 py-4 pb-24">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
-        
-        {/* マップ一覧 */}
-        {myMaps.length === 0 ? (
+    <div className="min-h-screen bg-background pb-24">
+      {/* 固定検索バー */}
+      <div className="sticky top-0 z-40 bg-background border-b border-gray-200 shadow-sm">
+        <div className="px-3 py-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <Input
+              type="text"
+              placeholder="マップ名・タグで検索..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 pr-4 py-3 bg-white border-gray-200 text-gray-800 placeholder-gray-400 rounded-lg focus:border-[#73370c] focus:ring-1 focus:ring-[#73370c]"
+            />
+          </div>
+        </div>
+
+        {/* 件数表示 */}
+        <div className="px-4 pb-3">
+          <p className="text-sm text-gray-500">
+            {filteredMaps.length}件のマイマップ
+          </p>
+        </div>
+      </div>
+
+      {/* マップ一覧 */}
+      <div className="px-4 space-y-4 pb-4">
+        {filteredMaps.length === 0 ? (
           <div className="text-center py-16">
             <div className="inline-flex items-center justify-center w-20 h-20 bg-gray-100 rounded-full mb-4">
               <MapPin className="h-10 w-10 text-gray-400" />
             </div>
-            <h3 className="text-xl font-semibold text-gray-700 mb-2">マップがまだありません</h3>
-            <p className="text-gray-500 mb-6">最初のマップを作成しましょう！</p>
+            <h3 className="text-xl font-semibold text-gray-700 mb-2">
+              {searchQuery ? '検索結果が見つかりませんでした' : 'マップがまだありません'}
+            </h3>
+            {!searchQuery && (
+              <p className="text-gray-500 mb-6">最初のマップを作成しましょう！</p>
+            )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {myMaps.map((map, index) => (
-              <motion.div
-                key={map.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: index * 0.1 }}
-                className="bg-white rounded-xl border border-gray-200 hover:border-[#73370c] overflow-hidden transition-all hover:shadow-lg"
-              >
-                {/* カバー画像 */}
-                <div 
-                  className="h-40 bg-gradient-to-br from-[#fef3e8] to-[#f5e6d3] relative overflow-hidden cursor-pointer"
-                  onClick={() => handleView(map.id)}
-                >
+          filteredMaps.map((map, index) => (
+            <motion.div
+              key={map.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: index * 0.05 }}
+              className="bg-white rounded-xl border border-gray-200 hover:border-[#73370c] overflow-hidden transition-all hover:shadow-lg cursor-pointer"
+              onClick={() => handleView(map.id)}
+            >
+              <div className="flex gap-3 p-3">
+                {/* サムネイル画像（正方形） */}
+                <div className="w-20 h-20 sm:w-24 sm:h-24 flex-shrink-0 bg-gradient-to-br from-[#fef3e8] to-[#f5e6d3] rounded overflow-hidden relative">
                   {map.cover_image_url ? (
-                    <img
+                    <Image
                       src={map.cover_image_url}
                       alt={map.title}
-                      className="w-full h-full object-cover"
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 640px) 80px, 96px"
                     />
                   ) : (
                     <div className="flex items-center justify-center h-full">
-                      <MapPin className="h-12 w-12 text-[#73370c]/30" />
+                      <MapPin className="h-8 w-8 text-[#73370c]/30" />
                     </div>
                   )}
-                  <div className="absolute top-2 left-2 bg-white/90 backdrop-blur-sm px-2.5 py-1 rounded-full text-xs font-medium text-[#73370c]">
-                    {map.total_locations || 0}箇所
-                  </div>
                 </div>
-                
-                {/* コンテンツ */}
-                <div className="p-4">
-                  <h3 
-                    className="text-lg font-bold text-gray-800 mb-2 line-clamp-2 cursor-pointer hover:text-[#73370c] transition-colors"
-                    onClick={() => handleView(map.id)}
-                  >
-                    {map.title}
-                  </h3>
-                  
-                  {/* ハッシュタグ */}
-                  {map.hashtags && map.hashtags.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 mb-3">
-                      {map.hashtags.slice(0, 3).map((tag, i) => (
-                        <span key={i} className="text-xs bg-[#fef3e8] text-[#73370c] px-2 py-0.5 rounded-full">
-                          #{tag}
-                        </span>
-                      ))}
-                      {map.hashtags.length > 3 && (
-                        <span className="text-xs text-gray-500 px-1.5 py-0.5">
-                          +{map.hashtags.length - 3}
-                        </span>
-                      )}
-                    </div>
-                  )}
-                  
-                  {/* メタ情報 */}
-                  <div className="flex items-center text-xs text-gray-500 mb-3">
-                    <Calendar className="h-3.5 w-3.5 mr-1" />
-                    {new Date(map.created_at).toLocaleDateString('ja-JP', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                    })}
-                  </div>
-                  
-                  {/* アクションボタン */}
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleView(map.id)}
-                      className="flex-1 h-9 text-sm rounded-lg"
-                    >
-                      <Eye className="h-4 w-4 mr-1" />
-                      見る
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleEdit(map.id)}
-                      className="flex-1 h-9 text-sm rounded-lg"
-                    >
-                      <Edit className="h-4 w-4 mr-1" />
-                      編集
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDelete(map.id, map.title)}
-                      className="h-9 px-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        )}
-      </motion.div>
 
-      {/* フローティングアクションボタン（左下配置） */}
-      <div className="fixed bottom-6 left-6 z-50 flex flex-col gap-3">
-        {/* マイページアイコン */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
+                {/* コンテンツ */}
+                <div className="flex-1 min-w-0 flex flex-col justify-between">
+                  <div>
+                    <h3 className="text-base sm:text-lg font-bold text-gray-800 mb-1.5 line-clamp-2 hover:text-[#73370c] transition-colors">
+                      {map.title}
+                    </h3>
+                    
+                    {/* スポット数 */}
+                    <div className="flex items-center gap-1.5 mb-1.5">
+                      <MapPin className="h-4 w-4 text-[#73370c] flex-shrink-0" />
+                      <span className="text-sm text-gray-600">
+                        {map.total_locations || 0}箇所
+                      </span>
+                    </div>
+
+                    {/* 作成日 */}
+                    <div className="flex items-center gap-1 mb-2">
+                      <Calendar className="h-3.5 w-3.5 text-gray-500 flex-shrink-0" />
+                      <span className="text-xs text-gray-500">
+                        {new Date(map.created_at).toLocaleDateString('ja-JP', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                        })}
+                      </span>
+                    </div>
+
+                    {/* ハッシュタグ */}
+                    {map.hashtags && map.hashtags.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 mt-1">
+                        {map.hashtags.slice(0, 3).map((tag, i) => (
+                          <span
+                            key={i}
+                            className="text-xs bg-[#fef3e8] text-[#73370c] px-2 py-0.5 rounded-full"
+                          >
+                            #{tag}
+                          </span>
+                        ))}
+                        {map.hashtags.length > 3 && (
+                          <span className="text-xs text-gray-500 px-1.5 py-0.5">
+                            +{map.hashtags.length - 3}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* アクションボタン（右側に縦並び） */}
+                <div className="flex flex-col gap-2 justify-center">
+                  <motion.button
+                    whileTap={{ scale: 0.95 }}
+                    onClick={(e) => handleEdit(e, map.id)}
+                    className="w-10 h-10 flex items-center justify-center bg-gray-100 hover:bg-[#fef3e8] text-gray-600 hover:text-[#73370c] rounded-lg transition-colors"
+                    title="編集"
+                  >
+                    <Edit className="h-4 w-4" />
+                  </motion.button>
+                  <motion.button
+                    whileTap={{ scale: 0.95 }}
+                    onClick={(e) => handleDelete(e, map.id, map.title)}
+                    className="w-10 h-10 flex items-center justify-center bg-gray-100 hover:bg-red-50 text-gray-600 hover:text-red-600 rounded-lg transition-colors"
+                    title="削除"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </motion.button>
+                </div>
+              </div>
+            </motion.div>
+          ))
+        )}
+      </div>
+
+      {/* 右下のFABボタン */}
+      <div className="fixed bottom-6 right-4 sm:bottom-8 sm:right-8 z-50 flex flex-col gap-3">
+        {/* マイページボタン */}
+        <motion.button
+          initial={{ opacity: 0, scale: 0 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.3, delay: 0.1 }}
+          onClick={handleMyPage}
+          className="w-16 h-16 sm:w-20 sm:h-20 bg-[#73370c] hover:bg-[#8b4513] rounded-xl shadow-lg transition-colors flex flex-col items-center justify-center gap-1"
         >
-          <Button
-            onClick={() => router.push('/profile')}
-            size="icon"
-            className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-2xl bg-[#73370c] hover:bg-[#8b4513] flex flex-col items-center justify-center gap-1"
-          >
-            <User className="h-6 w-6 sm:h-7 sm:w-7 text-white" />
-            <span className="text-xs text-white font-medium">マイページ</span>
-          </Button>
-        </motion.div>
+          <User className="h-6 w-6 sm:h-7 sm:w-7 text-white" />
+          <span className="text-xs text-white font-medium">マイページ</span>
+        </motion.button>
 
-        {/* プラスアイコン */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
+        {/* 新規作成ボタン */}
+        <motion.button
+          initial={{ opacity: 0, scale: 0 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.3, delay: 0.2 }}
+          onClick={handleCreate}
+          className="w-16 h-16 sm:w-20 sm:h-20 bg-[#73370c] hover:bg-[#8b4513] rounded-xl shadow-lg transition-colors flex flex-col items-center justify-center gap-1"
         >
-          <Button
-            onClick={handleCreate}
-            size="icon"
-            className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-2xl bg-[#73370c] hover:bg-[#8b4513] flex flex-col items-center justify-center gap-1"
-          >
-            <Plus className="h-6 w-6 sm:h-7 sm:w-7 text-white" />
-            <span className="text-xs text-white font-medium">作成</span>
-          </Button>
-        </motion.div>
+          <Plus className="h-6 w-6 sm:h-7 sm:w-7 text-white" />
+          <span className="text-xs text-white font-medium">作成</span>
+        </motion.button>
       </div>
     </div>
   );
