@@ -1410,7 +1410,7 @@ export function MapView() {
                       )}
                     </div>
                   </div>
-                  <Button onClick={() => router.push(`/map?title_id=${selectedMapLocation.map_id}`)} className="w-full bg-[#73370c] hover:bg-[#5c2a0a] text-white shadow-lg">詳細を見る</Button>
+                  <Button onClick={() => router.push(`/map/spot/${selectedMapLocation.id}?from=map&title_id=${selectedMapLocation.map_id}&order=${selectedMapLocation.order}`)} className="w-full bg-[#73370c] hover:bg-[#5c2a0a] text-white shadow-lg">詳細を見る</Button>
                 </div>
               </div>
             </div>
