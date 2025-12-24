@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, MapPin, Compass, BookOpen, ChevronDown, ChevronUp, RefreshCw, ArrowUpFromLine, Trash2, Loader2, ExternalLink } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, MapPin, Compass, BookOpen, ChevronDown, ChevronUp, RefreshCw, ArrowUpFromLine, Trash2, Loader2, ExternalLink, ScrollText } from 'lucide-react';
 
 // 🎨 LPカラーパレット
 const COLORS = {
@@ -810,35 +810,28 @@ export default function CalendarPage() {
       ) : (
         <>
           {/* ヘッダー - コンパクトなデザイン */}
-          <div className="sticky top-0 z-10 border-b" style={{ backgroundColor: COLORS.secondary, borderColor: COLORS.border }}>
-            <div className="px-4 py-1">
-              <div className="max-w-4xl mx-auto px-4 flex items-center justify-center">
-                <h1 className="text-2xl font-bold text-white">イベント一覧</h1>
+          <header className="sticky top-0 z-50 border-b-4 border-double shadow-lg" style={{ backgroundColor: COLORS.secondary, borderColor: COLORS.primary }}>
+            <div className="max-w-4xl mx-auto px-4 py-3">
+              <div className="flex items-center justify-center gap-3 mb-2">
+                <ScrollText className="h-6 w-6 text-[#ffecd2]" />
+                <h1 className="text-2xl font-black text-[#ffecd2] tracking-widest" style={{ fontFamily: "'Noto Serif JP', serif" }}>
+                  旅の予定表
+                </h1>
               </div>
 
-              {/* 月の切り替え */}
-              <div className="flex items-center justify-center gap-4 mt-1">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={handlePreviousMonth}
-                  className="text-white hover:bg-white/20 h-8 w-8"
-                >
-                  <ChevronLeft className="h-5 w-5" />
-                </Button>
-                
-                <h2 className="text-lg font-bold text-white min-w-[140px] text-center">
-                  {format(currentDate, 'yyyy年 M月', { locale: ja })}
-                </h2>
-                
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={handleNextMonth}
-                  className="text-white hover:bg-white/20 h-8 w-8"
-                >
-                  <ChevronRight className="h-5 w-5" />
-                </Button>
+              {/* 月切り替えコマンド */}
+              <div className="flex items-center justify-center gap-6">
+                <button onClick={() => setCurrentDate(addDays(currentDate, -30))} className="p-1 bg-[#3d2914] border border-[#ffecd2]/30 rounded hover:bg-[#8b6914] text-white">
+                  <ChevronLeft className="h-6 w-6" />
+                </button>
+                <div className="bg-[#fdf5e6] px-6 py-1 border-2 border-[#8b6914] shadow-[4px_4px_0px_0px_rgba(0,0,0,0.2)]">
+                  <span className="text-lg font-black text-[#3d2914]">
+                    {format(currentDate, 'yyyy年 M月', { locale: ja })}
+                  </span>
+                </div>
+                <button onClick={() => setCurrentDate(addDays(currentDate, 30))} className="p-1 bg-[#3d2914] border border-[#ffecd2]/30 rounded hover:bg-[#8b6914] text-white">
+                  <ChevronRight className="h-6 w-6" />
+                </button>
               </div>
 
               {/* フィルターボタン */}
@@ -882,7 +875,7 @@ export default function CalendarPage() {
                 </Select>
               </div>
             </div>
-          </div>
+          </header>
 
           {/* コンテンツエリア */}
           <div className="container mx-auto px-4 py-6 max-w-4xl pb-24">
@@ -1128,7 +1121,7 @@ export default function CalendarPage() {
               style={{ backgroundColor: COLORS.primaryDark }}
             >
               <ArrowUpFromLine className="h-6 w-6 sm:h-7 sm:w-7" style={{ color: COLORS.cream }} />
-              <span className="text-xs font-medium" style={{ color: COLORS.cream }}>先頭</span>
+              <span className="text-xs font-medium" style={{ color: COLORS.cream }}>TOP</span>
             </Button>
           </motion.div>
 
