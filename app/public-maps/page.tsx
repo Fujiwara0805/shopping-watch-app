@@ -279,7 +279,7 @@ export default function PublicMapsPage() {
           style={{ backgroundColor: COLORS.secondary }}
         >
           <User className="h-6 w-6 sm:h-7 sm:w-7" style={{ color: COLORS.cream }} />
-          <span className="text-xs font-medium" style={{ color: COLORS.cream }}>マイページ</span>
+          <span className="text-xs font-medium" style={{ color: COLORS.cream }}>MyPage</span>
         </motion.button>
 
         {/* 作成ボタン（羽ペンアイコン） */}

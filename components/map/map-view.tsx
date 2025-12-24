@@ -1035,7 +1035,7 @@ export function MapView() {
                     style={{ backgroundColor: COLORS.secondary }}
                   >
                     <Library className="h-6 w-6 sm:h-7 sm:w-7" style={{ color: COLORS.cream }} />
-                    <span className="text-[10px] font-bold" style={{ color: COLORS.cream }}>Maps</span>
+                    <span className="text-[10px] font-bold" style={{ color: COLORS.cream }}>ATLAS</span>
                   </Button>
                 </motion.div>
                 {/* Mapボタン（Map一覧の下）- 羅針盤/Compassアイコン */}
@@ -1267,7 +1267,7 @@ export function MapView() {
               <span className="text-[10px] font-bold" style={{ color: COLORS.cream }}>旅の予定</span>
             </Button>
           </motion.div>
-          {/* Maps (旧Map一覧) */}
+          {/* ATLAS (旧Map一覧) */}
           <motion.div 
             initial={{ opacity: 0, y: 20 }} 
             animate={{ opacity: 1, y: 0 }} 
@@ -1283,7 +1283,7 @@ export function MapView() {
               style={{ backgroundColor: COLORS.secondary }}
             >
               <Library className="h-6 w-6 sm:h-7 sm:w-7" style={{ color: COLORS.cream }} />
-              <span className="text-[10px] font-bold" style={{ color: COLORS.cream }}>Maps
+              <span className="text-[10px] font-bold" style={{ color: COLORS.cream }}>ATLAS
               </span>
             </Button>
           </motion.div>

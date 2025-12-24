@@ -167,17 +167,17 @@ const PublicMapsSection = ({ onMapClick }: { onMapClick: (mapId: string) => void
           <div className="flex items-center justify-center gap-4 mb-4">
             <div className="h-px w-12 bg-gradient-to-r from-transparent to-[#8b6914]" />
             <p className="px-5 py-1 text-xs sm:text-sm tracking-[0.25em] font-bold text-[#8b6914] border border-[#8b6914]/30 bg-[#fff8f0]/50 font-sans">
-              MY MAPS
+            ATLAS
             </p>
             <div className="h-px w-12 bg-gradient-to-l from-transparent to-[#8b6914]" />
           </div>
           
           <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold text-[#3d2914] tracking-tight mt-4 font-serif">
-            世界で一つだけのデジタルマップ
+            世界で一つだけの地図
           </h2>
           <p className="text-base sm:text-lg md:text-xl text-[#5c3a21] mt-4 font-semibold font-sans">
-            ユーザーが作成した<br />
-            <span className="ml-1 text-[#3d2914] border-b-2 border-[#8b6914]/50">ここでしか出会えないおすすめの地図</span>
+          ここでしか出会えない<br />
+            <span className="ml-1 text-[#3d2914] border-b-2 border-[#8b6914]/50">数々のスポットを集めた地図帳</span>
           </p>
         </motion.div>
 
@@ -360,7 +360,7 @@ const PublicMapsSection = ({ onMapClick }: { onMapClick: (mapId: string) => void
             onClick={() => router.push('/public-maps')}
             className="inline-flex items-center gap-2 px-8 py-4 text-base font-bold text-[#5c3a21] hover:text-[#3d2914] border-2 border-[#5c3a21] hover:border-[#3d2914] rounded-full transition-all hover:bg-[#ffecd2] group font-sans"
           >
-            他のMy Mapをみる
+            地図帳をひらく
             <ChevronRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
           </motion.button>
         </motion.div>
@@ -669,7 +669,7 @@ const EventLP = ({ onStart, onMapClick }: { onStart: () => void; onMapClick: (ma
                   transition={{ duration: 0.8, delay: 0.2 }}
                   className="text-xl sm:text-2xl md:text-3xl text-[#ffecd2] font-bold tracking-wider drop-shadow-lg font-sans"
                 >
-                  あなただけの<br />My Mapを作成できる
+                  あなただけの<br />地図を作成できる
                 </motion.p>
 
                 <motion.h1
@@ -795,15 +795,15 @@ const EventLP = ({ onStart, onMapClick }: { onStart: () => void; onMapClick: (ma
                 <span className="text-[#5c3a21]">こだわり</span>の機能
               </h2>
               <p className="text-lg sm:text-xl md:text-2xl text-[#5c3a21] font-semibold mt-4 font-sans">
-                「My Map作成」「イベントMap」に<br />徹底的にこだわりました
+                「地図の作成」「イベントMap」に<br />徹底的にこだわりました
               </p>
             </motion.div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
               <FeatureCard
                 label="CREATE"
-                title="あなただけのマップを作成"
-                description="お気に入りのスポットを登録して、世界で一つだけのオリジナルマップを作成できます。"
+                title="あなただけの地図を作成"
+                description="お気に入りのスポットを登録して、世界で一つだけのオリジナルの地図を作成できます。"
                 icon={Feather}
                 index={0}
               />
@@ -817,7 +817,7 @@ const EventLP = ({ onStart, onMapClick }: { onStart: () => void; onMapClick: (ma
               <FeatureCard
                 label="SHARE"
                 title="公開設定機能"
-                description="作成したMy Mapは公開範囲を設定でき、友達や家族だけにシェアすることや不特定多数のユーザーにシェアすることも可能です。"
+                description="作成した地図は公開範囲を設定でき、友達や家族だけにシェアすることや不特定多数のユーザーにシェアすることも可能です。"
                 icon={Send}
                 index={2}
               />

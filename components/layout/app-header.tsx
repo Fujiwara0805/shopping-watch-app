@@ -88,13 +88,13 @@ export function AppHeader() {
       case '/events':
         return 'イベント一覧';
       case '/create-map':
-        return 'My Map 作成';
+        return '地図づくり';
       case '/my-maps':
-        return 'My Map 画面';
+        return '作成した地図';
       case '/public-maps':
-        return 'My Map 一覧';
+        return 'ATLAS';
       case '/profile':
-        return 'マイページ';
+        return 'My Page';
       case '/profile/edit':
         return 'プロフィール編集';
       case '/profile/setup':
