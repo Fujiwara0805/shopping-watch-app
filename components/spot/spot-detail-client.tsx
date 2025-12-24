@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { 
   MapPin, 
@@ -10,34 +10,31 @@ import {
   AlertCircle, 
   X, 
   Navigation,
-  Clock,
   Tag,
   Image as ImageIcon,
   ChevronLeft,
   ChevronRight,
-  FileText,
-  ArrowUpFromLine
+  ArrowUpFromLine,
+  ScrollText,
+  Sword,
+  ChevronDown,
+  ChevronUp,
+  Feather
 } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 
 // 🔥 CloudinaryのURLを高品質化する関数
 const optimizeCloudinaryImageUrl = (url: string): string => {
   if (!url || typeof url !== 'string') return url;
-  
   if (url.includes('res.cloudinary.com') && url.includes('/upload/')) {
-    if (url.includes('q_auto') || url.includes('q_')) {
-      return url;
-    }
-    
+    if (url.includes('q_auto') || url.includes('q_')) return url;
     const uploadIndex = url.indexOf('/upload/');
     if (uploadIndex !== -1) {
       const beforeUpload = url.substring(0, uploadIndex + '/upload/'.length);
       const afterUpload = url.substring(uploadIndex + '/upload/'.length);
-      const qualityParams = 'q_auto:best,f_auto';
-      return `${beforeUpload}${qualityParams}/${afterUpload}`;
+      return `${beforeUpload}q_auto:best,f_auto/${afterUpload}`;
     }
   }
-  
   return url;
 };
 
@@ -74,12 +71,11 @@ export function SpotDetailClient({ spotId }: SpotDetailClientProps) {
   const [expandedImageIndex, setExpandedImageIndex] = useState<{ spotIndex: number; imageIndex: number } | null>(null);
   const [currentImageIndices, setCurrentImageIndices] = useState<{ [key: number]: number }>({});
   const [targetOrder, setTargetOrder] = useState<number | null>(null);
+  const [isTocOpen, setIsTocOpen] = useState(false); // 目次のトグル状態
 
-  // 閉じるボタンの処理
   const handleClose = () => {
     const from = searchParams.get('from');
     const titleId = searchParams.get('title_id');
-    
     if (from === 'map' && titleId) {
       router.push(`/map?title_id=${titleId}`);
     } else {
@@ -89,37 +85,22 @@ export function SpotDetailClient({ spotId }: SpotDetailClientProps) {
 
   useEffect(() => {
     if (!spotId) return;
-
     const fetchMapData = async () => {
       setLoading(true);
       try {
         const [mapId] = spotId.split('_');
-
-        // URLパラメータからorderを取得
         const orderParam = searchParams.get('order');
-        if (orderParam) {
-          setTargetOrder(parseInt(orderParam, 10));
-        }
+        if (orderParam) setTargetOrder(parseInt(orderParam, 10));
 
         const { data: mapDataResult, error: mapError } = await supabase
-          .from('maps')
-          .select('*')
-          .eq('id', mapId)
-          .eq('is_deleted', false)
-          .single();
+          .from('maps').select('*').eq('id', mapId).eq('is_deleted', false).single();
 
         if (mapError || !mapDataResult) {
-          console.error('マップ情報の取得に失敗:', mapError);
           setError('マップ情報の取得に失敗しました。');
           return;
         }
 
         const locations = mapDataResult.locations || [];
-        if (locations.length === 0) {
-          setError('場所が見つかりませんでした。');
-          return;
-        }
-
         setMapData({
           id: mapDataResult.id,
           title: mapDataResult.title,
@@ -129,65 +110,46 @@ export function SpotDetailClient({ spotId }: SpotDetailClientProps) {
           total_locations: locations.length,
         });
 
-        // 各スポットの画像インデックスを初期化
         const initialIndices: { [key: number]: number } = {};
-        locations.forEach((_: SpotLocation, index: number) => {
-          initialIndices[index] = 0;
-        });
+        locations.forEach((_: SpotLocation, index: number) => { initialIndices[index] = 0; });
         setCurrentImageIndices(initialIndices);
-
       } catch (error) {
-        console.error('場所詳細の取得中にエラー:', error);
         setError('予期しないエラーが発生しました。');
       } finally {
         setLoading(false);
       }
     };
-
     fetchMapData();
   }, [spotId, searchParams]);
 
-  // orderパラメータに基づいて該当箇所にスクロール
   useEffect(() => {
     if (mapData && targetOrder !== null && !loading) {
-      // orderに一致する要素を探す
       const targetIndex = mapData.locations.findIndex(loc => loc.order === targetOrder);
       if (targetIndex !== -1) {
-        // 少し遅延してからスクロール（レンダリング完了を待つ）
         setTimeout(() => {
           const element = document.getElementById(`spot-${targetIndex}`);
           if (element) {
             element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            // ハイライト効果を追加
             element.classList.add('highlight-flash');
-            setTimeout(() => {
-              element.classList.remove('highlight-flash');
-            }, 2000);
+            setTimeout(() => { element.classList.remove('highlight-flash'); }, 2000);
           }
         }, 300);
       }
-      setTargetOrder(null); // スクロール後にリセット
+      setTargetOrder(null);
     }
   }, [mapData, targetOrder, loading]);
 
-  // 画像ナビゲーション
   const handleImageNav = (spotIndex: number, direction: 'prev' | 'next', totalImages: number) => {
     setCurrentImageIndices(prev => {
       const current = prev[spotIndex] || 0;
-      let newIndex: number;
-      if (direction === 'next') {
-        newIndex = (current + 1) % totalImages;
-      } else {
-        newIndex = current === 0 ? totalImages - 1 : current - 1;
-      }
+      const newIndex = direction === 'next' ? (current + 1) % totalImages : current === 0 ? totalImages - 1 : current - 1;
       return { ...prev, [spotIndex]: newIndex };
     });
   };
 
-  // Google Mapsで開く
   const openInGoogleMaps = (location: SpotLocation) => {
     if (location?.store_latitude && location?.store_longitude) {
-      const url = `https://www.google.com/maps/search/?api=1&query=${location.store_name},`;
+      const url = `https://www.google.com/maps/search/?api=1&query=${location.store_latitude},${location.store_longitude}`;
       window.open(url, '_blank');
     }
   };
@@ -259,15 +221,13 @@ export function SpotDetailClient({ spotId }: SpotDetailClientProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#f5e6d3]">
       <style jsx>{`
         @keyframes highlight {
-          0%, 100% { box-shadow: 0 0 0 0 rgba(115, 55, 12, 0); }
-          50% { box-shadow: 0 0 20px 5px rgba(115, 55, 12, 0.5); }
+          0%, 100% { box-shadow: 0 0 0 0 rgba(139, 105, 20, 0); }
+          50% { box-shadow: 0 0 25px 8px rgba(139, 105, 20, 0.4); }
         }
-        .highlight-flash {
-          animation: highlight 1s ease-in-out 2;
-        }
+        .highlight-flash { animation: highlight 1s ease-in-out 2; }
       `}</style>
       {/* 固定ヘッダー */}
       <motion.header
@@ -287,324 +247,169 @@ export function SpotDetailClient({ spotId }: SpotDetailClientProps) {
         </div>
       </motion.header>
 
-      {/* メインコンテンツ */}
-      <main className="pt-16 pb-8">
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-          className="max-w-2xl mx-auto px-4"
-        >
+      <main className="pt-20 pb-12">
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-2xl mx-auto px-4">
+          
           {/* タイトルセクション */}
-          <motion.section variants={itemVariants} className="py-6">
-            <div className="text-center">
-              <h2 className="text-2xl md:text-3xl font-bold mb-4 leading-tight" style={{ color: '#73370c' }}>
-                {mapData.title}
-              </h2>
+          <section className="py-6 text-center">
+            <h2 className="text-3xl font-extrabold mb-6 text-[#3d2914] tracking-tight" style={{ fontFamily: "'Noto Serif JP', serif" }}>
+              {mapData.title}
+            </h2>
 
-              {/* 説明文カード */}
-              {mapData.description && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 }}
-                  className="mb-4"
+            {mapData.description && (
+              <div className="mb-6 bg-[#fff8f0] border-2 border-[#d4c4a8] rounded-lg p-5 text-left shadow-inner">
+                <p className="text-[#5c3a21] leading-relaxed whitespace-pre-wrap font-medium">
+                  {mapData.description}
+                </p>
+              </div>
+            )}
+
+            {/* 冒険の書風 目次改修 */}
+            {mapData.locations && mapData.locations.length > 0 && (
+              <div className="mt-8 border-4 border-double border-[#8b6914] bg-[#fdf5e6] shadow-[6px_6px_0px_0px_rgba(61,41,20,0.2)] overflow-hidden">
+                <button 
+                  onClick={() => setIsTocOpen(!isTocOpen)}
+                  className="w-full p-4 flex items-center justify-between bg-[#8b6914] hover:bg-[#73370c] transition-all text-[#ffecd2]"
                 >
-                  <div className="bg-gray-100 border-l-4 border-blue-400 rounded-lg p-4 text-left">
-                    <div className="flex items-start gap-3">
-                      <div className="flex-1">
-                        <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
-                          {mapData.description}
-                        </p>
-                      </div>
-                    </div>
+                  <div className="flex items-center gap-3">
+                    <ScrollText className="h-6 w-6" />
+                    <span className="text-lg font-bold tracking-widest" style={{ fontFamily: "'Noto Serif JP', serif" }}>
+                      CONTENTS
+                    </span>
                   </div>
-                </motion.div>
-              )}
+                  {isTocOpen ? <ChevronUp className="h-6 w-6" /> : <ChevronDown className="h-6 w-6" />}
+                </button>
 
-              {/* ハッシュタグ */}
-              {mapData.hashtags && mapData.hashtags.length > 0 && (
-                <div className="flex flex-wrap justify-center gap-2 mb-4">
-                  {mapData.hashtags.map((tag, index) => (
-                    <motion.span
-                      key={index}
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: 0.4 + index * 0.05 }}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 bg-white text-xs font-medium rounded-full shadow-sm border border-gray-200"
-                      style={{ color: '#73370c' }}
+                <AnimatePresence>
+                  {isTocOpen && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="bg-[url('https://www.transparenttextures.com/patterns/parchment.png')] bg-[#fdf5e6]"
                     >
-                      <Tag className="h-3 w-3" />
-                      {tag}
-                    </motion.span>
-                  ))}
-                </div>
-              )}
-
-              {/* 目次 */}
-              {mapData.locations && mapData.locations.length > 0 && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.5 }}
-                  className="mt-6 bg-white rounded-xl border border-gray-200 p-4 shadow-sm"
-                >
-                  <h3 className="text-base font-bold mb-3 text-gray-800 flex items-center">
-                    <MapPin className="h-4 w-4 mr-2" style={{ color: '#73370c' }} />
-                    目次
-                  </h3>
-                  <div className="space-y-2">
-                    {mapData.locations.map((location, index) => (
-                      <button
-                        key={index}
-                        onClick={() => {
-                          const element = document.getElementById(`spot-${index}`);
-                          if (element) {
-                            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                            // ハイライト効果を追加
-                            element.classList.add('highlight-flash');
-                            setTimeout(() => {
-                              element.classList.remove('highlight-flash');
-                            }, 2000);
-                          }
-                        }}
-                        className="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2 group"
-                      >
-                        <span className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold" style={{ backgroundColor: '#73370c' }}>
-                          {index + 1}
-                        </span>
-                        <span className="text-sm font-medium text-gray-700 group-hover:text-[#73370c] transition-colors">
-                          {location.store_name}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                </motion.div>
-              )}
-            </div>
-          </motion.section>
+                      <div className="p-4 space-y-1">
+                        {mapData.locations.map((location, index) => (
+                          <button
+                            key={index}
+                            onClick={() => {
+                              const element = document.getElementById(`spot-${index}`);
+                              if (element) {
+                                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                element.classList.add('highlight-flash');
+                                setTimeout(() => { element.classList.remove('highlight-flash'); }, 2000);
+                              }
+                            }}
+                            className="w-full flex items-center justify-start gap-4 px-4 py-3 border-b border-[#8b6914]/10 last:border-0 hover:bg-[#8b6914]/5 transition-all group"
+                          >
+                            <Sword className="h-4 w-4 text-[#8b6914] opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all duration-300" />
+                            <span className="text-left font-bold text-[#5c3a21] text-base">
+                              {String(index + 1).padStart(2, '0')}. {location.store_name}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            )}
+          </section>
 
           {/* スポットカード一覧 */}
-          <div className="space-y-6">
+          <div className="mt-12 space-y-10">
             {mapData.locations.map((location, index) => (
               <motion.article
-                key={index}
-                id={`spot-${index}`}
-                variants={itemVariants}
-                className="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-200 transition-all duration-300"
+                key={index} id={`spot-${index}`}
+                initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+                className="bg-white rounded-xl shadow-[0_10px_25px_-5px_rgba(61,41,20,0.1)] overflow-hidden border-2 border-[#d4c4a8]"
               >
-                {/* コンテンツセクション */}
-                <div className="p-5">
-                  {/* 場所名（番号付き） */}
-                  <h3 className="text-xl font-bold mb-4 flex items-start gap-2">
-                    <span className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm" style={{ backgroundColor: '#73370c' }}>
+                <div className="p-6">
+                  <h3 className="text-2xl font-bold mb-5 flex items-center gap-3 text-[#3d2914]" style={{ fontFamily: "'Noto Serif JP', serif" }}>
+                    <span className="flex-shrink-0 w-9 h-9 rounded-lg flex items-center justify-center text-[#ffecd2] font-bold text-lg bg-[#8b6914] shadow-md">
                       {index + 1}
                     </span>
-                    <span className="leading-tight pt-1" style={{ color: '#73370c' }}>{location.store_name}</span>
+                    <span className="border-b-2 border-[#8b6914]/20 pb-1 flex-1">{location.store_name}</span>
                   </h3>
 
-                  {/* 画像セクション */}
                   {location.image_urls && location.image_urls.length > 0 && (
-                    <div className="relative aspect-[16/10] bg-gray-100 rounded-lg overflow-hidden mb-4">
-                        <img
-                          src={optimizeCloudinaryImageUrl(location.image_urls[currentImageIndices[index] || 0])}
-                          alt={location.store_name}
-                          className="w-full h-full object-cover cursor-pointer transition-transform hover:scale-[1.02]"
-                          onClick={() => setExpandedImageIndex({ spotIndex: index, imageIndex: currentImageIndices[index] || 0 })}
-                        />
-                        
-                        {/* 画像ナビゲーション */}
-                        {location.image_urls.length > 1 && (
-                          <>
-                            <button
-                              onClick={(e) => { e.stopPropagation(); handleImageNav(index, 'prev', location.image_urls.length); }}
-                              className="absolute left-2 top-1/2 -translate-y-1/2 p-1.5 bg-black/40 hover:bg-black/60 rounded-full transition-colors"
-                            >
-                              <ChevronLeft className="h-5 w-5 text-white" />
-                            </button>
-                            <button
-                              onClick={(e) => { e.stopPropagation(); handleImageNav(index, 'next', location.image_urls.length); }}
-                              className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-black/40 hover:bg-black/60 rounded-full transition-colors"
-                            >
-                              <ChevronRight className="h-5 w-5 text-white" />
-                            </button>
-                            
-                            {/* 画像カウンター */}
-                            <div className="absolute bottom-2 right-2 flex items-center gap-1 px-2 py-1 bg-black/50 rounded-full text-white text-xs">
-                              <ImageIcon className="h-3 w-3" />
-                              {(currentImageIndices[index] || 0) + 1}/{location.image_urls.length}
-                            </div>
-                          </>
-                        )}
+                    <div className="relative aspect-[16/10] bg-gray-100 rounded-lg overflow-hidden mb-6 shadow-inner border border-[#d4c4a8]">
+                      <img
+                        src={optimizeCloudinaryImageUrl(location.image_urls[currentImageIndices[index] || 0])}
+                        alt={location.store_name}
+                        className="w-full h-full object-cover cursor-pointer hover:scale-[1.03] transition-transform duration-500"
+                        onClick={() => setExpandedImageIndex({ spotIndex: index, imageIndex: currentImageIndices[index] || 0 })}
+                      />
+                      {location.image_urls.length > 1 && (
+                        <>
+                          <button onClick={(e) => { e.stopPropagation(); handleImageNav(index, 'prev', location.image_urls.length); }}
+                            className="absolute left-2 top-1/2 -translate-y-1/2 p-2 bg-black/50 hover:bg-[#8b6914] rounded-full text-white transition-all shadow-lg"><ChevronLeft /></button>
+                          <button onClick={(e) => { e.stopPropagation(); handleImageNav(index, 'next', location.image_urls.length); }}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-black/50 hover:bg-[#8b6914] rounded-full text-white transition-all shadow-lg"><ChevronRight /></button>
+                          <div className="absolute bottom-3 right-3 flex items-center gap-1.5 px-3 py-1.5 bg-black/60 backdrop-blur-md rounded-full text-[#ffecd2] text-xs font-bold border border-white/20">
+                            <ImageIcon className="h-3.5 w-3.5" /> {(currentImageIndices[index] || 0) + 1} / {location.image_urls.length}
+                          </div>
+                        </>
+                      )}
                     </div>
                   )}
 
-                  {/* 説明文 */}
-                  <div className="bg-gray-100 border-l-4 border-teal-400 rounded-lg p-4 mb-4">
-                    <p className="text-gray-700 text-base leading-relaxed whitespace-pre-wrap">
+                  <div className="bg-[#fff8f0] border-l-8 border-[#8b6914] rounded-r-lg p-5 mb-6 shadow-sm">
+                    <p className="text-[#5c3a21] text-base leading-relaxed whitespace-pre-wrap font-medium">
                       {location.content}
                     </p>
                   </div>
 
-                  {/* URL表示 */}
                   {location.url && (
-                    <div className="mb-4">
-                      <a
-                        href={location.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-3 p-3 bg-blue-50 hover:bg-blue-100 rounded-lg border border-blue-200 transition-colors group"
+                    <div className="mb-6">
+                      <a href={location.url} target="_blank" rel="noopener noreferrer"
+                        className="flex items-center gap-3 p-4 bg-[#fdf5e6] hover:bg-[#ffecd2] rounded-xl border-2 border-[#d4c4a8] transition-all group shadow-sm"
                       >
-                        <img
-                          src={
-                            location.url.toLowerCase().includes('instagram.com') || location.url.toLowerCase().includes('instagr.am')
-                              ? 'https://res.cloudinary.com/dz9trbwma/image/upload/v1759308496/icons8-%E3%82%A4%E3%83%B3%E3%82%B9%E3%82%BF%E3%82%AF%E3%82%99%E3%83%A9%E3%83%A0-100_idedfz.png'
-                              : 'https://res.cloudinary.com/dz9trbwma/image/upload/v1759366399/icons8-%E3%82%A6%E3%82%A7%E3%83%95%E3%82%99-100_a6uwwq.png'
-                          }
-                          alt="link icon"
-                          className="w-8 h-8 flex-shrink-0"
-                        />
+                        <img src={location.url.includes('instagram.com') ? 'https://res.cloudinary.com/dz9trbwma/image/upload/v1759308496/icons8-%E3%82%A4%E3%83%B3%E3%82%B9%E3%82%BF%E3%82%AF%E3%82%99%E3%83%A9%E3%83%A0-100_idedfz.png' : 'https://res.cloudinary.com/dz9trbwma/image/upload/v1759366399/icons8-%E3%82%A6%E3%82%A7%E3%83%95%E3%82%99-100_a6uwwq.png'}
+                          alt="link" className="w-9 h-9 flex-shrink-0" />
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-blue-700 group-hover:text-blue-900 group-hover:underline truncate">
-                            {location.url.toLowerCase().includes('instagram.com') || location.url.toLowerCase().includes('instagr.am') 
-                              ? 'Instagramで見る' 
-                              : 'Webサイトを開く'}
+                          <p className="text-sm font-bold text-[#8b6914] group-hover:underline truncate uppercase tracking-tighter">
+                            {location.url.includes('instagram') ? 'Check Instagram' : 'Official Website'}
                           </p>
                         </div>
-                        <ExternalLink className="h-5 w-5 text-blue-600 flex-shrink-0" />
+                        <ExternalLink className="h-5 w-5 text-[#8b6914]" />
                       </a>
                     </div>
                   )}
 
-                  {/* アクションボタン */}
                   {location.store_latitude && location.store_longitude && (
-                    <div className="flex justify-center">
-                      <Button
-                        onClick={() => openInGoogleMaps(location)}
-                        size="sm"
-                        className="text-white text-sm px-4 py-2 h-auto rounded-lg shadow-sm"
-                        style={{ backgroundColor: '#73370c' }}
-                      >
-                        <Navigation className="mr-1.5 h-4 w-4" />
-                        Googleマップで見る
-                      </Button>
-                    </div>
+                    <Button onClick={() => openInGoogleMaps(location)} className="w-full bg-[#8b6914] hover:bg-[#5c3a21] text-[#ffecd2] font-bold py-6 rounded-xl shadow-lg transition-all active:scale-95">
+                      <Navigation className="mr-2 h-5 w-5" /> Googleマップで道案内
+                    </Button>
                   )}
                 </div>
               </motion.article>
             ))}
           </div>
-
-          {/* フッター */}
-          <motion.div
-            variants={itemVariants}
-            className="mt-8 text-center"
-          >
-            <button
-              onClick={handleClose}
-              className="inline-flex items-center gap-2 px-4 py-2 text-amber-700 hover:text-amber-800 font-medium text-sm transition-colors"
-            >
-              <X className="h-4 w-4" />
-              閉じる
-            </button>
-          </motion.div>
         </motion.div>
       </main>
 
-      {/* 右下の先頭へ戻るボタン */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0 }}
-        animate={{ opacity: 1, scale: 1 }}
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        transition={{ duration: 0.3, delay: 0.6 }}
-        className="fixed bottom-6 right-6 z-40"
-      >
-        <Button
-          onClick={() => {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          }}
-          size="icon"
-          className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg flex flex-col items-center justify-center gap-1"
-          style={{ backgroundColor: '#73370c' }}
-        >
-          <ArrowUpFromLine className="h-6 w-6 sm:h-7 sm:w-7 text-white" />
-          <span className="text-xs font-medium text-white">先頭</span>
-        </Button>
-      </motion.div>
+      {/* アクションボタン */}
+      <div className="fixed bottom-6 right-6 z-40 flex flex-col gap-3">
+        <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+          <Button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} size="icon" className="h-16 w-16 rounded-2xl shadow-2xl bg-[#5c3a21] border-2 border-[#ffecd2] flex flex-col items-center">
+            <ArrowUpFromLine className="h-6 w-6 text-[#ffecd2]" />
+            <span className="text-[10px] font-bold text-[#ffecd2]">TOP</span>
+          </Button>
+        </motion.div>
+      </div>
 
       {/* 画像拡大モーダル */}
-      {expandedImageIndex !== null && mapData.locations[expandedImageIndex.spotIndex]?.image_urls && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4"
-          onClick={() => setExpandedImageIndex(null)}
-        >
-          <button
-            onClick={() => setExpandedImageIndex(null)}
-            className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors"
-          >
-            <X className="h-6 w-6 text-white" />
-          </button>
-          
-          <img
-            src={optimizeCloudinaryImageUrl(
-              mapData.locations[expandedImageIndex.spotIndex].image_urls[expandedImageIndex.imageIndex]
-            )}
-            alt={mapData.locations[expandedImageIndex.spotIndex].store_name}
-            className="max-w-full max-h-full object-contain"
-            onClick={(e) => e.stopPropagation()}
-          />
-          
-          {/* モーダル内画像ナビゲーション */}
-          {mapData.locations[expandedImageIndex.spotIndex].image_urls.length > 1 && (
-            <>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  const totalImages = mapData.locations[expandedImageIndex.spotIndex].image_urls.length;
-                  const newIndex = expandedImageIndex.imageIndex === 0 ? totalImages - 1 : expandedImageIndex.imageIndex - 1;
-                  setExpandedImageIndex({ ...expandedImageIndex, imageIndex: newIndex });
-                }}
-                className="absolute left-4 top-1/2 -translate-y-1/2 p-3 bg-white/10 hover:bg-white/20 rounded-full transition-colors"
-              >
-                <ChevronLeft className="h-8 w-8 text-white" />
-              </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  const totalImages = mapData.locations[expandedImageIndex.spotIndex].image_urls.length;
-                  const newIndex = (expandedImageIndex.imageIndex + 1) % totalImages;
-                  setExpandedImageIndex({ ...expandedImageIndex, imageIndex: newIndex });
-                }}
-                className="absolute right-4 top-1/2 -translate-y-1/2 p-3 bg-white/10 hover:bg-white/20 rounded-full transition-colors"
-              >
-                <ChevronRight className="h-8 w-8 text-white" />
-              </button>
-              
-              {/* 画像インジケーター */}
-              <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2">
-                {mapData.locations[expandedImageIndex.spotIndex].image_urls.map((_, idx) => (
-                  <button
-                    key={idx}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setExpandedImageIndex({ ...expandedImageIndex, imageIndex: idx });
-                    }}
-                    className={`w-2 h-2 rounded-full transition-all ${
-                      idx === expandedImageIndex.imageIndex
-                        ? 'bg-white w-6'
-                        : 'bg-white/40 hover:bg-white/60'
-                    }`}
-                  />
-                ))}
-              </div>
-            </>
-          )}
-        </motion.div>
-      )}
+      <AnimatePresence>
+        {expandedImageIndex !== null && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-4" onClick={() => setExpandedImageIndex(null)}>
+            <button className="absolute top-6 right-6 p-2 bg-white/10 rounded-full"><X className="text-white h-8 w-8" /></button>
+            <img src={optimizeCloudinaryImageUrl(mapData.locations[expandedImageIndex.spotIndex].image_urls[expandedImageIndex.imageIndex])}
+              className="max-w-full max-h-full object-contain rounded shadow-2xl" onClick={(e) => e.stopPropagation()} />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
