@@ -4,7 +4,7 @@ import { useRef, useEffect, useState, useCallback } from 'react';
 import { useGeolocation } from '@/lib/hooks/use-geolocation';
 import { useGoogleMapsApi } from '@/components/providers/GoogleMapsApiProvider';
 import { Button } from '@/components/ui/button';
-import { MapPin, AlertTriangle, RefreshCw, Calendar, BookOpen, User, MapPinIcon, X, Loader2, Home, Share2, Link2, Check, Compass, Feather } from 'lucide-react';
+import { MapPin, AlertTriangle, RefreshCw, Calendar, BookOpen, User, MapPinIcon, X, Loader2, Home, Share2, Link2, Check, Compass, Feather, Sword } from 'lucide-react';
 
 // 🎨 LPカラーパレット
 const COLORS = {
@@ -1380,39 +1380,93 @@ export function MapView() {
       {/* マイマップロケーション詳細カード */}
       <AnimatePresence>
         {selectedMapLocation && viewMode === 'myMaps' && (
-          <motion.div initial={{ y: 100, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 100, opacity: 0 }} transition={{ duration: 0.3, ease: "easeOut" }} className="absolute bottom-20 left-4 right-4 z-40">
+          <motion.div 
+            initial={{ y: 100, opacity: 0 }} 
+            animate={{ y: 0, opacity: 1 }} 
+            exit={{ y: 100, opacity: 0 }} 
+            transition={{ duration: 0.4, type: "spring", damping: 20 }} 
+            className="absolute bottom-4 left-4 right-4 z-40"
+          >
             <div className="relative">
-              <div className="bg-white rounded-2xl shadow-2xl overflow-hidden border-2 border-gray-200">
-                <div className="relative"><div className="absolute top-2 right-2 z-10"><Button onClick={() => { setSelectedMapLocation(null); }} size="icon" className="h-8 w-8 rounded-full bg-white/90 hover:bg-white shadow-lg"><X className="h-4 w-4 text-gray-700" /></Button></div></div>
+              {/* 冒険の書・システムウィンドウデザイン */}
+              <div className="bg-[#fdf5e6] rounded-none border-4 border-double border-[#8b6914] shadow-[8px_8px_0px_0px_rgba(61,41,20,0.3)] overflow-hidden">
+                
+                {/* 閉じるボタン（右上の×） */}
+                <div className="absolute top-2 right-2 z-10">
+                  <Button 
+                    onClick={() => setSelectedMapLocation(null)} 
+                    size="icon" 
+                    className="h-8 w-8 rounded-none bg-[#8b6914] hover:bg-[#3d2914] border-2 border-[#ffecd2]"
+                  >
+                    <X className="h-4 w-4 text-[#ffecd2]" />
+                  </Button>
+                </div>
+
                 <div className="p-4">
                   <div className="flex gap-3 mb-3">
-                    {selectedMapLocation.image_urls && selectedMapLocation.image_urls.length > 0 ? <div className="flex-shrink-0 relative w-24 h-24 overflow-hidden rounded-lg bg-gray-100"><img src={optimizeCloudinaryImageUrl(selectedMapLocation.image_urls[0])} alt={selectedMapLocation.store_name} className="w-full h-full object-cover" loading="eager" /></div> : <div className="flex-shrink-0 w-24 h-24 bg-[#fef3e8] rounded-lg flex items-center justify-center"><MapPin className="h-12 w-12 text-[#73370c] opacity-30" /></div>}
+                    {/* 画像セクション (RPGの顔グラフィック枠風) */}
+                    <div className="flex-shrink-0 relative w-24 h-24 border-2 border-[#8b6914] bg-[#3d2914]/10 overflow-hidden shadow-inner">
+                      {selectedMapLocation.image_urls && selectedMapLocation.image_urls.length > 0 ? (
+                        <img 
+                          src={optimizeCloudinaryImageUrl(selectedMapLocation.image_urls[0])} 
+                          alt={selectedMapLocation.store_name} 
+                          className="w-full h-full object-cover" 
+                          loading="eager" 
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center opacity-30">
+                          <MapPin className="h-12 w-12 text-[#8b6914]" />
+                        </div>
+                      )}
+                      {/* 画像内の装飾 */}
+                      <div className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-[#ffecd2]/50" />
+                      <div className="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 border-[#ffecd2]/50" />
+                    </div>
+
+                    {/* 2. MyMap名 & 3. スポット名 */}
                     <div className="flex-1 min-w-0">
-                      <div className="text-xs text-gray-500 mb-1">{selectedMapLocation.map_title}</div>
-                      <h3 className="text-base font-bold line-clamp-2 mb-2 text-[#73370c]">{selectedMapLocation.store_name}</h3>
-                      {selectedMapLocation.url ? (
-                        <a
-                          href={normalizeUrl(selectedMapLocation.url) || '#'}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 hover:underline"
-                          onClick={(e) => e.stopPropagation()}
-                        >
+                      <div className="flex items-center gap-2 mb-1">
+                        <BookOpen className="h-3.5 w-3.5 text-[#8b6914] flex-shrink-0" />
+                        <span className="text-xs font-bold text-[#8b6914] tracking-tighter uppercase font-serif line-clamp-1" style={{ fontFamily: "'Noto Serif JP', serif" }}>
+                          {selectedMapLocation.map_title}
+                        </span>
+                      </div>
+                      <h3 className="text-base font-black text-[#3d2914] leading-tight tracking-tight line-clamp-2 mb-2 font-serif" style={{ fontFamily: "'Noto Serif JP', serif" }}>
+                        {selectedMapLocation.store_name}
+                      </h3>
+                      
+                      {/* URL情報の簡易表示 */}
+                      {selectedMapLocation.url && (
+                        <div className="flex items-center gap-1.5">
                           <img
                             src={getSocialIconUrl(normalizeUrl(selectedMapLocation.url) || '')}
-                            alt="link icon"
-                            className="w-5 h-5"
+                            alt="link"
+                            className="w-4 h-4 grayscale opacity-70"
                           />
-                          <span className="line-clamp-1">リンクを開く</span>
-                        </a>
-                      ) : (
-                        <p className="text-sm text-gray-400">URLなし</p>
+                          <span className="text-[10px] font-bold text-[#5c3a21] opacity-60 font-sans">LINK DETECTED</span>
+                        </div>
                       )}
                     </div>
                   </div>
-                  <Button onClick={() => router.push(`/map/spot/${selectedMapLocation.id}`)} className="w-full bg-[#73370c] hover:bg-[#5c2a0a] text-white shadow-lg">詳細を見る</Button>
+
+                  {/* 決定ボタン (RPGのコマンド風) */}
+                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                    <Button 
+                      onClick={() => router.push(`/map/spot/${selectedMapLocation.id}`)} 
+                      className="w-full bg-[#8b6914] hover:bg-[#3d2914] text-[#ffecd2] font-black text-base py-3 rounded-none border-t-2 border-l-2 border-[#ffecd2]/30 border-b-4 border-r-4 border-[#3d2914] shadow-md transition-all flex items-center justify-center gap-3 group"
+                    >
+                      <Sword className="h-4 w-4 group-hover:rotate-12 transition-transform" />
+                      詳細を見る
+                    </Button>
+                  </motion.div>
                 </div>
               </div>
+
+              {/* 装飾: ウィンドウの角のドット風チップ */}
+              <div className="absolute -top-1 -left-1 w-2 h-2 bg-[#8b6914]" />
+              <div className="absolute -top-1 -right-1 w-2 h-2 bg-[#8b6914]" />
+              <div className="absolute -bottom-1 -left-1 w-2 h-2 bg-[#8b6914]" />
+              <div className="absolute -bottom-1 -right-1 w-2 h-2 bg-[#8b6914]" />
             </div>
           </motion.div>
         )}
