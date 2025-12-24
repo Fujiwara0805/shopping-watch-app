@@ -4,7 +4,7 @@ import { useRef, useEffect, useState, useCallback } from 'react';
 import { useGeolocation } from '@/lib/hooks/use-geolocation';
 import { useGoogleMapsApi } from '@/components/providers/GoogleMapsApiProvider';
 import { Button } from '@/components/ui/button';
-import { MapPin, AlertTriangle, RefreshCw, Calendar, BookOpen, User, MapPinIcon, X, Loader2, Home, Share2, Link2, Check, Compass, Feather, Sword } from 'lucide-react';
+import { MapPin, AlertTriangle, RefreshCw, Calendar, BookOpen, User, MapPinIcon, X, Loader2, Home, Share2, Link2, Check, Compass, Feather, Sword, Search, ScrollText, Library } from 'lucide-react';
 
 // 🎨 LPカラーパレット
 const COLORS = {
@@ -1019,7 +1019,7 @@ export function MapView() {
             {/* 🔥 公開設定ONの場合のみMap一覧アイコンとMapボタンを表示 */}
             {isMapPublic && (
               <>
-                {/* Map一覧アイコン（最上）- 古書/BookOpenアイコン */}
+                {/* Maps (旧Map一覧) */}
                 <motion.div 
                   initial={{ opacity: 0, y: 20 }} 
                   animate={{ opacity: 1, y: 0 }} 
@@ -1031,11 +1031,11 @@ export function MapView() {
                   <Button 
                     onClick={() => router.push('/public-maps')} 
                     size="icon" 
-                    className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg flex flex-col items-center justify-center gap-1"
+                    className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg flex flex-col items-center justify-center gap-1 border-2 border-white"
                     style={{ backgroundColor: COLORS.secondary }}
                   >
-                    <BookOpen className="h-6 w-6 sm:h-7 sm:w-7" style={{ color: COLORS.cream }} />
-                    <span className="text-xs font-medium" style={{ color: COLORS.cream }}>Map一覧</span>
+                    <Library className="h-6 w-6 sm:h-7 sm:w-7" style={{ color: COLORS.cream }} />
+                    <span className="text-[10px] font-bold" style={{ color: COLORS.cream }}>Maps</span>
                   </Button>
                 </motion.div>
                 {/* Mapボタン（Map一覧の下）- 羅針盤/Compassアイコン */}
@@ -1076,20 +1076,19 @@ export function MapView() {
             <motion.div 
               initial={{ opacity: 0, y: 20 }} 
               animate={{ opacity: 1, y: 0 }} 
-              whileHover={{ scale: 1.05, boxShadow: "0 10px 30px rgba(61, 41, 20, 0.3)" }}
+              whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              transition={{ duration: 0.3, delay: isMapPublic ? 0.15 : 0.05 }} 
               className="flex flex-col items-center"
             >
               <Button 
                 onClick={handleManualRefresh} 
                 size="icon" 
                 disabled={isRefreshing || loadingMaps} 
-                className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg disabled:opacity-50 flex flex-col items-center justify-center gap-1"
+                className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg border-2 border-white disabled:opacity-50 flex flex-col items-center justify-center gap-1"
                 style={{ backgroundColor: COLORS.primaryDark }}
               >
                 <RefreshCw className={`h-6 w-6 sm:h-7 sm:w-7 ${(isRefreshing || loadingMaps) ? 'animate-spin' : ''}`} style={{ color: COLORS.cream }} />
-                <span className="text-xs font-medium" style={{ color: COLORS.cream }}>更新</span>
+                <span className="text-[10px] font-bold" style={{ color: COLORS.cream }}>再探索</span>
               </Button>
             </motion.div>
           </div>
@@ -1254,22 +1253,21 @@ export function MapView() {
           <motion.div 
             initial={{ opacity: 0, y: 20 }} 
             animate={{ opacity: 1, y: 0 }} 
-            whileHover={{ scale: 1.05, boxShadow: "0 10px 30px rgba(139, 105, 20, 0.3)" }}
+            whileHover={{ scale: 1.05 }} 
             whileTap={{ scale: 0.95 }}
-            transition={{ duration: 0.3, delay: 0.05 }} 
             className="flex flex-col items-center"
           >
             <Button 
               onClick={() => router.push('/events')} 
               size="icon" 
-              className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg flex flex-col items-center justify-center gap-1"
+              className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg flex flex-col items-center justify-center gap-1 border-2 border-white"
               style={{ backgroundColor: COLORS.primary }}
             >
-              <Calendar className="h-6 w-6 sm:h-7 sm:w-7" style={{ color: COLORS.cream }} />
-              <span className="text-xs font-medium" style={{ color: COLORS.cream }}>カレンダー</span>
+              <ScrollText className="h-6 w-6 sm:h-7 sm:w-7" style={{ color: COLORS.cream }} />
+              <span className="text-[10px] font-bold" style={{ color: COLORS.cream }}>旅の予定</span>
             </Button>
           </motion.div>
-          {/* Map一覧ボタン - 古書/BookOpenアイコン */}
+          {/* Maps (旧Map一覧) */}
           <motion.div 
             initial={{ opacity: 0, y: 20 }} 
             animate={{ opacity: 1, y: 0 }} 
@@ -1281,31 +1279,31 @@ export function MapView() {
             <Button 
               onClick={() => router.push('/public-maps')} 
               size="icon" 
-              className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg flex flex-col items-center justify-center gap-1"
+              className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg flex flex-col items-center justify-center gap-1 border-2 border-white"
               style={{ backgroundColor: COLORS.secondary }}
             >
-              <BookOpen className="h-6 w-6 sm:h-7 sm:w-7" style={{ color: COLORS.cream }} />
-              <span className="text-xs font-medium" style={{ color: COLORS.cream }}>Map一覧</span>
+              <Library className="h-6 w-6 sm:h-7 sm:w-7" style={{ color: COLORS.cream }} />
+              <span className="text-[10px] font-bold" style={{ color: COLORS.cream }}>Maps
+              </span>
             </Button>
           </motion.div>
           {/* 更新ボタン */}
           <motion.div 
             initial={{ opacity: 0, y: 20 }} 
             animate={{ opacity: 1, y: 0 }} 
-            whileHover={{ scale: 1.05, boxShadow: "0 10px 30px rgba(61, 41, 20, 0.3)" }}
+            whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            transition={{ duration: 0.3, delay: 0.15 }} 
             className="flex flex-col items-center"
           >
             <Button 
               onClick={handleManualRefresh} 
               size="icon" 
               disabled={isRefreshing || loadingPosts} 
-              className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg disabled:opacity-50 flex flex-col items-center justify-center gap-1"
+              className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg border-2 border-white disabled:opacity-50 flex flex-col items-center justify-center gap-1"
               style={{ backgroundColor: COLORS.primaryDark }}
             >
               <RefreshCw className={`h-6 w-6 sm:h-7 sm:w-7 ${(isRefreshing || loadingPosts) ? 'animate-spin' : ''}`} style={{ color: COLORS.cream }} />
-              <span className="text-xs font-medium" style={{ color: COLORS.cream }}>更新</span>
+              <span className="text-[10px] font-bold" style={{ color: COLORS.cream }}>再探索</span>
             </Button>
           </motion.div>
         </div>
@@ -1333,9 +1331,16 @@ export function MapView() {
       {/* 投稿詳細カード */}
       <AnimatePresence>
         {selectedPost && nearbyPosts.length > 0 && (
-          <motion.div initial={{ y: 100, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 100, opacity: 0 }} transition={{ duration: 0.3, ease: "easeOut" }} className="absolute bottom-4 left-4 right-4 z-40">
+          <motion.div 
+            initial={{ y: 100, opacity: 0 }} 
+            animate={{ y: 0, opacity: 1 }} 
+            exit={{ y: 100, opacity: 0 }} 
+            transition={{ duration: 0.4, type: "spring", damping: 20 }}
+            className="absolute bottom-4 left-4 right-4 z-40"
+          >
             {nearbyPosts.map((post) => {
               const displayTitle = post.category === 'イベント情報' ? (post.event_name || post.content) : post.content;
+              const config = getCategoryConfig((post.category as PostCategory) || 'イベント情報');
               const effectiveLatitude = savedLocation?.lat || latitude;
               const effectiveLongitude = savedLocation?.lng || longitude;
               let isWithinRangeResult = false;
@@ -1354,20 +1359,55 @@ export function MapView() {
                       </div>
                     </div>
                   )}
-                  <div className="bg-white rounded-2xl shadow-2xl overflow-hidden border-2 border-gray-200 mt-3">
-                    <div className="relative"><div className="absolute top-2 right-2 z-10"><Button onClick={() => { setSelectedPost(null); setNearbyPosts([]); }} size="icon" className="h-8 w-8 rounded-full bg-white/90 hover:bg-white shadow-lg"><X className="h-4 w-4 text-gray-700" /></Button></div></div>
+                  {/* 冒険の書デザインウィンドウ */}
+                  <div className="bg-[#fdf5e6] border-4 border-double border-[#8b6914] shadow-[8px_8px_0px_0px_rgba(61,41,20,0.3)] overflow-hidden">
+                    <div className="absolute top-2 right-2 z-10">
+                      <Button onClick={() => { setSelectedPost(null); setNearbyPosts([]); }} size="icon" className="h-8 w-8 rounded-none bg-[#8b6914] border-2 border-[#ffecd2]"><X className="h-4 w-4 text-[#ffecd2]" /></Button>
+                    </div>
+
                     <div className="p-4">
-                      <div className="flex gap-3 mb-3">
-                        {post.image_urls && post.image_urls.length > 0 ? <div className="flex-shrink-0 relative w-24 h-24 overflow-hidden rounded-lg bg-gray-100"><img src={optimizeCloudinaryImageUrl(post.image_urls[0])} alt={post.store_name} className="w-full h-full object-cover" loading="eager" /></div> : <div className="flex-shrink-0 w-24 h-24 bg-[#fef3e8] rounded-lg flex items-center justify-center"><Calendar className="h-12 w-12 text-[#73370c] opacity-30" /></div>}
+                      <div className="flex gap-3 mb-4">
+                        {/* 画像枠 */}
+                        <div className="flex-shrink-0 relative w-24 h-24 border-2 border-[#8b6914] bg-[#3d2914]/10 overflow-hidden shadow-inner">
+                          {post.image_urls && post.image_urls.length > 0 ? (
+                            <img src={optimizeCloudinaryImageUrl(post.image_urls[0])} alt={post.store_name} className="w-full h-full object-cover" loading="eager" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center opacity-30"><Calendar className="h-10 w-10 text-[#8b6914]" /></div>
+                          )}
+                          <div className="absolute top-0 left-0 w-2 h-2 border-t-2 border-l-2 border-[#ffecd2]/50" />
+                          <div className="absolute bottom-0 right-0 w-2 h-2 border-b-2 border-r-2 border-[#ffecd2]/50" />
+                        </div>
+
+                        {/* テキスト情報 */}
                         <div className="flex-1 min-w-0">
-                          <h3 className="text-base font-bold line-clamp-2 mb-2" style={{ color: getCategoryConfig((post.category as PostCategory) || 'イベント情報').color }}>{displayTitle}</h3>
-                          <div className="flex items-start gap-2 text-sm text-gray-600 mb-1"><MapPinIcon className="h-4 w-4 mt-0.5 flex-shrink-0 text-red-500" /><span className="line-clamp-1">{post.store_name}</span></div>
+                          <h3 className="text-base font-black leading-tight line-clamp-2 mb-2 font-serif" style={{ color: config.color, fontFamily: "'Noto Serif JP', serif" }}>
+                            {displayTitle}
+                          </h3>
+                          <div className="flex items-center gap-1.5 text-xs text-[#5c3a21] font-bold mb-1">
+                            <MapPinIcon className="h-3.5 w-3.5 flex-shrink-0 text-red-600" />
+                            <span className="line-clamp-1">{post.store_name}</span>
+                          </div>
                           {post.category === 'イベント情報' && post.event_start_date && (
-                            <div className="flex items-start gap-2 text-sm text-gray-600"><Calendar className="h-4 w-4 mt-0.5 flex-shrink-0 text-blue-500" /><span className="line-clamp-1">{new Date(post.event_start_date).toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' })}{post.event_end_date && post.event_end_date !== post.event_start_date && <> 〜 {new Date(post.event_end_date).toLocaleDateString('ja-JP', { month: 'long', day: 'numeric' })}</>}</span></div>
+                            <div className="flex items-center gap-1.5 text-xs text-[#5c3a21] font-bold">
+                              <Calendar className="h-3.5 w-3.5 flex-shrink-0 text-blue-600" />
+                              <span className="line-clamp-1">
+                                {new Date(post.event_start_date).toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' })}{post.event_end_date && post.event_end_date !== post.event_start_date && <> 〜 {new Date(post.event_end_date).toLocaleDateString('ja-JP', { month: 'long', day: 'numeric' })}</>}
+                              </span>
+                            </div>
                           )}
                         </div>
                       </div>
-                      <Button onClick={() => router.push(`/map/event/${post.id}`)} className="w-full bg-[#73370c] hover:bg-[#5c2a0a] text-white shadow-lg">詳細を見る</Button>
+
+                      {/* 決定コマンドボタン */}
+                      <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                        <Button 
+                          onClick={() => router.push(`/map/event/${post.id}`)} 
+                          className="w-full bg-[#8b6914] hover:bg-[#3d2914] text-[#ffecd2] font-black text-base py-3 rounded-none border-t-2 border-l-2 border-[#ffecd2]/30 border-b-4 border-r-4 border-[#3d2914] shadow-md transition-all flex items-center justify-center gap-3 group"
+                        >
+                          <Search className="h-4 w-4 group-hover:scale-125 transition-transform" />
+                          調査する（詳細）
+                        </Button>
+                      </motion.div>
                     </div>
                   </div>
                 </div>
