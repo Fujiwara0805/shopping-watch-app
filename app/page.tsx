@@ -166,18 +166,18 @@ const PublicMapsSection = ({ onMapClick }: { onMapClick: (mapId: string) => void
           {/* セクションラベル：古文書風の装飾付き */}
           <div className="flex items-center justify-center gap-4 mb-4">
             <div className="h-px w-12 bg-gradient-to-r from-transparent to-[#8b6914]" />
-            <p className="px-5 py-1 text-xs sm:text-sm tracking-[0.25em] font-bold text-[#8b6914] border border-[#8b6914]/30 bg-[#fff8f0]/50">
+            <p className="px-5 py-1 text-xs sm:text-sm tracking-[0.25em] font-bold text-[#8b6914] border border-[#8b6914]/30 bg-[#fff8f0]/50 font-sans">
               MY MAPS
             </p>
             <div className="h-px w-12 bg-gradient-to-l from-transparent to-[#8b6914]" />
           </div>
           
-          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold text-[#3d2914] tracking-tight mt-4" style={{ fontFamily: "'Noto Serif JP', serif" }}>
+          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold text-[#3d2914] tracking-tight mt-4 font-serif">
             世界で一つだけのデジタルマップ
           </h2>
-          <p className="text-base sm:text-lg md:text-xl text-[#5c3a21] mt-4 font-semibold">
+          <p className="text-base sm:text-lg md:text-xl text-[#5c3a21] mt-4 font-semibold font-sans">
             ユーザーが作成した<br />
-            <span className="ml-1 text-[#3d2914] border-b-2 border-[#8b6914]/50">あなただけのデジタルマップ</span>
+            <span className="ml-1 text-[#3d2914] border-b-2 border-[#8b6914]/50">ここでしか出会えないおすすめの地図</span>
           </p>
         </motion.div>
 
@@ -197,7 +197,7 @@ const PublicMapsSection = ({ onMapClick }: { onMapClick: (mapId: string) => void
             className="text-center py-12 bg-[#fff8f0]/60 rounded-lg border border-dashed border-[#d4c4a8]"
           >
             <MapPin className="h-12 w-12 mx-auto mb-4 text-[#8b6914]/50" />
-            <p className="text-[#5c3a21] font-medium">まだマップが投稿されていません</p>
+            <p className="text-[#5c3a21] font-medium font-sans">まだマップが投稿されていません</p>
           </motion.div>
         ) : (
           <div className="relative">
@@ -256,13 +256,13 @@ const PublicMapsSection = ({ onMapClick }: { onMapClick: (mapId: string) => void
                               {map.author_name.charAt(0).toUpperCase()}
                             </AvatarFallback>
                           </Avatar>
-                          <span className="text-xs font-semibold text-[#fff8f0] max-w-[80px] truncate">
+                          <span className="text-xs font-semibold text-[#fff8f0] max-w-[80px] truncate font-sans">
                             {map.author_name}
                           </span>
                         </div>
 
                         {/* スポット数 */}
-                        <div className="absolute top-3 left-3 bg-[#fff8f0]/90 backdrop-blur-sm px-2.5 py-1 rounded-full text-xs font-medium text-[#5c3a21] flex items-center gap-1">
+                        <div className="absolute top-3 left-3 bg-[#fff8f0]/90 backdrop-blur-sm px-2.5 py-1 rounded-full text-xs font-medium text-[#5c3a21] flex items-center gap-1 font-sans">
                           <MapPin className="h-3.5 w-3.5" />
                           {map.total_locations || 0}箇所
                         </div>
@@ -273,21 +273,21 @@ const PublicMapsSection = ({ onMapClick }: { onMapClick: (mapId: string) => void
 
                       {/* コンテンツ */}
                       <div className="p-4 border-t border-[#d4c4a8]">
-                        <h3 className="text-lg sm:text-xl font-bold text-[#3d2914] mb-2 line-clamp-2 group-hover:text-[#5c3a21] transition-colors" style={{ fontFamily: "'Noto Serif JP', serif" }}>
+                        <h3 className="text-lg sm:text-xl font-bold text-[#3d2914] mb-2 line-clamp-2 group-hover:text-[#5c3a21] transition-colors font-serif">
                           {map.title}
                         </h3>
 
                         {map.hashtags && map.hashtags.length > 0 && (
                           <div className="flex flex-wrap gap-1.5 mb-2">
                             {map.hashtags.slice(0, 3).map((tag: string, i: number) => (
-                              <span key={i} className="text-xs bg-[#e8f4e5] text-[#5c3a21] px-2 py-0.5 rounded-full">
+                              <span key={i} className="text-xs bg-[#e8f4e5] text-[#5c3a21] px-2 py-0.5 rounded-full font-sans">
                                 #{tag}
                               </span>
                             ))}
                           </div>
                         )}
 
-                        <div className="flex items-center text-xs text-[#8b7355]">
+                        <div className="flex items-center text-xs text-[#8b7355] font-sans">
                           <Calendar className="h-3.5 w-3.5 mr-1" />
                           {new Date(map.created_at).toLocaleDateString('ja-JP', {
                             year: 'numeric',
@@ -358,7 +358,7 @@ const PublicMapsSection = ({ onMapClick }: { onMapClick: (mapId: string) => void
             whileHover={{ scale: 1.05, boxShadow: "0 10px 30px rgba(92, 58, 33, 0.2)" }}
             whileTap={{ scale: 0.95 }}
             onClick={() => router.push('/public-maps')}
-            className="inline-flex items-center gap-2 px-8 py-4 text-base font-bold text-[#5c3a21] hover:text-[#3d2914] border-2 border-[#5c3a21] hover:border-[#3d2914] rounded-full transition-all hover:bg-[#ffecd2] group"
+            className="inline-flex items-center gap-2 px-8 py-4 text-base font-bold text-[#5c3a21] hover:text-[#3d2914] border-2 border-[#5c3a21] hover:border-[#3d2914] rounded-full transition-all hover:bg-[#ffecd2] group font-sans"
           >
             他のMy Mapをみる
             <ChevronRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
@@ -404,13 +404,13 @@ const FeatureCard = ({
       <Icon className="h-8 w-8 text-[#ffecd2]" strokeWidth={1.5} />
     </motion.div>
     
-    <span className="text-xs font-bold tracking-[0.2em] text-[#8b6914] uppercase mb-2 border-b border-[#8b6914]/30 pb-1">
+    <span className="text-xs font-bold tracking-[0.2em] text-[#8b6914] uppercase mb-2 border-b border-[#8b6914]/30 pb-1 font-sans">
       {label}
     </span>
-    <h3 className="text-xl sm:text-2xl font-bold mb-3 text-[#3d2914]" style={{ fontFamily: "'Noto Serif JP', serif" }}>
+    <h3 className="text-xl sm:text-2xl font-bold mb-3 text-[#3d2914] font-serif">
       {title}
     </h3>
-    <p className="text-sm sm:text-base text-[#5c3a21] leading-relaxed font-medium">
+    <p className="text-sm sm:text-base text-[#5c3a21] leading-relaxed font-medium font-sans">
       {description}
     </p>
     
@@ -489,7 +489,7 @@ const EventLP = ({ onStart, onMapClick }: { onStart: () => void; onMapClick: (ma
                   <div className="absolute inset-0 bg-gradient-to-br from-[#ffecd2]/20 to-transparent rounded-full" />
                 </div>
               </div>
-              <span className={`font-bold text-xl tracking-[0.15em] hidden sm:block transition-colors duration-300 ${scrollPosition > 10 ? 'text-[#3d2914]' : 'text-[#3d2914]'}`} style={{ fontFamily: "'Noto Serif JP', serif" }}>
+              <span className={`font-bold text-xl tracking-[0.15em] hidden sm:block transition-colors duration-300 font-serif ${scrollPosition > 10 ? 'text-[#3d2914]' : 'text-[#3d2914]'}`}>
                 TOKU<span className="text-[#8b6914]">DOKU</span>
               </span>
             </motion.div>
@@ -540,7 +540,7 @@ const EventLP = ({ onStart, onMapClick }: { onStart: () => void; onMapClick: (ma
                         alt="トクドク"
                         className="h-12 w-12"
                       />
-                      <span className="font-bold text-lg text-[#3d2914]" style={{ fontFamily: "'Noto Serif JP', serif" }}>TOKUDOKU</span>
+                      <span className="font-bold text-lg text-[#3d2914] font-serif">TOKUDOKU</span>
                     </div>
                     <motion.button
                       whileHover={{ rotate: 90 }}
@@ -574,7 +574,7 @@ const EventLP = ({ onStart, onMapClick }: { onStart: () => void; onMapClick: (ma
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: index * 0.05 }}
                         href={item.href}
-                        className="block px-4 py-3 text-[#5c3a21] hover:bg-[#8b6914]/10 hover:text-[#3d2914] rounded-lg transition-colors font-semibold border-b border-[#d4c4a8]/50"
+                        className="block px-4 py-3 text-[#5c3a21] hover:bg-[#8b6914]/10 hover:text-[#3d2914] rounded-lg transition-colors font-semibold border-b border-[#d4c4a8]/50 font-sans"
                         onClick={() => setIsMenuOpen(false)}
                       >
                         {item.label}
@@ -587,7 +587,7 @@ const EventLP = ({ onStart, onMapClick }: { onStart: () => void; onMapClick: (ma
                       transition={{ delay: 0.3 }}
                       href="https://www.instagram.com/tokudoku_nobody/"
                       rel="noopener noreferrer"
-                      className="flex items-center px-4 py-3 text-[#5c3a21] hover:bg-[#8b6914]/10 hover:text-[#3d2914] rounded-lg transition-colors mt-4"
+                      className="flex items-center px-4 py-3 text-[#5c3a21] hover:bg-[#8b6914]/10 hover:text-[#3d2914] rounded-lg transition-colors mt-4 font-sans"
                       onClick={() => setIsMenuOpen(false)}
                     >
                       <img
@@ -595,7 +595,7 @@ const EventLP = ({ onStart, onMapClick }: { onStart: () => void; onMapClick: (ma
                         alt="Instagram"
                         className="h-8 w-8"
                       />
-                      <span className="ml-2 font-bold">Instagram</span>
+                      <span className="ml-2 font-bold font-sans">Instagram</span>
                     </motion.a>
 
                     {session && (
@@ -607,7 +607,7 @@ const EventLP = ({ onStart, onMapClick }: { onStart: () => void; onMapClick: (ma
                           setIsMenuOpen(false);
                           await signOut({ callbackUrl: '/' });
                         }}
-                        className="flex items-center w-full px-4 py-3 text-[#dc2626] hover:bg-red-50 hover:text-[#b91c1c] rounded-lg transition-colors font-semibold border-t border-[#d4c4a8]/50 mt-4"
+                        className="flex items-center w-full px-4 py-3 text-[#dc2626] hover:bg-red-50 hover:text-[#b91c1c] rounded-lg transition-colors font-semibold border-t border-[#d4c4a8]/50 mt-4 font-sans"
                       >
                         <LogOut className="h-5 w-5 mr-2" />
                         ログアウト
@@ -667,21 +667,18 @@ const EventLP = ({ onStart, onMapClick }: { onStart: () => void; onMapClick: (ma
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.8, delay: 0.2 }}
-                  className="text-xl sm:text-2xl md:text-3xl text-[#ffecd2] font-bold tracking-wider drop-shadow-lg"
+                  className="text-xl sm:text-2xl md:text-3xl text-[#ffecd2] font-bold tracking-wider drop-shadow-lg font-sans"
                 >
-                  あなただけのマップを作成し
-                  <br />
-                  みんなとシェアしよう
+                  あなただけの<br />My Mapを作成できる
                 </motion.p>
 
                 <motion.h1
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.8, delay: 0.4 }}
-                  className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl text-white font-bold leading-tight tracking-tight drop-shadow-xl"
-                  style={{ fontFamily: "'Noto Serif JP', serif" }}
+                  className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl text-white font-bold leading-tight tracking-tight drop-shadow-xl font-serif"
                 >
-                  デジタルマップで
+                  ここでしか出会えない
                   <br className="hidden sm:block" />
                   <span className="relative inline-block mt-3 pb-2">
                     <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#ffecd2] via-[#fff8f0] to-[#ffecd2]">
@@ -717,11 +714,11 @@ const EventLP = ({ onStart, onMapClick }: { onStart: () => void; onMapClick: (ma
                     <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
                     <span className="relative flex items-center gap-2">
                       <Compass className="h-6 w-6" />
-                      イベントを探す
+                      イベントMapを見る
                     </span>
                   </Button>
                 </motion.div>
-                <p className="text-lg sm:text-xl text-gray-200 mt-4 font-bold">
+                <p className="text-lg sm:text-xl text-gray-200 mt-4 font-bold font-sans">
                   無料で今すぐ始められます
                 </p>
                 <motion.a
@@ -733,7 +730,7 @@ const EventLP = ({ onStart, onMapClick }: { onStart: () => void; onMapClick: (ma
                   transition={{ duration: 0.8, delay: 1.4 }}
                   whileHover={{ scale: 1.05, borderColor: '#ffecd2' }}
                   whileTap={{ scale: 0.95 }}
-                  className="inline-block mt-6 px-8 sm:px-12 py-3 sm:py-4 text-base sm:text-lg font-bold text-white bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full border border-[#ffecd2]/50 transition-all duration-300 shadow-lg"
+                  className="inline-block mt-6 px-8 sm:px-12 py-3 sm:py-4 text-base sm:text-lg font-bold text-white bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full border border-[#ffecd2]/50 transition-all duration-300 shadow-lg font-sans"
                 >
                   イベント情報募集中！
                 </motion.a>
@@ -751,7 +748,7 @@ const EventLP = ({ onStart, onMapClick }: { onStart: () => void; onMapClick: (ma
                   transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
                   className="flex flex-col items-center text-[#ffecd2]"
                 >
-                  <span className="text-sm font-semibold mb-3 tracking-wider">Scroll</span>
+                  <span className="text-sm font-semibold mb-3 tracking-wider font-sans">Scroll</span>
                   <motion.div
                     animate={{ rotate: [0, 10, -10, 0] }}
                     transition={{ duration: 2, repeat: Infinity }}
@@ -788,17 +785,17 @@ const EventLP = ({ onStart, onMapClick }: { onStart: () => void; onMapClick: (ma
             >
               <div className="flex items-center justify-center gap-4 mb-4">
                 <div className="h-px w-16 bg-gradient-to-r from-transparent to-[#8b6914]" />
-                <p className="px-6 py-1.5 text-xs sm:text-sm tracking-[0.25em] font-bold text-[#8b6914] border border-[#8b6914]/30 bg-[#fff8f0]/50">
+                <p className="px-6 py-1.5 text-xs sm:text-sm tracking-[0.25em] font-bold text-[#8b6914] border border-[#8b6914]/30 bg-[#fff8f0]/50 font-sans">
                   FEATURES
                 </p>
                 <div className="h-px w-16 bg-gradient-to-l from-transparent to-[#8b6914]" />
               </div>
               
-              <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold mb-4 text-[#3d2914] tracking-tight" style={{ fontFamily: "'Noto Serif JP', serif" }}>
+              <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold mb-4 text-[#3d2914] tracking-tight font-serif">
                 <span className="text-[#5c3a21]">こだわり</span>の機能
               </h2>
-              <p className="text-lg sm:text-xl md:text-2xl text-[#5c3a21] font-semibold mt-4">
-                「My Map作成」「イベント情報」に<br />徹底的にこだわりました
+              <p className="text-lg sm:text-xl md:text-2xl text-[#5c3a21] font-semibold mt-4 font-sans">
+                「My Map作成」「イベントMap」に<br />徹底的にこだわりました
               </p>
             </motion.div>
 
@@ -813,14 +810,14 @@ const EventLP = ({ onStart, onMapClick }: { onStart: () => void; onMapClick: (ma
               <FeatureCard
                 label="DISCOVER"
                 title="イベント情報をマップで発見"
-                description="地域のイベント情報がマップ上に表示。開催中のイベントをひと目で把握できます。"
+                description="地域のイベント情報がマップ上に表示。開催中(予定)のイベントをひと目で把握できる。"
                 icon={Search}
                 index={1}
               />
               <FeatureCard
                 label="SHARE"
-                title="みんなとシェア"
-                description="作成したマップは公開・共有OK。友達や家族とお気に入りスポットをシェアしよう。"
+                title="公開設定機能"
+                description="作成したMy Mapは公開範囲を設定でき、友達や家族だけにシェアすることや不特定多数のユーザーにシェアすることも可能です。"
                 icon={Send}
                 index={2}
               />
@@ -848,11 +845,11 @@ const EventLP = ({ onStart, onMapClick }: { onStart: () => void; onMapClick: (ma
               viewport={{ once: true }}
               className="space-y-8"
             >
-              <h2 className="text-2xl sm:text-3xl lg:text-5xl font-extrabold leading-tight text-[#3d2914] drop-shadow-lg" style={{ fontFamily: "'Noto Serif JP', serif" }}>
+              <h2 className="text-2xl sm:text-3xl lg:text-5xl font-extrabold leading-tight text-[#3d2914] drop-shadow-lg font-serif">
                 他では出会えない体験に<br />
                 出会えるのは「トクドク」だけ
               </h2>
-              <p className="text-xl sm:text-2xl lg:text-3xl text-[#5c3a21] leading-relaxed font-bold">
+              <p className="text-xl sm:text-2xl lg:text-3xl text-[#5c3a21] leading-relaxed font-bold font-sans">
                 デジタルマップで、<br />
                 <span className="relative inline-block">
                   思い出と発見をシェア
@@ -871,12 +868,6 @@ const EventLP = ({ onStart, onMapClick }: { onStart: () => void; onMapClick: (ma
 
         {/* 最終CTA（発光表現強調） */}
         <section className="relative py-20 sm:py-28 px-4 sm:px-8 overflow-hidden bg-[#f5e6d3]">
-          <div
-            className="absolute inset-0 bg-cover bg-center opacity-20"
-            style={{
-              backgroundImage: 'url(https://res.cloudinary.com/dz9trbwma/image/upload/v1764768321/photo-1516546453174-5e1098a4b4af_zwkcbo.jpg)'
-            }}
-          />
           <div className="absolute inset-0 bg-gradient-to-t from-[#f5e6d3] via-[#f5e6d3]/80 to-transparent" />
           <ParchmentTexture opacity={0.15} />
           
@@ -893,7 +884,7 @@ const EventLP = ({ onStart, onMapClick }: { onStart: () => void; onMapClick: (ma
               viewport={{ once: true }}
               className="space-y-10"
             >
-              <h2 className="text-3xl sm:text-4xl lg:text-6xl font-extrabold leading-tight text-[#3d2914]" style={{ fontFamily: "'Noto Serif JP', serif" }}>
+              <h2 className="text-3xl sm:text-4xl lg:text-6xl font-extrabold leading-tight text-[#3d2914] font-serif">
                 さあ、冒険を始めよう！
               </h2>
 
@@ -912,12 +903,12 @@ const EventLP = ({ onStart, onMapClick }: { onStart: () => void; onMapClick: (ma
                   <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
                   <span className="relative flex items-center gap-3">
                     <Compass className="h-8 w-8" />
-                    マップを見る
+                    イベントMapを見る
                   </span>
                 </Button>
               </motion.div>
 
-              <p className="text-lg sm:text-xl text-[#5c3a21] font-bold">
+              <p className="text-lg sm:text-xl text-[#5c3a21] font-bold font-sans">
                 アカウント登録不要 / 今すぐ使えます
               </p>
             </motion.div>
@@ -937,45 +928,45 @@ const EventLP = ({ onStart, onMapClick }: { onStart: () => void; onMapClick: (ma
                     alt="トクドク"
                     className="h-12 w-12"
                   />
-                  <span className="text-[#3d2914] font-bold text-xl tracking-wider" style={{ fontFamily: "'Noto Serif JP', serif" }}>TOKUDOKU</span>
+                  <span className="text-[#3d2914] font-bold text-xl tracking-wider font-serif">TOKUDOKU</span>
                 </div>
-                <p className="text-lg text-[#5c3a21] leading-relaxed font-semibold">
-                  デジタルマップで、
+                <p className="text-lg text-[#5c3a21] leading-relaxed font-semibold font-sans">
+                  ここでしか出会えない
                   <br />
-                  あなたの「お気に入り」をみんなとシェア
+                  新しい体験をあなたに
                 </p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <h4 className="font-extrabold mb-3 text-[#5c3a21] text-base sm:text-lg border-b border-[#8b6914]/30 pb-2">
+                  <h4 className="font-extrabold mb-3 text-[#5c3a21] text-base sm:text-lg border-b border-[#8b6914]/30 pb-2 font-serif">
                     サービス
                   </h4>
                   <ul className="space-y-2">
                     <li>
-                      <a href="/profile" className="text-[#8b7355] hover:text-[#3d2914] transition-colors font-semibold text-sm sm:text-base">マイページ</a>
+                      <a href="/profile" className="text-[#8b7355] hover:text-[#3d2914] transition-colors font-semibold text-sm sm:text-base font-sans">マイページ</a>
                     </li>
                     <li>
-                      <a href="/contact" className="text-[#8b7355] hover:text-[#3d2914] transition-colors font-semibold text-sm sm:text-base">問い合わせ</a>
+                      <a href="/contact" className="text-[#8b7355] hover:text-[#3d2914] transition-colors font-semibold text-sm sm:text-base font-sans">問い合わせ</a>
                     </li>
                     <li>
-                      <a href="/release-notes" className="text-[#8b7355] hover:text-[#3d2914] transition-colors font-semibold text-sm sm:text-base">リリースノート</a>
+                      <a href="/release-notes" className="text-[#8b7355] hover:text-[#3d2914] transition-colors font-semibold text-sm sm:text-base font-sans">リリースノート</a>
                     </li>
                   </ul>
                 </div>
                 <div>
-                  <h4 className="font-extrabold mb-3 text-[#5c3a21] text-base sm:text-lg border-b border-[#8b6914]/30 pb-2">
+                  <h4 className="font-extrabold mb-3 text-[#5c3a21] text-base sm:text-lg border-b border-[#8b6914]/30 pb-2 font-serif">
                     規約
                   </h4>
                   <ul className="space-y-2">
                     <li>
-                      <a href="/terms/terms-of-service" className="text-[#8b7355] hover:text-[#3d2914] transition-colors font-semibold text-sm sm:text-base">利用規約</a>
+                      <a href="/terms/terms-of-service" className="text-[#8b7355] hover:text-[#3d2914] transition-colors font-semibold text-sm sm:text-base font-sans">利用規約</a>
                     </li>
                     <li>
-                      <a href="/terms/privacy-policy" className="text-[#8b7355] hover:text-[#3d2914] transition-colors font-semibold text-sm sm:text-base">プライバシーポリシー</a>
+                      <a href="/terms/privacy-policy" className="text-[#8b7355] hover:text-[#3d2914] transition-colors font-semibold text-sm sm:text-base font-sans">プライバシーポリシー</a>
                     </li>
                     <li>
-                      <a href="/terms/service-policy" className="text-[#8b7355] hover:text-[#3d2914] transition-colors font-semibold text-sm sm:text-base">サービスポリシー</a>
+                      <a href="/terms/service-policy" className="text-[#8b7355] hover:text-[#3d2914] transition-colors font-semibold text-sm sm:text-base font-sans">サービスポリシー</a>
                     </li>
                   </ul>
                 </div>
@@ -983,7 +974,7 @@ const EventLP = ({ onStart, onMapClick }: { onStart: () => void; onMapClick: (ma
             </div>
 
             <div className="pt-8 border-t border-[#d4c4a8] text-center">
-              <p className="text-sm sm:text-base text-[#8b7355] font-semibold">
+              <p className="text-sm sm:text-base text-[#8b7355] font-semibold font-sans">
                 © 2025 トクドク All rights reserved.
               </p>
             </div>
@@ -1039,10 +1030,10 @@ const LocationModal = ({
                 transition={{ delay: 0.2 }}
                 className="text-center mb-6"
               >
-                <h3 className="text-2xl font-bold text-[#3d2914] mb-3" style={{ fontFamily: "'Noto Serif JP', serif" }}>
+                <h3 className="text-2xl font-bold text-[#3d2914] mb-3 font-serif">
                   位置情報の利用について
                 </h3>
-                <p className="text-[#5c3a21] font-medium">
+                <p className="text-[#5c3a21] font-medium font-sans">
                   近くのイベントを地図上で表示するために位置情報を使用します
                 </p>
               </motion.div>
@@ -1079,7 +1070,7 @@ const LocationModal = ({
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.4 }}
-                className="text-xs sm:text-sm text-[#8b7355] text-center font-semibold mt-6"
+                className="text-xs sm:text-sm text-[#8b7355] text-center font-semibold mt-6 font-sans"
               >
                 ※ブラウザの設定で位置情報の許可をONにしてください
               </motion.p>
