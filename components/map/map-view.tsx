@@ -4,7 +4,7 @@ import { useRef, useEffect, useState, useCallback } from 'react';
 import { useGeolocation } from '@/lib/hooks/use-geolocation';
 import { useGoogleMapsApi } from '@/components/providers/GoogleMapsApiProvider';
 import { Button } from '@/components/ui/button';
-import { MapPin, AlertTriangle, RefreshCw, Calendar, BookOpen, User, MapPinIcon, X, Loader2, Home, Share2, Link2, Check, Compass, Feather, Sword, Search, ScrollText, Library } from 'lucide-react';
+import { MapPin, AlertTriangle, RefreshCw, Calendar, BookOpen, User, MapPinIcon, X, Loader2, Home, Share2, Link2, Check, Compass, Feather, Sword, Search, ScrollText, Library, Shield } from 'lucide-react';
 
 // 🎨 LPカラーパレット
 const COLORS = {
@@ -960,59 +960,47 @@ export function MapView() {
     <div className="w-full h-full relative" style={{ backgroundColor: COLORS.background }}>
       <div ref={mapContainerRef} className="w-full h-full" style={{ touchAction: 'manipulation', WebkitOverflowScrolling: 'touch', WebkitTouchCallout: 'none', WebkitUserSelect: 'none', userSelect: 'none' }} />
 
+      {/* 🔥 [統合版] 右上: 冒険者(投稿者) & 共有ボタン */}
+      {map && mapInitialized && viewMode === 'myMaps' && mapCreatorProfile && (
+        <div className="absolute top-4 right-4 z-30">
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            transition={{ duration: 0.3 }}
+            className="flex flex-col items-center"
+          >
+            <Button
+              onClick={() => setIsProfileModalOpen(true)} // 統合モーダルを開く
+              size="icon"
+              className="h-16 w-16 rounded-none bg-[#fdf5e6] border-4 border-double border-[#8b6914] shadow-[4px_4px_0px_0px_rgba(61,41,20,0.3)] p-0 overflow-hidden relative"
+            >
+              {/* 背景の装飾的な輝き */}
+              <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent pointer-events-none" />
+              
+              <Avatar className="h-12 w-12 rounded-none border-2 border-[#8b6914]">
+                {mapCreatorProfile.avatar_path ? (
+                  <AvatarImage
+                    src={getAvatarPublicUrl(mapCreatorProfile.avatar_path) || ''}
+                    alt={mapCreatorProfile.display_name}
+                  />
+                ) : null}
+                <AvatarFallback className="text-lg font-black bg-[#3d2914] text-[#ffecd2] rounded-none">
+                  {mapCreatorProfile.display_name.charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+            </Button>
+            <span className="text-[10px] font-black mt-1 bg-[#8b6914] text-[#ffecd2] px-1 shadow-sm" style={{ fontFamily: "'Noto Serif JP', serif" }}>
+              MAKER
+            </span>
+          </motion.div>
+        </div>
+      )}
+
       {/* 🔥 マイマップモード時のUI */}
       {map && mapInitialized && viewMode === 'myMaps' && (
         <>
-          {/* 右上: プロフィールアイコンと共有アイコン */}
-          <div className="absolute top-4 right-4 z-30 flex flex-col gap-2">
-            {/* プロフィールアイコン */}
-            {mapCreatorProfile && (
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.3, delay: 0.05 }}
-                className="flex flex-col items-center"
-              >
-                <Button
-                  onClick={() => setIsProfileModalOpen(true)}
-                  size="icon"
-                  className="h-14 w-14 rounded-lg shadow-lg bg-white hover:bg-gray-100 border-2 border-[#73370c] p-0 overflow-hidden"
-                >
-                  <Avatar className="h-full w-full rounded-lg">
-                    {mapCreatorProfile.avatar_path ? (
-                      <AvatarImage
-                        src={getAvatarPublicUrl(mapCreatorProfile.avatar_path) || ''}
-                        alt={mapCreatorProfile.display_name}
-                      />
-                    ) : null}
-                    <AvatarFallback className="text-lg font-bold bg-gradient-to-br from-[#5c3a21] to-[#8b6914] text-[#fff8f0] rounded-lg">
-                      {mapCreatorProfile.display_name.charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                </Button>
-              </motion.div>
-            )}
-            
-            {/* 共有アイコン */}
-            <motion.div 
-              initial={{ opacity: 0, x: 20 }} 
-              animate={{ opacity: 1, x: 0 }} 
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              transition={{ duration: 0.3, delay: 0.1 }} 
-              className="flex flex-col items-center"
-            >
-              <Button 
-                onClick={() => setIsShareModalOpen(true)} 
-                size="icon" 
-                className="h-12 w-12 rounded-lg shadow-lg border-2 border-white"
-                style={{ backgroundColor: COLORS.primary }}
-              >
-                <Share2 className="h-6 w-6" style={{ color: COLORS.cream }} />
-              </Button>
-              <span className="text-xs font-bold mt-1" style={{ color: COLORS.primaryDark }}>共有</span>
-            </motion.div>
-          </div>
 
           {/* 左下: ナビゲーションボタン（公開設定OFFの場合は更新ボタンのみ） */}
           <div className="absolute bottom-4 left-4 z-30 flex flex-col gap-2">
@@ -1095,105 +1083,81 @@ export function MapView() {
         </>
       )}
 
-      {/* 🔥 プロフィールモーダル */}
+      {/* 🔥 [統合版] RPGデザインのプロフィール & 共有モーダル */}
       <CustomModal isOpen={isProfileModalOpen} onClose={() => setIsProfileModalOpen(false)}>
-        <div className="p-6 pt-10">
-          {/* プロフィールヘッダー */}
-          <div className="flex flex-col items-center mb-6">
-            <Avatar className="w-24 h-24 border-4 border-[#73370c] shadow-lg mb-4">
-              {mapCreatorProfile?.avatar_path ? (
-                <AvatarImage
-                  src={getAvatarPublicUrl(mapCreatorProfile.avatar_path) || ''}
-                  alt={mapCreatorProfile.display_name}
-                />
-              ) : null}
-              <AvatarFallback className="text-3xl font-bold bg-gradient-to-br from-[#5c3a21] to-[#8b6914] text-[#fff8f0]">
-                {mapCreatorProfile?.display_name?.charAt(0).toUpperCase() || 'U'}
-              </AvatarFallback>
-            </Avatar>
-            <h3 className="text-xl font-bold text-gray-800 mb-2">
-              {mapCreatorProfile?.display_name || '匿名ユーザー'}
-            </h3>
-            
-            {/* SNSアイコン表示 */}
-            {mapCreatorProfile?.url && (() => {
-              const normalizedUrl = normalizeUrl(mapCreatorProfile.url);
-              if (!normalizedUrl) return null;
+        <div className="relative bg-[#fdf5e6] border-4 border-double border-[#8b6914] overflow-hidden">
+          {/* 羊皮紙テクスチャ */}
+          <div className="absolute inset-0 opacity-[0.05] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/parchment.png')]" />
+
+          <div className="p-6 relative z-10 pt-10">
+            {/* リーダーステータス (投稿者情報) */}
+            <div className="flex flex-col items-center mb-6">
+              <div className="relative">
+                <Avatar className="w-24 h-24 border-4 border-[#8b6914] shadow-lg mb-3 rounded-none p-1 bg-white">
+                  {mapCreatorProfile?.avatar_path ? (
+                    <AvatarImage
+                      src={getAvatarPublicUrl(mapCreatorProfile.avatar_path) || ''}
+                      alt={mapCreatorProfile?.display_name}
+                      className="rounded-none"
+                    />
+                  ) : null}
+                  <AvatarFallback className="text-3xl font-black bg-[#3d2914] text-[#ffecd2] rounded-none">
+                    {mapCreatorProfile?.display_name?.charAt(0).toUpperCase() || 'U'}
+                  </AvatarFallback>
+                </Avatar>
+                {/* 勲章アイコン風装飾 */}
+                <Shield className="absolute -bottom-2 -right-2 h-8 w-8 text-[#8b6914] fill-[#ffecd2]" />
+              </div>
               
-              return (
-                <a
-                  href={normalizedUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="transition-opacity hover:opacity-80"
-                  title={normalizedUrl}
-                >
-                  <img 
-                    src={getSocialIconUrl(normalizedUrl)} 
-                    alt="SNS Icon"
-                    className="w-8 h-8 object-contain"
-                  />
-                </a>
-              );
-            })()}
-          </div>
+              <h3 className="text-xl font-black text-[#3d2914] font-serif mb-1" style={{ fontFamily: "'Noto Serif JP', serif" }}>
+                {mapCreatorProfile?.display_name || '匿名ユーザー'}
+              </h3>
+              <p className="text-[10px] font-bold text-[#8b6914] tracking-widest border-b border-[#8b6914] mb-3 uppercase">Map Architect</p>
 
-          {/* マップタイトル */}
-          {currentMapTitle && (
-            <div className="bg-amber-50 rounded-xl p-4">
-              <p className="text-xs text-amber-600 font-medium mb-1"> 作成したMap</p>
-              <p className="text-base font-bold text-gray-800">{currentMapTitle}</p>
+              {mapCreatorProfile?.url && (() => {
+                const normalizedUrl = normalizeUrl(mapCreatorProfile.url);
+                if (!normalizedUrl) return null;
+                return (
+                  <a href={normalizedUrl} target="_blank" rel="noopener noreferrer" className="transition-transform hover:scale-110">
+                    <img src={getSocialIconUrl(normalizedUrl)} alt="SNS" className="w-8 h-8 border border-[#d4c4a8] p-1 bg-white" />
+                  </a>
+                );
+              })()}
             </div>
-          )}
-        </div>
-      </CustomModal>
 
-      {/* 🔥 共有モーダル */}
-      <CustomModal isOpen={isShareModalOpen} onClose={() => setIsShareModalOpen(false)}>
-        <div className="p-6 pt-10">
-          {/* ヘッダー */}
-          <div className="text-center mb-6">
-            <h3 className="text-xl font-bold text-gray-800 mb-2">
-              My Mapをシェア
-            </h3>
-            <p className="text-sm text-gray-500">
-              友達や家族にこのMy Mapをシェアしよう！
-            </p>
-          </div>
-
-          {/* マップ情報 */}
-          {currentMapTitle && (
-            <div className="bg-gray-50 rounded-xl p-4 mb-6">
-              <p className="text-xs text-gray-500 font-medium mb-1">シェアするマップ</p>
-              <p className="text-base font-bold text-gray-800">{currentMapTitle}</p>
+            {/* 現在のマップ情報 */}
+            <div className="bg-[#3d2914]/5 border-2 border-dashed border-[#d4c4a8] p-4 mb-6">
+              <div className="flex items-center gap-2 mb-1">
+                <BookOpen className="h-4 w-4 text-[#8b6914]" />
+                <span className="text-[10px] font-bold text-[#8b6914] uppercase">Current Atlas</span>
+              </div>
+              <p className="text-base font-black text-[#3d2914] font-serif">{currentMapTitle}</p>
             </div>
-          )}
 
-          {/* URLコピーボタン */}
-          <button
-            onClick={handleCopyUrl}
-            className={`flex items-center justify-center gap-3 w-full py-4 px-4 rounded-xl font-medium transition-all ${
-              isCopied 
-                ? 'bg-green-500 text-white' 
-                : 'bg-[#73370c] hover:bg-[#5c2a0a] text-white'
-            }`}
-          >
-            {isCopied ? (
-              <>
-                <Check className="h-5 w-5" />
-                コピーしました！
-              </>
-            ) : (
-              <>
-                <Link2 className="h-5 w-5" />
-                URLをコピー
-              </>
-            )}
-          </button>
-
-          <p className="text-xs text-gray-400 text-center mt-4">
-            コピーしたURLをSNSやメッセージで共有できます
-          </p>
+            {/* 共有コマンド (共有機能) */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-[#8b6914] mb-1">
+                <Share2 className="h-4 w-4" />
+                <span className="text-[10px] font-bold uppercase tracking-widest">Share Command</span>
+              </div>
+              
+              <button
+                onClick={handleCopyUrl}
+                className={`flex items-center justify-center gap-3 w-full py-4 rounded-none font-black transition-all border-t-2 border-l-2 border-white/30 border-b-4 border-r-4 border-black shadow-md ${
+                  isCopied ? 'bg-green-700 text-white' : 'bg-[#8b6914] hover:bg-[#3d2914] text-[#ffecd2]'
+                }`}
+              >
+                {isCopied ? (
+                  <><Check className="h-5 w-5" />URLをコピーした！</>
+                ) : (
+                  <><Link2 className="h-5 w-5" />この地図のURLを記録</>
+                )}
+              </button>
+              <p className="text-[10px] text-center text-[#5c3a21] font-bold mt-2 opacity-60">
+                友達にこの地図のURLを教えてあげよう
+              </p>
+            </div>
+          </div>
         </div>
       </CustomModal>
 
