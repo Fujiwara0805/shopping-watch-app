@@ -16,7 +16,7 @@ interface PageProps {
 async function getEventData(eventId: string) {
   const { data: event, error } = await supabase
     .from('posts')
-    .select('*')
+    .select('id, event_name, content, city, prefecture')
     .eq('id', eventId)
     .eq('is_deleted', false)
     .single();
@@ -47,13 +47,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 
   const eventName = event.event_name || event.content || 'イベント';
-  const city = event.city || '';
   
   // 新しいセマンティックURLを生成
   const semanticUrl = generateSemanticEventUrl({
     eventId: event.id,
     eventName,
-    city: city || undefined,
+    city: event.city || undefined,
     prefecture: event.prefecture || '大分県',
   });
   const canonicalUrl = `https://tokudoku.com${semanticUrl}`;
@@ -74,7 +73,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 /**
  * ページコンポーネント
- * 旧URL (/map/event/[id]) から新URL (/events/oita/[city]/event/[slug]-[id]) へ301リダイレクト
+ * 旧URL (/map/event/[id]) から新URL (/events/oita/[city]/event/[shortId]) へ301リダイレクト
  */
 export default async function LegacyEventDetailPage({ params, searchParams }: PageProps) {
   const event = await getEventData(params.id);
@@ -85,13 +84,12 @@ export default async function LegacyEventDetailPage({ params, searchParams }: Pa
   }
 
   const eventName = event.event_name || event.content || 'イベント';
-  const city = event.city || '';
 
   // 新しいセマンティックURLを生成
   const semanticUrl = generateSemanticEventUrl({
     eventId: event.id,
     eventName,
-    city: city || undefined,
+    city: event.city || undefined,
     prefecture: event.prefecture || '大分県',
   });
 

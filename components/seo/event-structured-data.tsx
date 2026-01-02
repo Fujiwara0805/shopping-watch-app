@@ -8,8 +8,7 @@ import Script from 'next/script';
 import { SEOEventData, EventJsonLd, BreadcrumbJsonLd } from '@/lib/seo/types';
 import { 
   generateCanonicalUrl, 
-  cityToSlug, 
-  generateEventSlug,
+  cityToSlug,
   toISODateString 
 } from '@/lib/seo/utils';
 
@@ -65,8 +64,9 @@ function generateEventStructuredData(event: SEOEventData): EventJsonLd {
   const price = event.event_price || '0';
   const priceValue = price.replace(/[^0-9]/g, '') || '0';
   
-  // イベントURLの生成
-  const eventUrl = generateCanonicalUrl(`/events/oita/${cityToSlug(city || '大分市')}/event/${generateEventSlug(eventName, event.id)}-${event.id}`);
+  // イベントURLの生成（短縮ID使用）
+  const shortId = event.id.split('-')[0];
+  const eventUrl = generateCanonicalUrl(`/events/oita/${cityToSlug(city || '大分市')}/event/${shortId}`);
   
   const structuredData: EventJsonLd = {
     '@context': 'https://schema.org',
@@ -128,6 +128,7 @@ function generateBreadcrumbStructuredData(event: SEOEventData): BreadcrumbJsonLd
   const prefecture = event.prefecture || '大分県';
   const city = event.city || '';
   const citySlug = cityToSlug(city || '大分市');
+  const shortId = event.id.split('-')[0];
   
   const items = [
     {
@@ -162,14 +163,14 @@ function generateBreadcrumbStructuredData(event: SEOEventData): BreadcrumbJsonLd
       '@type': 'ListItem' as const,
       position: 5,
       name: eventName,
-      item: generateCanonicalUrl(`/events/oita/${citySlug}/event/${generateEventSlug(eventName, event.id)}-${event.id}`),
+      item: generateCanonicalUrl(`/events/oita/${citySlug}/event/${shortId}`),
     });
   } else {
     items.push({
       '@type': 'ListItem' as const,
       position: 4,
       name: eventName,
-      item: generateCanonicalUrl(`/events/oita/all/event/${generateEventSlug(eventName, event.id)}-${event.id}`),
+      item: generateCanonicalUrl(`/events/oita/all/event/${shortId}`),
     });
   }
   
@@ -234,6 +235,7 @@ export function EventListStructuredData({
       const eventName = event.event_name || event.content || 'イベント';
       const city = event.city || '';
       const citySlug = cityToSlug(city || '大分市');
+      const shortId = event.id.split('-')[0];
       
       return {
         '@type': 'ListItem',
@@ -241,7 +243,7 @@ export function EventListStructuredData({
         item: {
           '@type': 'Event',
           name: eventName,
-          url: generateCanonicalUrl(`/events/oita/${citySlug}/event/${generateEventSlug(eventName, event.id)}-${event.id}`),
+          url: generateCanonicalUrl(`/events/oita/${citySlug}/event/${shortId}`),
           startDate: event.event_start_date 
             ? toISODateString(event.event_start_date) 
             : toISODateString(event.created_at),

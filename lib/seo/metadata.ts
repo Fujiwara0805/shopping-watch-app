@@ -12,7 +12,6 @@ import {
   generateCanonicalUrl,
   generateOgImageUrl,
   cityToSlug,
-  generateEventSlug,
 } from './utils';
 
 /**
@@ -56,8 +55,10 @@ export function generateEventMetadata(event: SEOEventData): Metadata {
     storeName: event.store_name,
   });
   
+  // 短縮ID（UUIDの最初の8文字）を使用
+  const shortId = event.id.split('-')[0];
   const canonicalUrl = generateCanonicalUrl(
-    `/events/oita/${citySlug}/event/${generateEventSlug(eventName, event.id)}-${event.id}`
+    `/events/oita/${citySlug}/event/${shortId}`
   );
   
   // 日付情報

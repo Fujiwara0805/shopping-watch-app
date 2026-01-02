@@ -117,8 +117,8 @@ export function slugToCategory(slug: string): string {
 }
 
 /**
- * セマンティックURLを生成
- * 例: /events/oita/beppu/festival/summer-festival-2025-abc123
+ * セマンティックURLを生成（短縮ID使用）
+ * 例: /events/oita/beppu/event/e896d51a
  */
 export function generateEventUrl(params: {
   prefecture?: string;
@@ -127,22 +127,22 @@ export function generateEventUrl(params: {
   eventName: string;
   eventId: string;
 }): string {
-  const { prefecture, city, category, eventName, eventId } = params;
+  const { city, eventId } = params;
   
-  const prefectureSlug = prefecture === '大分県' ? 'oita' : 'oita';
+  const prefectureSlug = 'oita';
   const citySlug = city ? cityToSlug(city) : 'all';
-  const categorySlug = category ? categoryToSlug(category) : 'event';
-  const eventSlug = generateEventSlug(eventName, eventId);
+  // UUIDの最初の8文字を短縮IDとして使用
+  const shortId = eventId.split('-')[0];
   
-  return `/events/${prefectureSlug}/${citySlug}/${categorySlug}/${eventSlug}-${eventId}`;
+  return `/events/${prefectureSlug}/${citySlug}/event/${shortId}`;
 }
 
 /**
- * イベントURLからIDを抽出
+ * イベントURLから短縮IDを抽出
  */
 export function extractEventIdFromUrl(url: string): string | null {
-  // パターン: /events/oita/city/category/slug-{uuid}
-  const match = url.match(/([a-f0-9-]{36})$/);
+  // パターン: /events/oita/city/event/{shortId}
+  const match = url.match(/\/event\/([a-f0-9]{8})$/);
   return match ? match[1] : null;
 }
 

@@ -1,6 +1,6 @@
 import { MetadataRoute } from 'next';
 import { supabase } from '@/lib/supabaseClient';
-import { cityToSlug, generateEventSlug } from '@/lib/seo/utils';
+import { cityToSlug } from '@/lib/seo/utils';
 
 /**
  * 拡張版動的サイトマップ生成
@@ -234,26 +234,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       return true;
     });
 
-    // 旧URLのイベントページ（後方互換性）
-    const legacyEventPages: MetadataRoute.Sitemap = activeEvents.map((event) => ({
-      url: `${baseUrl}/map/event/${event.id}`,
-      lastModified: new Date(event.created_at),
-      changeFrequency: 'daily' as const,
-      priority: 0.8,
-    }));
-
-    // 新しいセマンティックURLのイベントページ
+    // 新しいセマンティックURLのイベントページ（短縮ID使用）
+    // URL形式: /events/oita/{city}/event/{shortId}
     const semanticEventPages: MetadataRoute.Sitemap = activeEvents.map((event) => {
-      const eventName = event.event_name || event.content || 'event';
       const city = event.city || '';
       const citySlug = cityToSlug(city) || 'all';
-      const eventSlug = generateEventSlug(eventName, event.id);
+      // UUIDの最初の8文字を短縮IDとして使用
+      const shortId = event.id.split('-')[0];
       
       return {
-        url: `${baseUrl}/events/oita/${citySlug}/event/${eventSlug}-${event.id}`,
+        url: `${baseUrl}/events/oita/${citySlug}/event/${shortId}`,
         lastModified: new Date(event.created_at),
         changeFrequency: 'daily' as const,
-        priority: 0.85, // セマンティックURLの方が優先度高め
+        priority: 0.85,
       };
     });
 
@@ -304,7 +297,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     
     return [
       ...staticPages, 
-      ...legacyEventPages,
       ...semanticEventPages,
       ...areaPages,
       ...regionEventPages,
@@ -321,8 +313,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
  * AI検索エンジン向けのヒント:
  * 
  * URL構造の説明:
- * - /events/oita/{city}/{category}/{slug}-{id}: セマンティックなイベントURL
- *   例: /events/oita/beppu/festival/summer-festival-2025-abc123
+ * - /events/oita/{city}/event/{shortId}: セマンティックなイベントURL（短縮ID使用）
+ *   例: /events/oita/beppu/event/e896d51a
  * 
  * - /area/{prefecture}/{city}: 地域別イベント一覧（日本語URL）
  *   例: /area/大分県/別府市
@@ -330,14 +322,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
  * - /events/oita/{city-slug}: 地域別イベント一覧（英語スラッグ）
  *   例: /events/oita/beppu
  * 
- * - /map/event/{id}: 旧URLフォーマット（後方互換性のため維持）
+ * - /map/event/{id}: 旧URLフォーマット（新URLへリダイレクト）
  * 
  * priority値:
  * - 1.0: トップページ
  * - 0.95: メインマップページ
  * - 0.9: イベント一覧、FAQ
  * - 0.85: セマンティックイベントURL、地域トップページ
- * - 0.8: 旧イベントURL、市町村ページ
+ * - 0.8: 市町村ページ
  * - 0.75: カテゴリページ
  * - 0.7: 地域×カテゴリページ
  * 
