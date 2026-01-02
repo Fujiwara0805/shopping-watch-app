@@ -218,10 +218,10 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose })
                   </Button>
                   
                   <div className="text-center">
-                    <h2 className="text-xl font-bold text-gray-900 mb-3">
+                    <h2 className="text-lg font-bold text-gray-900 mb-3">
                       アプリの評価をお聞かせください
                     </h2>
-                    <p className="text-lg text-gray-600">
+                    <p className="text-base text-gray-600">
                       より良いアプリにするため、<br />
                       ご意見をお聞かせください。
                     </p>
