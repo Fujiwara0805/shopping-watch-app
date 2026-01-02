@@ -3,18 +3,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, MapPin, Compass, BookOpen, ChevronDown, ChevronUp, RefreshCw, ArrowUpFromLine, Trash2, Loader2, ExternalLink, ScrollText } from 'lucide-react';
-
-// 🎨 LPカラーパレット
-const COLORS = {
-  primary: '#8b6914',      // ゴールドブラウン
-  primaryDark: '#3d2914',  // ダークブラウン
-  secondary: '#5c3a21',    // ミディアムブラウン
-  background: '#f5e6d3',   // ベージュ
-  surface: '#fff8f0',      // オフホワイト
-  cream: '#ffecd2',        // クリーム
-  border: '#d4c4a8',       // ライトベージュ
-  mint: '#e8f4e5',         // ミントグリーン
-};
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
@@ -22,76 +10,12 @@ import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, parseISO, getDay, getYear, getMonth, getDate, addDays } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, parseISO, getDay, getYear, addDays } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import Image from 'next/image';
 import { Ad } from '@/types/ad';
 import { generateSemanticEventUrl } from '@/lib/seo/url-helper';
-
-// 祝日データ（日本の祝日）
-const getHolidays = (year: number): Record<string, string> => {
-  const holidays: Record<string, string> = {
-    [`${year}-01-01`]: '元日',
-    [`${year}-01-08`]: '成人の日', // 第2月曜日（簡易実装）
-    [`${year}-02-11`]: '建国記念の日',
-    [`${year}-02-23`]: '天皇誕生日',
-    [`${year}-03-20`]: '春分の日', // 概算
-    [`${year}-04-29`]: '昭和の日',
-    [`${year}-05-03`]: '憲法記念日',
-    [`${year}-05-04`]: 'みどりの日',
-    [`${year}-05-05`]: 'こどもの日',
-    [`${year}-07-15`]: '海の日', // 第3月曜日（簡易実装）
-    [`${year}-08-11`]: '山の日',
-    [`${year}-09-16`]: '敬老の日', // 第3月曜日（簡易実装）
-    [`${year}-09-23`]: '秋分の日', // 概算
-    [`${year}-10-14`]: 'スポーツの日', // 第2月曜日（簡易実装）
-    [`${year}-11-03`]: '文化の日',
-    [`${year}-11-23`]: '勤労感謝の日',
-  };
-  return holidays;
-};
-
-// 六曜を計算する関数
-const getRokuyo = (date: Date): string => {
-  const year = getYear(date);
-  const month = getMonth(date) + 1; // 0-11 → 1-12
-  const day = getDate(date);
-  
-  // 旧暦の月日の合計を6で割った余りで六曜を決定（簡易計算）
-  const rokuyoArray = ['大安', '赤口', '先勝', '友引', '先負', '仏滅'];
-  const index = (month + day) % 6;
-  
-  return rokuyoArray[index];
-};
-
-// 祝日かどうかを判定する関数
-const isHoliday = (date: Date): boolean => {
-  const year = getYear(date);
-  const holidays = getHolidays(year);
-  const dateStr = format(date, 'yyyy-MM-dd');
-  return dateStr in holidays;
-};
-
-// 振替休日かどうかを判定する関数
-const isSubstituteHoliday = (date: Date): boolean => {
-  // 月曜日でなければ振替休日ではない
-  if (getDay(date) !== 1) return false;
-  
-  // 前日（日曜日）をチェック
-  const previousDay = addDays(date, -1);
-  
-  // 前日が日曜日かつ祝日の場合、振替休日
-  if (getDay(previousDay) === 0 && isHoliday(previousDay)) {
-    return true;
-  }
-  
-  return false;
-};
-
-// 祝日または振替休日かどうかを判定する関数
-const isHolidayOrSubstitute = (date: Date): boolean => {
-  return isHoliday(date) || isSubstituteHoliday(date);
-};
+import { getHolidaysRecord, getRokuyo, isHolidayOrSubstitute, COLORS } from '@/lib/constants';
 
 // イベントデータの型定義
 interface EventPost {
