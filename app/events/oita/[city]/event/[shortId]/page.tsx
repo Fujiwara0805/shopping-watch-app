@@ -16,19 +16,31 @@ interface PageProps {
 
 /**
  * 短縮IDからイベントデータを取得
- * 短縮ID（UUIDの最初の8文字）でLIKE検索
+ * 短縮ID（UUIDの最初の8文字）でフィルタリング
  */
 async function getEventDataByShortId(shortId: string): Promise<SEOEventData | null> {
-  // 短縮IDでLIKE検索（UUIDの先頭8文字でマッチ）
+  // UUID型のカラムではilike/likeが使えないため、
+  // idをtext型にキャストしてフィルタリング
   const { data: events, error } = await supabase
     .from('posts')
     .select('*')
     .eq('is_deleted', false)
-    .ilike('id', `${shortId}%`)
+    .filter('id::text', 'ilike', `${shortId}%`)
     .limit(1);
 
   if (error || !events || events.length === 0) {
-    return null;
+    // フォールバック: 全件取得してフィルタリング（非効率だが確実）
+    const { data: allEvents, error: fallbackError } = await supabase
+      .from('posts')
+      .select('*')
+      .eq('is_deleted', false);
+    
+    if (fallbackError || !allEvents) {
+      return null;
+    }
+    
+    const matchedEvent = allEvents.find(e => e.id.startsWith(shortId));
+    return matchedEvent as SEOEventData | null;
   }
 
   return events[0] as SEOEventData;
