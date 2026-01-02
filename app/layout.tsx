@@ -34,7 +34,8 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
   const isLandingPage = pathname === '/';
   const isEventPage = pathname === '/events';
   const isSpotDetailPage = pathname?.startsWith('/map/spot/');
-  const isEventDetailPage = pathname?.startsWith('/map/event/');
+  const isEventDetailPage = pathname?.startsWith('/events/');
+
   
   // ヘッダーを表示しないページ
   const hideHeader = isMapPage || isLoginPage || isRegisterPage || isLandingPage || isEventDetailPage || isEventPage || isSpotDetailPage;

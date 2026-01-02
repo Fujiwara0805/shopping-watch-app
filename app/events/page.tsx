@@ -26,6 +26,7 @@ import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameM
 import { ja } from 'date-fns/locale';
 import Image from 'next/image';
 import { Ad } from '@/types/ad';
+import { generateSemanticEventUrl } from '@/lib/seo/url-helper';
 
 // 祝日データ（日本の祝日）
 const getHolidays = (year: number): Record<string, string> => {
@@ -647,15 +648,24 @@ export default function CalendarPage() {
   }, [daysWithEvents, ads, getEventsForDay]);
 
   // イベントクリック時の処理（フィルター状態を保存してから遷移）
-  const handleEventClick = (eventId: string) => {
+  const handleEventClick = (event: CalendarEvent) => {
     // 現在のフィルター状態をクエリパラメータとして渡す
     const params = new URLSearchParams();
     if (selectedCity !== 'all') params.set('city', selectedCity);
     if (sortBy !== 'date') params.set('sort', sortBy);
     if (selectedEnableCheckin !== 'all') params.set('enable_checkin', selectedEnableCheckin);
+    params.set('from', 'events');
+    
+    // セマンティックURLを生成
+    const semanticUrl = generateSemanticEventUrl({
+      eventId: event.id,
+      eventName: event.name,
+      city: event.fullData.city || undefined,
+      prefecture: event.fullData.prefecture || '大分県',
+    });
     
     const queryString = params.toString();
-    const url = queryString ? `/map/event/${eventId}?from=events&${queryString}` : `/map/event/${eventId}?from=events`;
+    const url = queryString ? `${semanticUrl}?${queryString}` : semanticUrl;
     router.push(url);
   };
 
@@ -1056,7 +1066,7 @@ export default function CalendarPage() {
                                     {/* コンテンツ部分（クリッカブル） */}
                                     <div
                                       className="flex gap-3 p-3 cursor-pointer"
-                                      onClick={() => handleEventClick(event.id)}
+                                      onClick={() => handleEventClick(event)}
                                     >
                                       {/* イベント画像 */}
                                       {imageUrl ? (
