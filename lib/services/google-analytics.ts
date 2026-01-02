@@ -83,7 +83,9 @@ export async function fetchGoogleAnalyticsData(
         break;
     }
 
-    // 訪問者数（アクティブユーザー）とページビュー数を同時に取得
+    // 訪問者数（totalUsers）とページビュー数を同時に取得
+    // totalUsersはセッションベースではなくユーザーベースの合計
+    // activeUsersはアクティブなユーザーのみをカウントするため、totalUsersを使用
     const [response] = await analyticsDataClient.runReport({
       property: `properties/${propertyId}`,
       dateRanges: [
@@ -93,8 +95,9 @@ export async function fetchGoogleAnalyticsData(
         },
       ],
       metrics: [
-        { name: 'activeUsers' },        // アクティブユーザー数
+        { name: 'totalUsers' },         // 総ユーザー数（訪問者数）
         { name: 'screenPageViews' },    // ページビュー数
+        { name: 'sessions' },           // セッション数（参考用）
       ],
     });
 
@@ -102,6 +105,10 @@ export async function fetchGoogleAnalyticsData(
     const row = response.rows?.[0];
     const visitors = Number(row?.metricValues?.[0]?.value || 0);
     const pageViews = Number(row?.metricValues?.[1]?.value || 0);
+    const sessions = Number(row?.metricValues?.[2]?.value || 0);
+    
+    // デバッグログ
+    console.log('GA4 Data:', { visitors, pageViews, sessions, period: periodLabel });
 
     return {
       data: {

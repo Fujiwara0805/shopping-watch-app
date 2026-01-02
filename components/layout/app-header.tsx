@@ -2,12 +2,6 @@
 
 import { usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Bell } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Logo } from '@/components/common/logo';
-import { Badge } from '@/components/ui/badge';
-import Link from 'next/link';
-import { useNotification } from '@/contexts/NotificationContext';
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { supabase } from '@/lib/supabaseClient';
@@ -25,29 +19,8 @@ const COLORS = {
 
 export function AppHeader() {
   const pathname = usePathname();
-  const { unreadCount, isLoading } = useNotification();
   const { data: session } = useSession();
-  const [isMobile, setIsMobile] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
-  
-  // デバイス判定
-  useEffect(() => {
-    const checkDevice = () => {
-      const userAgent = navigator.userAgent.toLowerCase();
-      const isMobileUserAgent = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
-      const isMobileWidth = window.innerWidth <= 768;
-      const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-      
-      setIsMobile(isMobileUserAgent || (isMobileWidth && isTouchDevice));
-    };
-    
-    checkDevice();
-    window.addEventListener('resize', checkDevice);
-    
-    return () => {
-      window.removeEventListener('resize', checkDevice);
-    };
-  }, []);
 
   // ユーザーの役割を取得
   useEffect(() => {
@@ -128,7 +101,6 @@ export function AppHeader() {
     }
   };
   
-  const showLogo = false;
   const title = getPageTitle();
 
   return (
@@ -140,19 +112,12 @@ export function AppHeader() {
       }}
     >
       <motion.div 
-        className="h-14 px-4 flex items-center justify-center relative"
+        className="h-14 px-4 flex items-center justify-center"
         initial={{ y: -10, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.3 }}
       >
-        <div className="absolute left-4 flex items-center">
-          <Link href="/">
-            <img src="https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png" alt="App Icon" className="h-12 w-12 object-contain" />
-          </Link>
-          {showLogo && <Logo withText size="small" />}
-        </div>
-        
-        {!showLogo && title && (
+        {title && (
           <h1 
             className="font-bold text-2xl text-center"
             style={{ 
@@ -163,35 +128,6 @@ export function AppHeader() {
             {title}
           </h1>
         )}
-        
-        {/* 右側のアイコン（通知） */}
-        <div className={`absolute right-4 flex items-center space-x-2 ${!isMobile ? 'hidden' : ''}`}>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="relative hover:bg-[#ffecd2]" 
-            asChild
-          >
-            <Link href="/notifications">
-              <Bell className="h-7 w-7" style={{ color: COLORS.secondary }} />
-              {!isLoading && unreadCount > 0 && (
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ type: "spring", stiffness: 500, damping: 20 }}
-                  className="absolute -top-1 -right-1"
-                >
-                  <Badge 
-                    className="px-1.5 py-0.5 min-w-[1.25rem] h-5 flex items-center justify-center text-xs text-white"
-                    style={{ backgroundColor: '#8b2323' }}
-                  >
-                    {unreadCount > 9 ? '9+' : unreadCount}
-                  </Badge>
-                </motion.div>
-              )}
-            </Link>
-          </Button>
-        </div>
       </motion.div>
     </header>
   );

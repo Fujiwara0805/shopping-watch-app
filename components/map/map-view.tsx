@@ -381,6 +381,7 @@ export function MapView() {
   const selectedCategory: PostCategory = 'イベント情報';
   const [checkingIn, setCheckingIn] = useState<string | null>(null);
   const [checkedInPosts, setCheckedInPosts] = useState<Set<string>>(new Set());
+  const [navigatingToDetail, setNavigatingToDetail] = useState<string | null>(null); // 詳細画面への遷移中のイベントID
 
   // 🔥 マップ作成者のプロフィール情報
   const [mapCreatorProfile, setMapCreatorProfile] = useState<MapCreatorProfile | null>(null);
@@ -1366,9 +1367,11 @@ export function MapView() {
                       </div>
 
                       {/* 決定コマンドボタン */}
-                      <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                      <motion.div whileHover={{ scale: navigatingToDetail === post.id ? 1 : 1.02 }} whileTap={{ scale: navigatingToDetail === post.id ? 1 : 0.98 }}>
                         <Button 
                           onClick={() => {
+                            if (navigatingToDetail) return; // 既に遷移中の場合は何もしない
+                            setNavigatingToDetail(post.id);
                             const eventUrl = generateSemanticEventUrl({
                               eventId: post.id,
                               eventName: post.event_name || post.content,
@@ -1376,11 +1379,21 @@ export function MapView() {
                               prefecture: post.prefecture || '大分県',
                             });
                             router.push(eventUrl);
-                          }} 
-                          className="w-full bg-[#8b6914] hover:bg-[#3d2914] text-[#ffecd2] font-black text-base py-3 rounded-none border-t-2 border-l-2 border-[#ffecd2]/30 border-b-4 border-r-4 border-[#3d2914] shadow-md transition-all flex items-center justify-center gap-3 group"
+                          }}
+                          disabled={navigatingToDetail === post.id}
+                          className="w-full bg-[#8b6914] hover:bg-[#3d2914] text-[#ffecd2] font-black text-base py-3 rounded-none border-t-2 border-l-2 border-[#ffecd2]/30 border-b-4 border-r-4 border-[#3d2914] shadow-md transition-all flex items-center justify-center gap-3 group disabled:opacity-80"
                         >
-                          <Search className="h-4 w-4 group-hover:scale-125 transition-transform" />
-                          調査する（詳細）
+                          {navigatingToDetail === post.id ? (
+                            <>
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              読み込み中...
+                            </>
+                          ) : (
+                            <>
+                              <Search className="h-4 w-4 group-hover:scale-125 transition-transform" />
+                              調査する（詳細）
+                            </>
+                          )}
                         </Button>
                       </motion.div>
                     </div>
