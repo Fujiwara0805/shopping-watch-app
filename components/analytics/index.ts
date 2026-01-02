@@ -4,4 +4,5 @@
  */
 
 export { VisitorCount, PopularityBadge } from './VisitorCount';
+export { AnalyticsSection } from './AnalyticsSection';
 

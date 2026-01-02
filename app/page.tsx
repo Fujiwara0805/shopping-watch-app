@@ -10,6 +10,8 @@ import { CustomModal } from '@/components/ui/custom-modal';
 import { supabase } from '@/lib/supabaseClient';
 import { useSession, signOut } from 'next-auth/react';
 import { getPublicMaps } from '@/app/_actions/maps';
+import { NoteArticlesSection } from '@/components/external-content';
+import { AnalyticsSection } from '@/components/analytics';
 
 // 🔥 公開マップの型定義
 interface PublicMapData {
@@ -865,6 +867,12 @@ const EventLP = ({ onStart, onMapClick }: { onStart: () => void; onMapClick: (ma
             </motion.div>
           </div>
         </section>
+
+        {/* note記事セクション */}
+        <NoteArticlesSection username="kind_ixora3833" maxItems={4} />
+
+        {/* 注目度（Analytics）セクション */}
+        <AnalyticsSection />
 
         {/* 最終CTA（発光表現強調） */}
         <section className="relative py-20 sm:py-28 px-4 sm:px-8 overflow-hidden bg-[#f5e6d3]">

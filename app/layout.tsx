@@ -13,6 +13,7 @@ import { FeedbackProvider } from '@/contexts/feedback-context';
 import { FeedbackIntegration } from '@/components/feedback/feedback-integration';
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from "@vercel/analytics/react";
+import { GoogleAnalytics } from '@next/third-parties/google';
 import { usePathname } from 'next/navigation';
 import { useEffect } from 'react';
 import { AppHeader } from '@/components/layout/app-header';
@@ -176,6 +177,11 @@ export default function RootLayout({
         </LoadingProvider>
         <SpeedInsights />
         <Analytics />
+        
+        {/* Google Analytics 4 */}
+        {process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID && (
+          <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID} />
+        )}
         
         {/* 構造化データ(JSON-LD) - AI検索エンジン向け */}
         <WebsiteStructuredData />

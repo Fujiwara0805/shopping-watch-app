@@ -11,8 +11,10 @@
     "seo:robots": "echo 'robots.txt を確認しています...' && curl -s https://tokudoku.com/robots.txt"
   },
   "dependencies": {
+    "@google-analytics/data": "^5.2.1",
     "@hookform/resolvers": "^3.9.0",
     "@line/bot-sdk": "^10.0.0",
+    "@next/third-parties": "^16.1.1",
     "@radix-ui/react-accordion": "^1.2.0",
     "@radix-ui/react-alert-dialog": "^1.1.1",
     "@radix-ui/react-aspect-ratio": "^1.1.0",

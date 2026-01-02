@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Eye, Users, TrendingUp, Loader2, RefreshCw } from 'lucide-react';
-import { COLORS } from '@/lib/constants/colors';
 
 interface AnalyticsData {
   pageViews: number;
@@ -16,16 +15,18 @@ interface VisitorCountProps {
   className?: string;
   showRefresh?: boolean;
   variant?: 'card' | 'inline' | 'badge';
+  period?: '24h' | '7d' | '30d';
 }
 
 /**
  * 訪問者数・PV表示コンポーネント
- * LP上で「現在の注目度」として表示
+ * Google Analytics 4のデータを使用
  */
 export function VisitorCount({ 
   className = '', 
   showRefresh = false,
-  variant = 'card' 
+  variant = 'card',
+  period = '30d'
 }: VisitorCountProps) {
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -36,7 +37,7 @@ export function VisitorCount({
       setLoading(true);
       setError(null);
       
-      const response = await fetch('/api/analytics?period=24h');
+      const response = await fetch(`/api/analytics?period=${period}`);
       const result = await response.json();
       
       if (result.success && result.data) {
@@ -55,10 +56,10 @@ export function VisitorCount({
   useEffect(() => {
     fetchData();
     
-    // 5分ごとに自動更新
-    const interval = setInterval(fetchData, 5 * 60 * 1000);
+    // 10分ごとに自動更新
+    const interval = setInterval(fetchData, 10 * 60 * 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [period]);
 
   // バッジ形式
   if (variant === 'badge') {
@@ -73,7 +74,7 @@ export function VisitorCount({
           <span className="text-sm text-[#5c3a21]">読込中...</span>
         ) : data ? (
           <span className="text-sm font-bold text-[#3d2914]">
-            {data.visitors.toLocaleString()}人が閲覧中
+            {data.visitors.toLocaleString()}人が訪問
           </span>
         ) : (
           <span className="text-sm text-[#5c3a21]">--</span>
@@ -122,7 +123,7 @@ export function VisitorCount({
           <div className="p-2 bg-[#8b6914]/10 rounded-lg">
             <TrendingUp className="h-5 w-5 text-[#8b6914]" />
           </div>
-          <h3 className="font-bold text-[#3d2914]">現在の注目度</h3>
+          <h3 className="font-bold text-[#3d2914]">サイトの注目度</h3>
         </div>
         {showRefresh && (
           <motion.button
@@ -211,4 +212,3 @@ export function VisitorCount({
 export function PopularityBadge({ className = '' }: { className?: string }) {
   return <VisitorCount variant="badge" className={className} />;
 }
-
