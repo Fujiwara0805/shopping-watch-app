@@ -63,6 +63,7 @@ import { useSession } from 'next-auth/react';
 import { useToast } from '@/hooks/use-toast';
 import { isWithinRange, calculateDistance } from '@/lib/utils/distance';
 import { Map as MapData, MapLocation } from '@/types/map';
+import { generateSemanticEventUrl } from '@/lib/seo/url-helper';
 
 declare global {
   interface Window {
@@ -85,6 +86,8 @@ interface PostMarkerData {
   event_start_date?: string | null;
   event_end_date?: string | null;
   enable_checkin?: boolean | null;
+  city?: string | null;
+  prefecture?: string | null;
 }
 
 // マイマップのロケーションデータ型
@@ -590,7 +593,7 @@ export function MapView() {
     setLoadingPosts(true);
     try {
       const now = new Date();
-      const { data, error } = await supabase.from('posts').select('id, category, store_name, content, store_latitude, store_longitude, event_name, event_start_date, event_end_date, created_at, expires_at, image_urls, enable_checkin').eq('is_deleted', false).eq('category', selectedCategory);
+      const { data, error } = await supabase.from('posts').select('id, category, store_name, content, store_latitude, store_longitude, event_name, event_start_date, event_end_date, created_at, expires_at, image_urls, enable_checkin, city, prefecture').eq('is_deleted', false).eq('category', selectedCategory);
       if (error || !data) { setPosts([]); return; }
       const filteredData = data.filter((post) => {
         if (!post.event_start_date) return false;
@@ -1365,7 +1368,15 @@ export function MapView() {
                       {/* 決定コマンドボタン */}
                       <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                         <Button 
-                          onClick={() => router.push(`/map/event/${post.id}`)} 
+                          onClick={() => {
+                            const eventUrl = generateSemanticEventUrl({
+                              eventId: post.id,
+                              eventName: post.event_name || post.content,
+                              city: post.city || undefined,
+                              prefecture: post.prefecture || '大分県',
+                            });
+                            router.push(eventUrl);
+                          }} 
                           className="w-full bg-[#8b6914] hover:bg-[#3d2914] text-[#ffecd2] font-black text-base py-3 rounded-none border-t-2 border-l-2 border-[#ffecd2]/30 border-b-4 border-r-4 border-[#3d2914] shadow-md transition-all flex items-center justify-center gap-3 group"
                         >
                           <Search className="h-4 w-4 group-hover:scale-125 transition-transform" />

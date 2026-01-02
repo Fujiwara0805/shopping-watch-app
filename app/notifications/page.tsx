@@ -12,6 +12,7 @@ import { ja } from 'date-fns/locale';
 import { useRouter } from 'next/navigation';
 import { CustomModal } from '@/components/ui/custom-modal';
 import { useNotification } from '@/contexts/NotificationContext';
+import { generateSemanticEventUrl } from '@/lib/seo/url-helper';
 
 export default function NotificationsPage() {
   const { data: session, status: sessionStatus } = useSession();
@@ -310,10 +311,28 @@ export default function NotificationsPage() {
 
                 <div 
                   className="flex items-center space-x-3 cursor-pointer flex-1"
-                  onClick={() => {
+                  onClick={async () => {
                     !notification.is_read && markAsRead(notification.id);
                     if (notification.reference_post_id) {
-                      router.push(`/map/event/${notification.reference_post_id}`);
+                      // イベント情報を取得してセマンティックURLを生成
+                      const { data: eventData } = await supabase
+                        .from('posts')
+                        .select('id, event_name, content, city, prefecture')
+                        .eq('id', notification.reference_post_id)
+                        .single();
+                      
+                      if (eventData) {
+                        const eventUrl = generateSemanticEventUrl({
+                          eventId: eventData.id,
+                          eventName: eventData.event_name || eventData.content || 'イベント',
+                          city: eventData.city || undefined,
+                          prefecture: eventData.prefecture || '大分県',
+                        });
+                        router.push(eventUrl);
+                      } else {
+                        // フォールバック: データ取得に失敗した場合は旧URLを使用（リダイレクトされる）
+                        router.push(`/map/event/${notification.reference_post_id}`);
+                      }
                     }
                   }}
                 >
