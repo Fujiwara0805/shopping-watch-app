@@ -32,8 +32,8 @@ export const FeedbackProvider: React.FC<FeedbackProviderProps> = ({ children }) 
   const [isActive, setIsActive] = useState(true);
   const [lastShownTime, setLastShownTime] = useState<number | null>(null);
 
-  // 5分 = 300,000ミリ秒（初回表示用）
-  const FEEDBACK_DELAY = 5 * 60 * 1000;
+  // 1時間 = 3600,000ミリ秒（初回表示用）
+  const FEEDBACK_DELAY = 1 * 60 * 60 * 1000; // 1時間
   // 48時間 = 172,800,000ミリ秒（再表示抑制用）
   const FEEDBACK_COOLDOWN = 48 * 60 * 60 * 1000;
 

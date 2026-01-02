@@ -218,16 +218,6 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose })
                   </Button>
                   
                   <div className="text-center">
-                    <motion.div
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      transition={{ delay: 0.2, type: "spring", stiffness: 300 }}
-                      className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center"
-                      style={{ background: 'linear-gradient(135deg, #73370c 0%, #8b4513 100%)' }}
-                    >
-                      <Heart className="h-8 w-8 text-white" />
-                    </motion.div>
-                    
                     <h2 className="text-xl font-bold text-gray-900 mb-3">
                       アプリの評価をお聞かせください
                     </h2>
@@ -279,8 +269,8 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose })
                               <Textarea
                                 placeholder="改善点やご要望があれば..."
                                 className="resize-none text-lg"
-                                rows={3}
-                                style={{ fontSize: '18px' }}
+                                rows={6}
+                                style={{ fontSize: '16px' }}
                                 {...field}
                               />
                             </FormControl>
