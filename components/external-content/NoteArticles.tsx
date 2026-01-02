@@ -31,6 +31,22 @@ const extractThumbnailFromHtml = (html: string): string | undefined => {
 };
 
 /**
+ * APIからOGP画像を取得
+ */
+const fetchOgpImage = async (articleUrl: string): Promise<string | undefined> => {
+  try {
+    const response = await fetch(`/api/note-ogp?url=${encodeURIComponent(articleUrl)}`);
+    const data = await response.json();
+    if (data.success && data.ogImage) {
+      return data.ogImage;
+    }
+  } catch (err) {
+    console.error('OGP取得エラー:', err);
+  }
+  return undefined;
+};
+
+/**
  * noteの記事一覧を表示するコンポーネント
  * RSSフィードを使用して最新記事を取得
  */
@@ -61,9 +77,10 @@ export function NoteArticles({ username, maxItems = 3, className = '' }: NoteArt
           throw new Error('RSSフィードの解析に失敗しました');
         }
         
-        const parsedArticles: NoteArticle[] = data.items.slice(0, maxItems).map((item: any) => {
+        // 初期記事データを作成
+        const initialArticles: NoteArticle[] = data.items.slice(0, maxItems).map((item: any) => {
           // サムネイルの取得を複数の方法で試行
-          let thumbnail = item.thumbnail || item.enclosure?.link;
+          let thumbnail = item.thumbnail || item.enclosure?.link || item.enclosure?.url;
           
           // thumbnailが空の場合、contentからimgを抽出
           if (!thumbnail && item.content) {
@@ -90,7 +107,23 @@ export function NoteArticles({ username, maxItems = 3, className = '' }: NoteArt
           };
         });
         
-        setArticles(parsedArticles);
+        // まず初期データを表示
+        setArticles(initialArticles);
+        
+        // サムネイルがない記事に対してOGP画像を取得
+        const articlesWithOgp = await Promise.all(
+          initialArticles.map(async (article) => {
+            if (!article.thumbnail) {
+              const ogpImage = await fetchOgpImage(article.link);
+              if (ogpImage) {
+                return { ...article, thumbnail: ogpImage };
+              }
+            }
+            return article;
+          })
+        );
+        
+        setArticles(articlesWithOgp);
       } catch (err) {
         console.error('Note記事取得エラー:', err);
         setError(err instanceof Error ? err.message : '記事の取得に失敗しました');
