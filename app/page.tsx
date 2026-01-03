@@ -6,7 +6,6 @@ import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion'
 import { MapPin, Menu, X, ChevronRight, Calendar, User, LogOut, Compass, Feather, Search, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { CustomModal } from '@/components/ui/custom-modal';
 import { supabase } from '@/lib/supabaseClient';
 import { useSession, signOut } from 'next-auth/react';
 import { getPublicMaps } from '@/app/_actions/maps';
@@ -939,9 +938,9 @@ const EventLP = ({ onStart, onMapClick }: { onStart: () => void; onMapClick: (ma
                   <span className="text-[#3d2914] font-bold text-xl tracking-wider font-serif">TOKUDOKU</span>
                 </div>
                 <p className="text-lg text-[#5c3a21] leading-relaxed font-semibold font-sans">
-                  一人旅の冒険者のための
+                  地方の新たな可能性に
                   <br />
-                  冒険の書を作成
+                  光を当てる
                 </p>
               </div>
 

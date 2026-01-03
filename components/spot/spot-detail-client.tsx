@@ -21,8 +21,20 @@ import {
   ChevronUp,
   Feather,
   Clock,
-  ArrowRight
+  ArrowRight,
+  Shield,
+  Compass
 } from 'lucide-react';
+
+// 🎮 RPG風移動手段アイコン（ピクセルアート風）
+const TRANSPORT_ICONS: { [key: string]: { icon: string; label: string; color: string } } = {
+  walk: { icon: '🚶', label: '徒歩', color: '#4CAF50' },
+  bus: { icon: '🚌', label: 'バス', color: '#2196F3' },
+  taxi: { icon: '🚕', label: 'タクシー', color: '#FFC107' },
+  car: { icon: '🚗', label: '車', color: '#9C27B0' },
+  bicycle: { icon: '🚲', label: '自転車', color: '#00BCD4' },
+  train: { icon: '🚃', label: '電車', color: '#F44336' },
+};
 import { supabase } from '@/lib/supabaseClient';
 
 // 🔥 CloudinaryのURLを高品質化する関数
@@ -401,7 +413,7 @@ export function SpotDetailClient({ spotId }: SpotDetailClientProps) {
                             alt="link" className="w-8 h-8 flex-shrink-0" />
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-bold text-[#8b6914] group-hover:underline truncate">
-                              {location.url.includes('instagram') ? '📸 Instagramを見る' : '🔗 公式サイトを見る'}
+                              {location.url.includes('instagram') ? 'CHECK INSTAGRAM' : 'OFFICIAL WEBSITE'}
                             </p>
                           </div>
                           <ExternalLink className="h-4 w-4 text-[#8b6914]" />
@@ -412,53 +424,71 @@ export function SpotDetailClient({ spotId }: SpotDetailClientProps) {
                     {/* Googleマップボタン */}
                     {location.store_latitude && location.store_longitude && (
                       <Button onClick={() => openInGoogleMaps(location)} className="w-full bg-gradient-to-r from-[#8b6914] to-[#5c3a21] hover:from-[#5c3a21] hover:to-[#3d2914] text-[#ffecd2] font-bold py-5 rounded-xl shadow-lg transition-all active:scale-95 border-2 border-[#ffecd2]/30">
-                        <Navigation className="mr-2 h-5 w-5" /> 🗺️ Googleマップで道案内
+                        <Navigation className="mr-2 h-5 w-5" /> Googleマップで道案内
                       </Button>
                     )}
                   </div>
                 </motion.article>
 
-                {/* スポット間の移動情報（最後のスポット以外） */}
-                {index < mapData.locations.length - 1 && (
+                {/* 🎮 RPG風タイムライン移動セクション（最後のスポット以外、かつ移動情報がある場合のみ表示） */}
+                {index < mapData.locations.length - 1 && (location.next_transport || location.next_travel_time) && (
                   <motion.div
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    whileInView={{ opacity: 1, scale: 1 }}
+                    initial={{ opacity: 0, y: 10 }}
+                    whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
-                    className="flex items-center justify-center py-6"
+                    className="relative py-4"
                   >
-                    <div className="flex flex-col items-center gap-2 px-6 py-4 bg-[#f5e6d3] rounded-xl border-2 border-dashed border-[#8b6914] shadow-md">
-                      {/* 移動アイコン */}
-                      <div className="text-3xl">
-                        {location.next_transport ? (
-                          location.next_transport === 'walk' ? '🚶' :
-                          location.next_transport === 'bus' ? '🚌' :
-                          location.next_transport === 'taxi' ? '🚕' :
-                          location.next_transport === 'car' ? '🚗' :
-                          location.next_transport === 'bicycle' ? '🚲' :
-                          location.next_transport === 'train' ? '🚃' : '⬇️'
-                        ) : '⬇️'}
+                    {/* タイムラインの縦線 */}
+                    <div className="absolute left-1/2 top-0 bottom-0 w-1 bg-gradient-to-b from-[#8b6914] via-[#d4c4a8] to-[#8b6914] -translate-x-1/2" />
+                    
+                    {/* RPG風移動コマンドウィンドウ */}
+                    <div className="relative z-10 mx-auto max-w-[280px]">
+                      <div 
+                        className="bg-[#1a1a2e] border-4 border-[#ffecd2] shadow-[4px_4px_0px_0px_rgba(0,0,0,0.5),inset_2px_2px_0px_0px_rgba(255,255,255,0.1)] p-4"
+                        style={{ fontFamily: "'DotGothic16', 'Courier New', monospace" }}
+                      >
+                        {/* ウィンドウヘッダー */}
+                        <div className="flex items-center gap-2 mb-3 pb-2 border-b border-[#ffecd2]/30">
+                          <Compass className="h-4 w-4 text-[#ffecd2]" />
+                          <span className="text-[#ffecd2] text-xs font-bold tracking-wider">MOVE TO NEXT</span>
+                        </div>
+                        
+                        {/* 移動情報 */}
+                        <div className="space-y-2">
+                          {/* 移動手段 */}
+                          {location.next_transport && (
+                            <div className="flex items-center gap-3">
+                              <span className="text-[#ffecd2] text-lg">▶</span>
+                              <span className="text-2xl">
+                                {TRANSPORT_ICONS[location.next_transport]?.icon || '🚶'}
+                              </span>
+                              <span className="text-[#ffecd2] text-sm font-bold">
+                                {TRANSPORT_ICONS[location.next_transport]?.label || '移動'}
+                              </span>
+                            </div>
+                          )}
+                          
+                          {/* 所要時間 */}
+                          {location.next_travel_time && (
+                            <div className={`flex items-center gap-3 ${location.next_transport ? 'pl-7' : ''}`}>
+                              <Clock className="h-4 w-4 text-[#ffecd2]/70" />
+                              <span className="text-[#ffecd2] text-sm">
+                                約 <span className="text-lg font-bold text-[#ffd700]">{location.next_travel_time}</span> 分
+                              </span>
+                            </div>
+                          )}
+                        </div>
                       </div>
                       
-                      {/* 移動情報テキスト */}
-                      <div className="flex items-center gap-2 text-sm text-[#5c3a21] font-bold">
-                        {location.next_transport && (
-                          <span className="px-2 py-1 bg-white rounded-full border border-[#d4c4a8]">
-                            {location.next_transport === 'walk' ? '徒歩' :
-                             location.next_transport === 'bus' ? 'バス' :
-                             location.next_transport === 'taxi' ? 'タクシー' :
-                             location.next_transport === 'car' ? '車' :
-                             location.next_transport === 'bicycle' ? '自転車' :
-                             location.next_transport === 'train' ? '電車' : '移動'}
-                          </span>
-                        )}
-                        {location.next_travel_time && (
-                          <span className="px-2 py-1 bg-[#8b6914] text-[#ffecd2] rounded-full">
-                            約{location.next_travel_time}分
-                          </span>
-                        )}
-                        {!location.next_transport && !location.next_travel_time && (
-                          <span className="text-gray-500 italic">次のスポットへ</span>
-                        )}
+                      {/* 装飾的な矢印 */}
+                      <div className="flex justify-center mt-2">
+                        <motion.div
+                          animate={{ y: [0, 4, 0] }}
+                          transition={{ duration: 1, repeat: Infinity }}
+                          className="text-[#8b6914] text-2xl"
+                        >
+                          ▼
+                        </motion.div>
                       </div>
                     </div>
                   </motion.div>

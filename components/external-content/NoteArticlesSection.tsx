@@ -115,7 +115,7 @@ export function NoteArticlesSection({
             冒険の記録
           </h2>
           <p className="text-base sm:text-lg text-[#5c3a21] mt-4 font-medium" style={{ fontFamily: 'serif' }}>
-            大分の冒険者たちへ届ける物語
+            冒険者たちへ届ける物語
           </p>
         </motion.div>
 
