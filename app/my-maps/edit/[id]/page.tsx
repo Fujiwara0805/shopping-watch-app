@@ -943,17 +943,7 @@ export default function EditMapPage() {
   
   return (
     <div className="min-h-screen bg-[#f5e6d3]">
-      {/* RPG風ヘッダー */}
-      <div className="bg-gradient-to-b from-[#3d2914] to-[#5c3a21] text-[#ffecd2] py-6 px-4 shadow-lg">
-        <div className="container mx-auto max-w-3xl">
-          <h1 className="text-2xl font-bold text-center" style={{ fontFamily: "'Noto Serif JP', serif" }}>
-            ✏️ 冒険の書を編集
-          </h1>
-          <p className="text-center text-[#d4c4a8] text-sm mt-2">
-            記録を更新しよう
-          </p>
-        </div>
-      </div>
+
       
       <div className="container mx-auto max-w-3xl px-4 py-6 pb-8">
         <motion.div
@@ -977,7 +967,7 @@ export default function EditMapPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-base font-bold text-[#3d2914]">
-                        📖 冒険の書タイトル<span className="text-red-600 ml-1">*</span>
+                        Mapのタイトル<span className="text-red-600 ml-1">*</span>
                       </FormLabel>
                       <FormControl>
                         <Input
@@ -1206,7 +1196,7 @@ export default function EditMapPage() {
                 control={form.control}
                 name="isPublic"
                 render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 bg-gray-50">
                     <div className="space-y-0.5">
                       <FormLabel className="text-sm font-semibold">
                         公開設定
@@ -1370,16 +1360,7 @@ export default function EditMapPage() {
                           animate={{ opacity: 1 }}
                           transition={{ delay: index * 0.1 + 0.05 }}
                           className="relative flex items-center gap-3 ml-5 pl-5 py-2 mb-2"
-                        >
-                          {/* 移動アイコン */}
-                          <div className="absolute left-0 w-10 flex justify-center">
-                            <div className="text-lg">
-                              {location.nextTransport ? 
-                                TRANSPORT_OPTIONS.find(t => t.value === location.nextTransport)?.icon || '↓' 
-                                : '↓'}
-                            </div>
-                          </div>
-                          
+                        > 
                           {/* 移動情報入力 */}
                           <div className="flex-1 flex items-center gap-2 p-2 rounded-lg bg-[#fff8f0] border border-dashed border-[#d4c4a8]">
                             <Select
@@ -1434,7 +1415,7 @@ export default function EditMapPage() {
                   ) : (
                     <>
                       <CheckCircle className="mr-2 h-5 w-5" />
-                      ⚔️ 冒険の書を更新する
+                      マップを更新する
                     </>
                   )}
                 </Button>
@@ -1448,7 +1429,7 @@ export default function EditMapPage() {
                   onClick={() => router.push('/my-maps')}
                   className="w-full h-12 text-base font-semibold rounded-xl shadow-md bg-[#d4c4a8] hover:bg-[#c4b498] text-[#3d2914] border border-[#8b6914]"
                 >
-                  🏠 マイマップに戻る
+                  戻る
                 </Button>
               </div>
             </form>
