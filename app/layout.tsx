@@ -1,11 +1,7 @@
 import './globals.css';
 import type { Metadata, Viewport } from 'next';
 import { Noto_Sans_JP } from 'next/font/google';
-import { SpeedInsights } from "@vercel/speed-insights/next";
-import { Analytics } from "@vercel/analytics/react";
-import { GoogleAnalytics } from '@next/third-parties/google';
 import { RootLayoutClient } from './layout-client';
-import { WebsiteStructuredData, FAQStructuredData, LocalBusinessStructuredData } from '@/components/seo/structured-data';
 
 /**
  * ========================================
@@ -66,7 +62,7 @@ const SEO_KEYWORDS = [
 export const metadata: Metadata = {
   // 基本メタデータ
   title: {
-    default: `${SITE_NAME} - 地域情報マップアプリ | 大分県内のイベントやスポット情報を掲載`,
+    default: `${SITE_NAME} - 地域情報アプリ | 大分県内のイベントやスポット情報を掲載`,
     template: `%s | ${SITE_NAME}`,
   },
   description: SITE_DESCRIPTION,
@@ -108,14 +104,14 @@ export const metadata: Metadata = {
     locale: 'ja_JP',
     url: SITE_URL,
     siteName: SITE_NAME,
-    title: `${SITE_NAME} - 地域情報マップアプリ`,
+    title: `${SITE_NAME} - 地域情報アプリ`,
     description: 'いつもの街に、まだ知らない景色がある。県内全域のお祭り、マルシェ、ワークショップを地図から発見。気になる場所をまとめて、あなただけのオリジナルマップに。大分をもっと好きになる——完全無料の地域情報アプリ。',
     images: [
       {
         url: OG_IMAGE,
         width: 1200,
         height: 630,
-        alt: `${SITE_NAME} - 地域情報マップアプリ`,
+        alt: `${SITE_NAME} - 地域情報アプリ`,
         type: 'image/png',
       },
     ],
@@ -124,7 +120,7 @@ export const metadata: Metadata = {
   // Twitter Card
   twitter: {
     card: 'summary_large_image',
-    title: `${SITE_NAME} - 地域情報マップアプリ`,
+    title: `${SITE_NAME} - 地域情報アプリ`,
     description: 'いつもの街に、まだ知らない景色がある。県内全域のお祭り、マルシェ、ワークショップを地図から発見。気になる場所をまとめて、あなただけのオリジナルマップに。大分をもっと好きになる——完全無料の地域情報アプリ。',
     images: [OG_IMAGE],
     creator: '@tokudoku',
@@ -263,7 +259,7 @@ export default function RootLayout({
                   '@type': 'WebSite',
                   '@id': `${SITE_URL}/#website`,
                   url: SITE_URL,
-                  name: `${SITE_NAME} - 地域情報マップアプリ`,
+                  name: `${SITE_NAME} - 地域情報アプリ`,
                   description: SITE_DESCRIPTION,
                   publisher: { '@id': `${SITE_URL}/#organization` },
                   inLanguage: 'ja',
@@ -321,20 +317,6 @@ export default function RootLayout({
         <RootLayoutClient>
           {children}
         </RootLayoutClient>
-        
-        {/* Performance & Analytics */}
-        <SpeedInsights />
-        <Analytics />
-        
-        {/* Google Analytics 4 */}
-        {process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID && (
-          <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID} />
-        )}
-        
-        {/* 追加の構造化データ */}
-        <WebsiteStructuredData />
-        <FAQStructuredData />
-        <LocalBusinessStructuredData />
       </body>
     </html>
   );

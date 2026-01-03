@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
-import AppLayout from "@/app/layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -138,73 +137,23 @@ export default function ResetPasswordPage() {
   // トークン検証中の表示
   if (isValidating) {
     return (
-      <AppLayout>
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="flex flex-col items-center justify-center min-h-screen p-4 bg-[#73370c]/5"
-        >
-          <motion.div className="bg-white p-8 sm:p-10 rounded-xl shadow-xl w-full max-w-md text-center border border-[#73370c]/10">
-            <Loader2 className="h-16 w-16 animate-spin text-[#73370c] mx-auto mb-6" />
-            <p className="text-lg text-[#73370c]">リセットリンクを確認中...</p>
-            <p className="text-sm text-[#73370c]/60 mt-2">しばらくお待ちください</p>
-          </motion.div>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="flex flex-col items-center justify-center min-h-screen p-4 bg-[#73370c]/5"
+      >
+        <motion.div className="bg-white p-8 sm:p-10 rounded-xl shadow-xl w-full max-w-md text-center border border-[#73370c]/10">
+          <Loader2 className="h-16 w-16 animate-spin text-[#73370c] mx-auto mb-6" />
+          <p className="text-lg text-[#73370c]">リセットリンクを確認中...</p>
+          <p className="text-sm text-[#73370c]/60 mt-2">しばらくお待ちください</p>
         </motion.div>
-      </AppLayout>
+      </motion.div>
     );
   }
 
   // 無効なトークンの場合
   if (!isValidToken && tokenError) {
     return (
-      <AppLayout>
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.3 }}
-          className="flex flex-col items-center justify-center min-h-screen p-4 bg-[#73370c]/5"
-        >
-          <motion.div
-            initial={{ y: -20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.2, duration: 0.4 }}
-            className="bg-white p-8 sm:p-10 rounded-xl shadow-xl w-full max-w-md text-center border border-red-200"
-          >
-            <AlertTriangle className="h-16 w-16 text-red-500 mx-auto mb-4" />
-            <h1 className="text-3xl sm:text-4xl font-bold text-red-600 mb-4">
-              無効なリンク
-            </h1>
-            <p className="text-red-700/80 mb-8 text-sm sm:text-base leading-relaxed">
-              {tokenError}
-            </p>
-            
-            <div className="space-y-4">
-              <Link href="/forgot-password" className="w-full">
-                <Button
-                  className="w-full bg-[#73370c] hover:bg-[#73370c]/90 text-white text-base sm:text-lg py-6 sm:py-7 shadow-md rounded-lg transition-colors"
-                  style={{ fontSize: '16px' }}
-                >
-                  新しいリセットリンクを取得
-                </Button>
-              </Link>
-              <Link href="/login" className="w-full">
-                <Button
-                  variant="ghost"
-                  className="w-full text-[#73370c]/70 hover:text-[#73370c] hover:bg-[#73370c]/5 text-sm sm:text-base py-4 rounded-lg transition-colors border border-[#73370c]/10"
-                  style={{ fontSize: '16px' }}
-                >
-                  ログインページに戻る
-                </Button>
-              </Link>
-            </div>
-          </motion.div>
-        </motion.div>
-      </AppLayout>
-    );
-  }
-
-  return (
-    <AppLayout>
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -215,8 +164,53 @@ export default function ResetPasswordPage() {
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.2, duration: 0.4 }}
-          className="bg-white p-8 sm:p-10 rounded-xl shadow-xl w-full max-w-md text-center border border-[#73370c]/10"
+          className="bg-white p-8 sm:p-10 rounded-xl shadow-xl w-full max-w-md text-center border border-red-200"
         >
+          <AlertTriangle className="h-16 w-16 text-red-500 mx-auto mb-4" />
+          <h1 className="text-3xl sm:text-4xl font-bold text-red-600 mb-4">
+            無効なリンク
+          </h1>
+          <p className="text-red-700/80 mb-8 text-sm sm:text-base leading-relaxed">
+            {tokenError}
+          </p>
+          
+          <div className="space-y-4">
+            <Link href="/forgot-password" className="w-full">
+              <Button
+                className="w-full bg-[#73370c] hover:bg-[#73370c]/90 text-white text-base sm:text-lg py-6 sm:py-7 shadow-md rounded-lg transition-colors"
+                style={{ fontSize: '16px' }}
+              >
+                新しいリセットリンクを取得
+              </Button>
+            </Link>
+            <Link href="/login" className="w-full">
+              <Button
+                variant="ghost"
+                className="w-full text-[#73370c]/70 hover:text-[#73370c] hover:bg-[#73370c]/5 text-sm sm:text-base py-4 rounded-lg transition-colors border border-[#73370c]/10"
+                style={{ fontSize: '16px' }}
+              >
+                ログインページに戻る
+              </Button>
+            </Link>
+          </div>
+        </motion.div>
+      </motion.div>
+    );
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.3 }}
+      className="flex flex-col items-center justify-center min-h-screen p-4 bg-[#73370c]/5"
+    >
+      <motion.div
+        initial={{ y: -20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.2, duration: 0.4 }}
+        className="bg-white p-8 sm:p-10 rounded-xl shadow-xl w-full max-w-md text-center border border-[#73370c]/10"
+      >
           {isResetSuccess ? (
             <motion.div
               initial={{ opacity: 0, scale: 0.8 }}
@@ -367,6 +361,5 @@ export default function ResetPasswordPage() {
           )}
         </motion.div>
       </motion.div>
-    </AppLayout>
   );
 }

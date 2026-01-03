@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import AppLayout from "@/app/layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -94,13 +93,12 @@ export default function RegisterPage() {
   };
 
   return (
-    <AppLayout>
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.3 }}
-        className="flex flex-col items-center justify-center min-h-screen p-4 bg-[#73370c]/5"
-      >
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.3 }}
+      className="flex flex-col items-center justify-center min-h-screen p-4 bg-[#73370c]/5"
+    >
         <motion.div
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -246,6 +244,5 @@ export default function RegisterPage() {
           </p>
         </motion.div>
       </motion.div>
-    </AppLayout>
   );
 }
