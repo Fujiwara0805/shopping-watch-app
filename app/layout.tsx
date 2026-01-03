@@ -317,24 +317,25 @@ export default function RootLayout({
           }}
         />
       </head>
-      
-      <RootLayoutClient fontClassName={notoSansJP.variable}>
-        {children}
-      </RootLayoutClient>
-      
-      {/* Performance & Analytics */}
-      <SpeedInsights />
-      <Analytics />
-      
-      {/* Google Analytics 4 */}
-      {process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID && (
-        <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID} />
-      )}
-      
-      {/* 追加の構造化データ */}
-      <WebsiteStructuredData />
-      <FAQStructuredData />
-      <LocalBusinessStructuredData />
+      <body className={`${notoSansJP.variable} font-sans bg-background text-foreground`}>
+        <RootLayoutClient>
+          {children}
+        </RootLayoutClient>
+        
+        {/* Performance & Analytics */}
+        <SpeedInsights />
+        <Analytics />
+        
+        {/* Google Analytics 4 */}
+        {process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID && (
+          <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID} />
+        )}
+        
+        {/* 追加の構造化データ */}
+        <WebsiteStructuredData />
+        <FAQStructuredData />
+        <LocalBusinessStructuredData />
+      </body>
     </html>
   );
 }
