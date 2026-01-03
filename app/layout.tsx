@@ -36,7 +36,7 @@ const notoSansJP = Noto_Sans_JP({
 // サイト基本情報
 const SITE_NAME = 'トクドク';
 const SITE_URL = 'https://tokudoku.com';
-const SITE_DESCRIPTION = '大分県内のお祭り、マルシェ、ワークショップを地図で発見！大分市・別府市・中津市・日田市など県内全域のイベント情報をリアルタイム検索。現在地から近いイベントをかんたん発見できる、完全無料の地域密着イベントアプリです。';
+const SITE_DESCRIPTION = 'いつもの街に、まだ知らない景色がある。県内全域のお祭り、マルシェ、ワークショップを地図から発見。気になる場所をまとめて、あなただけのオリジナルマップに。大分をもっと好きになる——完全無料の地域情報アプリ。';
 const OG_IMAGE = 'https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png';
 
 // SEO用キーワード（大分県全18市町村 + イベントカテゴリ）
@@ -66,7 +66,7 @@ const SEO_KEYWORDS = [
 export const metadata: Metadata = {
   // 基本メタデータ
   title: {
-    default: `${SITE_NAME} - 地域イベント発見アプリ | 大分県のお祭り・マルシェ・ワークショップ情報`,
+    default: `${SITE_NAME} - 地域情報マップアプリ | 大分県内のイベントやスポット情報を掲載`,
     template: `%s | ${SITE_NAME}`,
   },
   description: SITE_DESCRIPTION,
@@ -108,14 +108,14 @@ export const metadata: Metadata = {
     locale: 'ja_JP',
     url: SITE_URL,
     siteName: SITE_NAME,
-    title: `${SITE_NAME} - 大分県の地域イベント発見アプリ`,
-    description: '大分県内のお祭り、マルシェ、ワークショップを地図で発見！現在地から近いイベントをかんたん検索。完全無料の地域密着イベントアプリ。',
+    title: `${SITE_NAME} - 地域情報マップアプリ`,
+    description: 'いつもの街に、まだ知らない景色がある。県内全域のお祭り、マルシェ、ワークショップを地図から発見。気になる場所をまとめて、あなただけのオリジナルマップに。大分をもっと好きになる——完全無料の地域情報アプリ。',
     images: [
       {
         url: OG_IMAGE,
         width: 1200,
         height: 630,
-        alt: `${SITE_NAME} - 大分県の地域イベント発見アプリ`,
+        alt: `${SITE_NAME} - 地域情報マップアプリ`,
         type: 'image/png',
       },
     ],
@@ -124,8 +124,8 @@ export const metadata: Metadata = {
   // Twitter Card
   twitter: {
     card: 'summary_large_image',
-    title: `${SITE_NAME} - 大分県の地域イベント発見アプリ`,
-    description: '大分県内のお祭り、マルシェ、ワークショップを地図で発見！完全無料の地域密着イベントアプリ。',
+    title: `${SITE_NAME} - 地域情報マップアプリ`,
+    description: 'いつもの街に、まだ知らない景色がある。県内全域のお祭り、マルシェ、ワークショップを地図から発見。気になる場所をまとめて、あなただけのオリジナルマップに。大分をもっと好きになる——完全無料の地域情報アプリ。',
     images: [OG_IMAGE],
     creator: '@tokudoku',
     site: '@tokudoku',
@@ -263,7 +263,7 @@ export default function RootLayout({
                   '@type': 'WebSite',
                   '@id': `${SITE_URL}/#website`,
                   url: SITE_URL,
-                  name: `${SITE_NAME} - 大分県の地域イベント発見アプリ`,
+                  name: `${SITE_NAME} - 地域情報マップアプリ`,
                   description: SITE_DESCRIPTION,
                   publisher: { '@id': `${SITE_URL}/#organization` },
                   inLanguage: 'ja',
@@ -292,13 +292,13 @@ export default function RootLayout({
                   },
                   featureList: [
                     '大分県内の地域イベント検索',
-                    '地図上でイベント位置を確認',
+                    '地図上でスポット位置を確認',
                     '現在地周辺のイベント表示',
                     'お祭り・マルシェ・ワークショップ情報',
                     '完全無料・登録不要',
                     'リアルタイム情報更新',
                   ],
-                  description: '大分県内の地域イベント情報をマップ上で検索できる無料アプリ。大分市、別府市、中津市、日田市など県内全18市町村のお祭り、マルシェ、ワークショップをリアルタイムで発見。',
+                  description: 'いつもの街に、まだ知らない景色がある。県内全域のお祭り、マルシェ、ワークショップを地図から発見。気になる場所をまとめて、あなただけのオリジナルマップに。大分をもっと好きになる——完全無料の地域情報アプリ。',
                 },
                 // BreadcrumbList (トップページ)
                 {

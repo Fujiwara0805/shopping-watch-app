@@ -177,8 +177,8 @@ const PublicMapsSection = ({ onMapClick }: { onMapClick: (mapId: string) => void
           世界で一つだけの地図
           </h2>
           <p className="text-base sm:text-lg md:text-xl text-[#5c3a21] mt-4 font-semibold font-sans">
-          地元の人が作った<br />
-            <span className="ml-1 text-[#3d2914] border-b-2 border-[#8b6914]/50">数々のスポットを集めた地図帳</span>
+          地域の知られざる魅力が詰まった<br />
+            <span className="ml-1 text-[#3d2914] border-b-2 border-[#8b6914]/50">数々のスポットを紹介した地図たち</span>
           </p>
         </motion.div>
 
@@ -679,11 +679,11 @@ const EventLP = ({ onStart, onMapClick }: { onStart: () => void; onMapClick: (ma
                   transition={{ duration: 0.8, delay: 0.4 }}
                   className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl text-white font-bold leading-tight tracking-tight drop-shadow-xl font-serif"
                 >
-                  ここでしか出会えない
+                  知られていない
                   <br className="hidden sm:block" />
                   <span className="relative inline-block mt-3 pb-2">
                     <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#ffecd2] via-[#fff8f0] to-[#ffecd2]">
-                      新しい発見を
+                    地域の魅力を発見
                     </span>
                     {/* 下線装飾 */}
                     <motion.span 
@@ -891,7 +891,7 @@ const EventLP = ({ onStart, onMapClick }: { onStart: () => void; onMapClick: (ma
               viewport={{ once: true }}
               className="space-y-10"
             >
-              <h2 className="text-3xl sm:text-4xl lg:text-6xl font-extrabold leading-tight text-[#3d2914] font-serif">
+              <h2 className="text-2xl sm:text-3xl lg:text-5xl font-extrabold leading-tight text-[#3d2914] font-serif">
                 さあ、冒険を始めよう！
               </h2>
 
@@ -938,7 +938,7 @@ const EventLP = ({ onStart, onMapClick }: { onStart: () => void; onMapClick: (ma
                   <span className="text-[#3d2914] font-bold text-xl tracking-wider font-serif">TOKUDOKU</span>
                 </div>
                 <p className="text-lg text-[#5c3a21] leading-relaxed font-semibold font-sans">
-                  地方の新たな可能性に
+                  地域の新たな可能性に
                   <br />
                   光を当てる
                 </p>
@@ -951,7 +951,7 @@ const EventLP = ({ onStart, onMapClick }: { onStart: () => void; onMapClick: (ma
                   </h4>
                   <ul className="space-y-2">
                     <li>
-                      <a href="/profile" className="text-[#8b7355] hover:text-[#3d2914] transition-colors font-semibold text-sm sm:text-base font-sans">マイページ</a>
+                      <a href="https://www.nobody-inc.jp/" target="_blank" className="text-[#8b7355] hover:text-[#3d2914] transition-colors font-semibold text-sm sm:text-base font-sans">会社概要</a>
                     </li>
                     <li>
                       <a href="/contact" className="text-[#8b7355] hover:text-[#3d2914] transition-colors font-semibold text-sm sm:text-base font-sans">問い合わせ</a>
@@ -982,7 +982,7 @@ const EventLP = ({ onStart, onMapClick }: { onStart: () => void; onMapClick: (ma
 
             <div className="pt-8 border-t border-[#d4c4a8] text-center">
               <p className="text-sm sm:text-base text-[#8b7355] font-semibold font-sans">
-                © 2025 トクドク All rights reserved.
+                © 2026 tokudoku All rights reserved.
               </p>
             </div>
           </div>
