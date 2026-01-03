@@ -399,8 +399,14 @@ export function MapView() {
   const [routePolylines, setRoutePolylines] = useState<google.maps.Polyline[]>([]);
   const directionsServiceRef = useRef<google.maps.DirectionsService | null>(null);
 
-  // デバイスの向きを取得
+  // デバイスの向きを取得（マイマップモード時のみ有効）
   useEffect(() => {
+    // イベントモード時はデバイスの向き取得を無効化（計算リソースの節約）
+    if (viewMode === 'events') {
+      setDeviceHeading(null);
+      return;
+    }
+    
     const handleDeviceOrientation = (event: DeviceOrientationEvent) => {
       let heading: number | null = null;
       if ('webkitCompassHeading' in event && typeof (event as any).webkitCompassHeading === 'number') {
@@ -423,7 +429,7 @@ export function MapView() {
     };
     requestOrientationPermission();
     return () => { window.removeEventListener('deviceorientation', handleDeviceOrientation, true); };
-  }, []);
+  }, [viewMode]);
 
   useEffect(() => {
     try {
@@ -877,13 +883,15 @@ export function MapView() {
     }
   }, [viewMode]);
 
-  // 方角付きユーザー位置マーカー
+  // 方角付きユーザー位置マーカー（マイマップモード時のみ方角を表示）
   useEffect(() => {
     const userLat = savedLocation?.lat || latitude;
     const userLng = savedLocation?.lng || longitude;
     if (map && userLat && userLng && mapInitialized && window.google?.maps) {
       const userPosition = new window.google.maps.LatLng(userLat, userLng);
-      const directionalIcon = createDirectionalLocationIcon(deviceHeading);
+      // イベントモード時は方角なし（null）、マイマップモード時のみ方角を表示
+      const headingForIcon = viewMode === 'myMaps' ? deviceHeading : null;
+      const directionalIcon = createDirectionalLocationIcon(headingForIcon);
       if (userLocationMarker) { userLocationMarker.setPosition(userPosition); userLocationMarker.setIcon(directionalIcon); userLocationMarker.setMap(map); userLocationMarker.setZIndex(9999); }
       else {
         try {

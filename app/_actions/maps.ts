@@ -15,6 +15,11 @@ export interface LocationData {
   content: string;
   image_urls: string[];
   url: string | null;
+  // 新規追加項目
+  stay_duration?: number; // 滞在予定時間（分）
+  recommended_transport?: string; // 推奨移動手段
+  next_transport?: string; // 次のスポットへの移動手段
+  next_travel_time?: number; // 次のスポットへの所要時間（分）
 }
 
 export interface CreateMapInput {

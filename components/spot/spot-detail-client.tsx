@@ -19,7 +19,9 @@ import {
   Sword,
   ChevronDown,
   ChevronUp,
-  Feather
+  Feather,
+  Clock,
+  ArrowRight
 } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 
@@ -47,6 +49,11 @@ interface SpotLocation {
   content: string;
   image_urls: string[];
   url?: string | null;
+  // 新規追加項目
+  stay_duration?: number; // 滞在予定時間（分）
+  recommended_transport?: string; // 推奨移動手段
+  next_transport?: string; // 次のスポットへの移動手段
+  next_travel_time?: number; // 次のスポットへの所要時間（分）
 }
 
 interface MapData {
@@ -317,74 +324,146 @@ export function SpotDetailClient({ spotId }: SpotDetailClientProps) {
             )}
           </section>
 
-          {/* スポットカード一覧 */}
-          <div className="mt-12 space-y-10">
+          {/* スポットカード一覧（RPG風デザイン＋スポット間移動表示） */}
+          <div className="mt-12">
             {mapData.locations.map((location, index) => (
-              <motion.article
-                key={index} id={`spot-${index}`}
-                initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
-                className="bg-white rounded-xl shadow-[0_10px_25px_-5px_rgba(61,41,20,0.1)] overflow-hidden border-2 border-[#d4c4a8]"
-              >
-                <div className="p-6">
-                  <h3 className="text-2xl font-bold mb-5 flex items-center gap-3 text-[#3d2914]" style={{ fontFamily: "'Noto Serif JP', serif" }}>
-                    <span className="flex-shrink-0 w-9 h-9 rounded-lg flex items-center justify-center text-[#ffecd2] font-bold text-lg bg-[#8b6914] shadow-md">
-                      {index + 1}
-                    </span>
-                    <span className="border-b-2 border-[#8b6914]/20 pb-1 flex-1">{location.store_name}</span>
-                  </h3>
-
-                  {location.image_urls && location.image_urls.length > 0 && (
-                    <div className="relative aspect-[16/10] bg-gray-100 rounded-lg overflow-hidden mb-6 shadow-inner border border-[#d4c4a8]">
-                      <img
-                        src={optimizeCloudinaryImageUrl(location.image_urls[currentImageIndices[index] || 0])}
-                        alt={location.store_name}
-                        className="w-full h-full object-cover cursor-pointer hover:scale-[1.03] transition-transform duration-500"
-                        onClick={() => setExpandedImageIndex({ spotIndex: index, imageIndex: currentImageIndices[index] || 0 })}
-                      />
-                      {location.image_urls.length > 1 && (
-                        <>
-                          <button onClick={(e) => { e.stopPropagation(); handleImageNav(index, 'prev', location.image_urls.length); }}
-                            className="absolute left-2 top-1/2 -translate-y-1/2 p-2 bg-black/50 hover:bg-[#8b6914] rounded-full text-white transition-all shadow-lg"><ChevronLeft /></button>
-                          <button onClick={(e) => { e.stopPropagation(); handleImageNav(index, 'next', location.image_urls.length); }}
-                            className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-black/50 hover:bg-[#8b6914] rounded-full text-white transition-all shadow-lg"><ChevronRight /></button>
-                          <div className="absolute bottom-3 right-3 flex items-center gap-1.5 px-3 py-1.5 bg-black/60 backdrop-blur-md rounded-full text-[#ffecd2] text-xs font-bold border border-white/20">
-                            <ImageIcon className="h-3.5 w-3.5" /> {(currentImageIndices[index] || 0) + 1} / {location.image_urls.length}
+              <div key={index}>
+                {/* スポットカード */}
+                <motion.article
+                  id={`spot-${index}`}
+                  initial={{ opacity: 0, y: 30 }} 
+                  whileInView={{ opacity: 1, y: 0 }} 
+                  viewport={{ once: true }}
+                  className="bg-[#fdf5e6] rounded-xl shadow-[0_10px_25px_-5px_rgba(61,41,20,0.15)] overflow-hidden border-4 border-double border-[#8b6914]"
+                  style={{
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
+                    backgroundBlendMode: 'overlay',
+                  }}
+                >
+                  <div className="p-6 relative">
+                    {/* RPG風ヘッダー */}
+                    <div className="flex items-center gap-3 mb-5">
+                      <div className="flex-shrink-0 w-12 h-12 rounded-full bg-gradient-to-br from-[#8b6914] to-[#5c3a21] flex items-center justify-center text-[#ffecd2] font-bold text-xl shadow-lg border-2 border-[#ffecd2]">
+                        {index + 1}
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-xl font-bold text-[#3d2914]" style={{ fontFamily: "'Noto Serif JP', serif" }}>
+                          {location.store_name}
+                        </h3>
+                        {/* 滞在時間バッジ */}
+                        {location.stay_duration && (
+                          <div className="flex items-center gap-1.5 mt-1 text-sm text-[#5c3a21]">
+                            <Clock className="h-3.5 w-3.5" />
+                            <span className="font-medium">滞在目安: {location.stay_duration}分</span>
                           </div>
-                        </>
-                      )}
+                        )}
+                      </div>
                     </div>
-                  )}
 
-                  <div className="bg-[#fff8f0] border-l-8 border-[#8b6914] rounded-r-lg p-5 mb-6 shadow-sm">
-                    <p className="text-[#5c3a21] text-base leading-relaxed whitespace-pre-wrap font-medium">
-                      {location.content}
-                    </p>
+                    {/* 画像 */}
+                    {location.image_urls && location.image_urls.length > 0 && (
+                      <div className="relative aspect-[16/10] bg-gray-100 rounded-lg overflow-hidden mb-5 shadow-inner border-2 border-[#d4c4a8]">
+                        <img
+                          src={optimizeCloudinaryImageUrl(location.image_urls[currentImageIndices[index] || 0])}
+                          alt={location.store_name}
+                          className="w-full h-full object-cover cursor-pointer hover:scale-[1.03] transition-transform duration-500"
+                          onClick={() => setExpandedImageIndex({ spotIndex: index, imageIndex: currentImageIndices[index] || 0 })}
+                        />
+                        {location.image_urls.length > 1 && (
+                          <>
+                            <button onClick={(e) => { e.stopPropagation(); handleImageNav(index, 'prev', location.image_urls.length); }}
+                              className="absolute left-2 top-1/2 -translate-y-1/2 p-2 bg-black/50 hover:bg-[#8b6914] rounded-full text-white transition-all shadow-lg"><ChevronLeft /></button>
+                            <button onClick={(e) => { e.stopPropagation(); handleImageNav(index, 'next', location.image_urls.length); }}
+                              className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-black/50 hover:bg-[#8b6914] rounded-full text-white transition-all shadow-lg"><ChevronRight /></button>
+                            <div className="absolute bottom-3 right-3 flex items-center gap-1.5 px-3 py-1.5 bg-black/60 backdrop-blur-md rounded-full text-[#ffecd2] text-xs font-bold border border-white/20">
+                              <ImageIcon className="h-3.5 w-3.5" /> {(currentImageIndices[index] || 0) + 1} / {location.image_urls.length}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    )}
+
+                    {/* コンテンツ（RPG風巻物デザイン） */}
+                    <div className="bg-[#fff8f0] border-l-4 border-[#8b6914] rounded-r-lg p-4 mb-5 shadow-sm relative">
+                      <Feather className="absolute -top-2 -left-2 h-5 w-5 text-[#8b6914] opacity-60" />
+                      <p className="text-[#5c3a21] text-base leading-relaxed whitespace-pre-wrap">
+                        {location.content}
+                      </p>
+                    </div>
+
+                    {/* リンク */}
+                    {location.url && (
+                      <div className="mb-5">
+                        <a href={location.url} target="_blank" rel="noopener noreferrer"
+                          className="flex items-center gap-3 p-3 bg-white hover:bg-[#ffecd2] rounded-lg border-2 border-[#d4c4a8] transition-all group shadow-sm"
+                        >
+                          <img src={location.url.includes('instagram.com') ? 'https://res.cloudinary.com/dz9trbwma/image/upload/v1759308496/icons8-%E3%82%A4%E3%83%B3%E3%82%B9%E3%82%BF%E3%82%AF%E3%82%99%E3%83%A9%E3%83%A0-100_idedfz.png' : 'https://res.cloudinary.com/dz9trbwma/image/upload/v1759366399/icons8-%E3%82%A6%E3%82%A7%E3%83%95%E3%82%99-100_a6uwwq.png'}
+                            alt="link" className="w-8 h-8 flex-shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-bold text-[#8b6914] group-hover:underline truncate">
+                              {location.url.includes('instagram') ? '📸 Instagramを見る' : '🔗 公式サイトを見る'}
+                            </p>
+                          </div>
+                          <ExternalLink className="h-4 w-4 text-[#8b6914]" />
+                        </a>
+                      </div>
+                    )}
+
+                    {/* Googleマップボタン */}
+                    {location.store_latitude && location.store_longitude && (
+                      <Button onClick={() => openInGoogleMaps(location)} className="w-full bg-gradient-to-r from-[#8b6914] to-[#5c3a21] hover:from-[#5c3a21] hover:to-[#3d2914] text-[#ffecd2] font-bold py-5 rounded-xl shadow-lg transition-all active:scale-95 border-2 border-[#ffecd2]/30">
+                        <Navigation className="mr-2 h-5 w-5" /> 🗺️ Googleマップで道案内
+                      </Button>
+                    )}
                   </div>
+                </motion.article>
 
-                  {location.url && (
-                    <div className="mb-6">
-                      <a href={location.url} target="_blank" rel="noopener noreferrer"
-                        className="flex items-center gap-3 p-4 bg-[#fdf5e6] hover:bg-[#ffecd2] rounded-xl border-2 border-[#d4c4a8] transition-all group shadow-sm"
-                      >
-                        <img src={location.url.includes('instagram.com') ? 'https://res.cloudinary.com/dz9trbwma/image/upload/v1759308496/icons8-%E3%82%A4%E3%83%B3%E3%82%B9%E3%82%BF%E3%82%AF%E3%82%99%E3%83%A9%E3%83%A0-100_idedfz.png' : 'https://res.cloudinary.com/dz9trbwma/image/upload/v1759366399/icons8-%E3%82%A6%E3%82%A7%E3%83%95%E3%82%99-100_a6uwwq.png'}
-                          alt="link" className="w-9 h-9 flex-shrink-0" />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-bold text-[#8b6914] group-hover:underline truncate uppercase tracking-tighter">
-                            {location.url.includes('instagram') ? 'Check Instagram' : 'Official Website'}
-                          </p>
-                        </div>
-                        <ExternalLink className="h-5 w-5 text-[#8b6914]" />
-                      </a>
+                {/* スポット間の移動情報（最後のスポット以外） */}
+                {index < mapData.locations.length - 1 && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    whileInView={{ opacity: 1, scale: 1 }}
+                    viewport={{ once: true }}
+                    className="flex items-center justify-center py-6"
+                  >
+                    <div className="flex flex-col items-center gap-2 px-6 py-4 bg-[#f5e6d3] rounded-xl border-2 border-dashed border-[#8b6914] shadow-md">
+                      {/* 移動アイコン */}
+                      <div className="text-3xl">
+                        {location.next_transport ? (
+                          location.next_transport === 'walk' ? '🚶' :
+                          location.next_transport === 'bus' ? '🚌' :
+                          location.next_transport === 'taxi' ? '🚕' :
+                          location.next_transport === 'car' ? '🚗' :
+                          location.next_transport === 'bicycle' ? '🚲' :
+                          location.next_transport === 'train' ? '🚃' : '⬇️'
+                        ) : '⬇️'}
+                      </div>
+                      
+                      {/* 移動情報テキスト */}
+                      <div className="flex items-center gap-2 text-sm text-[#5c3a21] font-bold">
+                        {location.next_transport && (
+                          <span className="px-2 py-1 bg-white rounded-full border border-[#d4c4a8]">
+                            {location.next_transport === 'walk' ? '徒歩' :
+                             location.next_transport === 'bus' ? 'バス' :
+                             location.next_transport === 'taxi' ? 'タクシー' :
+                             location.next_transport === 'car' ? '車' :
+                             location.next_transport === 'bicycle' ? '自転車' :
+                             location.next_transport === 'train' ? '電車' : '移動'}
+                          </span>
+                        )}
+                        {location.next_travel_time && (
+                          <span className="px-2 py-1 bg-[#8b6914] text-[#ffecd2] rounded-full">
+                            約{location.next_travel_time}分
+                          </span>
+                        )}
+                        {!location.next_transport && !location.next_travel_time && (
+                          <span className="text-gray-500 italic">次のスポットへ</span>
+                        )}
+                      </div>
                     </div>
-                  )}
-
-                  {location.store_latitude && location.store_longitude && (
-                    <Button onClick={() => openInGoogleMaps(location)} className="w-full bg-[#8b6914] hover:bg-[#5c3a21] text-[#ffecd2] font-bold py-6 rounded-xl shadow-lg transition-all active:scale-95">
-                      <Navigation className="mr-2 h-5 w-5" /> Googleマップで道案内
-                    </Button>
-                  )}
-                </div>
-              </motion.article>
+                  </motion.div>
+                )}
+              </div>
             ))}
           </div>
         </motion.div>
@@ -405,8 +484,12 @@ export function SpotDetailClient({ spotId }: SpotDetailClientProps) {
         {expandedImageIndex !== null && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-4" onClick={() => setExpandedImageIndex(null)}>
             <button className="absolute top-6 right-6 p-2 bg-white/10 rounded-full"><X className="text-white h-8 w-8" /></button>
-            <img src={optimizeCloudinaryImageUrl(mapData.locations[expandedImageIndex.spotIndex].image_urls[expandedImageIndex.imageIndex])}
-              className="max-w-full max-h-full object-contain rounded shadow-2xl" onClick={(e) => e.stopPropagation()} />
+            <img 
+              src={optimizeCloudinaryImageUrl(mapData.locations[expandedImageIndex.spotIndex].image_urls[expandedImageIndex.imageIndex])}
+              alt={mapData.locations[expandedImageIndex.spotIndex].store_name}
+              className="max-w-full max-h-full object-contain rounded shadow-2xl" 
+              onClick={(e) => e.stopPropagation()} 
+            />
           </motion.div>
         )}
       </AnimatePresence>

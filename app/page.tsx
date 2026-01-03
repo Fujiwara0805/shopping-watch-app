@@ -175,10 +175,10 @@ const PublicMapsSection = ({ onMapClick }: { onMapClick: (mapId: string) => void
           </div>
           
           <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold text-[#3d2914] tracking-tight mt-4 font-serif">
-            世界で一つだけの地図
+          世界で一つだけの地図
           </h2>
           <p className="text-base sm:text-lg md:text-xl text-[#5c3a21] mt-4 font-semibold font-sans">
-          ここでしか出会えない<br />
+          地元の人が作った<br />
             <span className="ml-1 text-[#3d2914] border-b-2 border-[#8b6914]/50">数々のスポットを集めた地図帳</span>
           </p>
         </motion.div>
@@ -716,12 +716,12 @@ const EventLP = ({ onStart, onMapClick }: { onStart: () => void; onMapClick: (ma
                     <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
                     <span className="relative flex items-center gap-2">
                       <Compass className="h-6 w-6" />
-                      イベントMapを見る
+                      イベントを確認
                     </span>
                   </Button>
                 </motion.div>
                 <p className="text-lg sm:text-xl text-gray-200 mt-4 font-bold font-sans">
-                  無料で今すぐ始められます
+                  登録不要。今すぐ探索を始める
                 </p>
                 <motion.a
                   href="https://forms.gle/KBSd4xoWsp5bvDJ7A"
@@ -797,7 +797,7 @@ const EventLP = ({ onStart, onMapClick }: { onStart: () => void; onMapClick: (ma
                 <span className="text-[#5c3a21]">こだわり</span>の機能
               </h2>
               <p className="text-lg sm:text-xl md:text-2xl text-[#5c3a21] font-semibold mt-4 font-sans">
-                「地図の作成」「イベントMap」に<br />徹底的にこだわりました
+                ひとり旅をも支える<br />強力な冒険ツール
               </p>
             </motion.div>
 
@@ -811,7 +811,7 @@ const EventLP = ({ onStart, onMapClick }: { onStart: () => void; onMapClick: (ma
               />
               <FeatureCard
                 label="DISCOVER"
-                title="イベント情報をマップで発見"
+                title="イベント情報を地図で発見"
                 description="地域のイベント情報がマップ上に表示。開催中(予定)のイベントをひと目で把握できる。"
                 icon={Search}
                 index={1}
@@ -911,13 +911,13 @@ const EventLP = ({ onStart, onMapClick }: { onStart: () => void; onMapClick: (ma
                   <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
                   <span className="relative flex items-center gap-3">
                     <Compass className="h-8 w-8" />
-                    イベントMapを見る
+                    イベントを確認
                   </span>
                 </Button>
               </motion.div>
 
               <p className="text-lg sm:text-xl text-[#5c3a21] font-bold font-sans">
-                アカウント登録不要 / 今すぐ使えます
+                登録不要。今すぐ冒険を始める
               </p>
             </motion.div>
           </div>
@@ -939,9 +939,9 @@ const EventLP = ({ onStart, onMapClick }: { onStart: () => void; onMapClick: (ma
                   <span className="text-[#3d2914] font-bold text-xl tracking-wider font-serif">TOKUDOKU</span>
                 </div>
                 <p className="text-lg text-[#5c3a21] leading-relaxed font-semibold font-sans">
-                  ここでしか出会えない
+                  一人旅の冒険者のための
                   <br />
-                  新しい体験をあなたに
+                  冒険の書を作成
                 </p>
               </div>
 
