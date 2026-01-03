@@ -362,13 +362,6 @@ export function SpotDetailClient({ spotId }: SpotDetailClientProps) {
                         <h3 className="text-xl font-bold text-[#3d2914]" style={{ fontFamily: "'Noto Serif JP', serif" }}>
                           {location.store_name}
                         </h3>
-                        {/* 滞在時間バッジ */}
-                        {location.stay_duration && (
-                          <div className="flex items-center gap-1.5 mt-1 text-sm text-[#5c3a21]">
-                            <Clock className="h-3.5 w-3.5" />
-                            <span className="font-medium">滞在目安: {location.stay_duration}分</span>
-                          </div>
-                        )}
                       </div>
                     </div>
 

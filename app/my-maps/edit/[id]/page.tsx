@@ -32,6 +32,7 @@ import { getMapForEdit, updateMap, type UpdateMapInput, type LocationData as Ser
 
 // 移動手段の選択肢
 const TRANSPORT_OPTIONS = [
+  { value: 'none', label: '選択なし', icon: '−' },
   { value: 'walk', label: '徒歩', icon: '🚶' },
   { value: 'bus', label: 'バス', icon: '🚌' },
   { value: 'taxi', label: 'タクシー', icon: '🚕' },
@@ -1306,11 +1307,6 @@ export default function EditMapPage() {
                               <span className="text-base font-bold text-gray-800">
                                 {location.storeName || `スポット${index + 1}`}
                               </span>
-                              {location.stayDuration && (
-                                <span className="ml-2 text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
-                                  滞在 {location.stayDuration}分
-                                </span>
-                              )}
                             </div>
                             
                             {/* 操作ボタン */}
@@ -1364,8 +1360,8 @@ export default function EditMapPage() {
                           {/* 移動情報入力 */}
                           <div className="flex-1 flex items-center gap-2 p-2 rounded-lg bg-[#fff8f0] border border-dashed border-[#d4c4a8]">
                             <Select
-                              value={location.nextTransport || ''}
-                              onValueChange={(value) => updateLocation(index, 'nextTransport', value || undefined)}
+                              value={location.nextTransport || 'none'}
+                              onValueChange={(value) => updateLocation(index, 'nextTransport', value === 'none' ? undefined : value)}
                             >
                               <SelectTrigger className="h-9 text-sm rounded-lg w-28 bg-white">
                                 <SelectValue placeholder="移動手段" />
@@ -1383,7 +1379,8 @@ export default function EditMapPage() {
                               <Input
                                 type="number"
                                 placeholder="10"
-                                className="h-9 text-sm rounded-lg w-16 bg-white"
+                                className="h-9 rounded-lg w-16 bg-white"
+                                style={{ fontSize: '16px' }}
                                 min={1}
                                 max={480}
                                 value={location.nextTravelTime || ''}
@@ -1688,30 +1685,10 @@ function LocationForm({
         </p>
       </div>
       
-      {/* 滞在予定時間 */}
-      <div>
-        <Label className="text-sm font-semibold mb-2 block">
-          <ClockIcon className="inline-block mr-1.5 h-4 w-4" />
-          滞在予定時間（任意）
-        </Label>
-        <div className="flex items-center gap-2">
-          <Input
-            type="number"
-            placeholder="30"
-            className="h-12 text-base rounded-xl w-24"
-            min={0}
-            max={480}
-            value={location.stayDuration || ''}
-            onChange={(e) => updateLocation(locationIndex, 'stayDuration', e.target.value ? parseInt(e.target.value) : undefined)}
-          />
-          <span className="text-sm text-gray-600">分</span>
-        </div>
-      </div>
-      
       {/* 推奨移動手段（このスポットへのアクセス） */}
       <div>
         <Label className="text-sm font-semibold mb-2 block">
-          🚶 このスポットへの推奨移動手段（任意）
+          移動手段（任意）
         </Label>
         <Select
           value={location.recommendedTransport || 'none'}
