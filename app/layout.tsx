@@ -1,24 +1,30 @@
-'use client';
-
 import './globals.css';
+import type { Metadata, Viewport } from 'next';
 import { Noto_Sans_JP } from 'next/font/google';
-import { Toaster } from '@/components/ui/toaster';
-import { ThemeProvider } from '@/components/theme/theme-provider';
-import NextAuthProvider from '@/components/providers/NextAuthProvider';
-import { GoogleMapsApiProvider } from '@/components/providers/GoogleMapsApiProvider';
-import { NotificationProvider } from '@/contexts/NotificationContext';
-import { LocationPermissionProvider } from '@/components/providers/LocationPermissionProvider';
-import { LoadingProvider } from '@/contexts/loading-context';
-import { FeedbackProvider } from '@/contexts/feedback-context';
-import { FeedbackIntegration } from '@/components/feedback/feedback-integration';
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from "@vercel/analytics/react";
 import { GoogleAnalytics } from '@next/third-parties/google';
-import { usePathname } from 'next/navigation';
-import { useEffect } from 'react';
-import { AppHeader } from '@/components/layout/app-header';
+import { RootLayoutClient } from './layout-client';
 import { WebsiteStructuredData, FAQStructuredData, LocalBusinessStructuredData } from '@/components/seo/structured-data';
 
+/**
+ * ========================================
+ * 大分県イベント情報ポータル SEO最適化設定
+ * ========================================
+ * 
+ * 対象検索クエリ:
+ * - 「大分県 イベント」「大分 イベント」
+ * - 「[市町村名] イベント」
+ * - 「大分 お祭り」「大分 マルシェ」
+ * - 「[イベント名]」単体
+ * 
+ * 大分県全18市町村:
+ * 大分市、別府市、中津市、日田市、佐伯市、臼杵市、津久見市、竹田市、
+ * 豊後高田市、杵築市、宇佐市、豊後大野市、由布市、国東市、
+ * 姫島村、日出町、九重町、玖珠町
+ */
+
+// フォント設定
 const notoSansJP = Noto_Sans_JP({ 
   subsets: ['latin'],
   weight: ['400', '500', '700'],
@@ -27,167 +33,308 @@ const notoSansJP = Noto_Sans_JP({
   preload: true,
 });
 
-function LayoutContent({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
-  const isMapPage = pathname === '/map';
-  const isLoginPage = pathname === '/login';
-  const isRegisterPage = pathname === '/register';
-  const isLandingPage = pathname === '/';
-  const isEventPage = pathname === '/events';
-  const isSpotDetailPage = pathname?.startsWith('/map/spot/');
-  const isEventDetailPage = pathname?.startsWith('/events/');
+// サイト基本情報
+const SITE_NAME = 'トクドク';
+const SITE_URL = 'https://tokudoku.com';
+const SITE_DESCRIPTION = '大分県内のお祭り、マルシェ、ワークショップを地図で発見！大分市・別府市・中津市・日田市など県内全域のイベント情報をリアルタイム検索。現在地から近いイベントをかんたん発見できる、完全無料の地域密着イベントアプリです。';
+const OG_IMAGE = 'https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png';
 
+// SEO用キーワード（大分県全18市町村 + イベントカテゴリ）
+const SEO_KEYWORDS = [
+  // ブランド名
+  'トクドク',
+  // 地域（県）
+  '大分', '大分県',
+  // 市部（14市）
+  '大分市', '別府市', '中津市', '日田市', '佐伯市', '臼杵市', '津久見市', '竹田市',
+  '豊後高田市', '杵築市', '宇佐市', '豊後大野市', '由布市', '国東市',
+  // 郡部（1村3町）
+  '姫島村', '日出町', '九重町', '玖珠町',
+  // イベントカテゴリ
+  'イベント', '地域イベント', 'お祭り', '夏祭り', '秋祭り', '花火大会',
+  'マルシェ', 'ワークショップ', '体験イベント', '手作り市', 'フードフェス',
+  '音楽イベント', 'フェスティバル', '地域コミュニティ',
+  // 機能キーワード
+  '地図', 'マップ', 'イベント検索', '無料', '週末', '今日', '明日',
+  'リアルタイム', '現在地', '近くのイベント', 'おでかけ',
+].join(',');
+
+/**
+ * Next.js Metadata API
+ * @see https://nextjs.org/docs/app/api-reference/functions/generate-metadata
+ */
+export const metadata: Metadata = {
+  // 基本メタデータ
+  title: {
+    default: `${SITE_NAME} - 地域イベント発見アプリ | 大分県のお祭り・マルシェ・ワークショップ情報`,
+    template: `%s | ${SITE_NAME}`,
+  },
+  description: SITE_DESCRIPTION,
+  keywords: SEO_KEYWORDS,
   
-  // ヘッダーを表示しないページ
-  const hideHeader = isMapPage || isLoginPage || isRegisterPage || isLandingPage || isEventDetailPage || isEventPage || isSpotDetailPage;
+  // アプリケーション情報
+  applicationName: SITE_NAME,
+  authors: [{ name: SITE_NAME, url: SITE_URL }],
+  creator: SITE_NAME,
+  publisher: SITE_NAME,
+  generator: 'Next.js',
+  
+  // 検索エンジン設定
+  robots: {
+    index: true,
+    follow: true,
+    nocache: false,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  
+  // 正規URL
+  metadataBase: new URL(SITE_URL),
+  alternates: {
+    canonical: '/',
+    languages: {
+      'ja-JP': '/',
+    },
+  },
+  
+  // Open Graph (Facebook, LINE, etc.)
+  openGraph: {
+    type: 'website',
+    locale: 'ja_JP',
+    url: SITE_URL,
+    siteName: SITE_NAME,
+    title: `${SITE_NAME} - 大分県の地域イベント発見アプリ`,
+    description: '大分県内のお祭り、マルシェ、ワークショップを地図で発見！現在地から近いイベントをかんたん検索。完全無料の地域密着イベントアプリ。',
+    images: [
+      {
+        url: OG_IMAGE,
+        width: 1200,
+        height: 630,
+        alt: `${SITE_NAME} - 大分県の地域イベント発見アプリ`,
+        type: 'image/png',
+      },
+    ],
+  },
+  
+  // Twitter Card
+  twitter: {
+    card: 'summary_large_image',
+    title: `${SITE_NAME} - 大分県の地域イベント発見アプリ`,
+    description: '大分県内のお祭り、マルシェ、ワークショップを地図で発見！完全無料の地域密着イベントアプリ。',
+    images: [OG_IMAGE],
+    creator: '@tokudoku',
+    site: '@tokudoku',
+  },
+  
+  // アイコン設定
+  icons: {
+    icon: [
+      { url: OG_IMAGE, sizes: '32x32', type: 'image/png' },
+      { url: OG_IMAGE, sizes: '192x192', type: 'image/png' },
+    ],
+    apple: [
+      { url: OG_IMAGE, sizes: '180x180', type: 'image/png' },
+    ],
+    shortcut: OG_IMAGE,
+  },
+  
+  // マニフェスト
+  manifest: '/manifest.json',
+  
+  // Apple Web App
+  appleWebApp: {
+    capable: true,
+    title: SITE_NAME,
+    statusBarStyle: 'default',
+  },
+  
+  // フォーマット検出
+  formatDetection: {
+    telephone: false,
+    email: false,
+    address: false,
+  },
+  
+  // カテゴリ
+  category: 'lifestyle',
+  
+  // その他のメタデータ
+  other: {
+    // 地理的情報（ローカルSEO）
+    'geo.region': 'JP-44',
+    'geo.placename': '大分県',
+    'geo.position': '33.2382;131.6126',
+    'ICBM': '33.2382, 131.6126',
+    // AI検索エンジン向け
+    'ai-content-declaration': 'human-created',
+  },
+};
 
-  useEffect(() => {
-    // マップページの場合、bodyのスクロールを無効化
-    if (isMapPage) {
-      document.body.style.overflow = 'hidden';
-      document.body.style.height = '100vh';
-    } else {
-      document.body.style.overflow = '';
-      document.body.style.height = '';
-    }
+/**
+ * Viewport設定
+ */
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#73370c' },
+    { media: '(prefers-color-scheme: dark)', color: '#1a1a2e' },
+  ],
+};
 
-    return () => {
-      document.body.style.overflow = '';
-      document.body.style.height = '';
-    };
-  }, [isMapPage]);
-
-  // マップページ専用レイアウト
-  if (isMapPage) {
-    return (
-      <div className="h-screen w-screen overflow-hidden">
-        {children}
-      </div>
-    );
-  }
-
-  // 通常ページレイアウト
-  return (
-    <div className="min-h-screen flex flex-col">
-      {!hideHeader && (
-        <div className="sticky top-0 z-50">
-          <AppHeader />
-        </div>
-      )}
-      <main className="flex-1">
-        {children}
-      </main>
-    </div>
-  );
-}
-
+/**
+ * Root Layout Component
+ */
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const googleMapsApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-
   return (
     <html lang="ja" suppressHydrationWarning>
       <head>
-        <title>トクドク - 地域イベント発見アプリ | 大分県のお祭り・マルシェ情報</title>
-        <meta name="description" content="大分県内のお祭り、マルシェ、ワークショップを地図で発見！現在地から近いイベントをかんたん検索。週末の予定探しに最適な、完全無料の地域密着イベントアプリです。リアルタイムで更新される最新イベント情報をチェックしよう。" />
-        <meta name="keywords" content="トクドク,大分,大分県,イベント,地域イベント,お祭り,夏祭り,秋祭り,マルシェ,ワークショップ,地図,マップ,イベント検索,無料,週末,予定,地域情報,フェスティバル,体験イベント,手作り市,フードフェス,音楽イベント,地域コミュニティ,リアルタイム,現在地,近くのイベント" />
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-        <meta name="theme-color" content="#73370c" />
-        
-        {/* AI検索エンジン向けメタデータ */}
-        <meta name="author" content="トクドク" />
-        <meta name="application-name" content="トクドク" />
-        <meta name="apple-mobile-web-app-title" content="トクドク" />
-        <meta name="mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        
-        {/* 地理的情報 */}
-        <meta name="geo.region" content="JP-44" />
-        <meta name="geo.placename" content="大分県" />
-        <meta name="geo.position" content="33.2382;131.6126" />
-        <meta name="ICBM" content="33.2382, 131.6126" />
-        
-        {/* SEO最適化 */}
-        <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
-        <meta name="googlebot" content="index, follow" />
-        <meta name="bingbot" content="index, follow" />
-        
-        {/* Open Graph */}
-        <meta property="og:title" content="トクドク - 地域イベント発見アプリ" />
-        <meta property="og:description" content="大分県内のお祭り、マルシェ、ワークショップを地図で発見！現在地から近いイベントをかんたん検索。週末の予定探しに最適な、完全無料の地域密着イベントアプリです。" />
-        <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://tokudoku.com" />
-        <meta property="og:image" content="https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png" />
-        <meta property="og:image:width" content="1200" />
-        <meta property="og:image:height" content="630" />
-        <meta property="og:site_name" content="トクドク" />
-        <meta property="og:locale" content="ja_JP" />
-        
-        {/* Twitter Card */}
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="トクドク - 地域イベント発見アプリ" />
-        <meta name="twitter:description" content="大分県内のお祭り、マルシェ、ワークショップを地図で発見！" />
-        <meta name="twitter:image" content="https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png" />
-        
-        {/* Links */}
-        <link rel="canonical" href="https://tokudoku.com" />
-        <link rel="manifest" href="/manifest.json" />
-        <link rel="icon" href="https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png" />
-        <link rel="apple-touch-icon" href="https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png" />
-        
-        {/* Preconnect */}
+        {/* Preconnect for performance */}
         <link rel="preconnect" href="https://res.cloudinary.com" />
         <link rel="dns-prefetch" href="https://res.cloudinary.com" />
+        <link rel="preconnect" href="https://maps.googleapis.com" />
+        <link rel="dns-prefetch" href="https://maps.googleapis.com" />
+        
+        {/* 追加のSEOメタタグ（Metadata APIで設定できないもの） */}
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="msapplication-TileColor" content="#73370c" />
+        <meta name="msapplication-config" content="/browserconfig.xml" />
+        
+        {/* 構造化データ (JSON-LD) - サイト全体 */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@graph': [
+                // Organization
+                {
+                  '@type': 'Organization',
+                  '@id': `${SITE_URL}/#organization`,
+                  name: SITE_NAME,
+                  url: SITE_URL,
+                  logo: {
+                    '@type': 'ImageObject',
+                    url: OG_IMAGE,
+                    width: 512,
+                    height: 512,
+                  },
+                  description: SITE_DESCRIPTION,
+                  areaServed: {
+                    '@type': 'AdministrativeArea',
+                    name: '大分県',
+                    containsPlace: [
+                      // 14市
+                      { '@type': 'City', name: '大分市' },
+                      { '@type': 'City', name: '別府市' },
+                      { '@type': 'City', name: '中津市' },
+                      { '@type': 'City', name: '日田市' },
+                      { '@type': 'City', name: '佐伯市' },
+                      { '@type': 'City', name: '臼杵市' },
+                      { '@type': 'City', name: '津久見市' },
+                      { '@type': 'City', name: '竹田市' },
+                      { '@type': 'City', name: '豊後高田市' },
+                      { '@type': 'City', name: '杵築市' },
+                      { '@type': 'City', name: '宇佐市' },
+                      { '@type': 'City', name: '豊後大野市' },
+                      { '@type': 'City', name: '由布市' },
+                      { '@type': 'City', name: '国東市' },
+                      // 1村3町
+                      { '@type': 'AdministrativeArea', name: '姫島村' },
+                      { '@type': 'AdministrativeArea', name: '日出町' },
+                      { '@type': 'AdministrativeArea', name: '九重町' },
+                      { '@type': 'AdministrativeArea', name: '玖珠町' },
+                    ],
+                  },
+                },
+                // WebSite with SearchAction
+                {
+                  '@type': 'WebSite',
+                  '@id': `${SITE_URL}/#website`,
+                  url: SITE_URL,
+                  name: `${SITE_NAME} - 大分県の地域イベント発見アプリ`,
+                  description: SITE_DESCRIPTION,
+                  publisher: { '@id': `${SITE_URL}/#organization` },
+                  inLanguage: 'ja',
+                  potentialAction: {
+                    '@type': 'SearchAction',
+                    target: {
+                      '@type': 'EntryPoint',
+                      urlTemplate: `${SITE_URL}/events?q={search_term_string}`,
+                    },
+                    'query-input': 'required name=search_term_string',
+                  },
+                },
+                // WebApplication
+                {
+                  '@type': 'WebApplication',
+                  '@id': `${SITE_URL}/#webapp`,
+                  name: SITE_NAME,
+                  url: SITE_URL,
+                  applicationCategory: 'LifestyleApplication',
+                  operatingSystem: 'Web',
+                  browserRequirements: 'Requires JavaScript. Requires HTML5.',
+                  offers: {
+                    '@type': 'Offer',
+                    price: '0',
+                    priceCurrency: 'JPY',
+                  },
+                  featureList: [
+                    '大分県内の地域イベント検索',
+                    '地図上でイベント位置を確認',
+                    '現在地周辺のイベント表示',
+                    'お祭り・マルシェ・ワークショップ情報',
+                    '完全無料・登録不要',
+                    'リアルタイム情報更新',
+                  ],
+                  description: '大分県内の地域イベント情報をマップ上で検索できる無料アプリ。大分市、別府市、中津市、日田市など県内全18市町村のお祭り、マルシェ、ワークショップをリアルタイムで発見。',
+                },
+                // BreadcrumbList (トップページ)
+                {
+                  '@type': 'BreadcrumbList',
+                  itemListElement: [
+                    {
+                      '@type': 'ListItem',
+                      position: 1,
+                      name: 'ホーム',
+                      item: SITE_URL,
+                    },
+                  ],
+                },
+              ],
+            }),
+          }}
+        />
       </head>
-      <body className={`${notoSansJP.variable} font-sans bg-background text-foreground`}>
-        <LoadingProvider>
-          <ThemeProvider 
-            attribute="class" 
-            defaultTheme="system" 
-            enableSystem
-            disableTransitionOnChange
-          >
-            <NextAuthProvider>
-              <FeedbackProvider>
-                <NotificationProvider>
-                  <LocationPermissionProvider>
-                    {googleMapsApiKey ? (
-                      <GoogleMapsApiProvider apiKey={googleMapsApiKey}>
-                        <LayoutContent>{children}</LayoutContent>
-                        <FeedbackIntegration />
-                      </GoogleMapsApiProvider>
-                    ) : (
-                      <>
-                        <div style={{ padding: '20px', backgroundColor: 'red', color: 'white', textAlign: 'center' }}>
-                          Google Maps APIキーが設定されていません。
-                        </div>
-                        <LayoutContent>{children}</LayoutContent>
-                        <FeedbackIntegration />
-                      </>
-                    )}
-                    <Toaster />
-                  </LocationPermissionProvider>
-                </NotificationProvider>
-              </FeedbackProvider>
-            </NextAuthProvider>
-          </ThemeProvider>
-        </LoadingProvider>
-        <SpeedInsights />
-        <Analytics />
-        
-        {/* Google Analytics 4 */}
-        {process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID && (
-          <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID} />
-        )}
-        
-        {/* 構造化データ(JSON-LD) - AI検索エンジン向け */}
-        <WebsiteStructuredData />
-        <FAQStructuredData />
-        <LocalBusinessStructuredData />
-      </body>
+      
+      <RootLayoutClient fontClassName={notoSansJP.variable}>
+        {children}
+      </RootLayoutClient>
+      
+      {/* Performance & Analytics */}
+      <SpeedInsights />
+      <Analytics />
+      
+      {/* Google Analytics 4 */}
+      {process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID && (
+        <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID} />
+      )}
+      
+      {/* 追加の構造化データ */}
+      <WebsiteStructuredData />
+      <FAQStructuredData />
+      <LocalBusinessStructuredData />
     </html>
   );
 }
