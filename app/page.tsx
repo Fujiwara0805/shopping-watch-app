@@ -11,6 +11,7 @@ import { useSession, signOut } from 'next-auth/react';
 import { getPublicMaps } from '@/app/_actions/maps';
 import { NoteArticlesSection } from '@/components/external-content';
 import { AnalyticsSection } from '@/components/analytics';
+import { EventIllustrationSection } from '@/components/lp';
 
 // 🔥 公開マップの型定義
 interface PublicMapData {
@@ -826,46 +827,10 @@ const EventLP = ({ onStart, onMapClick }: { onStart: () => void; onMapClick: (ma
           </div>
         </section>
 
-        {/* エモーショナルセクション（パララックス） */}
-        <section className="py-24 sm:py-36 px-4 sm:px-8 relative overflow-hidden flex items-center justify-center">
-          {/* 背景画像（パララックス） */}
-          <div 
-            className="absolute inset-0 bg-cover bg-center bg-fixed"
-            style={{
-              backgroundImage: 'url(https://res.cloudinary.com/dz9trbwma/image/upload/v1764768098/photo-1524661135-423995f22d0b_myc9u9.jpg)',
-            }}
-          />
-          <div className="absolute inset-0 bg-[#f5e6d3]/70" />
-          <ParchmentTexture opacity={0.2} />
+        {/* イベントイラストセクション */}
+        <EventIllustrationSection />
 
-          <div className="container mx-auto max-w-4xl relative z-10 text-center">
-            <motion.div
-              initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 1 }}
-              viewport={{ once: true }}
-              className="space-y-8"
-            >
-              <h2 className="text-2xl sm:text-3xl lg:text-5xl font-extrabold leading-tight text-[#3d2914] drop-shadow-lg font-serif">
-                他では出会えない体験に<br />
-                出会えるのは「トクドク」だけ
-              </h2>
-              <p className="text-xl sm:text-2xl lg:text-3xl text-[#5c3a21] leading-relaxed font-bold font-sans">
-                デジタルマップで、<br />
-                <span className="relative inline-block">
-                  思い出と発見をシェア
-                  <motion.span 
-                    initial={{ scaleX: 0 }}
-                    whileInView={{ scaleX: 1 }}
-                    transition={{ duration: 0.8, delay: 0.5 }}
-                    viewport={{ once: true }}
-                    className="absolute -bottom-1 left-0 right-0 h-1 bg-[#8b6914]"
-                  />
-                </span>
-              </p>
-            </motion.div>
-          </div>
-        </section>
+        {/* エモーショナルセクション（パララックス） */}
 
         {/* note記事セクション */}
         <NoteArticlesSection username="kind_ixora3833" maxItems={4} />
