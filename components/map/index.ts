@@ -16,4 +16,7 @@ export {
   type TimelineTransport,
   type SpotCategory,
 } from './route-timeline';
-
+export {
+  ReorderableTimeline,
+  type TimelineSpotData,
+} from './reorderable-timeline';

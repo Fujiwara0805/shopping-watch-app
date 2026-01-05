@@ -36,6 +36,8 @@ import {
   type TransportType 
 } from '@/components/map/transport-detail-input';
 import { Breadcrumb } from '@/components/seo/breadcrumb';
+import { RPGAccordion } from '@/components/ui/rpg-accordion';
+import { ReorderableTimeline, type TimelineSpotData } from '@/components/map/reorderable-timeline';
 
 // 移動手段の選択肢（タイムライン用）
 const TRANSPORT_OPTIONS = [
@@ -832,8 +834,14 @@ export default function CreateMapPage() {
       >
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-            {/* 基本情報 */}
-            <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-4 shadow-sm">
+            {/* 基本情報（アコーディオン） */}
+            <RPGAccordion
+              title="マップの基本情報"
+              icon={<MapIcon className="h-5 w-5" />}
+              iconType="scroll"
+              defaultOpen={true}
+              contentClassName="space-y-4"
+            >
               {/* タイトル */}
               <FormField
                 control={form.control}
@@ -1088,129 +1096,56 @@ export default function CreateMapPage() {
                   </FormItem>
                 )}
               />
-            </div>
+            </RPGAccordion>
             
-            {/* ルートタイムライン（横並びグリッド） */}
-            {locations.length > 0 && (
-              <div className="bg-gradient-to-br from-[#fef3e8] to-[#fff8f0] rounded-xl border border-[#e8d5c4] p-4 shadow-sm">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-base font-bold flex items-center text-[#73370c]">
-                    <Navigation className="mr-2 h-5 w-5" />
-                    旅のルート
-                  </h3>
-                  <span className="text-sm text-[#8b6914]">
-                    {locations.filter(loc => loc.storeName).length}スポット
-                  </span>
-                </div>
-                
-                {/* 横並びグリッドタイムライン */}
-                <div className="grid grid-cols-3 gap-2">
-                  {locations.map((location, index) => (
-                    <motion.div
-                      key={location.id}
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: index * 0.05 }}
-                      className={cn(
-                        "relative p-3 rounded-lg border-2 cursor-pointer transition-all duration-200",
-                        currentLocationIndex === index
-                          ? "bg-[#73370c] border-[#73370c] shadow-lg scale-[1.02]"
-                          : "bg-white border-[#e8d5c4] hover:border-[#73370c] hover:shadow-md"
-                      )}
-                      onClick={() => setCurrentLocationIndex(index)}
-                    >
-                      {/* 番号バッジ */}
-                      <div className={cn(
-                        "absolute -top-2 -left-2 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shadow-md",
-                        currentLocationIndex === index
-                          ? "bg-white text-[#73370c]"
-                          : "bg-[#73370c] text-white"
-                      )}>
-                        {index + 1}
-                      </div>
-                      
-                      {/* スポット名 */}
-                      <div className={cn(
-                        "text-sm font-bold truncate mt-1",
-                        currentLocationIndex === index ? "text-white" : "text-gray-800"
-                      )}>
-                        {location.storeName || `スポット${index + 1}`}
-                      </div>
-                      
-                      {/* ステータスインジケーター */}
-                      <div className="flex items-center gap-1 mt-2">
-                        {location.storeName && (
-                          <span className={cn(
-                            "w-2 h-2 rounded-full",
-                            currentLocationIndex === index ? "bg-green-300" : "bg-green-500"
-                          )} />
-                        )}
-                        {location.imageFiles.length > 0 && (
-                          <ImageIcon className={cn(
-                            "h-3 w-3",
-                            currentLocationIndex === index ? "text-white/70" : "text-[#8b6914]"
-                          )} />
-                        )}
-                      </div>
-                      
-                      {/* 接続矢印（最後以外） */}
-                      {index < locations.length - 1 && index % 3 !== 2 && (
-                        <div className="absolute -right-3 top-1/2 -translate-y-1/2 text-[#d4c4a8] z-10">
-                          →
-                        </div>
-                      )}
-                      
-                      {/* 削除ボタン */}
-                      {locations.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            removeLocation(index);
-                          }}
-                          className={cn(
-                            "absolute -top-2 -right-2 w-5 h-5 rounded-full flex items-center justify-center transition-all",
-                            currentLocationIndex === index
-                              ? "bg-red-400 text-white hover:bg-red-500"
-                              : "bg-red-100 text-red-500 hover:bg-red-200"
-                          )}
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      )}
-                    </motion.div>
-                  ))}
-                  
-                  {/* スポット追加ボタン */}
-                  <motion.button
-                    type="button"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={addLocation}
-                    className="p-3 rounded-lg border-2 border-dashed border-[#d4c4a8] bg-white/50 hover:border-[#73370c] hover:bg-[#fef3e8] transition-all flex flex-col items-center justify-center gap-1 min-h-[80px]"
-                  >
-                    <Plus className="h-5 w-5 text-[#8b6914]" />
-                    <span className="text-xs text-[#8b6914] font-medium">追加</span>
-                  </motion.button>
-                </div>
-              </div>
-            )}
+            {/* ルートタイムライン（アコーディオン + ドラッグ＆ドロップ） */}
+            <RPGAccordion
+              title="旅のルート"
+              icon={<Navigation className="h-5 w-5" />}
+              iconType="key"
+              defaultOpen={true}
+              className="bg-gradient-to-br from-[#fef3e8] to-[#fff8f0] border-[#e8d5c4]"
+              badge={`${locations.filter(loc => loc.storeName).length}スポット`}
+            >
+              <ReorderableTimeline
+                spots={locations.map((loc) => ({
+                  id: loc.id,
+                  storeName: loc.storeName,
+                  hasImage: loc.imageFiles.length > 0,
+                  isComplete: !!loc.storeName,
+                }))}
+                currentIndex={currentLocationIndex}
+                onReorder={(fromIndex, toIndex) => {
+                  // 並び替え後のlocationsを更新
+                  const newLocations = [...locations];
+                  const [movedItem] = newLocations.splice(fromIndex, 1);
+                  newLocations.splice(toIndex, 0, movedItem);
+                  setLocations(newLocations);
+                  // 選択中のスポットのインデックスを更新
+                  if (currentLocationIndex === fromIndex) {
+                    setCurrentLocationIndex(toIndex);
+                  } else if (
+                    fromIndex < currentLocationIndex && toIndex >= currentLocationIndex
+                  ) {
+                    setCurrentLocationIndex(currentLocationIndex - 1);
+                  } else if (
+                    fromIndex > currentLocationIndex && toIndex <= currentLocationIndex
+                  ) {
+                    setCurrentLocationIndex(currentLocationIndex + 1);
+                  }
+                }}
+                onSelect={(index) => setCurrentLocationIndex(index)}
+                onRemove={(index) => removeLocation(index)}
+                onAdd={addLocation}
+              />
+            </RPGAccordion>
 
             {/* スポット編集フォーム */}
             <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-bold text-[#73370c] flex items-center">
-                  <MapIcon className="mr-2 h-5 w-5" />
-                  スポット {currentLocationIndex + 1} の編集
-                </h2>
-                {locations[currentLocationIndex]?.storeName && (
-                  <span className="text-sm text-[#8b6914] bg-[#fef3e8] px-3 py-1 rounded-full">
-                    {locations[currentLocationIndex].storeName}
-                  </span>
-                )}
-              </div>
+              <h2 className="text-lg font-bold text-[#73370c] flex items-center">
+                <MapIcon className="mr-2 h-5 w-5" />
+                スポット {currentLocationIndex + 1} の編集
+              </h2>
               
               {/* 現在選択されているスポットのフォーム */}
               <AnimatePresence mode="wait">
