@@ -10,10 +10,6 @@ export interface Post {
   custom_expiry_minutes?: number | null;
   created_at: string;
   expires_at?: string | null;
-  likes_count: number;
-  views_count: number;
-  comments_count: number;
-  post_likes?: Array<{ user_id: string }>;
   
   // 店舗の位置情報
   store_latitude?: number | null;
@@ -57,7 +53,6 @@ export interface AuthorProfile {
 // PostWithAuthor は Post の全プロパティを持ち、さらに author オブジェクトを持つ
 export interface PostWithAuthor extends Omit<Post, 'app_profile_id'> {
   author: AuthorProfile | null;
-  isLikedByCurrentUser?: boolean;
 }
 
 export interface Comment {
@@ -71,6 +66,4 @@ export interface Comment {
   is_deleted: boolean;
   author: AuthorProfile;
   replies?: Comment[];
-  likes_count: number;
-  isLikedByCurrentUser?: boolean;
 }

@@ -284,7 +284,6 @@ export interface ProfileDisplayData {
 export interface ProfilePageData {
   profile: ProfileDisplayData | null;
   postsCount: number;
-  totalLikes: number;
   role: string | null;
 }
 
@@ -319,21 +318,10 @@ export async function getProfilePageData(userId: string): Promise<{ data: Profil
       .select('id', { count: 'exact' })
       .eq('app_profile_id', profileData.id);
 
-    // 総いいね数を取得
-    const { data: postsWithLikes, error: likesError } = await supabaseAnon
-      .from('posts')
-      .select('likes_count')
-      .eq('app_profile_id', profileData.id);
-
-    const totalLikes = !likesError && postsWithLikes 
-      ? postsWithLikes.reduce((sum, post) => sum + (post.likes_count || 0), 0)
-      : 0;
-
     return {
       data: {
         profile: profileData as ProfileDisplayData,
         postsCount: postsCount || 0,
-        totalLikes,
         role,
       },
       error: null,

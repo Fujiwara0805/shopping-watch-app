@@ -303,8 +303,8 @@ function ProfilePageContent() {
         setProfile(data.profile);
         setUserPostsCount(data.postsCount);
 
-        // ハンターレベルを計算
-        const level = getHunterLevel(data.totalLikes);
+        // ハンターレベルを計算（投稿数ベース）
+        const level = getHunterLevel(data.postsCount);
         setCurrentUserLevel(level);
       } catch (e) {
         console.error('ProfilePageContent: Unexpected error:', e);
