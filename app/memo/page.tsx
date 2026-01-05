@@ -13,6 +13,7 @@ import { useRouter } from 'next/navigation';
 import { CustomModal } from '@/components/ui/custom-modal';
 import { useLocationPermission } from '@/components/providers/LocationPermissionProvider';
 import { isWithinOitaUniversityArea } from '@/lib/utils';
+import { Breadcrumb } from '@/components/seo/breadcrumb';
 
 // ローカルの買い物アイテム
 interface MemoItem {
@@ -273,6 +274,11 @@ export default function MemoPage() {
 
   return (
     <div className="container mx-auto p-2 md:p-4">
+      {/* パンくずリスト */}
+      <div className="mb-2 px-4">
+        <Breadcrumb />
+      </div>
+      
       <div className="p-4 max-w-2xl mx-auto">
         <header className="flex items-center justify-between">
           <div className="flex items-center gap-4">

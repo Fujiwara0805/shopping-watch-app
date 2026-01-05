@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Shield, FileText, Lock, ChevronRight, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { Breadcrumb } from '@/components/seo/breadcrumb';
 
 export default function TermsGatewayPage() {
   const router = useRouter();
@@ -36,6 +37,11 @@ export default function TermsGatewayPage() {
 
   return (
     <div className="container mx-auto p-4 md:p-8">
+      {/* パンくずリスト */}
+      <div className="mb-4">
+        <Breadcrumb />
+      </div>
+      
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

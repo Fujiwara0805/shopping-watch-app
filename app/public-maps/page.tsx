@@ -4,10 +4,10 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
-import { Search, MapPin, Calendar, Compass, User, Feather } from 'lucide-react';
+import { MapPin, Calendar, Compass, User, Feather } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
-import { Input } from '@/components/ui/input';
 import { getPublicMaps } from '@/app/_actions/maps';
+import { Breadcrumb } from '@/components/seo/breadcrumb';
 
 // 🎨 LPカラーパレット
 const COLORS = {
@@ -35,33 +35,11 @@ interface PublicMap {
 export default function PublicMapsPage() {
   const router = useRouter();
   const [publicMaps, setPublicMaps] = useState<PublicMap[]>([]);
-  const [filteredMaps, setFilteredMaps] = useState<PublicMap[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     fetchPublicMaps();
   }, []);
-
-  useEffect(() => {
-    if (searchQuery.trim() === '') {
-      setFilteredMaps(publicMaps);
-    } else {
-      const query = searchQuery.toLowerCase();
-      const filtered = publicMaps.filter(map => {
-        // タイトルで検索
-        const matchesTitle = map.title.toLowerCase().includes(query);
-        
-        // ハッシュタグで検索
-        const matchesHashtag = map.hashtags?.some(tag => 
-          tag.toLowerCase().includes(query)
-        ) || false;
-        
-        return matchesTitle || matchesHashtag;
-      });
-      setFilteredMaps(filtered);
-    }
-  }, [searchQuery, publicMaps]);
 
   const fetchPublicMaps = async () => {
     try {
@@ -87,7 +65,6 @@ export default function PublicMapsPage() {
       }));
       
       setPublicMaps(mapsWithMetadata);
-      setFilteredMaps(mapsWithMetadata);
     } catch (error: any) {
       console.error('公開マップ取得エラー:', error);
     } finally {
@@ -127,40 +104,31 @@ export default function PublicMapsPage() {
 
   return (
     <div className="min-h-screen pb-24" style={{ backgroundColor: COLORS.background }}>
-      {/* 固定検索バー */}
-      <div 
-        className="sticky top-0 z-40 shadow-sm border-b"
-        style={{ backgroundColor: COLORS.background, borderColor: COLORS.border }}
-      >
-        <div className="px-3 py-3">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5" style={{ color: COLORS.secondary }} />
-            <Input
-              type="text"
-              placeholder="マップ名・タグで検索..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 pr-4 py-3 rounded-lg"
-              style={{ 
-                backgroundColor: COLORS.surface, 
-                borderColor: COLORS.border,
-                color: COLORS.primaryDark 
-              }}
-            />
-          </div>
-        </div>
-
-        {/* 件数表示 */}
-        <div className="px-4 pb-3">
-          <p className="text-sm" style={{ color: COLORS.secondary }}>
-            {filteredMaps.length}件のマップ
-          </p>
-        </div>
+      {/* パンくずリスト */}
+      <div className="px-4 pt-3 pb-2">
+        <Breadcrumb />
       </div>
+      
+      {/* ヘッダー */}
+      <motion.div 
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="px-4 pb-4"
+      >
+        <h1 
+          className="text-2xl font-bold mb-1"
+          style={{ color: COLORS.primaryDark, fontFamily: "'Noto Serif JP', serif" }}
+        >
+          みんなの旅マップ
+        </h1>
+        <p className="text-sm" style={{ color: COLORS.secondary }}>
+          {publicMaps.length}件のマップが公開中
+        </p>
+      </motion.div>
 
       {/* マップ一覧 */}
       <div className="px-4 space-y-4 pb-4">
-        {filteredMaps.length === 0 ? (
+        {publicMaps.length === 0 ? (
           <div className="text-center py-16">
             <div 
               className="inline-flex items-center justify-center w-20 h-20 rounded-full mb-4"
@@ -169,14 +137,12 @@ export default function PublicMapsPage() {
               <Compass className="h-10 w-10" style={{ color: COLORS.primary }} />
             </div>
             <h3 className="text-xl font-semibold mb-2" style={{ color: COLORS.primaryDark }}>
-              {searchQuery ? '検索結果が見つかりませんでした' : 'マップがまだありません'}
+              マップがまだありません
             </h3>
-            {!searchQuery && (
-              <p style={{ color: COLORS.secondary }}>マップが投稿され次第、ここに表示されます</p>
-            )}
+            <p style={{ color: COLORS.secondary }}>マップが投稿され次第、ここに表示されます</p>
           </div>
         ) : (
-          filteredMaps.map((map, index) => (
+          publicMaps.map((map, index) => (
             <motion.div
               key={map.id}
               initial={{ opacity: 0, y: 20 }}

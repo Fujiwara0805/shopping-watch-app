@@ -29,8 +29,15 @@ import { useLoading } from '@/contexts/loading-context';
 import { useGoogleMapsApi } from '@/components/providers/GoogleMapsApiProvider';
 import { useGeolocation } from '@/lib/hooks/use-geolocation';
 import { createMap, type CreateMapInput, type LocationData as ServerLocationData } from '@/app/_actions/maps';
+import { 
+  TransportDetailInput, 
+  TransportDetails, 
+  DETAILED_TRANSPORT_OPTIONS,
+  type TransportType 
+} from '@/components/map/transport-detail-input';
+import { Breadcrumb } from '@/components/seo/breadcrumb';
 
-// 移動手段の選択肢
+// 移動手段の選択肢（タイムライン用）
 const TRANSPORT_OPTIONS = [
   { value: 'none', label: '選択なし', icon: '−' },
   { value: 'walk', label: '徒歩', icon: '🚶' },
@@ -40,8 +47,6 @@ const TRANSPORT_OPTIONS = [
   { value: 'bicycle', label: '自転車', icon: '🚲' },
   { value: 'train', label: '電車', icon: '🚃' },
 ] as const;
-
-type TransportType = typeof TRANSPORT_OPTIONS[number]['value'];
 
 // 場所のデータ型
 interface LocationData {
@@ -56,8 +61,8 @@ interface LocationData {
   url: string;
   // 新規追加項目
   stayDuration?: number; // 滞在予定時間（分）
-  recommendedTransport?: TransportType; // 推奨移動手段
-  nextTransport?: TransportType; // 次のスポットへの移動手段
+  transportDetails?: TransportDetails; // 詳細な移動手段情報
+  nextTransport?: string; // 次のスポットへの移動手段（タイムライン用）
   nextTravelTime?: number; // 次のスポットへの所要時間（分）
 }
 
@@ -420,9 +425,7 @@ export default function CreateMapPage() {
     imagePreviewUrls: [],
     url: '',
     stayDuration: undefined,
-    recommendedTransport: undefined,
-    nextTransport: undefined,
-    nextTravelTime: undefined,
+    transportDetails: { type: 'none' },
   }]);
   
   const [currentLocationIndex, setCurrentLocationIndex] = useState(0);
@@ -546,9 +549,7 @@ export default function CreateMapPage() {
       imagePreviewUrls: [],
       url: '',
       stayDuration: undefined,
-      recommendedTransport: undefined,
-      nextTransport: undefined,
-      nextTravelTime: undefined,
+      transportDetails: { type: 'none' },
     }]);
     setCurrentLocationIndex(locations.length);
   };
@@ -769,9 +770,9 @@ export default function CreateMapPage() {
           image_urls: imageUrls,
           url: location.url && location.url.trim() !== '' ? location.url : null,
           stay_duration: location.stayDuration,
-          recommended_transport: location.recommendedTransport,
-          next_transport: location.nextTransport,
-          next_travel_time: location.nextTravelTime,
+          // 詳細な移動手段情報を送信
+          recommended_transport: location.transportDetails?.type !== 'none' ? location.transportDetails?.type : undefined,
+          transport_details: location.transportDetails?.type !== 'none' ? JSON.stringify(location.transportDetails) : null,
         });
       }
       
@@ -821,6 +822,9 @@ export default function CreateMapPage() {
   
   return (
     <div className="container mx-auto max-w-3xl px-4 py-4 pb-8">
+      {/* パンくずリスト */}
+      <Breadcrumb className="mb-4" />
+      
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -1086,23 +1090,126 @@ export default function CreateMapPage() {
               />
             </div>
             
-            {/* スポットリスト */}
+            {/* ルートタイムライン（横並びグリッド） */}
+            {locations.length > 0 && (
+              <div className="bg-gradient-to-br from-[#fef3e8] to-[#fff8f0] rounded-xl border border-[#e8d5c4] p-4 shadow-sm">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-base font-bold flex items-center text-[#73370c]">
+                    <Navigation className="mr-2 h-5 w-5" />
+                    旅のルート
+                  </h3>
+                  <span className="text-sm text-[#8b6914]">
+                    {locations.filter(loc => loc.storeName).length}スポット
+                  </span>
+                </div>
+                
+                {/* 横並びグリッドタイムライン */}
+                <div className="grid grid-cols-3 gap-2">
+                  {locations.map((location, index) => (
+                    <motion.div
+                      key={location.id}
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: index * 0.05 }}
+                      className={cn(
+                        "relative p-3 rounded-lg border-2 cursor-pointer transition-all duration-200",
+                        currentLocationIndex === index
+                          ? "bg-[#73370c] border-[#73370c] shadow-lg scale-[1.02]"
+                          : "bg-white border-[#e8d5c4] hover:border-[#73370c] hover:shadow-md"
+                      )}
+                      onClick={() => setCurrentLocationIndex(index)}
+                    >
+                      {/* 番号バッジ */}
+                      <div className={cn(
+                        "absolute -top-2 -left-2 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shadow-md",
+                        currentLocationIndex === index
+                          ? "bg-white text-[#73370c]"
+                          : "bg-[#73370c] text-white"
+                      )}>
+                        {index + 1}
+                      </div>
+                      
+                      {/* スポット名 */}
+                      <div className={cn(
+                        "text-sm font-bold truncate mt-1",
+                        currentLocationIndex === index ? "text-white" : "text-gray-800"
+                      )}>
+                        {location.storeName || `スポット${index + 1}`}
+                      </div>
+                      
+                      {/* ステータスインジケーター */}
+                      <div className="flex items-center gap-1 mt-2">
+                        {location.storeName && (
+                          <span className={cn(
+                            "w-2 h-2 rounded-full",
+                            currentLocationIndex === index ? "bg-green-300" : "bg-green-500"
+                          )} />
+                        )}
+                        {location.imageFiles.length > 0 && (
+                          <ImageIcon className={cn(
+                            "h-3 w-3",
+                            currentLocationIndex === index ? "text-white/70" : "text-[#8b6914]"
+                          )} />
+                        )}
+                      </div>
+                      
+                      {/* 接続矢印（最後以外） */}
+                      {index < locations.length - 1 && index % 3 !== 2 && (
+                        <div className="absolute -right-3 top-1/2 -translate-y-1/2 text-[#d4c4a8] z-10">
+                          →
+                        </div>
+                      )}
+                      
+                      {/* 削除ボタン */}
+                      {locations.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeLocation(index);
+                          }}
+                          className={cn(
+                            "absolute -top-2 -right-2 w-5 h-5 rounded-full flex items-center justify-center transition-all",
+                            currentLocationIndex === index
+                              ? "bg-red-400 text-white hover:bg-red-500"
+                              : "bg-red-100 text-red-500 hover:bg-red-200"
+                          )}
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      )}
+                    </motion.div>
+                  ))}
+                  
+                  {/* スポット追加ボタン */}
+                  <motion.button
+                    type="button"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={addLocation}
+                    className="p-3 rounded-lg border-2 border-dashed border-[#d4c4a8] bg-white/50 hover:border-[#73370c] hover:bg-[#fef3e8] transition-all flex flex-col items-center justify-center gap-1 min-h-[80px]"
+                  >
+                    <Plus className="h-5 w-5 text-[#8b6914]" />
+                    <span className="text-xs text-[#8b6914] font-medium">追加</span>
+                  </motion.button>
+                </div>
+              </div>
+            )}
+
+            {/* スポット編集フォーム */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-bold text-[#73370c] flex items-center">
                   <MapIcon className="mr-2 h-5 w-5" />
-                  スポットの追加
+                  スポット {currentLocationIndex + 1} の編集
                 </h2>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={addLocation}
-                  className="flex items-center gap-1.5 h-9 text-sm border-[#73370c] text-[#73370c]"
-                >
-                  <Plus className="h-4 w-4" />
-                  追加
-                </Button>
+                {locations[currentLocationIndex]?.storeName && (
+                  <span className="text-sm text-[#8b6914] bg-[#fef3e8] px-3 py-1 rounded-full">
+                    {locations[currentLocationIndex].storeName}
+                  </span>
+                )}
               </div>
               
               {/* 現在選択されているスポットのフォーム */}
@@ -1110,11 +1217,11 @@ export default function CreateMapPage() {
                 {locations[currentLocationIndex] && (
                   <motion.div
                     key={currentLocationIndex}
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -20 }}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
                     transition={{ duration: 0.2 }}
-                    className="bg-white rounded-xl border border-gray-200 p-4 space-y-4 shadow-sm"
+                    className="bg-white rounded-xl border-2 border-[#e8d5c4] p-4 space-y-4 shadow-sm"
                   >
                     <LocationForm
                       location={locations[currentLocationIndex]}
@@ -1135,134 +1242,13 @@ export default function CreateMapPage() {
             
             {/* エラーメッセージ */}
             {submitError && (
-              <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+              <motion.div 
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-red-50 border border-red-200 rounded-xl p-4"
+              >
                 <p className="text-sm text-red-800">{submitError}</p>
-              </div>
-            )}
-
-            {/* スポット一覧（タイムライン形式） */}
-            {locations.some(loc => loc.storeName) && (
-              <div className="bg-[#fef3e8] rounded-xl border border-[#e8d5c4] p-4 shadow-sm">
-                <h3 className="text-base font-bold mb-4 flex items-center text-[#73370c]">
-                  <MapPin className="mr-2 h-5 w-5" />
-                  ルートタイムライン
-                </h3>
-                <div className="relative">
-                  {/* タイムラインの縦線 */}
-                  <div className="absolute left-5 top-0 bottom-0 w-0.5 bg-[#d4c4a8]" />
-                  
-                  {locations.map((location, index) => (
-                    <div key={location.id}>
-                      {/* スポットカード */}
-                      <motion.div
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: index * 0.1 }}
-                        className="relative flex items-start gap-3 mb-2"
-                      >
-                        {/* タイムラインのドット */}
-                        <div className="relative z-10 flex-shrink-0 w-10 h-10 rounded-full bg-[#73370c] flex items-center justify-center text-white font-bold text-sm shadow-md">
-                          {toCircledNumber(index + 1)}
-                        </div>
-                        
-                        {/* スポット情報 */}
-                        <div 
-                          className="flex-1 p-3 rounded-lg bg-white border border-[#e8d5c4] hover:border-[#73370c] transition-colors cursor-pointer"
-                          onClick={() => setCurrentLocationIndex(index)}
-                        >
-                          <div className="flex items-center justify-between">
-                            <div className="flex-1">
-                              <span className="text-base font-bold text-gray-800">
-                                {location.storeName || `スポット${index + 1}`}
-                              </span>
-                            </div>
-                            
-                            {/* 操作ボタン */}
-                            <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                              <div className="flex flex-col gap-0.5">
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-5 w-5 p-0 hover:bg-[#fef3e8]"
-                                  onClick={() => moveLocation(index, 'up')}
-                                  disabled={index === 0}
-                                >
-                                  <ChevronUp className="h-3.5 w-3.5 text-[#73370c]" />
-                                </Button>
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-5 w-5 p-0 hover:bg-[#fef3e8]"
-                                  onClick={() => moveLocation(index, 'down')}
-                                  disabled={index === locations.length - 1}
-                                >
-                                  <ChevronDown className="h-3.5 w-3.5 text-[#73370c]" />
-                                </Button>
-                              </div>
-                              {locations.length > 1 && (
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-7 w-7 p-0 hover:bg-red-50"
-                                  onClick={() => removeLocation(index)}
-                                >
-                                  <Trash2 className="h-4 w-4 text-red-500" />
-                                </Button>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </motion.div>
-                      
-                      {/* スポット間の移動セクション（最後のスポット以外） */}
-                      {index < locations.length - 1 && (
-                        <motion.div
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          transition={{ delay: index * 0.1 + 0.05 }}
-                          className="relative flex items-center gap-3 ml-5 pl-5 py-2 mb-2"
-                        > 
-                          {/* 移動情報入力 */}
-                          <div className="flex-1 flex items-center gap-2 p-2 rounded-lg bg-[#fff8f0] border border-dashed border-[#d4c4a8]">
-                            <Select
-                              value={location.nextTransport || 'none'}
-                              onValueChange={(value) => updateLocation(index, 'nextTransport', value === 'none' ? undefined : value)}
-                            >
-                              <SelectTrigger className="h-9 text-sm rounded-lg w-28 bg-white">
-                                <SelectValue placeholder="移動手段" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {TRANSPORT_OPTIONS.map((option) => (
-                                  <SelectItem key={option.value} value={option.value}>
-                                    {option.icon} {option.label}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            
-                            <div className="flex items-center gap-1">
-                              <Input
-                                type="number"
-                                placeholder="10"
-                                className="h-9 rounded-lg w-16 bg-white"
-                                style={{ fontSize: '16px' }}
-                                min={1}
-                                max={480}
-                                value={location.nextTravelTime || ''}
-                                onChange={(e) => updateLocation(index, 'nextTravelTime', e.target.value ? parseInt(e.target.value) : undefined)}
-                              />
-                              <span className="text-xs text-gray-500">分</span>
-                            </div>
-                          </div>
-                        </motion.div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
+              </motion.div>
             )}
             
             {/* 投稿ボタン */}
@@ -1517,27 +1503,13 @@ function LocationForm({
         />
       </div>
       
-      {/* 推奨移動手段（このスポットへのアクセス） */}
-      <div>
-        <Label className="text-sm font-semibold mb-2 block">
-          移動手段（任意）
-        </Label>
-        <Select
-          value={location.recommendedTransport || 'none'}
-          onValueChange={(value) => updateLocation(locationIndex, 'recommendedTransport', value === 'none' ? undefined : value)}
-        >
-          <SelectTrigger className="h-12 text-base rounded-xl">
-            <SelectValue placeholder="移動手段を選択" />
-          </SelectTrigger>
-          <SelectContent>
-            {TRANSPORT_OPTIONS.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.icon} {option.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      {/* 詳細な移動手段入力 */}
+      <TransportDetailInput
+        value={location.transportDetails || { type: 'none' }}
+        onChange={(details) => updateLocation(locationIndex, 'transportDetails', details)}
+        label="このスポットへの移動手段（任意）"
+        className="mt-2"
+      />
       
       {/* 🔥 マーカー位置選択モーダル */}
       <MarkerLocationModal

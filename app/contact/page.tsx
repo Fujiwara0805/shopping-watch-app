@@ -17,6 +17,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Breadcrumb } from '@/components/seo/breadcrumb';
 
 const contactSchema = z.object({
   name: z.string().min(1, { message: 'お名前を入力してください。' }).max(50, { message: 'お名前は50文字以内で入力してください。' }),
@@ -107,6 +108,10 @@ export default function ContactPage() {
 
   return (
     <div className="container mx-auto p-4 md:p-8">
+      {/* パンくずリスト */}
+      <div className="mb-4">
+        <Breadcrumb />
+      </div>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

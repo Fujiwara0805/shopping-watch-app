@@ -16,6 +16,7 @@ import Image from 'next/image';
 import { Ad } from '@/types/ad';
 import { generateSemanticEventUrl } from '@/lib/seo/url-helper';
 import { getHolidaysRecord, getRokuyo, isHolidayOrSubstitute, COLORS } from '@/lib/constants';
+import { Breadcrumb } from '@/components/seo/breadcrumb';
 
 // イベントデータの型定義
 interface EventPost {
@@ -743,6 +744,11 @@ export default function CalendarPage() {
         </>
       ) : (
         <>
+          {/* パンくずリスト */}
+          <div className="px-4 pt-3">
+            <Breadcrumb />
+          </div>
+          
           {/* ヘッダー - コンパクトなデザイン */}
           <header className="sticky top-0 z-50 border-b-4 border-double shadow-lg" style={{ backgroundColor: COLORS.secondary, borderColor: COLORS.primary }}>
             <div className="max-w-4xl mx-auto px-4 py-3">

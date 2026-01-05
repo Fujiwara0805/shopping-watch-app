@@ -28,6 +28,7 @@ import { useToast } from '@/hooks/use-toast';
 import { getHunterLevel } from '@/lib/hunter-level';
 import { StampBoardModal } from '@/components/stamp-board/stamp-board-modal';
 import { getProfilePageData } from '@/app/_actions/profiles';
+import { Breadcrumb } from '@/components/seo/breadcrumb';
 
 interface AppProfile {
   id: string;
@@ -436,6 +437,11 @@ function ProfilePageContent() {
         minHeight: '500px'
       }}
     >
+      {/* パンくずリスト */}
+      <div className="px-4 pt-3">
+        <Breadcrumb />
+      </div>
+      
       {/* プロフィールヘッダー - 上部固定 */}
       <div className="flex-shrink-0 relative overflow-hidden">
         <div className="absolute inset-0" style={{ backgroundColor: COLORS.secondary }} />

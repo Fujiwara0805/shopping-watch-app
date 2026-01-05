@@ -18,8 +18,7 @@ export interface LocationData {
   // 新規追加項目
   stay_duration?: number; // 滞在予定時間（分）
   recommended_transport?: string; // 推奨移動手段
-  next_transport?: string; // 次のスポットへの移動手段
-  next_travel_time?: number; // 次のスポットへの所要時間（分）
+  transport_details?: string | null; // 詳細な移動手段情報（JSON文字列）
 }
 
 export interface CreateMapInput {

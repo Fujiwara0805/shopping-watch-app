@@ -19,6 +19,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import Link from "next/link";
+import { Breadcrumb } from '@/components/seo/breadcrumb';
 
 const resetPasswordSchema = z.object({
   password: z.string().min(6, { message: "パスワードは6文字以上で入力してください。" }),
@@ -205,6 +206,11 @@ export default function ResetPasswordPage() {
       transition={{ duration: 0.3 }}
       className="flex flex-col items-center justify-center min-h-screen p-4 bg-[#73370c]/5"
     >
+      {/* パンくずリスト */}
+      <div className="w-full max-w-md mb-4">
+        <Breadcrumb />
+      </div>
+      
       <motion.div
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}

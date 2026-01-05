@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from "@/hooks/use-toast";
 import { useLoading } from '@/contexts/loading-context';
 import { getMapsByUserId, deleteMap, type MyMapListItem } from '@/app/_actions/maps';
+import { Breadcrumb } from '@/components/seo/breadcrumb';
 
 // 🎨 LPカラーパレット
 const COLORS = {
@@ -173,6 +174,11 @@ export default function MyMapsPage() {
   
   return (
     <div className="min-h-screen pb-24" style={{ backgroundColor: COLORS.background }}>
+      {/* パンくずリスト */}
+      <div className="px-4 pt-3">
+        <Breadcrumb />
+      </div>
+      
       {/* 固定検索バー */}
       <div 
         className="sticky top-0 z-40 shadow-sm border-b"

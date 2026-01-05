@@ -23,6 +23,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useFeedback } from '@/contexts/feedback-context';
+import { Breadcrumb } from '@/components/seo/breadcrumb';
 
 // リリースノートのタイプ
 type ReleaseType = 'major' | 'minor' | 'patch' | 'hotfix';
@@ -1019,6 +1020,11 @@ export default function ReleaseNotesPage() {
 
   return (
     <div className="container mx-auto p-4 md:p-8">
+      {/* パンくずリスト */}
+      <div className="mb-4">
+        <Breadcrumb />
+      </div>
+      
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

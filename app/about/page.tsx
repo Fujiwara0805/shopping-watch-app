@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { MapPin, Calendar, Users, Heart, Sparkles, Target } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Breadcrumb } from '@/components/seo/breadcrumb';
 
 /**
  * Aboutページ - AI検索エンジン向けに最適化
@@ -12,6 +13,11 @@ import { Button } from '@/components/ui/button';
 export default function AboutPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#fef3e7] to-white">
+      {/* パンくずリスト */}
+      <div className="px-4 sm:px-8 pt-4">
+        <Breadcrumb />
+      </div>
+      
       {/* ヒーローセクション */}
       <section className="py-20 px-4 sm:px-8">
         <div className="container mx-auto max-w-4xl text-center">

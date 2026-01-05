@@ -1,15 +1,18 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Compass,
   MapPin, Calendar, ExternalLink, AlertCircle, Phone, 
   FileText, DollarSign, Link as LinkIcon, ChevronLeft, 
-  ChevronRight, X, CalendarPlusIcon, Shield, ScrollText, Search
+  ChevronRight, X, CalendarPlusIcon, Shield, ScrollText, Search,
+  Home, ChevronRight as ChevronRightIcon
 } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
+import Script from 'next/script';
+import Link from 'next/link';
 
 // 🎨 LPカラーパレット
 const COLORS = {
@@ -46,6 +49,65 @@ interface EventDetail {
 
 interface EventDetailClientProps {
   eventId: string;
+}
+
+// パンくずリストコンポーネント（イベント詳細用）
+interface EventBreadcrumbProps {
+  event: EventDetail | null;
+  className?: string;
+}
+
+function EventBreadcrumb({ event, className = '' }: EventBreadcrumbProps) {
+  const pathname = usePathname();
+  const baseUrl = 'https://tokudoku.com';
+  
+  // パンくずアイテムを生成
+  const breadcrumbItems = [
+    { label: 'ホーム', href: '/' },
+    { label: '大分県', href: '/events' },
+    ...(event?.city ? [{ label: event.city, href: `/events?city=${encodeURIComponent(event.city)}` }] : []),
+    { label: event?.event_name || 'イベント詳細', href: pathname, isCurrent: true },
+  ];
+
+  // JSON-LD構造化データ
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": breadcrumbItems.map((item, index) => ({
+      "@type": "ListItem",
+      "position": index + 1,
+      "name": item.label,
+      "item": new URL(item.href, baseUrl).toString()
+    }))
+  };
+
+  return (
+    <nav aria-label="breadcrumb" className={`flex items-center flex-wrap gap-1 text-sm ${className}`}>
+      <Script
+        id="event-breadcrumb-jsonld"
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      {breadcrumbItems.map((item, index) => (
+        <div key={item.href} className="flex items-center">
+          {index > 0 && <ChevronRightIcon className="h-4 w-4 text-[#8b6914]/50 mx-1" />}
+          {item.isCurrent ? (
+            <span className="font-bold text-[#3d2914] truncate max-w-[200px]">
+              {item.label}
+            </span>
+          ) : (
+            <Link 
+              href={item.href} 
+              className="text-[#8b6914] hover:text-[#3d2914] hover:underline transition-colors flex items-center"
+            >
+              {index === 0 && <Home className="h-4 w-4 mr-1" />}
+              {item.label}
+            </Link>
+          )}
+        </div>
+      ))}
+    </nav>
+  );
 }
 
 export function EventDetailClient({ eventId }: EventDetailClientProps) {
@@ -194,6 +256,15 @@ export function EventDetailClient({ eventId }: EventDetailClientProps) {
       <div className="fixed inset-0 opacity-[0.03] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/parchment.png')] z-0" />
 
       <div className="max-w-3xl mx-auto px-4 pt-6 relative z-10">
+        {/* パンくずリスト */}
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-4 p-3 bg-[#fdf5e6]/80 backdrop-blur-sm rounded-lg border-2 border-[#d4c4a8]"
+        >
+          <EventBreadcrumb event={event} />
+        </motion.div>
+        
         <motion.div
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
           className="bg-[#fdf5e6] border-4 border-double border-[#8b6914] shadow-[8px_8px_0px_0px_rgba(61,41,20,0.2)] overflow-hidden"

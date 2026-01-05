@@ -13,6 +13,7 @@ import { useRouter } from 'next/navigation';
 import { CustomModal } from '@/components/ui/custom-modal';
 import { useNotification } from '@/contexts/NotificationContext';
 import { generateSemanticEventUrl } from '@/lib/seo/url-helper';
+import { Breadcrumb } from '@/components/seo/breadcrumb';
 
 export default function NotificationsPage() {
   const { data: session, status: sessionStatus } = useSession();
@@ -377,6 +378,11 @@ export default function NotificationsPage() {
 
   return (
     <div className="container mx-auto p-4 md:p-8">
+      {/* パンくずリスト */}
+      <div className="mb-4">
+        <Breadcrumb />
+      </div>
+      
       <div className="flex items-center justify-between p-4 border-b">
         {notifications.length > 0 && (
           <Button 

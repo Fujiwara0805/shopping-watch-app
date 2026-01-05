@@ -4,12 +4,18 @@ import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, FileText } from 'lucide-react';
+import { Breadcrumb } from '@/components/seo/breadcrumb';
 
 export default function PostCompletePage() {
   const router = useRouter();
 
   return (
     <div className="container mx-auto p-4 md:p-8">
+      {/* パンくずリスト */}
+      <div className="mb-4">
+        <Breadcrumb />
+      </div>
+      
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}

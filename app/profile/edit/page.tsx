@@ -32,6 +32,7 @@ import {
   deleteBusinessImageFromStorage,
   type UpdateProfileInput 
 } from '@/app/_actions/profiles';
+import { Breadcrumb } from '@/components/seo/breadcrumb';
 
 // プロフィールスキーマ - お気に入り店舗機能を削除
 const profileSchema = z.object({
@@ -444,7 +445,9 @@ export default function ProfileEditPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 p-4">
       <div className="max-w-2xl mx-auto space-y-6">
-        {/* ヘッダー */}
+        {/* パンくずリスト */}
+        <Breadcrumb />
+        
         {/* 完成度表示 */}
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}

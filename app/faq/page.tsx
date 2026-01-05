@@ -11,6 +11,7 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
+import { Breadcrumb } from '@/components/seo/breadcrumb';
 
 /**
  * FAQページ - AI検索エンジン向けに最適化
@@ -115,6 +116,11 @@ export default function FAQPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#fef3e7] to-white">
+      {/* パンくずリスト */}
+      <div className="px-4 sm:px-8 pt-4">
+        <Breadcrumb />
+      </div>
+      
       {/* ヘッダー */}
       <section className="py-20 px-4 sm:px-8">
         <div className="container mx-auto max-w-4xl text-center">

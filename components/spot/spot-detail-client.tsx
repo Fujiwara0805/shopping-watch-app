@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { 
@@ -23,8 +23,12 @@ import {
   Clock,
   ArrowRight,
   Shield,
-  Compass
+  Compass,
+  Home,
+  ChevronRight as ChevronRightIcon
 } from 'lucide-react';
+import Script from 'next/script';
+import Link from 'next/link';
 
 // 🎮 RPG風移動手段アイコン（ピクセルアート風）
 const TRANSPORT_ICONS: { [key: string]: { icon: string; label: string; color: string } } = {
@@ -79,6 +83,64 @@ interface MapData {
 
 interface SpotDetailClientProps {
   spotId: string;
+}
+
+// パンくずリストコンポーネント（スポット詳細用）
+interface SpotBreadcrumbProps {
+  mapData: MapData | null;
+  className?: string;
+}
+
+function SpotBreadcrumb({ mapData, className = '' }: SpotBreadcrumbProps) {
+  const pathname = usePathname();
+  const baseUrl = 'https://tokudoku.com';
+  
+  // パンくずアイテムを生成
+  const breadcrumbItems = [
+    { label: 'ホーム', href: '/' },
+    { label: '公開マップ', href: '/public-maps' },
+    { label: mapData?.title || 'マップ詳細', href: pathname, isCurrent: true },
+  ];
+
+  // JSON-LD構造化データ
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": breadcrumbItems.map((item, index) => ({
+      "@type": "ListItem",
+      "position": index + 1,
+      "name": item.label,
+      "item": new URL(item.href, baseUrl).toString()
+    }))
+  };
+
+  return (
+    <nav aria-label="breadcrumb" className={`flex items-center flex-wrap gap-1 text-sm ${className}`}>
+      <Script
+        id="spot-breadcrumb-jsonld"
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      {breadcrumbItems.map((item, index) => (
+        <div key={item.href} className="flex items-center">
+          {index > 0 && <ChevronRightIcon className="h-4 w-4 text-[#8b6914]/50 mx-1" />}
+          {item.isCurrent ? (
+            <span className="font-bold text-[#3d2914] truncate max-w-[200px]" style={{ fontFamily: "'Noto Serif JP', serif" }}>
+              {item.label}
+            </span>
+          ) : (
+            <Link 
+              href={item.href} 
+              className="text-[#8b6914] hover:text-[#3d2914] hover:underline transition-colors flex items-center"
+            >
+              {index === 0 && <Home className="h-4 w-4 mr-1" />}
+              {item.label}
+            </Link>
+          )}
+        </div>
+      ))}
+    </nav>
+  );
 }
 
 export function SpotDetailClient({ spotId }: SpotDetailClientProps) {
@@ -268,6 +330,15 @@ export function SpotDetailClient({ spotId }: SpotDetailClientProps) {
 
       <main className="pt-20 pb-12">
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-2xl mx-auto px-4">
+          
+          {/* パンくずリスト */}
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-4 p-3 bg-[#fdf5e6]/80 backdrop-blur-sm rounded-lg border-2 border-[#d4c4a8]"
+          >
+            <SpotBreadcrumb mapData={mapData} />
+          </motion.div>
           
           {/* タイトルセクション */}
           <section className="py-6 text-center">

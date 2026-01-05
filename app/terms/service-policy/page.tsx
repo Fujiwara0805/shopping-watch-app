@@ -2,12 +2,18 @@
 
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
+import { Breadcrumb } from '@/components/seo/breadcrumb';
 
 export default function ServicePolicyPage() {
   const router = useRouter();
 
   return (
     <div className="container mx-auto p-4 md:p-8">
+      {/* パンくずリスト */}
+      <div className="mb-4">
+        <Breadcrumb />
+      </div>
+      
       <div className="container mx-auto px-4 py-6 max-w-3xl">
         <div className="bg-white">
           <div className="text-center mb-8">

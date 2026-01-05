@@ -24,6 +24,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLoading } from '@/contexts/loading-context';
 import { useGoogleMapsApi } from '@/components/providers/GoogleMapsApiProvider';
 import { createPost, type CreatePostInput, type PostCategory as ServerPostCategory } from '@/app/_actions/posts';
+import { Breadcrumb } from '@/components/seo/breadcrumb';
 
 declare global {
   interface Window {
@@ -799,6 +800,10 @@ export default function PostPage() {
           transition={{ duration: 0.5 }}
           className="container mx-auto max-w-lg p-4 md:p-8"
         >
+          {/* パンくずリスト */}
+          <div className="mb-4">
+            <Breadcrumb />
+          </div>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(triggerConfirmationModal)} className="space-y-6 pb-20">
               {/* カテゴリー選択 */}
