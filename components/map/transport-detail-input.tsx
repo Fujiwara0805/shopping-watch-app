@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ChevronDown, ChevronUp, Bus, Train, Car, Bike, 
   Footprints, MapPin, Clock, Navigation, Info,
-  CircleDot, ArrowRight
+  CircleDot, ArrowRight, Plane
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -74,6 +74,15 @@ export const DETAILED_TRANSPORT_OPTIONS = [
     hasDetails: true,
     detailFields: ['departureStation', 'arrivalStation', 'lineName', 'fare'],
   },
+  { 
+    value: 'airplane', 
+    label: '飛行機', 
+    icon: '✈️',
+    lucideIcon: Plane,
+    color: '#0ea5e9',
+    hasDetails: true,
+    detailFields: ['departureAirport', 'arrivalAirport', 'flightNumber', 'fare'],
+  },
 ] as const;
 
 export type TransportType = typeof DETAILED_TRANSPORT_OPTIONS[number]['value'];
@@ -92,6 +101,10 @@ export interface TransportDetails {
   parkingInfo?: string; // 駐車場情報
   rentalInfo?: string; // レンタル情報
   note?: string; // メモ
+  // 飛行機用フィールド
+  departureAirport?: string; // 出発空港
+  arrivalAirport?: string; // 到着空港
+  flightNumber?: string; // 便名
 }
 
 interface TransportDetailInputProps {
@@ -269,6 +282,11 @@ export function TransportDetailInput({
               {/* 自転車詳細 */}
               {value.type === 'bicycle' && (
                 <BicycleDetailFields value={value} onChange={handleDetailChange} />
+              )}
+
+              {/* 飛行機詳細 */}
+              {value.type === 'airplane' && (
+                <AirplaneDetailFields value={value} onChange={handleDetailChange} />
               )}
             </div>
           </motion.div>
@@ -581,6 +599,103 @@ function BicycleDetailFields({
 }
 
 /**
+ * 飛行機移動の詳細入力フィールド
+ */
+function AirplaneDetailFields({ 
+  value, 
+  onChange 
+}: { 
+  value: TransportDetails; 
+  onChange: (field: keyof TransportDetails, value: any) => void;
+}) {
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-2 mb-2">
+        <Plane className="h-5 w-5 text-[#0ea5e9]" />
+        <span className="text-sm font-bold text-[#3d2914]">飛行機移動の詳細</span>
+      </div>
+      
+      {/* 出発・到着空港 */}
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <Label className="text-xs font-medium text-[#5c3a21] mb-1 block">
+            出発空港 <span className="text-[#8b6914]">★</span>
+          </Label>
+          <Input
+            type="text"
+            placeholder="例: 羽田空港"
+            className="h-10 text-sm rounded-lg bg-white border-[#d4c4a8] focus:border-[#0ea5e9]"
+            value={value.departureAirport || ''}
+            onChange={(e) => onChange('departureAirport', e.target.value)}
+          />
+        </div>
+        <div>
+          <Label className="text-xs font-medium text-[#5c3a21] mb-1 block">
+            到着空港 <span className="text-[#8b6914]">★</span>
+          </Label>
+          <Input
+            type="text"
+            placeholder="例: 大分空港"
+            className="h-10 text-sm rounded-lg bg-white border-[#d4c4a8] focus:border-[#0ea5e9]"
+            value={value.arrivalAirport || ''}
+            onChange={(e) => onChange('arrivalAirport', e.target.value)}
+          />
+        </div>
+      </div>
+
+      {/* 便名・運賃 */}
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <Label className="text-xs font-medium text-[#5c3a21] mb-1 block">
+            便名
+          </Label>
+          <Input
+            type="text"
+            placeholder="例: ANA 961"
+            className="h-10 text-sm rounded-lg bg-white border-[#d4c4a8]"
+            value={value.flightNumber || ''}
+            onChange={(e) => onChange('flightNumber', e.target.value)}
+          />
+        </div>
+        <div>
+          <Label className="text-xs font-medium text-[#5c3a21] mb-1 block">
+            運賃（円）
+          </Label>
+          <Input
+            type="number"
+            placeholder="15000"
+            className="h-10 text-sm rounded-lg bg-white border-[#d4c4a8]"
+            style={{ fontSize: '16px' }}
+            min={0}
+            value={value.fare || ''}
+            onChange={(e) => onChange('fare', e.target.value ? parseInt(e.target.value) : undefined)}
+          />
+        </div>
+      </div>
+
+      {/* メモ */}
+      <div>
+        <Label className="text-xs font-medium text-[#5c3a21] mb-1 block">
+          メモ
+        </Label>
+        <Input
+          type="text"
+          placeholder="例: LCC利用、預け荷物別料金"
+          className="h-10 text-sm rounded-lg bg-white border-[#d4c4a8]"
+          value={value.note || ''}
+          onChange={(e) => onChange('note', e.target.value)}
+        />
+      </div>
+
+      {/* ヒント */}
+      <p className="text-xs text-[#8b7355] bg-[#fff8f0] px-3 py-2 rounded-lg">
+        ✈️ 空港名と便名を入力しておくと、旅行当日にスムーズに搭乗できます
+      </p>
+    </div>
+  );
+}
+
+/**
  * 移動手段のサマリー表示コンポーネント
  */
 export function TransportSummary({ details }: { details: TransportDetails }) {
@@ -609,6 +724,13 @@ export function TransportSummary({ details }: { details: TransportDetails }) {
       {details.type === 'train' && details.departureStation && details.arrivalStation && (
         <span className="text-xs text-[#8b7355]">
           ({details.departureStation} → {details.arrivalStation})
+        </span>
+      )}
+
+      {/* 空港情報 */}
+      {details.type === 'airplane' && details.departureAirport && details.arrivalAirport && (
+        <span className="text-xs text-[#8b7355]">
+          ({details.departureAirport} → {details.arrivalAirport})
         </span>
       )}
       

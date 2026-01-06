@@ -38,6 +38,7 @@ const TRANSPORT_ICONS: { [key: string]: { icon: string; label: string; color: st
   car: { icon: '🚗', label: '車', color: '#9C27B0' },
   bicycle: { icon: '🚲', label: '自転車', color: '#00BCD4' },
   train: { icon: '🚃', label: '電車', color: '#F44336' },
+  airplane: { icon: '✈️', label: '飛行機', color: '#0ea5e9' },
 };
 import { supabase } from '@/lib/supabaseClient';
 
@@ -56,6 +57,25 @@ const optimizeCloudinaryImageUrl = (url: string): string => {
   return url;
 };
 
+// 移動詳細データの型（transport-detail-input.tsxと同期）
+interface TransportDetails {
+  type: string;
+  travelTime?: number;
+  departureStop?: string;
+  arrivalStop?: string;
+  busLine?: string;
+  departureStation?: string;
+  arrivalStation?: string;
+  lineName?: string;
+  fare?: number;
+  parkingInfo?: string;
+  rentalInfo?: string;
+  note?: string;
+  departureAirport?: string;
+  arrivalAirport?: string;
+  flightNumber?: string;
+}
+
 interface SpotLocation {
   order: number;
   store_id: string;
@@ -68,6 +88,7 @@ interface SpotLocation {
   // 新規追加項目
   stay_duration?: number; // 滞在予定時間（分）
   recommended_transport?: string; // 推奨移動手段
+  transport_details?: string | TransportDetails | null; // 詳細な移動手段情報（JSON文字列またはオブジェクト）
   next_transport?: string; // 次のスポットへの移動手段
   next_travel_time?: number; // 次のスポットへの所要時間（分）
 }
@@ -494,69 +515,159 @@ export function SpotDetailClient({ spotId }: SpotDetailClientProps) {
                   </div>
                 </motion.article>
 
-                {/* 🎮 RPG風タイムライン移動セクション（最後のスポット以外、かつ移動情報がある場合のみ表示） */}
-                {index < mapData.locations.length - 1 && (location.next_transport || location.next_travel_time) && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    className="relative py-4"
-                  >
-                    {/* タイムラインの縦線 */}
-                    <div className="absolute left-1/2 top-0 bottom-0 w-1 bg-gradient-to-b from-[#8b6914] via-[#d4c4a8] to-[#8b6914] -translate-x-1/2" />
-                    
-                    {/* RPG風移動コマンドウィンドウ */}
-                    <div className="relative z-10 mx-auto max-w-[280px]">
-                      <div 
-                        className="bg-[#1a1a2e] border-4 border-[#ffecd2] shadow-[4px_4px_0px_0px_rgba(0,0,0,0.5),inset_2px_2px_0px_0px_rgba(255,255,255,0.1)] p-4"
-                        style={{ fontFamily: "'DotGothic16', 'Courier New', monospace" }}
-                      >
-                        {/* ウィンドウヘッダー */}
-                        <div className="flex items-center gap-2 mb-3 pb-2 border-b border-[#ffecd2]/30">
-                          <Compass className="h-4 w-4 text-[#ffecd2]" />
-                          <span className="text-[#ffecd2] text-xs font-bold tracking-wider">MOVE TO NEXT</span>
+                {/* 🎮 RPG風タイムライン移動セクション（最後のスポット以外に表示） */}
+                {index < mapData.locations.length - 1 && (() => {
+                  // 現在のスポットの移動情報を取得（スポット1の移動手段 = スポット1→2への移動）
+                  let transportDetails: TransportDetails | null = null;
+                  
+                  // transport_detailsをパース（現在のスポットから取得）
+                  if (location?.transport_details) {
+                    if (typeof location.transport_details === 'string') {
+                      try {
+                        transportDetails = JSON.parse(location.transport_details);
+                      } catch {
+                        transportDetails = null;
+                      }
+                    } else {
+                      transportDetails = location.transport_details as TransportDetails;
+                    }
+                  }
+                  
+                  // 移動手段の種類を取得（現在のスポットから）
+                  const transportType = transportDetails?.type || location?.recommended_transport || location.next_transport;
+                  const travelTime = transportDetails?.travelTime || location.next_travel_time;
+                  
+                  // 移動情報がない場合はシンプルな接続線のみ表示
+                  if (!transportType || transportType === 'none') {
+                    return (
+                      <div className="relative py-6">
+                        {/* シンプルな接続線 */}
+                        <div className="flex flex-col items-center">
+                          <div className="w-0.5 h-8 bg-gradient-to-b from-[#8b6914] to-[#d4c4a8]" />
+                          <motion.div
+                            animate={{ y: [0, 4, 0] }}
+                            transition={{ duration: 1.5, repeat: Infinity }}
+                            className="text-[#8b6914] text-xl"
+                          >
+                            ▼
+                          </motion.div>
+                          <div className="w-0.5 h-8 bg-gradient-to-b from-[#d4c4a8] to-[#8b6914]" />
                         </div>
-                        
-                        {/* 移動情報 */}
-                        <div className="space-y-2">
-                          {/* 移動手段 */}
-                          {location.next_transport && (
+                      </div>
+                    );
+                  }
+                  
+                  return (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      className="relative py-4"
+                    >
+                      {/* タイムラインの縦線 */}
+                      <div className="absolute left-1/2 top-0 bottom-0 w-1 bg-gradient-to-b from-[#8b6914] via-[#d4c4a8] to-[#8b6914] -translate-x-1/2" />
+                      
+                      {/* RPG風移動コマンドウィンドウ */}
+                      <div className="relative z-10 mx-auto max-w-[300px]">
+                        <div 
+                          className="bg-[#1a1a2e] border-4 border-[#ffecd2] shadow-[4px_4px_0px_0px_rgba(0,0,0,0.5),inset_2px_2px_0px_0px_rgba(255,255,255,0.1)] p-4"
+                          style={{ fontFamily: "'DotGothic16', 'Courier New', monospace" }}
+                        >
+                          {/* ウィンドウヘッダー */}
+                          <div className="flex items-center gap-2 mb-3 pb-2 border-b border-[#ffecd2]/30">
+                            <Compass className="h-4 w-4 text-[#ffecd2]" />
+                            <span className="text-[#ffecd2] text-xs font-bold tracking-wider">MOVE TO NEXT</span>
+                          </div>
+                          
+                          {/* 移動情報 */}
+                          <div className="space-y-2">
+                            {/* 移動手段 */}
                             <div className="flex items-center gap-3">
                               <span className="text-[#ffecd2] text-lg">▶</span>
                               <span className="text-2xl">
-                                {TRANSPORT_ICONS[location.next_transport]?.icon || '🚶'}
+                                {TRANSPORT_ICONS[transportType]?.icon || '🚶'}
                               </span>
                               <span className="text-[#ffecd2] text-sm font-bold">
-                                {TRANSPORT_ICONS[location.next_transport]?.label || '移動'}
+                                {TRANSPORT_ICONS[transportType]?.label || '移動'}
                               </span>
                             </div>
-                          )}
-                          
-                          {/* 所要時間 */}
-                          {location.next_travel_time && (
-                            <div className={`flex items-center gap-3 ${location.next_transport ? 'pl-7' : ''}`}>
-                              <Clock className="h-4 w-4 text-[#ffecd2]/70" />
-                              <span className="text-[#ffecd2] text-sm">
-                                約 <span className="text-lg font-bold text-[#ffd700]">{location.next_travel_time}</span> 分
-                              </span>
-                            </div>
-                          )}
+                            
+                            {/* 所要時間 */}
+                            {travelTime && (
+                              <div className="flex items-center gap-3 pl-7">
+                                <Clock className="h-4 w-4 text-[#ffecd2]/70" />
+                                <span className="text-[#ffecd2] text-sm">
+                                  約 <span className="text-lg font-bold text-[#ffd700]">{travelTime}</span> 分
+                                </span>
+                              </div>
+                            )}
+                            
+                            {/* 詳細情報（バス停、駅、空港など） */}
+                            {transportDetails && (
+                              <div className="mt-3 pt-2 border-t border-[#ffecd2]/20 space-y-1">
+                                {/* バス停情報 */}
+                                {transportType === 'bus' && (transportDetails.departureStop || transportDetails.arrivalStop) && (
+                                  <div className="text-xs text-[#ffecd2]/80">
+                                    <span className="text-[#ffd700]">🚏</span> {transportDetails.departureStop || '?'} → {transportDetails.arrivalStop || '?'}
+                                    {transportDetails.busLine && <span className="ml-1 text-[#ffecd2]/60">({transportDetails.busLine})</span>}
+                                  </div>
+                                )}
+                                
+                                {/* 駅情報 */}
+                                {transportType === 'train' && (transportDetails.departureStation || transportDetails.arrivalStation) && (
+                                  <div className="text-xs text-[#ffecd2]/80">
+                                    <span className="text-[#ffd700]">🚉</span> {transportDetails.departureStation || '?'} → {transportDetails.arrivalStation || '?'}
+                                    {transportDetails.lineName && <span className="ml-1 text-[#ffecd2]/60">({transportDetails.lineName})</span>}
+                                  </div>
+                                )}
+                                
+                                {/* 空港情報 */}
+                                {transportType === 'airplane' && (transportDetails.departureAirport || transportDetails.arrivalAirport) && (
+                                  <div className="text-xs text-[#ffecd2]/80">
+                                    <span className="text-[#ffd700]">✈️</span> {transportDetails.departureAirport || '?'} → {transportDetails.arrivalAirport || '?'}
+                                    {transportDetails.flightNumber && <span className="ml-1 text-[#ffecd2]/60">({transportDetails.flightNumber})</span>}
+                                  </div>
+                                )}
+                                
+                                {/* 運賃 */}
+                                {transportDetails.fare && (
+                                  <div className="text-xs text-[#ffd700]">
+                                    💰 ¥{transportDetails.fare.toLocaleString()}
+                                  </div>
+                                )}
+                                
+                                {/* 駐車場情報 */}
+                                {transportType === 'car' && transportDetails.parkingInfo && (
+                                  <div className="text-xs text-[#ffecd2]/80">
+                                    🅿️ {transportDetails.parkingInfo}
+                                  </div>
+                                )}
+                                
+                                {/* メモ */}
+                                {transportDetails.note && (
+                                  <div className="text-xs text-[#ffecd2]/60 italic">
+                                    📝 {transportDetails.note}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        
+                        {/* 装飾的な矢印 */}
+                        <div className="flex justify-center mt-2">
+                          <motion.div
+                            animate={{ y: [0, 4, 0] }}
+                            transition={{ duration: 1, repeat: Infinity }}
+                            className="text-[#8b6914] text-2xl"
+                          >
+                            ▼
+                          </motion.div>
                         </div>
                       </div>
-                      
-                      {/* 装飾的な矢印 */}
-                      <div className="flex justify-center mt-2">
-                        <motion.div
-                          animate={{ y: [0, 4, 0] }}
-                          transition={{ duration: 1, repeat: Infinity }}
-                          className="text-[#8b6914] text-2xl"
-                        >
-                          ▼
-                        </motion.div>
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
+                    </motion.div>
+                  );
+                })()}
               </div>
             ))}
           </div>

@@ -538,9 +538,9 @@ export default function CreateMapPage() {
     setThumbnailPreviewUrl(null);
   };
   
-  // 場所を追加
-  const addLocation = () => {
-    setLocations([...locations, {
+  // 場所を追加（楽観的UI対応）
+  const addLocation = useCallback(() => {
+    const newLocation: LocationData = {
       id: crypto.randomUUID(),
       storeName: '',
       storeId: '',
@@ -552,129 +552,196 @@ export default function CreateMapPage() {
       url: '',
       stayDuration: undefined,
       transportDetails: { type: 'none' },
-    }]);
-    setCurrentLocationIndex(locations.length);
-  };
+    };
+    
+    setLocations(prevLocations => {
+      const newLocations = [...prevLocations, newLocation];
+      // 新しいスポットを選択状態にする
+      setTimeout(() => {
+        setCurrentLocationIndex(newLocations.length - 1);
+      }, 0);
+      return newLocations;
+    });
+  }, []);
   
-  // 場所を削除
-  const removeLocation = (index: number) => {
-    if (locations.length === 1) {
-      toast({
-        title: "⚠️ 削除できません",
-        description: "最低1つのスポットが必要です",
-        duration: 2000,
-      });
-      return;
-    }
-    
-    const newLocations = locations.filter((_, i) => i !== index);
-    setLocations(newLocations);
-    
-    if (currentLocationIndex >= newLocations.length) {
-      setCurrentLocationIndex(newLocations.length - 1);
-    }
-  };
+  // 場所を削除（安全な削除処理）
+  const removeLocation = useCallback((index: number) => {
+    setLocations(prevLocations => {
+      if (prevLocations.length === 1) {
+        toast({
+          title: "⚠️ 削除できません",
+          description: "最低1つのスポットが必要です",
+          duration: 2000,
+        });
+        return prevLocations;
+      }
+      
+      const newLocations = prevLocations.filter((_, i) => i !== index);
+      
+      // 現在選択中のインデックスを調整
+      setTimeout(() => {
+        setCurrentLocationIndex(prev => {
+          if (prev >= newLocations.length) {
+            return Math.max(0, newLocations.length - 1);
+          }
+          if (prev > index) {
+            return prev - 1;
+          }
+          return prev;
+        });
+      }, 0);
+      
+      return newLocations;
+    });
+  }, [toast]);
 
-  // 場所の順番を入れ替え
-  const moveLocation = (index: number, direction: 'up' | 'down') => {
-    if (direction === 'up' && index === 0) return;
-    if (direction === 'down' && index === locations.length - 1) return;
-    
-    const newLocations = [...locations];
-    const targetIndex = direction === 'up' ? index - 1 : index + 1;
-    
-    // 配列の要素を入れ替え
-    [newLocations[index], newLocations[targetIndex]] = [newLocations[targetIndex], newLocations[index]];
-    
-    setLocations(newLocations);
-    
-    // 現在選択中のインデックスも更新
-    if (currentLocationIndex === index) {
-      setCurrentLocationIndex(targetIndex);
-    } else if (currentLocationIndex === targetIndex) {
-      setCurrentLocationIndex(index);
-    }
-  };
+  // 場所の順番を入れ替え（安全な入れ替え処理）
+  const moveLocation = useCallback((index: number, direction: 'up' | 'down') => {
+    setLocations(prevLocations => {
+      if (direction === 'up' && index === 0) return prevLocations;
+      if (direction === 'down' && index === prevLocations.length - 1) return prevLocations;
+      
+      const targetIndex = direction === 'up' ? index - 1 : index + 1;
+      const newLocations = [...prevLocations];
+      
+      // 配列の要素を入れ替え
+      [newLocations[index], newLocations[targetIndex]] = [newLocations[targetIndex], newLocations[index]];
+      
+      // 現在選択中のインデックスも更新
+      setTimeout(() => {
+        setCurrentLocationIndex(prev => {
+          if (prev === index) return targetIndex;
+          if (prev === targetIndex) return index;
+          return prev;
+        });
+      }, 0);
+      
+      return newLocations;
+    });
+  }, []);
   
-  // 場所の情報を更新
-  const updateLocation = (index: number, field: keyof LocationData, value: any) => {
-    const newLocations = [...locations];
-    (newLocations[index][field] as any) = value;
-    setLocations(newLocations);
-  };
+  // 場所の情報を更新（不変性を保つ安全な更新）
+  const updateLocation = useCallback((index: number, field: keyof LocationData, value: any) => {
+    setLocations(prevLocations => {
+      // インデックスが範囲外の場合は何もしない
+      if (index < 0 || index >= prevLocations.length) {
+        return prevLocations;
+      }
+      
+      // 新しい配列を作成し、該当のオブジェクトのみ更新
+      return prevLocations.map((loc, i) => {
+        if (i === index) {
+          return { ...loc, [field]: value };
+        }
+        return loc;
+      });
+    });
+  }, []);
   
-  // 画像アップロード処理
-  const handleImageUpload = async (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+  // 画像アップロード処理（安全な非同期処理）
+  const handleImageUpload = useCallback(async (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
     
-    const location = locations[index];
-    if (location.imageFiles.length + files.length > 3) {
-      toast({
-        title: "⚠️ 画像枚数の上限を超えています",
-        description: "各スポットに最大3枚まで画像を追加できます",
-        duration: 3000,
-      });
-      return;
-    }
-    
-    const maxSize = 5 * 1024 * 1024;
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
-    
-    for (const file of files) {
-      if (file.size > maxSize) {
+    // 現在のlocationsから該当のlocationを取得
+    setLocations(prevLocations => {
+      const location = prevLocations[index];
+      if (!location) return prevLocations;
+      
+      if (location.imageFiles.length + files.length > 3) {
         toast({
-          title: "⚠️ ファイルサイズが大きすぎます",
-          description: "各画像は5MB以下にしてください",
+          title: "⚠️ 画像枚数の上限を超えています",
+          description: "各スポットに最大3枚まで画像を追加できます",
           duration: 3000,
         });
-        return;
+        return prevLocations;
       }
       
-      if (!allowedTypes.includes(file.type)) {
-        toast({
-          title: "⚠️ サポートされていないファイル形式です",
-          description: "JPG、PNG、またはWEBP形式の画像を選択してください",
-          duration: 3000,
-        });
-        return;
-      }
-    }
-    
-    // プレビューURL生成
-    const newPreviewUrls: string[] = [];
-    files.forEach(file => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        newPreviewUrls.push(reader.result as string);
-        if (newPreviewUrls.length === files.length) {
-          updateLocation(index, 'imageFiles', [...location.imageFiles, ...files]);
-          updateLocation(index, 'imagePreviewUrls', [...location.imagePreviewUrls, ...newPreviewUrls]);
+      const maxSize = 5 * 1024 * 1024;
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+      
+      for (const file of files) {
+        if (file.size > maxSize) {
+          toast({
+            title: "⚠️ ファイルサイズが大きすぎます",
+            description: "各画像は5MB以下にしてください",
+            duration: 3000,
+          });
+          return prevLocations;
         }
+        
+        if (!allowedTypes.includes(file.type)) {
+          toast({
+            title: "⚠️ サポートされていないファイル形式です",
+            description: "JPG、PNG、またはWEBP形式の画像を選択してください",
+            duration: 3000,
+          });
+          return prevLocations;
+        }
+      }
+      
+      // プレビューURL生成（非同期だが、ここでは同期的に処理）
+      const readFilesAsDataURLs = async (): Promise<string[]> => {
+        const promises = files.map(file => {
+          return new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.readAsDataURL(file);
+          });
+        });
+        return Promise.all(promises);
       };
-      reader.readAsDataURL(file);
+      
+      // 非同期処理を別途実行
+      readFilesAsDataURLs().then(newPreviewUrls => {
+        setLocations(currentLocations => {
+          return currentLocations.map((loc, i) => {
+            if (i === index) {
+              return {
+                ...loc,
+                imageFiles: [...loc.imageFiles, ...files],
+                imagePreviewUrls: [...loc.imagePreviewUrls, ...newPreviewUrls],
+              };
+            }
+            return loc;
+          });
+        });
+        
+        toast({
+          title: "✅ 画像を追加しました",
+          description: `${files.length}枚の画像が追加されました`,
+          duration: 1000,
+        });
+      });
+      
+      return prevLocations;
     });
-    
-    toast({
-      title: "✅ 画像を追加しました",
-      description: `${files.length}枚の画像が追加されました`,
-      duration: 1000,
-    });
-  };
+  }, [toast]);
   
-  // 画像削除
-  const removeImage = (locationIndex: number, imageIndex: number) => {
-    const location = locations[locationIndex];
-    const newImageFiles = location.imageFiles.filter((_, i) => i !== imageIndex);
-    const newPreviewUrls = location.imagePreviewUrls.filter((_, i) => i !== imageIndex);
-    
-    if (location.imagePreviewUrls[imageIndex].startsWith('blob:')) {
-      URL.revokeObjectURL(location.imagePreviewUrls[imageIndex]);
-    }
-    
-    updateLocation(locationIndex, 'imageFiles', newImageFiles);
-    updateLocation(locationIndex, 'imagePreviewUrls', newPreviewUrls);
-  };
+  // 画像削除（安全な削除処理）
+  const removeImage = useCallback((locationIndex: number, imageIndex: number) => {
+    setLocations(prevLocations => {
+      const location = prevLocations[locationIndex];
+      if (!location) return prevLocations;
+      
+      // blob URLを解放
+      const urlToRevoke = location.imagePreviewUrls[imageIndex];
+      if (urlToRevoke && urlToRevoke.startsWith('blob:')) {
+        URL.revokeObjectURL(urlToRevoke);
+      }
+      
+      return prevLocations.map((loc, i) => {
+        if (i === locationIndex) {
+          return {
+            ...loc,
+            imageFiles: loc.imageFiles.filter((_, idx) => idx !== imageIndex),
+            imagePreviewUrls: loc.imagePreviewUrls.filter((_, idx) => idx !== imageIndex),
+          };
+        }
+        return loc;
+      });
+    });
+  }, []);
   
   // 画像アップロード処理（クライアントサイド - Supabase Storage直接アップロード）
   const uploadImageToStorage = async (file: File, userId: string): Promise<string> => {
