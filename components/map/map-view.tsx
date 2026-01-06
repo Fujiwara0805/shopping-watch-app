@@ -382,6 +382,7 @@ export function MapView() {
   const [checkingIn, setCheckingIn] = useState<string | null>(null);
   const [checkedInPosts, setCheckedInPosts] = useState<Set<string>>(new Set());
   const [navigatingToDetail, setNavigatingToDetail] = useState<string | null>(null); // 詳細画面への遷移中のイベントID
+  const [navigatingToMapDetail, setNavigatingToMapDetail] = useState<string | null>(null); // 詳細画面への遷移中のMyMapロケーションID
 
   // 🔥 マップ作成者のプロフィール情報
   const [mapCreatorProfile, setMapCreatorProfile] = useState<MapCreatorProfile | null>(null);
@@ -1486,13 +1487,27 @@ export function MapView() {
                   </div>
 
                   {/* 決定ボタン (RPGのコマンド風) */}
-                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                  <motion.div whileHover={{ scale: navigatingToMapDetail === selectedMapLocation.id ? 1 : 1.02 }} whileTap={{ scale: navigatingToMapDetail === selectedMapLocation.id ? 1 : 0.98 }}>
                     <Button 
-                      onClick={() => router.push(`/map/spot/${selectedMapLocation.id}`)} 
-                      className="w-full bg-[#8b6914] hover:bg-[#3d2914] text-[#ffecd2] font-black text-base py-3 rounded-none border-t-2 border-l-2 border-[#ffecd2]/30 border-b-4 border-r-4 border-[#3d2914] shadow-md transition-all flex items-center justify-center gap-3 group"
+                      onClick={() => {
+                        if (navigatingToMapDetail) return; // 既に遷移中の場合は何もしない
+                        setNavigatingToMapDetail(selectedMapLocation.id);
+                        router.push(`/map/spot/${selectedMapLocation.id}`);
+                      }}
+                      disabled={navigatingToMapDetail === selectedMapLocation.id}
+                      className="w-full bg-[#8b6914] hover:bg-[#3d2914] text-[#ffecd2] font-black text-base py-3 rounded-none border-t-2 border-l-2 border-[#ffecd2]/30 border-b-4 border-r-4 border-[#3d2914] shadow-md transition-all flex items-center justify-center gap-3 group disabled:opacity-80"
                     >
-                      <Sword className="h-4 w-4 group-hover:rotate-12 transition-transform" />
-                      詳細を見る
+                      {navigatingToMapDetail === selectedMapLocation.id ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          読み込み中...
+                        </>
+                      ) : (
+                        <>
+                          <Sword className="h-4 w-4 group-hover:rotate-12 transition-transform" />
+                          詳細を見る
+                        </>
+                      )}
                     </Button>
                   </motion.div>
                 </div>
