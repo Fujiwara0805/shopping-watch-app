@@ -10,7 +10,7 @@ import {
   Upload, X, MapPin, Plus, Trash2, 
   Loader2, Image as ImageIcon, Link as LinkIcon, Tag, ClockIcon,
   MapIcon, CheckCircle, ChevronUp, ChevronDown, Home, User, ArrowLeft,
-  Navigation, Crosshair
+  Navigation, Crosshair, Save
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -433,6 +433,7 @@ export default function CreateMapPage() {
   const [currentLocationIndex, setCurrentLocationIndex] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isSavingSpot, setIsSavingSpot] = useState(false); // スポット個別保存中フラグ
 
   // currentLocationIndexが配列の範囲内に収まるようにする
   useEffect(() => {
@@ -538,7 +539,7 @@ export default function CreateMapPage() {
     setThumbnailPreviewUrl(null);
   };
   
-  // 場所を追加（楽観的UI対応）
+  // 場所を追加（楽観的UI対応・即時反映）
   const addLocation = useCallback(() => {
     const newLocation: LocationData = {
       id: crypto.randomUUID(),
@@ -554,13 +555,19 @@ export default function CreateMapPage() {
       transportDetails: { type: 'none' },
     };
     
+    // 先に現在のlocations長を取得してからstateを更新
     setLocations(prevLocations => {
       const newLocations = [...prevLocations, newLocation];
-      // 新しいスポットを選択状態にする
-      setTimeout(() => {
-        setCurrentLocationIndex(newLocations.length - 1);
-      }, 0);
       return newLocations;
+    });
+    
+    // 次のレンダリングサイクルで新しいスポットを選択
+    // requestAnimationFrameを使用してUIの更新を確実に待つ
+    requestAnimationFrame(() => {
+      setLocations(currentLocations => {
+        setCurrentLocationIndex(currentLocations.length - 1);
+        return currentLocations;
+      });
     });
   }, []);
   
@@ -718,6 +725,84 @@ export default function CreateMapPage() {
     });
   }, [toast]);
   
+  // スポットの入力バリデーション
+  const validateSpot = useCallback((location: LocationData): { isValid: boolean; errorMessage: string | null } => {
+    if (!location.storeName || (!location.storeId && (!location.store_latitude || !location.store_longitude))) {
+      return { isValid: false, errorMessage: 'スポットを選択または位置を指定してください' };
+    }
+    
+    if (!location.content || location.content.length < 5) {
+      return { isValid: false, errorMessage: '説明を5文字以上入力してください' };
+    }
+    
+    if (location.imageFiles.length === 0) {
+      return { isValid: false, errorMessage: '画像を最低1枚アップロードしてください' };
+    }
+    
+    return { isValid: true, errorMessage: null };
+  }, []);
+
+  // 「保存して続ける」処理
+  const handleSaveAndContinue = useCallback(async () => {
+    const currentLocation = locations[currentLocationIndex];
+    if (!currentLocation) return;
+
+    // バリデーション
+    const { isValid, errorMessage } = validateSpot(currentLocation);
+    if (!isValid) {
+      toast({
+        title: "⚠️ 入力エラー",
+        description: errorMessage,
+        duration: 3000,
+      });
+      return;
+    }
+
+    setIsSavingSpot(true);
+
+    try {
+      // 新しいスポットを追加
+      const newLocation: LocationData = {
+        id: crypto.randomUUID(),
+        storeName: '',
+        storeId: '',
+        store_latitude: undefined,
+        store_longitude: undefined,
+        content: '',
+        imageFiles: [],
+        imagePreviewUrls: [],
+        url: '',
+        stayDuration: undefined,
+        transportDetails: { type: 'none' },
+      };
+
+      // locationsを更新し、新しいインデックスを取得
+      setLocations(prevLocations => {
+        const newLocations = [...prevLocations, newLocation];
+        // 次のレンダリングサイクルで新しいスポットを選択
+        requestAnimationFrame(() => {
+          setCurrentLocationIndex(newLocations.length - 1);
+        });
+        return newLocations;
+      });
+
+      toast({
+        title: "✅ スポットを保存しました",
+        description: "次のスポットを入力してください",
+        duration: 2000,
+      });
+    } catch (error) {
+      console.error("スポット保存エラー:", error);
+      toast({
+        title: "⚠️ エラー",
+        description: "スポットの保存に失敗しました",
+        duration: 3000,
+      });
+    } finally {
+      setIsSavingSpot(false);
+    }
+  }, [locations, currentLocationIndex, validateSpot, toast]);
+
   // 画像削除（安全な削除処理）
   const removeImage = useCallback((locationIndex: number, imageIndex: number) => {
     setLocations(prevLocations => {
@@ -1236,6 +1321,8 @@ export default function CreateMapPage() {
                       userLatitude={latitude}
                       userLongitude={longitude}
                       allLocations={locations}
+                      onSaveAndContinue={handleSaveAndContinue}
+                      isSavingSpot={isSavingSpot}
                     />
                   </motion.div>
                 )}
@@ -1304,6 +1391,8 @@ interface LocationFormProps {
   userLatitude?: number | null;
   userLongitude?: number | null;
   allLocations?: LocationData[];
+  onSaveAndContinue?: () => void;
+  isSavingSpot?: boolean;
 }
 
 function LocationForm({
@@ -1317,6 +1406,8 @@ function LocationForm({
   userLatitude,
   userLongitude,
   allLocations = [],
+  onSaveAndContinue,
+  isSavingSpot = false,
 }: LocationFormProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [locationStatus, setLocationStatus] = useState<'none' | 'getting' | 'success' | 'error'>('none');
@@ -1512,6 +1603,38 @@ function LocationForm({
         label="このスポットへの移動手段（任意）"
         className="mt-2"
       />
+
+      {/* 保存して続けるボタン */}
+      {onSaveAndContinue && (
+        <motion.div 
+          className="pt-4 border-t border-[#e8d5c4]"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+        >
+          <Button
+            type="button"
+            onClick={onSaveAndContinue}
+            disabled={isSavingSpot}
+            className="w-full h-14 text-base font-bold rounded-xl shadow-md bg-gradient-to-r from-[#22c55e] to-[#16a34a] hover:from-[#16a34a] hover:to-[#15803d] text-white disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isSavingSpot ? (
+              <>
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                保存中...
+              </>
+            ) : (
+              <>
+                <Save className="mr-2 h-5 w-5" />
+                保存して次のスポットを追加
+              </>
+            )}
+          </Button>
+          <p className="text-xs text-gray-500 text-center mt-2">
+            ※このスポットを保存し、続けて次のスポットを入力できます
+          </p>
+        </motion.div>
+      )}
       
       {/* 🔥 マーカー位置選択モーダル */}
       <MarkerLocationModal
