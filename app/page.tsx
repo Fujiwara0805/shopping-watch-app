@@ -244,25 +244,6 @@ const PublicMapsSection = ({ onMapClick }: { onMapClick: (mapId: string) => void
                             <MapPin className="h-16 w-16 text-[#5c3a21]/30" />
                           </div>
                         )}
-                        
-                        {/* 作成者情報 */}
-                        <div className="absolute top-3 right-3 bg-[#3d2914]/80 backdrop-blur-sm px-2.5 py-1.5 rounded-full flex items-center gap-2">
-                          <Avatar className="h-6 w-6 border border-[#ffecd2]/50">
-                            {map.author_avatar_path ? (
-                              <AvatarImage
-                                src={getAvatarPublicUrl(map.author_avatar_path) || ''}
-                                alt={map.author_name}
-                              />
-                            ) : null}
-                            <AvatarFallback className="text-xs font-bold bg-gradient-to-br from-[#5c3a21] to-[#8b6914] text-[#fff8f0]">
-                              {map.author_name.charAt(0).toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="text-xs font-semibold text-[#fff8f0] max-w-[80px] truncate font-sans">
-                            {map.author_name}
-                          </span>
-                        </div>
-
                         {/* スポット数 */}
                         <div className="absolute top-3 left-3 bg-[#fff8f0]/90 backdrop-blur-sm px-2.5 py-1 rounded-full text-xs font-medium text-[#5c3a21] flex items-center gap-1 font-sans">
                           <MapPin className="h-3.5 w-3.5" />
@@ -553,22 +534,14 @@ const EventLP = ({ onStart, onMapClick }: { onStart: () => void; onMapClick: (ma
                       <X className="h-6 w-6 text-[#5c3a21]" strokeWidth={2.5} />
                     </motion.button>
                   </div>
-
-                  {/* シーリングワックス装飾 */}
-                  <div className="flex justify-center mb-6">
-                    <div className="w-12 h-12 bg-gradient-to-br from-[#8b2323] to-[#5c1515] rounded-full shadow-lg flex items-center justify-center">
-                      <Compass className="h-6 w-6 text-[#ffecd2]" />
-                    </div>
-                  </div>
-
                   <nav className="space-y-1">
                     {[
-                      { href: '/profile', label: 'マイページ' },
-                      { href: '/terms/terms-of-service', label: '利用規約' },
-                      { href: '/terms/privacy-policy', label: 'プライバシーポリシー' },
-                      { href: '/terms/service-policy', label: 'サービスポリシー' },
-                      { href: '/contact', label: '問い合わせ' },
-                      { href: '/release-notes', label: 'リリースノート' },
+                      { href: '/profile', label: 'MyPage' },
+                      { href: '/terms/terms-of-service', label: 'TermsOfService' },
+                      { href: '/terms/privacy-policy', label: 'PrivacyPolicy' },
+                      { href: '/terms/service-policy', label: 'ServicePolicy' },
+                      { href: '/contact', label: 'Contact' },
+                      { href: '/release-notes', label: 'ReleaseNotes' },
                     ].map((item, index) => (
                       <motion.a
                         key={item.href}
@@ -1006,7 +979,7 @@ const LocationModal = ({
                   位置情報の利用について
                 </h3>
                 <p className="text-[#5c3a21] font-medium font-sans">
-                  近くのイベントを地図上で表示するために位置情報を使用します
+                  地図上に情報を表示するために位置情報を使用します
                 </p>
               </motion.div>
 
@@ -1023,7 +996,7 @@ const LocationModal = ({
                   >
                     <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
                     <MapPin className="mr-2 h-6 w-6" strokeWidth={2.5} />
-                    位置情報を許可してマップを探索
+                    位置情報を許可して地図を探索
                   </Button>
                 </motion.div>
 

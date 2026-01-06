@@ -108,24 +108,6 @@ export default function PublicMapsPage() {
       <div className="px-4 pt-3 pb-2">
         <Breadcrumb />
       </div>
-      
-      {/* ヘッダー */}
-      <motion.div 
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="px-4 pb-4"
-      >
-        <h1 
-          className="text-2xl font-bold mb-1"
-          style={{ color: COLORS.primaryDark, fontFamily: "'Noto Serif JP', serif" }}
-        >
-          みんなの旅マップ
-        </h1>
-        <p className="text-sm" style={{ color: COLORS.secondary }}>
-          {publicMaps.length}件のマップが公開中
-        </p>
-      </motion.div>
-
       {/* マップ一覧 */}
       <div className="px-4 space-y-4 pb-4">
         {publicMaps.length === 0 ? (

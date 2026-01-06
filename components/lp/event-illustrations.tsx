@@ -538,14 +538,14 @@ export const EventIllustrationSection = () => {
             <div className="h-px w-20 bg-gradient-to-l from-transparent to-[#8b6914]" />
           </div>
           
-          <h2 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-[#3d2914] tracking-tight font-serif leading-tight">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-[#3d2914] tracking-tight font-serif leading-tight">
             地域のイベントを
             <br className="sm:hidden" />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#8b6914] to-[#c9a227]">発見</span>
             しよう
           </h2>
           <p className="text-lg sm:text-xl text-[#5c3a21]/80 mt-6 font-medium font-sans max-w-xl mx-auto">
-            祭り、自然、文化。あなたの冒険が待っている
+            お祭り、自然体験、文化鑑賞...<br />あなたの旅をもっと豊かに
           </p>
         </motion.div>
 

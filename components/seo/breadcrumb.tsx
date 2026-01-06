@@ -9,14 +9,14 @@ import { ChevronRight, Home, Map, Calendar, User, Settings, FileText, HelpCircle
 
 // パス名からパンくず情報を生成するマッピング
 const BREADCRUMB_MAP: Record<string, { label: string; icon?: React.ElementType }> = {
-  '': { label: 'ホーム', icon: Home },
-  'map': { label: 'マップ', icon: Map },
-  'events': { label: 'イベント', icon: Calendar },
-  'profile': { label: 'マイページ', icon: User },
+  '': { label: 'Home', icon: Home },
+  'map': { label: 'Map', icon: Map },
+  'events': { label: 'Events', icon: Calendar },
+  'profile': { label: 'MyPage', icon: User },
   'edit': { label: '編集', icon: Settings },
   'setup': { label: '初期設定', icon: Settings },
-  'my-maps': { label: 'マイマップ', icon: Compass },
-  'create-map': { label: 'マップ作成', icon: Map },
+  'my-maps': { label: 'MyMaps', icon: Compass },
+  'create-map': { label: '地図づくり', icon: Map },
   'complete': { label: '完了', icon: FileText },
   'public-maps': { label: '公開マップ', icon: Map },
   'post': { label: '投稿', icon: FileText },
