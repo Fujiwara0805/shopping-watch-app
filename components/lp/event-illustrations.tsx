@@ -305,35 +305,6 @@ export const CountrysideIllustration = ({ className = '' }: { className?: string
         ))}
       </div>
 
-      {/* 蝶々エフェクト */}
-      {[
-        { x: 20, y: 40, color: '#FF9800' },
-        { x: 55, y: 35, color: '#E91E63' },
-        { x: 75, y: 45, color: '#9C27B0' },
-      ].map((butterfly, i) => (
-        <motion.div
-          key={`butterfly-${i}`}
-          className="absolute w-4 h-3 pointer-events-none z-20"
-          style={{
-            left: `${butterfly.x}%`,
-            top: `${butterfly.y}%`,
-            background: butterfly.color,
-            borderRadius: '50% 50% 50% 50% / 60% 60% 40% 40%',
-            filter: 'blur(0.5px)',
-          }}
-          animate={{ 
-            x: [0, 40, 0, -30, 0],
-            y: [0, -25, 0, -15, 0],
-            scale: [1, 0.8, 1, 0.9, 1],
-          }}
-          transition={{ 
-            duration: 6 + i, 
-            repeat: Infinity, 
-            ease: "easeInOut" 
-          }}
-        />
-      ))}
-
       {/* レンズフレア効果 */}
       <motion.div
         className="absolute top-[10%] right-[10%] w-24 h-24 rounded-full pointer-events-none z-20"
@@ -440,36 +411,6 @@ export const TravelerIllustration = ({ className = '' }: { className?: string })
             />
           );
         })}
-      </div>
-
-      {/* 鳥のシルエット */}
-      <div className="absolute inset-0 pointer-events-none z-20">
-        {[
-          { x: 15, y: 15, delay: 0 },
-          { x: 22, y: 12, delay: 0.15 },
-          { x: 28, y: 18, delay: 0.3 },
-          { x: 35, y: 14, delay: 0.45 },
-        ].map((bird, i) => (
-          <motion.div
-            key={`bird-${i}`}
-            className="absolute text-[#2d1515] text-xs"
-            style={{
-              left: `${bird.x}%`,
-              top: `${bird.y}%`,
-            }}
-            animate={{ 
-              y: [0, -8, 0],
-              x: [0, 15, 0]
-            }}
-            transition={{ 
-              duration: 4, 
-              repeat: Infinity, 
-              delay: bird.delay 
-            }}
-          >
-            ∿
-          </motion.div>
-        ))}
       </div>
 
       {/* 追加の光エフェクト */}
