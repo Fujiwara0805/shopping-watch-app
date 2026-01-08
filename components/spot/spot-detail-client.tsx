@@ -25,12 +25,14 @@ import {
   Shield,
   Compass,
   Home,
-  ChevronRight as ChevronRightIcon
+  ChevronRight as ChevronRightIcon,
+  Ship // 🚢 船のアイコンをインポート
 } from 'lucide-react';
 import Script from 'next/script';
 import Link from 'next/link';
 
 // 🎮 RPG風移動手段アイコン（ピクセルアート風）
+// 🔥 変更点1: `ship` と `ferry` を追加（ferry は transport-detail-input.tsx で使用される値）
 const TRANSPORT_ICONS: { [key: string]: { icon: string; label: string; color: string } } = {
   walk: { icon: '🚶', label: '徒歩', color: '#4CAF50' },
   bus: { icon: '🚌', label: 'バス', color: '#2196F3' },
@@ -39,6 +41,8 @@ const TRANSPORT_ICONS: { [key: string]: { icon: string; label: string; color: st
   bicycle: { icon: '🚲', label: '自転車', color: '#00BCD4' },
   train: { icon: '🚃', label: '電車', color: '#F44336' },
   airplane: { icon: '✈️', label: '飛行機', color: '#0ea5e9' },
+  ship: { icon: '🚢', label: '船・フェリー', color: '#06b6d4' }, // 🆕 船を追加（シアン系カラー）
+  ferry: { icon: '🚢', label: '船・フェリー', color: '#06b6d4' }, // 🆕 ferry を追加（transport-detail-input.tsx の値と一致させる）
 };
 import { supabase } from '@/lib/supabaseClient';
 
@@ -57,23 +61,58 @@ const optimizeCloudinaryImageUrl = (url: string): string => {
   return url;
 };
 
-// 移動詳細データの型（transport-detail-input.tsxと同期）
+// 🔥 変更点2: 移動詳細データの型に船関連フィールドを追加
 interface TransportDetails {
   type: string;
   travelTime?: number;
+  // バス関連
   departureStop?: string;
   arrivalStop?: string;
   busLine?: string;
+  // 電車関連
   departureStation?: string;
   arrivalStation?: string;
   lineName?: string;
+  // 共通
   fare?: number;
+  // 車関連
   parkingInfo?: string;
+  // 自転車関連
   rentalInfo?: string;
+  // メモ
   note?: string;
+  // 飛行機関連
   departureAirport?: string;
   arrivalAirport?: string;
   flightNumber?: string;
+  // 🆕 船・フェリー関連フィールドを追加
+  departurePort?: string;      // 出発港
+  arrivalPort?: string;        // 到着港
+  ferryLine?: string;          // フェリー路線名（transport-detail-input.tsx で使用）
+  shipName?: string;           // 船名・便名（例: さんふらわあ、フェリーおおいた など）
+  // 🆕 乗り換え用フィールド（segments配列に対応）
+  segments?: Array<{
+    id?: string;
+    type?: string;
+    travelTime?: number;
+    departureStop?: string;
+    arrivalStop?: string;
+    busLine?: string;
+    departureStation?: string;
+    arrivalStation?: string;
+    lineName?: string;
+    fare?: number;
+    departureAirport?: string;
+    arrivalAirport?: string;
+    flightNumber?: string;
+    departurePort?: string;
+    arrivalPort?: string;
+    ferryLine?: string;
+    shipName?: string;
+    parkingInfo?: string;
+    rentalInfo?: string;
+    note?: string;
+  }>;
 }
 
 interface SpotLocation {
@@ -533,9 +572,26 @@ export function SpotDetailClient({ spotId }: SpotDetailClientProps) {
                     }
                   }
                   
-                  // 移動手段の種類を取得（現在のスポットから）
-                  const transportType = transportDetails?.type || location?.recommended_transport || location.next_transport;
-                  const travelTime = transportDetails?.travelTime || location.next_travel_time;
+                  // segments配列がある場合、最初のセグメントから情報を取得
+                  let segmentData: any = null;
+                  if (transportDetails && 'segments' in transportDetails && transportDetails.segments && transportDetails.segments.length > 0) {
+                    segmentData = transportDetails.segments[0];
+                    // segmentsから合計所要時間と合計運賃を計算
+                    const totalTravelTime = transportDetails.segments.reduce((sum: number, s: any) => sum + (s.travelTime || 0), 0);
+                    const totalFare = transportDetails.segments.reduce((sum: number, s: any) => sum + (s.fare || 0), 0);
+                    // segmentDataに合計値を設定（個別の値がない場合に使用）
+                    if (segmentData && !segmentData.travelTime && totalTravelTime > 0) {
+                      segmentData.travelTime = totalTravelTime;
+                    }
+                    if (segmentData && !segmentData.fare && totalFare > 0) {
+                      segmentData.fare = totalFare;
+                    }
+                  }
+                  
+                  // 移動手段の種類を取得（segmentsがある場合は最初のセグメントから、なければtransportDetailsから）
+                  const transportType = segmentData?.type || transportDetails?.type || location?.recommended_transport || location.next_transport;
+                  // 所要時間を取得（segmentsがある場合はsegmentDataから、なければtransportDetailsから）
+                  const travelTime = segmentData?.travelTime || transportDetails?.travelTime || location.next_travel_time;
                   
                   // 移動情報がない場合はシンプルな接続線のみ表示
                   if (!transportType || transportType === 'none') {
@@ -602,51 +658,77 @@ export function SpotDetailClient({ spotId }: SpotDetailClientProps) {
                               </div>
                             )}
                             
-                            {/* 詳細情報（バス停、駅、空港など） */}
-                            {transportDetails && (
+                            {/* 詳細情報（バス停、駅、空港、船など） */}
+                            {(transportDetails || segmentData) && (
                               <div className="mt-3 pt-2 border-t border-[#ffecd2]/20 space-y-1">
                                 {/* バス停情報 */}
-                                {transportType === 'bus' && (transportDetails.departureStop || transportDetails.arrivalStop) && (
-                                  <div className="text-xs text-[#ffecd2]/80">
-                                    <span className="text-[#ffd700]">🚏</span> {transportDetails.departureStop || '?'} → {transportDetails.arrivalStop || '?'}
-                                    {transportDetails.busLine && <span className="ml-1 text-[#ffecd2]/60">({transportDetails.busLine})</span>}
-                                  </div>
+                                {transportType === 'bus' && (
+                                  (segmentData?.departureStop || segmentData?.arrivalStop || transportDetails?.departureStop || transportDetails?.arrivalStop) && (
+                                    <div className="text-xs text-[#ffecd2]/80">
+                                      <span className="text-[#ffd700]">🚏</span> {(segmentData?.departureStop || transportDetails?.departureStop) || '?'} → {(segmentData?.arrivalStop || transportDetails?.arrivalStop) || '?'}
+                                      {(segmentData?.busLine || transportDetails?.busLine) && (
+                                        <span className="ml-1 text-[#ffecd2]/60">({segmentData?.busLine || transportDetails?.busLine})</span>
+                                      )}
+                                    </div>
+                                  )
                                 )}
                                 
                                 {/* 駅情報 */}
-                                {transportType === 'train' && (transportDetails.departureStation || transportDetails.arrivalStation) && (
-                                  <div className="text-xs text-[#ffecd2]/80">
-                                    <span className="text-[#ffd700]">🚉</span> {transportDetails.departureStation || '?'} → {transportDetails.arrivalStation || '?'}
-                                    {transportDetails.lineName && <span className="ml-1 text-[#ffecd2]/60">({transportDetails.lineName})</span>}
-                                  </div>
+                                {transportType === 'train' && (
+                                  (segmentData?.departureStation || segmentData?.arrivalStation || transportDetails?.departureStation || transportDetails?.arrivalStation) && (
+                                    <div className="text-xs text-[#ffecd2]/80">
+                                      <span className="text-[#ffd700]">🚉</span> {(segmentData?.departureStation || transportDetails?.departureStation) || '?'} → {(segmentData?.arrivalStation || transportDetails?.arrivalStation) || '?'}
+                                      {(segmentData?.lineName || transportDetails?.lineName) && (
+                                        <span className="ml-1 text-[#ffecd2]/60">({segmentData?.lineName || transportDetails?.lineName})</span>
+                                      )}
+                                    </div>
+                                  )
                                 )}
                                 
                                 {/* 空港情報 */}
-                                {transportType === 'airplane' && (transportDetails.departureAirport || transportDetails.arrivalAirport) && (
-                                  <div className="text-xs text-[#ffecd2]/80">
-                                    <span className="text-[#ffd700]">✈️</span> {transportDetails.departureAirport || '?'} → {transportDetails.arrivalAirport || '?'}
-                                    {transportDetails.flightNumber && <span className="ml-1 text-[#ffecd2]/60">({transportDetails.flightNumber})</span>}
-                                  </div>
+                                {transportType === 'airplane' && (
+                                  (segmentData?.departureAirport || segmentData?.arrivalAirport || transportDetails?.departureAirport || transportDetails?.arrivalAirport) && (
+                                    <div className="text-xs text-[#ffecd2]/80">
+                                      <span className="text-[#ffd700]">✈️</span> {(segmentData?.departureAirport || transportDetails?.departureAirport) || '?'} → {(segmentData?.arrivalAirport || transportDetails?.arrivalAirport) || '?'}
+                                      {(segmentData?.flightNumber || transportDetails?.flightNumber) && (
+                                        <span className="ml-1 text-[#ffecd2]/60">({segmentData?.flightNumber || transportDetails?.flightNumber})</span>
+                                      )}
+                                    </div>
+                                  )
                                 )}
                                 
-                                {/* 運賃 */}
-                                {transportDetails.fare && (
+                                {/* 🆕 変更点3: 船・フェリー情報の表示を追加（ferry と ship の両方に対応、segments配列にも対応） */}
+                                {(transportType === 'ferry' || transportType === 'ship') && (
+                                  (segmentData?.departurePort || segmentData?.arrivalPort || transportDetails?.departurePort || transportDetails?.arrivalPort) && (
+                                    <div className="text-xs text-[#ffecd2]/80">
+                                      <span className="text-[#ffd700]">⚓</span> {(segmentData?.departurePort || transportDetails?.departurePort) || '?'} → {(segmentData?.arrivalPort || transportDetails?.arrivalPort) || '?'}
+                                      {(segmentData?.ferryLine || segmentData?.shipName || transportDetails?.ferryLine || (transportDetails as any)?.ferryLine || transportDetails?.shipName) && (
+                                        <span className="ml-1 text-[#ffecd2]/60">
+                                          ({(segmentData?.ferryLine || transportDetails?.ferryLine || (transportDetails as any)?.ferryLine || transportDetails?.shipName || segmentData?.shipName)})
+                                        </span>
+                                      )}
+                                    </div>
+                                  )
+                                )}
+                                
+                                {/* 運賃（segments配列がある場合は合計、なければ個別の値） */}
+                                {(segmentData?.fare || transportDetails?.fare) && (
                                   <div className="text-xs text-[#ffd700]">
-                                    💰 ¥{transportDetails.fare.toLocaleString()}
+                                    💰 ¥{(segmentData?.fare || transportDetails?.fare).toLocaleString()}
                                   </div>
                                 )}
                                 
                                 {/* 駐車場情報 */}
-                                {transportType === 'car' && transportDetails.parkingInfo && (
+                                {transportType === 'car' && (segmentData?.parkingInfo || transportDetails?.parkingInfo) && (
                                   <div className="text-xs text-[#ffecd2]/80">
-                                    🅿️ {transportDetails.parkingInfo}
+                                    🅿️ {segmentData?.parkingInfo || transportDetails?.parkingInfo}
                                   </div>
                                 )}
                                 
                                 {/* メモ */}
-                                {transportDetails.note && (
+                                {(segmentData?.note || transportDetails?.note) && (
                                   <div className="text-xs text-[#ffecd2]/60 italic">
-                                    📝 {transportDetails.note}
+                                    📝 {segmentData?.note || transportDetails?.note}
                                   </div>
                                 )}
                               </div>

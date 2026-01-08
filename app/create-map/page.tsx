@@ -48,6 +48,8 @@ const TRANSPORT_OPTIONS = [
   { value: 'car', label: '車', icon: '🚗' },
   { value: 'bicycle', label: '自転車', icon: '🚲' },
   { value: 'train', label: '電車', icon: '🚃' },
+  { value: 'ship', label: '船', icon: '🚢' },
+  { value: 'airplane', label: '飛行機', icon: '✈️' },
 ] as const;
 
 // 場所のデータ型
