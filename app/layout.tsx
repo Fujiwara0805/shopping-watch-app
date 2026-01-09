@@ -32,7 +32,7 @@ const notoSansJP = Noto_Sans_JP({
 // サイト基本情報
 const SITE_NAME = 'トクドク';
 const SITE_URL = 'https://tokudoku.com';
-const SITE_DESCRIPTION = 'いつもの街に、まだ知らない景色がある。県内全域のお祭り、マルシェ、ワークショップを地図から発見。気になる場所をまとめて、あなただけのオリジナルマップに。大分をもっと好きになる——完全無料の地域情報アプリ。';
+const SITE_DESCRIPTION = 'いつもの街に、まだ知らない景色がある。県内全域のお祭り、マルシェ、ワークショップを地図から発見。気になる場所をまとめて、あなただけのオリジナルマップに。大分をもっと好きになる——完全無料の地域情報サイト。';
 const OG_IMAGE = 'https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png';
 
 // SEO用キーワード（大分県全18市町村 + イベントカテゴリ）
@@ -62,7 +62,7 @@ const SEO_KEYWORDS = [
 export const metadata: Metadata = {
   // 基本メタデータ
   title: {
-    default: `${SITE_NAME} - 地域情報アプリ | 大分県内のイベントやスポット情報を掲載`,
+    default: `大分のイベント・観光・穴場スポットの情報を探すなら${SITE_NAME} | 大分県内のイベントやスポット情報を掲載`,
     template: `%s | ${SITE_NAME}`,
   },
   description: SITE_DESCRIPTION,
@@ -104,14 +104,14 @@ export const metadata: Metadata = {
     locale: 'ja_JP',
     url: SITE_URL,
     siteName: SITE_NAME,
-    title: `${SITE_NAME} - 地域情報アプリ`,
-    description: 'いつもの街に、まだ知らない景色がある。県内全域のお祭り、マルシェ、ワークショップを地図から発見。気になる場所をまとめて、あなただけのオリジナルマップに。大分をもっと好きになる——完全無料の地域情報アプリ。',
+    title: `大分のイベント・観光・穴場スポットの情報を探すなら${SITE_NAME}`,
+    description: 'いつもの街に、まだ知らない景色がある。県内全域のお祭り、マルシェ、ワークショップを地図から発見。気になる場所をまとめて、あなただけのオリジナルマップに。大分をもっと好きになる——完全無料の地域情報サイト。',
     images: [
       {
         url: OG_IMAGE,
         width: 1200,
         height: 630,
-        alt: `${SITE_NAME} - 地域情報アプリ`,
+        alt: `大分のイベント・観光・穴場スポットの情報を探すなら${SITE_NAME}`,
         type: 'image/png',
       },
     ],
@@ -120,8 +120,8 @@ export const metadata: Metadata = {
   // Twitter Card
   twitter: {
     card: 'summary_large_image',
-    title: `${SITE_NAME} - 地域情報アプリ`,
-    description: 'いつもの街に、まだ知らない景色がある。県内全域のお祭り、マルシェ、ワークショップを地図から発見。気になる場所をまとめて、あなただけのオリジナルマップに。大分をもっと好きになる——完全無料の地域情報アプリ。',
+    title: `大分のイベント・観光・穴場スポットの情報を探すなら${SITE_NAME}`,
+    description: 'いつもの街に、まだ知らない景色がある。県内全域のお祭り、マルシェ、ワークショップを地図から発見。気になる場所をまとめて、あなただけのオリジナルマップに。大分をもっと好きになる——完全無料の地域情報サイト。',
     images: [OG_IMAGE],
     creator: '@tokudoku',
     site: '@tokudoku',
@@ -259,7 +259,7 @@ export default function RootLayout({
                   '@type': 'WebSite',
                   '@id': `${SITE_URL}/#website`,
                   url: SITE_URL,
-                  name: `${SITE_NAME} - 地域情報アプリ`,
+                  name: `大分のイベント・観光・穴場スポットの情報を探すなら${SITE_NAME}`,
                   description: SITE_DESCRIPTION,
                   publisher: { '@id': `${SITE_URL}/#organization` },
                   inLanguage: 'ja',
@@ -294,7 +294,7 @@ export default function RootLayout({
                     '完全無料・登録不要',
                     'リアルタイム情報更新',
                   ],
-                  description: 'いつもの街に、まだ知らない景色がある。県内全域のお祭り、マルシェ、ワークショップを地図から発見。気になる場所をまとめて、あなただけのオリジナルマップに。大分をもっと好きになる——完全無料の地域情報アプリ。',
+                  description: 'いつもの街に、まだ知らない景色がある。県内全域のお祭り、マルシェ、ワークショップを地図から発見。気になる場所をまとめて、あなただけのオリジナルマップに。大分をもっと好きになる——完全無料の地域情報サイト。',
                 },
                 // BreadcrumbList (トップページ)
                 {

@@ -45,7 +45,7 @@ export function WebsiteStructuredData({ url = 'https://tokudoku.com' }: WebsiteS
         '@type': 'WebSite',
         '@id': `${url}/#website`,
         url: url,
-        name: 'トクドク - 地域イベント発見アプリ',
+        name: '大分のイベント・観光・穴場スポットの情報を探すならトクドク',
         description: '地域のお祭り、マルシェ、ワークショップを地図で発見！現在地から近いイベントをかんたん検索。週末の予定探しに最適な、完全無料の地域密着イベントアプリです。',
         publisher: {
           '@id': `${url}/#organization`,
@@ -80,7 +80,7 @@ export function WebsiteStructuredData({ url = 'https://tokudoku.com' }: WebsiteS
           '完全無料',
           'アカウント登録不要',
         ],
-        description: '大分県内の地域イベント情報をマップ上でかんたんに検索できる無料アプリ。お祭り、マルシェ、ワークショップなどのイベントをリアルタイムで発見。位置情報を活用して現在地周辺のイベントを表示します。',
+        description: '地域のお祭り、マルシェ、ワークショップを地図で発見！現在地から近いイベントをかんたん検索。週末の予定探しに最適な、完全無料の地域密着イベントサイトです。リアルタイムで更新される最新イベント情報をチェックしよう。',
         browserRequirements: 'Requires JavaScript. Requires HTML5.',
       },
     ],
@@ -240,7 +240,7 @@ export function FAQStructuredData() {
         name: 'どのようなイベント情報が掲載されていますか？',
         acceptedAnswer: {
           '@type': 'Answer',
-          text: 'トクドクでは、大分県内のお祭り、夏祭り、秋祭り、地域のマルシェ、手作り市、ワークショップ、体験イベント、フードフェスティバル、音楽イベントなど、さまざまな地域密着型イベント情報を掲載しています。終了したイベントは自動的に非表示になるため、常に最新の情報をご覧いただけます。',
+          text: 'トクドクでは、大分県内のお祭り、マルシェ、ワークショップなど、さまざまな地域密着型イベント情報を掲載しています。終了したイベントは自動的に非表示になるため、常に最新の情報をご覧いただけます。',
         },
       },
       {
@@ -322,7 +322,7 @@ export function LocalBusinessStructuredData() {
     '@id': 'https://tokudoku.com/#localbusiness',
     name: 'トクドク',
     image: 'https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png',
-    description: '大分県の地域イベント情報プラットフォーム。お祭り、マルシェ、ワークショップを地図で発見。',
+    description: '大分県のお祭り、イベント、マルシェ、ワークショップを地図で発見！現在地から近いイベントをかんたん検索。週末の予定探しに最適な、完全無料の地域密着イベントサイトです。リアルタイムで更新される最新イベント情報をチェックしよう。',
     url: 'https://tokudoku.com',
     telephone: '',
     priceRange: '無料',
