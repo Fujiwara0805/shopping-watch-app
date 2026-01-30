@@ -761,7 +761,7 @@ export default function CalendarPage() {
 
               {/* 月切り替えコマンド */}
               <div className="flex items-center justify-center gap-6">
-                <button onClick={() => setCurrentDate(addDays(currentDate, -30))} className="p-1 bg-[#3d2914] border border-[#ffecd2]/30 rounded hover:bg-[#8b6914] text-white">
+                <button onClick={handlePreviousMonth} className="p-1 bg-[#3d2914] border border-[#ffecd2]/30 rounded hover:bg-[#8b6914] text-white">
                   <ChevronLeft className="h-6 w-6" />
                 </button>
                 <div className="bg-[#fdf5e6] px-6 py-1 border-2 border-[#8b6914] shadow-[4px_4px_0px_0px_rgba(0,0,0,0.2)]">
@@ -769,7 +769,7 @@ export default function CalendarPage() {
                     {format(currentDate, 'yyyy年 M月', { locale: ja })}
                   </span>
                 </div>
-                <button onClick={() => setCurrentDate(addDays(currentDate, 30))} className="p-1 bg-[#3d2914] border border-[#ffecd2]/30 rounded hover:bg-[#8b6914] text-white">
+                <button onClick={handleNextMonth} className="p-1 bg-[#3d2914] border border-[#ffecd2]/30 rounded hover:bg-[#8b6914] text-white">
                   <ChevronRight className="h-6 w-6" />
                 </button>
               </div>
