@@ -522,14 +522,14 @@ export default function PostPage() {
       return;
     }
 
-    const maxSize = 5 * 1024 * 1024;
+    const maxSize = 10 * 2048 * 2048;
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
     
     for (const file of files) {
       if (file.size > maxSize) {
         toast({
           title: "⚠️ ファイルサイズが大きすぎます",
-          description: "各画像は5MB以下にしてください。",
+          description: "各画像は10MB以下にしてください。",
           duration: 3000,
         });
         return;
@@ -581,7 +581,7 @@ export default function PostPage() {
       return;
     }
 
-    const maxSize = 10 * 1024 * 1024;
+    const maxSize = 10 * 2048 * 2048;
     const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
     
     for (const file of files) {
