@@ -1,29 +1,15 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { useRouter, useSearchParams, usePathname } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { Compass,
-  MapPin, Calendar, ExternalLink, AlertCircle, Phone, 
-  FileText, DollarSign, Link as LinkIcon, ChevronLeft, 
-  ChevronRight, X, CalendarPlusIcon, Shield, ScrollText, Search,
-  Home, ChevronRight as ChevronRightIcon
-} from 'lucide-react';
+import { Compass, MapPin, Calendar, ExternalLink, AlertCircle, Phone, FileText, DollarSign, Link as LinkIcon, ChevronLeft, ChevronRight, X, CalendarPlusIcon, Shield, ScrollText, Search, Home, ChevronRight as ChevronRightIcon, ArrowLeft, Share2 } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import Script from 'next/script';
 import Link from 'next/link';
-
-// 🎨 LPカラーパレット
-const COLORS = {
-  primary: '#8b6914',      // ゴールドブラウン
-  primaryDark: '#3d2914',  // ダークブラウン
-  secondary: '#5c3a21',    // ミディアムブラウン
-  background: '#f5e6d3',   // ベージュ
-  surface: '#fdf5e6',      // 羊皮紙色
-  cream: '#ffecd2',        // クリーム
-  border: '#d4c4a8',       // ライトベージュ
-};
+import Image from 'next/image';
+import { designTokens, COLORS } from '@/lib/constants';
 
 interface EventDetail {
   id: string;
@@ -51,7 +37,7 @@ interface EventDetailClientProps {
   eventId: string;
 }
 
-// パンくずリストコンポーネント（イベント詳細用）
+// パンくずリストコンポーネント
 interface EventBreadcrumbProps {
   event: EventDetail | null;
   className?: string;
@@ -61,7 +47,6 @@ function EventBreadcrumb({ event, className = '' }: EventBreadcrumbProps) {
   const pathname = usePathname();
   const baseUrl = 'https://tokudoku.com';
   
-  // パンくずアイテムを生成
   const breadcrumbItems = [
     { label: 'ホーム', href: '/' },
     { label: '大分県', href: '/events' },
@@ -69,7 +54,6 @@ function EventBreadcrumb({ event, className = '' }: EventBreadcrumbProps) {
     { label: event?.event_name || 'イベント詳細', href: pathname, isCurrent: true },
   ];
 
-  // JSON-LD構造化データ
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
@@ -90,15 +74,16 @@ function EventBreadcrumb({ event, className = '' }: EventBreadcrumbProps) {
       />
       {breadcrumbItems.map((item, index) => (
         <div key={item.href} className="flex items-center">
-          {index > 0 && <ChevronRightIcon className="h-4 w-4 text-[#8b6914]/50 mx-1" />}
+          {index > 0 && <ChevronRightIcon className="h-4 w-4 mx-1" style={{ color: designTokens.colors.text.muted }} />}
           {item.isCurrent ? (
-            <span className="font-bold text-[#3d2914] truncate max-w-[200px]">
+            <span className="font-medium truncate max-w-[200px]" style={{ color: designTokens.colors.text.primary }}>
               {item.label}
             </span>
           ) : (
             <Link 
               href={item.href} 
-              className="text-[#8b6914] hover:text-[#3d2914] hover:underline transition-colors flex items-center"
+              className="flex items-center transition-colors hover:underline"
+              style={{ color: designTokens.colors.accent.lilacDark }}
             >
               {index === 0 && <Home className="h-4 w-4 mr-1" />}
               {item.label}
@@ -110,29 +95,46 @@ function EventBreadcrumb({ event, className = '' }: EventBreadcrumbProps) {
   );
 }
 
+// 情報行コンポーネント
+const InfoRow = ({ icon: Icon, label, children, iconColor }: { icon: React.ElementType; label: string; children: React.ReactNode; iconColor?: string }) => (
+  <motion.div
+    initial={{ opacity: 0, x: -10 }}
+    animate={{ opacity: 1, x: 0 }}
+    className="flex items-start gap-4 group"
+  >
+    <div 
+      className="flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110"
+      style={{ 
+        background: `${iconColor || designTokens.colors.accent.lilac}20`,
+      }}
+    >
+      <Icon className="h-5 w-5" style={{ color: iconColor || designTokens.colors.accent.lilac }} />
+    </div>
+    <div className="flex-1 min-w-0">
+      <p className="text-xs font-semibold tracking-wide uppercase mb-1" style={{ color: designTokens.colors.text.muted }}>
+        {label}
+      </p>
+      {children}
+    </div>
+  </motion.div>
+);
+
 export function EventDetailClient({ eventId }: EventDetailClientProps) {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [event, setEvent] = useState<EventDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [imageLoading, setImageLoading] = useState(true);
 
   const handleBack = () => {
-    const from = searchParams.get('from');
-    if (from === 'events') {
-      const city = searchParams.get('city');
-      const sort = searchParams.get('sort');
-      const duration = searchParams.get('duration');
-      const params = new URLSearchParams();
-      if (city) params.set('city', city);
-      if (sort) params.set('sort', sort);
-      if (duration) params.set('duration', duration);
-      router.push(`/events?${params.toString()}`);
-    } else {
-      router.back();
-    }
+    router.push('/events');
   };
+
+  // 表示する画像が切り替わったら画像ローディングを表示
+  useEffect(() => {
+    if (event?.image_urls?.length) setImageLoading(true);
+  }, [currentImageIndex]);
 
   useEffect(() => {
     if (!eventId) return;
@@ -204,267 +206,445 @@ export function EventDetailClient({ eventId }: EventDetailClientProps) {
 
     if (startDate && now < startDate) {
       const diffDays = Math.ceil((startDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-      return { status: '開催予定', color: 'blue', remainingTime: `開催まであと${diffDays}日` };
+      return { status: '開催予定', color: designTokens.colors.functional.info, remainingTime: `開催まであと${diffDays}日` };
     }
     if (now <= endDate) {
       const diffMs = endDate.getTime() - now.getTime();
       const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
       const diffHours = Math.ceil(diffMs / (1000 * 60 * 60));
       let remainingText = diffDays > 1 ? `あと${diffDays}日` : diffHours > 1 ? `あと${diffHours}時間` : 'まもなく終了';
-      return { status: '開催中', color: 'green', remainingTime: remainingText };
+      return { status: '開催中', color: designTokens.colors.functional.success, remainingTime: remainingText };
     }
-    return { status: '終了', color: 'gray', remainingTime: '' };
+    return { status: '終了', color: designTokens.colors.text.muted, remainingTime: '' };
   };
 
+  // ローディング
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#f5e6d3]">
+      <div className="min-h-screen flex items-center justify-center" style={{ background: designTokens.colors.background.mist }}>
         <div className="text-center">
           <motion.div animate={{ rotate: 360 }} transition={{ duration: 2, repeat: Infinity, ease: "linear" }}>
-            <Compass className="h-12 w-12 text-[#8b6914] mx-auto mb-4" />
+            <Compass className="h-12 w-12 mx-auto mb-4" style={{ color: designTokens.colors.accent.gold }} />
           </motion.div>
-          <p className="text-[#5c3a21] font-bold">イベント情報を解析中...</p>
+          <p className="font-medium" style={{ color: designTokens.colors.text.secondary }}>イベント情報を読み込み中...</p>
         </div>
       </div>
     );
   }
 
+  // エラー
   if (error || !event) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#f5e6d3] p-4">
-        <div className="bg-[#fdf5e6] border-4 border-double border-[#8b6914] shadow-lg p-8 max-w-md w-full text-center">
-          <AlertCircle className="h-16 w-16 text-red-700 mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-[#3d2914] mb-2 font-serif">通信エラー</h2>
-          <p className="text-[#5c3a21] font-bold mb-6">{error || 'イベントが見つかりませんでした。'}</p>
-          <Button onClick={handleBack} className="w-full bg-[#8b6914] text-white hover:bg-[#3d2914] font-bold">戻る</Button>
-        </div>
+      <div className="min-h-screen flex items-center justify-center p-4" style={{ background: designTokens.colors.background.mist }}>
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="rounded-3xl p-8 max-w-md w-full text-center"
+          style={{ background: designTokens.colors.background.white, boxShadow: designTokens.elevation.high }}
+        >
+          <AlertCircle className="h-16 w-16 mx-auto mb-4" style={{ color: designTokens.colors.functional.error }} />
+          <h2 className="text-xl font-semibold mb-2" style={{ fontFamily: designTokens.typography.display, color: designTokens.colors.text.primary }}>
+            読み込みエラー
+          </h2>
+          <p className="mb-6" style={{ color: designTokens.colors.text.secondary }}>{error || 'イベントが見つかりませんでした。'}</p>
+          <Button 
+            onClick={handleBack} 
+            className="w-full rounded-xl py-3"
+            style={{ background: designTokens.colors.accent.lilac, color: designTokens.colors.text.inverse }}
+          >
+            戻る
+          </Button>
+        </motion.div>
       </div>
     );
   }
 
   const eventStatus = getEventStatus();
-  const statusColors = {
-    green: { bg: 'bg-green-700', text: 'text-white', label: '現着可能' },
-    blue: { bg: 'bg-blue-700', text: 'text-white', label: '待機中' },
-    gray: { bg: 'bg-gray-600', text: 'text-white', label: '終了' }
-  };
-  const colors = statusColors[eventStatus.color as keyof typeof statusColors];
 
   return (
-    <div className="min-h-screen bg-[#f5e6d3] overflow-y-auto pb-10">
-      {/* 羊皮紙テクスチャ風オーバーレイ */}
-      <div className="fixed inset-0 opacity-[0.03] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/parchment.png')] z-0" />
+    <div className="min-h-screen overflow-y-auto pb-10" style={{ background: designTokens.colors.background.mist }}>
+      {/* 背景装飾 */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <motion.div
+          animate={{ x: [0, 40, 0], y: [0, -30, 0], scale: [1, 1.15, 1] }}
+          transition={{ duration: 25, repeat: Infinity, ease: 'easeInOut' }}
+          className="absolute -top-1/4 -right-1/4 w-1/2 h-1/2"
+          style={{ background: `radial-gradient(circle, ${designTokens.colors.accent.gold}10 0%, transparent 70%)`, filter: 'blur(80px)' }}
+        />
+        <motion.div
+          animate={{ x: [0, -50, 0], y: [0, 40, 0], scale: [1.1, 1, 1.1] }}
+          transition={{ duration: 30, repeat: Infinity, ease: 'easeInOut' }}
+          className="absolute -bottom-1/4 -left-1/4 w-2/3 h-2/3"
+          style={{ background: `radial-gradient(circle, ${designTokens.colors.accent.lilac}08 0%, transparent 70%)`, filter: 'blur(100px)' }}
+        />
+      </div>
 
       <div className="max-w-3xl mx-auto px-4 pt-6 relative z-10">
         {/* パンくずリスト */}
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-4 p-3 bg-[#fdf5e6]/80 backdrop-blur-sm rounded-lg border-2 border-[#d4c4a8]"
+          className="mb-4 p-3 rounded-xl backdrop-blur-sm"
+          style={{ 
+            background: `${designTokens.colors.background.white}90`,
+            boxShadow: designTokens.elevation.subtle,
+          }}
         >
           <EventBreadcrumb event={event} />
         </motion.div>
         
+        {/* メインカード */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-          className="bg-[#fdf5e6] border-4 border-double border-[#8b6914] shadow-[8px_8px_0px_0px_rgba(61,41,20,0.2)] overflow-hidden"
+          initial={{ opacity: 0, y: 20 }} 
+          animate={{ opacity: 1, y: 0 }}
+          className="rounded-3xl overflow-hidden"
+          style={{ 
+            background: designTokens.colors.background.white,
+            boxShadow: designTokens.elevation.high,
+          }}
         >
           {/* 画像カルーセル */}
-          <div className="relative h-64 sm:h-96 w-full bg-[#3d2914] border-b-4 border-[#8b6914]">
+          <div className="relative w-full aspect-square max-h-[600px]" style={{ background: designTokens.colors.background.cloud }}>
             {event.image_urls && event.image_urls.length > 0 ? (
               <>
-                <img
-                  src={event.image_urls[currentImageIndex]}
-                  alt={event.event_name || event.store_name}
-                  className="w-full h-full object-cover"
-                />
+                {/* 画像読込中: 既存のコンパスローディング */}
+                <AnimatePresence>
+                  {imageLoading && (
+                    <motion.div
+                      initial={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="absolute inset-0 z-10 flex items-center justify-center"
+                      style={{ background: designTokens.colors.background.cloud }}
+                    >
+                      <div className="text-center">
+                        <motion.div
+                          animate={{ rotate: 360 }}
+                          transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+                        >
+                          <Compass className="h-12 w-12 mx-auto mb-2" style={{ color: designTokens.colors.accent.gold }} />
+                        </motion.div>
+                        <p className="text-sm font-medium" style={{ color: designTokens.colors.text.secondary }}>画像を読み込み中...</p>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={currentImageIndex}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="w-full h-full relative"
+                  >
+                    <Image
+                      src={event.image_urls[currentImageIndex]}
+                      alt={event.event_name || event.store_name}
+                      fill
+                      className="object-contain"
+                      sizes="(max-width: 768px) 100vw, 768px"
+                      priority={currentImageIndex === 0}
+                      onLoad={() => setImageLoading(false)}
+                      onError={() => setImageLoading(false)}
+                    />
+                  </motion.div>
+                </AnimatePresence>
+                
                 {event.image_urls.length > 1 && (
                   <>
-                    <button onClick={() => setCurrentImageIndex((prev) => (prev - 1 + event.image_urls!.length) % event.image_urls!.length)}
-                      className="absolute left-2 top-1/2 -translate-y-1/2 bg-[#3d2914]/80 text-[#ffecd2] p-2 border-2 border-[#8b6914]">
-                      <ChevronLeft className="h-6 w-6" />
-                    </button>
-                    <button onClick={() => setCurrentImageIndex((prev) => (prev + 1) % event.image_urls!.length)}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 bg-[#3d2914]/80 text-[#ffecd2] p-2 border-2 border-[#8b6914]">
-                      <ChevronRight className="h-6 w-6" />
-                    </button>
+                    <motion.button 
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => setCurrentImageIndex((prev) => (prev - 1 + event.image_urls!.length) % event.image_urls!.length)}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center backdrop-blur-md"
+                      style={{ 
+                        background: `${designTokens.colors.background.white}90`,
+                        boxShadow: designTokens.elevation.medium,
+                      }}
+                    >
+                      <ChevronLeft className="h-5 w-5" style={{ color: designTokens.colors.text.primary }} />
+                    </motion.button>
+                    <motion.button 
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => setCurrentImageIndex((prev) => (prev + 1) % event.image_urls!.length)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center backdrop-blur-md"
+                      style={{ 
+                        background: `${designTokens.colors.background.white}90`,
+                        boxShadow: designTokens.elevation.medium,
+                      }}
+                    >
+                      <ChevronRight className="h-5 w-5" style={{ color: designTokens.colors.text.primary }} />
+                    </motion.button>
+                    
+                    {/* インジケーター */}
+                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+                      {event.image_urls.map((_, index) => (
+                        <button
+                          key={index}
+                          onClick={() => setCurrentImageIndex(index)}
+                          className="w-2 h-2 rounded-full transition-all"
+                          style={{ 
+                            background: index === currentImageIndex ? designTokens.colors.accent.gold : `${designTokens.colors.background.white}80`,
+                            transform: index === currentImageIndex ? 'scale(1.3)' : 'scale(1)',
+                          }}
+                        />
+                      ))}
+                    </div>
                   </>
                 )}
               </>
             ) : (
-              <div className="h-full w-full flex items-center justify-center opacity-40">
-                <ScrollText className="h-32 w-32 text-white" />
+              <div className="h-full w-full flex items-center justify-center">
+                <ScrollText className="h-24 w-24" style={{ color: designTokens.colors.text.muted }} />
               </div>
             )}
             
-            {/* 右上の閉じるボタン */}
-            <button onClick={handleBack} className="absolute top-4 right-4 bg-[#8b2323] text-white p-1 border-2 border-[#ffecd2] shadow-md hover:bg-red-800 transition-colors">
-              <X className="h-6 w-6" />
-            </button>
+            {/* 閉じるボタン */}
+            <motion.button 
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={handleBack} 
+              className="absolute top-4 right-4 w-10 h-10 rounded-full flex items-center justify-center backdrop-blur-md"
+              style={{ 
+                background: `${designTokens.colors.text.primary}90`,
+                color: designTokens.colors.text.inverse,
+              }}
+            >
+              <X className="h-5 w-5" />
+            </motion.button>
+            
+            {/* 戻るボタン */}
+            <motion.button 
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={handleBack} 
+              className="absolute top-4 left-4 w-10 h-10 rounded-full flex items-center justify-center backdrop-blur-md"
+              style={{ 
+                background: `${designTokens.colors.background.white}90`,
+                boxShadow: designTokens.elevation.medium,
+              }}
+            >
+              <ArrowLeft className="h-5 w-5" style={{ color: designTokens.colors.text.primary }} />
+            </motion.button>
           </div>
 
-          <div className="p-4 sm:p-8">
+          {/* コンテンツ */}
+          <div className="p-6 sm:p-8">
             {/* ステータスと名前 */}
             <div className="mb-6">
               <div className="flex items-center gap-3 mb-4">
-                <span className={`${colors.bg} ${colors.text} px-3 py-1 text-xs font-bold tracking-widest border border-[#ffecd2]/50 shadow-sm`}>
+                <span 
+                  className="px-4 py-1.5 rounded-full text-xs font-semibold"
+                  style={{ 
+                    background: `${eventStatus.color}20`,
+                    color: eventStatus.color,
+                  }}
+                >
                   {eventStatus.status}
                 </span>
                 {eventStatus.remainingTime && (
-                  <span className="text-[#8b2323] font-black text-sm animate-pulse">
-                    【{eventStatus.remainingTime}】
-                  </span>
+                  <motion.span 
+                    animate={{ opacity: [1, 0.6, 1] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                    className="text-sm font-semibold"
+                    style={{ color: designTokens.colors.functional.warning }}
+                  >
+                    {eventStatus.remainingTime}
+                  </motion.span>
                 )}
               </div>
-              <h2 className="text-2xl sm:text-4xl font-black text-[#3d2914] font-serif leading-tight">
+              <h1 
+                className="text-2xl sm:text-3xl font-semibold leading-tight"
+                style={{ 
+                  fontFamily: designTokens.typography.display,
+                  color: designTokens.colors.text.primary,
+                }}
+              >
                 {event.event_name}
-              </h2>
-              <div className="w-full h-1 bg-gradient-to-r from-[#8b6914] to-transparent mt-4" />
+              </h1>
+              <div 
+                className="w-20 h-1 rounded-full mt-4"
+                style={{ background: `linear-gradient(90deg, ${designTokens.colors.accent.gold}, transparent)` }}
+              />
             </div>
 
             {/* 本文 */}
-            <div className="mb-8 p-4 bg-[#f5e6d3]/50 border-l-4 border-[#8b6914] relative">
-              <Shield className="absolute -top-3 -right-3 h-8 w-8 text-[#8b6914] opacity-20" />
-              <p className="text-[#3d2914] leading-relaxed whitespace-pre-wrap font-medium">
+            <div 
+              className="mb-8 p-5 rounded-2xl relative"
+              style={{ background: designTokens.colors.background.cloud }}
+            >
+              <p 
+                className="leading-relaxed whitespace-pre-wrap"
+                style={{ 
+                  fontFamily: designTokens.typography.body,
+                  color: designTokens.colors.text.primary,
+                }}
+              >
                 {event.content}
               </p>
             </div>
 
-            {/* 詳細パラメータ */}
-            <div className="grid grid-cols-1 gap-6 border-t-2 border-dashed border-[#d4c4a8] pt-8">
+            {/* 詳細情報 */}
+            <div className="space-y-6 pt-6" style={{ borderTop: `1px dashed ${designTokens.colors.secondary.stone}50` }}>
               
               {/* 開催場所 */}
-              <div className="flex items-start gap-4 group">
-                <div className="bg-[#8b6914] p-2 rounded-none shadow-sm group-hover:scale-110 transition-transform">
-                  <MapPin className="h-5 w-5 text-[#ffecd2]" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-xs font-black text-[#8b6914] uppercase tracking-tighter">Location / 開催場所</p>
-                  <p className="text-[#3d2914] text-lg font-bold">{event.store_name}</p>
-
-                  <Button onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${event.store_name}`, '_blank')}
-                    variant="link" className="p-0 h-auto text-[#8b6914] font-black underline decoration-double">
-                    地図を広げる（Google Map）
-                  </Button>
-                </div>
-              </div>
+              <InfoRow icon={MapPin} label="Location" iconColor={designTokens.colors.functional.error}>
+                <p className="text-lg font-semibold mb-2" style={{ color: designTokens.colors.text.primary }}>{event.store_name}</p>
+                <Button 
+                  onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${event.store_name}`, '_blank')}
+                  variant="link" 
+                  className="p-0 h-auto font-medium underline decoration-dotted"
+                  style={{ color: designTokens.colors.accent.lilacDark }}
+                >
+                  Google Mapで開く
+                </Button>
+              </InfoRow>
 
               {/* 開催期日 */}
-              <div className="flex items-start gap-4">
-                <div className="bg-[#5c3a21] p-2 rounded-none shadow-sm">
-                  <Calendar className="h-5 w-5 text-[#ffecd2]" />
+              <InfoRow icon={Calendar} label="Period" iconColor={designTokens.colors.functional.info}>
+                <div className="text-lg font-semibold mb-2" style={{ color: designTokens.colors.text.primary }}>
+                  {event.event_start_date ? (
+                    <>
+                      {new Date(event.event_start_date).toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' })}
+                      {event.event_end_date && event.event_end_date !== event.event_start_date && (
+                        <>
+                          <span className="mx-2" style={{ color: designTokens.colors.text.muted }}>〜</span>
+                          {new Date(event.event_end_date).toLocaleDateString('ja-JP', { month: 'long', day: 'numeric' })}
+                        </>
+                      )}
+                    </>
+                  ) : (
+                    <span>{new Date(event.expires_at).toLocaleDateString('ja-JP')}まで</span>
+                  )}
                 </div>
-                <div className="flex-1">
-                  <p className="text-xs font-black text-[#8b6914] uppercase tracking-tighter">Period / 開催期間</p>
-                  <div className="text-[#3d2914] text-lg font-bold">
-                    {event.event_start_date ? (
-                      <>
-                        {new Date(event.event_start_date).toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' })}
-                        {event.event_end_date && event.event_end_date !== event.event_start_date && (
-                          <span className="mx-2 text-[#8b6914]">〜</span>
-                        )}
-                        {event.event_end_date && event.event_end_date !== event.event_start_date && (
-                          new Date(event.event_end_date).toLocaleDateString('ja-JP', { month: 'long', day: 'numeric' })
-                        )}
-                      </>
-                    ) : (
-                      <span>{new Date(event.expires_at).toLocaleDateString('ja-JP')}まで</span>
-                    )}
-                  </div>
-                  {event.event_start_date && (
-                    <Button onClick={() => {
+                {event.event_start_date && (
+                  <Button 
+                    onClick={() => {
                       const startDate = new Date(event.event_start_date!);
                       const endDate = event.event_end_date ? new Date(event.event_end_date) : startDate;
                       const fmt = (d: Date) => d.toISOString().replace(/-|:|\.\d\d\d/g, "");
                       const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(event.event_name || '')}&dates=${fmt(startDate)}/${fmt(new Date(endDate.getTime() + 86400000))}&location=${encodeURIComponent(event.store_name)}`;
                       window.open(url, '_blank');
-                    }} variant="outline" className="mt-3 border-[#8b6914] text-[#8b6914] hover:bg-[#8b6914] hover:text-white rounded-none h-8 font-black text-xs uppercase">
-                      <CalendarPlusIcon className="h-3 w-3 mr-2" />
-                      Googleカレンダーに追加
-                    </Button>
-                  )}
-                </div>
-              </div>
+                    }} 
+                    variant="outline" 
+                    className="mt-2 rounded-xl h-10 font-medium"
+                    style={{ 
+                      borderColor: designTokens.colors.secondary.stone,
+                      color: designTokens.colors.text.secondary,
+                    }}
+                  >
+                    <CalendarPlusIcon className="h-4 w-4 mr-2" />
+                    Googleカレンダーに追加
+                  </Button>
+                )}
+              </InfoRow>
 
               {/* 料金 */}
               {event.event_price && (
-                <div className="flex items-start gap-4">
-                  <div className="bg-green-800 p-2 rounded-none shadow-sm">
-                    <DollarSign className="h-5 w-5 text-[#ffecd2]" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-xs font-black text-[#8b6914] uppercase tracking-tighter">Cost / 料金</p>
-                    <p className="text-[#3d2914] text-lg font-bold">{event.event_price}</p>
-                  </div>
-                </div>
+                <InfoRow icon={DollarSign} label="Cost" iconColor={designTokens.colors.functional.success}>
+                  <p className="text-lg font-semibold" style={{ color: designTokens.colors.text.primary }}>{event.event_price}</p>
+                </InfoRow>
               )}
 
               {/* 連絡先 */}
               {event.phone_number && (
-                <div className="flex items-start gap-4">
-                  <div className="bg-orange-800 p-2 rounded-none shadow-sm">
-                    <Phone className="h-5 w-5 text-[#ffecd2]" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-xs font-black text-[#8b6914] uppercase tracking-tighter">Contact / 連絡先</p>
-                    <a href={`tel:${event.phone_number}`} className="text-[#3d2914] text-lg font-bold underline decoration-dotted">{event.phone_number}</a>
-                  </div>
-                </div>
+                <InfoRow icon={Phone} label="Contact" iconColor={designTokens.colors.functional.warning}>
+                  <a 
+                    href={`tel:${event.phone_number}`} 
+                    className="text-lg font-semibold underline decoration-dotted"
+                    style={{ color: designTokens.colors.text.primary }}
+                  >
+                    {event.phone_number}
+                  </a>
+                </InfoRow>
               )}
 
               {/* メディアリンク */}
               {event.url && (
-                <div className="flex items-start gap-4">
-                  <div className="bg-indigo-900 p-2 rounded-none shadow-sm">
-                    <LinkIcon className="h-5 w-5 text-[#ffecd2]" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-xs font-black text-[#8b6914] uppercase tracking-tighter">Media / メディア情報</p>
-                    <a href={event.url} target="_blank" rel="noopener noreferrer" className="inline-block mt-2">
-                      <img src={event.url.includes('instagram.com') ? 'https://res.cloudinary.com/dz9trbwma/image/upload/v1759308496/icons8-%E3%82%A4%E3%83%B3%E3%82%B9%E3%82%BF%E3%82%AF%E3%82%99%E3%83%A9%E3%83%A0-100_idedfz.png' : 'https://res.cloudinary.com/dz9trbwma/image/upload/v1759366399/icons8-%E3%82%A6%E3%82%A7%E3%83%95%E3%82%99-100_a6uwwq.png'}
-                        alt="Media icon" className="h-10 w-10 hover:opacity-70 transition-opacity border-2 border-[#8b6914] p-1 bg-white" />
-                    </a>
-                  </div>
-                </div>
+                <InfoRow icon={LinkIcon} label="Media" iconColor={designTokens.colors.accent.lilac}>
+                  <a href={event.url} target="_blank" rel="noopener noreferrer" className="inline-block mt-1 transition-transform hover:scale-110">
+                    <img 
+                      src={event.url.includes('instagram.com') 
+                        ? 'https://res.cloudinary.com/dz9trbwma/image/upload/v1759308496/icons8-%E3%82%A4%E3%83%B3%E3%82%B9%E3%82%BF%E3%82%AF%E3%82%99%E3%83%A9%E3%83%A0-100_idedfz.png' 
+                        : 'https://res.cloudinary.com/dz9trbwma/image/upload/v1759366399/icons8-%E3%82%A6%E3%82%A7%E3%83%95%E3%82%99-100_a6uwwq.png'
+                      }
+                      alt="Media icon" 
+                      className="h-10 w-10 rounded-xl p-1"
+                      style={{ 
+                        background: designTokens.colors.background.white,
+                        border: `1px solid ${designTokens.colors.secondary.stone}`,
+                      }}
+                    />
+                  </a>
+                </InfoRow>
               )}
 
               {/* 添付ファイル */}
               {event.file_urls && event.file_urls.length > 0 && (
-                <div className="flex items-start gap-4">
-                  <div className="bg-gray-700 p-2 rounded-none shadow-sm">
-                    <FileText className="h-5 w-5 text-[#ffecd2]" />
+                <InfoRow icon={FileText} label="Attachments" iconColor={designTokens.colors.text.secondary}>
+                  <div className="space-y-2 mt-1">
+                    {event.file_urls.map((fileUrl, index) => (
+                      <motion.a 
+                        key={index} 
+                        href={fileUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        whileHover={{ scale: 1.01 }}
+                        className="flex items-center justify-between p-3 rounded-xl group transition-all"
+                        style={{ 
+                          background: designTokens.colors.background.mist,
+                          border: `1px solid ${designTokens.colors.secondary.stone}50`,
+                        }}
+                      >
+                        <span className="text-sm font-medium" style={{ color: designTokens.colors.text.primary }}>添付資料 {index + 1}</span>
+                        <ExternalLink className="h-4 w-4 transition-transform group-hover:translate-x-1" style={{ color: designTokens.colors.accent.lilacDark }} />
+                      </motion.a>
+                    ))}
                   </div>
-                  <div className="flex-1">
-                    <p className="text-xs font-black text-[#8b6914] uppercase tracking-tighter">Artifacts / 添付ファイル</p>
-                    <div className="mt-2 space-y-2">
-                      {event.file_urls.map((fileUrl, index) => (
-                        <a key={index} href={fileUrl} target="_blank" rel="noopener noreferrer" 
-                          className="flex items-center justify-between p-3 bg-white border-2 border-[#d4c4a8] hover:border-[#8b6914] transition-colors group">
-                          <span className="text-sm font-bold text-[#3d2914]">調査資料 {index + 1}</span>
-                          <ExternalLink className="h-4 w-4 text-[#8b6914]" />
-                        </a>
-                      ))}
-                    </div>
-                  </div>
-                </div>
+                </InfoRow>
               )}
             </div>
 
             {/* アクションボタン */}
-            <div className="mt-12 grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Button onClick={() => event.url ? window.open(event.url, '_blank') : window.open(`https://www.google.com/maps/search/?api=1&query=${event.store_name}`, '_blank')}
-                className="bg-[#8b6914] text-[#ffecd2] hover:bg-[#3d2914] h-16 rounded-none border-t-2 border-l-2 border-[#ffecd2]/30 border-b-4 border-r-4 border-black text-lg font-black shadow-lg">
-                <Search className="mr-2 h-6 w-6" />
-                {event.url ? '詳細情報を確認' : '地図で確認'}
-              </Button>
-              <Button onClick={handleBack} variant="outline"
-                className="border-4 border-double border-[#8b6914] text-[#8b6914] h-16 rounded-none bg-transparent text-lg font-black hover:bg-[#8b6914]/10">
-                戻る
-              </Button>
+            <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                <Button 
+                  onClick={() => event.url ? window.open(event.url, '_blank') : window.open(`https://www.google.com/maps/search/?api=1&query=${event.store_name}`, '_blank')}
+                  className="w-full h-14 rounded-xl font-semibold text-base"
+                  style={{ 
+                    background: designTokens.colors.accent.lilac,
+                    color: designTokens.colors.text.inverse,
+                    boxShadow: `0 8px 24px ${designTokens.colors.accent.lilac}40`,
+                  }}
+                >
+                  <Search className="mr-2 h-5 w-5" />
+                  {event.url ? '詳細情報を確認' : '地図で確認'}
+                </Button>
+              </motion.div>
+              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                <Button 
+                  onClick={handleBack} 
+                  variant="outline"
+                  className="w-full h-14 rounded-xl font-semibold text-base"
+                  style={{ 
+                    borderColor: designTokens.colors.secondary.stone,
+                    color: designTokens.colors.text.secondary,
+                  }}
+                >
+                  <ArrowLeft className="mr-2 h-5 w-5" />
+                  イベント一覧へ
+                </Button>
+              </motion.div>
             </div>
           </div>
         </motion.div>
       </div>
+
+      <style jsx global>{`
+        @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=IBM+Plex+Sans+JP:wght@400;500;600&family=Noto+Sans+JP:wght@400;500;600;700&display=swap');
+      `}</style>
     </div>
   );
 }

@@ -4,60 +4,10 @@ import { useRef, useEffect, useState, useCallback } from 'react';
 import { useGeolocation } from '@/lib/hooks/use-geolocation';
 import { useGoogleMapsApi } from '@/components/providers/GoogleMapsApiProvider';
 import { Button } from '@/components/ui/button';
-import { MapPin, AlertTriangle, RefreshCw, Calendar, BookOpen, User, MapPinIcon, X, Loader2, Home, Share2, Link2, Check, Compass, Feather, Sword, Search, ScrollText, Library, Shield } from 'lucide-react';
-
-// 🎨 LPカラーパレット
-const COLORS = {
-  primary: '#8b6914',      // ゴールドブラウン
-  primaryDark: '#3d2914',  // ダークブラウン
-  secondary: '#5c3a21',    // ミディアムブラウン
-  background: '#f5e6d3',   // ベージュ
-  surface: '#fff8f0',      // オフホワイト
-  cream: '#ffecd2',        // クリーム
-  border: '#d4c4a8',       // ライトベージュ
-  mint: '#e8f4e5',         // ミントグリーン
-};
+import { MapPin, AlertTriangle, RefreshCw, Calendar, BookOpen, User, MapPinIcon, X, Loader2, Home, Share2, Link2, Check, Compass, Search, ScrollText, Library, Shield } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabaseClient';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-
-// 🔥 avatar_urlからSupabase StorageのPublic URLを取得する関数
-const getAvatarPublicUrl = (avatarPath: string | null): string | null => {
-  if (!avatarPath) return null;
-  return supabase.storage.from('avatars').getPublicUrl(avatarPath).data.publicUrl;
-};
-
-// 🔥 URLを正規化する関数（配列やJSON形式から実際のURLを抽出）
-const normalizeUrl = (url: string | null): string | null => {
-  if (!url) return null;
-  
-  try {
-    // JSON配列形式の場合（例: ["https://example.com"]）
-    const parsed = JSON.parse(url);
-    if (Array.isArray(parsed) && parsed.length > 0) {
-      return parsed[0];
-    }
-    return url;
-  } catch {
-    // JSONパースに失敗した場合は、そのまま返す
-    return url;
-  }
-};
-
-// 🔥 URLの種類に応じたアイコンを取得する関数
-const getSocialIconUrl = (url: string): string => {
-  const lowerUrl = url.toLowerCase();
-  
-  if (lowerUrl.includes('instagram.com') || lowerUrl.includes('instagr.am')) {
-    return 'https://res.cloudinary.com/dz9trbwma/image/upload/v1759308496/icons8-%E3%82%A4%E3%83%B3%E3%82%B9%E3%82%BF%E3%82%AF%E3%82%99%E3%83%A9%E3%83%A0-100_idedfz.png';
-  } else if (lowerUrl.includes('facebook.com') || lowerUrl.includes('fb.com')) {
-    return 'https://res.cloudinary.com/dz9trbwma/image/upload/v1759308615/icons8-facebook%E3%81%AE%E6%96%B0%E3%81%97%E3%81%84-100_2_pps86o.png';
-  } else if (lowerUrl.includes('twitter.com') || lowerUrl.includes('x.com')) {
-    return 'https://res.cloudinary.com/dz9trbwma/image/upload/v1759308507/icons8-%E3%83%84%E3%82%A4%E3%83%83%E3%82%BF%E3%83%BCx-100_x18dc0.png';
-  } else {
-    return 'https://res.cloudinary.com/dz9trbwma/image/upload/v1759366399/icons8-%E3%82%A6%E3%82%A7%E3%83%95%E3%82%99-100_a6uwwq.png';
-  }
-};
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { useToast } from '@/hooks/use-toast';
@@ -65,13 +15,77 @@ import { isWithinRange, calculateDistance } from '@/lib/utils/distance';
 import { Map as MapData, MapLocation } from '@/types/map';
 import { generateSemanticEventUrl } from '@/lib/seo/url-helper';
 
+// ===================================================================
+// DESIGN SYSTEM: "Oita Organic Elegance"
+// ===================================================================
+
+const designTokens = {
+  colors: {
+    primary: {
+      base: '#6E7F80',
+      dark: '#5A6B6C',
+      light: '#8A9A9B',
+      contrast: '#FFFFFF',
+    },
+    secondary: {
+      fern: '#8A9A5B',
+      fernLight: '#A4B47A',
+      fernDark: '#6F7D48',
+      stone: '#C2B8A3',
+      stoneLight: '#D4CCBA',
+      stoneDark: '#A89E8A',
+    },
+    accent: {
+      lilac: '#BFA3D1',
+      lilacLight: '#D4C2E3',
+      lilacDark: '#9B7FB5',
+      gold: '#E2C275',
+      goldLight: '#EDD49A',
+      goldDark: '#C9A85C',
+    },
+    background: {
+      mist: '#F4F5F2',
+      cloud: '#E6E9E5',
+      white: '#FFFFFF',
+    },
+    text: {
+      primary: '#2D3436',
+      secondary: '#636E72',
+      muted: '#95A5A6',
+      inverse: '#FFFFFF',
+    },
+    functional: {
+      error: '#E74C3C',
+      success: '#27AE60',
+      warning: '#F39C12',
+      info: '#3498DB',
+    },
+  },
+  typography: {
+    display: "'Sora', 'Noto Sans JP', sans-serif",
+    body: "'IBM Plex Sans JP', 'Noto Sans JP', sans-serif",
+  },
+  elevation: {
+    subtle: '0 1px 3px rgba(110, 127, 128, 0.08)',
+    low: '0 2px 8px rgba(110, 127, 128, 0.10)',
+    medium: '0 4px 16px rgba(110, 127, 128, 0.12)',
+    high: '0 8px 32px rgba(110, 127, 128, 0.15)',
+    dramatic: '0 16px 48px rgba(110, 127, 128, 0.20)',
+  },
+  radius: {
+    sm: '8px',
+    md: '12px',
+    lg: '16px',
+    xl: '24px',
+    full: '9999px',
+  },
+};
+
 declare global {
-  interface Window {
-    google: any;
-  }
+  interface Window { google: any; }
 }
 
-// 投稿データの型定義
+// 型定義
 interface PostMarkerData {
   id: string;
   category: string | null;
@@ -90,7 +104,6 @@ interface PostMarkerData {
   prefecture?: string | null;
 }
 
-// マイマップのロケーションデータ型
 interface MapLocationMarkerData {
   id: string;
   map_id: string;
@@ -104,7 +117,6 @@ interface MapLocationMarkerData {
   order: number;
 }
 
-// 🔥 マップ作成者のプロフィール型
 interface MapCreatorProfile {
   id: string;
   user_id: string;
@@ -116,27 +128,42 @@ interface MapCreatorProfile {
 type PostCategory = 'イベント情報';
 type ViewMode = 'events' | 'myMaps';
 
-const getCategoryConfig = (category: PostCategory) => {
-  const configs = {
-    'イベント情報': { color: '#73370c', icon: 'calendar' },
-  };
-  return configs[category as keyof typeof configs] || configs['イベント情報'];
+// ヘルパー関数
+const getAvatarPublicUrl = (avatarPath: string | null): string | null => {
+  if (!avatarPath) return null;
+  return supabase.storage.from('avatars').getPublicUrl(avatarPath).data.publicUrl;
 };
+
+const normalizeUrl = (url: string | null): string | null => {
+  if (!url) return null;
+  try {
+    const parsed = JSON.parse(url);
+    if (Array.isArray(parsed) && parsed.length > 0) return parsed[0];
+    return url;
+  } catch { return url; }
+};
+
+const getSocialIconUrl = (url: string): string => {
+  const lowerUrl = url.toLowerCase();
+  if (lowerUrl.includes('instagram.com') || lowerUrl.includes('instagr.am')) {
+    return 'https://res.cloudinary.com/dz9trbwma/image/upload/v1759308496/icons8-%E3%82%A4%E3%83%B3%E3%82%B9%E3%82%BF%E3%82%AF%E3%82%99%E3%83%A9%E3%83%A0-100_idedfz.png';
+  } else if (lowerUrl.includes('facebook.com') || lowerUrl.includes('fb.com')) {
+    return 'https://res.cloudinary.com/dz9trbwma/image/upload/v1759308615/icons8-facebook%E3%81%AE%E6%96%B0%E3%81%97%E3%81%84-100_2_pps86o.png';
+  } else if (lowerUrl.includes('twitter.com') || lowerUrl.includes('x.com')) {
+    return 'https://res.cloudinary.com/dz9trbwma/image/upload/v1759308507/icons8-%E3%83%84%E3%82%A4%E3%83%83%E3%82%BF%E3%83%BCx-100_x18dc0.png';
+  }
+  return 'https://res.cloudinary.com/dz9trbwma/image/upload/v1759366399/icons8-%E3%82%A6%E3%82%A7%E3%83%95%E3%82%99-100_a6uwwq.png';
+};
+
+const getCategoryConfig = (category: PostCategory) => ({
+  'イベント情報': { color: designTokens.colors.accent.lilacDark, icon: 'calendar' },
+}[category] || { color: designTokens.colors.accent.lilacDark, icon: 'calendar' });
 
 const createSimpleCategoryIcon = (category: PostCategory) => {
   const size = 40;
   const config = getCategoryConfig(category);
-  
-  let iconSvg = '';
-  const iconScale = 0.75;
-  switch (config.icon) {
-    case 'calendar':
-      iconSvg = `<g transform="translate(${size/2 - 5}, ${size/2 - 5}) scale(${iconScale})"><rect x="2" y="4" width="12" height="10" rx="1" fill="none" stroke="white" stroke-width="1.5"/><line x1="2" y1="7" x2="14" y2="7" stroke="white" stroke-width="1.5"/><line x1="5" y1="2" x2="5" y2="5" stroke="white" stroke-width="1.5" stroke-linecap="round"/><line x1="11" y1="2" x2="11" y2="5" stroke="white" stroke-width="1.5" stroke-linecap="round"/></g>`;
-      break;
-  }
-  
+  const iconSvg = `<g transform="translate(${size/2 - 5}, ${size/2 - 5}) scale(0.75)"><rect x="2" y="4" width="12" height="10" rx="1" fill="none" stroke="white" stroke-width="1.5"/><line x1="2" y1="7" x2="14" y2="7" stroke="white" stroke-width="1.5"/><line x1="5" y1="2" x2="5" y2="5" stroke="white" stroke-width="1.5" stroke-linecap="round"/><line x1="11" y1="2" x2="11" y2="5" stroke="white" stroke-width="1.5" stroke-linecap="round"/></g>`;
   const svgIcon = `<svg width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg"><circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="${config.color}" stroke="#ffffff" stroke-width="2"/>${iconSvg}</svg>`;
-  
   return {
     url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svgIcon),
     scaledSize: new window.google.maps.Size(size, size),
@@ -162,12 +189,11 @@ const wrapText = (text: string, maxWidth: number, ctx: CanvasRenderingContext2D)
   const lines: string[] = [];
   let currentLine = '';
   for (let i = 0; i < text.length; i++) {
-    const char = text[i];
-    const testLine = currentLine + char;
+    const testLine = currentLine + text[i];
     const metrics = ctx.measureText(testLine);
     if (metrics.width > maxWidth && currentLine.length > 0) {
       lines.push(currentLine);
-      currentLine = char;
+      currentLine = text[i];
     } else {
       currentLine = testLine;
     }
@@ -183,7 +209,7 @@ const wrapText = (text: string, maxWidth: number, ctx: CanvasRenderingContext2D)
 const createCategoryPinIcon = async (imageUrls: string[] | null, title: string | null, category: PostCategory): Promise<google.maps.Icon> => {
   let parsedUrls = imageUrls;
   if (typeof imageUrls === 'string') {
-    try { parsedUrls = JSON.parse(imageUrls); } catch (e) { parsedUrls = null; }
+    try { parsedUrls = JSON.parse(imageUrls); } catch { parsedUrls = null; }
   }
   const imageUrl = parsedUrls && Array.isArray(parsedUrls) && parsedUrls.length > 0 ? parsedUrls[0] : null;
   if (!imageUrl || typeof imageUrl !== 'string' || !imageUrl.startsWith('http')) {
@@ -204,7 +230,7 @@ const createCategoryPinIcon = async (imageUrls: string[] | null, title: string |
       const tempCanvas = document.createElement('canvas');
       const tempCtx = tempCanvas.getContext('2d');
       if (!tempCtx) { resolve(createSimpleCategoryIcon(category)); return; }
-      tempCtx.font = '600 10px "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif';
+      tempCtx.font = '600 10px "Hiragino Sans", "Noto Sans JP", sans-serif';
       const textLines = wrapText(displayTitle, maxTextWidth, tempCtx);
       const numLines = textLines.length;
       let maxLineWidth = 0;
@@ -242,27 +268,28 @@ const createCategoryPinIcon = async (imageUrls: string[] | null, title: string |
       ctx.stroke();
       ctx.restore();
       if (textLines.length > 0) {
-        ctx.font = '600 10px "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif';
+        ctx.font = '600 10px "Hiragino Sans", "Noto Sans JP", sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'top';
         const textStartY = imageSize + textPadding;
         const textX = canvasWidth / 2;
         ctx.lineWidth = 3;
         ctx.lineJoin = 'round';
-        ctx.miterLimit = 2;
         ctx.strokeStyle = '#ffffff';
-        ctx.fillStyle = '#333333';
-        textLines.forEach((line, index) => { const lineY = textStartY + index * lineHeight; ctx.strokeText(line, textX, lineY); ctx.fillText(line, textX, lineY); });
+        ctx.fillStyle = designTokens.colors.text.primary;
+        textLines.forEach((line, index) => {
+          const lineY = textStartY + index * lineHeight;
+          ctx.strokeText(line, textX, lineY);
+          ctx.fillText(line, textX, lineY);
+        });
       }
-      const dataUrl = canvas.toDataURL('image/png');
-      resolve({ url: dataUrl, scaledSize: new window.google.maps.Size(canvasWidth, canvasHeight), anchor: new window.google.maps.Point(canvasWidth / 2, imageSize) });
+      resolve({ url: canvas.toDataURL('image/png'), scaledSize: new window.google.maps.Size(canvasWidth, canvasHeight), anchor: new window.google.maps.Point(canvasWidth / 2, imageSize) });
     };
     img.onerror = () => { resolve(createSimpleCategoryIcon(category)); };
     img.src = optimizedImageUrl;
   });
 };
 
-// 🔥 方角付き現在地マーカーアイコンを作成
 const createDirectionalLocationIcon = (heading: number | null): google.maps.Icon => {
   const size = 48;
   const centerX = size / 2;
@@ -283,10 +310,10 @@ const createDirectionalLocationIcon = (heading: number | null): google.maps.Icon
   
   const svgIcon = `<svg width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg">
     <defs><filter id="shadow" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="1" stdDeviation="2" flood-opacity="0.3"/></filter></defs>
-    <polygon points="${tipX},${tipY} ${base1X},${base1Y} ${base2X},${base2Y}" fill="#4285F4" fill-opacity="0.4" filter="url(#shadow)"/>
-    <circle cx="${centerX}" cy="${centerY}" r="${innerRadius + 6}" fill="#4285F4" fill-opacity="0.2"/>
+    <polygon points="${tipX},${tipY} ${base1X},${base1Y} ${base2X},${base2Y}" fill="${designTokens.colors.accent.lilac}" fill-opacity="0.4" filter="url(#shadow)"/>
+    <circle cx="${centerX}" cy="${centerY}" r="${innerRadius + 6}" fill="${designTokens.colors.accent.lilac}" fill-opacity="0.2"/>
     <circle cx="${centerX}" cy="${centerY}" r="${innerRadius}" fill="white" filter="url(#shadow)"/>
-    <circle cx="${centerX}" cy="${centerY}" r="${innerRadius - 3}" fill="#4285F4"/>
+    <circle cx="${centerX}" cy="${centerY}" r="${innerRadius - 3}" fill="${designTokens.colors.accent.lilac}"/>
   </svg>`;
   
   return {
@@ -296,7 +323,7 @@ const createDirectionalLocationIcon = (heading: number | null): google.maps.Icon
   };
 };
 
-// 🔥 カスタムモーダルコンポーネント
+// カスタムモーダル
 const CustomModal = ({ isOpen, onClose, children }: { isOpen: boolean; onClose: () => void; children: React.ReactNode }) => {
   if (!isOpen) return null;
   
@@ -310,28 +337,31 @@ const CustomModal = ({ isOpen, onClose, children }: { isOpen: boolean; onClose: 
           className="fixed inset-0 z-[100] flex items-center justify-center p-4"
           onClick={onClose}
         >
-          {/* オーバーレイ */}
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            className="absolute inset-0 backdrop-blur-sm"
+            style={{ background: `${designTokens.colors.primary.base}40` }}
           />
-          {/* モーダルコンテンツ */}
           <motion.div 
             initial={{ scale: 0.9, opacity: 0, y: 20 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.9, opacity: 0, y: 20 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden"
+            className="relative rounded-3xl w-full max-w-sm overflow-hidden"
+            style={{ 
+              background: designTokens.colors.background.white,
+              boxShadow: designTokens.elevation.dramatic,
+            }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* 閉じるボタン */}
             <button 
               onClick={onClose}
-              className="absolute top-3 right-3 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
+              className="absolute top-4 right-4 z-10 w-8 h-8 flex items-center justify-center rounded-full transition-colors"
+              style={{ background: designTokens.colors.background.cloud }}
             >
-              <X className="w-4 h-4 text-gray-600" />
+              <X className="w-4 h-4" style={{ color: designTokens.colors.text.secondary }} />
             </button>
             {children}
           </motion.div>
@@ -341,12 +371,32 @@ const CustomModal = ({ isOpen, onClose, children }: { isOpen: boolean; onClose: 
   );
 };
 
-// 🔥 ルートの色とスタイル設定
 const ROUTE_STYLES = {
-  strokeColor: '#09b562',      // ルートの色（緑）
-  strokeOpacity: 0.8,          // 透明度
-  strokeWeight: 4,             // 線の太さ
+  strokeColor: designTokens.colors.secondary.fern,
+  strokeOpacity: 0.8,
+  strokeWeight: 4,
 };
+
+// マップスタイル
+const organicMapStyles: google.maps.MapTypeStyle[] = [
+  { featureType: "all", elementType: "geometry", stylers: [{ saturation: -20 }, { lightness: 10 }] },
+  { featureType: "landscape", elementType: "geometry.fill", stylers: [{ color: designTokens.colors.background.mist }] },
+  { featureType: "landscape.natural", elementType: "geometry.fill", stylers: [{ color: "#E8F0E5" }] },
+  { featureType: "water", elementType: "geometry.fill", stylers: [{ color: "#D0E3F0" }] },
+  { featureType: "water", elementType: "labels.text.fill", stylers: [{ color: designTokens.colors.primary.light }] },
+  { featureType: "road", elementType: "geometry.fill", stylers: [{ color: designTokens.colors.background.white }] },
+  { featureType: "road", elementType: "geometry.stroke", stylers: [{ color: designTokens.colors.secondary.stoneLight }] },
+  { featureType: "road.highway", elementType: "geometry.fill", stylers: [{ color: designTokens.colors.secondary.stoneLight }] },
+  { featureType: "road.highway", elementType: "geometry.stroke", stylers: [{ color: designTokens.colors.secondary.stone }] },
+  { featureType: "poi.park", elementType: "geometry.fill", stylers: [{ color: "#D4E8D1" }] },
+  { featureType: "poi", elementType: "geometry.fill", stylers: [{ color: designTokens.colors.background.cloud }] },
+  { featureType: "all", elementType: "labels.text.fill", stylers: [{ color: designTokens.colors.text.secondary }] },
+  { featureType: "all", elementType: "labels.text.stroke", stylers: [{ color: "#ffffff" }, { visibility: "on" }, { weight: 2 }] },
+  { featureType: "poi", elementType: "labels", stylers: [{ visibility: "off" }] },
+  { featureType: "poi.business", elementType: "labels", stylers: [{ visibility: "off" }] },
+  { featureType: "administrative", elementType: "labels", stylers: [{ visibility: "off" }] },
+  { featureType: "transit.station", elementType: "labels", stylers: [{ visibility: "off" }] }
+];
 
 export function MapView() {
   const router = useRouter();
@@ -381,33 +431,21 @@ export function MapView() {
   const selectedCategory: PostCategory = 'イベント情報';
   const [checkingIn, setCheckingIn] = useState<string | null>(null);
   const [checkedInPosts, setCheckedInPosts] = useState<Set<string>>(new Set());
-  const [navigatingToDetail, setNavigatingToDetail] = useState<string | null>(null); // 詳細画面への遷移中のイベントID
-  const [navigatingToMapDetail, setNavigatingToMapDetail] = useState<string | null>(null); // 詳細画面への遷移中のMyMapロケーションID
-
-  // 🔥 マップ作成者のプロフィール情報
+  const [navigatingToDetail, setNavigatingToDetail] = useState<string | null>(null);
+  const [navigatingToMapDetail, setNavigatingToMapDetail] = useState<string | null>(null);
   const [mapCreatorProfile, setMapCreatorProfile] = useState<MapCreatorProfile | null>(null);
   const [currentMapTitle, setCurrentMapTitle] = useState<string>('');
-  const [isMapPublic, setIsMapPublic] = useState<boolean>(true); // 🔥 マップの公開設定
-  const hasShownLocationModalRef = useRef<boolean>(false); // 🔥 位置情報モーダルを一度表示したかどうか
-  
-  // 🔥 モーダル制御
+  const [isMapPublic, setIsMapPublic] = useState<boolean>(true);
+  const hasShownLocationModalRef = useRef<boolean>(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
-  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
-  const [isLocationPermissionModalOpen, setIsLocationPermissionModalOpen] = useState(false); // 🔥 位置情報許可モーダル
-
-  // 🔥 ルート表示用の状態
+  const [isLocationPermissionModalOpen, setIsLocationPermissionModalOpen] = useState(false);
   const [routePolylines, setRoutePolylines] = useState<google.maps.Polyline[]>([]);
   const directionsServiceRef = useRef<google.maps.DirectionsService | null>(null);
 
-  // デバイスの向きを取得（マイマップモード時のみ有効）
+  // Effects
   useEffect(() => {
-    // イベントモード時はデバイスの向き取得を無効化（計算リソースの節約）
-    if (viewMode === 'events') {
-      setDeviceHeading(null);
-      return;
-    }
-    
+    if (viewMode === 'events') { setDeviceHeading(null); return; }
     const handleDeviceOrientation = (event: DeviceOrientationEvent) => {
       let heading: number | null = null;
       if ('webkitCompassHeading' in event && typeof (event as any).webkitCompassHeading === 'number') {
@@ -417,7 +455,6 @@ export function MapView() {
       }
       if (heading !== null) setDeviceHeading(heading);
     };
-    
     const requestOrientationPermission = async () => {
       if (typeof (DeviceOrientationEvent as any).requestPermission === 'function') {
         try {
@@ -442,7 +479,7 @@ export function MapView() {
           setSavedLocation({ lat: locationData.latitude, lng: locationData.longitude });
         } else { localStorage.removeItem('userLocation'); }
       }
-    } catch (error) { console.error('MapView: 位置情報の読み込みに失敗:', error); }
+    } catch (error) { console.error('位置情報の読み込みに失敗:', error); }
   }, []);
 
   useEffect(() => {
@@ -500,62 +537,33 @@ export function MapView() {
     return () => { clearTimeout(timer); window.removeEventListener('resize', handleResize); window.removeEventListener('orientationchange', handleResize); };
   }, [updateContainerDimensions]);
 
-  // 🔥 マップ作成者のプロフィール情報を取得
   const fetchMapCreatorProfile = useCallback(async (mapId: string) => {
     try {
-      // mapsテーブルからapp_profile_id, title, is_publicを取得
-      const { data: mapData, error: mapError } = await supabase
-        .from('maps')
-        .select('app_profile_id, title, is_public')
-        .eq('id', mapId)
-        .single();
-
-      if (mapError || !mapData) {
-        console.error('マップデータの取得に失敗:', mapError);
-        return;
-      }
-
+      const { data: mapData, error: mapError } = await supabase.from('maps').select('app_profile_id, title, is_public').eq('id', mapId).single();
+      if (mapError || !mapData) return;
       setCurrentMapTitle(mapData.title || '');
-      setIsMapPublic(mapData.is_public ?? true); // 🔥 公開設定を保存
-      
-      // 🔥 公開設定OFFの場合、一度だけ位置情報許可モーダルを表示
+      setIsMapPublic(mapData.is_public ?? true);
       if (mapData.is_public === false && !hasShownLocationModalRef.current) {
         setIsLocationPermissionModalOpen(true);
-        hasShownLocationModalRef.current = true; // 一度表示したらフラグを立てる
+        hasShownLocationModalRef.current = true;
       }
-
-      // app_profilesテーブルからプロフィール情報を取得
-      const { data: profileData, error: profileError } = await supabase
-        .from('app_profiles')
-        .select('id, user_id, display_name, avatar_url, url')
-        .eq('id', mapData.app_profile_id)
-        .single();
-
-      if (profileError || !profileData) {
-        console.error('プロフィールデータの取得に失敗:', profileError);
-        return;
-      }
-
+      const { data: profileData, error: profileError } = await supabase.from('app_profiles').select('id, user_id, display_name, avatar_url, url').eq('id', mapData.app_profile_id).single();
+      if (profileError || !profileData) return;
       setMapCreatorProfile({
         id: profileData.id,
         user_id: profileData.user_id,
         display_name: profileData.display_name || '匿名ユーザー',
-        avatar_path: profileData.avatar_url, // 🔥 パスとして保持
+        avatar_path: profileData.avatar_url,
         url: profileData.url || null,
       });
-    } catch (error) {
-      console.error('プロフィール取得エラー:', error);
-    }
+    } catch (error) { console.error('プロフィール取得エラー:', error); }
   }, []);
 
   const fetchMapLocations = useCallback(async () => {
     const currentTitleId = searchParams.get('title_id');
     if (currentTitleId) {
       setLoadingMaps(true);
-      
-      // 🔥 マップ作成者のプロフィールを取得
       await fetchMapCreatorProfile(currentTitleId);
-      
       try {
         const { data: mapData, error: mapError } = await supabase.from('maps').select('id, title, locations').eq('id', currentTitleId).eq('is_deleted', false).single();
         if (mapError || !mapData) { setMapLocations([]); setLoadingMaps(false); return; }
@@ -568,7 +576,7 @@ export function MapView() {
           });
         }
         setMapLocations(allLocations);
-      } catch (error) { console.error('MapView: 公開マップデータの取得中にエラー:', error); }
+      } catch (error) { console.error('公開マップデータの取得中にエラー:', error); }
       finally { setLoadingMaps(false); }
       return;
     }
@@ -590,7 +598,7 @@ export function MapView() {
         }
       });
       setMapLocations(allLocations);
-    } catch (error) { console.error('MapView: マイマップデータの取得中にエラー:', error); }
+    } catch (error) { console.error('マイマップデータの取得中にエラー:', error); }
     finally { setLoadingMaps(false); }
   }, [session?.user?.id, searchParams, fetchMapCreatorProfile]);
 
@@ -613,7 +621,7 @@ export function MapView() {
       const postsWithDistance = filteredData.filter((post: any) => post.store_latitude != null && post.store_longitude != null && !isNaN(post.store_latitude) && !isNaN(post.store_longitude))
         .map((post: any) => {
           let imageUrls = post.image_urls;
-          if (typeof imageUrls === 'string') { try { imageUrls = JSON.parse(imageUrls); } catch (e) { imageUrls = null; } }
+          if (typeof imageUrls === 'string') { try { imageUrls = JSON.parse(imageUrls); } catch { imageUrls = null; } }
           const R = 6371;
           const dLat = (post.store_latitude - userLat) * Math.PI / 180;
           const dLng = (post.store_longitude - userLng) * Math.PI / 180;
@@ -622,12 +630,12 @@ export function MapView() {
           return { ...post, image_urls: imageUrls, distance };
         });
       setPosts(postsWithDistance.sort((a, b) => a.distance - b.distance));
-    } catch (error) { console.error('MapView: 投稿データの取得中にエラー:', error); }
+    } catch (error) { console.error('投稿データの取得中にエラー:', error); }
     finally { setLoadingPosts(false); }
   }, [latitude, longitude, savedLocation, selectedCategory]);
 
-  const groupPostsByLocation = (posts: PostMarkerData[]) => {
-    const locationGroups: { [key: string]: PostMarkerData[] } = {};
+  const groupPostsByLocation = (posts: any[]) => {
+    const locationGroups: { [key: string]: any[] } = {};
     posts.forEach(post => {
       if (!post.store_latitude || !post.store_longitude) return;
       const lat = Math.round(post.store_latitude * 10000) / 10000;
@@ -646,85 +654,59 @@ export function MapView() {
     return { lat: baseLat + offsetDistance * Math.cos(angle), lng: baseLng + offsetDistance * Math.sin(angle) / Math.cos(baseLat * Math.PI / 180) };
   };
 
-  // 🔥 道路に沿ったルートを計算して描画する関数
   const calculateAndDrawRoute = useCallback(async (locations: MapLocationMarkerData[]) => {
     if (!map || !window.google?.maps || locations.length < 2) {
-      // ルートをクリア
       routePolylines.forEach(polyline => polyline.setMap(null));
       setRoutePolylines([]);
       return;
     }
-
-    // 既存のルートをクリア
     routePolylines.forEach(polyline => polyline.setMap(null));
-
-    // DirectionsServiceを初期化
     if (!directionsServiceRef.current) {
       directionsServiceRef.current = new window.google.maps.DirectionsService();
     }
-
-    // ロケーションをorder順にソート
     const sortedLocations = [...locations].sort((a, b) => a.order - b.order);
-
     const newPolylines: google.maps.Polyline[] = [];
-
-    // 連続するスポット間のルートを計算
     for (let i = 0; i < sortedLocations.length - 1; i++) {
       const origin = sortedLocations[i];
       const destination = sortedLocations[i + 1];
-
       try {
         const result = await new Promise<google.maps.DirectionsResult>((resolve, reject) => {
-          directionsServiceRef.current!.route(
-            {
-              origin: new window.google.maps.LatLng(origin.store_latitude, origin.store_longitude),
-              destination: new window.google.maps.LatLng(destination.store_latitude, destination.store_longitude),
-              travelMode: window.google.maps.TravelMode.WALKING, // 徒歩ルート（道路に沿う）
-            },
-            (response, status) => {
-              if (status === window.google.maps.DirectionsStatus.OK && response) {
-                resolve(response);
-              } else {
-                reject(new Error(`Directions request failed: ${status}`));
-              }
-            }
-          );
+          directionsServiceRef.current!.route({
+            origin: new window.google.maps.LatLng(origin.store_latitude, origin.store_longitude),
+            destination: new window.google.maps.LatLng(destination.store_latitude, destination.store_longitude),
+            travelMode: window.google.maps.TravelMode.WALKING,
+          }, (response, status) => {
+            if (status === window.google.maps.DirectionsStatus.OK && response) resolve(response);
+            else reject(new Error(`Directions request failed: ${status}`));
+          });
         });
-
-        // ルートのパスを取得
         const route = result.routes[0];
         if (route && route.overview_path) {
-          // Polylineを作成して描画
           const polyline = new window.google.maps.Polyline({
             path: route.overview_path,
             strokeColor: ROUTE_STYLES.strokeColor,
             strokeOpacity: ROUTE_STYLES.strokeOpacity,
             strokeWeight: ROUTE_STYLES.strokeWeight,
             map: map,
-            zIndex: 1, // マーカーより下に表示
+            zIndex: 1,
           });
           newPolylines.push(polyline);
         }
       } catch (error) {
-        console.error(`ルート計算エラー (${origin.store_name} → ${destination.store_name}):`, error);
-        
-        // エラー時はフォールバックとして直線を描画
         const fallbackPolyline = new window.google.maps.Polyline({
           path: [
             new window.google.maps.LatLng(origin.store_latitude, origin.store_longitude),
             new window.google.maps.LatLng(destination.store_latitude, destination.store_longitude),
           ],
           strokeColor: ROUTE_STYLES.strokeColor,
-          strokeOpacity: 0.5, // 直線は薄く
+          strokeOpacity: 0.5,
           strokeWeight: 2,
-          strokePattern: [{ icon: { path: 'M 0,-1 0,1', strokeOpacity: 1, scale: 2 }, offset: '0', repeat: '10px' }], // 破線
           map: map,
           zIndex: 1,
         });
         newPolylines.push(fallbackPolyline);
       }
     }
-
     setRoutePolylines(newPolylines);
   }, [map, routePolylines]);
 
@@ -743,18 +725,13 @@ export function MapView() {
       const offsetPosition = getOffsetPosition(location.store_latitude, location.store_longitude, indexInGroup, groupLocations.length);
       const position = new window.google.maps.LatLng(offsetPosition.lat, offsetPosition.lng);
       const markerIcon = await createCategoryPinIcon(location.image_urls, location.store_name, 'イベント情報');
-      const marker = new window.google.maps.Marker({ position, map, title: `${location.store_name} - ${location.map_title}`, icon: markerIcon, animation: window.google.maps.Animation.DROP, zIndex: indexInGroup + 10 }); // zIndexを上げてルートより上に
-      marker.addListener('click', () => { 
-        // マーカークリック時に詳細カードを表示
-        setSelectedMapLocation(location);
-      });
+      const marker = new window.google.maps.Marker({ position, map, title: `${location.store_name} - ${location.map_title}`, icon: markerIcon, animation: window.google.maps.Animation.DROP, zIndex: indexInGroup + 10 });
+      marker.addListener('click', () => { setSelectedMapLocation(location); });
       return marker;
     });
     const markers = await Promise.all(markerPromises);
     newMarkers.push(...markers.filter((m): m is google.maps.Marker => m != null));
     setMapMarkers(newMarkers);
-
-    // 🔥 マーカー作成後にルートを描画
     await calculateAndDrawRoute(mapLocations);
   }, [map, mapLocations, calculateAndDrawRoute]);
 
@@ -791,28 +768,6 @@ export function MapView() {
     processNextBatch();
   }, [map, posts]);
 
-  // 🔥 RPG風ライトカラーの地図スタイル
-  const rpgLightMapStyles: google.maps.MapTypeStyle[] = [
-    { featureType: "all", elementType: "geometry", stylers: [{ saturation: 10 }, { lightness: 5 }] },
-    { featureType: "landscape", elementType: "geometry.fill", stylers: [{ color: "#f5e6d3" }] },
-    { featureType: "landscape.natural", elementType: "geometry.fill", stylers: [{ color: "#e8f4e5" }] },
-    { featureType: "water", elementType: "geometry.fill", stylers: [{ color: "#c5e1f5" }] },
-    { featureType: "water", elementType: "labels.text.fill", stylers: [{ color: "#5a9fd4" }] },
-    { featureType: "road", elementType: "geometry.fill", stylers: [{ color: "#fff8f0" }] },
-    { featureType: "road", elementType: "geometry.stroke", stylers: [{ color: "#e8d4c4" }] },
-    { featureType: "road.highway", elementType: "geometry.fill", stylers: [{ color: "#ffecd2" }] },
-    { featureType: "road.highway", elementType: "geometry.stroke", stylers: [{ color: "#d4a574" }] },
-    { featureType: "poi.park", elementType: "geometry.fill", stylers: [{ color: "#d4ecd1" }] },
-    { featureType: "poi", elementType: "geometry.fill", stylers: [{ color: "#f0e4dc" }] },
-    { featureType: "all", elementType: "labels.text.fill", stylers: [{ color: "#5c4033" }] },
-    { featureType: "all", elementType: "labels.text.stroke", stylers: [{ color: "#ffffff" }, { visibility: "on" }, { weight: 2 }] },
-    { featureType: "poi", elementType: "labels", stylers: [{ visibility: "off" }] },
-    { featureType: "poi.business", elementType: "labels", stylers: [{ visibility: "off" }] },
-    { featureType: "administrative", elementType: "labels", stylers: [{ visibility: "off" }] },
-    { featureType: "transit.line", elementType: "geometry", stylers: [{ color: "#c8b8a8" }, { weight: 1 }] },
-    { featureType: "transit.station", elementType: "labels", stylers: [{ visibility: "off" }] }
-  ];
-
   const initializeMap = useCallback(() => {
     if (!mapContainerRef.current || mapInstanceRef.current || !googleMapsLoaded || containerDimensions.height < 200 || initializationTriedRef.current) return false;
     if (!window.google?.maps?.Map) { setInitializationError("Google Maps APIが利用できません。"); return false; }
@@ -821,7 +776,7 @@ export function MapView() {
       const container = mapContainerRef.current;
       container.innerHTML = '';
       const center = savedLocation ? savedLocation : (latitude && longitude) ? { lat: latitude, lng: longitude } : { lat: 35.6812, lng: 139.7671 };
-      const mapOptions: google.maps.MapOptions = { center, zoom: (savedLocation || (latitude && longitude)) ? 8 : 7, disableDefaultUI: true, zoomControl: true, gestureHandling: 'greedy', mapTypeId: window.google.maps.MapTypeId.ROADMAP, styles: rpgLightMapStyles };
+      const mapOptions: google.maps.MapOptions = { center, zoom: (savedLocation || (latitude && longitude)) ? 8 : 7, disableDefaultUI: true, zoomControl: true, gestureHandling: 'greedy', mapTypeId: window.google.maps.MapTypeId.ROADMAP, styles: organicMapStyles };
       const newMap = new window.google.maps.Map(container, mapOptions);
       mapInstanceRef.current = newMap;
       window.google.maps.event.addListenerOnce(newMap, 'idle', () => { setMap(newMap); setMapInitialized(true); setInitializationError(null); });
@@ -870,13 +825,11 @@ export function MapView() {
     else if (viewMode === 'myMaps' && mapLocations.length === 0 && map && window.google?.maps) { 
       mapMarkers.forEach(marker => { if (marker?.setMap) marker.setMap(null); }); 
       setMapMarkers([]); 
-      // 🔥 ルートもクリア
       routePolylines.forEach(polyline => polyline.setMap(null));
       setRoutePolylines([]);
     }
   }, [mapLocations, map, viewMode]);
 
-  // 🔥 viewModeが変わったときにルートをクリア
   useEffect(() => {
     if (viewMode === 'events') {
       routePolylines.forEach(polyline => polyline.setMap(null));
@@ -884,13 +837,11 @@ export function MapView() {
     }
   }, [viewMode]);
 
-  // 方角付きユーザー位置マーカー（マイマップモード時のみ方角を表示）
   useEffect(() => {
     const userLat = savedLocation?.lat || latitude;
     const userLng = savedLocation?.lng || longitude;
     if (map && userLat && userLng && mapInitialized && window.google?.maps) {
       const userPosition = new window.google.maps.LatLng(userLat, userLng);
-      // イベントモード時は方角なし（null）、マイマップモード時のみ方角を表示
       const headingForIcon = viewMode === 'myMaps' ? deviceHeading : null;
       const directionalIcon = createDirectionalLocationIcon(headingForIcon);
       if (userLocationMarker) { userLocationMarker.setPosition(userPosition); userLocationMarker.setIcon(directionalIcon); userLocationMarker.setMap(map); userLocationMarker.setZIndex(9999); }
@@ -909,14 +860,12 @@ export function MapView() {
     if (userLocationMarker) { userLocationMarker.setMap(null); setUserLocationMarker(null); }
     postMarkers.forEach(marker => { if (marker?.setMap) marker.setMap(null); });
     setPostMarkers([]); setPosts([]);
-    // 🔥 ルートもクリア
     routePolylines.forEach(polyline => polyline.setMap(null));
     setRoutePolylines([]);
     if (mapContainerRef.current) mapContainerRef.current.innerHTML = '';
     setTimeout(() => { updateContainerDimensions(); if (!latitude || !longitude) requestLocation(); }, 100);
   };
 
-  // 🔥 URLをコピーする関数
   const handleCopyUrl = async () => {
     const currentUrl = typeof window !== 'undefined' ? window.location.href : '';
     try {
@@ -925,55 +874,48 @@ export function MapView() {
       toast({ title: '✅ コピー完了！', description: 'URLをクリップボードにコピーしました' });
       setTimeout(() => setIsCopied(false), 1000);
     } catch (error) {
-      console.error('URLのコピーに失敗:', error);
       toast({ title: '⚠️ エラー', description: 'URLのコピーに失敗しました', variant: 'destructive' });
     }
   };
 
   const MessageCard = ({ icon: Icon, title, message, children, variant = 'default' }: { icon?: React.ElementType; title: string; message: string | React.ReactNode; children?: React.ReactNode; variant?: 'default' | 'destructive' | 'warning'; }) => {
-    let iconColorClass = "text-primary";
-    if (variant === 'destructive') iconColorClass = "text-destructive";
-    if (variant === 'warning') iconColorClass = "text-amber-500";
+    const iconColor = variant === 'destructive' ? designTokens.colors.functional.error : variant === 'warning' ? designTokens.colors.functional.warning : designTokens.colors.primary.base;
     return (
-      <div className="w-full h-full flex items-center justify-center p-4 bg-background">
-        <div className="bg-card p-6 sm:p-8 rounded-xl shadow-2xl w-full max-w-md text-center border">
-          {Icon && <Icon className={`h-16 w-16 ${iconColorClass} mb-6 mx-auto`} />}
-          <h2 className={`text-xl sm:text-2xl font-semibold mb-3 ${variant === 'destructive' ? 'text-destructive' : 'text-foreground'}`}>{title}</h2>
-          <div className="text-sm sm:text-base text-muted-foreground mb-6 leading-relaxed">{message}</div>
+      <div className="w-full h-full flex items-center justify-center p-4" style={{ background: designTokens.colors.background.mist }}>
+        <div className="p-8 rounded-3xl w-full max-w-md text-center" style={{ background: designTokens.colors.background.white, boxShadow: designTokens.elevation.high }}>
+          {Icon && <Icon className="h-16 w-16 mb-6 mx-auto" style={{ color: iconColor }} />}
+          <h2 className="text-xl font-semibold mb-3" style={{ fontFamily: designTokens.typography.display, color: variant === 'destructive' ? designTokens.colors.functional.error : designTokens.colors.text.primary }}>{title}</h2>
+          <div className="text-base mb-6 leading-relaxed" style={{ color: designTokens.colors.text.secondary }}>{message}</div>
           {children}
         </div>
       </div>
     );
   };
 
-  if (googleMapsLoadError) return <MessageCard title="Google Maps APIエラー" message="Google Maps APIの読み込みに失敗しました。" variant="destructive" icon={AlertTriangle}><Button onClick={handleRetry} className="mt-4"><RefreshCw className="mr-2 h-4 w-4" />再試行</Button></MessageCard>;
-  if (initializationError) return <MessageCard title="地図初期化エラー" message={initializationError} variant="destructive" icon={AlertTriangle}><Button onClick={handleRetry} className="mt-4"><RefreshCw className="mr-2 h-4 w-4" />再試行</Button></MessageCard>;
+  if (googleMapsLoadError) return <MessageCard title="Google Maps APIエラー" message="Google Maps APIの読み込みに失敗しました。" variant="destructive" icon={AlertTriangle}><Button onClick={handleRetry} className="mt-4" style={{ background: designTokens.colors.accent.lilac, color: designTokens.colors.text.inverse }}><RefreshCw className="mr-2 h-4 w-4" />再試行</Button></MessageCard>;
+  if (initializationError) return <MessageCard title="地図初期化エラー" message={initializationError} variant="destructive" icon={AlertTriangle}><Button onClick={handleRetry} className="mt-4" style={{ background: designTokens.colors.accent.lilac, color: designTokens.colors.text.inverse }}><RefreshCw className="mr-2 h-4 w-4" />再試行</Button></MessageCard>;
 
   if (!googleMapsLoaded || !mapInitialized) {
-    if (locationError && permissionState === 'denied') return <MessageCard title="位置情報の許可が必要です" message={locationError} variant="warning" icon={MapPin}><Button onClick={requestLocation} className="mt-4"><MapPin className="mr-2 h-4 w-4" />位置情報を許可する</Button></MessageCard>;
+    if (locationError && permissionState === 'denied') return <MessageCard title="位置情報の許可が必要です" message={locationError} variant="warning" icon={MapPin}><Button onClick={requestLocation} className="mt-4" style={{ background: designTokens.colors.accent.lilac, color: designTokens.colors.text.inverse }}><MapPin className="mr-2 h-4 w-4" />位置情報を許可する</Button></MessageCard>;
     return (
-      <div className="w-full h-full relative" style={{ backgroundColor: COLORS.background }}>
-        <div ref={mapContainerRef} className="w-full h-full" style={{ backgroundColor: COLORS.background }} />
-        <div className="absolute inset-0 flex flex-col items-center justify-center backdrop-blur-sm" style={{ backgroundColor: `${COLORS.surface}E6` }}>
-          <motion.div 
-            animate={{ rotate: 360 }}
-            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-            className="mb-4"
-          >
-            <Compass className="h-12 w-12" style={{ color: COLORS.primary }} />
+      <div className="w-full h-full relative" style={{ background: designTokens.colors.background.mist }}>
+        <div ref={mapContainerRef} className="w-full h-full" style={{ background: designTokens.colors.background.mist }} />
+        <div className="absolute inset-0 flex flex-col items-center justify-center backdrop-blur-sm" style={{ background: `${designTokens.colors.background.white}E6` }}>
+          <motion.div animate={{ rotate: 360 }} transition={{ duration: 2, repeat: Infinity, ease: "linear" }} className="mb-4">
+            <Compass className="h-12 w-12" style={{ color: designTokens.colors.accent.gold }} />
           </motion.div>
-          <p className="text-center px-4 font-medium" style={{ color: COLORS.secondary }}>地図を準備中...</p>
-          {(!latitude || !longitude) && permissionState !== 'denied' && <p className="text-sm text-center px-4 mt-2" style={{ color: COLORS.secondary }}>位置情報を取得中...</p>}
+          <p className="text-center px-4 font-medium" style={{ color: designTokens.colors.text.secondary }}>地図を準備中...</p>
+          {(!latitude || !longitude) && permissionState !== 'denied' && <p className="text-sm text-center px-4 mt-2" style={{ color: designTokens.colors.text.muted }}>位置情報を取得中...</p>}
         </div>
       </div>
     );
   }
 
   return (
-    <div className="w-full h-full relative" style={{ backgroundColor: COLORS.background }}>
+    <div className="w-full h-full relative" style={{ background: designTokens.colors.background.mist }}>
       <div ref={mapContainerRef} className="w-full h-full" style={{ touchAction: 'manipulation', WebkitOverflowScrolling: 'touch', WebkitTouchCallout: 'none', WebkitUserSelect: 'none', userSelect: 'none' }} />
 
-      {/* 🔥 [統合版] 右上: 冒険者(投稿者) & 共有ボタン */}
+      {/* マイマップモード: 作成者アバター */}
       {map && mapInitialized && viewMode === 'myMaps' && mapCreatorProfile && (
         <div className="absolute top-4 right-4 z-30">
           <motion.div
@@ -981,343 +923,198 @@ export function MapView() {
             animate={{ opacity: 1, x: 0 }}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            transition={{ duration: 0.3 }}
-            className="flex flex-col items-center"
           >
             <Button
-              onClick={() => setIsProfileModalOpen(true)} // 統合モーダルを開く
+              onClick={() => setIsProfileModalOpen(true)}
               size="icon"
-              className="h-16 w-16 rounded-none bg-[#fdf5e6] border-4 border-double border-[#8b6914] shadow-[4px_4px_0px_0px_rgba(61,41,20,0.3)] p-0 overflow-hidden relative"
+              className="h-16 w-16 rounded-2xl p-0 overflow-hidden"
+              style={{ 
+                background: designTokens.colors.background.white,
+                boxShadow: designTokens.elevation.high,
+                border: `2px solid ${designTokens.colors.accent.gold}`,
+              }}
             >
-              {/* 背景の装飾的な輝き */}
-              <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent pointer-events-none" />
-              
-              <Avatar className="h-12 w-12 rounded-none border-2 border-[#8b6914]">
+              <Avatar className="h-12 w-12">
                 {mapCreatorProfile.avatar_path ? (
-                  <AvatarImage
-                    src={getAvatarPublicUrl(mapCreatorProfile.avatar_path) || ''}
-                    alt={mapCreatorProfile.display_name}
-                  />
+                  <AvatarImage src={getAvatarPublicUrl(mapCreatorProfile.avatar_path) || ''} alt={mapCreatorProfile.display_name} />
                 ) : null}
-                <AvatarFallback className="text-lg font-black bg-[#3d2914] text-[#ffecd2] rounded-none">
+                <AvatarFallback style={{ background: designTokens.colors.primary.base, color: designTokens.colors.text.inverse }}>
                   {mapCreatorProfile.display_name.charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
             </Button>
-            <span className="text-[10px] font-black mt-1 bg-[#8b6914] text-[#ffecd2] px-1 shadow-sm" style={{ fontFamily: "'Noto Serif JP', serif" }}>
-              MAKER
-            </span>
           </motion.div>
         </div>
       )}
 
-      {/* 🔥 マイマップモード時のUI */}
+      {/* マイマップモード: ナビゲーション */}
       {map && mapInitialized && viewMode === 'myMaps' && (
-        <>
-
-          {/* 左下: ナビゲーションボタン（公開設定OFFの場合は更新ボタンのみ） */}
-          <div className="absolute bottom-4 left-4 z-30 flex flex-col gap-2">
-            {/* 🔥 公開設定ONの場合のみMap一覧アイコンとMapボタンを表示 */}
-            {isMapPublic && (
-              <>
-                {/* Maps (旧Map一覧) */}
-                <motion.div 
-                  initial={{ opacity: 0, y: 20 }} 
-                  animate={{ opacity: 1, y: 0 }} 
-                  whileHover={{ scale: 1.05, boxShadow: "0 10px 30px rgba(92, 58, 33, 0.3)" }}
-                  whileTap={{ scale: 0.95 }}
-                  transition={{ duration: 0.3, delay: 0.05 }} 
-                  className="flex flex-col items-center"
-                >
-                  <Button 
-                    onClick={() => router.push('/public-maps')} 
-                    size="icon" 
-                    className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg flex flex-col items-center justify-center gap-1 border-2 border-white"
-                    style={{ backgroundColor: COLORS.secondary }}
-                  >
-                    <Library className="h-6 w-6 sm:h-7 sm:w-7" style={{ color: COLORS.cream }} />
-                    <span className="text-[10px] font-bold" style={{ color: COLORS.cream }}>ATLAS</span>
-                  </Button>
-                </motion.div>
-                {/* Mapボタン（Map一覧の下）- 羅針盤/Compassアイコン */}
-                <motion.div 
-                  initial={{ opacity: 0, y: 20 }} 
-                  animate={{ opacity: 1, y: 0 }} 
-                  whileHover={{ scale: 1.05, boxShadow: "0 10px 30px rgba(139, 105, 20, 0.3)" }}
-                  whileTap={{ scale: 0.95 }}
-                  transition={{ duration: 0.3, delay: 0.1 }} 
-                  className="flex flex-col items-center"
-                >
-                  <Button onClick={() => {
-                    setViewMode('events');
-                    setSelectedMapLocation(null);
-                    mapMarkers.forEach(marker => { if (marker?.setMap) marker.setMap(null); });
-                    setMapMarkers([]);
-                    // 🔥 ルートもクリア
-                    routePolylines.forEach(polyline => polyline.setMap(null));
-                    setRoutePolylines([]);
-                    router.push('/map');
-                    const userLat = savedLocation?.lat || latitude;
-                    const userLng = savedLocation?.lng || longitude;
-                    if (userLat && userLng) {
-                      setTimeout(() => fetchPosts(), 100);
-                    }
-                  }} 
+        <div className="absolute bottom-4 left-4 z-30 flex flex-col gap-3">
+          {isMapPublic && (
+            <>
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} transition={{ duration: 0.3 }}>
+                <Button 
+                  onClick={() => router.push('/public-maps')} 
                   size="icon" 
-                  className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg flex flex-col items-center justify-center gap-1"
-                  style={{ backgroundColor: COLORS.primary }}
-                  >
-                    <Compass className="h-6 w-6 sm:h-7 sm:w-7" style={{ color: COLORS.cream }} />
-                    <span className="text-xs font-medium" style={{ color: COLORS.cream }}>Map</span>
-                  </Button>
-                </motion.div>
-              </>
-            )}
-            {/* 更新ボタンは常に表示（最下） */}
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }} 
-              animate={{ opacity: 1, y: 0 }} 
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="flex flex-col items-center"
-            >
-              <Button 
-                onClick={handleManualRefresh} 
+                  className="h-14 w-14 rounded-2xl flex flex-col items-center justify-center gap-0.5"
+                  style={{ background: designTokens.colors.secondary.fern, color: designTokens.colors.text.inverse, boxShadow: designTokens.elevation.high }}
+                >
+                  <Library className="h-5 w-5" />
+                  <span className="text-[9px] font-medium">ATLAS</span>
+                </Button>
+              </motion.div>
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} transition={{ duration: 0.3, delay: 0.1 }}>
+                <Button onClick={() => {
+                  setViewMode('events');
+                  setSelectedMapLocation(null);
+                  mapMarkers.forEach(marker => { if (marker?.setMap) marker.setMap(null); });
+                  setMapMarkers([]);
+                  routePolylines.forEach(polyline => polyline.setMap(null));
+                  setRoutePolylines([]);
+                  router.push('/map');
+                  const userLat = savedLocation?.lat || latitude;
+                  const userLng = savedLocation?.lng || longitude;
+                  if (userLat && userLng) setTimeout(() => fetchPosts(), 100);
+                }} 
                 size="icon" 
-                disabled={isRefreshing || loadingMaps} 
-                className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg border-2 border-white disabled:opacity-50 flex flex-col items-center justify-center gap-1"
-                style={{ backgroundColor: COLORS.primaryDark }}
-              >
-                <RefreshCw className={`h-6 w-6 sm:h-7 sm:w-7 ${(isRefreshing || loadingMaps) ? 'animate-spin' : ''}`} style={{ color: COLORS.cream }} />
-                <span className="text-[10px] font-bold" style={{ color: COLORS.cream }}>再探索</span>
-              </Button>
-            </motion.div>
-          </div>
-        </>
+                className="h-14 w-14 rounded-2xl flex flex-col items-center justify-center gap-0.5"
+                style={{ background: designTokens.colors.accent.lilac, color: designTokens.colors.text.inverse, boxShadow: designTokens.elevation.high }}
+                >
+                  <Compass className="h-5 w-5" />
+                  <span className="text-[9px] font-medium">Map</span>
+                </Button>
+              </motion.div>
+            </>
+          )}
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <Button 
+              onClick={handleManualRefresh} 
+              size="icon" 
+              disabled={isRefreshing || loadingMaps} 
+              className="h-14 w-14 rounded-2xl disabled:opacity-50 flex flex-col items-center justify-center gap-0.5"
+              style={{ background: designTokens.colors.primary.dark, color: designTokens.colors.text.inverse, boxShadow: designTokens.elevation.high }}
+            >
+              <RefreshCw className={`h-5 w-5 ${(isRefreshing || loadingMaps) ? 'animate-spin' : ''}`} />
+              <span className="text-[9px] font-medium">更新</span>
+            </Button>
+          </motion.div>
+        </div>
       )}
 
-      {/* 🔥 [統合版] RPGデザインのプロフィール & 共有モーダル */}
+      {/* プロフィール&共有モーダル */}
       <CustomModal isOpen={isProfileModalOpen} onClose={() => setIsProfileModalOpen(false)}>
-        <div className="relative bg-[#fdf5e6] border-4 border-double border-[#8b6914] overflow-hidden">
-          {/* 羊皮紙テクスチャ */}
-          <div className="absolute inset-0 opacity-[0.05] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/parchment.png')]" />
-
-          <div className="p-6 relative z-10 pt-10">
-            {/* リーダーステータス (投稿者情報) */}
-            <div className="flex flex-col items-center mb-6">
-              <div className="relative">
-                <Avatar className="w-24 h-24 border-4 border-[#8b6914] shadow-lg mb-3 rounded-none p-1 bg-white">
-                  {mapCreatorProfile?.avatar_path ? (
-                    <AvatarImage
-                      src={getAvatarPublicUrl(mapCreatorProfile.avatar_path) || ''}
-                      alt={mapCreatorProfile?.display_name}
-                      className="rounded-none"
-                    />
-                  ) : null}
-                  <AvatarFallback className="text-3xl font-black bg-[#3d2914] text-[#ffecd2] rounded-none">
-                    {mapCreatorProfile?.display_name?.charAt(0).toUpperCase() || 'U'}
-                  </AvatarFallback>
-                </Avatar>
-                {/* 勲章アイコン風装飾 */}
-                <Shield className="absolute -bottom-2 -right-2 h-8 w-8 text-[#8b6914] fill-[#ffecd2]" />
-              </div>
-              
-              <h3 className="text-xl font-black text-[#3d2914] font-serif mb-1" style={{ fontFamily: "'Noto Serif JP', serif" }}>
-                {mapCreatorProfile?.display_name || '匿名ユーザー'}
-              </h3>
-              <p className="text-[10px] font-bold text-[#8b6914] tracking-widest border-b border-[#8b6914] mb-3 uppercase">Map Architect</p>
-
-              {mapCreatorProfile?.url && (() => {
-                const normalizedUrl = normalizeUrl(mapCreatorProfile.url);
-                if (!normalizedUrl) return null;
-                return (
-                  <a href={normalizedUrl} target="_blank" rel="noopener noreferrer" className="transition-transform hover:scale-110">
-                    <img src={getSocialIconUrl(normalizedUrl)} alt="SNS" className="w-8 h-8 border border-[#d4c4a8] p-1 bg-white" />
-                  </a>
-                );
-              })()}
+        <div className="p-6 pt-12">
+          <div className="flex flex-col items-center mb-6">
+            <Avatar className="w-20 h-20 mb-3" style={{ border: `3px solid ${designTokens.colors.accent.gold}` }}>
+              {mapCreatorProfile?.avatar_path ? (
+                <AvatarImage src={getAvatarPublicUrl(mapCreatorProfile.avatar_path) || ''} alt={mapCreatorProfile?.display_name} />
+              ) : null}
+              <AvatarFallback style={{ background: designTokens.colors.primary.base, color: designTokens.colors.text.inverse, fontSize: '1.5rem' }}>
+                {mapCreatorProfile?.display_name?.charAt(0).toUpperCase() || 'U'}
+              </AvatarFallback>
+            </Avatar>
+            <h3 className="text-xl font-semibold mb-1" style={{ fontFamily: designTokens.typography.display, color: designTokens.colors.text.primary }}>
+              {mapCreatorProfile?.display_name || '匿名ユーザー'}
+            </h3>
+            <p className="text-xs font-medium tracking-wide" style={{ color: designTokens.colors.accent.goldDark }}>Map Creator</p>
+            {mapCreatorProfile?.url && (() => {
+              const normalizedUrl = normalizeUrl(mapCreatorProfile.url);
+              if (!normalizedUrl) return null;
+              return (
+                <a href={normalizedUrl} target="_blank" rel="noopener noreferrer" className="mt-2 transition-transform hover:scale-110">
+                  <img src={getSocialIconUrl(normalizedUrl)} alt="SNS" className="w-8 h-8 rounded-lg" style={{ border: `1px solid ${designTokens.colors.secondary.stone}` }} />
+                </a>
+              );
+            })()}
+          </div>
+          <div className="p-4 rounded-xl mb-6" style={{ background: designTokens.colors.background.cloud }}>
+            <div className="flex items-center gap-2 mb-1">
+              <BookOpen className="h-4 w-4" style={{ color: designTokens.colors.accent.goldDark }} />
+              <span className="text-xs font-medium" style={{ color: designTokens.colors.text.muted }}>Current Map</span>
             </div>
-
-            {/* 現在のマップ情報 */}
-            <div className="bg-[#3d2914]/5 border-2 border-dashed border-[#d4c4a8] p-4 mb-6">
-              <div className="flex items-center gap-2 mb-1">
-                <BookOpen className="h-4 w-4 text-[#8b6914]" />
-                <span className="text-[10px] font-bold text-[#8b6914] uppercase">Current Atlas</span>
-              </div>
-              <p className="text-base font-black text-[#3d2914] font-serif">{currentMapTitle}</p>
+            <p className="font-semibold" style={{ fontFamily: designTokens.typography.display, color: designTokens.colors.text.primary }}>{currentMapTitle}</p>
+          </div>
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 mb-2">
+              <Share2 className="h-4 w-4" style={{ color: designTokens.colors.text.muted }} />
+              <span className="text-xs font-medium tracking-wide" style={{ color: designTokens.colors.text.muted }}>SHARE</span>
             </div>
-
-            {/* 共有コマンド (共有機能) */}
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 text-[#8b6914] mb-1">
-                <Share2 className="h-4 w-4" />
-                <span className="text-[10px] font-bold uppercase tracking-widest">Share Command</span>
-              </div>
-              
-              <button
-                onClick={handleCopyUrl}
-                className={`flex items-center justify-center gap-3 w-full py-4 rounded-none font-black transition-all border-t-2 border-l-2 border-white/30 border-b-4 border-r-4 border-black shadow-md ${
-                  isCopied ? 'bg-green-700 text-white' : 'bg-[#8b6914] hover:bg-[#3d2914] text-[#ffecd2]'
-                }`}
-              >
-                {isCopied ? (
-                  <><Check className="h-5 w-5" />URLをコピーした！</>
-                ) : (
-                  <><Link2 className="h-5 w-5" />この地図のURLを記録</>
-                )}
-              </button>
-              <p className="text-[10px] text-center text-[#5c3a21] font-bold mt-2 opacity-60">
-                友達にこの地図のURLを教えてあげよう
-              </p>
-            </div>
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={handleCopyUrl}
+              className="flex items-center justify-center gap-3 w-full py-4 rounded-xl font-semibold transition-all"
+              style={{ 
+                background: isCopied ? designTokens.colors.functional.success : designTokens.colors.accent.lilac,
+                color: designTokens.colors.text.inverse,
+              }}
+            >
+              {isCopied ? (<><Check className="h-5 w-5" />コピー完了！</>) : (<><Link2 className="h-5 w-5" />URLをコピー</>)}
+            </motion.button>
           </div>
         </div>
       </CustomModal>
 
-      {/* 🔥 位置情報許可モーダル（公開設定OFFのMyMap表示時） */}
+      {/* 位置情報許可モーダル */}
       <AnimatePresence>
         {isLocationPermissionModalOpen && !isMapPublic && viewMode === 'myMaps' && (
-          <motion.div 
-            initial={{ opacity: 0 }} 
-            animate={{ opacity: 1 }} 
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4"
-          >
-            {/* オーバーレイ */}
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-            />
-            {/* モーダルコンテンツ */}
-            <motion.div 
-              initial={{ scale: 0.9, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden"
-            >
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 backdrop-blur-sm" style={{ background: `${designTokens.colors.primary.base}60` }} />
+            <motion.div initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 20 }} transition={{ type: "spring", damping: 25, stiffness: 300 }} className="relative rounded-3xl w-full max-w-sm overflow-hidden" style={{ background: designTokens.colors.background.white, boxShadow: designTokens.elevation.dramatic }}>
               <div className="p-6">
-                {/* タイトル */}
-                <h3 className="text-xl font-bold text-gray-800 text-center mb-3">
-                  位置情報を許可してください
-                </h3>
-
-                {/* 説明文 */}
-                <p className="text-sm text-gray-600 text-center mb-6 leading-relaxed">
-                  このMyMapを表示するには、<br />位置情報の許可が必要です。<br />
-                  左下の<span className="font-bold text-[#73370c]">「更新」ボタン</span>を押して、<br />
-                  位置情報を許可してください。
+                <h3 className="text-xl font-semibold text-center mb-3" style={{ fontFamily: designTokens.typography.display, color: designTokens.colors.text.primary }}>位置情報を許可してください</h3>
+                <p className="text-sm text-center mb-6 leading-relaxed" style={{ color: designTokens.colors.text.secondary }}>
+                  このMyMapを表示するには、位置情報の許可が必要です。左下の「更新」ボタンを押して、位置情報を許可してください。
                 </p>
-                {/* 閉じるボタン */}
-                <Button 
-                  onClick={() => setIsLocationPermissionModalOpen(false)}
-                  className="w-full bg-[#73370c] hover:bg-[#5c2a0a] text-white py-3 rounded-xl font-medium"
-                >
-                  閉じる
-                </Button>
+                <Button onClick={() => setIsLocationPermissionModalOpen(false)} className="w-full py-3 rounded-xl font-medium" style={{ background: designTokens.colors.accent.lilac, color: designTokens.colors.text.inverse }}>閉じる</Button>
               </div>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* 🔥 イベント情報モード時のUI（左下に縦並び） */}
+      {/* イベントモード: ナビゲーション */}
       {map && mapInitialized && viewMode === 'events' && (
-        <div className="absolute bottom-4 left-4 z-30 flex flex-col gap-2">
-          {/* カレンダーボタン */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }} 
-            animate={{ opacity: 1, y: 0 }} 
-            whileHover={{ scale: 1.05 }} 
-            whileTap={{ scale: 0.95 }}
-            className="flex flex-col items-center"
-          >
-            <Button 
-              onClick={() => router.push('/events')} 
-              size="icon" 
-              className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg flex flex-col items-center justify-center gap-1 border-2 border-white"
-              style={{ backgroundColor: COLORS.primary }}
-            >
-              <ScrollText className="h-6 w-6 sm:h-7 sm:w-7" style={{ color: COLORS.cream }} />
-              <span className="text-[10px] font-bold" style={{ color: COLORS.cream }}>旅の予定</span>
+        <div className="absolute bottom-4 left-4 z-30 flex flex-col gap-3">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <Button onClick={() => router.push('/events')} size="icon" className="h-14 w-14 rounded-2xl flex flex-col items-center justify-center gap-0.5" style={{ background: designTokens.colors.accent.gold, color: designTokens.colors.text.primary, boxShadow: designTokens.elevation.high }}>
+              <ScrollText className="h-5 w-5" />
+              <span className="text-[9px] font-bold">予定</span>
             </Button>
           </motion.div>
-          {/* ATLAS (旧Map一覧) */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }} 
-            animate={{ opacity: 1, y: 0 }} 
-            whileHover={{ scale: 1.05, boxShadow: "0 10px 30px rgba(92, 58, 33, 0.3)" }}
-            whileTap={{ scale: 0.95 }}
-            transition={{ duration: 0.3, delay: 0.1 }} 
-            className="flex flex-col items-center"
-          >
-            <Button 
-              onClick={() => router.push('/public-maps')} 
-              size="icon" 
-              className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg flex flex-col items-center justify-center gap-1 border-2 border-white"
-              style={{ backgroundColor: COLORS.secondary }}
-            >
-              <Library className="h-6 w-6 sm:h-7 sm:w-7" style={{ color: COLORS.cream }} />
-              <span className="text-[10px] font-bold" style={{ color: COLORS.cream }}>ATLAS
-              </span>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} transition={{ delay: 0.1 }}>
+            <Button onClick={() => router.push('/public-maps')} size="icon" className="h-14 w-14 rounded-2xl flex flex-col items-center justify-center gap-0.5" style={{ background: designTokens.colors.secondary.fern, color: designTokens.colors.text.inverse, boxShadow: designTokens.elevation.high }}>
+              <Library className="h-5 w-5" />
+              <span className="text-[9px] font-medium">ATLAS</span>
             </Button>
           </motion.div>
-          {/* 更新ボタン */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }} 
-            animate={{ opacity: 1, y: 0 }} 
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="flex flex-col items-center"
-          >
-            <Button 
-              onClick={handleManualRefresh} 
-              size="icon" 
-              disabled={isRefreshing || loadingPosts} 
-              className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg border-2 border-white disabled:opacity-50 flex flex-col items-center justify-center gap-1"
-              style={{ backgroundColor: COLORS.primaryDark }}
-            >
-              <RefreshCw className={`h-6 w-6 sm:h-7 sm:w-7 ${(isRefreshing || loadingPosts) ? 'animate-spin' : ''}`} style={{ color: COLORS.cream }} />
-              <span className="text-[10px] font-bold" style={{ color: COLORS.cream }}>再探索</span>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <Button onClick={handleManualRefresh} size="icon" disabled={isRefreshing || loadingPosts} className="h-14 w-14 rounded-2xl disabled:opacity-50 flex flex-col items-center justify-center gap-0.5" style={{ background: designTokens.colors.primary.dark, color: designTokens.colors.text.inverse, boxShadow: designTokens.elevation.high }}>
+              <RefreshCw className={`h-5 w-5 ${(isRefreshing || loadingPosts) ? 'animate-spin' : ''}`} />
+              <span className="text-[9px] font-medium">更新</span>
             </Button>
           </motion.div>
         </div>
       )}
 
-      {/* 更新中の表示 */}
+      {/* 更新中表示 */}
       <AnimatePresence>
         {(isRefreshing || loadingPosts || loadingMaps) && (
-          <motion.div 
-            initial={{ opacity: 0, y: -20 }} 
-            animate={{ opacity: 1, y: 0 }} 
-            exit={{ opacity: 0, y: -20 }} 
-            className="absolute top-20 left-1/2 transform -translate-x-1/2 z-40 backdrop-blur-sm px-6 py-3 rounded-full shadow-lg"
-            style={{ backgroundColor: `${COLORS.surface}F5`, borderColor: COLORS.border, borderWidth: 1 }}
-          >
+          <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="absolute top-20 left-1/2 transform -translate-x-1/2 z-40 backdrop-blur-sm px-6 py-3 rounded-full" style={{ background: `${designTokens.colors.background.white}F5`, boxShadow: designTokens.elevation.medium }}>
             <div className="flex items-center gap-2">
-              <RefreshCw className="h-4 w-4 animate-spin" style={{ color: COLORS.primary }} />
-              <span className="text-sm font-bold" style={{ color: COLORS.primary }}>更新中...</span>
+              <RefreshCw className="h-4 w-4 animate-spin" style={{ color: designTokens.colors.accent.gold }} />
+              <span className="text-sm font-medium" style={{ color: designTokens.colors.text.primary }}>更新中...</span>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-
-      {/* 投稿詳細カード */}
+      {/* イベント詳細カード */}
       <AnimatePresence>
         {selectedPost && nearbyPosts.length > 0 && (
-          <motion.div 
-            initial={{ y: 100, opacity: 0 }} 
-            animate={{ y: 0, opacity: 1 }} 
-            exit={{ y: 100, opacity: 0 }} 
-            transition={{ duration: 0.4, type: "spring", damping: 20 }}
-            className="absolute bottom-4 left-4 right-4 z-40"
-          >
+          <motion.div initial={{ y: 100, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 100, opacity: 0 }} transition={{ duration: 0.4, type: "spring", damping: 20 }} className="absolute bottom-4 left-4 right-4 z-40">
             {nearbyPosts.map((post) => {
               const displayTitle = post.category === 'イベント情報' ? (post.event_name || post.content) : post.content;
-              const config = getCategoryConfig((post.category as PostCategory) || 'イベント情報');
               const effectiveLatitude = savedLocation?.lat || latitude;
               const effectiveLongitude = savedLocation?.lng || longitude;
               let isWithinRangeResult = false;
@@ -1327,85 +1124,58 @@ export function MapView() {
               const canCheckIn = !!session?.user?.id && post.enable_checkin === true && !!effectiveLatitude && !!effectiveLongitude && !!post.store_latitude && !!post.store_longitude && isWithinRangeResult;
               const isCheckedIn = checkedInPosts.has(post.id);
               return (
-                <div key={post.id} className="relative">
+                <div key={post.id} className="relative rounded-2xl overflow-hidden" style={{ background: designTokens.colors.background.white, boxShadow: designTokens.elevation.high }}>
                   {canCheckIn && (
-                    <div onClick={(e) => { e.stopPropagation(); if (!isCheckedIn && checkingIn !== post.id) handleCheckIn(post); }} className={`absolute -top-3 left-2 z-30 cursor-pointer transition-all duration-300 ${isCheckedIn || checkingIn === post.id ? 'cursor-default' : 'hover:scale-105'}`}>
-                      <div className={`relative ${isCheckedIn ? 'bg-green-600' : 'bg-[#73370c]'} text-white px-3 py-1.5 rounded-t-md shadow-xl`}>
-                        <div className="flex items-center gap-1 text-xs font-bold whitespace-nowrap">{checkingIn === post.id ? <Loader2 className="h-3 w-3 animate-spin" /> : isCheckedIn ? <>完了☑️</> : 'Check In'}</div>
-                        <div className={`absolute -bottom-1.5 left-0 w-full h-1.5 ${isCheckedIn ? 'bg-green-600' : 'bg-[#73370c]'}`}><div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-[18px] border-l-transparent border-r-[18px] border-r-transparent border-t-[8px] border-t-white"></div></div>
+                    <div onClick={(e) => { e.stopPropagation(); if (!isCheckedIn && checkingIn !== post.id) handleCheckIn(post); }} className={`absolute -top-3 left-4 z-30 cursor-pointer transition-all ${isCheckedIn || checkingIn === post.id ? 'cursor-default' : 'hover:scale-105'}`}>
+                      <div className="px-4 py-2 rounded-full font-semibold text-sm" style={{ background: isCheckedIn ? designTokens.colors.functional.success : designTokens.colors.accent.lilac, color: designTokens.colors.text.inverse, boxShadow: designTokens.elevation.medium }}>
+                        {checkingIn === post.id ? <Loader2 className="h-4 w-4 animate-spin" /> : isCheckedIn ? '✓ 完了' : 'Check In'}
                       </div>
                     </div>
                   )}
-                  {/* 冒険の書デザインウィンドウ */}
-                  <div className="bg-[#fdf5e6] border-4 border-double border-[#8b6914] shadow-[8px_8px_0px_0px_rgba(61,41,20,0.3)] overflow-hidden">
-                    <div className="absolute top-2 right-2 z-10">
-                      <Button onClick={() => { setSelectedPost(null); setNearbyPosts([]); }} size="icon" className="h-8 w-8 rounded-none bg-[#8b6914] border-2 border-[#ffecd2]"><X className="h-4 w-4 text-[#ffecd2]" /></Button>
-                    </div>
-
-                    <div className="p-4">
-                      <div className="flex gap-3 mb-4">
-                        {/* 画像枠 */}
-                        <div className="flex-shrink-0 relative w-24 h-24 border-2 border-[#8b6914] bg-[#3d2914]/10 overflow-hidden shadow-inner">
-                          {post.image_urls && post.image_urls.length > 0 ? (
-                            <img src={optimizeCloudinaryImageUrl(post.image_urls[0])} alt={post.store_name} className="w-full h-full object-cover" loading="eager" />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center opacity-30"><Calendar className="h-10 w-10 text-[#8b6914]" /></div>
-                          )}
-                          <div className="absolute top-0 left-0 w-2 h-2 border-t-2 border-l-2 border-[#ffecd2]/50" />
-                          <div className="absolute bottom-0 right-0 w-2 h-2 border-b-2 border-r-2 border-[#ffecd2]/50" />
-                        </div>
-
-                        {/* テキスト情報 */}
-                        <div className="flex-1 min-w-0">
-                          <h3 className="text-base font-black leading-tight line-clamp-2 mb-2 font-serif" style={{ color: config.color, fontFamily: "'Noto Serif JP', serif" }}>
-                            {displayTitle}
-                          </h3>
-                          <div className="flex items-center gap-1.5 text-xs text-[#5c3a21] font-bold mb-1">
-                            <MapPinIcon className="h-3.5 w-3.5 flex-shrink-0 text-red-600" />
-                            <span className="line-clamp-1">{post.store_name}</span>
-                          </div>
-                          {post.category === 'イベント情報' && post.event_start_date && (
-                            <div className="flex items-center gap-1.5 text-xs text-[#5c3a21] font-bold">
-                              <Calendar className="h-3.5 w-3.5 flex-shrink-0 text-blue-600" />
-                              <span className="line-clamp-1">
-                                {new Date(post.event_start_date).toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' })}{post.event_end_date && post.event_end_date !== post.event_start_date && <> 〜 {new Date(post.event_end_date).toLocaleDateString('ja-JP', { month: 'long', day: 'numeric' })}</>}
-                              </span>
-                            </div>
-                          )}
-                        </div>
+                  <div className="absolute top-4 right-4 z-10">
+                    <Button onClick={() => { setSelectedPost(null); setNearbyPosts([]); }} size="icon" className="h-8 w-8 rounded-full" style={{ background: designTokens.colors.background.cloud, color: designTokens.colors.text.secondary }}><X className="h-4 w-4" /></Button>
+                  </div>
+                  <div className="p-5">
+                    <div className="flex gap-4 mb-4">
+                      <div className="flex-shrink-0 relative w-24 h-24 rounded-xl overflow-hidden" style={{ background: designTokens.colors.background.cloud }}>
+                        {post.image_urls && post.image_urls.length > 0 ? (
+                          <img src={optimizeCloudinaryImageUrl(post.image_urls[0])} alt={post.store_name} className="w-full h-full object-cover" loading="eager" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center"><Calendar className="h-10 w-10" style={{ color: designTokens.colors.text.muted }} /></div>
+                        )}
                       </div>
-
-                      {/* 決定コマンドボタン */}
-                      <motion.div whileHover={{ scale: navigatingToDetail === post.id ? 1 : 1.02 }} whileTap={{ scale: navigatingToDetail === post.id ? 1 : 0.98 }}>
-                        <Button 
-                          onClick={() => {
-                            if (navigatingToDetail) return; // 既に遷移中の場合は何もしない
-                            setNavigatingToDetail(post.id);
-                            const eventUrl = generateSemanticEventUrl({
-                              eventId: post.id,
-                              eventName: post.event_name || post.content,
-                              city: post.city || undefined,
-                              prefecture: post.prefecture || '大分県',
-                            });
-                            router.push(eventUrl);
-                          }}
-                          disabled={navigatingToDetail === post.id}
-                          className="w-full bg-[#8b6914] hover:bg-[#3d2914] text-[#ffecd2] font-black text-base py-3 rounded-none border-t-2 border-l-2 border-[#ffecd2]/30 border-b-4 border-r-4 border-[#3d2914] shadow-md transition-all flex items-center justify-center gap-3 group disabled:opacity-80"
-                        >
-                          {navigatingToDetail === post.id ? (
-                            <>
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                              読み込み中...
-                            </>
-                          ) : (
-                            <>
-                              <Search className="h-4 w-4 group-hover:scale-125 transition-transform" />
-                              調査する（詳細）
-                            </>
-                          )}
-                        </Button>
-                      </motion.div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-lg font-semibold leading-tight line-clamp-2 mb-2" style={{ fontFamily: designTokens.typography.display, color: designTokens.colors.primary.dark }}>{displayTitle}</h3>
+                        <div className="flex items-center gap-2 text-sm mb-1" style={{ color: designTokens.colors.text.secondary }}>
+                          <MapPinIcon className="h-4 w-4 flex-shrink-0" style={{ color: designTokens.colors.functional.error }} />
+                          <span className="line-clamp-1">{post.store_name}</span>
+                        </div>
+                        {post.category === 'イベント情報' && post.event_start_date && (
+                          <div className="flex items-center gap-2 text-sm" style={{ color: designTokens.colors.text.secondary }}>
+                            <Calendar className="h-4 w-4 flex-shrink-0" style={{ color: designTokens.colors.functional.info }} />
+                            <span className="line-clamp-1">
+                              {new Date(post.event_start_date).toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' })}
+                              {post.event_end_date && post.event_end_date !== post.event_start_date && <> 〜 {new Date(post.event_end_date).toLocaleDateString('ja-JP', { month: 'long', day: 'numeric' })}</>}
+                            </span>
+                          </div>
+                        )}
+                      </div>
                     </div>
+                    <motion.div whileHover={{ scale: navigatingToDetail === post.id ? 1 : 1.02 }} whileTap={{ scale: navigatingToDetail === post.id ? 1 : 0.98 }}>
+                      <Button 
+                        onClick={() => {
+                          if (navigatingToDetail) return;
+                          setNavigatingToDetail(post.id);
+                          const eventUrl = generateSemanticEventUrl({ eventId: post.id, eventName: post.event_name || post.content, city: post.city || undefined, prefecture: post.prefecture || '大分県' });
+                          router.push(eventUrl);
+                        }}
+                        disabled={navigatingToDetail === post.id}
+                        className="w-full py-3 rounded-xl font-semibold flex items-center justify-center gap-2 disabled:opacity-80"
+                        style={{ background: designTokens.colors.accent.lilac, color: designTokens.colors.text.inverse }}
+                      >
+                        {navigatingToDetail === post.id ? (<><Loader2 className="h-4 w-4 animate-spin" />読み込み中...</>) : (<><Search className="h-4 w-4" />詳細を見る</>)}
+                      </Button>
+                    </motion.div>
                   </div>
                 </div>
               );
@@ -1417,111 +1187,57 @@ export function MapView() {
       {/* マイマップロケーション詳細カード */}
       <AnimatePresence>
         {selectedMapLocation && viewMode === 'myMaps' && (
-          <motion.div 
-            initial={{ y: 100, opacity: 0 }} 
-            animate={{ y: 0, opacity: 1 }} 
-            exit={{ y: 100, opacity: 0 }} 
-            transition={{ duration: 0.4, type: "spring", damping: 20 }} 
-            className="absolute bottom-4 left-4 right-4 z-40"
-          >
-            <div className="relative">
-              {/* 冒険の書・システムウィンドウデザイン */}
-              <div className="bg-[#fdf5e6] rounded-none border-4 border-double border-[#8b6914] shadow-[8px_8px_0px_0px_rgba(61,41,20,0.3)] overflow-hidden">
-                
-                {/* 閉じるボタン（右上の×） */}
-                <div className="absolute top-2 right-2 z-10">
-                  <Button 
-                    onClick={() => setSelectedMapLocation(null)} 
-                    size="icon" 
-                    className="h-8 w-8 rounded-none bg-[#8b6914] hover:bg-[#3d2914] border-2 border-[#ffecd2]"
-                  >
-                    <X className="h-4 w-4 text-[#ffecd2]" />
-                  </Button>
-                </div>
-
-                <div className="p-4">
-                  <div className="flex gap-3 mb-3">
-                    {/* 画像セクション (RPGの顔グラフィック枠風) */}
-                    <div className="flex-shrink-0 relative w-24 h-24 border-2 border-[#8b6914] bg-[#3d2914]/10 overflow-hidden shadow-inner">
-                      {selectedMapLocation.image_urls && selectedMapLocation.image_urls.length > 0 ? (
-                        <img 
-                          src={optimizeCloudinaryImageUrl(selectedMapLocation.image_urls[0])} 
-                          alt={selectedMapLocation.store_name} 
-                          className="w-full h-full object-cover" 
-                          loading="eager" 
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center opacity-30">
-                          <MapPin className="h-12 w-12 text-[#8b6914]" />
-                        </div>
-                      )}
-                      {/* 画像内の装飾 */}
-                      <div className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-[#ffecd2]/50" />
-                      <div className="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 border-[#ffecd2]/50" />
-                    </div>
-
-                    {/* 2. MyMap名 & 3. スポット名 */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <BookOpen className="h-3.5 w-3.5 text-[#8b6914] flex-shrink-0" />
-                        <span className="text-xs font-bold text-[#8b6914] tracking-tighter uppercase font-serif line-clamp-1" style={{ fontFamily: "'Noto Serif JP', serif" }}>
-                          {selectedMapLocation.map_title}
-                        </span>
-                      </div>
-                      <h3 className="text-base font-black text-[#3d2914] leading-tight tracking-tight line-clamp-2 mb-2 font-serif" style={{ fontFamily: "'Noto Serif JP', serif" }}>
-                        {selectedMapLocation.store_name}
-                      </h3>
-                      
-                      {/* URL情報の簡易表示 */}
-                      {selectedMapLocation.url && (
-                        <div className="flex items-center gap-1.5">
-                          <img
-                            src={getSocialIconUrl(normalizeUrl(selectedMapLocation.url) || '')}
-                            alt="link"
-                            className="w-4 h-4 grayscale opacity-70"
-                          />
-                          <span className="text-[10px] font-bold text-[#5c3a21] opacity-60 font-sans">LINK DETECTED</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* 決定ボタン (RPGのコマンド風) */}
-                  <motion.div whileHover={{ scale: navigatingToMapDetail === selectedMapLocation.id ? 1 : 1.02 }} whileTap={{ scale: navigatingToMapDetail === selectedMapLocation.id ? 1 : 0.98 }}>
-                    <Button 
-                      onClick={() => {
-                        if (navigatingToMapDetail) return; // 既に遷移中の場合は何もしない
-                        setNavigatingToMapDetail(selectedMapLocation.id);
-                        router.push(`/map/spot/${selectedMapLocation.id}`);
-                      }}
-                      disabled={navigatingToMapDetail === selectedMapLocation.id}
-                      className="w-full bg-[#8b6914] hover:bg-[#3d2914] text-[#ffecd2] font-black text-base py-3 rounded-none border-t-2 border-l-2 border-[#ffecd2]/30 border-b-4 border-r-4 border-[#3d2914] shadow-md transition-all flex items-center justify-center gap-3 group disabled:opacity-80"
-                    >
-                      {navigatingToMapDetail === selectedMapLocation.id ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          読み込み中...
-                        </>
-                      ) : (
-                        <>
-                          <Sword className="h-4 w-4 group-hover:rotate-12 transition-transform" />
-                          詳細を見る
-                        </>
-                      )}
-                    </Button>
-                  </motion.div>
-                </div>
+          <motion.div initial={{ y: 100, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 100, opacity: 0 }} transition={{ duration: 0.4, type: "spring", damping: 20 }} className="absolute bottom-4 left-4 right-4 z-40">
+            <div className="relative rounded-2xl overflow-hidden" style={{ background: designTokens.colors.background.white, boxShadow: designTokens.elevation.high }}>
+              <div className="absolute top-4 right-4 z-10">
+                <Button onClick={() => setSelectedMapLocation(null)} size="icon" className="h-8 w-8 rounded-full" style={{ background: designTokens.colors.background.cloud, color: designTokens.colors.text.secondary }}><X className="h-4 w-4" /></Button>
               </div>
-
-              {/* 装飾: ウィンドウの角のドット風チップ */}
-              <div className="absolute -top-1 -left-1 w-2 h-2 bg-[#8b6914]" />
-              <div className="absolute -top-1 -right-1 w-2 h-2 bg-[#8b6914]" />
-              <div className="absolute -bottom-1 -left-1 w-2 h-2 bg-[#8b6914]" />
-              <div className="absolute -bottom-1 -right-1 w-2 h-2 bg-[#8b6914]" />
+              <div className="p-5">
+                <div className="flex gap-4 mb-4">
+                  <div className="flex-shrink-0 relative w-24 h-24 rounded-xl overflow-hidden" style={{ background: designTokens.colors.background.cloud }}>
+                    {selectedMapLocation.image_urls && selectedMapLocation.image_urls.length > 0 ? (
+                      <img src={optimizeCloudinaryImageUrl(selectedMapLocation.image_urls[0])} alt={selectedMapLocation.store_name} className="w-full h-full object-cover" loading="eager" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center"><MapPin className="h-12 w-12" style={{ color: designTokens.colors.text.muted }} /></div>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <BookOpen className="h-4 w-4 flex-shrink-0" style={{ color: designTokens.colors.accent.goldDark }} />
+                      <span className="text-xs font-medium line-clamp-1" style={{ color: designTokens.colors.text.muted }}>{selectedMapLocation.map_title}</span>
+                    </div>
+                    <h3 className="text-lg font-semibold leading-tight line-clamp-2 mb-2" style={{ fontFamily: designTokens.typography.display, color: designTokens.colors.text.primary }}>{selectedMapLocation.store_name}</h3>
+                    {selectedMapLocation.url && (
+                      <div className="flex items-center gap-1.5">
+                        <img src={getSocialIconUrl(normalizeUrl(selectedMapLocation.url) || '')} alt="link" className="w-4 h-4 grayscale opacity-70" />
+                        <span className="text-xs font-medium" style={{ color: designTokens.colors.text.muted }}>Link available</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <motion.div whileHover={{ scale: navigatingToMapDetail === selectedMapLocation.id ? 1 : 1.02 }} whileTap={{ scale: navigatingToMapDetail === selectedMapLocation.id ? 1 : 0.98 }}>
+                  <Button 
+                    onClick={() => {
+                      if (navigatingToMapDetail) return;
+                      setNavigatingToMapDetail(selectedMapLocation.id);
+                      router.push(`/map/spot/${selectedMapLocation.id}`);
+                    }}
+                    disabled={navigatingToMapDetail === selectedMapLocation.id}
+                    className="w-full py-3 rounded-xl font-semibold flex items-center justify-center gap-2 disabled:opacity-80"
+                    style={{ background: designTokens.colors.accent.lilac, color: designTokens.colors.text.inverse }}
+                  >
+                    {navigatingToMapDetail === selectedMapLocation.id ? (<><Loader2 className="h-4 w-4 animate-spin" />読み込み中...</>) : (<><Search className="h-4 w-4" />詳細を見る</>)}
+                  </Button>
+                </motion.div>
+              </div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
+
+      <style jsx global>{`
+        @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=IBM+Plex+Sans+JP:wght@400;500;600&family=Noto+Sans+JP:wght@400;500;600;700&display=swap');
+      `}</style>
     </div>
   );
 }

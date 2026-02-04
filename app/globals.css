@@ -61,4 +61,13 @@
     background-color: hsl(var(--muted-foreground));
     border-radius: 20px;
   }
+
+  /* スクロールバー非表示（日付タブなど） */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
 }
