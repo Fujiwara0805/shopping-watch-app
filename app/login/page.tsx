@@ -243,8 +243,7 @@ export default function LoginPage() {
                     type="submit"
                     disabled={isLoading}
                     className="w-full text-white text-base sm:text-lg py-6 sm:py-7 shadow-md rounded-lg transition-colors"
-                    style={{ backgroundColor: designTokens.colors.primary.base }}
-                    style={{ fontSize: '16px' }}
+                    style={{ backgroundColor: designTokens.colors.primary.base, fontSize: '16px' }}
                   >
                     {isLoading ? (
                       <Loader2 className="h-6 w-6 animate-spin" />
@@ -266,8 +265,7 @@ export default function LoginPage() {
                 disabled={isLoading}
                 variant="outline"
                 className="w-full text-base sm:text-lg py-6 sm:py-7 shadow-md flex items-center justify-center space-x-3 rounded-lg transition-colors"
-                style={{ borderColor: `${designTokens.colors.primary.base}30`, color: designTokens.colors.text.primary }}
-                style={{ fontSize: '16px' }}
+                style={{ borderColor: `${designTokens.colors.primary.base}30`, color: designTokens.colors.text.primary, fontSize: '16px' }}
               >
                 {isLoading ? (
                   <Loader2 className="h-6 w-6 animate-spin" />
@@ -285,8 +283,7 @@ export default function LoginPage() {
                 <Button
                   variant="ghost"
                   className="w-full text-white text-base sm:text-lg py-6 sm:py-7 shadow-md rounded-lg transition-colors"
-                  style={{ backgroundColor: designTokens.colors.primary.base }}
-                  style={{ fontSize: '16px' }}
+                  style={{ backgroundColor: designTokens.colors.primary.base, fontSize: '16px' }}
                 >
                   <span>新規登録</span>
                 </Button>
@@ -299,8 +296,7 @@ export default function LoginPage() {
                 onClick={handleGoBack}
                 variant="ghost"
                 className="w-full text-sm sm:text-base py-4 flex items-center justify-center space-x-2 rounded-lg transition-colors border"
-                style={{ color: designTokens.colors.text.secondary, borderColor: `${designTokens.colors.primary.base}20` }}
-                style={{ fontSize: '16px' }}
+                style={{ color: designTokens.colors.text.secondary, borderColor: `${designTokens.colors.primary.base}20`, fontSize: '16px' }}
               >
                 <span>トップページに戻る</span>
               </Button>

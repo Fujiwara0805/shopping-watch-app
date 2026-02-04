@@ -147,8 +147,7 @@ export default function ForgotPasswordPage() {
                   type="submit"
                   disabled={isLoading}
                   className="w-full text-white text-base sm:text-lg py-6 sm:py-7 shadow-md rounded-lg transition-colors"
-                  style={{ backgroundColor: designTokens.colors.primary.base }}
-                  style={{ fontSize: '16px' }}
+                  style={{ backgroundColor: designTokens.colors.primary.base, fontSize: '16px' }}
                 >
                   {isLoading ? (
                     <Loader2 className="h-6 w-6 animate-spin" />
@@ -165,8 +164,7 @@ export default function ForgotPasswordPage() {
               <Button
                 variant="ghost"
                 className="w-full text-sm sm:text-base py-4 flex items-center justify-center space-x-2 rounded-lg transition-colors border"
-                style={{ color: designTokens.colors.text.secondary, borderColor: `${designTokens.colors.primary.base}20` }}
-                style={{ fontSize: '16px' }}
+                style={{ color: designTokens.colors.text.secondary, borderColor: `${designTokens.colors.primary.base}20`, fontSize: '16px' }}
               >
                 <ArrowLeft className="h-4 w-4" />
                 <span>ログインページに戻る</span>

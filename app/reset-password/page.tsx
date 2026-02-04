@@ -355,8 +355,7 @@ export default function ResetPasswordPage() {
                       type="submit"
                       disabled={isLoading}
                       className="w-full text-white text-base sm:text-lg py-6 sm:py-7 shadow-md rounded-lg transition-colors"
-                      style={{ backgroundColor: designTokens.colors.primary.base }}
-                      style={{ fontSize: '16px' }}
+                      style={{ backgroundColor: designTokens.colors.primary.base, fontSize: '16px' }}
                     >
                       {isLoading ? (
                         <Loader2 className="h-6 w-6 animate-spin" />
