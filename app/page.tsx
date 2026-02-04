@@ -261,30 +261,30 @@ const HeroSection = ({
           }}
         />
         
-        {/* Gradient Overlay - 上部は薄く、下部は濃く */}
+        {/* Gradient Overlay - 白色を濃くして背景画像を適度に覆う */}
         <div 
           className="absolute inset-0"
           style={{
             background: `linear-gradient(
               180deg,
-              ${designTokens.colors.background.mist}95 0%,
-              ${designTokens.colors.background.mist}85 25%,
-              ${designTokens.colors.background.mist}70 50%,
-              ${designTokens.colors.background.mist}85 75%,
-              ${designTokens.colors.background.mist}98 100%
+              ${designTokens.colors.background.white}E6 0%,
+              ${designTokens.colors.background.white}D9 25%,
+              ${designTokens.colors.background.white}CC 50%,
+              ${designTokens.colors.background.white}D9 75%,
+              ${designTokens.colors.background.white}F2 100%
             )`,
           }}
         />
         
-        {/* サイドのビネット効果 */}
+        {/* サイドのビネット効果（白をやや濃く） */}
         <div 
           className="absolute inset-0"
           style={{
             background: `radial-gradient(
               ellipse at center,
               transparent 0%,
-              transparent 50%,
-              ${designTokens.colors.background.mist}40 100%
+              transparent 45%,
+              ${designTokens.colors.background.white}60 100%
             )`,
           }}
         />
@@ -382,10 +382,10 @@ const HeroSection = ({
               color: designTokens.colors.text.primary,
             }}
           >
-            土地の記憶を、
+            あなたの周りには
             <br />
             <span className="relative inline-block mt-2">
-              <span className="relative z-10">可視化する。</span>
+              <span className="relative z-10">素敵な物語がある</span>
               <motion.span 
                 initial={{ scaleX: 0 }}
                 animate={{ scaleX: 1 }}
@@ -396,21 +396,6 @@ const HeroSection = ({
             </span>
           </motion.h1>
 
-          {/* Sub Copy */}
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.6 }}
-            className="text-lg sm:text-xl max-w-2xl mx-auto leading-relaxed"
-            style={{ 
-              fontFamily: designTokens.typography.body,
-              color: `${designTokens.colors.text.inverse}E6`,
-            }}
-          >
-            大分県全18市町村のイベント情報と、地域が紡いできた物語を
-            <br className="hidden sm:block" />
-            ひとつの地図に集約。あなたの「次の一歩」を、ここから。
-          </motion.p>
 
           {/* Search Form */}
           <motion.div
@@ -420,22 +405,22 @@ const HeroSection = ({
             className="max-w-xl mx-auto mt-12"
           >
             <ElevationCard elevation="high" padding="lg" hover={false}>
-              <div className="space-y-5">
+              <div className="space-y-4">
                 {/* Date Range */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2 text-left">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5 text-left">
                     <Label 
-                      className="text-xs font-semibold tracking-wide"
+                      className="text-sm font-semibold tracking-wide"
                       style={{ color: designTokens.colors.text.secondary }}
                     >
-                      開始日
+                    開催開始日
                     </Label>
                     <Input
                       type="date"
                       value={startDate}
                       onChange={(e) => setStartDate(e.target.value)}
                       min={todayStr}
-                      className="h-12 rounded-xl transition-all focus:ring-2"
+                      className="h-9 rounded-lg text-sm transition-all focus:ring-2"
                       style={{ 
                         borderColor: `${designTokens.colors.secondary.stone}50`,
                         backgroundColor: designTokens.colors.background.mist,
@@ -443,19 +428,19 @@ const HeroSection = ({
                       }}
                     />
                   </div>
-                  <div className="space-y-2 text-left">
+                  <div className="space-y-1.5 text-left">
                     <Label 
-                      className="text-xs font-semibold tracking-wide"
+                      className="text-sm font-semibold tracking-wide"
                       style={{ color: designTokens.colors.text.secondary }}
                     >
-                      終了日
+                    開催終了日
                     </Label>
                     <Input
                       type="date"
                       value={endDate}
                       onChange={(e) => setEndDate(e.target.value)}
                       min={startDate}
-                      className="h-12 rounded-xl transition-all focus:ring-2"
+                      className="h-9 rounded-lg text-sm transition-all focus:ring-2"
                       style={{ 
                         borderColor: `${designTokens.colors.secondary.stone}50`,
                         backgroundColor: designTokens.colors.background.mist,
@@ -468,7 +453,7 @@ const HeroSection = ({
                 {/* Area Select */}
                 <div className="space-y-2 text-left">
                   <Label 
-                    className="text-xs font-semibold tracking-wide"
+                    className="text-sm font-semibold tracking-wide"
                     style={{ color: designTokens.colors.text.secondary }}
                   >
                     エリア
@@ -496,7 +481,7 @@ const HeroSection = ({
                 {/* Target Audience */}
                 <div className="space-y-2 text-left">
                   <Label 
-                    className="text-xs font-semibold tracking-wide"
+                    className="text-sm font-semibold tracking-wide"
                     style={{ color: designTokens.colors.text.secondary }}
                   >
                     対象（任意）
@@ -1352,11 +1337,6 @@ const Header = ({ scrollPosition }: { scrollPosition: number }) => {
         <div className="container mx-auto px-6 h-16 sm:h-20 flex items-center justify-between">
           {/* Logo */}
           <a href="/" className="flex items-center gap-3">
-            <img
-              src="https://res.cloudinary.com/dz9trbwma/image/upload/v1763822849/ChatGPT_Image_2025%E5%B9%B411%E6%9C%8822%E6%97%A5_23_46_11_-_%E7%B7%A8%E9%9B%86%E6%B8%88%E3%81%BF_n1uf53.png"
-              alt="TOKUDOKU"
-              className="h-9 w-9 sm:h-10 sm:w-10"
-            />
             <span 
               className="font-semibold text-lg tracking-wider hidden sm:block"
               style={{ 
