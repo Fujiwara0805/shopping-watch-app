@@ -10,13 +10,6 @@ export {
   type TransportType,
 } from './transport-detail-input';
 export {
-  RouteTimeline,
-  SPOT_CATEGORIES,
-  type TimelineSpot,
-  type TimelineTransport,
-  type SpotCategory,
-} from './route-timeline';
-export {
   ReorderableTimeline,
   type TimelineSpotData,
 } from './reorderable-timeline';
