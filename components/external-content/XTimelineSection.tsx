@@ -110,11 +110,11 @@ export function XTimelineSection({ username, className = '' }: XTimelineSectionP
           className="text-center mb-10"
         >
           <div className="flex items-center justify-center gap-4 mb-4">
-            <div className="h-px w-12 bg-gradient-to-r from-transparent to-[#8b6914]" />
-            <p className="px-5 py-1 text-xs sm:text-sm tracking-[0.25em] font-bold text-[#8b6914] border border-[#8b6914]/30 bg-[#fff8f0]/50">
+            <div className="h-px w-12 bg-gradient-to-r from-transparent to-primary" />
+            <p className="px-5 py-1 text-xs sm:text-sm tracking-[0.25em] font-bold text-primary border border-primary/30 bg-muted/50">
               LATEST NEWS
             </p>
-            <div className="h-px w-12 bg-gradient-to-l from-transparent to-[#8b6914]" />
+            <div className="h-px w-12 bg-gradient-to-l from-transparent to-primary" />
           </div>
           
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-[#3d2914] tracking-tight mt-4 font-serif">

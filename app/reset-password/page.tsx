@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/form";
 import Link from "next/link";
 import { Breadcrumb } from '@/components/seo/breadcrumb';
+import { designTokens } from '@/lib/constants/colors';
 
 const resetPasswordSchema = z.object({
   password: z.string().min(6, { message: "パスワードは6文字以上で入力してください。" }),
@@ -141,12 +142,13 @@ export default function ResetPasswordPage() {
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="flex flex-col items-center justify-center min-h-screen p-4 bg-[#73370c]/5"
+        className="flex flex-col items-center justify-center min-h-screen p-4"
+        style={{ backgroundColor: `${designTokens.colors.primary.base}08` }}
       >
-        <motion.div className="bg-white p-8 sm:p-10 rounded-xl shadow-xl w-full max-w-md text-center border border-[#73370c]/10">
-          <Loader2 className="h-16 w-16 animate-spin text-[#73370c] mx-auto mb-6" />
-          <p className="text-lg text-[#73370c]">リセットリンクを確認中...</p>
-          <p className="text-sm text-[#73370c]/60 mt-2">しばらくお待ちください</p>
+        <motion.div className="p-8 sm:p-10 rounded-xl shadow-xl w-full max-w-md text-center border" style={{ backgroundColor: designTokens.colors.background.white, borderColor: `${designTokens.colors.primary.base}20` }}>
+          <Loader2 className="h-16 w-16 animate-spin mx-auto mb-6" style={{ color: designTokens.colors.primary.base }} />
+          <p className="text-lg" style={{ color: designTokens.colors.text.primary }}>リセットリンクを確認中...</p>
+          <p className="text-sm mt-2" style={{ color: designTokens.colors.text.secondary }}>しばらくお待ちください</p>
         </motion.div>
       </motion.div>
     );
@@ -159,27 +161,29 @@ export default function ResetPasswordPage() {
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.3 }}
-        className="flex flex-col items-center justify-center min-h-screen p-4 bg-[#73370c]/5"
+        className="flex flex-col items-center justify-center min-h-screen p-4"
+        style={{ backgroundColor: `${designTokens.colors.primary.base}08` }}
       >
         <motion.div
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.2, duration: 0.4 }}
-          className="bg-white p-8 sm:p-10 rounded-xl shadow-xl w-full max-w-md text-center border border-red-200"
+          className="p-8 sm:p-10 rounded-xl shadow-xl w-full max-w-md text-center border"
+          style={{ backgroundColor: designTokens.colors.background.white, borderColor: designTokens.colors.functional.error }}
         >
-          <AlertTriangle className="h-16 w-16 text-red-500 mx-auto mb-4" />
-          <h1 className="text-3xl sm:text-4xl font-bold text-red-600 mb-4">
+          <AlertTriangle className="h-16 w-16 mx-auto mb-4" style={{ color: designTokens.colors.functional.error }} />
+          <h1 className="text-3xl sm:text-4xl font-bold mb-4" style={{ color: designTokens.colors.functional.error }}>
             無効なリンク
           </h1>
-          <p className="text-red-700/80 mb-8 text-sm sm:text-base leading-relaxed">
+          <p className="mb-8 text-sm sm:text-base leading-relaxed" style={{ color: designTokens.colors.text.secondary }}>
             {tokenError}
           </p>
           
           <div className="space-y-4">
             <Link href="/forgot-password" className="w-full">
               <Button
-                className="w-full bg-[#73370c] hover:bg-[#73370c]/90 text-white text-base sm:text-lg py-6 sm:py-7 shadow-md rounded-lg transition-colors"
-                style={{ fontSize: '16px' }}
+                className="w-full text-white text-base sm:text-lg py-6 sm:py-7 shadow-md rounded-lg transition-colors"
+                style={{ fontSize: '16px', backgroundColor: designTokens.colors.primary.base }}
               >
                 新しいリセットリンクを取得
               </Button>
@@ -187,8 +191,8 @@ export default function ResetPasswordPage() {
             <Link href="/login" className="w-full">
               <Button
                 variant="ghost"
-                className="w-full text-[#73370c]/70 hover:text-[#73370c] hover:bg-[#73370c]/5 text-sm sm:text-base py-4 rounded-lg transition-colors border border-[#73370c]/10"
-                style={{ fontSize: '16px' }}
+                className="w-full text-sm sm:text-base py-4 rounded-lg transition-colors border"
+                style={{ fontSize: '16px', color: designTokens.colors.text.secondary, borderColor: `${designTokens.colors.primary.base}20` }}
               >
                 ログインページに戻る
               </Button>
@@ -204,7 +208,8 @@ export default function ResetPasswordPage() {
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.3 }}
-      className="flex flex-col items-center justify-center min-h-screen p-4 bg-[#73370c]/5"
+      className="flex flex-col items-center justify-center min-h-screen p-4"
+      style={{ backgroundColor: `${designTokens.colors.primary.base}08` }}
     >
       {/* パンくずリスト */}
       <div className="w-full max-w-md mb-4">
@@ -215,7 +220,8 @@ export default function ResetPasswordPage() {
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.2, duration: 0.4 }}
-        className="bg-white p-8 sm:p-10 rounded-xl shadow-xl w-full max-w-md text-center border border-[#73370c]/10"
+        className="p-8 sm:p-10 rounded-xl shadow-xl w-full max-w-md text-center border"
+        style={{ backgroundColor: designTokens.colors.background.white, borderColor: `${designTokens.colors.primary.base}20` }}
       >
           {isResetSuccess ? (
             <motion.div
@@ -224,17 +230,18 @@ export default function ResetPasswordPage() {
               transition={{ delay: 0.3, duration: 0.5 }}
               className="flex flex-col items-center"
             >
-              <CheckCircle className="h-16 w-16 text-green-500 mb-4" />
-              <h1 className="text-3xl sm:text-4xl font-bold text-[#73370c] mb-4">
+              <CheckCircle className="h-16 w-16 mb-4" style={{ color: designTokens.colors.functional.success }} />
+              <h1 className="text-3xl sm:text-4xl font-bold mb-4" style={{ color: designTokens.colors.text.primary }}>
                 パスワードリセット完了
               </h1>
-              <p className="text-[#73370c]/70 mb-8 text-sm sm:text-base">
+              <p className="mb-8 text-sm sm:text-base" style={{ color: designTokens.colors.text.secondary }}>
                 パスワードが正常に更新されました。<br />
                 自動的にログインページに移動します...
               </p>
-              <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
+              <div className="w-full rounded-full h-2 mb-4" style={{ backgroundColor: designTokens.colors.background.cloud }}>
                 <motion.div 
-                  className="bg-[#73370c] h-2 rounded-full"
+                  className="h-2 rounded-full"
+                  style={{ backgroundColor: designTokens.colors.primary.base }}
                   initial={{ width: "0%" }}
                   animate={{ width: "100%" }}
                   transition={{ duration: 3 }}
@@ -242,8 +249,8 @@ export default function ResetPasswordPage() {
               </div>
               <Link href="/login" className="w-full">
                 <Button
-                  className="w-full bg-[#73370c] hover:bg-[#73370c]/90 text-white text-base sm:text-lg py-6 sm:py-7 shadow-md rounded-lg transition-colors"
-                  style={{ fontSize: '16px' }}
+                  className="w-full text-white text-base sm:text-lg py-6 sm:py-7 shadow-md rounded-lg transition-colors"
+                  style={{ fontSize: '16px', backgroundColor: designTokens.colors.primary.base }}
                 >
                   すぐにログインページへ
                 </Button>
@@ -257,18 +264,19 @@ export default function ResetPasswordPage() {
                 transition={{ delay: 0.3, duration: 0.5, type: "spring" }}
                 className="mb-6"
               >
-                <Key className="h-16 w-16 text-[#73370c] mx-auto mb-4" />
+                <Key className="h-16 w-16 mx-auto mb-4" style={{ color: designTokens.colors.primary.base }} />
               </motion.div>
 
               <motion.h1
-                className="text-3xl sm:text-4xl font-bold text-[#73370c] mb-4"
+                className="text-3xl sm:text-4xl font-bold mb-4"
+                style={{ color: designTokens.colors.text.primary }}
                 initial={{ letterSpacing: "-0.05em" }}
                 animate={{ letterSpacing: "0em" }}
                 transition={{ delay: 0.3, duration: 0.5 }}
               >
                 新しいパスワードを設定
               </motion.h1>
-              <p className="text-[#73370c]/70 mb-8 text-sm sm:text-base">
+              <p className="mb-8 text-sm sm:text-base" style={{ color: designTokens.colors.text.secondary }}>
                 安全で覚えやすいパスワードを入力してください。
               </p>
 
@@ -279,14 +287,15 @@ export default function ResetPasswordPage() {
                     name="password"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-[#73370c]">新しいパスワード</FormLabel>
+                        <FormLabel style={{ color: designTokens.colors.text.primary }}>新しいパスワード</FormLabel>
                         <FormControl>
                           <div className="relative">
                             <Input
                               type={showPassword ? "text" : "password"}
                               placeholder="新しいパスワード (6文字以上)"
                               {...field}
-                              className="pr-10 text-[#73370c] border-[#73370c]/20 focus-visible:ring-[#73370c]"
+                              className="pr-10 focus-visible:ring-2"
+                              style={{ color: designTokens.colors.text.primary, borderColor: `${designTokens.colors.primary.base}30` }}
                             />
                             <Button
                               type="button"
@@ -296,14 +305,14 @@ export default function ResetPasswordPage() {
                               onClick={() => setShowPassword((prev) => !prev)}
                             >
                               {showPassword ? (
-                                <EyeOff className="h-4 w-4 text-[#73370c]/60" />
+                                <EyeOff className="h-4 w-4" style={{ color: designTokens.colors.text.secondary }} />
                               ) : (
-                                <Eye className="h-4 w-4 text-[#73370c]/60" />
+                                <Eye className="h-4 w-4" style={{ color: designTokens.colors.text.secondary }} />
                               )}
                             </Button>
                           </div>
                         </FormControl>
-                        <FormMessage className="text-red-500 text-xs" />
+                        <FormMessage className="text-xs" style={{ color: designTokens.colors.functional.error }} />
                       </FormItem>
                     )}
                   />
@@ -312,14 +321,15 @@ export default function ResetPasswordPage() {
                     name="confirmPassword"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-[#73370c]">パスワード確認</FormLabel>
+                        <FormLabel style={{ color: designTokens.colors.text.primary }}>パスワード確認</FormLabel>
                         <FormControl>
                           <div className="relative">
                             <Input
                               type={showConfirmPassword ? "text" : "password"}
                               placeholder="新しいパスワードを再入力"
                               {...field}
-                              className="pr-10 text-[#73370c] border-[#73370c]/20 focus-visible:ring-[#73370c]"
+                              className="pr-10 focus-visible:ring-2"
+                              style={{ color: designTokens.colors.text.primary, borderColor: `${designTokens.colors.primary.base}30` }}
                             />
                             <Button
                               type="button"
@@ -329,14 +339,14 @@ export default function ResetPasswordPage() {
                               onClick={() => setShowConfirmPassword((prev) => !prev)}
                             >
                               {showConfirmPassword ? (
-                                <EyeOff className="h-4 w-4 text-[#73370c]/60" />
+                                <EyeOff className="h-4 w-4" style={{ color: designTokens.colors.text.secondary }} />
                               ) : (
-                                <Eye className="h-4 w-4 text-[#73370c]/60" />
+                                <Eye className="h-4 w-4" style={{ color: designTokens.colors.text.secondary }} />
                               )}
                             </Button>
                           </div>
                         </FormControl>
-                        <FormMessage className="text-red-500 text-xs" />
+                        <FormMessage className="text-xs" style={{ color: designTokens.colors.functional.error }} />
                       </FormItem>
                     )}
                   />
@@ -344,7 +354,8 @@ export default function ResetPasswordPage() {
                     <Button
                       type="submit"
                       disabled={isLoading}
-                      className="w-full bg-[#73370c] hover:bg-[#73370c]/90 text-white text-base sm:text-lg py-6 sm:py-7 shadow-md rounded-lg transition-colors"
+                      className="w-full text-white text-base sm:text-lg py-6 sm:py-7 shadow-md rounded-lg transition-colors"
+                      style={{ backgroundColor: designTokens.colors.primary.base }}
                       style={{ fontSize: '16px' }}
                     >
                       {isLoading ? (
@@ -357,7 +368,7 @@ export default function ResetPasswordPage() {
                 </form>
               </Form>
 
-              <div className="text-xs text-[#73370c]/60 space-y-1">
+              <div className="text-xs space-y-1" style={{ color: designTokens.colors.text.secondary }}>
                 <p>💡 パスワードの推奨事項：</p>
                 <p>• 6文字以上で設定してください</p>
                 <p>• 数字と文字を組み合わせると安全です</p>

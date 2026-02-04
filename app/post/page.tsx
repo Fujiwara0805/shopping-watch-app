@@ -856,7 +856,7 @@ export default function PostPage() {
                           variant="ghost"
                           size="sm"
                           onClick={() => setShowTemplateModal(true)}
-                          className="text-[#73370c] hover:text-[#5c2b0a] hover:bg-[#fef3e8] text-sm font-normal"
+                          className="text-primary hover:text-primary hover:bg-background text-sm font-normal"
                         >
                           定型文
                         </Button>
@@ -974,7 +974,7 @@ export default function PostPage() {
                 transition={{ duration: 0.3, delay: 0.2 }}
                 className="space-y-4"
               >
-                <div className="flex items-center justify-between p-3 bg-[#73370c] text-white rounded-lg shadow-md">
+                <div className="flex items-center justify-between p-3 bg-primary text-white rounded-lg shadow-md">
                   <div className="flex items-center">
                     <Settings className="mr-2 h-6 w-6 text-white" />
                     <h3 className="text-lg font-semibold">詳細情報</h3>
@@ -984,7 +984,7 @@ export default function PostPage() {
                     variant="ghost"
                     size="sm"
                     onClick={() => setShowOptionalFields(!showOptionalFields)}
-                    className="text-white hover:text-white hover:bg-[#5c2b0a]"
+                    className="text-primary-foreground hover:text-primary-foreground hover:bg-primary/90"
                   >
                     {showOptionalFields ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
                   </Button>
@@ -1012,24 +1012,24 @@ export default function PostPage() {
                           transition={{ duration: 0.2 }}
                           className={cn(
                             "border rounded-lg overflow-hidden transition-all",
-                            isExpanded ? "border-[#73370c] shadow-md" : "border-gray-200"
+                            isExpanded ? "border-primary shadow-md" : "border-border"
                           )}
                         >
                           <div
                             className={cn(
                               "flex items-center justify-between p-3 cursor-pointer transition-colors",
-                              isExpanded ? "bg-[#fef3e8]" : "bg-gray-50 hover:bg-gray-100"
+                              isExpanded ? "bg-background" : "bg-muted hover:bg-muted/80"
                             )}
                             onClick={() => toggleOptionalField(field as keyof typeof optionalFieldsExpanded)}
                           >
                             <div className="flex items-center">
-                              <Icon className={cn("mr-2 h-5 w-5", isExpanded ? "text-[#73370c]" : "text-gray-600")} />
-                              <span className={cn("font-bold", isExpanded ? "text-[#73370c]" : "text-gray-700")}>
+                              <Icon className={cn("mr-2 h-5 w-5", isExpanded ? "text-primary" : "text-muted-foreground")} />
+                              <span className={cn("font-bold", isExpanded ? "text-primary" : "text-foreground")}>
                                 {fieldInfo.label}
                                 {isRequired && <span className="text-destructive ml-1">※</span>}
                               </span>
                             </div>
-                            {isExpanded ? <ChevronUp className="h-5 w-5 text-[#73370c]" /> : <ChevronDown className="h-5 w-5 text-gray-400" />}
+                            {isExpanded ? <ChevronUp className="h-5 w-5 text-primary" /> : <ChevronDown className="h-5 w-5 text-muted-foreground" />}
                           </div>
 
                           {isExpanded && (
@@ -1090,7 +1090,7 @@ export default function PostPage() {
                                         <FormControl>
                                           <input
                                             type="date"
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#73370c]"
+                                            className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
                                             {...field}
                                           />
                                         </FormControl>
@@ -1107,7 +1107,7 @@ export default function PostPage() {
                                         <FormControl>
                                           <input
                                             type="date"
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#73370c]"
+                                            className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
                                             {...field}
                                           />
                                         </FormControl>
@@ -1226,11 +1226,11 @@ export default function PostPage() {
                                     />
                                     <label
                                       htmlFor="image-upload"
-                                      className="cursor-pointer flex items-center justify-center p-6 border-2 border-dashed border-gray-300 rounded-lg hover:border-[#73370c] hover:bg-[#fef3e8] transition-colors"
+                                      className="cursor-pointer flex items-center justify-center p-6 border-2 border-dashed border-input rounded-lg hover:border-primary hover:bg-background transition-colors"
                                     >
                                       <div className="text-center">
-                                        <Upload className="mx-auto h-12 w-12 text-gray-400" />
-                                        <p className="mt-2 text-sm text-gray-600">クリックして画像を選択</p>
+                                        <Upload className="mx-auto h-12 w-12 text-muted-foreground" />
+                                        <p className="mt-2 text-sm text-muted-foreground">クリックして画像を選択</p>
                                         <p className="text-xs text-gray-500">JPG, PNG, WEBP（各5MB以下）</p>
                                       </div>
                                     </label>
@@ -1243,7 +1243,7 @@ export default function PostPage() {
                                               <img 
                                                 src={url} 
                                             alt={`Preview ${index + 1}`}
-                                            className="w-full h-32 object-cover rounded-lg border border-gray-200"
+                                            className="w-full h-32 object-cover rounded-lg border border-border"
                                               />
                                           <button
                                               type="button"
@@ -1298,11 +1298,11 @@ export default function PostPage() {
                                     />
                                     <label
                                       htmlFor="file-upload"
-                                      className="cursor-pointer flex items-center justify-center p-6 border-2 border-dashed border-gray-300 rounded-lg hover:border-[#73370c] hover:bg-[#fef3e8] transition-colors"
+                                      className="cursor-pointer flex items-center justify-center p-6 border-2 border-dashed border-input rounded-lg hover:border-primary hover:bg-background transition-colors"
                                     >
                                       <div className="text-center">
-                                        <Upload className="mx-auto h-12 w-12 text-gray-400" />
-                                        <p className="mt-2 text-sm text-gray-600">クリックしてファイルを選択</p>
+                                        <Upload className="mx-auto h-12 w-12 text-muted-foreground" />
+                                        <p className="mt-2 text-sm text-muted-foreground">クリックしてファイルを選択</p>
                                         <p className="text-xs text-gray-500">PDF, Word, Excel（各10MB以下）</p>
                                       </div>
                                     </label>
@@ -1311,10 +1311,10 @@ export default function PostPage() {
                                   {fileFiles.length > 0 && (
                                     <div className="space-y-2">
                                         {fileFiles.map((file, index) => (
-                                        <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
+                                        <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-border">
                                           <div className="flex items-center space-x-2 flex-1 min-w-0">
                                             <FileText className="h-5 w-5 text-blue-600 flex-shrink-0" />
-                                            <span className="text-sm text-gray-700 truncate">{file.name}</span>
+                                            <span className="text-sm text-foreground truncate">{file.name}</span>
                                             </div>
                                           <button
                                               type="button"
@@ -1337,20 +1337,20 @@ export default function PostPage() {
                                   name="enableCheckin"
                                   render={({ field }) => (
                                     <FormItem>
-                                      <div className="p-4 bg-gradient-to-r from-orange-50 to-amber-50 rounded-lg border-2 border-[#73370c]/20">
+                                      <div className="p-4 bg-gradient-to-r from-background to-muted rounded-lg border-2 border-primary/20">
                                         <div className="flex items-start space-x-3">
                                           <input
                                             type="checkbox"
                                             id="enable-checkin"
                                             checked={field.value}
                                             onChange={(e) => field.onChange(e.target.checked)}
-                                            className="mt-1 h-5 w-5 rounded border-gray-300 text-[#73370c] focus:ring-[#73370c]"
+                                            className="mt-1 h-5 w-5 rounded border-input text-primary focus:ring-primary"
                                           />
                                           <div className="flex-1">
-                                            <Label htmlFor="enable-checkin" className="cursor-pointer text-base font-semibold text-[#73370c]">
+                                            <Label htmlFor="enable-checkin" className="cursor-pointer text-base font-semibold text-primary">
                                               📍 GPSチェックイン対象にする
                                             </Label>
-                                            <p className="text-sm text-gray-600 mt-1">
+                                            <p className="text-sm text-muted-foreground mt-1">
                                               有効にすると、ユーザーが現地でGPSチェックインできるようになります。（500m以内）
                                             </p>
                                           </div>
@@ -1455,7 +1455,7 @@ export default function PostPage() {
             title="イベント掲載期間の設定"
           >
             <div className="pt-2 space-y-4">
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-muted-foreground">
                 イベントの掲載期間を設定してください（1-90日）
               </p>
               
@@ -1501,7 +1501,7 @@ export default function PostPage() {
             title="定型文を選択"
           >
             <div className="pt-2 space-y-4">
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-muted-foreground">
                 以下から定型文を選択して投稿内容に適用できます。適用後に編集も可能です。
               </p>
               
@@ -1512,10 +1512,10 @@ export default function PostPage() {
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.2, delay: index * 0.05 }}
-                      className="border border-gray-200 rounded-lg p-4 hover:border-[#73370c] hover:bg-[#fef3e8] transition-all cursor-pointer"
+                      className="border border-border rounded-lg p-4 hover:border-primary hover:bg-background transition-all cursor-pointer"
                       onClick={() => applyTemplate(template)}
                     >
-                      <div className="text-sm text-gray-700 whitespace-pre-wrap line-clamp-4">
+                      <div className="text-sm text-foreground whitespace-pre-wrap line-clamp-4">
                         {template}
                       </div>
                       <div className="mt-2 flex justify-end">
@@ -1646,7 +1646,7 @@ function PlaceAutocompleteField({
     return (
       <div className="flex items-center space-x-2 p-4">
         <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
-        <span className="text-sm text-gray-600">Google Maps APIを読み込み中...</span>
+        <span className="text-sm text-muted-foreground">Google Maps APIを読み込み中...</span>
       </div>
     );
   }
@@ -1665,11 +1665,11 @@ function PlaceAutocompleteField({
                   ref={inputRef}
                   type="text"
                   placeholder="店舗名や施設名で検索..."
-                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#73370c]"
+                  className="w-full px-4 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
                   style={{ fontSize: '16px' }}
                   defaultValue={field.value}
                 />
-                <MapPin className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#73370c] pointer-events-none" />
+                <MapPin className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-primary pointer-events-none" />
               </div>
             </FormControl>
             <FormMessage />

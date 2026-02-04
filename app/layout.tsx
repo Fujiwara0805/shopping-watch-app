@@ -180,8 +180,8 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#73370c' },
-    { media: '(prefers-color-scheme: dark)', color: '#1a1a2e' },
+    { media: '(prefers-color-scheme: light)', color: '#6E7F80' },
+    { media: '(prefers-color-scheme: dark)', color: '#5A6B6C' },
   ],
 };
 
@@ -204,7 +204,7 @@ export default function RootLayout({
         
         {/* 追加のSEOメタタグ（Metadata APIで設定できないもの） */}
         <meta name="mobile-web-app-capable" content="yes" />
-        <meta name="msapplication-TileColor" content="#73370c" />
+        <meta name="msapplication-TileColor" content="#6E7F80" />
         <meta name="msapplication-config" content="/browserconfig.xml" />
         
         {/* 構造化データ (JSON-LD) - サイト全体 */}

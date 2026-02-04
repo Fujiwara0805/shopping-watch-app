@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { COLORS } from '@/lib/constants/colors';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 
 const feedbackSchema = z.object({
@@ -262,7 +263,7 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose })
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel className="text-xl font-semibold text-gray-900 flex items-center">
-                              <MessageSquare className="h-6 w-6 mr-2" style={{ color: '#73370c' }} />
+                              <MessageSquare className="h-6 w-6 mr-2" style={{ color: COLORS.primary }} />
                               コメント（任意）
                             </FormLabel>
                             <FormControl>
@@ -290,7 +291,7 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose })
                           type="submit"
                           disabled={!isValid || isSubmitting}
                           className="w-full py-4 text-xl font-semibold text-white hover:opacity-90 transition-opacity"
-                          style={{ background: 'linear-gradient(135deg, #73370c 0%, #8b4513 100%)' }}
+                          style={{ backgroundColor: COLORS.primary }}
                         >
                           {isSubmitting ? (
                             <>
@@ -341,14 +342,14 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose })
                   className="rounded-lg p-4 border-2"
                   style={{ 
                     background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
-                    borderColor: '#73370c'
+                    borderColor: COLORS.primary
                   }}
                 >
-                  <div className="flex items-center justify-center mb-2" style={{ color: '#73370c' }}>
+                  <div className="flex items-center justify-center mb-2" style={{ color: COLORS.primary }}>
                     <Gift className="h-6 w-6 mr-2" />
                     <span className="font-semibold text-lg">今後もよろしくお願いします</span>
                   </div>
-                  <p className="text-base" style={{ color: '#73370c' }}>
+                  <p className="text-base" style={{ color: COLORS.primary }}>
                     引き続きトクドクをお楽しみください！
                   </p>
                 </motion.div>

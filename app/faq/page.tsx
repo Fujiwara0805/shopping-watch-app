@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
 import { Breadcrumb } from '@/components/seo/breadcrumb';
+import { designTokens } from '@/lib/constants/colors';
 
 /**
  * FAQページ - AI検索エンジン向けに最適化
@@ -115,7 +116,7 @@ export default function FAQPage() {
   const [openCategory, setOpenCategory] = useState<string | null>(null);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#fef3e7] to-white">
+    <div className="min-h-screen" style={{ background: `linear-gradient(to bottom, ${designTokens.colors.background.mist}, white)` }}>
       {/* パンくずリスト */}
       <div className="px-4 sm:px-8 pt-4">
         <Breadcrumb />
@@ -129,7 +130,7 @@ export default function FAQPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-[#73370c] mb-6">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold mb-6" style={{ color: designTokens.colors.text.primary }}>
               よくある質問
             </h1>
             <p className="text-xl sm:text-2xl text-gray-700 leading-relaxed">
@@ -153,8 +154,8 @@ export default function FAQPage() {
                 viewport={{ once: true }}
                 className="bg-white rounded-2xl shadow-lg overflow-hidden"
               >
-                <div className="bg-[#fef3e8] px-6 py-4 border-b border-gray-200">
-                  <h2 className="text-2xl font-bold text-[#73370c]">
+                <div className="px-6 py-4 border-b border-gray-200" style={{ backgroundColor: designTokens.colors.background.mist }}>
+                  <h2 className="text-2xl font-bold" style={{ color: designTokens.colors.text.primary }}>
                     {category.category}
                   </h2>
                 </div>
@@ -169,7 +170,7 @@ export default function FAQPage() {
                       >
                         <AccordionTrigger className="text-left hover:no-underline py-4">
                           <div className="flex items-start gap-3 pr-4">
-                            <span className="flex-shrink-0 w-8 h-8 bg-[#73370c] text-white rounded-full flex items-center justify-center text-sm font-bold">
+                            <span className="flex-shrink-0 w-8 h-8 text-white rounded-full flex items-center justify-center text-sm font-bold" style={{ backgroundColor: designTokens.colors.primary.base }}>
                               Q
                             </span>
                             <span className="text-lg font-bold text-gray-800">
@@ -179,7 +180,7 @@ export default function FAQPage() {
                         </AccordionTrigger>
                         <AccordionContent>
                           <div className="flex items-start gap-3 pl-11 pr-4 py-2">
-                            <span className="flex-shrink-0 w-8 h-8 bg-[#fef3e8] text-[#73370c] rounded-full flex items-center justify-center text-sm font-bold">
+                            <span className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold" style={{ backgroundColor: designTokens.colors.background.mist, color: designTokens.colors.primary.base }}>
                               A
                             </span>
                             <p className="text-gray-700 leading-relaxed">
@@ -198,7 +199,7 @@ export default function FAQPage() {
       </section>
 
       {/* お問い合わせCTA */}
-      <section className="py-20 px-4 sm:px-8 bg-gradient-to-br from-[#fef3e8] to-[#fff5eb]">
+      <section className="py-20 px-4 sm:px-8" style={{ background: `linear-gradient(to bottom right, ${designTokens.colors.background.mist}, ${designTokens.colors.background.white})` }}>
         <div className="container mx-auto max-w-4xl text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -206,7 +207,7 @@ export default function FAQPage() {
             transition={{ duration: 0.6 }}
             viewport={{ once: true }}
           >
-            <h2 className="text-3xl sm:text-4xl font-bold text-[#73370c] mb-6">
+            <h2 className="text-3xl sm:text-4xl font-bold mb-6" style={{ color: designTokens.colors.text.primary }}>
               解決しませんでしたか？
             </h2>
             <p className="text-xl text-gray-700 mb-8">
@@ -216,7 +217,8 @@ export default function FAQPage() {
             <Link href="/contact">
               <Button
                 size="lg"
-                className="h-16 px-12 text-xl font-bold rounded-full bg-[#73370c] hover:bg-[#5c2a0a]"
+                className="h-16 px-12 text-xl font-bold rounded-full text-white"
+                style={{ backgroundColor: designTokens.colors.primary.base }}
               >
                 お問い合わせ
               </Button>

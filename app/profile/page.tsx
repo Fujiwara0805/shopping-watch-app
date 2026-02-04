@@ -5,17 +5,7 @@ import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Bell, LogOut, Settings, Edit,  Store as StoreIcon, Calendar,  User, CheckCircle,  ArrowRight, Trophy, Compass, ShoppingBag, Megaphone, Feather } from 'lucide-react';
 
-// 🎨 LPカラーパレット
-const COLORS = {
-  primary: '#8b6914',      // ゴールドブラウン
-  primaryDark: '#3d2914',  // ダークブラウン
-  secondary: '#5c3a21',    // ミディアムブラウン
-  background: '#f5e6d3',   // ベージュ
-  surface: '#fff8f0',      // オフホワイト
-  cream: '#ffecd2',        // クリーム
-  border: '#d4c4a8',       // ライトベージュ
-  mint: '#e8f4e5',         // ミントグリーン
-};
+import { COLORS } from '@/lib/constants/colors';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -68,12 +58,12 @@ const StatCard = ({ icon: Icon, title, value, subtitle, gradient, delay = 0 }: {
   >
     <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent" />
     <div className="relative z-10 text-center">
-      <div className="flex items-center justify-center mb-2">
-        <Icon className="h-4 w-4 text-gray-700" />
+        <div className="flex items-center justify-center mb-2">
+        <Icon className="h-4 w-4" style={{ color: COLORS.textPrimary }} />
       </div>
-      <div className="text-3xl font-bold mb-1 text-gray-800 min-h-8 flex items-center justify-center">{value}</div>
-      <p className="text-gray-600 text-xs font-medium">{title}</p>
-      {subtitle && <p className="text-gray-500 text-xs mt-1">{subtitle}</p>}
+      <div className="text-3xl font-bold mb-1 min-h-8 flex items-center justify-center" style={{ color: COLORS.textPrimary }}>{value}</div>
+      <p className="text-xs font-medium" style={{ color: COLORS.textSecondary }}>{title}</p>
+      {subtitle && <p className="text-xs mt-1" style={{ color: COLORS.textMuted }}>{subtitle}</p>}
     </div>
   </motion.div>
 );
@@ -97,7 +87,7 @@ const SettingItem = ({ icon: Icon, title, description, action, variant = "defaul
     <Button
       variant="ghost"
       className={cn(
-        "w-full justify-start p-3 h-auto rounded-lg border border-gray-100",
+        "w-full justify-start p-3 h-auto rounded-lg border",
         "hover:shadow-sm transition-all duration-300",
         "bg-white",
         variant === "danger" && "hover:bg-red-50 hover:border-red-200"
@@ -131,7 +121,7 @@ const SettingItem = ({ icon: Icon, title, description, action, variant = "defaul
           )}>
             {loading ? (variant === "danger" ? "ログアウト中..." : "読み込み中...") : title}
           </p>
-          <p className="text-xs text-gray-500 truncate">{description}</p>
+          <p className="text-xs truncate" style={{ color: COLORS.textMuted }}>{description}</p>
         </div>
       </div>
     </Button>
@@ -152,7 +142,8 @@ const LineNotificationSettings = ({
 }) => (
   <motion.div
     whileHover={{ scale: 1.01 }}
-    className="p-3 bg-white rounded-lg border border-gray-100 shadow-sm"
+    className="p-3 bg-white rounded-lg border shadow-sm"
+    style={{ borderColor: COLORS.border }}
   >
     <div className="space-y-3">
       <div className="flex items-center justify-between">
@@ -160,17 +151,17 @@ const LineNotificationSettings = ({
           <div className="flex items-center space-x-2">
             <Label className="text-sm font-medium">LINE通知</Label>
             {isConnected ? (
-              <Badge variant="secondary" className="bg-green-100 text-green-800 text-xs">
+              <Badge variant="secondary" className="text-xs" style={{ backgroundColor: `${COLORS.success}20`, color: COLORS.success }}>
                 <CheckCircle className="h-3 w-3 mr-1" />
                 接続済み
               </Badge>
             ) : (
-              <Badge variant="secondary" className="bg-gray-100 text-gray-600 text-xs">
+              <Badge variant="secondary" className="text-xs" style={{ backgroundColor: COLORS.border, color: COLORS.textSecondary }}>
                 未接続
               </Badge>
             )}
           </div>
-          <p className="text-xs text-gray-500">
+          <p className="text-xs" style={{ color: COLORS.textMuted }}>
             {isConnected 
               ? "LINEでお得情報を受信中です" 
               : "LINEでお得情報を受け取る"
@@ -186,7 +177,8 @@ const LineNotificationSettings = ({
             size="sm"
             onClick={onRefreshConnection}
             disabled={loading}
-            className="text-green-600 border-green-200 hover:bg-green-50 text-xs px-3 py-1 flex-1"
+            className="text-xs px-3 py-1 flex-1"
+            style={{ color: COLORS.success, borderColor: COLORS.success }}
           >
             {loading ? (
               <motion.div
@@ -206,7 +198,8 @@ const LineNotificationSettings = ({
             variant="outline"
             size="sm"
             onClick={onNavigateToLineConnect}
-            className="text-green-600 border-green-200 hover:bg-green-500 hover:text-white text-xs px-3 py-1 flex-1"
+            className="text-xs px-3 py-1 flex-1"
+            style={{ color: COLORS.success, borderColor: COLORS.success }}
           >
             <svg className="h-3 w-3 mr-1" viewBox="0 0 24 24" fill="currentColor">
               <path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63h2.386c.346 0 .627.285.627.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63.346 0 .628.285.628.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.282.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/>
@@ -462,7 +455,7 @@ function ProfilePageContent() {
                     alt={profile.display_name ?? 'User Avatar'}
                   />
                 ) : (
-                  <AvatarFallback className="text-lg font-bold bg-gradient-to-br from-purple-500 to-pink-500 text-white">
+                  <AvatarFallback className="text-lg font-bold text-white" style={{ backgroundColor: COLORS.primary }}>
                     {profile.display_name?.charAt(0).toUpperCase() ?? 'U'}
                   </AvatarFallback>
                 )}
@@ -517,7 +510,7 @@ function ProfilePageContent() {
             transition={{ delay: 0.1 }}
             className="space-y-2"
           >
-            <h3 className="text-lg font-bold flex items-center mb-2" style={{ color: COLORS.primaryDark, fontFamily: "'Noto Serif JP', serif" }}>
+            <h3 className="text-lg font-bold flex items-center mb-2" style={{ color: COLORS.textPrimary, fontFamily: "'Noto Serif JP', serif" }}>
               <Bell className="h-5 w-5 mr-2" style={{ color: COLORS.primary }} />
               通知設定
             </h3>
@@ -539,7 +532,7 @@ function ProfilePageContent() {
             transition={{ delay: 0.15 }}
             className="space-y-2"
           >
-            <h3 className="text-lg font-bold flex items-center mb-2" style={{ color: COLORS.primaryDark, fontFamily: "'Noto Serif JP', serif" }}>
+            <h3 className="text-lg font-bold flex items-center mb-2" style={{ color: COLORS.textPrimary, fontFamily: "'Noto Serif JP', serif" }}>
               <Compass className="h-5 w-5 mr-2" style={{ color: COLORS.primary }} />
               My Map設定
             </h3>
@@ -572,7 +565,7 @@ function ProfilePageContent() {
             transition={{ delay: 0.2 }}
             className="space-y-2"
           >
-            <h3 className="text-lg font-bold flex items-center mb-2" style={{ color: COLORS.primaryDark, fontFamily: "'Noto Serif JP', serif" }}>
+            <h3 className="text-lg font-bold flex items-center mb-2" style={{ color: COLORS.textPrimary, fontFamily: "'Noto Serif JP', serif" }}>
               <User className="h-5 w-5 mr-2" style={{ color: COLORS.primary }} />
               アカウント設定
             </h3>
@@ -586,18 +579,19 @@ function ProfilePageContent() {
               >
                 <Button
                   variant="ghost"
-                  className="w-full justify-start p-3 h-auto rounded-lg border border-gray-100 hover:shadow-sm transition-all duration-300 bg-gradient-to-r from-orange-50 to-amber-50 hover:from-orange-100 hover:to-amber-100"
+                  className="w-full justify-start p-3 h-auto rounded-lg border hover:shadow-sm transition-all duration-300"
+                  style={{ borderColor: COLORS.border, backgroundColor: `${COLORS.cream}20` }}
                   onClick={() => setStampBoardOpen(true)}
                 >
                   <div className="flex items-center space-x-3 w-full">
-                    <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-[#73370c] to-[#a04d14] flex items-center justify-center">
+                    <div className="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: COLORS.primary }}>
                       <Trophy className="h-5 w-5 text-white" />
                     </div>
                     <div className="flex-1 text-left min-w-0">
-                      <p className="font-medium text-sm group-hover:translate-x-1 transition-transform duration-200 text-[#73370c]">
+                      <p className="font-medium text-sm group-hover:translate-x-1 transition-transform duration-200" style={{ color: COLORS.primary }}>
                         スタンプボード
                       </p>
-                      <p className="text-xs text-gray-600 truncate">チェックインスタンプを確認</p>
+                      <p className="text-xs truncate" style={{ color: COLORS.textSecondary }}>チェックインスタンプを確認</p>
                     </div>
                     <ArrowRight className="h-4 w-4 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-200" style={{ color: COLORS.primary }} />
                   </div>
@@ -670,7 +664,7 @@ function ProfilePageContent() {
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
-          whileHover={{ scale: 1.05, boxShadow: "0 10px 30px rgba(139, 105, 20, 0.3)" }}
+          whileHover={{ scale: 1.05, boxShadow: `0 10px 30px ${COLORS.primary}40` }}
           whileTap={{ scale: 0.95 }}
           transition={{ duration: 0.3, delay: 0.1 }}
           className="flex flex-col items-center"

@@ -284,7 +284,7 @@ export default function LineConnectPage() {
                     <Button 
                       onClick={handleBackToProfile}
                       className="w-full"
-                      style={{ backgroundColor: '#73370c' }}
+                      style={{ backgroundColor: 'hsl(var(--primary))' }}
                     >
                       プロフィールに戻る
                     </Button>

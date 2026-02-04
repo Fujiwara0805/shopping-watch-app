@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/form";
 import Link from "next/link";
 import { Breadcrumb } from '@/components/seo/breadcrumb';
+import { designTokens } from '@/lib/constants/colors';
 
 // フォームのバリデーションスキーマを定義
 const registerFormSchema = z.object({
@@ -98,7 +99,8 @@ export default function RegisterPage() {
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.3 }}
-      className="flex flex-col items-center justify-center min-h-screen p-4 bg-[#73370c]/5"
+      className="flex flex-col items-center justify-center min-h-screen p-4"
+      style={{ backgroundColor: `${designTokens.colors.primary.base}08` }}
     >
         {/* パンくずリスト */}
         <div className="w-full max-w-md mb-4">
@@ -109,17 +111,19 @@ export default function RegisterPage() {
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.2, duration: 0.4 }}
-          className="bg-white p-8 sm:p-10 rounded-xl shadow-xl w-full max-w-md text-center border border-[#73370c]/10"
+          className="p-8 sm:p-10 rounded-xl shadow-xl w-full max-w-md text-center border"
+          style={{ backgroundColor: designTokens.colors.background.white, borderColor: `${designTokens.colors.primary.base}20` }}
         >
           <motion.h1
-            className="text-3xl sm:text-4xl font-bold text-[#73370c] mb-4"
+            className="text-3xl sm:text-4xl font-bold mb-4"
+            style={{ color: designTokens.colors.text.primary }}
             initial={{ letterSpacing: "-0.05em" }}
             animate={{ letterSpacing: "0em" }}
             transition={{ delay: 0.3, duration: 0.5 }}
           >
             新規アカウント作成
           </motion.h1>
-          <p className="text-[#73370c]/70 mb-8 text-sm sm:text-base">
+          <p className="mb-8 text-sm sm:text-base" style={{ color: designTokens.colors.text.secondary }}>
             メールアドレスとパスワードで新しいアカウントを作成します。
           </p>
 
@@ -130,15 +134,16 @@ export default function RegisterPage() {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-[#73370c]">メールアドレス</FormLabel>
+                    <FormLabel style={{ color: designTokens.colors.text.primary }}>メールアドレス</FormLabel>
                     <FormControl>
                       <Input
                         placeholder="メールアドレス"
                         {...field}
-                        className="text-[#73370c] border-[#73370c]/20 focus-visible:ring-[#73370c]"
+                        className="focus-visible:ring-2"
+                        style={{ color: designTokens.colors.text.primary, borderColor: `${designTokens.colors.primary.base}30` }}
                       />
                     </FormControl>
-                    <FormMessage className="text-red-500 text-xs" />
+                    <FormMessage className="text-xs" style={{ color: designTokens.colors.functional.error }} />
                   </FormItem>
                 )}
               />
@@ -147,14 +152,15 @@ export default function RegisterPage() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-[#73370c]">パスワード</FormLabel>
+                    <FormLabel style={{ color: designTokens.colors.text.primary }}>パスワード</FormLabel>
                     <FormControl>
                       <div className="relative">
                         <Input
                           type={showPassword ? "text" : "password"}
                           placeholder="パスワード (半角英数字6文字以上)"
                           {...field}
-                          className="pr-10 text-[#73370c] border-[#73370c]/20 focus-visible:ring-[#73370c]"
+                          className="pr-10 focus-visible:ring-2"
+                          style={{ color: designTokens.colors.text.primary, borderColor: `${designTokens.colors.primary.base}30` }}
                         />
                         <Button
                           type="button"
@@ -164,14 +170,14 @@ export default function RegisterPage() {
                           onClick={() => setShowPassword((prev) => !prev)}
                         >
                           {showPassword ? (
-                            <EyeOff className="h-4 w-4 text-[#73370c]/60" />
+                            <EyeOff className="h-4 w-4" style={{ color: designTokens.colors.text.secondary }} />
                           ) : (
-                            <Eye className="h-4 w-4 text-[#73370c]/60" />
+                            <Eye className="h-4 w-4" style={{ color: designTokens.colors.text.secondary }} />
                           )}
                         </Button>
                       </div>
                     </FormControl>
-                    <FormMessage className="text-red-500 text-xs" />
+                    <FormMessage className="text-xs" style={{ color: designTokens.colors.functional.error }} />
                   </FormItem>
                 )}
               />
@@ -180,14 +186,15 @@ export default function RegisterPage() {
                 name="confirmPassword"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-[#73370c]">パスワード確認</FormLabel>
+                    <FormLabel style={{ color: designTokens.colors.text.primary }}>パスワード確認</FormLabel>
                     <FormControl>
                       <div className="relative">
                         <Input
                           type={showConfirmPassword ? "text" : "password"}
                           placeholder="パスワードを再入力"
                           {...field}
-                          className="pr-10 text-[#73370c] border-[#73370c]/20 focus-visible:ring-[#73370c]"
+                          className="pr-10 focus-visible:ring-2"
+                          style={{ color: designTokens.colors.text.primary, borderColor: `${designTokens.colors.primary.base}30` }}
                         />
                         <Button
                           type="button"
@@ -197,14 +204,14 @@ export default function RegisterPage() {
                           onClick={() => setShowConfirmPassword((prev) => !prev)}
                         >
                           {showConfirmPassword ? (
-                            <EyeOff className="h-4 w-4 text-[#73370c]/60" />
+                            <EyeOff className="h-4 w-4" style={{ color: designTokens.colors.text.secondary }} />
                           ) : (
-                            <Eye className="h-4 w-4 text-[#73370c]/60" />
+                            <Eye className="h-4 w-4" style={{ color: designTokens.colors.text.secondary }} />
                           )}
                         </Button>
                       </div>
                     </FormControl>
-                    <FormMessage className="text-red-500 text-xs" />
+                    <FormMessage className="text-xs" style={{ color: designTokens.colors.functional.error }} />
                   </FormItem>
                 )}
               />
@@ -212,7 +219,8 @@ export default function RegisterPage() {
                 <Button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full bg-[#73370c] hover:bg-[#73370c]/90 text-white text-base sm:text-lg py-6 sm:py-7 shadow-md rounded-lg transition-colors"
+                  className="w-full text-white text-base sm:text-lg py-6 sm:py-7 shadow-md rounded-lg transition-colors"
+                  style={{ backgroundColor: designTokens.colors.primary.base }}
                   style={{ fontSize: '16px' }}
                 >
                   {isLoading ? (
@@ -226,14 +234,15 @@ export default function RegisterPage() {
           </Form>
 
           <div className="relative flex justify-center text-xs uppercase mb-6">
-            <span className="bg-white px-2 text-[#73370c]/60">または</span>
+            <span className="px-2" style={{ backgroundColor: designTokens.colors.background.white, color: designTokens.colors.text.secondary }}>または</span>
           </div>
 
           <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="mb-6">
             <Link href="/login" className="w-full">
               <Button
                 variant="ghost"
-                className="w-full text-[#73370c]/70 hover:text-[#73370c] hover:bg-[#73370c]/5 text-sm sm:text-base py-4 flex items-center justify-center space-x-2 rounded-lg transition-colors border border-[#73370c]/10"
+                className="w-full text-sm sm:text-base py-4 flex items-center justify-center space-x-2 rounded-lg transition-colors border"
+                style={{ color: designTokens.colors.text.secondary, borderColor: `${designTokens.colors.primary.base}20` }}
                 style={{ fontSize: '16px' }}
               >
                 <span>ログインページに戻る</span>
@@ -242,10 +251,10 @@ export default function RegisterPage() {
             </Link>
           </motion.div>
 
-          <p className="text-xs text-[#73370c]/60 mt-4">
+          <p className="text-xs mt-4" style={{ color: designTokens.colors.text.secondary }}>
             登録することで、
-            <a href="/terms" className="underline hover:text-[#73370c] transition-colors">利用規約</a>および
-            <a href="/privacy" className="underline hover:text-[#73370c] transition-colors">プライバシーポリシー</a>
+            <a href="/terms" className="underline transition-colors" style={{ color: designTokens.colors.text.primary }}>利用規約</a>および
+            <a href="/privacy" className="underline transition-colors" style={{ color: designTokens.colors.text.primary }}>プライバシーポリシー</a>
             に同意したものとみなされます。
           </p>
         </motion.div>

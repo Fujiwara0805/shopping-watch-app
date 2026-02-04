@@ -197,15 +197,15 @@ export function Breadcrumb({
                 className="flex items-center"
               >
                 {index > 0 && (
-                  <ChevronRight className="h-4 w-4 mx-1 text-[#8b7355] flex-shrink-0" />
+                  <ChevronRight className="h-4 w-4 mx-1 text-muted-foreground flex-shrink-0" />
                 )}
 
                 {isLast ? (
                   <span
-                    className="flex items-center gap-1.5 text-[#3d2914] font-semibold"
+                    className="flex items-center gap-1.5 text-foreground font-semibold"
                     aria-current="page"
                   >
-                    {Icon && <Icon className="h-4 w-4 text-[#8b6914]" />}
+                    {Icon && <Icon className="h-4 w-4 text-primary" />}
                     <span className="truncate max-w-[150px] sm:max-w-[200px]">
                       {item.label}
                     </span>
@@ -213,10 +213,10 @@ export function Breadcrumb({
                 ) : (
                   <Link
                     href={item.href}
-                    className="flex items-center gap-1.5 text-[#5c3a21] hover:text-[#8b6914] transition-colors group"
+                    className="flex items-center gap-1.5 text-[#5c3a21] hover:text-primary transition-colors group"
                   >
                     {Icon && (
-                      <Icon className="h-4 w-4 text-[#8b7355] group-hover:text-[#8b6914] transition-colors" />
+                      <Icon className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
                     )}
                     <span className="truncate max-w-[100px] sm:max-w-[150px] hover:underline underline-offset-2">
                       {item.label}
@@ -361,7 +361,7 @@ export function RPGBreadcrumb({
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
                     transition={{ duration: 0.2, delay: index * 0.08 }}
-                    className="mx-2 text-[#8b6914] font-bold"
+                    className="mx-2 text-primary font-bold"
                   >
                     ▸
                   </motion.span>
@@ -369,10 +369,10 @@ export function RPGBreadcrumb({
 
                 {isLast ? (
                   <span
-                    className="flex items-center gap-1.5 px-2 py-1 bg-[#8b6914]/20 rounded text-[#3d2914] font-bold border border-[#8b6914]/30"
+                    className="flex items-center gap-1.5 px-2 py-1 bg-[#8b6914]/20 rounded text-foreground font-bold border border-primary/30"
                     aria-current="page"
                   >
-                    {Icon && <Icon className="h-4 w-4 text-[#8b6914]" />}
+                    {Icon && <Icon className="h-4 w-4 text-primary" />}
                     <span className="truncate max-w-[120px] sm:max-w-[180px]">
                       {item.label}
                     </span>
@@ -380,10 +380,10 @@ export function RPGBreadcrumb({
                 ) : (
                   <Link
                     href={item.href}
-                    className="flex items-center gap-1.5 px-2 py-1 text-[#5c3a21] hover:text-[#8b6914] hover:bg-[#ffecd2] rounded transition-all group"
+                    className="flex items-center gap-1.5 px-2 py-1 text-[#5c3a21] hover:text-primary hover:bg-accent rounded transition-all group"
                   >
                     {Icon && (
-                      <Icon className="h-4 w-4 text-[#8b7355] group-hover:text-[#8b6914] transition-colors" />
+                      <Icon className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
                     )}
                     <span className="truncate max-w-[80px] sm:max-w-[120px] font-medium">
                       {item.label}

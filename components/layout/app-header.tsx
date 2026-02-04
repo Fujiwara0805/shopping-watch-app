@@ -6,16 +6,7 @@ import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { supabase } from '@/lib/supabaseClient';
 
-// 🎨 LPカラーパレット
-const COLORS = {
-  primary: '#8b6914',      // ゴールドブラウン
-  primaryDark: '#3d2914',  // ダークブラウン
-  secondary: '#5c3a21',    // ミディアムブラウン
-  background: '#f5e6d3',   // ベージュ
-  surface: '#fff8f0',      // オフホワイト
-  cream: '#ffecd2',        // クリーム
-  border: '#d4c4a8',       // ライトベージュ
-};
+import { COLORS } from '@/lib/constants/colors';
 
 export function AppHeader() {
   const pathname = usePathname();
@@ -121,7 +112,7 @@ export function AppHeader() {
           <h1 
             className="font-bold text-2xl text-center"
             style={{ 
-              color: COLORS.primaryDark,
+              color: COLORS.textPrimary,
               fontFamily: "'Noto Serif JP', serif"
             }}
           >

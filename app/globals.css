@@ -3,26 +3,27 @@
 @tailwind utilities;
 
 @layer base {
+  /* Oita Organic Elegance - LP と全画面で統一 */
   :root {
-    --background: 0 0% 98%;
-    --foreground: 25 80% 25%;
+    --background: 60 14% 95%;       /* mist #F4F5F2 */
+    --foreground: 192 9% 19%;       /* text primary #2D3436 */
     --card: 0 0% 100%;
-    --card-foreground: 25 80% 25%;
+    --card-foreground: 192 9% 19%;
     --popover: 0 0% 100%;
-    --popover-foreground: 25 80% 25%;
-    --primary: 25 95% 53%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 130 50% 60%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
-    --accent: 45 100% 60%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 84% 56%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 25 95% 53%;
+    --popover-foreground: 192 9% 19%;
+    --primary: 183 7% 47%;          /* primary base #6E7F80 */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 78 18% 51%;        /* fern #8A9A5B */
+    --secondary-foreground: 192 9% 19%;
+    --muted: 60 9% 93%;             /* cloud #E6E9E5 */
+    --muted-foreground: 195 9% 40%; /* text secondary #636E72 */
+    --accent: 43 67% 67%;           /* gold #E2C275 */
+    --accent-foreground: 192 9% 19%;
+    --destructive: 6 78% 57%;       /* error #E74C3C */
+    --destructive-foreground: 0 0% 100%;
+    --border: 38 16% 74%;           /* stone #C2B8A3 */
+    --input: 38 16% 74%;
+    --ring: 183 7% 47%;
     --radius: 0.5rem;
   }
 

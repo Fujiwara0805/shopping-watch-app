@@ -72,7 +72,7 @@ export function XEmbed({ tweetUrl, className = '' }: XEmbedProps) {
     >
       {loading && (
         <div className="flex items-center justify-center py-8">
-          <Loader2 className="h-8 w-8 animate-spin text-[#8b6914]" />
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       )}
       {error && (
@@ -161,7 +161,7 @@ export function XTimelineEmbed({ username, height = 400, className = '' }: XTime
     >
       {loading && (
         <div className="flex items-center justify-center py-8">
-          <Loader2 className="h-8 w-8 animate-spin text-[#8b6914]" />
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       )}
       <div ref={containerRef} className="flex justify-center" />

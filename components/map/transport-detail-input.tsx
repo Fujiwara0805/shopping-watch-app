@@ -246,8 +246,8 @@ export function TransportDetailInput({
     <div className={`space-y-3 ${className}`}>
       {/* ヘッダー：移動元→移動先の表示 */}
       {(fromSpotName || toSpotName) && (
-        <div className="flex items-center gap-2 text-sm text-[#5c3a21] bg-[#fef3e8] px-3 py-2 rounded-lg border border-[#d4c4a8]">
-          <MapPin className="h-4 w-4 text-[#8b6914]" />
+        <div className="flex items-center gap-2 text-sm text-muted-foreground bg-background px-3 py-2 rounded-lg border border-border">
+          <MapPin className="h-4 w-4 text-primary" />
           <span className="font-medium truncate max-w-[100px]">{fromSpotName || '出発地'}</span>
           <ArrowRight className="h-4 w-4 text-[#8b7355] flex-shrink-0" />
           <span className="font-medium truncate max-w-[100px]">{toSpotName || '目的地'}</span>
@@ -259,7 +259,7 @@ export function TransportDetailInput({
         <Navigation className="inline-block mr-1.5 h-4 w-4" />
         {label}
         {segments.length > 1 && (
-          <span className="ml-2 text-xs font-normal text-[#8b6914] bg-[#fef3e8] px-2 py-0.5 rounded-full">
+          <span className="ml-2 text-xs font-normal text-primary bg-background px-2 py-0.5 rounded-full">
             乗り換え{segments.length - 1}回
           </span>
         )}
@@ -288,7 +288,7 @@ export function TransportDetailInput({
         whileHover={{ scale: 1.01 }}
         whileTap={{ scale: 0.99 }}
         onClick={addSegment}
-        className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-[#fff8f0] hover:bg-[#fef3e8] text-[#8b6914] border-2 border-dashed border-[#d4c4a8] rounded-xl transition-colors"
+        className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-[#fff8f0] hover:bg-background text-primary border-2 border-dashed border-border rounded-xl transition-colors"
       >
         <Plus className="h-4 w-4" />
         <span className="text-sm font-medium">乗り換えを追加</span>
@@ -299,7 +299,7 @@ export function TransportDetailInput({
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-[#8b6914]/10 to-[#d4c4a8]/20 rounded-xl border border-[#d4c4a8]"
+          className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-primary/10 to-border/20 rounded-xl border border-border"
         >
           <span className="text-sm font-bold text-[#3d2914]">合計</span>
           <div className="flex items-center gap-4">
@@ -310,7 +310,7 @@ export function TransportDetailInput({
               </div>
             )}
             {totalFare > 0 && (
-              <div className="text-sm font-bold text-[#8b6914]">
+              <div className="text-sm font-bold text-primary">
                 ¥{totalFare.toLocaleString()}
               </div>
             )}
@@ -365,7 +365,7 @@ function TransportSegmentCard({
       {/* セグメントヘッダー */}
       <div className="flex items-center gap-2 px-3 py-2 bg-[#fdf5e6] border-b border-[#e8d5c4]">
         <div className="flex items-center gap-2 flex-1">
-          <span className="flex items-center justify-center w-6 h-6 bg-[#8b6914] text-white text-xs font-bold rounded-full">
+          <span className="flex items-center justify-center w-6 h-6 bg-primary text-white text-xs font-bold rounded-full">
             {index + 1}
           </span>
           {totalSegments > 1 && (
@@ -405,8 +405,8 @@ function TransportSegmentCard({
                 className={`
                   relative flex flex-col items-center justify-center p-2 rounded-lg border transition-all
                   ${isSelected 
-                    ? 'border-[#8b6914] bg-[#fef3e8] shadow-sm' 
-                    : 'border-[#e8d5c4] bg-white hover:border-[#8b7355] hover:bg-[#fff8f0]'
+                    ? 'border-primary bg-background shadow-sm' 
+                    : 'border-border bg-white hover:border-muted-foreground hover:bg-muted'
                   }
                 `}
               >
@@ -434,7 +434,7 @@ function TransportSegmentCard({
                 <Input
                   type="number"
                   placeholder="10"
-                  className="h-9 w-20 text-center rounded-lg bg-white border-[#d4c4a8] focus:border-[#8b6914]"
+                  className="h-9 w-20 text-center rounded-lg bg-white border-border focus:border-primary"
                   style={{ fontSize: '16px' }}
                   min={1}
                   max={480}
@@ -452,7 +452,7 @@ function TransportSegmentCard({
                 variant="outline"
                 size="sm"
                 onClick={onToggleExpand}
-                className="mt-5 border-[#8b6914] text-[#8b6914] hover:bg-[#fef3e8] h-9"
+                className="mt-5 border-[#8b6914] text-primary hover:bg-background h-9"
               >
                 <Info className="h-3 w-3 mr-1" />
                 詳細
@@ -1025,7 +1025,7 @@ export function TransportSummary({ details }: { details: TransportDetails }) {
               {index > 0 && (
                 <ArrowRight className="h-3 w-3 text-[#8b7355]" />
               )}
-              <div className="flex items-center gap-1 px-2 py-1 bg-[#fef3e8] rounded-lg">
+              <div className="flex items-center gap-1 px-2 py-1 bg-background rounded-lg">
                 <Icon className="h-3 w-3" style={{ color: option.color }} />
                 <span className="text-xs font-medium text-[#3d2914]">{option.label}</span>
                 {segment.travelTime && (
@@ -1044,7 +1044,7 @@ export function TransportSummary({ details }: { details: TransportDetails }) {
             <span>合計 約{totalTime}分</span>
           )}
           {totalFare > 0 && (
-            <span className="text-[#8b6914] font-medium">¥{totalFare.toLocaleString()}</span>
+            <span className="text-primary font-medium">¥{totalFare.toLocaleString()}</span>
           )}
         </div>
       )}

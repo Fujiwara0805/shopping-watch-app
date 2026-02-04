@@ -14,6 +14,7 @@ import { CustomModal } from '@/components/ui/custom-modal';
 import { useLocationPermission } from '@/components/providers/LocationPermissionProvider';
 import { isWithinOitaUniversityArea } from '@/lib/utils';
 import { Breadcrumb } from '@/components/seo/breadcrumb';
+import { COLORS } from '@/lib/constants/colors';
 
 // ローカルの買い物アイテム
 interface MemoItem {
@@ -284,7 +285,7 @@ export default function MemoPage() {
           <div className="flex items-center gap-4">
             {isMutating && <Loader2 className="h-5 w-5 animate-spin text-primary" />}
             {!isOnline && (
-              <div className="flex items-center gap-2 text-sm text-yellow-600 bg-yellow-100 px-3 py-1 rounded-full">
+              <div className="flex items-center gap-2 text-sm px-3 py-1 rounded-full" style={{ color: COLORS.warning, backgroundColor: `${COLORS.warning}20` }}>
                 <WifiOff size={16} /><span>オフライン</span>
               </div>
             )}
@@ -341,7 +342,8 @@ export default function MemoPage() {
                   variant="outline" 
                   size="sm" 
                   onClick={handleOpenUsageModal}
-                  className="flex items-center gap-2 text-[#fa7415] border-[#fa7415] hover:bg-[#fa7415] hover:text-white"
+                  className="flex items-center gap-2 border hover:opacity-90"
+                style={{ color: COLORS.primary, borderColor: COLORS.primary }}
                 >
                   <Info size={16} />
                   使い方を見る
@@ -399,16 +401,17 @@ export default function MemoPage() {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="p-4 bg-gradient-to-r from-green-50 to-lime-50 border border-green-200 rounded-lg"
+              className="p-4 border rounded-lg"
+            style={{ backgroundColor: `${COLORS.success}10`, borderColor: `${COLORS.success}40` }}
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
-                  <div className="bg-green-100 p-2 rounded-full">
-                    <TrainFront className="h-5 w-5 text-green-600" />
+                  <div className="p-2 rounded-full" style={{ backgroundColor: `${COLORS.success}25` }}>
+                    <TrainFront className="h-5 w-5" style={{ color: COLORS.success }} />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-green-900">時刻表を確認</h3>
-                    <p className="text-xs text-green-700">
+                    <h3 className="font-semibold" style={{ color: COLORS.textPrimary }}>時刻表を確認</h3>
+                    <p className="text-xs" style={{ color: COLORS.textSecondary }}>
                       旦野原キャンパス限定で大分駅までの<br />電車とバスの時刻表を確認できます。
                       {storedLocation && !latitude && (
                         <span className="block text-green-600 font-medium mt-1">
@@ -422,7 +425,7 @@ export default function MemoPage() {
                   onClick={handleGoToTrainSchedule}
                   variant="outline"
                   size="sm"
-                  className="border-green-300 text-green-700 hover:bg-green-200"
+                  style={{ borderColor: COLORS.success, color: COLORS.success }}
                 >
                   時刻表へ
                 </Button>
@@ -444,7 +447,8 @@ export default function MemoPage() {
           <Button
             onClick={() => router.push('/map')}
             size="icon"
-            className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg bg-[#73370c] hover:bg-[#8b4513] flex flex-col items-center justify-center gap-1"
+            className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg flex flex-col items-center justify-center gap-1"
+            style={{ backgroundColor: COLORS.primary }}
           >
             <Map className="h-6 w-6 sm:h-7 sm:w-7 text-white" />
             <span className="text-xs text-white font-medium">Map</span>
@@ -463,7 +467,7 @@ export default function MemoPage() {
           </div>
           <div className="max-h-60 overflow-y-auto space-y-2 pr-2">
             {frequentItems.map(item => (
-              <div key={item.id} className="flex items-center justify-between p-2 rounded-md" style={{ backgroundColor: '#b3e3ba' }}>
+              <div key={item.id} className="flex items-center justify-between p-2 rounded-md" style={{ backgroundColor: `${COLORS.success}25` }}>
                 <span>{item.item_name}</span>
                 <Button variant="ghost" size="icon" onClick={() => handleDeleteFrequentItem(item.id)} disabled={isMutating || !isOnline}>
                   <Trash2 size={16} className="text-destructive" />
@@ -479,32 +483,32 @@ export default function MemoPage() {
       <CustomModal isOpen={showUsageModal} onClose={() => setShowUsageModal(false)} title="買い物メモの使い方">
         <div className="pt-2 space-y-4">
           <div className="space-y-3 text-sm">
-            <div className="p-3 rounded-lg border bg-yellow-50 border-yellow-200/80">
+            <div className="p-3 rounded-lg border" style={{ backgroundColor: `${COLORS.warning}15`, borderColor: `${COLORS.warning}50` }}>
               <div className="flex items-center gap-2.5 mb-1.5">
-                <Sparkles className="h-5 w-5 text-yellow-600" />
-                <h3 className="font-semibold text-yellow-800">かんたんアイテム追加</h3>
+                <Sparkles className="h-5 w-5" style={{ color: COLORS.warning }} />
+                <h3 className="font-semibold" style={{ color: COLORS.textPrimary }}>かんたんアイテム追加</h3>
               </div>
-              <p className="text-xs text-yellow-700 pl-1">
+              <p className="text-xs pl-1" style={{ color: COLORS.textSecondary }}>
                 テキストでアイテムを入力し、<Plus size={12} className="inline-block mx-0.5 -mt-0.5" />ボタンでリストに追加します。
               </p>
             </div>
             
-            <div className="p-3 rounded-lg border bg-green-50 border-green-200/80">
+            <div className="p-3 rounded-lg border" style={{ backgroundColor: `${COLORS.success}15`, borderColor: `${COLORS.success}50` }}>
               <div className="flex items-center gap-2.5 mb-1.5">
-                <PackageCheck className="h-5 w-5 text-green-600" />
-                <h3 className="font-semibold text-green-800">リストの管理</h3>
+                <PackageCheck className="h-5 w-5" style={{ color: COLORS.success }} />
+                <h3 className="font-semibold" style={{ color: COLORS.textPrimary }}>リストの管理</h3>
               </div>
-              <p className="text-xs text-green-700 pl-1">
+              <p className="text-xs pl-1" style={{ color: COLORS.textSecondary }}>
                 購入済みのアイテムは左の<CheckSquare size={12} className="inline-block mx-0.5 -mt-0.5" />でチェック。不要なアイテムは<Trash2 size={12} className="inline-block mx-0.5 -mt-0.5" />で削除できます。
               </p>
             </div>
 
-            <div className="p-3 rounded-lg border bg-blue-50 border-blue-200/80">
+            <div className="p-3 rounded-lg border" style={{ backgroundColor: `${COLORS.info}15`, borderColor: `${COLORS.info}50` }}>
               <div className="flex items-center gap-2.5 mb-1.5">
-                <History className="h-5 w-5 text-blue-600" />
-                <h3 className="font-semibold text-blue-800">便利な「よく買うもの」</h3>
+                <History className="h-5 w-5" style={{ color: COLORS.info }} />
+                <h3 className="font-semibold" style={{ color: COLORS.textPrimary }}>便利な「よく買うもの」</h3>
               </div>
-              <p className="text-xs text-blue-700 pl-1">
+              <p className="text-xs pl-1" style={{ color: COLORS.textSecondary }}>
                 タップで直接リストに追加。編集は<Edit size={12} className="inline-block mx-0.5 -mt-0.5" />ボタンから行えます。
               </p>
             </div>

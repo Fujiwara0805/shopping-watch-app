@@ -21,16 +21,7 @@ import { Badge } from '@/components/ui/badge';
 import { SEOEventData } from '@/lib/seo/types';
 import { generateSemanticEventUrl } from '@/lib/seo/url-helper';
 
-// カラーパレット
-const COLORS = {
-  primary: '#8b6914',
-  primaryDark: '#3d2914',
-  secondary: '#5c3a21',
-  background: '#f5e6d3',
-  surface: '#fff8f0',
-  cream: '#ffecd2',
-  border: '#d4c4a8',
-};
+import { COLORS } from '@/lib/constants/colors';
 
 interface AreaEventListClientProps {
   prefecture: string;
@@ -155,10 +146,10 @@ export function AreaEventListClient({
       <main className="container mx-auto px-4 py-6 max-w-4xl pb-24">
         {/* イベント数 */}
         <div className="mb-4 flex items-center justify-between">
-          <p className="text-sm text-[#5c3a21]">
+          <p className="text-sm text-muted-foreground">
             {filteredEvents.length}件のイベントが見つかりました
           </p>
-          <Badge variant="outline" className="border-[#8b6914] text-[#8b6914]">
+          <Badge variant="outline" className="border-primary text-primary">
             {locationName}
           </Badge>
         </div>
@@ -238,7 +229,7 @@ export function AreaEventListClient({
                         <div className="flex-1 p-4">
                           <h2 
                             className="font-bold text-lg mb-2 line-clamp-2"
-                            style={{ color: COLORS.primaryDark }}
+                            style={{ color: COLORS.textPrimary }}
                           >
                             {eventName}
                           </h2>
@@ -280,7 +271,7 @@ export function AreaEventListClient({
           className="mt-8 p-4 rounded-xl border-2"
           style={{ backgroundColor: COLORS.surface, borderColor: COLORS.border }}
         >
-          <h2 className="font-bold text-lg mb-3" style={{ color: COLORS.primaryDark }}>
+          <h2 className="font-bold text-lg mb-3" style={{ color: COLORS.textPrimary }}>
             {prefecture}の他の地域
           </h2>
           <div className="flex flex-wrap gap-2">
@@ -294,7 +285,7 @@ export function AreaEventListClient({
                 className="px-3 py-1 rounded-full text-sm transition-colors"
                 style={{ 
                   backgroundColor: COLORS.cream,
-                  color: COLORS.primaryDark,
+                  color: COLORS.textPrimary,
                 }}
               >
                 {otherCity}
@@ -317,7 +308,7 @@ export function AreaEventListClient({
             onClick={scrollToTop}
             size="icon"
             className="h-14 w-14 rounded-xl shadow-lg flex flex-col items-center justify-center gap-1"
-            style={{ backgroundColor: COLORS.primaryDark }}
+            style={{ backgroundColor: COLORS.textPrimary }}
           >
             <ArrowUpFromLine className="h-5 w-5" style={{ color: COLORS.cream }} />
             <span className="text-[10px]" style={{ color: COLORS.cream }}>TOP</span>

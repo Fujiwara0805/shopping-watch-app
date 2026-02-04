@@ -368,7 +368,7 @@ function MarkerLocationModal({
               type="button"
               variant="outline"
               onClick={onClose}
-              className="flex-1 h-12 text-base font-bold rounded-full border-2 border-gray-300"
+              className="flex-1 h-12 text-base font-bold rounded-full border-2 border-input"
             >
               キャンセル
             </Button>
@@ -1041,7 +1041,7 @@ export default function CreateMapPage() {
                   <Button
                     type="button"
                     onClick={addHashtag}
-                    className="h-12 w-12 p-0 bg-[#73370c] hover:bg-[#8b4513]"
+                    className="h-12 w-12 p-0 bg-primary hover:bg-primary/90"
                     disabled={!hashtagInput.trim()}
                   >
                     <Plus className="h-5 w-5" />
@@ -1055,13 +1055,13 @@ export default function CreateMapPage() {
                         initial={{ opacity: 0, scale: 0.8 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.8 }}
-                        className="inline-flex items-center gap-1 px-3 py-1.5 bg-[#fef3e8] text-[#73370c] rounded-full text-sm font-medium"
+                        className="inline-flex items-center gap-1 px-3 py-1.5 bg-background text-primary rounded-full text-sm font-medium"
                       >
                         #{tag}
                         <button
                           type="button"
                           onClick={() => removeHashtag(tag)}
-                          className="ml-1 hover:bg-[#73370c]/10 rounded-full p-0.5"
+                          className="ml-1 hover:bg-primary/10 rounded-full p-0.5"
                         >
                           <X className="h-3.5 w-3.5" />
                         </button>
@@ -1112,7 +1112,7 @@ export default function CreateMapPage() {
                     />
                     <label
                       htmlFor="thumbnail-upload"
-                      className="cursor-pointer flex items-center justify-center p-6 border-2 border-dashed border-gray-300 rounded-xl hover:border-[#73370c] hover:bg-[#fef3e8]/50 transition-colors max-w-xs"
+                      className="cursor-pointer flex items-center justify-center p-6 border-2 border-dashed border-input rounded-xl hover:border-primary hover:bg-background/80 transition-colors max-w-xs"
                     >
                       <div className="text-center">
                         <Upload className="mx-auto h-8 w-8 text-gray-400" />
@@ -1218,7 +1218,7 @@ export default function CreateMapPage() {
                     <ClockIcon className="mr-2 h-4 w-4 text-gray-600" />
                     <span className="text-sm font-semibold text-gray-700">掲載期間</span>
                   </div>
-                  <span className="text-base font-bold text-[#73370c]">
+                  <span className="text-base font-bold text-primary">
                     {form.watch('customExpiryDays')}日間
                   </span>
                 </div>
@@ -1258,7 +1258,7 @@ export default function CreateMapPage() {
               icon={<Navigation className="h-5 w-5" />}
               iconType="key"
               defaultOpen={true}
-              className="bg-gradient-to-br from-[#fef3e8] to-[#fff8f0] border-[#e8d5c4]"
+              className="bg-gradient-to-br from-background to-muted border-border"
               badge={`${locations.filter(loc => loc.storeName).length}スポット`}
             >
               <ReorderableTimeline
@@ -1296,7 +1296,7 @@ export default function CreateMapPage() {
 
             {/* スポット編集フォーム */}
             <div className="space-y-3">
-              <h2 className="text-lg font-bold text-[#73370c] flex items-center">
+              <h2 className="text-lg font-bold text-primary flex items-center">
                 <MapIcon className="mr-2 h-5 w-5" />
                 スポット {currentLocationIndex + 1} の編集
               </h2>
@@ -1310,7 +1310,7 @@ export default function CreateMapPage() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
                     transition={{ duration: 0.2 }}
-                    className="bg-white rounded-xl border-2 border-[#e8d5c4] p-4 space-y-4 shadow-sm"
+                    className="bg-white rounded-xl border-2 border-border p-4 space-y-4 shadow-sm"
                   >
                     <LocationForm
                       location={locations[currentLocationIndex]}
@@ -1347,7 +1347,7 @@ export default function CreateMapPage() {
               <Button
                 type="submit"
                 disabled={isSubmitting || !isFormValid()}
-                className="w-full h-14 text-lg font-bold rounded-xl shadow-lg bg-[#73370c] hover:bg-[#8b4513] disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed"
+                className="w-full h-14 text-lg font-bold rounded-xl shadow-lg bg-primary hover:bg-primary/90 disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed"
               >
                 {isSubmitting ? (
                   <>
@@ -1491,7 +1491,7 @@ function LocationForm({
             ref={inputRef}
             type="text"
             placeholder="店舗名や施設名で検索..."
-            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#73370c] focus:border-transparent text-base"
+            className="w-full px-4 py-3 border border-input rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-base"
             defaultValue={location.storeName}
           />
           <MapPin className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
@@ -1552,7 +1552,7 @@ function LocationForm({
         />
         <label
           htmlFor={`image-upload-${locationIndex}`}
-          className="cursor-pointer flex items-center justify-center p-6 border-2 border-dashed border-gray-300 rounded-xl hover:border-[#73370c] hover:bg-[#fef3e8]/50 transition-colors"
+          className="cursor-pointer flex items-center justify-center p-6 border-2 border-dashed border-input rounded-xl hover:border-primary hover:bg-background/80 transition-colors"
         >
           <div className="text-center">
             <Upload className="mx-auto h-10 w-10 text-gray-400" />
@@ -1609,7 +1609,7 @@ function LocationForm({
       {/* 保存して続けるボタン */}
       {onSaveAndContinue && (
         <motion.div 
-          className="pt-4 border-t border-[#e8d5c4]"
+          className="pt-4 border-t border-border"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
@@ -1618,7 +1618,7 @@ function LocationForm({
             type="button"
             onClick={onSaveAndContinue}
             disabled={isSavingSpot}
-            className="w-full h-14 text-base font-bold rounded-xl shadow-md bg-gradient-to-r from-[#22c55e] to-[#16a34a] hover:from-[#16a34a] hover:to-[#15803d] text-white disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full h-14 text-base font-bold rounded-xl shadow-md bg-gradient-to-r from-green-500 to-green-600 hover:from-[#16a34a] hover:to-[#15803d] text-white disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSavingSpot ? (
               <>

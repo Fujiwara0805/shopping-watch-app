@@ -12,17 +12,7 @@ import { useLoading } from '@/contexts/loading-context';
 import { getMapsByUserId, deleteMap, type MyMapListItem } from '@/app/_actions/maps';
 import { Breadcrumb } from '@/components/seo/breadcrumb';
 
-// 🎨 LPカラーパレット
-const COLORS = {
-  primary: '#8b6914',      // ゴールドブラウン
-  primaryDark: '#3d2914',  // ダークブラウン
-  secondary: '#5c3a21',    // ミディアムブラウン
-  background: '#f5e6d3',   // ベージュ
-  surface: '#fff8f0',      // オフホワイト
-  cream: '#ffecd2',        // クリーム
-  border: '#d4c4a8',       // ライトベージュ
-  mint: '#e8f4e5',         // ミントグリーン
-};
+import { COLORS } from '@/lib/constants/colors';
 
 export default function MyMapsPage() {
   const { data: session, status } = useSession();

@@ -183,7 +183,7 @@ function SpotBreadcrumb({ mapData, className = '' }: SpotBreadcrumbProps) {
       />
       {breadcrumbItems.map((item, index) => (
         <div key={item.href} className="flex items-center">
-          {index > 0 && <ChevronRightIcon className="h-4 w-4 text-[#8b6914]/50 mx-1" />}
+          {index > 0 && <ChevronRightIcon className="h-4 w-4 text-primary/50 mx-1" />}
           {item.isCurrent ? (
             <span className="font-bold text-[#3d2914] truncate max-w-[200px]" style={{ fontFamily: "'Noto Serif JP', serif" }}>
               {item.label}
@@ -191,7 +191,7 @@ function SpotBreadcrumb({ mapData, className = '' }: SpotBreadcrumbProps) {
           ) : (
             <Link 
               href={item.href} 
-              className="text-[#8b6914] hover:text-[#3d2914] hover:underline transition-colors flex items-center"
+              className="text-primary hover:text-foreground hover:underline transition-colors flex items-center"
             >
               {index === 0 && <Home className="h-4 w-4 mr-1" />}
               {item.label}
@@ -334,7 +334,7 @@ export function SpotDetailClient({ spotId }: SpotDetailClientProps) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#73370c] mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-gray-600 font-bold">読み込み中...</p>
         </div>
       </div>
@@ -353,7 +353,7 @@ export function SpotDetailClient({ spotId }: SpotDetailClientProps) {
           <AlertCircle className="h-12 w-12 text-red-400 mx-auto mb-3" />
           <h2 className="text-xl font-bold text-gray-800 mb-2">エラー</h2>
           <p className="text-gray-600 text-sm mb-4">{error || '場所が見つかりませんでした。'}</p>
-          <Button onClick={handleClose} size="sm" style={{ backgroundColor: '#73370c' }} className="text-white hover:opacity-90">
+          <Button onClick={handleClose} size="sm" className="bg-primary text-primary-foreground hover:opacity-90">
             戻る
           </Button>
         </motion.div>
@@ -407,8 +407,8 @@ export function SpotDetailClient({ spotId }: SpotDetailClientProps) {
             </h2>
 
             {mapData.description && (
-              <div className="mb-6 bg-[#fff8f0] border-2 border-[#d4c4a8] rounded-lg p-5 text-left shadow-inner">
-                <p className="text-[#5c3a21] leading-relaxed whitespace-pre-wrap font-medium">
+              <div className="mb-6 bg-muted border-2 border-border rounded-lg p-5 text-left shadow-inner">
+                <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap font-medium">
                   {mapData.description}
                 </p>
               </div>
@@ -416,10 +416,10 @@ export function SpotDetailClient({ spotId }: SpotDetailClientProps) {
 
             {/* 冒険の書風 目次改修 */}
             {mapData.locations && mapData.locations.length > 0 && (
-              <div className="mt-8 border-4 border-double border-[#8b6914] bg-[#fdf5e6] shadow-[6px_6px_0px_0px_rgba(61,41,20,0.2)] overflow-hidden">
+              <div className="mt-8 border-4 border-double border-primary bg-background shadow-[6px_6px_0px_0px_rgba(61,41,20,0.2)] overflow-hidden">
                 <button 
                   onClick={() => setIsTocOpen(!isTocOpen)}
-                  className="w-full p-4 flex items-center justify-between bg-[#8b6914] hover:bg-[#73370c] transition-all text-[#ffecd2]"
+                  className="w-full p-4 flex items-center justify-between bg-primary hover:bg-primary/90 transition-all text-primary-foreground"
                 >
                   <div className="flex items-center gap-3">
                     <ScrollText className="h-6 w-6" />
@@ -451,10 +451,10 @@ export function SpotDetailClient({ spotId }: SpotDetailClientProps) {
                                 setTimeout(() => { element.classList.remove('highlight-flash'); }, 2000);
                               }
                             }}
-                            className="w-full flex items-center justify-start gap-4 px-4 py-3 border-b border-[#8b6914]/10 last:border-0 hover:bg-[#8b6914]/5 transition-all group"
+                            className="w-full flex items-center justify-start gap-4 px-4 py-3 border-b border-primary/10 last:border-0 hover:bg-primary/5 transition-all group"
                           >
-                            <Sword className="h-4 w-4 text-[#8b6914] opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all duration-300" />
-                            <span className="text-left font-bold text-[#5c3a21] text-base">
+                            <Sword className="h-4 w-4 text-primary opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all duration-300" />
+                            <span className="text-left font-bold text-muted-foreground text-base">
                               {String(index + 1).padStart(2, '0')}. {location.store_name}
                             </span>
                           </button>
@@ -477,7 +477,7 @@ export function SpotDetailClient({ spotId }: SpotDetailClientProps) {
                   initial={{ opacity: 0, y: 30 }} 
                   whileInView={{ opacity: 1, y: 0 }} 
                   viewport={{ once: true }}
-                  className="bg-[#fdf5e6] rounded-xl shadow-[0_10px_25px_-5px_rgba(61,41,20,0.15)] overflow-hidden border-4 border-double border-[#8b6914]"
+                  className="bg-background rounded-xl shadow-[0_10px_25px_-5px_rgba(61,41,20,0.15)] overflow-hidden border-4 border-double border-primary"
                   style={{
                     backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
                     backgroundBlendMode: 'overlay',
@@ -486,7 +486,7 @@ export function SpotDetailClient({ spotId }: SpotDetailClientProps) {
                   <div className="p-6 relative">
                     {/* RPG風ヘッダー */}
                     <div className="flex items-center gap-3 mb-5">
-                      <div className="flex-shrink-0 w-12 h-12 rounded-full bg-gradient-to-br from-[#8b6914] to-[#5c3a21] flex items-center justify-center text-[#ffecd2] font-bold text-xl shadow-lg border-2 border-[#ffecd2]">
+                      <div className="flex-shrink-0 w-12 h-12 rounded-full bg-gradient-to-br from-[#8b6914] to-[#5c3a21] flex items-center justify-center text-primary-foreground font-bold text-xl shadow-lg border-2 border-[#ffecd2]">
                         {index + 1}
                       </div>
                       <div className="flex-1">
@@ -508,10 +508,10 @@ export function SpotDetailClient({ spotId }: SpotDetailClientProps) {
                         {location.image_urls.length > 1 && (
                           <>
                             <button onClick={(e) => { e.stopPropagation(); handleImageNav(index, 'prev', location.image_urls.length); }}
-                              className="absolute left-2 top-1/2 -translate-y-1/2 p-2 bg-black/50 hover:bg-[#8b6914] rounded-full text-white transition-all shadow-lg"><ChevronLeft /></button>
+                              className="absolute left-2 top-1/2 -translate-y-1/2 p-2 bg-black/50 hover:bg-primary rounded-full text-white transition-all shadow-lg"><ChevronLeft /></button>
                             <button onClick={(e) => { e.stopPropagation(); handleImageNav(index, 'next', location.image_urls.length); }}
-                              className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-black/50 hover:bg-[#8b6914] rounded-full text-white transition-all shadow-lg"><ChevronRight /></button>
-                            <div className="absolute bottom-3 right-3 flex items-center gap-1.5 px-3 py-1.5 bg-black/60 backdrop-blur-md rounded-full text-[#ffecd2] text-xs font-bold border border-white/20">
+                              className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-black/50 hover:bg-primary rounded-full text-white transition-all shadow-lg"><ChevronRight /></button>
+                            <div className="absolute bottom-3 right-3 flex items-center gap-1.5 px-3 py-1.5 bg-black/60 backdrop-blur-md rounded-full text-primary-foreground text-xs font-bold border border-white/20">
                               <ImageIcon className="h-3.5 w-3.5" /> {(currentImageIndices[index] || 0) + 1} / {location.image_urls.length}
                             </div>
                           </>
@@ -520,9 +520,9 @@ export function SpotDetailClient({ spotId }: SpotDetailClientProps) {
                     )}
 
                     {/* コンテンツ（RPG風巻物デザイン） */}
-                    <div className="bg-[#fff8f0] border-l-4 border-[#8b6914] rounded-r-lg p-4 mb-5 shadow-sm relative">
-                      <Feather className="absolute -top-2 -left-2 h-5 w-5 text-[#8b6914] opacity-60" />
-                      <p className="text-[#5c3a21] text-base leading-relaxed whitespace-pre-wrap">
+                    <div className="bg-[#fff8f0] border-l-4 border-primary rounded-r-lg p-4 mb-5 shadow-sm relative">
+                      <Feather className="absolute -top-2 -left-2 h-5 w-5 text-primary opacity-60" />
+                      <p className="text-muted-foreground text-base leading-relaxed whitespace-pre-wrap">
                         {location.content}
                       </p>
                     </div>
@@ -536,18 +536,18 @@ export function SpotDetailClient({ spotId }: SpotDetailClientProps) {
                           <img src={location.url.includes('instagram.com') ? 'https://res.cloudinary.com/dz9trbwma/image/upload/v1759308496/icons8-%E3%82%A4%E3%83%B3%E3%82%B9%E3%82%BF%E3%82%AF%E3%82%99%E3%83%A9%E3%83%A0-100_idedfz.png' : 'https://res.cloudinary.com/dz9trbwma/image/upload/v1759366399/icons8-%E3%82%A6%E3%82%A7%E3%83%95%E3%82%99-100_a6uwwq.png'}
                             alt="link" className="w-8 h-8 flex-shrink-0" />
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-bold text-[#8b6914] group-hover:underline truncate">
+                            <p className="text-sm font-bold text-primary group-hover:underline truncate">
                               {location.url.includes('instagram') ? 'CHECK INSTAGRAM' : 'OFFICIAL WEBSITE'}
                             </p>
                           </div>
-                          <ExternalLink className="h-4 w-4 text-[#8b6914]" />
+                          <ExternalLink className="h-4 w-4 text-primary" />
                         </a>
                       </div>
                     )}
 
                     {/* Googleマップボタン */}
                     {location.store_latitude && location.store_longitude && (
-                      <Button onClick={() => openInGoogleMaps(location)} className="w-full bg-gradient-to-r from-[#8b6914] to-[#5c3a21] hover:from-[#5c3a21] hover:to-[#3d2914] text-[#ffecd2] font-bold py-5 rounded-xl shadow-lg transition-all active:scale-95 border-2 border-[#ffecd2]/30">
+                      <Button onClick={() => openInGoogleMaps(location)} className="w-full bg-gradient-to-r from-[#8b6914] to-[#5c3a21] hover:from-[#5c3a21] hover:to-[#3d2914] text-primary-foreground font-bold py-5 rounded-xl shadow-lg transition-all active:scale-95 border-2 border-[#ffecd2]/30">
                         <Navigation className="mr-2 h-5 w-5" /> Googleマップで道案内
                       </Button>
                     )}
@@ -599,15 +599,15 @@ export function SpotDetailClient({ spotId }: SpotDetailClientProps) {
                       <div className="relative py-6">
                         {/* シンプルな接続線 */}
                         <div className="flex flex-col items-center">
-                          <div className="w-0.5 h-8 bg-gradient-to-b from-[#8b6914] to-[#d4c4a8]" />
+                          <div className="w-0.5 h-8 bg-gradient-to-b from-primary to-border" />
                           <motion.div
                             animate={{ y: [0, 4, 0] }}
                             transition={{ duration: 1.5, repeat: Infinity }}
-                            className="text-[#8b6914] text-xl"
+                            className="text-primary text-xl"
                           >
                             ▼
                           </motion.div>
-                          <div className="w-0.5 h-8 bg-gradient-to-b from-[#d4c4a8] to-[#8b6914]" />
+                          <div className="w-0.5 h-8 bg-gradient-to-b from-border to-primary" />
                         </div>
                       </div>
                     );
@@ -621,7 +621,7 @@ export function SpotDetailClient({ spotId }: SpotDetailClientProps) {
                       className="relative py-4"
                     >
                       {/* タイムラインの縦線 */}
-                      <div className="absolute left-1/2 top-0 bottom-0 w-1 bg-gradient-to-b from-[#8b6914] via-[#d4c4a8] to-[#8b6914] -translate-x-1/2" />
+                      <div className="absolute left-1/2 top-0 bottom-0 w-1 bg-gradient-to-b from-primary via-border to-primary -translate-x-1/2" />
                       
                       {/* RPG風移動コマンドウィンドウ */}
                       <div className="relative z-10 mx-auto max-w-[300px]">
@@ -631,19 +631,19 @@ export function SpotDetailClient({ spotId }: SpotDetailClientProps) {
                         >
                           {/* ウィンドウヘッダー */}
                           <div className="flex items-center gap-2 mb-3 pb-2 border-b border-[#ffecd2]/30">
-                            <Compass className="h-4 w-4 text-[#ffecd2]" />
-                            <span className="text-[#ffecd2] text-xs font-bold tracking-wider">MOVE TO NEXT</span>
+                            <Compass className="h-4 w-4 text-primary-foreground" />
+                            <span className="text-primary-foreground text-xs font-bold tracking-wider">MOVE TO NEXT</span>
                           </div>
                           
                           {/* 移動情報 */}
                           <div className="space-y-2">
                             {/* 移動手段 */}
                             <div className="flex items-center gap-3">
-                              <span className="text-[#ffecd2] text-lg">▶</span>
+                              <span className="text-primary-foreground text-lg">▶</span>
                               <span className="text-2xl">
                                 {TRANSPORT_ICONS[transportType]?.icon || '🚶'}
                               </span>
-                              <span className="text-[#ffecd2] text-sm font-bold">
+                              <span className="text-primary-foreground text-sm font-bold">
                                 {TRANSPORT_ICONS[transportType]?.label || '移動'}
                               </span>
                             </div>
@@ -651,8 +651,8 @@ export function SpotDetailClient({ spotId }: SpotDetailClientProps) {
                             {/* 所要時間 */}
                             {travelTime && (
                               <div className="flex items-center gap-3 pl-7">
-                                <Clock className="h-4 w-4 text-[#ffecd2]/70" />
-                                <span className="text-[#ffecd2] text-sm">
+                                <Clock className="h-4 w-4 text-primary-foreground/70" />
+                                <span className="text-primary-foreground text-sm">
                                   約 <span className="text-lg font-bold text-[#ffd700]">{travelTime}</span> 分
                                 </span>
                               </div>
@@ -664,10 +664,10 @@ export function SpotDetailClient({ spotId }: SpotDetailClientProps) {
                                 {/* バス停情報 */}
                                 {transportType === 'bus' && (
                                   (segmentData?.departureStop || segmentData?.arrivalStop || transportDetails?.departureStop || transportDetails?.arrivalStop) && (
-                                    <div className="text-xs text-[#ffecd2]/80">
+                                    <div className="text-xs text-primary-foreground/80">
                                       <span className="text-[#ffd700]">🚏</span> {(segmentData?.departureStop || transportDetails?.departureStop) || '?'} → {(segmentData?.arrivalStop || transportDetails?.arrivalStop) || '?'}
                                       {(segmentData?.busLine || transportDetails?.busLine) && (
-                                        <span className="ml-1 text-[#ffecd2]/60">({segmentData?.busLine || transportDetails?.busLine})</span>
+                                        <span className="ml-1 text-primary-foreground/60">({segmentData?.busLine || transportDetails?.busLine})</span>
                                       )}
                                     </div>
                                   )
@@ -676,10 +676,10 @@ export function SpotDetailClient({ spotId }: SpotDetailClientProps) {
                                 {/* 駅情報 */}
                                 {transportType === 'train' && (
                                   (segmentData?.departureStation || segmentData?.arrivalStation || transportDetails?.departureStation || transportDetails?.arrivalStation) && (
-                                    <div className="text-xs text-[#ffecd2]/80">
+                                    <div className="text-xs text-primary-foreground/80">
                                       <span className="text-[#ffd700]">🚉</span> {(segmentData?.departureStation || transportDetails?.departureStation) || '?'} → {(segmentData?.arrivalStation || transportDetails?.arrivalStation) || '?'}
                                       {(segmentData?.lineName || transportDetails?.lineName) && (
-                                        <span className="ml-1 text-[#ffecd2]/60">({segmentData?.lineName || transportDetails?.lineName})</span>
+                                        <span className="ml-1 text-primary-foreground/60">({segmentData?.lineName || transportDetails?.lineName})</span>
                                       )}
                                     </div>
                                   )
@@ -688,10 +688,10 @@ export function SpotDetailClient({ spotId }: SpotDetailClientProps) {
                                 {/* 空港情報 */}
                                 {transportType === 'airplane' && (
                                   (segmentData?.departureAirport || segmentData?.arrivalAirport || transportDetails?.departureAirport || transportDetails?.arrivalAirport) && (
-                                    <div className="text-xs text-[#ffecd2]/80">
+                                    <div className="text-xs text-primary-foreground/80">
                                       <span className="text-[#ffd700]">✈️</span> {(segmentData?.departureAirport || transportDetails?.departureAirport) || '?'} → {(segmentData?.arrivalAirport || transportDetails?.arrivalAirport) || '?'}
                                       {(segmentData?.flightNumber || transportDetails?.flightNumber) && (
-                                        <span className="ml-1 text-[#ffecd2]/60">({segmentData?.flightNumber || transportDetails?.flightNumber})</span>
+                                        <span className="ml-1 text-primary-foreground/60">({segmentData?.flightNumber || transportDetails?.flightNumber})</span>
                                       )}
                                     </div>
                                   )
@@ -700,10 +700,10 @@ export function SpotDetailClient({ spotId }: SpotDetailClientProps) {
                                 {/* 🆕 変更点3: 船・フェリー情報の表示を追加（ferry と ship の両方に対応、segments配列にも対応） */}
                                 {(transportType === 'ferry' || transportType === 'ship') && (
                                   (segmentData?.departurePort || segmentData?.arrivalPort || transportDetails?.departurePort || transportDetails?.arrivalPort) && (
-                                    <div className="text-xs text-[#ffecd2]/80">
+                                    <div className="text-xs text-primary-foreground/80">
                                       <span className="text-[#ffd700]">⚓</span> {(segmentData?.departurePort || transportDetails?.departurePort) || '?'} → {(segmentData?.arrivalPort || transportDetails?.arrivalPort) || '?'}
                                       {(segmentData?.ferryLine || segmentData?.shipName || transportDetails?.ferryLine || (transportDetails as any)?.ferryLine || transportDetails?.shipName) && (
-                                        <span className="ml-1 text-[#ffecd2]/60">
+                                        <span className="ml-1 text-primary-foreground/60">
                                           ({(segmentData?.ferryLine || transportDetails?.ferryLine || (transportDetails as any)?.ferryLine || transportDetails?.shipName || segmentData?.shipName)})
                                         </span>
                                       )}
@@ -720,14 +720,14 @@ export function SpotDetailClient({ spotId }: SpotDetailClientProps) {
                                 
                                 {/* 駐車場情報 */}
                                 {transportType === 'car' && (segmentData?.parkingInfo || transportDetails?.parkingInfo) && (
-                                  <div className="text-xs text-[#ffecd2]/80">
+                                  <div className="text-xs text-primary-foreground/80">
                                     🅿️ {segmentData?.parkingInfo || transportDetails?.parkingInfo}
                                   </div>
                                 )}
                                 
                                 {/* メモ */}
                                 {(segmentData?.note || transportDetails?.note) && (
-                                  <div className="text-xs text-[#ffecd2]/60 italic">
+                                  <div className="text-xs text-primary-foreground/60 italic">
                                     📝 {segmentData?.note || transportDetails?.note}
                                   </div>
                                 )}
@@ -741,7 +741,7 @@ export function SpotDetailClient({ spotId }: SpotDetailClientProps) {
                           <motion.div
                             animate={{ y: [0, 4, 0] }}
                             transition={{ duration: 1, repeat: Infinity }}
-                            className="text-[#8b6914] text-2xl"
+                            className="text-primary text-2xl"
                           >
                             ▼
                           </motion.div>
@@ -760,8 +760,8 @@ export function SpotDetailClient({ spotId }: SpotDetailClientProps) {
       <div className="fixed bottom-6 right-6 z-40 flex flex-col gap-3">
         <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
           <Button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} size="icon" className="h-16 w-16 rounded-2xl shadow-2xl bg-[#5c3a21] border-2 border-[#ffecd2] flex flex-col items-center">
-            <ArrowUpFromLine className="h-6 w-6 text-[#ffecd2]" />
-            <span className="text-[10px] font-bold text-[#ffecd2]">TOP</span>
+            <ArrowUpFromLine className="h-6 w-6 text-primary-foreground" />
+            <span className="text-[10px] font-bold text-primary-foreground">TOP</span>
           </Button>
         </motion.div>
       </div>

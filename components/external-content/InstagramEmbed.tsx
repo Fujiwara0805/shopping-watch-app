@@ -77,7 +77,7 @@ export function InstagramEmbed({ postUrl, className = '' }: InstagramEmbedProps)
     >
       {loading && (
         <div className="flex items-center justify-center py-8">
-          <Loader2 className="h-8 w-8 animate-spin text-[#8b6914]" />
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       )}
       {error && (
@@ -87,7 +87,7 @@ export function InstagramEmbed({ postUrl, className = '' }: InstagramEmbedProps)
             href={postUrl} 
             target="_blank" 
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 mt-2 text-[#8b6914] hover:underline"
+            className="inline-flex items-center gap-1 mt-2 text-primary hover:underline"
           >
             Instagramで見る <ExternalLink className="h-4 w-4" />
           </a>
@@ -136,7 +136,7 @@ export function InstagramFeedCard({ username, className = '' }: InstagramFeedPro
           <h3 className="font-bold text-[#3d2914] text-lg">@{username}</h3>
           <p className="text-sm text-[#5c3a21]">Instagramをフォロー</p>
         </div>
-        <ExternalLink className="h-5 w-5 text-[#8b6914]" />
+        <ExternalLink className="h-5 w-5 text-primary" />
       </div>
     </motion.a>
   );

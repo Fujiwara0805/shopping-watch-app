@@ -52,8 +52,8 @@ export function RPGAccordion({
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
           "w-full flex items-center justify-between p-4 text-left transition-colors",
-          "hover:bg-opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#8b6914] focus-visible:ring-offset-2",
-          isOpen ? "bg-[#73370c] text-white" : "bg-[#fef3e8] text-[#73370c]",
+          "hover:bg-opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+          isOpen ? "bg-primary text-primary-foreground" : "bg-background text-primary",
           headerClassName
         )}
       >
@@ -70,7 +70,7 @@ export function RPGAccordion({
           {badge && (
             <span className={cn(
               "text-xs px-2 py-0.5 rounded-full font-medium",
-              isOpen ? "bg-white/20 text-white" : "bg-[#73370c]/10 text-[#73370c]"
+              isOpen ? "bg-white/20 text-white" : "bg-primary/10 text-primary"
             )}>
               {badge}
             </span>
@@ -78,7 +78,7 @@ export function RPGAccordion({
         </div>
         <AccordionIcon 
           isOpen={isOpen} 
-          className={isOpen ? "text-white" : "text-[#73370c]"} 
+          className={isOpen ? "text-primary-foreground" : "text-primary"} 
         />
       </button>
 

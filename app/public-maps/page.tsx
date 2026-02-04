@@ -9,17 +9,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { getPublicMaps } from '@/app/_actions/maps';
 import { Breadcrumb } from '@/components/seo/breadcrumb';
 
-// 🎨 LPカラーパレット
-const COLORS = {
-  primary: '#8b6914',      // ゴールドブラウン
-  primaryDark: '#3d2914',  // ダークブラウン
-  secondary: '#5c3a21',    // ミディアムブラウン
-  background: '#f5e6d3',   // ベージュ
-  surface: '#fff8f0',      // オフホワイト
-  cream: '#ffecd2',        // クリーム
-  border: '#d4c4a8',       // ライトベージュ
-  mint: '#e8f4e5',         // ミントグリーン
-};
+import { COLORS } from '@/lib/constants/colors';
 
 interface PublicMap {
   id: string;
@@ -130,7 +120,7 @@ export default function PublicMapsPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: index * 0.05 }}
-              whileHover={{ y: -4, boxShadow: "0 10px 30px rgba(61, 41, 20, 0.15)" }}
+              whileHover={{ y: -4, boxShadow: `0 10px 30px ${COLORS.primary}26` }}
               className="rounded-xl border-2 overflow-hidden transition-all cursor-pointer"
               style={{ backgroundColor: COLORS.surface, borderColor: COLORS.border }}
               onClick={() => handleMapClick(map.id)}
@@ -219,7 +209,7 @@ export default function PublicMapsPage() {
         <motion.button
           initial={{ opacity: 0, scale: 0 }}
           animate={{ opacity: 1, scale: 1 }}
-          whileHover={{ scale: 1.05, boxShadow: "0 10px 30px rgba(92, 58, 33, 0.3)" }}
+          whileHover={{ scale: 1.05, boxShadow: `0 10px 30px ${COLORS.primary}4D` }}
           whileTap={{ scale: 0.95 }}
           transition={{ duration: 0.3, delay: 0.1 }}
           onClick={handleMyPage}
@@ -234,7 +224,7 @@ export default function PublicMapsPage() {
         <motion.button
           initial={{ opacity: 0, scale: 0 }}
           animate={{ opacity: 1, scale: 1 }}
-          whileHover={{ scale: 1.05, boxShadow: "0 10px 30px rgba(139, 105, 20, 0.3)" }}
+          whileHover={{ scale: 1.05, boxShadow: `0 10px 30px ${COLORS.primary}4D` }}
           whileTap={{ scale: 0.95 }}
           transition={{ duration: 0.3, delay: 0.2 }}
           onClick={() => router.push('/create-map')}
@@ -249,7 +239,7 @@ export default function PublicMapsPage() {
         <motion.button
           initial={{ opacity: 0, scale: 0 }}
           animate={{ opacity: 1, scale: 1 }}
-          whileHover={{ scale: 1.05, boxShadow: "0 10px 30px rgba(139, 105, 20, 0.3)" }}
+          whileHover={{ scale: 1.05, boxShadow: `0 10px 30px ${COLORS.primary}4D` }}
           whileTap={{ scale: 0.95 }}
           transition={{ duration: 0.3, delay: 0.3 }}
           onClick={handleMapButtonClick}

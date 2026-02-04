@@ -17,7 +17,7 @@ export default function TermsGatewayPage() {
       title: 'サービスポリシー',
       description: 'サービスの概要、提供機能、運営方針について説明します。',
       icon: Shield,
-      color: 'text-[#73370c]'
+      color: 'text-primary'
     },
     {
       href: '/terms/terms-of-service',
@@ -50,7 +50,7 @@ export default function TermsGatewayPage() {
       >
         <Card>
           <CardHeader className="text-center">
-            <CardTitle className="text-3xl sm:text-4xl font-bold text-[#73370c]">
+            <CardTitle className="text-3xl sm:text-4xl font-bold text-primary">
               規約・ポリシー
             </CardTitle>
             <p className="text-muted-foreground pt-2">

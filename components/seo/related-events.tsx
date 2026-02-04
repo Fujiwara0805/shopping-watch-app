@@ -162,7 +162,7 @@ export function RelatedEvents({
       className="mt-8 px-4 pb-8"
     >
       <h2 className="text-lg font-bold text-[#3d2914] mb-4 flex items-center gap-2">
-        <MapPin className="h-5 w-5 text-[#8b6914]" />
+        <MapPin className="h-5 w-5 text-primary" />
         {city ? `${city}周辺のイベント` : '関連イベント'}
       </h2>
       
@@ -202,7 +202,7 @@ export function RelatedEvents({
                     />
                   ) : (
                     <div className="flex items-center justify-center h-full">
-                      <Calendar className="h-8 w-8 text-[#8b6914]/30" />
+                      <Calendar className="h-8 w-8 text-primary/30" />
                     </div>
                   )}
                 </div>
@@ -235,7 +235,7 @@ export function RelatedEvents({
       {city && (
         <Link
           href={`/area/${encodeURIComponent(prefecture)}/${encodeURIComponent(city)}`}
-          className="mt-4 flex items-center justify-center gap-1 text-sm text-[#8b6914] hover:text-[#3d2914] transition-colors"
+          className="mt-4 flex items-center justify-center gap-1 text-sm text-primary hover:text-foreground transition-colors"
         >
           <span>{city}のイベントをもっと見る</span>
           <ChevronRight className="h-4 w-4" />

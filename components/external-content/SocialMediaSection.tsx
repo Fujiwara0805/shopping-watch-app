@@ -43,11 +43,11 @@ export function SocialMediaSection({
           className="text-center mb-12"
         >
           <div className="flex items-center justify-center gap-4 mb-4">
-            <div className="h-px w-12 bg-gradient-to-r from-transparent to-[#8b6914]" />
-            <p className="px-5 py-1 text-xs sm:text-sm tracking-[0.25em] font-bold text-[#8b6914] border border-[#8b6914]/30 bg-[#fff8f0]/50">
+            <div className="h-px w-12 bg-gradient-to-r from-transparent to-primary" />
+            <p className="px-5 py-1 text-xs sm:text-sm tracking-[0.25em] font-bold text-primary border border-primary/30 bg-muted/50">
               NEWS & UPDATES
             </p>
-            <div className="h-px w-12 bg-gradient-to-l from-transparent to-[#8b6914]" />
+            <div className="h-px w-12 bg-gradient-to-l from-transparent to-primary" />
           </div>
           
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-[#3d2914] tracking-tight mt-4 font-serif">
@@ -69,14 +69,14 @@ export function SocialMediaSection({
           >
             <div className="flex items-center gap-3 mb-6">
               <div className="p-2 bg-[#fff8f0] rounded-lg border border-[#d4c4a8]">
-                <BookOpen className="h-5 w-5 text-[#8b6914]" />
+                <BookOpen className="h-5 w-5 text-primary" />
               </div>
               <h3 className="text-xl font-bold text-[#3d2914]">noteで記事を公開中</h3>
               <a
                 href={`https://note.com/${noteUsername}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="ml-auto text-sm text-[#8b6914] hover:underline flex items-center gap-1"
+                className="ml-auto text-sm text-primary hover:underline flex items-center gap-1"
               >
                 すべて見る <ExternalLink className="h-3 w-3" />
               </a>
@@ -118,7 +118,7 @@ export function SocialMediaSection({
                 <h3 className="font-bold text-[#3d2914] text-lg">@{xUsername}</h3>
                 <p className="text-sm text-[#5c3a21]">Xをフォロー</p>
               </div>
-              <ExternalLink className="h-5 w-5 text-[#8b6914]" />
+              <ExternalLink className="h-5 w-5 text-primary" />
             </motion.a>
           )}
 

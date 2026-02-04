@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, MapIcon } from 'lucide-react';
 import { Breadcrumb } from '@/components/seo/breadcrumb';
+import { designTokens } from '@/lib/constants/colors';
 
 export default function CreateMapCompletePage() {
   const router = useRouter();
@@ -28,9 +29,9 @@ export default function CreateMapCompletePage() {
           transition={{ delay: 0.2, type: "spring", stiffness: 260, damping: 20 }}
           className="mb-8"
         >
-          <CheckCircle className="h-24 w-24 text-green-500" />
+          <CheckCircle className="h-24 w-24" style={{ color: designTokens.colors.functional.success }} />
         </motion.div>
-        <h1 className="text-3xl font-bold text-center mb-4 text-[#73370c]">
+        <h1 className="text-3xl font-bold text-center mb-4" style={{ color: designTokens.colors.text.primary }}>
           マップ作成完了！
         </h1>
         <p className="text-lg text-muted-foreground text-center mb-8">
@@ -40,7 +41,8 @@ export default function CreateMapCompletePage() {
           <motion.div whileTap={{ scale: 0.98 }} className="w-full">
             <Button
               onClick={() => router.push('/my-maps')}
-              className="w-full text-lg py-3 px-6 bg-[#73370c] hover:bg-[#8b4513]"
+              className="w-full text-lg py-3 px-6 text-white"
+              style={{ backgroundColor: designTokens.colors.primary.base }}
               size="lg"
             >
               <MapIcon className="mr-2 h-5 w-5" />
@@ -51,7 +53,8 @@ export default function CreateMapCompletePage() {
             <Button
               variant="outline"
               onClick={() => router.push('/create-map')}
-              className="w-full text-lg py-3 px-6 border-[#73370c] text-[#73370c] hover:bg-[#fef3e8]"
+              className="w-full text-lg py-3 px-6"
+              style={{ borderColor: designTokens.colors.primary.base, color: designTokens.colors.primary.base }}
               size="lg"
             >
               新しいマップを作る

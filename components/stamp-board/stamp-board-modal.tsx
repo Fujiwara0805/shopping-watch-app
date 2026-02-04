@@ -126,7 +126,7 @@ export function StampBoardModal({
     >
       {loading ? (
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-[#73370c]" />
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       ) : (
         <>
@@ -140,7 +140,7 @@ export function StampBoardModal({
                 transition={{ duration: 0.2, delay: index * 0.05 }}
                 className={`aspect-square rounded-lg border-2 ${
                   checkIn 
-                    ? 'border-[#73370c] bg-gradient-to-br from-orange-50 to-amber-50 shadow-md' 
+                    ? 'border-primary bg-background shadow-md' 
                     : 'border-gray-300 bg-gray-100'
                 } p-2 flex flex-col items-center justify-center`}
               >
@@ -156,7 +156,7 @@ export function StampBoardModal({
                       />
                     </div>
                     {/* イベント名（省略表示） */}
-                    <p className="text-xs font-bold text-[#73370c] text-center line-clamp-2 leading-tight">
+                    <p className="text-xs font-bold text-primary text-center line-clamp-2 leading-tight">
                       {checkIn.event_name}
                     </p>
                     {/* 日付 */}
@@ -189,7 +189,7 @@ export function StampBoardModal({
                 initial={{ width: 0 }}
                 animate={{ width: `${(checkIns.length / 9) * 100}%` }}
                 transition={{ duration: 0.8, ease: "easeOut" }}
-                className="h-full bg-gradient-to-r from-[#73370c] to-[#a04d14]"
+                className="h-full bg-primary"
               />
             </div>
           </div>
@@ -198,7 +198,7 @@ export function StampBoardModal({
           <Button
             onClick={handleSubmit}
             disabled={checkIns.length < 9 || submitting}
-            className="w-full bg-[#73370c] hover:bg-[#5c2a0a] disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {submitting ? (
               <>

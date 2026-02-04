@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { COLORS } from '@/lib/constants/colors';
 import { motion } from 'framer-motion';
 import { ExternalLink, BookOpen, Loader2, Scroll } from 'lucide-react';
 
@@ -86,7 +87,7 @@ export function NoteArticles({ username, maxItems = 3, className = '' }: NoteArt
           animate={{ rotate: 360 }}
           transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
         >
-          <Scroll className="h-10 w-10 text-[#8b6914]" />
+          <Scroll className="h-10 w-10 text-primary" />
         </motion.div>
       </div>
     );
@@ -94,7 +95,7 @@ export function NoteArticles({ username, maxItems = 3, className = '' }: NoteArt
 
   if (error) {
     return (
-      <div className={`text-center py-8 text-[#5c3a21] ${className}`}>
+      <div className={`text-center py-8 text-muted-foreground ${className}`}>
         <p>{error}</p>
       </div>
     );
@@ -102,7 +103,7 @@ export function NoteArticles({ username, maxItems = 3, className = '' }: NoteArt
 
   if (articles.length === 0) {
     return (
-      <div className={`text-center py-8 text-[#5c3a21] ${className}`}>
+      <div className={`text-center py-8 text-muted-foreground ${className}`}>
         <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
         <p>記事がありません</p>
       </div>
@@ -129,7 +130,7 @@ export function NoteArticles({ username, maxItems = 3, className = '' }: NoteArt
             style={{
               background: 'linear-gradient(145deg, #f5e6c8 0%, #e8d4a8 50%, #d4c090 100%)',
               borderRadius: '8px',
-              border: '3px solid #8b6914',
+              border: `3px solid ${COLORS.primary}`,
               boxShadow: '0 4px 16px rgba(61, 41, 20, 0.2), inset 0 2px 4px rgba(255, 255, 255, 0.3)',
             }}
           >
@@ -146,10 +147,10 @@ export function NoteArticles({ username, maxItems = 3, className = '' }: NoteArt
             />
             
             {/* 角の装飾 */}
-            <div className="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-[#6b4e0a] rounded-tl-md" />
-            <div className="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 border-[#6b4e0a] rounded-tr-md" />
-            <div className="absolute bottom-0 left-0 w-6 h-6 border-b-2 border-l-2 border-[#6b4e0a] rounded-bl-md" />
-            <div className="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-[#6b4e0a] rounded-br-md" />
+            <div className="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-primary rounded-tl-md" />
+            <div className="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 border-primary rounded-tr-md" />
+            <div className="absolute bottom-0 left-0 w-6 h-6 border-b-2 border-l-2 border-primary rounded-bl-md" />
+            <div className="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-primary rounded-br-md" />
             
             <div className="relative p-5">
               {/* 章番号 */}
@@ -163,7 +164,7 @@ export function NoteArticles({ username, maxItems = 3, className = '' }: NoteArt
                   <span 
                     className="text-xs font-bold tracking-wider px-2 py-1 rounded"
                     style={{
-                      background: 'linear-gradient(135deg, #8b6914 0%, #6b4e0a 100%)',
+                      background: `linear-gradient(135deg, ${COLORS.primary} 0%, ${COLORS.primaryDark} 100%)`,
                       color: '#f5e6c8',
                       textShadow: '0 1px 2px rgba(0,0,0,0.3)',
                     }}
@@ -174,7 +175,7 @@ export function NoteArticles({ username, maxItems = 3, className = '' }: NoteArt
                 <span 
                   className="text-xs italic"
                   style={{ 
-                    color: '#6b4e0a',
+                    color: COLORS.primaryDark,
                     fontFamily: 'serif',
                   }}
                 >
@@ -188,9 +189,9 @@ export function NoteArticles({ username, maxItems = 3, className = '' }: NoteArt
               
               {/* タイトル */}
               <h3 
-                className="font-bold line-clamp-2 mb-3 group-hover:text-[#4a3508] transition-colors"
+                className="font-bold line-clamp-2 mb-3 group-hover:text-foreground transition-colors"
                 style={{
-                  color: '#3d2914',
+                  color: COLORS.textPrimary,
                   fontSize: '1.1rem',
                   fontFamily: 'serif',
                   textShadow: '0 1px 1px rgba(255,255,255,0.5)',
@@ -204,7 +205,7 @@ export function NoteArticles({ username, maxItems = 3, className = '' }: NoteArt
               <div 
                 className="w-full h-px mb-3"
                 style={{
-                  background: 'linear-gradient(90deg, transparent 0%, #8b6914 20%, #8b6914 80%, transparent 100%)',
+                  background: `linear-gradient(90deg, transparent 0%, ${COLORS.primary} 20%, ${COLORS.primary} 80%, transparent 100%)`,
                 }}
               />
               
@@ -212,7 +213,7 @@ export function NoteArticles({ username, maxItems = 3, className = '' }: NoteArt
               <p 
                 className="text-sm line-clamp-2 mb-4"
                 style={{
-                  color: '#5c3a21',
+                  color: COLORS.textSecondary,
                   fontFamily: 'serif',
                   lineHeight: '1.7',
                 }}
@@ -226,9 +227,9 @@ export function NoteArticles({ username, maxItems = 3, className = '' }: NoteArt
                 whileHover={{ x: 5 }}
               >
                 <span 
-                  className="flex items-center gap-2 text-sm group-hover:text-[#4a3508] transition-colors"
+                  className="flex items-center gap-2 text-sm group-hover:text-foreground transition-colors"
                   style={{
-                    color: '#8b6914',
+                    color: COLORS.primary,
                     fontFamily: 'serif',
                     fontStyle: 'italic',
                   }}

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { MapPin, Calendar, Users, Heart, Sparkles, Target } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Breadcrumb } from '@/components/seo/breadcrumb';
+import { designTokens } from '@/lib/constants/colors';
 
 /**
  * Aboutページ - AI検索エンジン向けに最適化
@@ -12,7 +13,7 @@ import { Breadcrumb } from '@/components/seo/breadcrumb';
  */
 export default function AboutPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#fef3e7] to-white">
+    <div className="min-h-screen bg-gradient-to-b to-white" style={{ backgroundImage: `linear-gradient(to bottom, ${designTokens.colors.background.mist}, white)` }}>
       {/* パンくずリスト */}
       <div className="px-4 sm:px-8 pt-4">
         <Breadcrumb />
@@ -26,10 +27,10 @@ export default function AboutPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-[#73370c] mb-6">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold mb-6" style={{ color: designTokens.colors.text.primary }}>
               トクドクについて
             </h1>
-            <p className="text-xl sm:text-2xl text-gray-700 leading-relaxed">
+            <p className="text-xl sm:text-2xl leading-relaxed" style={{ color: designTokens.colors.text.secondary }}>
               地域のイベント情報を地図で発見。<br />
               人と街をつなぐ、新しいイベント発見プラットフォームです。
             </p>
@@ -47,8 +48,8 @@ export default function AboutPage() {
             viewport={{ once: true }}
           >
             <div className="flex items-center justify-center mb-8">
-              <Target className="h-12 w-12 text-[#73370c] mr-4" />
-              <h2 className="text-3xl sm:text-4xl font-bold text-[#73370c]">
+              <Target className="h-12 w-12 mr-4" style={{ color: designTokens.colors.primary.base }} />
+              <h2 className="text-3xl sm:text-4xl font-bold" style={{ color: designTokens.colors.text.primary }}>
                 私たちのミッション
               </h2>
             </div>
@@ -67,7 +68,7 @@ export default function AboutPage() {
       {/* 特徴 */}
       <section className="py-16 px-4 sm:px-8">
         <div className="container mx-auto max-w-6xl">
-          <h2 className="text-3xl sm:text-4xl font-bold text-[#73370c] text-center mb-12">
+          <h2 className="text-3xl sm:text-4xl font-bold text-center mb-12" style={{ color: designTokens.colors.text.primary }}>
             トクドクの特徴
           </h2>
 
@@ -118,10 +119,10 @@ export default function AboutPage() {
                 viewport={{ once: true }}
                 className="bg-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition-shadow"
               >
-                <div className="bg-[#fef3e8] w-16 h-16 rounded-xl flex items-center justify-center mb-4">
-                  <feature.icon className="h-8 w-8 text-[#73370c]" strokeWidth={2.5} />
+                <div className="w-16 h-16 rounded-xl flex items-center justify-center mb-4" style={{ backgroundColor: designTokens.colors.background.mist }}>
+                  <feature.icon className="h-8 w-8" style={{ color: designTokens.colors.primary.base }} strokeWidth={2.5} />
                 </div>
-                <h3 className="text-xl font-bold text-[#73370c] mb-3">
+                <h3 className="text-xl font-bold mb-3" style={{ color: designTokens.colors.text.primary }}>
                   {feature.title}
                 </h3>
                 <p className="text-gray-600 leading-relaxed">{feature.description}</p>
@@ -134,7 +135,7 @@ export default function AboutPage() {
       {/* 使い方 */}
       <section className="py-16 px-4 sm:px-8 bg-white">
         <div className="container mx-auto max-w-4xl">
-          <h2 className="text-3xl sm:text-4xl font-bold text-[#73370c] text-center mb-12">
+          <h2 className="text-3xl sm:text-4xl font-bold text-center mb-12" style={{ color: designTokens.colors.text.primary }}>
             使い方
           </h2>
 
@@ -167,11 +168,11 @@ export default function AboutPage() {
                 viewport={{ once: true }}
                 className="flex items-start gap-6"
               >
-                <div className="flex-shrink-0 w-16 h-16 bg-[#73370c] text-white rounded-full flex items-center justify-center text-2xl font-bold">
+                <div className="flex-shrink-0 w-16 h-16 text-white rounded-full flex items-center justify-center text-2xl font-bold" style={{ backgroundColor: designTokens.colors.primary.base }}>
                   {item.step}
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-2xl font-bold text-[#73370c] mb-2">
+                  <h3 className="text-2xl font-bold mb-2" style={{ color: designTokens.colors.text.primary }}>
                     {item.title}
                   </h3>
                   <p className="text-lg text-gray-600 leading-relaxed">
@@ -187,40 +188,40 @@ export default function AboutPage() {
       {/* サービス詳細 */}
       <section className="py-16 px-4 sm:px-8">
         <div className="container mx-auto max-w-4xl">
-          <h2 className="text-3xl sm:text-4xl font-bold text-[#73370c] text-center mb-12">
+          <h2 className="text-3xl sm:text-4xl font-bold text-center mb-12" style={{ color: designTokens.colors.text.primary }}>
             サービス詳細
           </h2>
 
           <div className="bg-white p-8 rounded-2xl shadow-lg">
             <dl className="space-y-6">
               <div>
-                <dt className="text-xl font-bold text-[#73370c] mb-2">対応エリア</dt>
+                <dt className="text-xl font-bold mb-2" style={{ color: designTokens.colors.text.primary }}>対応エリア</dt>
                 <dd className="text-lg text-gray-600">
                   現在は大分県内のイベント情報を掲載しています。今後、他の地域にも拡大予定です。
                 </dd>
               </div>
               <div>
-                <dt className="text-xl font-bold text-[#73370c] mb-2">掲載イベント</dt>
+                <dt className="text-xl font-bold mb-2" style={{ color: designTokens.colors.text.primary }}>掲載イベント</dt>
                 <dd className="text-lg text-gray-600">
                   お祭り、夏祭り、秋祭り、マルシェ、フリーマーケット、ワークショップ、体験イベント、
                   フードフェスティバル、音楽イベント、地域の催し物など
                 </dd>
               </div>
               <div>
-                <dt className="text-xl font-bold text-[#73370c] mb-2">利用料金</dt>
+                <dt className="text-xl font-bold mb-2" style={{ color: designTokens.colors.text.primary }}>利用料金</dt>
                 <dd className="text-lg text-gray-600">
                   完全無料。すべての機能を無料でご利用いただけます。
                 </dd>
               </div>
               <div>
-                <dt className="text-xl font-bold text-[#73370c] mb-2">対応デバイス</dt>
+                <dt className="text-xl font-bold mb-2" style={{ color: designTokens.colors.text.primary }}>対応デバイス</dt>
                 <dd className="text-lg text-gray-600">
                   スマートフォン、タブレット、パソコンなど、あらゆるデバイスでご利用いただけます。
                   ウェブブラウザから簡単にアクセスでき、アプリのインストールは不要です。
                 </dd>
               </div>
               <div>
-                <dt className="text-xl font-bold text-[#73370c] mb-2">更新頻度</dt>
+                <dt className="text-xl font-bold mb-2" style={{ color: designTokens.colors.text.primary }}>更新頻度</dt>
                 <dd className="text-lg text-gray-600">
                   リアルタイムで更新。新しいイベント情報が随時追加され、
                   終了したイベントは自動的に非表示になります。
@@ -232,7 +233,7 @@ export default function AboutPage() {
       </section>
 
       {/* CTA */}
-      <section className="py-20 px-4 sm:px-8 bg-gradient-to-br from-[#fef3e8] to-[#fff5eb]">
+      <section className="py-20 px-4 sm:px-8" style={{ background: `linear-gradient(to bottom right, ${designTokens.colors.background.mist}, ${designTokens.colors.background.white})` }}>
         <div className="container mx-auto max-w-4xl text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -240,7 +241,7 @@ export default function AboutPage() {
             transition={{ duration: 0.6 }}
             viewport={{ once: true }}
           >
-            <h2 className="text-3xl sm:text-4xl font-bold text-[#73370c] mb-6">
+            <h2 className="text-3xl sm:text-4xl font-bold mb-6" style={{ color: designTokens.colors.text.primary }}>
               さあ、始めよう！
             </h2>
             <p className="text-xl text-gray-700 mb-8">
@@ -249,7 +250,8 @@ export default function AboutPage() {
             <Link href="/map">
               <Button
                 size="lg"
-                className="h-16 px-12 text-xl font-bold rounded-full bg-[#73370c] hover:bg-[#5c2a0a]"
+                className="h-16 px-12 text-xl font-bold rounded-full text-white"
+                style={{ backgroundColor: designTokens.colors.primary.base }}
               >
                 イベントを探す
               </Button>
@@ -261,7 +263,7 @@ export default function AboutPage() {
       {/* 運営情報 */}
       <section className="py-16 px-4 sm:px-8 bg-white">
         <div className="container mx-auto max-w-4xl">
-          <h2 className="text-3xl sm:text-4xl font-bold text-[#73370c] text-center mb-12">
+          <h2 className="text-3xl sm:text-4xl font-bold text-center mb-12" style={{ color: designTokens.colors.text.primary }}>
             運営情報
           </h2>
           <div className="bg-gray-50 p-8 rounded-2xl">
@@ -281,7 +283,7 @@ export default function AboutPage() {
               <div>
                 <dt className="font-bold text-gray-700 mb-1">お問い合わせ</dt>
                 <dd className="text-gray-600">
-                  <Link href="/contact" className="text-[#73370c] hover:underline">
+                  <Link href="/contact" className="hover:underline" style={{ color: designTokens.colors.primary.base }}>
                     お問い合わせフォーム
                   </Link>
                 </dd>
