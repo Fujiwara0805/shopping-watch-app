@@ -18,72 +18,7 @@ import { Ad } from '@/types/ad';
 import { generateSemanticEventUrl } from '@/lib/seo/url-helper';
 import { isHolidayOrSubstitute } from '@/lib/constants';
 import { Breadcrumb } from '@/components/seo/breadcrumb';
-
-// ===================================================================
-// DESIGN SYSTEM: "Oita Organic Elegance"
-// ===================================================================
-
-const designTokens = {
-  colors: {
-    primary: {
-      base: '#6E7F80',
-      dark: '#5A6B6C',
-      light: '#8A9A9B',
-      contrast: '#FFFFFF',
-    },
-    secondary: {
-      fern: '#8A9A5B',
-      fernLight: '#A4B47A',
-      fernDark: '#6F7D48',
-      stone: '#C2B8A3',
-      stoneLight: '#D4CCBA',
-      stoneDark: '#A89E8A',
-    },
-    accent: {
-      lilac: '#BFA3D1',
-      lilacLight: '#D4C2E3',
-      lilacDark: '#9B7FB5',
-      gold: '#E2C275',
-      goldLight: '#EDD49A',
-      goldDark: '#C9A85C',
-    },
-    background: {
-      mist: '#F4F5F2',
-      cloud: '#E6E9E5',
-      white: '#FFFFFF',
-    },
-    text: {
-      primary: '#2D3436',
-      secondary: '#636E72',
-      muted: '#95A5A6',
-      inverse: '#FFFFFF',
-    },
-    functional: {
-      error: '#E74C3C',
-      success: '#27AE60',
-      warning: '#F39C12',
-      info: '#3498DB',
-    },
-  },
-  typography: {
-    display: "'Sora', 'Noto Sans JP', sans-serif",
-    body: "'IBM Plex Sans JP', 'Noto Sans JP', sans-serif",
-  },
-  elevation: {
-    subtle: '0 1px 3px rgba(110, 127, 128, 0.08)',
-    low: '0 2px 8px rgba(110, 127, 128, 0.10)',
-    medium: '0 4px 16px rgba(110, 127, 128, 0.12)',
-    high: '0 8px 32px rgba(110, 127, 128, 0.15)',
-    dramatic: '0 16px 48px rgba(110, 127, 128, 0.20)',
-  },
-  radius: {
-    sm: '8px',
-    md: '12px',
-    lg: '16px',
-    xl: '24px',
-    full: '9999px',
-  },
-};
+import { designTokens } from '@/lib/constants';
 
 // イベントデータの型定義
 interface EventPost {

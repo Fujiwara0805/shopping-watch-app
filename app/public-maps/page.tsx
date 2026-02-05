@@ -109,9 +109,9 @@ export default function PublicMapsPage() {
               <Compass className="h-10 w-10" style={{ color: COLORS.primary }} />
             </div>
             <h3 className="text-xl font-semibold mb-2" style={{ color: COLORS.primaryDark }}>
-              マップがまだありません
+              モデルコースがまだありません
             </h3>
-            <p style={{ color: COLORS.secondary }}>マップが投稿され次第、ここに表示されます</p>
+            <p style={{ color: COLORS.secondary }}>モデルコースが投稿され次第、ここに表示されます</p>
           </div>
         ) : (
           publicMaps.map((map, index) => (
@@ -220,7 +220,7 @@ export default function PublicMapsPage() {
           <span className="text-xs font-medium" style={{ color: COLORS.cream }}>MyPage</span>
         </motion.button>
 
-        {/* 作成ボタン（羽ペンアイコン） */}
+        {/* モデルコース作成ボタン（羽ペンアイコン） */}
         <motion.button
           initial={{ opacity: 0, scale: 0 }}
           animate={{ opacity: 1, scale: 1 }}

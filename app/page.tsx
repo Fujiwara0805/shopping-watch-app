@@ -3,10 +3,12 @@
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence, useScroll, useTransform, useInView } from 'framer-motion';
-import { MapPin, Menu, X, ChevronRight, Calendar, LogOut, Search, Layers, Clock, MapPinOff, Map, Users, ArrowRight, Compass, ExternalLink } from 'lucide-react';
+import { MapPin, Menu, X, ChevronRight, Calendar, LogOut, Search, Layers, Clock, MapPinOff, Map, Users, ArrowRight, Compass, ExternalLink, Sparkles, Route, Globe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useSession, signOut } from 'next-auth/react';
 import { getPublicMaps } from '@/app/_actions/maps';
+import { getPublicSpots } from '@/app/_actions/spots';
+import type { SpotWithAuthor } from '@/types/spot';
 import { NoteArticlesSection } from '@/components/external-content';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -367,7 +369,7 @@ const HeroSection = ({
               }}
             >
               <Compass className="w-4 h-4" />
-              Discover Oita&apos;s Local Events
+              Preserve &amp; Discover Oita&apos;s Heritage
             </span>
           </motion.div>
 
@@ -382,10 +384,10 @@ const HeroSection = ({
               color: designTokens.colors.text.primary,
             }}
           >
-            あなたの周りには
+            大分の魅力を、
             <br />
             <span className="relative inline-block mt-2">
-              <span className="relative z-10">素敵な物語がある</span>
+              <span className="relative z-10">未来へつなぐ</span>
               <motion.span 
                 initial={{ scaleX: 0 }}
                 animate={{ scaleX: 1 }}
@@ -613,19 +615,19 @@ const ChallengesSection = () => {
 
   const challenges = [
     {
-      icon: <Layers className="w-6 h-6" />,
-      title: '情報の分断',
-      description: '市町村ごとにバラバラのプラットフォーム。一元的な発見体験が存在しない。',
+      icon: <Clock className="w-6 h-6" />,
+      title: '消えゆく地域の文化遺産',
+      description: '大分県内の魅力的なイベントや祭りが、記録されないまま人々の記憶から消えていく。後世に残すべき文化が、静かに失われている。',
     },
     {
-      icon: <Clock className="w-6 h-6" />,
-      title: '機会の消失',
-      description: '「知らないうちに終わっていた」を繰り返す、情報到達の構造的な遅延。',
+      icon: <Globe className="w-6 h-6" />,
+      title: '旅行者が求める自由な旅',
+      description: '一人旅やインバウンド観光客が増加する中、ツアーに頼らず自分のペースで観光名所やモデルコースを巡りたいというニーズに応える情報が不足している。',
     },
     {
       icon: <MapPinOff className="w-6 h-6" />,
-      title: '地図との断絶',
-      description: 'テキストリストでは伝わらない、「場所」としての文脈と魅力。',
+      title: '埋もれたままの魅力的なスポット',
+      description: '地域に数多く存在する魅力的な場所が、知られないまま観光資源として活かされていない。新たな名所を生み出す仕組みがない。',
     },
   ];
 
@@ -649,9 +651,9 @@ const ChallengesSection = () => {
               color: designTokens.colors.primary.base,
             }}
           >
-            地域情報の分断が、
+            失われゆく文化と、
             <br />
-            機会損失を生んでいる。
+            届かない魅力。
           </motion.h2>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
@@ -663,9 +665,9 @@ const ChallengesSection = () => {
               color: designTokens.colors.text.secondary,
             }}
           >
-            観光客は「何があるかわからない」。住民は「知らないうちに終わっていた」。
+            地域の祭りやイベントが記録されないまま消え、魅力的な場所が知られないまま埋もれている。
             <br className="hidden sm:block" />
-            これが、大分の地域経済における見えない課題でした。
+            一人旅やインバウンド客が自由に巡れる情報も、まだ十分ではありません。
           </motion.p>
         </div>
 
@@ -727,24 +729,24 @@ const SolutionSection = () => {
 
   const solutions = [
     {
-      label: 'DISCOVER',
-      title: '地図から発見する',
-      description: '日付・エリア・対象で絞り込み、地図上でイベントを俯瞰。「偶然の出会い」をデザインする検索体験。',
-      icon: <Search className="w-8 h-8" />,
+      label: 'PRESERVE',
+      title: 'イベントと祭りを後世に残す',
+      description: '大分県内で開催される魅力的なイベントやお祭りを記録し、5年後、10年後、20年後まで残す。地域の文化遺産を未来へつなぎます。',
+      icon: <Sparkles className="w-8 h-8" />,
       color: designTokens.colors.accent.lilac,
     },
     {
-      label: 'CREATE',
-      title: 'あなたの地図を作る',
-      description: 'お気に入りのスポットを登録し、パーソナルマップを構築。旅の記録が、誰かの道標になる。',
-      icon: <Map className="w-8 h-8" />,
+      label: 'DISCOVER',
+      title: 'スポットを登録し、新たな名所を作る',
+      description: 'あなたが見つけた魅力的な場所をマップ上に記録。多くのユーザーの発見が集まり、新たな名所や観光地が生まれます。',
+      icon: <MapPin className="w-8 h-8" />,
       color: designTokens.colors.secondary.fern,
     },
     {
-      label: 'SHARE',
-      title: '物語を共有する',
-      description: '作成した地図は公開・限定公開を選択可能。地域の知見が、有機的に繋がっていく。',
-      icon: <Users className="w-8 h-8" />,
+      label: 'EXPLORE',
+      title: 'モデルコースでツアーに頼らない旅',
+      description: '一人旅やインバウンド観光客の増加に応え、ツアーに頼らず観光名所やモデルコースを自由に巡れる情報を提供します。',
+      icon: <Route className="w-8 h-8" />,
       color: designTokens.colors.accent.gold,
     },
   ];
@@ -771,9 +773,9 @@ const SolutionSection = () => {
               color: designTokens.colors.primary.base,
             }}
           >
-            地域情報の、
+            TOKUDOKUが届ける、
             <br />
-            新しい標準。
+            3つの価値。
           </motion.h2>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
@@ -785,9 +787,9 @@ const SolutionSection = () => {
               color: designTokens.colors.text.secondary,
             }}
           >
-            TOKUDOKUは、大分県のローカルイベントを「地図」という普遍的インターフェースに統合。
+            大分の魅力的なイベントや祭りを後世に残し、新たな名所を生み出し、
             <br className="hidden sm:block" />
-            情報を「探す」から、地域を「発見する」体験へ。
+            自由な旅を実現する。TOKUDOKUが提供する3つのソリューション。
           </motion.p>
         </div>
 
@@ -869,10 +871,184 @@ const SolutionSection = () => {
 };
 
 // ===================================================================
-// ATLAS SECTION (Public Maps)
+// SPOTS SECTION
 // ===================================================================
 
-const AtlasSection = ({ onMapClick }: { onMapClick: (mapId: string) => void }) => {
+const SpotsSection = () => {
+  const router = useRouter();
+  const [spots, setSpots] = useState<SpotWithAuthor[]>([]);
+  const [loading, setLoading] = useState(true);
+  const sectionRef = useRef<HTMLElement>(null);
+  const isInView = useInView(sectionRef, { once: true, margin: '-100px' });
+
+  useEffect(() => {
+    fetchSpots();
+  }, []);
+
+  const fetchSpots = async () => {
+    try {
+      const { spots: fetchedSpots, error } = await getPublicSpots(6);
+      if (error) throw new Error(error);
+      setSpots(fetchedSpots);
+    } catch (error: any) {
+      console.error('スポット取得エラー:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <section
+      ref={sectionRef}
+      className="py-24 sm:py-32 px-6 relative overflow-hidden"
+      style={{ background: designTokens.colors.background.cloud }}
+    >
+      <div className="container mx-auto max-w-5xl relative z-10">
+        <div className="text-center mb-16">
+          <SectionLabel>Spots</SectionLabel>
+          <motion.h2
+            initial={{ opacity: 0, y: 30 }}
+            animate={isInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.6, delay: 0.1 }}
+            className="mt-4 text-3xl sm:text-4xl md:text-5xl font-semibold leading-tight"
+            style={{
+              fontFamily: designTokens.typography.display,
+              color: designTokens.colors.primary.base,
+            }}
+          >
+            あなたの発見が、
+            <br />
+            未来の名所になる。
+          </motion.h2>
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={isInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="mt-6 text-lg max-w-2xl mx-auto leading-relaxed"
+            style={{
+              fontFamily: designTokens.typography.body,
+              color: designTokens.colors.text.secondary,
+            }}
+          >
+            大分県内の魅力的なスポットをマップ上に記録。
+            <br className="hidden sm:block" />
+            5年後、10年後、20年後まで残り続ける新たな名所を、あなたの手で作りましょう。
+          </motion.p>
+        </div>
+
+        {loading ? (
+          <div className="flex items-center justify-center py-20">
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
+              className="w-10 h-10 border-2 rounded-full"
+              style={{
+                borderColor: `${designTokens.colors.secondary.stone}50`,
+                borderTopColor: designTokens.colors.secondary.fern,
+              }}
+            />
+          </div>
+        ) : spots.length === 0 ? (
+          <ElevationCard elevation="low" padding="xl" hover={false} className="max-w-md mx-auto text-center">
+            <MapPin className="w-12 h-12 mx-auto mb-4" style={{ color: designTokens.colors.text.muted }} />
+            <p style={{ color: designTokens.colors.text.secondary }}>
+              まだスポットが登録されていません。
+              <br />
+              最初の発見者になりましょう。
+            </p>
+          </ElevationCard>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {spots.map((spot, index) => (
+              <motion.div
+                key={spot.id}
+                initial={{ opacity: 0, y: 30 }}
+                animate={isInView ? { opacity: 1, y: 0 } : {}}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+              >
+                <ElevationCard elevation="medium" padding="none" className="overflow-hidden h-full group">
+                  <div className="relative overflow-hidden h-48">
+                    {spot.image_urls && spot.image_urls.length > 0 ? (
+                      <img
+                        src={spot.image_urls[0]}
+                        alt={spot.store_name}
+                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                      />
+                    ) : (
+                      <div
+                        className="w-full h-full flex items-center justify-center"
+                        style={{ background: designTokens.colors.background.cloud }}
+                      >
+                        <MapPin className="w-12 h-12" style={{ color: designTokens.colors.text.muted }} />
+                      </div>
+                    )}
+                    <div
+                      className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                      style={{ background: `linear-gradient(to top, ${designTokens.colors.primary.base}50, transparent)` }}
+                    />
+                  </div>
+                  <div className="p-5">
+                    <h3
+                      className="font-semibold text-base mb-2 line-clamp-1"
+                      style={{
+                        fontFamily: designTokens.typography.display,
+                        color: designTokens.colors.primary.base,
+                      }}
+                    >
+                      {spot.store_name}
+                    </h3>
+                    <p
+                      className="text-sm line-clamp-2 mb-3"
+                      style={{ color: designTokens.colors.text.secondary }}
+                    >
+                      {spot.description}
+                    </p>
+                    <div
+                      className="flex items-center text-xs"
+                      style={{ color: designTokens.colors.text.muted }}
+                    >
+                      <Users className="w-3.5 h-3.5 mr-1.5" />
+                      {spot.author_name}
+                    </div>
+                  </div>
+                </ElevationCard>
+              </motion.div>
+            ))}
+          </div>
+        )}
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={isInView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.5, delay: 0.5 }}
+          className="text-center mt-12"
+        >
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => router.push('/create-spot')}
+            className="group inline-flex items-center gap-2 px-8 py-4 rounded-full font-semibold transition-all"
+            style={{
+              background: designTokens.colors.secondary.fern,
+              color: designTokens.colors.text.inverse,
+              boxShadow: `0 8px 32px ${designTokens.colors.secondary.fern}40`,
+            }}
+          >
+            <MapPin className="w-5 h-5" />
+            スポットを登録する
+            <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
+          </motion.button>
+        </motion.div>
+      </div>
+    </section>
+  );
+};
+
+// ===================================================================
+// MODEL COURSE SECTION (Public Maps)
+// ===================================================================
+
+const ModelCourseSection = ({ onMapClick }: { onMapClick: (mapId: string) => void }) => {
   const router = useRouter();
   const [publicMaps, setPublicMaps] = useState<PublicMapData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -926,7 +1102,7 @@ const AtlasSection = ({ onMapClick }: { onMapClick: (mapId: string) => void }) =
       <div className="container mx-auto max-w-6xl relative z-10">
         {/* Section Header */}
         <div className="text-center mb-16">
-          <SectionLabel>Atlas</SectionLabel>
+          <SectionLabel>Model Course</SectionLabel>
           <motion.h2
             initial={{ opacity: 0, y: 30 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
@@ -937,9 +1113,9 @@ const AtlasSection = ({ onMapClick }: { onMapClick: (mapId: string) => void }) =
               color: designTokens.colors.primary.base,
             }}
           >
-            地域の知見が、
+            モデルコースで、
             <br />
-            地図になる。
+            大分を巡る。
           </motion.h2>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
@@ -951,9 +1127,9 @@ const AtlasSection = ({ onMapClick }: { onMapClick: (mapId: string) => void }) =
               color: designTokens.colors.text.secondary,
             }}
           >
-            誰かが歩いた道は、次の旅人の道標になる。
+            ツアーに頼らず、自分のペースで大分を楽しむ。
             <br className="hidden sm:block" />
-            TOKUDOKUユーザーが作成した公開マップ。
+            一人旅やインバウンド観光客のためのモデルコース。
           </motion.p>
         </div>
 
@@ -1027,7 +1203,7 @@ const AtlasSection = ({ onMapClick }: { onMapClick: (mapId: string) => void }) =
               background: `${designTokens.colors.accent.lilac}10`,
             }}
           >
-            すべての地図を見る
+            すべてのモデルコースを見る
             <ChevronRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
           </motion.button>
         </motion.div>
@@ -1161,14 +1337,14 @@ const FinalCTASection = ({ onStart }: { onStart: () => void }) => {
               color: designTokens.colors.text.inverse,
             }}
           >
-            地域を、再発見する。
+            大分の魅力を、未来へ。
           </h2>
           
           <p 
             className="text-lg max-w-md mx-auto"
             style={{ color: `${designTokens.colors.text.inverse}90` }}
           >
-            登録不要。今すぐ、大分の地図を開く。
+            イベントを記録し、スポットを登録し、モデルコースを共有する。今すぐ始めましょう。
           </p>
 
           <motion.button
@@ -1231,9 +1407,9 @@ const Footer = () => (
               color: designTokens.colors.text.secondary,
             }}
           >
-            地域の新たな可能性に
+            大分の魅力を、
             <br />
-            光を当てる。
+            未来へつなぐ。
           </p>
         </div>
 
@@ -1675,8 +1851,10 @@ export default function Home() {
       <ChallengesSection />
       
       <SolutionSection />
-      
-      <AtlasSection onMapClick={handleMapClick} />
+
+      <SpotsSection />
+
+      <ModelCourseSection onMapClick={handleMapClick} />
       
       <NoteArticlesSection username="kind_ixora3833" maxItems={4} />
       

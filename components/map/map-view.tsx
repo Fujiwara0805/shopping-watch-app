@@ -4,7 +4,7 @@ import { useRef, useEffect, useState, useCallback } from 'react';
 import { useGeolocation } from '@/lib/hooks/use-geolocation';
 import { useGoogleMapsApi } from '@/components/providers/GoogleMapsApiProvider';
 import { Button } from '@/components/ui/button';
-import { MapPin, AlertTriangle, RefreshCw, Calendar, BookOpen, User, MapPinIcon, X, Loader2, Home, Share2, Link2, Check, Compass, Search, ScrollText, Library, Shield } from 'lucide-react';
+import { MapPin, AlertTriangle, RefreshCw, Calendar, BookOpen, User, MapPinIcon, X, Loader2, Home, Share2, Link2, Check, Compass, Search, ScrollText, Library, Shield, Route, ArrowLeft, ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabaseClient';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -14,72 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { isWithinRange, calculateDistance } from '@/lib/utils/distance';
 import { Map as MapData, MapLocation } from '@/types/map';
 import { generateSemanticEventUrl } from '@/lib/seo/url-helper';
-
-// ===================================================================
-// DESIGN SYSTEM: "Oita Organic Elegance"
-// ===================================================================
-
-const designTokens = {
-  colors: {
-    primary: {
-      base: '#6E7F80',
-      dark: '#5A6B6C',
-      light: '#8A9A9B',
-      contrast: '#FFFFFF',
-    },
-    secondary: {
-      fern: '#8A9A5B',
-      fernLight: '#A4B47A',
-      fernDark: '#6F7D48',
-      stone: '#C2B8A3',
-      stoneLight: '#D4CCBA',
-      stoneDark: '#A89E8A',
-    },
-    accent: {
-      lilac: '#BFA3D1',
-      lilacLight: '#D4C2E3',
-      lilacDark: '#9B7FB5',
-      gold: '#E2C275',
-      goldLight: '#EDD49A',
-      goldDark: '#C9A85C',
-    },
-    background: {
-      mist: '#F4F5F2',
-      cloud: '#E6E9E5',
-      white: '#FFFFFF',
-    },
-    text: {
-      primary: '#2D3436',
-      secondary: '#636E72',
-      muted: '#95A5A6',
-      inverse: '#FFFFFF',
-    },
-    functional: {
-      error: '#E74C3C',
-      success: '#27AE60',
-      warning: '#F39C12',
-      info: '#3498DB',
-    },
-  },
-  typography: {
-    display: "'Sora', 'Noto Sans JP', sans-serif",
-    body: "'IBM Plex Sans JP', 'Noto Sans JP', sans-serif",
-  },
-  elevation: {
-    subtle: '0 1px 3px rgba(110, 127, 128, 0.08)',
-    low: '0 2px 8px rgba(110, 127, 128, 0.10)',
-    medium: '0 4px 16px rgba(110, 127, 128, 0.12)',
-    high: '0 8px 32px rgba(110, 127, 128, 0.15)',
-    dramatic: '0 16px 48px rgba(110, 127, 128, 0.20)',
-  },
-  radius: {
-    sm: '8px',
-    md: '12px',
-    lg: '16px',
-    xl: '24px',
-    full: '9999px',
-  },
-};
+import { designTokens } from '@/lib/constants';
 
 declare global {
   interface Window { google: any; }
@@ -125,8 +60,23 @@ interface MapCreatorProfile {
   url: string | null;
 }
 
+interface SpotMarkerData {
+  id: string;
+  store_name: string;
+  description: string;
+  store_latitude: number;
+  store_longitude: number;
+  image_urls: string[];
+  url: string | null;
+  city: string | null;
+  prefecture: string;
+  created_at: string;
+  author_name: string;
+  author_avatar_path: string | null;
+}
+
 type PostCategory = 'イベント情報';
-type ViewMode = 'events' | 'myMaps';
+type ViewMode = 'events' | 'myMaps' | 'spots';
 
 // ヘルパー関数
 const getAvatarPublicUrl = (avatarPath: string | null): string | null => {
@@ -427,7 +377,8 @@ export function MapView() {
   const hasInitialLoadedRef = useRef(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const titleId = searchParams.get('title_id');
-  const [viewMode, setViewMode] = useState<ViewMode>(titleId ? 'myMaps' : 'events');
+  const viewParam = searchParams.get('view');
+  const [viewMode, setViewMode] = useState<ViewMode>(titleId ? 'myMaps' : viewParam === 'spots' ? 'spots' : 'events');
   const selectedCategory: PostCategory = 'イベント情報';
   const [checkingIn, setCheckingIn] = useState<string | null>(null);
   const [checkedInPosts, setCheckedInPosts] = useState<Set<string>>(new Set());
@@ -442,6 +393,12 @@ export function MapView() {
   const [isLocationPermissionModalOpen, setIsLocationPermissionModalOpen] = useState(false);
   const [routePolylines, setRoutePolylines] = useState<google.maps.Polyline[]>([]);
   const directionsServiceRef = useRef<google.maps.DirectionsService | null>(null);
+
+  // Spots mode state
+  const [spots, setSpots] = useState<SpotMarkerData[]>([]);
+  const [spotMarkers, setSpotMarkers] = useState<google.maps.Marker[]>([]);
+  const [loadingSpots, setLoadingSpots] = useState(false);
+  const [selectedSpot, setSelectedSpot] = useState<SpotMarkerData | null>(null);
 
   // Effects
   useEffect(() => {
@@ -634,6 +591,53 @@ export function MapView() {
     finally { setLoadingPosts(false); }
   }, [latitude, longitude, savedLocation, selectedCategory]);
 
+  const fetchSpots = useCallback(async () => {
+    setLoadingSpots(true);
+    try {
+      const { data, error } = await supabase
+        .from('spots')
+        .select(`
+          *,
+          app_profiles (
+            id,
+            display_name,
+            avatar_url
+          )
+        `)
+        .eq('is_deleted', false)
+        .order('created_at', { ascending: false });
+
+      if (error || !data) {
+        setSpots([]);
+        return;
+      }
+
+      const spotsData: SpotMarkerData[] = data.map((spot: any) => {
+        const profile = spot.app_profiles as { id: string; display_name: string | null; avatar_url: string | null } | null;
+        return {
+          id: spot.id,
+          store_name: spot.store_name,
+          description: spot.description,
+          store_latitude: spot.store_latitude,
+          store_longitude: spot.store_longitude,
+          image_urls: spot.image_urls || [],
+          url: spot.url,
+          city: spot.city,
+          prefecture: spot.prefecture,
+          created_at: spot.created_at,
+          author_name: profile?.display_name || '匿名ユーザー',
+          author_avatar_path: profile?.avatar_url || null,
+        };
+      });
+
+      setSpots(spotsData);
+    } catch (error) {
+      console.error('スポットデータの取得中にエラー:', error);
+    } finally {
+      setLoadingSpots(false);
+    }
+  }, []);
+
   const groupPostsByLocation = (posts: any[]) => {
     const locationGroups: { [key: string]: any[] } = {};
     posts.forEach(post => {
@@ -768,6 +772,56 @@ export function MapView() {
     processNextBatch();
   }, [map, posts]);
 
+  const createSpotMarkers = useCallback(async () => {
+    if (!map || !spots.length || !window.google?.maps) return;
+    spotMarkers.forEach(marker => { if (marker?.setMap) marker.setMap(null); });
+    const newMarkers: google.maps.Marker[] = [];
+    const locationGroups = groupPostsByLocation(spots as any);
+
+    const markerPromises = spots.map(async (spot) => {
+      if (!spot.store_latitude || !spot.store_longitude) return;
+      const lat = Math.round(spot.store_latitude * 10000) / 10000;
+      const lng = Math.round(spot.store_longitude * 10000) / 10000;
+      const locationKey = `${lat},${lng}`;
+      const groupSpots = locationGroups[locationKey] || [spot];
+      const indexInGroup = groupSpots.findIndex((s: any) => s.id === spot.id);
+      const offsetPosition = getOffsetPosition(spot.store_latitude, spot.store_longitude, indexInGroup, groupSpots.length);
+      const position = new window.google.maps.LatLng(offsetPosition.lat, offsetPosition.lng);
+      const markerIcon = await createCategoryPinIcon(spot.image_urls, spot.store_name, 'イベント情報');
+      const marker = new window.google.maps.Marker({
+        position,
+        map,
+        title: spot.store_name,
+        icon: markerIcon,
+        animation: window.google.maps.Animation.DROP,
+        zIndex: indexInGroup + 10,
+      });
+      marker.addListener('click', () => { setSelectedSpot(spot); });
+      return marker;
+    });
+
+    const markers = await Promise.all(markerPromises);
+    newMarkers.push(...markers.filter((m): m is google.maps.Marker => m != null));
+    setSpotMarkers(newMarkers);
+
+    // Fit bounds to show all spots
+    if (newMarkers.length > 0) {
+      const bounds = new window.google.maps.LatLngBounds();
+      spots.forEach(spot => {
+        if (spot.store_latitude && spot.store_longitude) {
+          bounds.extend(new window.google.maps.LatLng(spot.store_latitude, spot.store_longitude));
+        }
+      });
+      // Also include user location if available
+      const userLat = savedLocation?.lat || latitude;
+      const userLng = savedLocation?.lng || longitude;
+      if (userLat && userLng) {
+        bounds.extend(new window.google.maps.LatLng(userLat, userLng));
+      }
+      map.fitBounds(bounds, 60);
+    }
+  }, [map, spots, latitude, longitude, savedLocation]);
+
   const initializeMap = useCallback(() => {
     if (!mapContainerRef.current || mapInstanceRef.current || !googleMapsLoaded || containerDimensions.height < 200 || initializationTriedRef.current) return false;
     if (!window.google?.maps?.Map) { setInitializationError("Google Maps APIが利用できません。"); return false; }
@@ -795,9 +849,10 @@ export function MapView() {
       const userLat = savedLocation?.lat || latitude;
       const userLng = savedLocation?.lng || longitude;
       if (viewMode === 'events') { if (userLat && userLng) { hasInitialLoadedRef.current = true; fetchPosts(); } }
+      else if (viewMode === 'spots') { hasInitialLoadedRef.current = true; fetchSpots(); }
       else { hasInitialLoadedRef.current = true; fetchMapLocations(); }
     }
-  }, [latitude, longitude, savedLocation, mapInitialized, viewMode, fetchPosts, fetchMapLocations]);
+  }, [latitude, longitude, savedLocation, mapInitialized, viewMode, fetchPosts, fetchMapLocations, fetchSpots]);
 
   const handleManualRefresh = async () => {
     setIsRefreshing(true);
@@ -809,11 +864,19 @@ export function MapView() {
         if (map) map.panTo(new window.google.maps.LatLng(position.coords.latitude, position.coords.longitude));
       } catch (error) { console.error('位置情報の取得に失敗:', error); }
     }
-    if (viewMode === 'events') await fetchPosts(); else await fetchMapLocations();
+    if (viewMode === 'events') await fetchPosts();
+    else if (viewMode === 'spots') await fetchSpots();
+    else await fetchMapLocations();
     setTimeout(() => { setIsRefreshing(false); }, 500);
   };
 
-  useEffect(() => { const newTitleId = searchParams.get('title_id'); setViewMode(newTitleId ? 'myMaps' : 'events'); }, [searchParams]);
+  useEffect(() => {
+    const newTitleId = searchParams.get('title_id');
+    const newViewParam = searchParams.get('view');
+    if (newTitleId) setViewMode('myMaps');
+    else if (newViewParam === 'spots') setViewMode('spots');
+    else setViewMode('events');
+  }, [searchParams]);
 
   useEffect(() => {
     if (viewMode === 'events' && posts.length > 0 && map && window.google?.maps) createPostMarkers();
@@ -830,10 +893,25 @@ export function MapView() {
     }
   }, [mapLocations, map, viewMode]);
 
+  // Spots mode: create/clear markers
+  useEffect(() => {
+    if (viewMode === 'spots' && spots.length > 0 && map && window.google?.maps) createSpotMarkers();
+    else if (viewMode === 'spots' && spots.length === 0 && map && window.google?.maps) {
+      spotMarkers.forEach(marker => { if (marker?.setMap) marker.setMap(null); });
+      setSpotMarkers([]);
+    }
+  }, [spots, map, viewMode]);
+
   useEffect(() => {
     if (viewMode === 'events') {
       routePolylines.forEach(polyline => polyline.setMap(null));
       setRoutePolylines([]);
+    }
+    // Clear spot markers when leaving spots mode
+    if (viewMode !== 'spots') {
+      spotMarkers.forEach(marker => { if (marker?.setMap) marker.setMap(null); });
+      setSpotMarkers([]);
+      setSelectedSpot(null);
     }
   }, [viewMode]);
 
@@ -959,8 +1037,8 @@ export function MapView() {
                   className="h-14 w-14 rounded-2xl flex flex-col items-center justify-center gap-0.5"
                   style={{ background: designTokens.colors.secondary.fern, color: designTokens.colors.text.inverse, boxShadow: designTokens.elevation.high }}
                 >
-                  <Library className="h-5 w-5" />
-                  <span className="text-[9px] font-medium">ATLAS</span>
+                  <Route className="h-5 w-5" />
+                  <span className="text-[8px] font-medium leading-tight">モデル<br/>コース</span>
                 </Button>
               </motion.div>
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} transition={{ duration: 0.3, delay: 0.1 }}>
@@ -1073,33 +1151,100 @@ export function MapView() {
         )}
       </AnimatePresence>
 
-      {/* イベントモード: ナビゲーション */}
+      {/* イベントモード: ナビゲーション（2つのテキストボタン + 更新） */}
       {map && mapInitialized && viewMode === 'events' && (
-        <div className="absolute bottom-4 left-4 z-30 flex flex-col gap-3">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-            <Button onClick={() => router.push('/events')} size="icon" className="h-14 w-14 rounded-2xl flex flex-col items-center justify-center gap-0.5" style={{ background: designTokens.colors.accent.gold, color: designTokens.colors.text.primary, boxShadow: designTokens.elevation.high }}>
-              <ScrollText className="h-5 w-5" />
-              <span className="text-[9px] font-bold">予定</span>
-            </Button>
-          </motion.div>
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} transition={{ delay: 0.1 }}>
-            <Button onClick={() => router.push('/public-maps')} size="icon" className="h-14 w-14 rounded-2xl flex flex-col items-center justify-center gap-0.5" style={{ background: designTokens.colors.secondary.fern, color: designTokens.colors.text.inverse, boxShadow: designTokens.elevation.high }}>
-              <Library className="h-5 w-5" />
-              <span className="text-[9px] font-medium">ATLAS</span>
-            </Button>
-          </motion.div>
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-            <Button onClick={handleManualRefresh} size="icon" disabled={isRefreshing || loadingPosts} className="h-14 w-14 rounded-2xl disabled:opacity-50 flex flex-col items-center justify-center gap-0.5" style={{ background: designTokens.colors.primary.dark, color: designTokens.colors.text.inverse, boxShadow: designTokens.elevation.high }}>
-              <RefreshCw className={`h-5 w-5 ${(isRefreshing || loadingPosts) ? 'animate-spin' : ''}`} />
-              <span className="text-[9px] font-medium">更新</span>
-            </Button>
-          </motion.div>
-        </div>
+        <>
+          {/* 更新ボタン（右上） */}
+          <div className="absolute top-20 right-4 z-30">
+            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} whileTap={{ scale: 0.95 }}>
+              <Button onClick={handleManualRefresh} size="icon" disabled={isRefreshing || loadingPosts} className="h-10 w-10 rounded-full disabled:opacity-50" style={{ background: `${designTokens.colors.background.white}F0`, color: designTokens.colors.primary.base, boxShadow: designTokens.elevation.medium, border: `1px solid ${designTokens.colors.secondary.stone}40` }}>
+                <RefreshCw className={`h-4 w-4 ${(isRefreshing || loadingPosts) ? 'animate-spin' : ''}`} />
+              </Button>
+            </motion.div>
+          </div>
+          {/* 2つのメインボタン（画面下部に横並び） */}
+          <div className="absolute bottom-6 left-4 right-4 z-30 flex gap-3">
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} whileTap={{ scale: 0.98 }} className="flex-1">
+              <Button
+                onClick={() => {
+                  setViewMode('spots');
+                  setSelectedPost(null);
+                  setNearbyPosts([]);
+                  postMarkers.forEach(marker => { if (marker?.setMap) marker.setMap(null); });
+                  setPostMarkers([]);
+                  fetchSpots();
+                }}
+                className="w-full h-14 rounded-2xl flex items-center justify-center gap-2 font-semibold text-base"
+                style={{ background: designTokens.colors.secondary.fern, color: designTokens.colors.text.inverse, boxShadow: designTokens.elevation.high }}
+              >
+                <MapPin className="h-5 w-5" />
+                スポットを探す
+              </Button>
+            </motion.div>
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} whileTap={{ scale: 0.98 }} transition={{ delay: 0.05 }} className="flex-1">
+              <Button
+                onClick={() => router.push('/public-maps')}
+                className="w-full h-14 rounded-2xl flex items-center justify-center gap-2 font-semibold text-base"
+                style={{ background: designTokens.colors.accent.lilac, color: designTokens.colors.text.inverse, boxShadow: designTokens.elevation.high }}
+              >
+                <Route className="h-5 w-5" />
+                モデルコースを見る
+              </Button>
+            </motion.div>
+          </div>
+        </>
+      )}
+
+      {/* スポットモード: ナビゲーション */}
+      {map && mapInitialized && viewMode === 'spots' && (
+        <>
+          {/* 戻るボタン（左上） */}
+          <div className="absolute top-20 left-4 z-30">
+            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} whileTap={{ scale: 0.95 }}>
+              <Button
+                onClick={() => {
+                  setViewMode('events');
+                  setSelectedSpot(null);
+                  spotMarkers.forEach(marker => { if (marker?.setMap) marker.setMap(null); });
+                  setSpotMarkers([]);
+                  const userLat = savedLocation?.lat || latitude;
+                  const userLng = savedLocation?.lng || longitude;
+                  if (userLat && userLng) {
+                    if (map) map.panTo(new window.google.maps.LatLng(userLat, userLng));
+                    setTimeout(() => fetchPosts(), 100);
+                  }
+                }}
+                size="icon"
+                className="h-10 w-10 rounded-full"
+                style={{ background: `${designTokens.colors.background.white}F0`, color: designTokens.colors.text.primary, boxShadow: designTokens.elevation.medium, border: `1px solid ${designTokens.colors.secondary.stone}40` }}
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+            </motion.div>
+          </div>
+          {/* 更新ボタン（右上） */}
+          <div className="absolute top-20 right-4 z-30">
+            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} whileTap={{ scale: 0.95 }}>
+              <Button onClick={() => fetchSpots()} size="icon" disabled={loadingSpots} className="h-10 w-10 rounded-full disabled:opacity-50" style={{ background: `${designTokens.colors.background.white}F0`, color: designTokens.colors.primary.base, boxShadow: designTokens.elevation.medium, border: `1px solid ${designTokens.colors.secondary.stone}40` }}>
+                <RefreshCw className={`h-4 w-4 ${loadingSpots ? 'animate-spin' : ''}`} />
+              </Button>
+            </motion.div>
+          </div>
+          {/* スポットモードラベル */}
+          <div className="absolute top-20 left-1/2 -translate-x-1/2 z-30">
+            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="px-4 py-2 rounded-full" style={{ background: `${designTokens.colors.secondary.fern}E8`, boxShadow: designTokens.elevation.medium }}>
+              <span className="text-sm font-semibold" style={{ color: designTokens.colors.text.inverse }}>
+                <MapPin className="h-3.5 w-3.5 inline mr-1" />
+                スポット {spots.length > 0 ? `(${spots.length}件)` : ''}
+              </span>
+            </motion.div>
+          </div>
+        </>
       )}
 
       {/* 更新中表示 */}
       <AnimatePresence>
-        {(isRefreshing || loadingPosts || loadingMaps) && (
+        {(isRefreshing || loadingPosts || loadingMaps || loadingSpots) && (
           <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="absolute top-20 left-1/2 transform -translate-x-1/2 z-40 backdrop-blur-sm px-6 py-3 rounded-full" style={{ background: `${designTokens.colors.background.white}F5`, boxShadow: designTokens.elevation.medium }}>
             <div className="flex items-center gap-2">
               <RefreshCw className="h-4 w-4 animate-spin" style={{ color: designTokens.colors.accent.gold }} />
@@ -1229,6 +1374,60 @@ export function MapView() {
                     {navigatingToMapDetail === selectedMapLocation.id ? (<><Loader2 className="h-4 w-4 animate-spin" />読み込み中...</>) : (<><Search className="h-4 w-4" />詳細を見る</>)}
                   </Button>
                 </motion.div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* スポット詳細カード */}
+      <AnimatePresence>
+        {selectedSpot && viewMode === 'spots' && (
+          <motion.div initial={{ y: 100, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 100, opacity: 0 }} transition={{ duration: 0.4, type: "spring", damping: 20 }} className="absolute bottom-4 left-4 right-4 z-40">
+            <div className="relative rounded-2xl overflow-hidden" style={{ background: designTokens.colors.background.white, boxShadow: designTokens.elevation.high }}>
+              <div className="absolute top-4 right-4 z-10">
+                <Button onClick={() => setSelectedSpot(null)} size="icon" className="h-8 w-8 rounded-full" style={{ background: designTokens.colors.background.cloud, color: designTokens.colors.text.secondary }}><X className="h-4 w-4" /></Button>
+              </div>
+              <div className="p-5">
+                <div className="flex gap-4 mb-3">
+                  <div className="flex-shrink-0 relative w-24 h-24 rounded-xl overflow-hidden" style={{ background: designTokens.colors.background.cloud }}>
+                    {selectedSpot.image_urls && selectedSpot.image_urls.length > 0 ? (
+                      <img src={optimizeCloudinaryImageUrl(selectedSpot.image_urls[0])} alt={selectedSpot.store_name} className="w-full h-full object-cover" loading="eager" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center"><MapPin className="h-12 w-12" style={{ color: designTokens.colors.text.muted }} /></div>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-lg font-semibold leading-tight line-clamp-2 mb-1.5" style={{ fontFamily: designTokens.typography.display, color: designTokens.colors.text.primary }}>{selectedSpot.store_name}</h3>
+                    {selectedSpot.city && (
+                      <div className="flex items-center gap-1.5 text-sm mb-1" style={{ color: designTokens.colors.text.secondary }}>
+                        <MapPinIcon className="h-3.5 w-3.5 flex-shrink-0" style={{ color: designTokens.colors.functional.error }} />
+                        <span>{selectedSpot.city}</span>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-1.5 text-xs" style={{ color: designTokens.colors.text.muted }}>
+                      <User className="h-3 w-3 flex-shrink-0" />
+                      <span>{selectedSpot.author_name}</span>
+                    </div>
+                  </div>
+                </div>
+                {selectedSpot.description && (
+                  <p className="text-sm line-clamp-2 mb-3 leading-relaxed" style={{ color: designTokens.colors.text.secondary }}>{selectedSpot.description}</p>
+                )}
+                <div className="flex gap-2">
+                  {selectedSpot.url && (
+                    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="flex-1">
+                      <Button
+                        onClick={() => { if (selectedSpot.url) window.open(selectedSpot.url, '_blank'); }}
+                        className="w-full py-3 rounded-xl font-semibold flex items-center justify-center gap-2"
+                        style={{ background: designTokens.colors.secondary.fern, color: designTokens.colors.text.inverse }}
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                        リンクを開く
+                      </Button>
+                    </motion.div>
+                  )}
+                </div>
               </div>
             </div>
           </motion.div>
