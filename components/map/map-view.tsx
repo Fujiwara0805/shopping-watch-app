@@ -1042,10 +1042,10 @@ export function MapView() {
         </div>
       )}
 
-      {/* マイマップモード: ナビゲーションボタン（画面下部） */}
+      {/* マイマップモード: ナビゲーションボタン（画面左下・テキスト幅に合わせてコンパクト） */}
       {map && mapInitialized && viewMode === 'myMaps' && isMapPublic && (
-        <div className="absolute bottom-6 left-4 right-4 z-30 flex gap-3">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} whileTap={{ scale: 0.98 }} className="flex-1">
+        <div className="absolute bottom-6 left-4 z-30 flex flex-col gap-2 w-max">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} whileTap={{ scale: 0.98 }}>
             <Button
               onClick={() => {
                 setViewMode('spots');
@@ -1057,14 +1057,14 @@ export function MapView() {
                 router.push('/map?view=spots');
                 fetchSpots();
               }}
-              className="w-full h-14 rounded-2xl flex items-center justify-center gap-2 font-semibold text-base"
+              className="min-w-[10rem] h-11 rounded-xl flex items-center justify-center gap-1.5 font-semibold text-sm px-5"
               style={{ background: designTokens.colors.secondary.fern, color: designTokens.colors.text.inverse, boxShadow: designTokens.elevation.high }}
             >
-              <MapPin className="h-5 w-5" />
-              スポットを探す
+              <MapPin className="h-4 w-4 flex-shrink-0" />
+              スポット
             </Button>
           </motion.div>
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} whileTap={{ scale: 0.98 }} transition={{ delay: 0.05 }} className="flex-1">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} whileTap={{ scale: 0.98 }} transition={{ delay: 0.05 }}>
             <Button
               onClick={() => {
                 setViewMode('events');
@@ -1078,11 +1078,11 @@ export function MapView() {
                 const userLng = savedLocation?.lng || longitude;
                 if (userLat && userLng) setTimeout(() => fetchPosts(), 100);
               }}
-              className="w-full h-14 rounded-2xl flex items-center justify-center gap-2 font-semibold text-base"
-              style={{ background: designTokens.colors.accent.lilac, color: designTokens.colors.text.inverse, boxShadow: designTokens.elevation.high }}
+              className="min-w-[10rem] h-11 rounded-xl flex items-center justify-center gap-1.5 font-semibold text-sm px-5"
+              style={{ background: designTokens.colors.accent.gold, color: designTokens.colors.text.primary, boxShadow: designTokens.elevation.high }}
             >
-              <Compass className="h-5 w-5" />
-              イベントを探す
+              <Compass className="h-4 w-4 flex-shrink-0" />
+              イベント
             </Button>
           </motion.div>
         </div>
@@ -1171,19 +1171,19 @@ export function MapView() {
               </Button>
             </motion.div>
           </div>
-          {/* 2つのメインボタン（画面下部に横並び） - モデルコースを上（左）に配置 */}
-          <div className="absolute bottom-6 left-4 right-4 z-30 flex gap-3">
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} whileTap={{ scale: 0.98 }} className="flex-1">
+          {/* 2つのメインボタン（画面左下・テキスト幅に合わせてコンパクト） */}
+          <div className="absolute bottom-6 left-4 z-30 flex flex-col gap-2 w-max">
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} whileTap={{ scale: 0.98 }}>
               <Button
                 onClick={() => router.push('/public-maps')}
-                className="w-full h-14 rounded-2xl flex items-center justify-center gap-2 font-semibold text-base"
+                className="min-w-[8rem] h-11 rounded-xl flex items-center justify-center gap-1.5 font-semibold text-sm px-5"
                 style={{ background: designTokens.colors.accent.lilac, color: designTokens.colors.text.inverse, boxShadow: designTokens.elevation.high }}
               >
-                <Route className="h-5 w-5" />
-                モデルコースを見る
+                <Route className="h-4 w-4 flex-shrink-0" />
+                コース
               </Button>
             </motion.div>
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} whileTap={{ scale: 0.98 }} transition={{ delay: 0.05 }} className="flex-1">
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} whileTap={{ scale: 0.98 }} transition={{ delay: 0.05 }}>
               <Button
                 onClick={() => {
                   setViewMode('spots');
@@ -1193,11 +1193,11 @@ export function MapView() {
                   setPostMarkers([]);
                   fetchSpots();
                 }}
-                className="w-full h-14 rounded-2xl flex items-center justify-center gap-2 font-semibold text-base"
+                className="min-w-[8rem] h-11 rounded-xl flex items-center justify-center gap-1.5 font-semibold text-sm px-5"
                 style={{ background: designTokens.colors.secondary.fern, color: designTokens.colors.text.inverse, boxShadow: designTokens.elevation.high }}
               >
-                <MapPin className="h-5 w-5" />
-                スポットを探す
+                <MapPin className="h-4 w-4 flex-shrink-0" />
+                スポット
               </Button>
             </motion.div>
           </div>

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, MapPin, Compass, BookOpen, ChevronDown, ChevronUp, RefreshCw, Trash2, Loader2, ExternalLink, ScrollText, SlidersHorizontal, Map, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, MapPin, Compass, BookOpen, ChevronDown, ChevronUp, RefreshCw, Trash2, Loader2, ExternalLink, ScrollText, SlidersHorizontal, X } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
@@ -646,8 +646,9 @@ export default function CalendarPage() {
                     color: designTokens.colors.text.inverse,
                   }}
                 >
-                  {selectedCity === 'all' ? '大分県イベント' : `${selectedCity}イベント`}
+                  {selectedCity === 'all' ? '大分県内のイベント' : `${selectedCity}内のイベント`}
                 </h1>
+                <ScrollText className="h-5 w-5" style={{ color: designTokens.colors.accent.gold }} />
               </div>
 
               {/* 月切り替え */}
@@ -884,13 +885,29 @@ export default function CalendarPage() {
                     })}
                   </div>
                 </ElevationCard>
+                {/* 開催中のイベントを見る（一番下のイベントカードの下に配置） */}
+                <div className="flex justify-center pt-4 pb-4 px-4">
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => router.push('/map')}
+                    className="px-6 py-3 rounded-xl font-semibold text-sm flex items-center justify-center gap-2"
+                    style={{
+                      background: designTokens.colors.accent.gold,
+                      color: designTokens.colors.text.primary,
+                      boxShadow: designTokens.elevation.high,
+                    }}
+                  >
+                    <Compass className="h-4 w-4" />
+                    開催中のイベントを見る
+                  </motion.button>
+                </div>
               </motion.div>
             ) : null}
           </div>
 
-          {/* フローティングナビゲーション */}
+          {/* フローティングナビゲーション（絞込のみ） */}
           <div className="fixed bottom-6 right-4 z-30 flex flex-col gap-3">
-            {/* フィルター */}
             <Sheet open={filterSheetOpen} onOpenChange={setFilterSheetOpen}>
               <SheetTrigger asChild>
                 <motion.div
@@ -951,29 +968,6 @@ export default function CalendarPage() {
                 </div>
               </SheetContent>
             </Sheet>
-
-            {/* マップ */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              transition={{ delay: 0.1 }}
-            >
-              <Button
-                onClick={() => router.push('/map')}
-                size="icon"
-                className="h-14 w-14 rounded-2xl flex flex-col items-center justify-center gap-0.5"
-                style={{ 
-                  background: designTokens.colors.accent.lilac,
-                  color: designTokens.colors.text.inverse,
-                  boxShadow: designTokens.elevation.high,
-                }}
-              >
-                <Compass className="h-5 w-5" />
-                <span className="text-[9px] font-medium">Map</span>
-              </Button>
-            </motion.div>
           </div>
         </>
       )}

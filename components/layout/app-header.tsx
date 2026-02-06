@@ -52,13 +52,13 @@ export function AppHeader() {
       case '/events':
         return 'イベント一覧';
       case '/create-map':
-        return '地図づくり';
+        return 'コース作成';
       case '/my-maps':
-        return '作成した地図';
+        return 'マイコース';
       case '/public-maps':
-        return 'ATLAS';
+        return 'コース一覧';
       case '/profile':
-        return 'My Page';
+        return 'マイページ';
       case '/profile/edit':
         return 'プロフィール編集';
       case '/profile/setup':
