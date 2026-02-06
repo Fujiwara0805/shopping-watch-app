@@ -1,6 +1,7 @@
 import { MetadataRoute } from 'next';
 import { supabase } from '@/lib/supabaseClient';
 import { cityToSlug } from '@/lib/seo/utils';
+import { OITA_LOCATIONS, EVENT_CATEGORIES, OITA_MAIN_CITIES } from '@/lib/constants';
 
 /**
  * 拡張版動的サイトマップ生成
@@ -74,13 +75,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'monthly',
       priority: 0.6,
     },
-    // 通知とメモ
-    {
-      url: `${baseUrl}/notifications`,
-      lastModified: currentDate,
-      changeFrequency: 'daily',
-      priority: 0.6,
-    },
+    // メモ
     {
       url: `${baseUrl}/memo`,
       lastModified: currentDate,
@@ -167,38 +162,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ];
 
-  // 大分県の市町村リスト（ローカルSEO強化）
-  const locations = [
-    { prefecture: '大分県', city: '大分市', slug: 'oita' },
-    { prefecture: '大分県', city: '別府市', slug: 'beppu' },
-    { prefecture: '大分県', city: '中津市', slug: 'nakatsu' },
-    { prefecture: '大分県', city: '日田市', slug: 'hita' },
-    { prefecture: '大分県', city: '佐伯市', slug: 'saiki' },
-    { prefecture: '大分県', city: '臼杵市', slug: 'usuki' },
-    { prefecture: '大分県', city: '津久見市', slug: 'tsukumi' },
-    { prefecture: '大分県', city: '竹田市', slug: 'taketa' },
-    { prefecture: '大分県', city: '豊後高田市', slug: 'bungotakada' },
-    { prefecture: '大分県', city: '杵築市', slug: 'kitsuki' },
-    { prefecture: '大分県', city: '宇佐市', slug: 'usa' },
-    { prefecture: '大分県', city: '豊後大野市', slug: 'bungoono' },
-    { prefecture: '大分県', city: '由布市', slug: 'yufu' },
-    { prefecture: '大分県', city: '国東市', slug: 'kunisaki' },
-    { prefecture: '大分県', city: '姫島村', slug: 'himeshima' },
-    { prefecture: '大分県', city: '日出町', slug: 'hiji' },
-    { prefecture: '大分県', city: '九重町', slug: 'kokonoe' },
-    { prefecture: '大分県', city: '玖珠町', slug: 'kusu' },
-  ];
-
-  // イベントカテゴリ
-  const categories = [
-    { name: 'お祭り', slug: 'festival' },
-    { name: 'マルシェ', slug: 'marche' },
-    { name: 'ワークショップ', slug: 'workshop' },
-    { name: '音楽イベント', slug: 'music' },
-    { name: 'フードフェス', slug: 'food-festival' },
-    { name: '体験', slug: 'experience' },
-  ];
-
   // イベントページの動的生成
   try {
     const now = new Date();
@@ -260,7 +223,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         priority: 0.85,
       },
       // 市町村ページ（日本語URL）
-      ...locations.map((loc) => ({
+      ...OITA_LOCATIONS.map((loc) => ({
         url: `${baseUrl}/area/${encodeURIComponent(loc.prefecture)}/${encodeURIComponent(loc.city)}`,
         lastModified: currentDate,
         changeFrequency: 'daily' as const,
@@ -269,7 +232,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ];
 
     // 地域別イベント一覧ページ（英語スラッグURL）
-    const regionEventPages: MetadataRoute.Sitemap = locations.map((loc) => ({
+    const regionEventPages: MetadataRoute.Sitemap = OITA_LOCATIONS.map((loc) => ({
       url: `${baseUrl}/events/oita/${loc.slug}`,
       lastModified: currentDate,
       changeFrequency: 'daily' as const,
@@ -277,7 +240,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }));
 
     // カテゴリ別ページ
-    const categoryPages: MetadataRoute.Sitemap = categories.map((cat) => ({
+    const categoryPages: MetadataRoute.Sitemap = EVENT_CATEGORIES.map((cat) => ({
       url: `${baseUrl}/events/oita/all/${cat.slug}`,
       lastModified: currentDate,
       changeFrequency: 'daily' as const,
@@ -285,9 +248,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }));
 
     // 地域×カテゴリの組み合わせページ（主要都市のみ）
-    const mainCities = ['oita', 'beppu', 'nakatsu', 'hita', 'yufu'];
-    const regionCategoryPages: MetadataRoute.Sitemap = mainCities.flatMap((citySlug) =>
-      categories.map((cat) => ({
+    const regionCategoryPages: MetadataRoute.Sitemap = OITA_MAIN_CITIES.flatMap((citySlug) =>
+      EVENT_CATEGORIES.map((cat) => ({
         url: `${baseUrl}/events/oita/${citySlug}/${cat.slug}`,
         lastModified: currentDate,
         changeFrequency: 'daily' as const,

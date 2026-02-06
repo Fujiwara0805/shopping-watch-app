@@ -4,12 +4,12 @@ import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { Compass, MapPin, Calendar, ExternalLink, AlertCircle, Phone, FileText, DollarSign, Link as LinkIcon, ChevronLeft, ChevronRight, X, CalendarPlusIcon, Shield, ScrollText, Search, Home, ChevronRight as ChevronRightIcon, ArrowLeft, Share2 } from 'lucide-react';
+import { Compass, MapPin, Calendar, ExternalLink, AlertCircle, Phone, FileText, DollarSign, Link as LinkIcon, ChevronLeft, ChevronRight, X, CalendarPlusIcon, Shield, ScrollText, Search, Home, ChevronRight as ChevronRightIcon, ArrowLeft, Share2, Users } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import Script from 'next/script';
 import Link from 'next/link';
 import Image from 'next/image';
-import { designTokens, COLORS } from '@/lib/constants';
+import { designTokens, COLORS, TARGET_TAG_LABELS } from '@/lib/constants';
 
 interface EventDetail {
   id: string;
@@ -31,6 +31,7 @@ interface EventDetail {
   file_urls?: string[] | null;
   event_start_date?: string | null;
   event_end_date?: string | null;
+  target_tags?: string[] | null;
 }
 
 interface EventDetailClientProps {
@@ -178,7 +179,8 @@ export function EventDetailClient({ eventId }: EventDetailClientProps) {
         setEvent({
           ...data,
           image_urls: normalizeUrls(data.image_urls),
-          file_urls: normalizeUrls(data.file_urls)
+          file_urls: normalizeUrls(data.file_urls),
+          target_tags: normalizeUrls(data.target_tags),
         });
       } catch (error) {
         setError('予期しないエラーが発生しました。');
@@ -485,6 +487,37 @@ export function EventDetailClient({ eventId }: EventDetailClientProps) {
                 {event.content}
               </p>
             </div>
+
+            {/* 対象者タグ */}
+            {event.target_tags && event.target_tags.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mb-6"
+              >
+                <div className="flex items-center gap-2 mb-3">
+                  <Users className="h-4 w-4" style={{ color: designTokens.colors.accent.lilac }} />
+                  <span className="text-xs font-semibold tracking-wide uppercase" style={{ color: designTokens.colors.text.muted }}>
+                    Target
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {event.target_tags.map((tagId) => (
+                    <span
+                      key={tagId}
+                      className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium"
+                      style={{
+                        background: `${designTokens.colors.accent.lilac}15`,
+                        color: designTokens.colors.accent.lilacDark,
+                        border: `1px solid ${designTokens.colors.accent.lilac}30`,
+                      }}
+                    >
+                      {TARGET_TAG_LABELS[tagId] || tagId}
+                    </span>
+                  ))}
+                </div>
+              </motion.div>
+            )}
 
             {/* 詳細情報 */}
             <div className="space-y-6 pt-6" style={{ borderTop: `1px dashed ${designTokens.colors.secondary.stone}50` }}>

@@ -19,6 +19,7 @@ export interface CreateSpotInput {
   url: string | null;
   city: string | null;
   prefecture: string;
+  targetTags?: string[];
 }
 
 // =============================================================================
@@ -34,9 +35,7 @@ export async function createSpot(
       return { spotId: null, error: profileError || 'プロフィール情報が見つかりません' };
     }
 
-    const { data, error } = await supabaseAnon
-      .from('spots')
-      .insert({
+    const insertData: any = {
         app_profile_id: profileId,
         store_name: input.storeName,
         description: input.description,
@@ -47,7 +46,15 @@ export async function createSpot(
         url: input.url,
         city: input.city,
         prefecture: input.prefecture,
-      })
+    };
+
+    if (input.targetTags && input.targetTags.length > 0) {
+      insertData.target_tags = JSON.stringify(input.targetTags);
+    }
+
+    const { data, error } = await supabaseAnon
+      .from('spots')
+      .insert(insertData)
       .select('id')
       .single();
 

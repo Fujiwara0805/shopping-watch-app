@@ -5,7 +5,7 @@ import { CustomModal } from '@/components/ui/custom-modal';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabaseClient';
 import { useSession } from 'next-auth/react';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/lib/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';

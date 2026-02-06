@@ -20,7 +20,7 @@ import { Loader2, User as UserIcon, Info, Image as ImageIcon, X, Upload, Check, 
 import { supabase } from '@/lib/supabaseClient';
 import { v4 as uuidv4 } from 'uuid';
 import FavoriteStoreInput from '@/components/profile/FavoriteStoreInput';
-import { useLoading } from '@/contexts/loading-context';
+import { useLoading } from '@/lib/contexts/loading-context';
 import { AnimatePresence} from 'framer-motion';
 import { createProfileSetup } from '@/app/_actions/profiles';
 

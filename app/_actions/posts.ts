@@ -37,6 +37,8 @@ export interface CreatePostInput {
   expiryOption: string;
   customExpiryMinutes?: number | null;
   expiresAt: string;
+  // 対象者タグ
+  targetTags?: string[];
 }
 
 export interface PostData {
@@ -120,6 +122,11 @@ export async function createPost(input: CreatePostInput): Promise<{ postId: stri
       postData.event_start_date = input.eventStartDate;
       postData.event_end_date = input.eventEndDate;
       postData.event_price = input.eventPrice;
+    }
+
+    // 対象者タグ
+    if (input.targetTags && input.targetTags.length > 0) {
+      postData.target_tags = JSON.stringify(input.targetTags);
     }
 
     // コラボフィールド

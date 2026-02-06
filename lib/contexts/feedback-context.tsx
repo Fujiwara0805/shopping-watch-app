@@ -62,7 +62,7 @@ export const FeedbackProvider: React.FC<FeedbackProviderProps> = ({ children }) 
     const userEmail = session.user.email;
     const feedbackSubmittedKey = getFeedbackKey(userEmail);
     const lastShownKey = getLastShownKey(userEmail);
-    
+
     // このユーザーが既にフィードバックを送信済みかチェック
     const hasSubmittedFeedback = localStorage.getItem(feedbackSubmittedKey);
     if (hasSubmittedFeedback === 'true') {
@@ -113,7 +113,7 @@ export const FeedbackProvider: React.FC<FeedbackProviderProps> = ({ children }) 
   // モーダルを閉じる時の処理を追加
   const handleCloseModal = (show: boolean) => {
     setShowFeedbackModal(show);
-    
+
     // モーダルを閉じる時（show = false）に最終表示時間を記録
     if (!show && session?.user?.email) {
       const userEmail = session.user.email;
@@ -135,11 +135,11 @@ export const FeedbackProvider: React.FC<FeedbackProviderProps> = ({ children }) 
       const userEmail = session.user.email;
       const feedbackSubmittedKey = getFeedbackKey(userEmail);
       const lastShownKey = getLastShownKey(userEmail);
-      
+
       localStorage.removeItem(feedbackSubmittedKey);
       localStorage.removeItem(lastShownKey);
     }
-    
+
     setHasShownFeedback(false);
     setShowFeedbackModal(false);
     setLastShownTime(null);

@@ -20,11 +20,12 @@ import { supabase } from '@/lib/supabaseClient';
 import { calculateExpiresAt } from '@/lib/expires-at-date';
 import { v4 as uuidv4 } from 'uuid';
 import { CustomModal } from '@/components/ui/custom-modal';
-import { useToast } from "@/hooks/use-toast";
-import { useLoading } from '@/contexts/loading-context';
+import { useToast } from '@/lib/hooks/use-toast';
+import { useLoading } from '@/lib/contexts/loading-context';
 import { useGoogleMapsApi } from '@/components/providers/GoogleMapsApiProvider';
 import { createPost, type CreatePostInput, type PostCategory as ServerPostCategory } from '@/app/_actions/posts';
 import { Breadcrumb } from '@/components/seo/breadcrumb';
+import { TARGET_TAGS } from '@/lib/constants';
 
 declare global {
   interface Window {
@@ -159,6 +160,9 @@ export default function PostPage() {
   
   // 🔥 複数ファイル対応を追加
   const [fileFiles, setFileFiles] = useState<File[]>([]);
+
+  // 対象者タグ
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
   const {
     latitude,
@@ -448,6 +452,7 @@ export default function PostPage() {
         expiryOption,
         customExpiryMinutes,
         expiresAt,
+        targetTags: selectedTags.length > 0 ? selectedTags : undefined,
       };
 
       const { postId, error: createError } = await createPost(postInput);
@@ -484,6 +489,7 @@ export default function PostPage() {
       setImageFiles([]);
       setImagePreviewUrls([]);
       setFileFiles([]);
+      setSelectedTags([]);
       setSelectedPlace(null);
       setLocationStatus('none');
       router.push('/post/complete');
@@ -1332,6 +1338,7 @@ export default function PostPage() {
 
                               {/* チェックイン対象フラグ */}
                               {field === 'enableCheckin' && (
+                                <>
                                 <FormField
                                   control={form.control}
                                   name="enableCheckin"
@@ -1360,6 +1367,50 @@ export default function PostPage() {
                                     </FormItem>
                                   )}
                                 />
+
+                                {/* 対象者タグ */}
+                                <div className="mt-4">
+                                  <div className="p-4 bg-gradient-to-r from-background to-muted rounded-lg border-2 border-primary/20">
+                                    <Label className="text-base font-semibold text-primary flex items-center gap-2 mb-3">
+                                      <Users className="h-5 w-5" />
+                                      対象者タグ（任意）
+                                    </Label>
+                                    <p className="text-sm text-muted-foreground mb-3">
+                                      対象となるユーザー層を選択してください（複数選択可）
+                                    </p>
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                      {TARGET_TAGS.map((tag) => {
+                                        const isSelected = selectedTags.includes(tag.id);
+                                        return (
+                                          <label
+                                            key={tag.id}
+                                            className={cn(
+                                              "flex items-center gap-2 px-3 py-2.5 rounded-lg cursor-pointer transition-all border-2 text-sm",
+                                              isSelected
+                                                ? "border-primary bg-primary/10 font-medium"
+                                                : "border-transparent bg-background hover:bg-muted"
+                                            )}
+                                          >
+                                            <input
+                                              type="checkbox"
+                                              checked={isSelected}
+                                              onChange={(e) => {
+                                                if (e.target.checked) {
+                                                  setSelectedTags(prev => [...prev, tag.id]);
+                                                } else {
+                                                  setSelectedTags(prev => prev.filter(t => t !== tag.id));
+                                                }
+                                              }}
+                                              className="h-4 w-4 rounded border-input text-primary focus:ring-primary"
+                                            />
+                                            <span style={{ fontSize: '16px' }}>{tag.label}</span>
+                                          </label>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                </div>
+                                </>
                               )}
 
                               {/* コラボフィールド（新規カテゴリーのみ） */}

@@ -4,10 +4,10 @@ import { Toaster } from '@/components/ui/toaster';
 import { ThemeProvider } from '@/components/theme/theme-provider';
 import NextAuthProvider from '@/components/providers/NextAuthProvider';
 import { GoogleMapsApiProvider } from '@/components/providers/GoogleMapsApiProvider';
-import { NotificationProvider } from '@/contexts/NotificationContext';
+
 import { LocationPermissionProvider } from '@/components/providers/LocationPermissionProvider';
-import { LoadingProvider } from '@/contexts/loading-context';
-import { FeedbackProvider } from '@/contexts/feedback-context';
+import { LoadingProvider } from '@/lib/contexts/loading-context';
+import { FeedbackProvider } from '@/lib/contexts/feedback-context';
 import { FeedbackIntegration } from '@/components/feedback/feedback-integration';
 import { usePathname } from 'next/navigation';
 import { useEffect } from 'react';
@@ -88,25 +88,23 @@ export function RootLayoutClient({ children }: RootLayoutClientProps) {
         >
           <NextAuthProvider>
             <FeedbackProvider>
-              <NotificationProvider>
-                <LocationPermissionProvider>
-                  {googleMapsApiKey ? (
-                    <GoogleMapsApiProvider apiKey={googleMapsApiKey}>
-                      <LayoutContent>{children}</LayoutContent>
-                      <FeedbackIntegration />
-                    </GoogleMapsApiProvider>
-                  ) : (
-                    <>
-                      <div style={{ padding: '20px', backgroundColor: 'red', color: 'white', textAlign: 'center' }}>
-                        Google Maps APIキーが設定されていません。
-                      </div>
-                      <LayoutContent>{children}</LayoutContent>
-                      <FeedbackIntegration />
-                    </>
-                  )}
-                  <Toaster />
-                </LocationPermissionProvider>
-              </NotificationProvider>
+              <LocationPermissionProvider>
+                {googleMapsApiKey ? (
+                  <GoogleMapsApiProvider apiKey={googleMapsApiKey}>
+                    <LayoutContent>{children}</LayoutContent>
+                    <FeedbackIntegration />
+                  </GoogleMapsApiProvider>
+                ) : (
+                  <>
+                    <div style={{ padding: '20px', backgroundColor: 'red', color: 'white', textAlign: 'center' }}>
+                      Google Maps APIキーが設定されていません。
+                    </div>
+                    <LayoutContent>{children}</LayoutContent>
+                    <FeedbackIntegration />
+                  </>
+                )}
+                <Toaster />
+              </LocationPermissionProvider>
             </FeedbackProvider>
           </NextAuthProvider>
         </ThemeProvider>
