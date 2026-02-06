@@ -806,7 +806,7 @@ export default function CreateMapPage() {
                   サムネイル画像（16:9）
                 </Label>
                 <p className="text-xs text-gray-500 mb-2">
-                  MyMapのカバー画像として表示されます
+                  コースのカバー画像として表示されます
                 </p>
                 
                 {thumbnailPreviewUrl ? (

@@ -555,7 +555,7 @@ export function MapView() {
         }
       });
       setMapLocations(allLocations);
-    } catch (error) { console.error('マイマップデータの取得中にエラー:', error); }
+    } catch (error) { console.error('コースデータの取得中にエラー:', error); }
     finally { setLoadingMaps(false); }
   }, [session?.user?.id, searchParams, fetchMapCreatorProfile]);
 
@@ -993,7 +993,7 @@ export function MapView() {
     <div className="w-full h-full relative" style={{ background: designTokens.colors.background.mist }}>
       <div ref={mapContainerRef} className="w-full h-full" style={{ touchAction: 'manipulation', WebkitOverflowScrolling: 'touch', WebkitTouchCallout: 'none', WebkitUserSelect: 'none', userSelect: 'none' }} />
 
-      {/* マイマップモード: 作成者アバター */}
+      {/* コースモード: 作成者アバター */}
       {map && mapInitialized && viewMode === 'myMaps' && mapCreatorProfile && (
         <div className="absolute top-4 right-4 z-30">
           <motion.div
@@ -1025,7 +1025,7 @@ export function MapView() {
         </div>
       )}
 
-      {/* マイマップモード: 更新ボタン（右上・開発者アイコンの下） */}
+      {/* コースモード: 更新ボタン（右上・開発者アイコンの下） */}
       {map && mapInitialized && viewMode === 'myMaps' && (
         <div className="absolute top-24 right-4 z-30">
           <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} whileTap={{ scale: 0.95 }}>
@@ -1042,7 +1042,7 @@ export function MapView() {
         </div>
       )}
 
-      {/* マイマップモード: ナビゲーションボタン（画面左下・アイコン下にテキスト） */}
+      {/* コースモード: ナビゲーションボタン（画面左下・アイコン下にテキスト） */}
       {map && mapInitialized && viewMode === 'myMaps' && isMapPublic && (
         <div className="absolute bottom-6 left-4 z-30 flex flex-col gap-2 w-max">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} whileTap={{ scale: 0.98 }}>
@@ -1151,7 +1151,7 @@ export function MapView() {
               <div className="p-6">
                 <h3 className="text-xl font-semibold text-center mb-3" style={{ fontFamily: designTokens.typography.display, color: designTokens.colors.text.primary }}>位置情報を許可してください</h3>
                 <p className="text-sm text-center mb-6 leading-relaxed" style={{ color: designTokens.colors.text.secondary }}>
-                  このMyMapを表示するには、位置情報の許可が必要です。左下の「更新」ボタンを押して、位置情報を許可してください。
+                  このコースを表示するには、位置情報の許可が必要です。左下の「更新」ボタンを押して、位置情報を許可してください。
                 </p>
                 <Button onClick={() => setIsLocationPermissionModalOpen(false)} className="w-full py-3 rounded-xl font-medium" style={{ background: designTokens.colors.accent.lilac, color: designTokens.colors.text.inverse }}>閉じる</Button>
               </div>
@@ -1318,7 +1318,7 @@ export function MapView() {
         )}
       </AnimatePresence>
 
-      {/* マイマップロケーション詳細カード */}
+      {/* コースロケーション詳細カード */}
       <AnimatePresence>
         {selectedMapLocation && viewMode === 'myMaps' && (
           <motion.div initial={{ y: 100, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 100, opacity: 0 }} transition={{ duration: 0.4, type: "spring", damping: 20 }} className="absolute bottom-4 left-4 right-4 z-40">

@@ -43,7 +43,7 @@ export function AppHeader() {
   const getPageTitle = () => {
     // 動的ルートのチェック（先にチェックする必要がある）
     if (pathname.startsWith('/my-maps/edit/')) {
-      return 'My Map編集';
+      return 'コース編集';
     }
     
     switch (pathname) {
@@ -54,7 +54,7 @@ export function AppHeader() {
       case '/create-map':
         return 'コース作成';
       case '/my-maps':
-        return 'マイコース';
+        return 'コース';
       case '/public-maps':
         return 'コース一覧';
       case '/create-spot':

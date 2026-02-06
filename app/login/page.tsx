@@ -164,7 +164,7 @@ export default function LoginPage() {
               ログインして<br />素敵な体験を始めよう
             </motion.h1>
             <p className="mb-8 text-base sm:text-base" style={{ color: designTokens.colors.text.secondary }}>
-              ログインすると、MyMapを作成できます
+              ログインすると、コースを作成できます
             </p>
 
             {error && (

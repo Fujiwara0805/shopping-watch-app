@@ -46,7 +46,7 @@ export default function CreateMapCompletePage() {
               size="lg"
             >
               <MapIcon className="mr-2 h-5 w-5" />
-              マイコースを見る
+              コースを見る
             </Button>
           </motion.div>
           <motion.div whileTap={{ scale: 0.98 }} className="w-full">

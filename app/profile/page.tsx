@@ -578,7 +578,7 @@ function ProfilePageContent() {
           
           <Separator className="my-3" />
           
-          {/* マイマップセクション */}
+          {/* コースセクション */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -587,23 +587,23 @@ function ProfilePageContent() {
           >
             <h3 className="text-lg font-bold flex items-center mb-2" style={{ color: COLORS.textPrimary, fontFamily: "'Noto Serif JP', serif" }}>
               <Compass className="h-5 w-5 mr-2" style={{ color: COLORS.primary }} />
-              My Map設定
+              コース設定
             </h3>
             
             <div className="space-y-2">
-              {/* マイマップ作成ボタン（羽ペンアイコン） */}
+              {/* コース作成ボタン（羽ペンアイコン） */}
               <SettingItem
                 icon={Feather}
-                title="My Mapを作成"
-                description="新しいマイマップを作成"
+                title="コースを作成"
+                description="新しいコースを作成"
                 action={() => router.push('/create-map')}
               />
               
-              {/* マイマップ編集ボタン（羅針盤アイコン） */}
+              {/* コース編集ボタン（羅針盤アイコン） */}
               <SettingItem
                 icon={Compass}
-                title="My Mapを編集"
-                description="既存のマイマップを編集・管理"
+                title="コースを編集"
+                description="既存のコースを編集・管理"
                 action={() => router.push('/my-maps')}
               />
             </div>
@@ -754,7 +754,7 @@ function ProfilePageContent() {
           <DialogHeader>
             <DialogTitle className="text-red-600">アカウント削除の確認</DialogTitle>
             <DialogDescription>
-              アカウントを削除すると、プロフィール・マイマップ・投稿などすべてのデータが完全に削除され、復元できません。この操作は取り消せません。よろしいですか？
+              アカウントを削除すると、プロフィール・コース・投稿などすべてのデータが完全に削除され、復元できません。この操作は取り消せません。よろしいですか？
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-0">

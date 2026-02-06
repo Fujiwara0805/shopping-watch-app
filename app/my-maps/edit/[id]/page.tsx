@@ -1098,7 +1098,7 @@ export default function EditMapPage() {
         <h2 className="text-2xl font-bold text-gray-800 mb-4">マップが見つかりません</h2>
         <Button onClick={() => router.push('/my-maps')}>
           <ArrowLeft className="mr-2 h-4 w-4" />
-          マイマップに戻る
+          コースに戻る
         </Button>
       </div>
     );
@@ -1207,7 +1207,7 @@ export default function EditMapPage() {
                   サムネイル画像（16:9）
                 </Label>
                 <p className="text-xs text-gray-500 mb-2">
-                  MyMapのカバー画像として表示されます
+                  コースのカバー画像として表示されます
                 </p>
                 
                 {(thumbnailPreviewUrl || existingThumbnailUrl) ? (

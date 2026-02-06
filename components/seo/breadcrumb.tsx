@@ -15,7 +15,7 @@ const BREADCRUMB_MAP: Record<string, { label: string; icon?: React.ElementType }
   'profile': { label: 'マイページ', icon: User },
   'edit': { label: '編集', icon: Settings },
   'setup': { label: '初期設定', icon: Settings },
-  'my-maps': { label: 'マイコース', icon: Compass },
+  'my-maps': { label: 'コース', icon: Compass },
   'create-map': { label: 'コース作成', icon: Map },
   'create-spot': { label: 'スポット作成', icon: MapPin },
   'complete': { label: '完了', icon: FileText },

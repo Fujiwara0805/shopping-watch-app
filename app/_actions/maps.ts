@@ -278,7 +278,7 @@ export async function getMapById(mapId: string): Promise<{ map: MapData | null; 
 /**
  * ユーザーのマップ一覧を取得（計算フィールド付き）
  */
-export interface MyMapListItem {
+export interface CourseListItem {
   id: string;
   title: string;
   total_locations: number;
@@ -288,7 +288,7 @@ export interface MyMapListItem {
   hashtags: string[] | null;
 }
 
-export async function getMapsByUserId(userId: string): Promise<{ maps: MyMapListItem[]; error: string | null }> {
+export async function getMapsByUserId(userId: string): Promise<{ maps: CourseListItem[]; error: string | null }> {
   try {
     // プロフィールIDを取得
     const { profileId, error: profileError } = await getProfileIdByUserId(userId);

@@ -9,19 +9,19 @@ import { Search, MapPin, Calendar, Trash2, Edit, Feather, User, Loader2, Compass
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/lib/hooks/use-toast';
 import { useLoading } from '@/lib/contexts/loading-context';
-import { getMapsByUserId, deleteMap, type MyMapListItem } from '@/app/_actions/maps';
+import { getMapsByUserId, deleteMap, type CourseListItem } from '@/app/_actions/maps';
 import { Breadcrumb } from '@/components/seo/breadcrumb';
 
 import { COLORS } from '@/lib/constants/colors';
 
-export default function MyMapsPage() {
+export default function CoursesPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const { toast } = useToast();
   const { showLoading, hideLoading } = useLoading();
   
-  const [myMaps, setMyMaps] = useState<MyMapListItem[]>([]);
-  const [filteredMaps, setFilteredMaps] = useState<MyMapListItem[]>([]);
+  const [courses, setCourses] = useState<CourseListItem[]>([]);
+  const [filteredMaps, setFilteredMaps] = useState<CourseListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   
@@ -32,10 +32,10 @@ export default function MyMapsPage() {
     }
   }, [session, status, router]);
   
-  // マイマップを取得
+  // コースを取得
   useEffect(() => {
     if (session?.user?.id) {
-      fetchMyMaps();
+      fetchCourses();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session]);
@@ -43,10 +43,10 @@ export default function MyMapsPage() {
   // 検索フィルター
   useEffect(() => {
     if (searchQuery.trim() === '') {
-      setFilteredMaps(myMaps);
+      setFilteredMaps(courses);
     } else {
       const query = searchQuery.toLowerCase();
-      const filtered = myMaps.filter(map => {
+      const filtered = courses.filter(map => {
         // タイトルで検索
         const matchesTitle = map.title.toLowerCase().includes(query);
         
@@ -59,9 +59,9 @@ export default function MyMapsPage() {
       });
       setFilteredMaps(filtered);
     }
-  }, [searchQuery, myMaps]);
+  }, [searchQuery, courses]);
   
-  const fetchMyMaps = async () => {
+  const fetchCourses = async () => {
     if (!session?.user?.id) return;
     
     try {
@@ -74,13 +74,13 @@ export default function MyMapsPage() {
         throw new Error(error);
       }
       
-      setMyMaps(maps);
+      setCourses(maps);
       setFilteredMaps(maps);
     } catch (error: any) {
-      console.error("マイマップ取得エラー:", error);
+      console.error("コース取得エラー:", error);
       toast({
         title: "⚠️ エラー",
-        description: error.message || "マイマップの取得に失敗しました",
+        description: error.message || "コースの取得に失敗しました",
         duration: 3000,
       });
     } finally {
@@ -113,7 +113,7 @@ export default function MyMapsPage() {
         duration: 2000,
       });
       
-      await fetchMyMaps();
+      await fetchCourses();
     } catch (error: any) {
       console.error("削除エラー:", error);
       toast({
@@ -195,7 +195,7 @@ export default function MyMapsPage() {
         {/* 件数表示 */}
         <div className="px-4 pb-3">
           <p className="text-sm" style={{ color: COLORS.secondary }}>
-            {filteredMaps.length}件のマイマップ
+            {filteredMaps.length}件のコース
           </p>
         </div>
       </div>

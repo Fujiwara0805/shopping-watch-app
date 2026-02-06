@@ -27,8 +27,8 @@ export interface Map {
   updated_at: string;
 }
 
-// マイマップ一覧用の型定義
-export interface MyMap {
+// コース一覧用の型定義
+export interface Course {
   id: string;
   title: string;
   total_locations: number;
