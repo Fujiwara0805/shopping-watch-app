@@ -6,7 +6,7 @@ import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, MapPin, Compass, B
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/lib/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -374,6 +374,17 @@ export default function CalendarPage() {
 
       if (urlTarget && urlTarget.trim() !== '') {
         processedPosts = processedPosts.filter((post: any) => {
+          // target_tags カラム（JSON文字列）にタグIDが含まれるかチェック
+          let tags: string[] = [];
+          if (post.target_tags) {
+            try {
+              tags = typeof post.target_tags === 'string' ? JSON.parse(post.target_tags) : post.target_tags;
+            } catch { tags = []; }
+          }
+          if (tags.length > 0 && tags.includes(urlTarget)) {
+            return true;
+          }
+          // フォールバック: コンテンツ内テキスト検索
           const content = post.content || '';
           const eventName = post.event_name || '';
           return content.includes(urlTarget) || eventName.includes(urlTarget);

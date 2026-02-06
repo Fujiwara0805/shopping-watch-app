@@ -32,7 +32,6 @@ const BREADCRUMB_MAP: Record<string, { label: string; icon?: React.ElementType }
   'register': { label: '新規登録', icon: User },
   'forgot-password': { label: 'パスワードを忘れた方', icon: User },
   'reset-password': { label: 'パスワードリセット', icon: User },
-  'notifications': { label: '通知', icon: MessageSquare },
   'memo': { label: '買い物メモ', icon: FileText },
   'train-schedule': { label: '時刻表', icon: Calendar },
   'area': { label: 'エリア', icon: Map },

@@ -7,8 +7,8 @@ import { motion } from 'framer-motion';
 import Image from 'next/image';
 import { Search, MapPin, Calendar, Trash2, Edit, Feather, User, Loader2, Compass } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { useToast } from "@/hooks/use-toast";
-import { useLoading } from '@/contexts/loading-context';
+import { useToast } from '@/lib/hooks/use-toast';
+import { useLoading } from '@/lib/contexts/loading-context';
 import { getMapsByUserId, deleteMap, type MyMapListItem } from '@/app/_actions/maps';
 import { Breadcrumb } from '@/components/seo/breadcrumb';
 

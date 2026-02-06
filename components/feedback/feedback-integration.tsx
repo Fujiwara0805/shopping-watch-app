@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { useFeedback } from '@/contexts/feedback-context';
+import { useFeedback } from '@/lib/contexts/feedback-context';
 import { FeedbackModal } from './feedback-modal';
 
 export const FeedbackIntegration: React.FC = () => {

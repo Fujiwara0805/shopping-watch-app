@@ -10,7 +10,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/lib/hooks/use-toast';
 import { isWithinRange, calculateDistance } from '@/lib/utils/distance';
 import { Map as MapData, MapLocation } from '@/types/map';
 import { generateSemanticEventUrl } from '@/lib/seo/url-helper';
@@ -1025,55 +1025,64 @@ export function MapView() {
         </div>
       )}
 
-      {/* マイマップモード: ナビゲーション */}
+      {/* マイマップモード: 更新ボタン（右上・開発者アイコンの下） */}
       {map && mapInitialized && viewMode === 'myMaps' && (
-        <div className="absolute bottom-4 left-4 z-30 flex flex-col gap-3">
-          {isMapPublic && (
-            <>
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} transition={{ duration: 0.3 }}>
-                <Button 
-                  onClick={() => router.push('/public-maps')} 
-                  size="icon" 
-                  className="h-14 w-14 rounded-2xl flex flex-col items-center justify-center gap-0.5"
-                  style={{ background: designTokens.colors.secondary.fern, color: designTokens.colors.text.inverse, boxShadow: designTokens.elevation.high }}
-                >
-                  <Route className="h-5 w-5" />
-                  <span className="text-[8px] font-medium leading-tight">モデル<br/>コース</span>
-                </Button>
-              </motion.div>
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} transition={{ duration: 0.3, delay: 0.1 }}>
-                <Button onClick={() => {
-                  setViewMode('events');
-                  setSelectedMapLocation(null);
-                  mapMarkers.forEach(marker => { if (marker?.setMap) marker.setMap(null); });
-                  setMapMarkers([]);
-                  routePolylines.forEach(polyline => polyline.setMap(null));
-                  setRoutePolylines([]);
-                  router.push('/map');
-                  const userLat = savedLocation?.lat || latitude;
-                  const userLng = savedLocation?.lng || longitude;
-                  if (userLat && userLng) setTimeout(() => fetchPosts(), 100);
-                }} 
-                size="icon" 
-                className="h-14 w-14 rounded-2xl flex flex-col items-center justify-center gap-0.5"
-                style={{ background: designTokens.colors.accent.lilac, color: designTokens.colors.text.inverse, boxShadow: designTokens.elevation.high }}
-                >
-                  <Compass className="h-5 w-5" />
-                  <span className="text-[9px] font-medium">Map</span>
-                </Button>
-              </motion.div>
-            </>
-          )}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-            <Button 
-              onClick={handleManualRefresh} 
-              size="icon" 
-              disabled={isRefreshing || loadingMaps} 
-              className="h-14 w-14 rounded-2xl disabled:opacity-50 flex flex-col items-center justify-center gap-0.5"
-              style={{ background: designTokens.colors.primary.dark, color: designTokens.colors.text.inverse, boxShadow: designTokens.elevation.high }}
+        <div className="absolute top-24 right-4 z-30">
+          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} whileTap={{ scale: 0.95 }}>
+            <Button
+              onClick={handleManualRefresh}
+              size="icon"
+              disabled={isRefreshing || loadingMaps}
+              className="h-10 w-10 rounded-full disabled:opacity-50"
+              style={{ background: `${designTokens.colors.background.white}F0`, color: designTokens.colors.primary.base, boxShadow: designTokens.elevation.medium, border: `1px solid ${designTokens.colors.secondary.stone}40` }}
             >
-              <RefreshCw className={`h-5 w-5 ${(isRefreshing || loadingMaps) ? 'animate-spin' : ''}`} />
-              <span className="text-[9px] font-medium">更新</span>
+              <RefreshCw className={`h-4 w-4 ${(isRefreshing || loadingMaps) ? 'animate-spin' : ''}`} />
+            </Button>
+          </motion.div>
+        </div>
+      )}
+
+      {/* マイマップモード: ナビゲーションボタン（画面下部） */}
+      {map && mapInitialized && viewMode === 'myMaps' && isMapPublic && (
+        <div className="absolute bottom-6 left-4 right-4 z-30 flex gap-3">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} whileTap={{ scale: 0.98 }} className="flex-1">
+            <Button
+              onClick={() => {
+                setViewMode('spots');
+                setSelectedMapLocation(null);
+                mapMarkers.forEach(marker => { if (marker?.setMap) marker.setMap(null); });
+                setMapMarkers([]);
+                routePolylines.forEach(polyline => polyline.setMap(null));
+                setRoutePolylines([]);
+                router.push('/map?view=spots');
+                fetchSpots();
+              }}
+              className="w-full h-14 rounded-2xl flex items-center justify-center gap-2 font-semibold text-base"
+              style={{ background: designTokens.colors.secondary.fern, color: designTokens.colors.text.inverse, boxShadow: designTokens.elevation.high }}
+            >
+              <MapPin className="h-5 w-5" />
+              スポットを探す
+            </Button>
+          </motion.div>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} whileTap={{ scale: 0.98 }} transition={{ delay: 0.05 }} className="flex-1">
+            <Button
+              onClick={() => {
+                setViewMode('events');
+                setSelectedMapLocation(null);
+                mapMarkers.forEach(marker => { if (marker?.setMap) marker.setMap(null); });
+                setMapMarkers([]);
+                routePolylines.forEach(polyline => polyline.setMap(null));
+                setRoutePolylines([]);
+                router.push('/map');
+                const userLat = savedLocation?.lat || latitude;
+                const userLng = savedLocation?.lng || longitude;
+                if (userLat && userLng) setTimeout(() => fetchPosts(), 100);
+              }}
+              className="w-full h-14 rounded-2xl flex items-center justify-center gap-2 font-semibold text-base"
+              style={{ background: designTokens.colors.accent.lilac, color: designTokens.colors.text.inverse, boxShadow: designTokens.elevation.high }}
+            >
+              <Compass className="h-5 w-5" />
+              イベントを探す
             </Button>
           </motion.div>
         </div>
@@ -1162,9 +1171,19 @@ export function MapView() {
               </Button>
             </motion.div>
           </div>
-          {/* 2つのメインボタン（画面下部に横並び） */}
+          {/* 2つのメインボタン（画面下部に横並び） - モデルコースを上（左）に配置 */}
           <div className="absolute bottom-6 left-4 right-4 z-30 flex gap-3">
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} whileTap={{ scale: 0.98 }} className="flex-1">
+              <Button
+                onClick={() => router.push('/public-maps')}
+                className="w-full h-14 rounded-2xl flex items-center justify-center gap-2 font-semibold text-base"
+                style={{ background: designTokens.colors.accent.lilac, color: designTokens.colors.text.inverse, boxShadow: designTokens.elevation.high }}
+              >
+                <Route className="h-5 w-5" />
+                モデルコースを見る
+              </Button>
+            </motion.div>
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} whileTap={{ scale: 0.98 }} transition={{ delay: 0.05 }} className="flex-1">
               <Button
                 onClick={() => {
                   setViewMode('spots');
@@ -1179,16 +1198,6 @@ export function MapView() {
               >
                 <MapPin className="h-5 w-5" />
                 スポットを探す
-              </Button>
-            </motion.div>
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} whileTap={{ scale: 0.98 }} transition={{ delay: 0.05 }} className="flex-1">
-              <Button
-                onClick={() => router.push('/public-maps')}
-                className="w-full h-14 rounded-2xl flex items-center justify-center gap-2 font-semibold text-base"
-                style={{ background: designTokens.colors.accent.lilac, color: designTokens.colors.text.inverse, boxShadow: designTokens.elevation.high }}
-              >
-                <Route className="h-5 w-5" />
-                モデルコースを見る
               </Button>
             </motion.div>
           </div>

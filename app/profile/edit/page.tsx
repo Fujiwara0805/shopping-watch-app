@@ -21,8 +21,8 @@ import { Loader2, User as UserIcon, Info, Image as ImageIcon, X, Upload, Store, 
 import { supabase } from '@/lib/supabaseClient';
 import { v4 as uuidv4 } from 'uuid';
 import FavoriteStoreInput from '@/components/profile/FavoriteStoreInput';
-import { useLoading } from '@/contexts/loading-context';
-import { useToast } from '@/hooks/use-toast';
+import { useLoading } from '@/lib/contexts/loading-context';
+import { useToast } from '@/lib/hooks/use-toast';
 import { 
   getUserRole, 
   getProfile, 

@@ -8,7 +8,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import {
   Upload, X, MapPin, Loader2, Image as ImageIcon,
-  Link as LinkIcon, CheckCircle, Navigation
+  Link as LinkIcon, CheckCircle, Navigation, Users
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -18,14 +18,14 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { useSession } from "next-auth/react";
 import { supabase } from '@/lib/supabaseClient';
 import { v4 as uuidv4 } from 'uuid';
-import { useToast } from "@/hooks/use-toast";
-import { useLoading } from '@/contexts/loading-context';
+import { useToast } from '@/lib/hooks/use-toast';
+import { useLoading } from '@/lib/contexts/loading-context';
 import { useGoogleMapsApi } from '@/components/providers/GoogleMapsApiProvider';
 import { useGeolocation } from '@/lib/hooks/use-geolocation';
 import { createSpot, type CreateSpotInput } from '@/app/_actions/spots';
 import { MarkerLocationModal } from '@/components/map/marker-location-modal';
 import { Breadcrumb } from '@/components/seo/breadcrumb';
-import { designTokens } from '@/lib/constants/colors';
+import { designTokens, TARGET_TAGS } from '@/lib/constants';
 
 const createSpotSchema = z.object({
   storeName: z.string().min(1, { message: 'スポット名は必須です' }).max(100, { message: '100文字以内で入力してください' }),
@@ -62,6 +62,7 @@ export default function CreateSpotPage() {
   const [imagePreviewUrls, setImagePreviewUrls] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
   // ログインチェック
   useEffect(() => {
@@ -268,6 +269,7 @@ export default function CreateSpotPage() {
         url: values.url && values.url.trim() !== '' ? values.url : null,
         city: null,
         prefecture: '大分県',
+        targetTags: selectedTags.length > 0 ? selectedTags : undefined,
       };
 
       const { spotId, error: createError } = await createSpot(spotInput);
@@ -450,6 +452,46 @@ export default function CreateSpotPage() {
                     ))}
                   </div>
                 )}
+              </div>
+
+              {/* 対象者タグ */}
+              <div>
+                <Label className="text-sm font-semibold mb-2 block">
+                  <Users className="inline-block mr-1.5 h-4 w-4" />
+                  対象者タグ（任意）
+                </Label>
+                <p className="text-xs text-gray-500 mb-3">
+                  対象となるユーザー層を選択してください（複数選択可）
+                </p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {TARGET_TAGS.map((tag) => {
+                    const isSelected = selectedTags.includes(tag.id);
+                    return (
+                      <label
+                        key={tag.id}
+                        className={`flex items-center gap-2 px-3 py-2.5 rounded-lg cursor-pointer transition-all border-2 text-sm ${
+                          isSelected
+                            ? 'border-primary bg-primary/10 font-medium'
+                            : 'border-transparent bg-gray-50 hover:bg-gray-100'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedTags(prev => [...prev, tag.id]);
+                            } else {
+                              setSelectedTags(prev => prev.filter(t => t !== tag.id));
+                            }
+                          }}
+                          className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                        />
+                        <span style={{ fontSize: '16px' }}>{tag.label}</span>
+                      </label>
+                    );
+                  })}
+                </div>
               </div>
 
               {/* リンク */}

@@ -10,11 +10,9 @@ import { getPublicMaps } from '@/app/_actions/maps';
 import { getPublicSpots } from '@/app/_actions/spots';
 import type { SpotWithAuthor } from '@/types/spot';
 import { NoteArticlesSection } from '@/components/external-content';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { format, addDays } from 'date-fns';
-import { designTokens } from '@/lib/constants';
+import { designTokens, OITA_MUNICIPALITIES, TARGET_AUDIENCE_OPTIONS } from '@/lib/constants';
 
 // ===================================================================
 // TYPE DEFINITIONS
@@ -32,29 +30,6 @@ interface PublicMapData {
   author_name: string;
   author_avatar_path: string | null;
 }
-
-// ===================================================================
-// LP CONFIGURATION
-// ===================================================================
-
-const OITA_MUNICIPALITIES = [
-  '大分市', '別府市', '中津市', '日田市', '佐伯市', '臼杵市', '津久見市',
-  '竹田市', '豊後高田市', '杵築市', '宇佐市', '豊後大野市', '由布市',
-  '国東市', '日出町', '九重町', '玖珠町', '姫島村'
-];
-
-const TARGET_AUDIENCE_OPTIONS = [
-  { value: 'none', label: '指定なし' },
-  { value: '家族向け', label: '家族向け' },
-  { value: 'カップル向け', label: 'カップル向け' },
-  { value: '一人参加', label: 'ひとり参加' },
-  { value: '観光客向け', label: '観光客向け' },
-  { value: '子ども向け', label: '子ども向け' },
-  { value: 'シニア向け', label: 'シニア向け' },
-];
-
-const todayStr = format(new Date(), 'yyyy-MM-dd');
-const defaultEndStr = format(addDays(new Date(), 14), 'yyyy-MM-dd');
 
 // ===================================================================
 // DECORATIVE COMPONENTS
@@ -211,21 +186,13 @@ const HERO_BG_IMAGE = 'https://res.cloudinary.com/dz9trbwma/image/upload/v177010
 const HeroSection = ({
   onStart,
   onEventSearch,
-  startDate,
-  setStartDate,
-  endDate,
-  setEndDate,
   city,
   setCity,
   target,
   setTarget,
 }: {
   onStart: () => void;
-  onEventSearch: (params: { startDate: string; endDate: string; city: string; target: string }) => void;
-  startDate: string;
-  setStartDate: (v: string) => void;
-  endDate: string;
-  setEndDate: (v: string) => void;
+  onEventSearch: (params: { city: string; target: string }) => void;
   city: string;
   setCity: (v: string) => void;
   target: string;
@@ -408,48 +375,20 @@ const HeroSection = ({
           >
             <ElevationCard elevation="high" padding="lg" hover={false}>
               <div className="space-y-4">
-                {/* Date Range */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5 text-left">
-                    <Label 
-                      className="text-sm font-semibold tracking-wide"
-                      style={{ color: designTokens.colors.text.secondary }}
-                    >
-                    開催開始日
-                    </Label>
-                    <Input
-                      type="date"
-                      value={startDate}
-                      onChange={(e) => setStartDate(e.target.value)}
-                      min={todayStr}
-                      className="h-9 rounded-lg text-sm transition-all focus:ring-2"
-                      style={{ 
-                        borderColor: `${designTokens.colors.secondary.stone}50`,
-                        backgroundColor: designTokens.colors.background.mist,
-                        color: designTokens.colors.text.primary,
-                      }}
-                    />
-                  </div>
-                  <div className="space-y-1.5 text-left">
-                    <Label 
-                      className="text-sm font-semibold tracking-wide"
-                      style={{ color: designTokens.colors.text.secondary }}
-                    >
-                    開催終了日
-                    </Label>
-                    <Input
-                      type="date"
-                      value={endDate}
-                      onChange={(e) => setEndDate(e.target.value)}
-                      min={startDate}
-                      className="h-9 rounded-lg text-sm transition-all focus:ring-2"
-                      style={{ 
-                        borderColor: `${designTokens.colors.secondary.stone}50`,
-                        backgroundColor: designTokens.colors.background.mist,
-                        color: designTokens.colors.text.primary,
-                      }}
-                    />
-                  </div>
+                {/* Search Description */}
+                <div
+                  className="text-center py-3 px-4 rounded-xl"
+                  style={{
+                    background: `${designTokens.colors.accent.gold}12`,
+                    border: `1px dashed ${designTokens.colors.accent.gold}40`,
+                  }}
+                >
+                  <p
+                    className="text-sm font-medium"
+                    style={{ color: designTokens.colors.text.secondary }}
+                  >
+                    条件を入力してイベントを探せます
+                  </p>
                 </div>
 
                 {/* Area Select */}
@@ -512,13 +451,11 @@ const HeroSection = ({
                   <Button
                     variant="outline"
                     onClick={() => {
-                      setStartDate(todayStr);
-                      setEndDate(defaultEndStr);
                       setCity('all');
                       setTarget('none');
                     }}
                     className="flex-1 h-12 rounded-xl font-medium transition-all hover:bg-opacity-10"
-                    style={{ 
+                    style={{
                       borderColor: designTokens.colors.secondary.stone,
                       color: designTokens.colors.text.secondary,
                     }}
@@ -527,8 +464,6 @@ const HeroSection = ({
                   </Button>
                   <Button
                     onClick={() => onEventSearch({
-                      startDate,
-                      endDate,
                       city: city === 'all' ? '' : city,
                       target: target === 'none' ? '' : target,
                     })}
@@ -1739,8 +1674,6 @@ export default function Home() {
   const [selectedMapId, setSelectedMapId] = useState<string | null>(null);
   
   // Search form state
-  const [startDate, setStartDate] = useState(todayStr);
-  const [endDate, setEndDate] = useState(defaultEndStr);
   const [city, setCity] = useState('all');
   const [target, setTarget] = useState('none');
 
@@ -1760,10 +1693,8 @@ export default function Home() {
     setShowLocationModal(true);
   };
 
-  const handleEventSearch = (params: { startDate: string; endDate: string; city: string; target: string }) => {
+  const handleEventSearch = (params: { city: string; target: string }) => {
     const searchParams = new URLSearchParams();
-    if (params.startDate) searchParams.set('start_date', params.startDate);
-    if (params.endDate) searchParams.set('end_date', params.endDate);
     if (params.city) searchParams.set('city', params.city);
     if (params.target) searchParams.set('target', params.target);
     router.push(searchParams.toString() ? `/events?${searchParams}` : '/events');
@@ -1838,10 +1769,6 @@ export default function Home() {
       <HeroSection
         onStart={handleStart}
         onEventSearch={handleEventSearch}
-        startDate={startDate}
-        setStartDate={setStartDate}
-        endDate={endDate}
-        setEndDate={setEndDate}
         city={city}
         setCity={setCity}
         target={target}

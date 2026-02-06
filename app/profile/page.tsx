@@ -14,7 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { useSession, signOut } from 'next-auth/react';
 import { supabase } from '@/lib/supabaseClient';
 import { cn } from '@/lib/utils';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/lib/hooks/use-toast';
 import { getHunterLevel } from '@/lib/hunter-level';
 import { StampBoardModal } from '@/components/stamp-board/stamp-board-modal';
 import { getProfilePageData } from '@/app/_actions/profiles';
