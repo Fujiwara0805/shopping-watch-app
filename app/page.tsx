@@ -219,6 +219,7 @@ const HeroSection = ({
     <section 
       ref={heroRef} 
       className="relative min-h-screen flex items-center justify-center overflow-hidden"
+      style={{ marginTop: '-4px' }}
     >
       {/* Background Image with Parallax */}
       <motion.div 
@@ -1595,17 +1596,7 @@ const LocationModal = ({
           transition={{ type: 'spring', damping: 30, stiffness: 400 }}
           className="fixed inset-0 flex items-center justify-center z-[101] px-4"
         >
-          <ElevationCard elevation="high" padding="xl" hover={false} className="w-full max-w-md text-center">
-            <div 
-              className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-6"
-              style={{ 
-                background: `${designTokens.colors.secondary.fern}15`,
-                color: designTokens.colors.secondary.fern,
-              }}
-            >
-              <MapPin className="w-8 h-8" />
-            </div>
-            
+          <ElevationCard elevation="high" padding="xl" hover={false} className="w-full max-w-md text-center">            
             <h3 
               className="text-2xl font-semibold mb-3"
               style={{ 
@@ -1619,9 +1610,8 @@ const LocationModal = ({
               className="mb-8"
               style={{ color: designTokens.colors.text.secondary }}
             >
-              地図上にあなたの位置を表示するために
-              <br />
-              位置情報を使用します
+              地図上にあなたの現在地を表示するために
+              位置情報を使用します。
             </p>
 
             <div className="space-y-3">
