@@ -141,12 +141,14 @@ const ElevationCard = ({
   elevation = 'medium',
   hover = true,
   padding = 'lg',
+  style: styleOverride,
 }: { 
   children: React.ReactNode; 
   className?: string;
   elevation?: 'subtle' | 'low' | 'medium' | 'high';
   hover?: boolean;
   padding?: 'none' | 'sm' | 'md' | 'lg' | 'xl';
+  style?: React.CSSProperties;
 }) => {
   const paddingMap = {
     none: '',
@@ -169,6 +171,7 @@ const ElevationCard = ({
         background: designTokens.colors.background.white,
         boxShadow: designTokens.elevation[elevation],
         border: `1px solid ${designTokens.colors.secondary.stone}30`,
+        ...styleOverride,
       }}
     >
       {children}
@@ -345,13 +348,13 @@ const HeroSection = ({
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.4 }}
-            className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-semibold leading-[1.1] tracking-tight"
+            className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-semibold leading-[1.1] tracking-tight"
             style={{ 
               fontFamily: designTokens.typography.display,
               color: designTokens.colors.text.primary,
             }}
           >
-            大分の魅力を、
+            大分の魅力を
             <br />
             <span className="relative inline-block mt-2">
               <span className="relative z-10">未来へつなぐ</span>
@@ -373,21 +376,21 @@ const HeroSection = ({
             transition={{ duration: 0.6, delay: 0.8 }}
             className="max-w-xl mx-auto mt-12"
           >
-            <ElevationCard elevation="high" padding="lg" hover={false}>
+            <ElevationCard elevation="high" padding="lg" hover={false} style={{ background: '#999da8' }}>
               <div className="space-y-4">
                 {/* Search Description */}
                 <div
                   className="text-center py-3 px-4 rounded-xl"
                   style={{
-                    background: `${designTokens.colors.accent.gold}12`,
-                    border: `1px dashed ${designTokens.colors.accent.gold}40`,
+                    background: `${designTokens.colors.accent.goldLight}25`,
+                    border: `1px dashed ${designTokens.colors.accent.goldLight}50`,
                   }}
                 >
                   <p
                     className="text-sm font-medium"
-                    style={{ color: designTokens.colors.text.secondary }}
+                    style={{ color: 'rgba(255,255,255,0.95)' }}
                   >
-                    条件を入力してイベントを探せます
+                    条件を入力してイベントを探す
                   </p>
                 </div>
 
@@ -395,7 +398,7 @@ const HeroSection = ({
                 <div className="space-y-2 text-left">
                   <Label 
                     className="text-sm font-semibold tracking-wide"
-                    style={{ color: designTokens.colors.text.secondary }}
+                    style={{ color: 'rgba(255,255,255,0.95)' }}
                   >
                     エリア
                   </Label>
@@ -423,7 +426,7 @@ const HeroSection = ({
                 <div className="space-y-2 text-left">
                   <Label 
                     className="text-sm font-semibold tracking-wide"
-                    style={{ color: designTokens.colors.text.secondary }}
+                    style={{ color: 'rgba(255,255,255,0.95)' }}
                   >
                     対象（任意）
                   </Label>
@@ -500,7 +503,7 @@ const HeroSection = ({
               }}
             >
               <Map className="w-5 h-5" />
-              地図を直接開く
+              地図から探す
               <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
             </motion.button>
             <p 
@@ -1673,7 +1676,7 @@ export default function Home() {
   const [showLocationModal, setShowLocationModal] = useState(false);
   const [selectedMapId, setSelectedMapId] = useState<string | null>(null);
   
-  // Search form state
+  // Search form state（LP離脱・リロード時にリセット）
   const [city, setCity] = useState('all');
   const [target, setTarget] = useState('none');
 
@@ -1681,6 +1684,18 @@ export default function Home() {
     const handleScroll = () => setScrollPosition(window.scrollY);
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // bfcache 復元時（戻るボタンで LP に戻った場合など）に検索フォームをリセット
+  useEffect(() => {
+    const handlePageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) {
+        setCity('all');
+        setTarget('none');
+      }
+    };
+    window.addEventListener('pageshow', handlePageShow);
+    return () => window.removeEventListener('pageshow', handlePageShow);
   }, []);
 
   const handleMapClick = (mapId: string) => {
@@ -1695,9 +1710,9 @@ export default function Home() {
 
   const handleEventSearch = (params: { city: string; target: string }) => {
     const searchParams = new URLSearchParams();
-    if (params.city) searchParams.set('city', params.city);
-    if (params.target) searchParams.set('target', params.target);
-    router.push(searchParams.toString() ? `/events?${searchParams}` : '/events');
+    searchParams.set('city', params.city?.trim() || 'all');
+    if (params.target?.trim()) searchParams.set('target', params.target.trim());
+    router.push(`/events?${searchParams.toString()}`);
   };
 
   const handleAllowLocation = async () => {

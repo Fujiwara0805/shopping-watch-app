@@ -168,17 +168,17 @@ export default function CalendarPage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
   
-  const getInitialCity = () => {
-    const cityParam = searchParams.get('city');
-    if (cityParam) return cityParam;
-    const savedCity = sessionStorage.getItem('eventFilterCity');
-    return savedCity || 'all';
-  };
-
+  const urlCity = searchParams.get('city');
   const urlStartDate = searchParams.get('start_date');
   const urlEndDate = searchParams.get('end_date');
   const urlTarget = searchParams.get('target');
   const hasSearchParams = Boolean(urlStartDate && urlEndDate);
+
+  const getInitialCity = () => {
+    if (urlCity !== null && urlCity !== undefined) return urlCity === '' ? 'all' : urlCity;
+    const savedCity = sessionStorage.getItem('eventFilterCity');
+    return savedCity || 'all';
+  };
 
   const [sortBy] = useState<'date' | 'distance'>('date');
   const [selectedPrefecture] = useState('大分県');
@@ -194,6 +194,14 @@ export default function CalendarPage() {
   useEffect(() => {
     sessionStorage.setItem('eventFilterCity', selectedCity);
   }, [selectedCity]);
+
+  // LP からの検索時: URL の city を優先し、searchParams 変更時にフィルターを同期
+  useEffect(() => {
+    const cityParam = searchParams.get('city');
+    if (cityParam !== null && cityParam !== undefined) {
+      setSelectedCity(cityParam === '' ? 'all' : cityParam);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     if (hasSearchParams && urlStartDate) {
