@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Bell, LogOut, Settings, Edit,  Store as StoreIcon, Calendar,  User, CheckCircle,  ArrowRight, Trophy, Compass, ShoppingBag, Megaphone, Feather } from 'lucide-react';
+import { Bell, LogOut, Settings, Edit,  Store as StoreIcon, Calendar,  User, CheckCircle,  ArrowRight, Trophy, Compass, ShoppingBag, Megaphone, Feather, Trash2 } from 'lucide-react';
 
 import { COLORS } from '@/lib/constants/colors';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -19,6 +19,14 @@ import { getHunterLevel } from '@/lib/hunter-level';
 import { StampBoardModal } from '@/components/stamp-board/stamp-board-modal';
 import { getProfilePageData } from '@/app/_actions/profiles';
 import { Breadcrumb } from '@/components/seo/breadcrumb';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogFooter,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
 
 interface AppProfile {
   id: string;
@@ -230,6 +238,10 @@ function ProfilePageContent() {
   // ボタンローディング状態の管理
   const [accountSettingsLoading, setAccountSettingsLoading] = useState(false);
   const [logoutLoading, setLogoutLoading] = useState(false);
+  const [deleteAccountLoading, setDeleteAccountLoading] = useState(false);
+  
+  // アカウント削除確認ダイアログ
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   
   // スタンプボードモーダルの管理
   const [stampBoardOpen, setStampBoardOpen] = useState(false);
@@ -370,6 +382,47 @@ function ProfilePageContent() {
   // LINE設定ページへのナビゲーション
   const handleNavigateToLineConnect = () => {
     router.push('/line-connect');
+  };
+
+  // アカウント削除確認ダイアログを開く（警告表示）
+  const handleOpenDeleteAccountDialog = () => {
+    setDeleteDialogOpen(true);
+    toast({
+      title: '注意',
+      description: 'アカウントを削除すると、すべてのデータが復元できません。',
+      variant: 'destructive',
+    });
+  };
+
+  // アカウント削除を実行（OK許可後）
+  const handleConfirmDeleteAccount = async () => {
+    setDeleteAccountLoading(true);
+    try {
+      const res = await fetch('/api/account/delete', { method: 'POST' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast({
+          title: '削除に失敗しました',
+          description: data.error || 'しばらく経ってからお試しください。',
+          variant: 'destructive',
+        });
+        setDeleteDialogOpen(false);
+        return;
+      }
+      setDeleteDialogOpen(false);
+      await signOut({ redirect: false, callbackUrl: '/' });
+      router.push('/');
+    } catch (e) {
+      console.error('Account delete error:', e);
+      toast({
+        title: '削除に失敗しました',
+        description: '予期せぬエラーが発生しました。',
+        variant: 'destructive',
+      });
+      setDeleteDialogOpen(false);
+    } finally {
+      setDeleteAccountLoading(false);
+    }
   };
 
   // プロフィール情報がない場合はログイン画面へ遷移
@@ -632,6 +685,14 @@ function ProfilePageContent() {
                 variant="danger"
                 loading={logoutLoading}
               />
+              
+              <SettingItem
+                icon={Trash2}
+                title="アカウント削除"
+                description="アカウントとデータを完全に削除します"
+                action={handleOpenDeleteAccountDialog}
+                variant="danger"
+              />
             </div>
           </motion.div>
           
@@ -686,6 +747,34 @@ function ProfilePageContent() {
         isOpen={stampBoardOpen}
         onClose={() => setStampBoardOpen(false)}
       />
+
+      {/* アカウント削除確認ダイアログ */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-red-600">アカウント削除の確認</DialogTitle>
+            <DialogDescription>
+              アカウントを削除すると、プロフィール・マイマップ・投稿などすべてのデータが完全に削除され、復元できません。この操作は取り消せません。よろしいですか？
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => setDeleteDialogOpen(false)}
+              disabled={deleteAccountLoading}
+            >
+              キャンセル
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleConfirmDeleteAccount}
+              disabled={deleteAccountLoading}
+            >
+              {deleteAccountLoading ? '削除中...' : 'OK（削除する）'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
     </div>
   );

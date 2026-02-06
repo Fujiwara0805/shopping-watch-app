@@ -129,7 +129,11 @@ export function EventDetailClient({ eventId }: EventDetailClientProps) {
   const [imageLoading, setImageLoading] = useState(true);
 
   const handleBack = () => {
-    router.push('/events');
+    if (typeof window !== 'undefined' && window.history.length > 1) {
+      router.back();
+    } else {
+      router.push('/events');
+    }
   };
 
   // 表示する画像が切り替わったら画像ローディングを表示
@@ -667,7 +671,7 @@ export function EventDetailClient({ eventId }: EventDetailClientProps) {
                   }}
                 >
                   <ArrowLeft className="mr-2 h-5 w-5" />
-                  イベント一覧へ
+                  戻る
                 </Button>
               </motion.div>
             </div>

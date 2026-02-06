@@ -57,6 +57,8 @@ export function AppHeader() {
         return 'マイコース';
       case '/public-maps':
         return 'コース一覧';
+      case '/create-spot':
+        return 'スポット作成';
       case '/profile':
         return 'マイページ';
       case '/profile/edit':
