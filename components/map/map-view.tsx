@@ -1175,7 +1175,7 @@ export function MapView() {
           <div className="absolute bottom-6 left-4 z-30 flex flex-col gap-2 w-max">
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} whileTap={{ scale: 0.98 }}>
               <Button
-                onClick={() => router.push('/public-maps')}
+                onClick={() => router.push('/courses')}
                 className="min-w-[5rem] h-16 rounded-2xl flex flex-col items-center justify-center gap-1 font-semibold text-xs px-4 py-3"
                 style={{ background: '#999da8', color: designTokens.colors.text.inverse, boxShadow: designTokens.elevation.high }}
               >

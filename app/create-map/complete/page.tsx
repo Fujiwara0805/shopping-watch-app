@@ -40,7 +40,7 @@ export default function CreateMapCompletePage() {
         <div className="flex flex-col sm:flex-row gap-4 w-full max-w-xs">
           <motion.div whileTap={{ scale: 0.98 }} className="w-full">
             <Button
-              onClick={() => router.push('/my-maps')}
+              onClick={() => router.push('/my-course')}
               className="w-full text-lg py-3 px-6 text-white"
               style={{ backgroundColor: designTokens.colors.primary.base }}
               size="lg"

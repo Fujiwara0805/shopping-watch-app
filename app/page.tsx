@@ -1134,7 +1134,7 @@ const ModelCourseSection = ({ onMapClick }: { onMapClick: (mapId: string) => voi
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            onClick={() => router.push('/public-maps')}
+            onClick={() => router.push('/courses')}
             className="group inline-flex items-center gap-2 px-8 py-4 rounded-full font-semibold transition-all"
             style={{ 
               border: `2px solid ${designTokens.colors.accent.lilac}60`,

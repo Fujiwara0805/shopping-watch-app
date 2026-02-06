@@ -2,13 +2,14 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import {
   Upload, X, MapPin, Loader2, Image as ImageIcon,
-  Link as LinkIcon, CheckCircle, Navigation, Users
+  Link as LinkIcon, CheckCircle, Navigation, Users,
+  Sparkles, UserPlus, Award, ChevronDown, ChevronUp
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -23,9 +24,12 @@ import { useLoading } from '@/lib/contexts/loading-context';
 import { useGoogleMapsApi } from '@/components/providers/GoogleMapsApiProvider';
 import { useGeolocation } from '@/lib/hooks/use-geolocation';
 import { createSpot, type CreateSpotInput } from '@/app/_actions/spots';
+import { registerReporter, getReporterByDeviceToken } from '@/app/_actions/reporters';
 import { MarkerLocationModal } from '@/components/map/marker-location-modal';
 import { Breadcrumb } from '@/components/seo/breadcrumb';
-import { designTokens, TARGET_TAGS } from '@/lib/constants';
+import { designTokens, TARGET_TAGS, TAG_ACTIVITIES } from '@/lib/constants';
+import type { Reporter } from '@/types/reporter';
+import type { TargetTagId } from '@/lib/constants/target-tags';
 
 const createSpotSchema = z.object({
   storeName: z.string().min(1, { message: 'スポット名は必須です' }).max(100, { message: '100文字以内で入力してください' }),
@@ -63,8 +67,66 @@ export default function CreateSpotPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [selectedTagActivities, setSelectedTagActivities] = useState<Record<string, string[]>>({});
+  const [expandedTags, setExpandedTags] = useState<string[]>([]);
 
-  // ログイン不要でスポット登録可能（未ログイン時はゲストとして登録）
+  // リポーターシステム
+  const [reporter, setReporter] = useState<Reporter | null>(null);
+  const [showReporterModal, setShowReporterModal] = useState(false);
+  const [reporterNickname, setReporterNickname] = useState('');
+  const [isRegisteringReporter, setIsRegisteringReporter] = useState(false);
+  const [reporterRegistered, setReporterRegistered] = useState(false);
+
+  // リポーター情報の読み込み
+  useEffect(() => {
+    if (status === 'loading') return;
+    if (session?.user?.id) return; // ログイン済みはリポーター不要
+
+    const checkReporter = async () => {
+      const deviceToken = localStorage.getItem('reporter_device_token');
+      if (deviceToken) {
+        const { reporter: existing } = await getReporterByDeviceToken(deviceToken);
+        if (existing) {
+          setReporter(existing);
+          return;
+        }
+      }
+      // 未登録 → モーダル表示
+      setShowReporterModal(true);
+    };
+    checkReporter();
+  }, [session, status]);
+
+  // リポーター登録処理
+  const handleRegisterReporter = async () => {
+    if (!reporterNickname.trim()) return;
+    setIsRegisteringReporter(true);
+
+    try {
+      const deviceToken = uuidv4();
+      const { reporter: newReporter, error } = await registerReporter(reporterNickname.trim(), deviceToken);
+
+      if (error || !newReporter) {
+        toast({ title: 'エラー', description: error || '登録に失敗しました', duration: 3000 });
+        return;
+      }
+
+      localStorage.setItem('reporter_device_token', deviceToken);
+      localStorage.setItem('reporter_id', newReporter.id);
+      setReporter(newReporter);
+      setReporterRegistered(true);
+
+      // 登録完了を表示してからモーダルを閉じる
+      setTimeout(() => {
+        setShowReporterModal(false);
+        setReporterRegistered(false);
+      }, 3000);
+    } catch (err: any) {
+      toast({ title: 'エラー', description: err.message, duration: 3000 });
+    } finally {
+      setIsRegisteringReporter(false);
+    }
+  };
 
   // Google Places Autocomplete
   useEffect(() => {
@@ -213,6 +275,40 @@ export default function CreateSpotPage() {
     return publicUrlData.publicUrl;
   };
 
+  // タグ選択時にアクティビティ展開を制御
+  const handleTagToggle = (tagId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedTags(prev => [...prev, tagId]);
+      setExpandedTags(prev => [...prev, tagId]);
+    } else {
+      setSelectedTags(prev => prev.filter(t => t !== tagId));
+      setExpandedTags(prev => prev.filter(t => t !== tagId));
+      setSelectedTagActivities(prev => {
+        const next = { ...prev };
+        delete next[tagId];
+        return next;
+      });
+    }
+  };
+
+  // アクティビティ選択
+  const handleActivityToggle = (tagId: string, activityId: string, checked: boolean) => {
+    setSelectedTagActivities(prev => {
+      const current = prev[tagId] || [];
+      if (checked) {
+        return { ...prev, [tagId]: [...current, activityId] };
+      } else {
+        const filtered = current.filter(a => a !== activityId);
+        if (filtered.length === 0) {
+          const next = { ...prev };
+          delete next[tagId];
+          return next;
+        }
+        return { ...prev, [tagId]: filtered };
+      }
+    });
+  };
+
   // フォームバリデーション
   const isFormValid = () => {
     const storeName = form.watch('storeName');
@@ -225,7 +321,7 @@ export default function CreateSpotPage() {
     );
   };
 
-  // 投稿処理（ログイン不要：未ログイン時はゲストとして登録）
+  // 投稿処理
   const handleSubmit = async (values: SpotFormValues) => {
     if (!storeId && (!storeLat || !storeLng)) {
       setSubmitError('スポットを選択または位置を指定してください');
@@ -253,6 +349,7 @@ export default function CreateSpotPage() {
 
       const spotInput: CreateSpotInput = {
         userId: session?.user?.id ?? undefined,
+        reporterId: reporter?.id ?? undefined,
         storeName: values.storeName,
         description: values.description,
         storeLatitude: storeLat!,
@@ -263,6 +360,7 @@ export default function CreateSpotPage() {
         city: null,
         prefecture: '大分県',
         targetTags: selectedTags.length > 0 ? selectedTags : undefined,
+        tagActivities: Object.keys(selectedTagActivities).length > 0 ? selectedTagActivities : undefined,
       };
 
       const { spotId, error: createError } = await createSpot(spotInput);
@@ -306,6 +404,23 @@ export default function CreateSpotPage() {
           <p className="text-sm mt-2" style={{ color: designTokens.colors.text.secondary }}>
             あなたが見つけた大分の魅力的な場所を登録して、未来の名所を作りましょう。
           </p>
+          {/* リポーター情報バッジ */}
+          {reporter && !session?.user?.id && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="mt-3 inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium"
+              style={{
+                background: `${designTokens.colors.accent.lilac}15`,
+                color: designTokens.colors.accent.lilacDark,
+                border: `1px solid ${designTokens.colors.accent.lilac}30`,
+              }}
+            >
+              <Award className="h-4 w-4" />
+              <span>{reporter.nickname}</span>
+              <span className="text-xs opacity-70">({reporter.reporter_no})</span>
+            </motion.div>
+          )}
         </div>
 
         <Form {...form}>
@@ -445,7 +560,7 @@ export default function CreateSpotPage() {
                 )}
               </div>
 
-              {/* 対象者タグ */}
+              {/* 対象者タグ + アクティビティ */}
               <div>
                 <Label className="text-sm font-semibold mb-2 block">
                   <Users className="inline-block mr-1.5 h-4 w-4" />
@@ -454,32 +569,110 @@ export default function CreateSpotPage() {
                 <p className="text-xs text-gray-500 mb-3">
                   対象となるユーザー層を選択してください（複数選択可）
                 </p>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                <div className="space-y-2">
                   {TARGET_TAGS.map((tag) => {
                     const isSelected = selectedTags.includes(tag.id);
+                    const isExpanded = expandedTags.includes(tag.id);
+                    const activities = TAG_ACTIVITIES[tag.id as TargetTagId] || [];
+                    const selectedActivitiesForTag = selectedTagActivities[tag.id] || [];
+
                     return (
-                      <label
-                        key={tag.id}
-                        className={`flex items-center gap-2 px-3 py-2.5 rounded-lg cursor-pointer transition-all border-2 text-sm ${
-                          isSelected
-                            ? 'border-primary bg-primary/10 font-medium'
-                            : 'border-transparent bg-gray-50 hover:bg-gray-100'
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedTags(prev => [...prev, tag.id]);
-                            } else {
-                              setSelectedTags(prev => prev.filter(t => t !== tag.id));
-                            }
-                          }}
-                          className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                        />
-                        <span style={{ fontSize: '16px' }}>{tag.label}</span>
-                      </label>
+                      <div key={tag.id}>
+                        <label
+                          className={`flex items-center justify-between px-3 py-2.5 rounded-lg cursor-pointer transition-all border-2 text-sm ${
+                            isSelected
+                              ? 'border-primary bg-primary/10 font-medium'
+                              : 'border-transparent bg-gray-50 hover:bg-gray-100'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={(e) => handleTagToggle(tag.id, e.target.checked)}
+                              className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                            />
+                            <span style={{ fontSize: '16px' }}>{tag.label}</span>
+                            {selectedActivitiesForTag.length > 0 && (
+                              <span
+                                className="text-xs px-2 py-0.5 rounded-full"
+                                style={{
+                                  background: `${designTokens.colors.secondary.fern}20`,
+                                  color: designTokens.colors.secondary.fernDark,
+                                }}
+                              >
+                                {selectedActivitiesForTag.length}個選択
+                              </span>
+                            )}
+                          </div>
+                          {isSelected && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                setExpandedTags(prev =>
+                                  prev.includes(tag.id)
+                                    ? prev.filter(t => t !== tag.id)
+                                    : [...prev, tag.id]
+                                );
+                              }}
+                              className="p-1 hover:bg-primary/20 rounded transition-colors"
+                            >
+                              {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                            </button>
+                          )}
+                        </label>
+
+                        {/* アクティビティ要素（展開時） */}
+                        <AnimatePresence>
+                          {isSelected && isExpanded && (
+                            <motion.div
+                              initial={{ height: 0, opacity: 0 }}
+                              animate={{ height: 'auto', opacity: 1 }}
+                              exit={{ height: 0, opacity: 0 }}
+                              transition={{ duration: 0.2 }}
+                              className="overflow-hidden"
+                            >
+                              <div className="ml-4 mt-1 mb-2 p-3 rounded-lg border border-dashed border-gray-200 bg-gray-50/50">
+                                <p className="text-xs font-medium mb-2" style={{ color: designTokens.colors.text.secondary }}>
+                                  <Sparkles className="inline-block h-3 w-3 mr-1" />
+                                  おすすめアクティビティ
+                                </p>
+                                <div className="grid grid-cols-3 gap-1.5">
+                                  {activities.map((activity) => {
+                                    const isActivitySelected = selectedActivitiesForTag.includes(activity.id);
+                                    return (
+                                      <label
+                                        key={activity.id}
+                                        className={`flex items-center gap-1.5 px-2 py-1.5 rounded-md cursor-pointer transition-all text-xs ${
+                                          isActivitySelected
+                                            ? 'font-medium'
+                                            : 'hover:bg-white'
+                                        }`}
+                                        style={isActivitySelected ? {
+                                          background: `${designTokens.colors.secondary.fern}15`,
+                                          color: designTokens.colors.secondary.fernDark,
+                                          border: `1px solid ${designTokens.colors.secondary.fern}30`,
+                                        } : {
+                                          border: '1px solid transparent',
+                                        }}
+                                      >
+                                        <input
+                                          type="checkbox"
+                                          checked={isActivitySelected}
+                                          onChange={(e) => handleActivityToggle(tag.id, activity.id, e.target.checked)}
+                                          className="h-3 w-3 rounded border-gray-300 text-primary focus:ring-primary"
+                                        />
+                                        <span>{activity.label}</span>
+                                      </label>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
                     );
                   })}
                 </div>
@@ -564,6 +757,142 @@ export default function CreateSpotPage() {
         initialSpotName={form.watch('storeName')}
         isLoaded={isLoaded}
       />
+
+      {/* リポーター登録モーダル */}
+      <AnimatePresence>
+        {showReporterModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+            style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+              className="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden"
+            >
+              {!reporterRegistered ? (
+                <>
+                  {/* モーダルヘッダー */}
+                  <div
+                    className="p-6 text-center"
+                    style={{
+                      background: `linear-gradient(135deg, ${designTokens.colors.accent.lilac}20, ${designTokens.colors.accent.gold}15)`,
+                    }}
+                  >
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ type: 'spring', stiffness: 400, damping: 15, delay: 0.2 }}
+                      className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center"
+                      style={{
+                        background: `linear-gradient(135deg, ${designTokens.colors.accent.lilac}, ${designTokens.colors.accent.lilacDark})`,
+                      }}
+                    >
+                      <UserPlus className="h-8 w-8 text-white" />
+                    </motion.div>
+                    <h2 className="text-xl font-bold" style={{ color: designTokens.colors.text.primary }}>
+                      リポーター登録
+                    </h2>
+                    <p className="text-sm mt-2" style={{ color: designTokens.colors.text.secondary }}>
+                      ニックネームを登録して、<br />あなただけのリポーターNo.を取得しましょう
+                    </p>
+                  </div>
+
+                  {/* モーダルボディ */}
+                  <div className="p-6 space-y-4">
+                    <div>
+                      <Label className="text-sm font-semibold mb-2 block">
+                        ニックネーム<span className="text-destructive ml-1">*</span>
+                      </Label>
+                      <Input
+                        placeholder="例: 大分太郎"
+                        value={reporterNickname}
+                        onChange={(e) => setReporterNickname(e.target.value)}
+                        className="h-12 text-base rounded-xl"
+                        maxLength={20}
+                      />
+                      <p className="text-xs text-gray-400 mt-1">20文字以内</p>
+                    </div>
+
+                    <Button
+                      onClick={handleRegisterReporter}
+                      disabled={!reporterNickname.trim() || isRegisteringReporter}
+                      className="w-full h-12 text-base font-bold rounded-xl"
+                      style={{
+                        background: reporterNickname.trim()
+                          ? `linear-gradient(135deg, ${designTokens.colors.accent.lilac}, ${designTokens.colors.accent.lilacDark})`
+                          : undefined,
+                      }}
+                    >
+                      {isRegisteringReporter ? (
+                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                      ) : (
+                        <Award className="mr-2 h-5 w-5" />
+                      )}
+                      登録してリポーターNo.を取得
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                /* 登録完了画面 */
+                <div className="p-8 text-center">
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ type: 'spring', stiffness: 300, damping: 15 }}
+                    className="w-20 h-20 rounded-full mx-auto mb-6 flex items-center justify-center"
+                    style={{
+                      background: `linear-gradient(135deg, ${designTokens.colors.functional.success}, ${designTokens.colors.secondary.fern})`,
+                    }}
+                  >
+                    <CheckCircle className="h-10 w-10 text-white" />
+                  </motion.div>
+
+                  <motion.h2
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 }}
+                    className="text-xl font-bold mb-2"
+                    style={{ color: designTokens.colors.text.primary }}
+                  >
+                    登録完了!
+                  </motion.h2>
+
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5 }}
+                    className="space-y-3"
+                  >
+                    <p className="text-sm" style={{ color: designTokens.colors.text.secondary }}>
+                      あなたのリポーターNo.
+                    </p>
+                    <div
+                      className="inline-flex items-center gap-2 px-6 py-3 rounded-full text-lg font-bold"
+                      style={{
+                        background: `${designTokens.colors.accent.gold}20`,
+                        color: designTokens.colors.accent.goldDark,
+                        border: `2px solid ${designTokens.colors.accent.gold}50`,
+                      }}
+                    >
+                      <Award className="h-5 w-5" />
+                      {reporter?.reporter_no}
+                    </div>
+                    <p className="text-xs" style={{ color: designTokens.colors.text.muted }}>
+                      {reporter?.nickname} さん、ようこそ!
+                    </p>
+                  </motion.div>
+                </div>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -13,6 +13,8 @@ export interface Spot {
   is_deleted: boolean;
   created_at: string;
   updated_at: string;
+  tag_activities: Record<string, string[]> | null;
+  reporter_id: string | null;
 }
 
 export interface SpotWithAuthor extends Spot {

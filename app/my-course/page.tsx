@@ -134,7 +134,7 @@ export default function CoursesPage() {
   // マップを編集
   const handleEdit = (e: React.MouseEvent, mapId: string) => {
     e.stopPropagation(); // カード全体のクリックを防止
-    router.push(`/my-maps/edit/${mapId}`);
+    router.push(`/my-course/edit/${mapId}`);
   };
   
   // 新規作成

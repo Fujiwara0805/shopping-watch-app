@@ -39,6 +39,8 @@ export interface CreatePostInput {
   expiresAt: string;
   // 対象者タグ
   targetTags?: string[];
+  // 対象者タグごとのアクティビティ要素
+  tagActivities?: Record<string, string[]>;
 }
 
 export interface PostData {
@@ -127,6 +129,11 @@ export async function createPost(input: CreatePostInput): Promise<{ postId: stri
     // 対象者タグ
     if (input.targetTags && input.targetTags.length > 0) {
       postData.target_tags = JSON.stringify(input.targetTags);
+    }
+
+    // 対象者タグごとのアクティビティ
+    if (input.tagActivities && Object.keys(input.tagActivities).length > 0) {
+      postData.tag_activities = JSON.stringify(input.tagActivities);
     }
 
     // コラボフィールド

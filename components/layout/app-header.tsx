@@ -42,10 +42,10 @@ export function AppHeader() {
   // Get page title based on current path
   const getPageTitle = () => {
     // 動的ルートのチェック（先にチェックする必要がある）
-    if (pathname.startsWith('/my-maps/edit/')) {
+    if (pathname.startsWith('/my-course/edit/')) {
       return 'コース編集';
     }
-    
+
     switch (pathname) {
       case '/post':
         return '新規投稿';
@@ -53,9 +53,9 @@ export function AppHeader() {
         return 'イベント一覧';
       case '/create-map':
         return 'コース作成';
-      case '/my-maps':
+      case '/my-course':
         return 'コース';
-      case '/public-maps':
+      case '/courses':
         return 'コース一覧';
       case '/create-spot':
         return 'スポット作成';

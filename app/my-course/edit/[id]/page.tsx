@@ -1073,7 +1073,7 @@ export default function EditMapPage() {
         duration: 1000,
       });
       
-      router.push('/my-maps');
+      router.push('/my-course');
 
     } catch (error: any) {
       console.error("マップ更新エラー:", error);
@@ -1096,7 +1096,7 @@ export default function EditMapPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4">
         <h2 className="text-2xl font-bold text-gray-800 mb-4">マップが見つかりません</h2>
-        <Button onClick={() => router.push('/my-maps')}>
+        <Button onClick={() => router.push('/my-course')}>
           <ArrowLeft className="mr-2 h-4 w-4" />
           コースに戻る
         </Button>
@@ -1498,7 +1498,7 @@ export default function EditMapPage() {
                 {/* 戻るボタン */}
                 <Button
                   type="button"
-                  onClick={() => router.push('/my-maps')}
+                  onClick={() => router.push('/my-course')}
                   className="w-full h-12 text-base font-semibold rounded-xl shadow-md bg-secondary/30 hover:bg-secondary/50 text-foreground border border-border"
                 >
                   戻る

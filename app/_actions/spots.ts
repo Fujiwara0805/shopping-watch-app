@@ -11,6 +11,8 @@ import type { Spot, SpotWithAuthor } from '@/types/spot';
 export interface CreateSpotInput {
   /** 未ログインの場合は null / 未指定 */
   userId?: string | null;
+  /** リポーター登録済みの場合 */
+  reporterId?: string | null;
   storeName: string;
   description: string;
   storeLatitude: number;
@@ -21,6 +23,8 @@ export interface CreateSpotInput {
   city: string | null;
   prefecture: string;
   targetTags?: string[];
+  /** 対象者タグごとのアクティビティ要素 { tagId: [activityId, ...] } */
+  tagActivities?: Record<string, string[]>;
 }
 
 /**
@@ -85,6 +89,14 @@ export async function createSpot(
 
     if (input.targetTags && input.targetTags.length > 0) {
       insertData.target_tags = JSON.stringify(input.targetTags);
+    }
+
+    if (input.tagActivities && Object.keys(input.tagActivities).length > 0) {
+      insertData.tag_activities = JSON.stringify(input.tagActivities);
+    }
+
+    if (input.reporterId) {
+      insertData.reporter_id = input.reporterId;
     }
 
     const { data, error } = await supabaseAnon

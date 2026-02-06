@@ -4,49 +4,50 @@ import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { 
-  MapPin, 
-  ExternalLink, 
-  AlertCircle, 
-  X, 
+import {
+  MapPin,
+  ExternalLink,
+  AlertCircle,
+  X,
   Navigation,
   Tag,
   Image as ImageIcon,
   ChevronLeft,
   ChevronRight,
   ArrowUpFromLine,
-  ScrollText,
-  Sword,
   ChevronDown,
   ChevronUp,
-  Feather,
   Clock,
   ArrowRight,
-  Shield,
   Compass,
   Home,
   ChevronRight as ChevronRightIcon,
-  Ship // 🚢 船のアイコンをインポート
+  Ship,
+  ArrowLeft,
+  Users,
+  List,
+  Activity
 } from 'lucide-react';
 import Script from 'next/script';
 import Link from 'next/link';
-
-// 🎮 RPG風移動手段アイコン（ピクセルアート風）
-// 🔥 変更点1: `ship` と `ferry` を追加（ferry は transport-detail-input.tsx で使用される値）
-const TRANSPORT_ICONS: { [key: string]: { icon: string; label: string; color: string } } = {
-  walk: { icon: '🚶', label: '徒歩', color: '#4CAF50' },
-  bus: { icon: '🚌', label: 'バス', color: '#2196F3' },
-  taxi: { icon: '🚕', label: 'タクシー', color: '#FFC107' },
-  car: { icon: '🚗', label: '車', color: '#9C27B0' },
-  bicycle: { icon: '🚲', label: '自転車', color: '#00BCD4' },
-  train: { icon: '🚃', label: '電車', color: '#F44336' },
-  airplane: { icon: '✈️', label: '飛行機', color: '#0ea5e9' },
-  ship: { icon: '🚢', label: '船・フェリー', color: '#06b6d4' }, // 🆕 船を追加（シアン系カラー）
-  ferry: { icon: '🚢', label: '船・フェリー', color: '#06b6d4' }, // 🆕 ferry を追加（transport-detail-input.tsx の値と一致させる）
-};
+import Image from 'next/image';
+import { designTokens, TARGET_TAG_LABELS, TAG_ACTIVITIES, TAG_ACTIVITY_LABELS } from '@/lib/constants';
 import { supabase } from '@/lib/supabaseClient';
 
-// 🔥 CloudinaryのURLを高品質化する関数
+// 移動手段アイコンマッピング
+const TRANSPORT_ICONS: { [key: string]: { icon: string; label: string; color: string } } = {
+  walk: { icon: '🚶', label: '徒歩', color: designTokens.colors.functional.success },
+  bus: { icon: '🚌', label: 'バス', color: designTokens.colors.functional.info },
+  taxi: { icon: '🚕', label: 'タクシー', color: designTokens.colors.functional.warning },
+  car: { icon: '🚗', label: '車', color: designTokens.colors.accent.lilac },
+  bicycle: { icon: '🚲', label: '自転車', color: designTokens.colors.primary.base },
+  train: { icon: '🚃', label: '電車', color: designTokens.colors.functional.error },
+  airplane: { icon: '✈️', label: '飛行機', color: designTokens.colors.functional.info },
+  ship: { icon: '🚢', label: '船・フェリー', color: designTokens.colors.primary.base },
+  ferry: { icon: '🚢', label: '船・フェリー', color: designTokens.colors.primary.base },
+};
+
+// CloudinaryのURLを高品質化する関数
 const optimizeCloudinaryImageUrl = (url: string): string => {
   if (!url || typeof url !== 'string') return url;
   if (url.includes('res.cloudinary.com') && url.includes('/upload/')) {
@@ -61,36 +62,26 @@ const optimizeCloudinaryImageUrl = (url: string): string => {
   return url;
 };
 
-// 🔥 変更点2: 移動詳細データの型に船関連フィールドを追加
 interface TransportDetails {
   type: string;
   travelTime?: number;
-  // バス関連
   departureStop?: string;
   arrivalStop?: string;
   busLine?: string;
-  // 電車関連
   departureStation?: string;
   arrivalStation?: string;
   lineName?: string;
-  // 共通
   fare?: number;
-  // 車関連
   parkingInfo?: string;
-  // 自転車関連
   rentalInfo?: string;
-  // メモ
   note?: string;
-  // 飛行機関連
   departureAirport?: string;
   arrivalAirport?: string;
   flightNumber?: string;
-  // 🆕 船・フェリー関連フィールドを追加
-  departurePort?: string;      // 出発港
-  arrivalPort?: string;        // 到着港
-  ferryLine?: string;          // フェリー路線名（transport-detail-input.tsx で使用）
-  shipName?: string;           // 船名・便名（例: さんふらわあ、フェリーおおいた など）
-  // 🆕 乗り換え用フィールド（segments配列に対応）
+  departurePort?: string;
+  arrivalPort?: string;
+  ferryLine?: string;
+  shipName?: string;
   segments?: Array<{
     id?: string;
     type?: string;
@@ -124,12 +115,11 @@ interface SpotLocation {
   content: string;
   image_urls: string[];
   url?: string | null;
-  // 新規追加項目
-  stay_duration?: number; // 滞在予定時間（分）
-  recommended_transport?: string; // 推奨移動手段
-  transport_details?: string | TransportDetails | null; // 詳細な移動手段情報（JSON文字列またはオブジェクト）
-  next_transport?: string; // 次のスポットへの移動手段
-  next_travel_time?: number; // 次のスポットへの所要時間（分）
+  stay_duration?: number;
+  recommended_transport?: string;
+  transport_details?: string | TransportDetails | null;
+  next_transport?: string;
+  next_travel_time?: number;
 }
 
 interface MapData {
@@ -139,13 +129,15 @@ interface MapData {
   description?: string | null;
   locations: SpotLocation[];
   total_locations: number;
+  target_tags?: string[] | null;
+  tag_activities?: Record<string, string[]> | null;
 }
 
 interface SpotDetailClientProps {
   spotId: string;
 }
 
-// パンくずリストコンポーネント（スポット詳細用）
+// パンくずリストコンポーネント（designTokensスタイル）
 interface SpotBreadcrumbProps {
   mapData: MapData | null;
   className?: string;
@@ -154,15 +146,13 @@ interface SpotBreadcrumbProps {
 function SpotBreadcrumb({ mapData, className = '' }: SpotBreadcrumbProps) {
   const pathname = usePathname();
   const baseUrl = 'https://tokudoku.com';
-  
-  // パンくずアイテムを生成
+
   const breadcrumbItems = [
     { label: 'ホーム', href: '/' },
-    { label: '公開マップ', href: '/public-maps' },
+    { label: 'コース一覧', href: '/courses' },
     { label: mapData?.title || 'マップ詳細', href: pathname, isCurrent: true },
   ];
 
-  // JSON-LD構造化データ
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
@@ -183,15 +173,16 @@ function SpotBreadcrumb({ mapData, className = '' }: SpotBreadcrumbProps) {
       />
       {breadcrumbItems.map((item, index) => (
         <div key={item.href} className="flex items-center">
-          {index > 0 && <ChevronRightIcon className="h-4 w-4 text-primary/50 mx-1" />}
+          {index > 0 && <ChevronRightIcon className="h-4 w-4 mx-1" style={{ color: designTokens.colors.text.muted }} />}
           {item.isCurrent ? (
-            <span className="font-bold text-[#3d2914] truncate max-w-[200px]" style={{ fontFamily: "'Noto Serif JP', serif" }}>
+            <span className="font-medium truncate max-w-[200px]" style={{ color: designTokens.colors.text.primary }}>
               {item.label}
             </span>
           ) : (
-            <Link 
-              href={item.href} 
-              className="text-primary hover:text-foreground hover:underline transition-colors flex items-center"
+            <Link
+              href={item.href}
+              className="flex items-center transition-colors hover:underline"
+              style={{ color: designTokens.colors.accent.lilacDark }}
             >
               {index === 0 && <Home className="h-4 w-4 mr-1" />}
               {item.label}
@@ -203,6 +194,30 @@ function SpotBreadcrumb({ mapData, className = '' }: SpotBreadcrumbProps) {
   );
 }
 
+// 情報行コンポーネント（event-detail-clientと同じパターン）
+const InfoRow = ({ icon: Icon, label, children, iconColor }: { icon: React.ElementType; label: string; children: React.ReactNode; iconColor?: string }) => (
+  <motion.div
+    initial={{ opacity: 0, x: -10 }}
+    animate={{ opacity: 1, x: 0 }}
+    className="flex items-start gap-4 group"
+  >
+    <div
+      className="flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110"
+      style={{
+        background: `${iconColor || designTokens.colors.accent.lilac}20`,
+      }}
+    >
+      <Icon className="h-5 w-5" style={{ color: iconColor || designTokens.colors.accent.lilac }} />
+    </div>
+    <div className="flex-1 min-w-0">
+      <p className="text-xs font-semibold tracking-wide uppercase mb-1" style={{ color: designTokens.colors.text.muted }}>
+        {label}
+      </p>
+      {children}
+    </div>
+  </motion.div>
+);
+
 export function SpotDetailClient({ spotId }: SpotDetailClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -212,7 +227,7 @@ export function SpotDetailClient({ spotId }: SpotDetailClientProps) {
   const [expandedImageIndex, setExpandedImageIndex] = useState<{ spotIndex: number; imageIndex: number } | null>(null);
   const [currentImageIndices, setCurrentImageIndices] = useState<{ [key: number]: number }>({});
   const [targetOrder, setTargetOrder] = useState<number | null>(null);
-  const [isTocOpen, setIsTocOpen] = useState(false); // 目次のトグル状態
+  const [isTocOpen, setIsTocOpen] = useState(false);
 
   const handleClose = () => {
     const from = searchParams.get('from');
@@ -242,6 +257,17 @@ export function SpotDetailClient({ spotId }: SpotDetailClientProps) {
         }
 
         const locations = mapDataResult.locations || [];
+
+        // target_tags と tag_activities のパース
+        let targetTags = mapDataResult.target_tags;
+        if (typeof targetTags === 'string') {
+          try { targetTags = JSON.parse(targetTags); } catch { targetTags = null; }
+        }
+        let tagActivities = mapDataResult.tag_activities;
+        if (typeof tagActivities === 'string') {
+          try { tagActivities = JSON.parse(tagActivities); } catch { tagActivities = null; }
+        }
+
         setMapData({
           id: mapDataResult.id,
           title: mapDataResult.title,
@@ -249,6 +275,8 @@ export function SpotDetailClient({ spotId }: SpotDetailClientProps) {
           description: mapDataResult.description || null,
           locations: locations,
           total_locations: locations.length,
+          target_tags: targetTags,
+          tag_activities: tagActivities,
         });
 
         const initialIndices: { [key: number]: number } = {};
@@ -295,65 +323,40 @@ export function SpotDetailClient({ spotId }: SpotDetailClientProps) {
     }
   };
 
-  // アニメーション設定
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.15,
-        delayChildren: 0.2
-      }
-    }
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 30 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        type: "spring",
-        stiffness: 100,
-        damping: 12
-      }
-    }
-  };
-
-  const headerVariants = {
-    hidden: { opacity: 0, y: -20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: { duration: 0.5, ease: "easeOut" }
-    }
-  };
-
-  // ローディング中
+  // ローディング
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center" style={{ background: designTokens.colors.background.mist }}>
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-gray-600 font-bold">読み込み中...</p>
+          <motion.div animate={{ rotate: 360 }} transition={{ duration: 2, repeat: Infinity, ease: "linear" }}>
+            <Compass className="h-12 w-12 mx-auto mb-4" style={{ color: designTokens.colors.accent.gold }} />
+          </motion.div>
+          <p className="font-medium" style={{ color: designTokens.colors.text.secondary }}>コース情報を読み込み中...</p>
         </div>
       </div>
     );
   }
 
-  // エラー表示
+  // エラー
   if (error || !mapData) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+      <div className="min-h-screen flex items-center justify-center p-4" style={{ background: designTokens.colors.background.mist }}>
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="max-w-sm w-full bg-white rounded-2xl shadow-xl p-6 text-center"
+          className="rounded-3xl p-8 max-w-md w-full text-center"
+          style={{ background: designTokens.colors.background.white, boxShadow: designTokens.elevation.high }}
         >
-          <AlertCircle className="h-12 w-12 text-red-400 mx-auto mb-3" />
-          <h2 className="text-xl font-bold text-gray-800 mb-2">エラー</h2>
-          <p className="text-gray-600 text-sm mb-4">{error || '場所が見つかりませんでした。'}</p>
-          <Button onClick={handleClose} size="sm" className="bg-primary text-primary-foreground hover:opacity-90">
+          <AlertCircle className="h-16 w-16 mx-auto mb-4" style={{ color: designTokens.colors.functional.error }} />
+          <h2 className="text-xl font-semibold mb-2" style={{ fontFamily: designTokens.typography.display, color: designTokens.colors.text.primary }}>
+            読み込みエラー
+          </h2>
+          <p className="mb-6" style={{ color: designTokens.colors.text.secondary }}>{error || '場所が見つかりませんでした。'}</p>
+          <Button
+            onClick={handleClose}
+            className="w-full rounded-xl py-3"
+            style={{ background: designTokens.colors.accent.lilac, color: designTokens.colors.text.inverse }}
+          >
             戻る
           </Button>
         </motion.div>
@@ -362,424 +365,708 @@ export function SpotDetailClient({ spotId }: SpotDetailClientProps) {
   }
 
   return (
-    <div className="min-h-screen bg-[#f5e6d3]">
+    <div className="min-h-screen overflow-y-auto pb-10" style={{ background: designTokens.colors.background.mist }}>
       <style jsx>{`
         @keyframes highlight {
-          0%, 100% { box-shadow: 0 0 0 0 rgba(139, 105, 20, 0); }
-          50% { box-shadow: 0 0 25px 8px rgba(139, 105, 20, 0.4); }
+          0%, 100% { box-shadow: 0 0 0 0 rgba(191, 163, 209, 0); }
+          50% { box-shadow: 0 0 25px 8px rgba(191, 163, 209, 0.4); }
         }
         .highlight-flash { animation: highlight 1s ease-in-out 2; }
       `}</style>
-      {/* 固定ヘッダー */}
-      <motion.header
-        variants={headerVariants}
-        initial="hidden"
-        animate="visible"
-        className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-200 shadow-sm"
-      >
-        <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-end">
-          <button
-            onClick={handleClose}
-            className="p-2 rounded-full hover:bg-gray-100 transition-colors flex-shrink-0"
-            aria-label="閉じる"
-          >
-            <X className="h-5 w-5 text-gray-600" />
-          </button>
-        </div>
-      </motion.header>
 
-      <main className="pt-20 pb-12">
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-2xl mx-auto px-4">
-          
-          {/* パンくずリスト */}
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-4 p-3 bg-[#fdf5e6]/80 backdrop-blur-sm rounded-lg border-2 border-[#d4c4a8]"
-          >
-            <SpotBreadcrumb mapData={mapData} />
-          </motion.div>
-          
-          {/* タイトルセクション */}
-          <section className="py-6 text-center">
-            <h2 className="text-3xl font-extrabold mb-6 text-[#3d2914] tracking-tight" style={{ fontFamily: "'Noto Serif JP', serif" }}>
+      {/* 背景装飾 */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <motion.div
+          animate={{ x: [0, 40, 0], y: [0, -30, 0], scale: [1, 1.15, 1] }}
+          transition={{ duration: 25, repeat: Infinity, ease: 'easeInOut' }}
+          className="absolute -top-1/4 -right-1/4 w-1/2 h-1/2"
+          style={{ background: `radial-gradient(circle, ${designTokens.colors.accent.gold}10 0%, transparent 70%)`, filter: 'blur(80px)' }}
+        />
+        <motion.div
+          animate={{ x: [0, -50, 0], y: [0, 40, 0], scale: [1.1, 1, 1.1] }}
+          transition={{ duration: 30, repeat: Infinity, ease: 'easeInOut' }}
+          className="absolute -bottom-1/4 -left-1/4 w-2/3 h-2/3"
+          style={{ background: `radial-gradient(circle, ${designTokens.colors.accent.lilac}08 0%, transparent 70%)`, filter: 'blur(100px)' }}
+        />
+      </div>
+
+      <div className="max-w-3xl mx-auto px-4 pt-6 relative z-10">
+        {/* パンくずリスト */}
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-4 p-3 rounded-xl backdrop-blur-sm"
+          style={{
+            background: `${designTokens.colors.background.white}90`,
+            boxShadow: designTokens.elevation.subtle,
+          }}
+        >
+          <SpotBreadcrumb mapData={mapData} />
+        </motion.div>
+
+        {/* メインカード */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="rounded-3xl overflow-hidden mb-6"
+          style={{
+            background: designTokens.colors.background.white,
+            boxShadow: designTokens.elevation.high,
+          }}
+        >
+          {/* ヘッダー部 */}
+          <div className="p-6 sm:p-8">
+            {/* 戻るボタン */}
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={handleClose}
+              className="mb-6 w-10 h-10 rounded-full flex items-center justify-center"
+              style={{
+                background: designTokens.colors.background.cloud,
+              }}
+            >
+              <ArrowLeft className="h-5 w-5" style={{ color: designTokens.colors.text.primary }} />
+            </motion.button>
+
+            {/* タイトル */}
+            <h1
+              className="text-2xl sm:text-3xl font-semibold leading-tight mb-2"
+              style={{
+                fontFamily: designTokens.typography.display,
+                color: designTokens.colors.text.primary,
+              }}
+            >
               {mapData.title}
-            </h2>
+            </h1>
+            <div
+              className="w-20 h-1 rounded-full mt-3 mb-6"
+              style={{ background: `linear-gradient(90deg, ${designTokens.colors.accent.gold}, transparent)` }}
+            />
 
+            {/* 説明文 */}
             {mapData.description && (
-              <div className="mb-6 bg-muted border-2 border-border rounded-lg p-5 text-left shadow-inner">
-                <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap font-medium">
+              <div
+                className="mb-6 p-5 rounded-2xl"
+                style={{ background: designTokens.colors.background.cloud }}
+              >
+                <p
+                  className="leading-relaxed whitespace-pre-wrap"
+                  style={{
+                    fontFamily: designTokens.typography.body,
+                    color: designTokens.colors.text.primary,
+                  }}
+                >
                   {mapData.description}
                 </p>
               </div>
             )}
 
-            {/* 冒険の書風 目次改修 */}
-            {mapData.locations && mapData.locations.length > 0 && (
-              <div className="mt-8 border-4 border-double border-primary bg-background shadow-[6px_6px_0px_0px_rgba(61,41,20,0.2)] overflow-hidden">
-                <button 
-                  onClick={() => setIsTocOpen(!isTocOpen)}
-                  className="w-full p-4 flex items-center justify-between bg-primary hover:bg-primary/90 transition-all text-primary-foreground"
-                >
-                  <div className="flex items-center gap-3">
-                    <ScrollText className="h-6 w-6" />
-                    <span className="text-lg font-bold tracking-widest" style={{ fontFamily: "'Noto Serif JP', serif" }}>
-                      CONTENTS
-                    </span>
-                  </div>
-                  {isTocOpen ? <ChevronUp className="h-6 w-6" /> : <ChevronDown className="h-6 w-6" />}
-                </button>
-
-                <AnimatePresence>
-                  {isTocOpen && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.3 }}
-                      className="bg-[url('https://www.transparenttextures.com/patterns/parchment.png')] bg-[#fdf5e6]"
-                    >
-                      <div className="p-4 space-y-1">
-                        {mapData.locations.map((location, index) => (
-                          <button
-                            key={index}
-                            onClick={() => {
-                              const element = document.getElementById(`spot-${index}`);
-                              if (element) {
-                                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                element.classList.add('highlight-flash');
-                                setTimeout(() => { element.classList.remove('highlight-flash'); }, 2000);
-                              }
-                            }}
-                            className="w-full flex items-center justify-start gap-4 px-4 py-3 border-b border-primary/10 last:border-0 hover:bg-primary/5 transition-all group"
-                          >
-                            <Sword className="h-4 w-4 text-primary opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all duration-300" />
-                            <span className="text-left font-bold text-muted-foreground text-base">
-                              {String(index + 1).padStart(2, '0')}. {location.store_name}
-                            </span>
-                          </button>
-                        ))}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+            {/* ハッシュタグ */}
+            {mapData.hashtags && mapData.hashtags.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-6">
+                {mapData.hashtags.map((tag, i) => (
+                  <span
+                    key={i}
+                    className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium"
+                    style={{
+                      background: `${designTokens.colors.secondary.fern}15`,
+                      color: designTokens.colors.secondary.fernDark,
+                      border: `1px solid ${designTokens.colors.secondary.fern}30`,
+                    }}
+                  >
+                    #{tag}
+                  </span>
+                ))}
               </div>
             )}
-          </section>
 
-          {/* スポットカード一覧（RPG風デザイン＋スポット間移動表示） */}
-          <div className="mt-12">
-            {mapData.locations.map((location, index) => (
-              <div key={index}>
-                {/* スポットカード */}
-                <motion.article
-                  id={`spot-${index}`}
-                  initial={{ opacity: 0, y: 30 }} 
-                  whileInView={{ opacity: 1, y: 0 }} 
-                  viewport={{ once: true }}
-                  className="bg-background rounded-xl shadow-[0_10px_25px_-5px_rgba(61,41,20,0.15)] overflow-hidden border-4 border-double border-primary"
+            {/* 対象者タグ */}
+            {mapData.target_tags && mapData.target_tags.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mb-6"
+              >
+                <div className="flex items-center gap-2 mb-3">
+                  <Users className="h-4 w-4" style={{ color: designTokens.colors.accent.lilac }} />
+                  <span className="text-xs font-semibold tracking-wide uppercase" style={{ color: designTokens.colors.text.muted }}>
+                    Target
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {mapData.target_tags.map((tagId) => (
+                    <div key={tagId}>
+                      <span
+                        className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium"
+                        style={{
+                          background: `${designTokens.colors.accent.lilac}15`,
+                          color: designTokens.colors.accent.lilacDark,
+                          border: `1px solid ${designTokens.colors.accent.lilac}30`,
+                        }}
+                      >
+                        {TARGET_TAG_LABELS[tagId] || tagId}
+                      </span>
+                      {/* タグアクティビティ表示 */}
+                      {mapData.tag_activities && mapData.tag_activities[tagId] && mapData.tag_activities[tagId].length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 mt-1.5 ml-2">
+                          {mapData.tag_activities[tagId].map((actId) => (
+                            <span
+                              key={actId}
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium"
+                              style={{
+                                background: `${designTokens.colors.secondary.fern}12`,
+                                color: designTokens.colors.secondary.fernDark,
+                                border: `1px solid ${designTokens.colors.secondary.fern}25`,
+                              }}
+                            >
+                              <Activity className="h-3 w-3" />
+                              {TAG_ACTIVITY_LABELS[actId] || actId}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+
+            {/* スポット数 */}
+            <div className="flex items-center gap-2 mb-2">
+              <MapPin className="h-4 w-4" style={{ color: designTokens.colors.accent.gold }} />
+              <span className="text-sm font-medium" style={{ color: designTokens.colors.text.secondary }}>
+                {mapData.total_locations}箇所のスポット
+              </span>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* 目次カード */}
+        {mapData.locations && mapData.locations.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="rounded-2xl overflow-hidden mb-8"
+            style={{
+              background: designTokens.colors.background.white,
+              boxShadow: designTokens.elevation.medium,
+            }}
+          >
+            <button
+              onClick={() => setIsTocOpen(!isTocOpen)}
+              className="w-full p-4 flex items-center justify-between transition-colors"
+              style={{ background: `${designTokens.colors.accent.lilac}10` }}
+            >
+              <div className="flex items-center gap-3">
+                <List className="h-5 w-5" style={{ color: designTokens.colors.accent.lilac }} />
+                <span
+                  className="text-base font-semibold tracking-wide"
                   style={{
-                    backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
-                    backgroundBlendMode: 'overlay',
+                    fontFamily: designTokens.typography.display,
+                    color: designTokens.colors.text.primary,
                   }}
                 >
-                  <div className="p-6 relative">
-                    {/* RPG風ヘッダー */}
-                    <div className="flex items-center gap-3 mb-5">
-                      <div className="flex-shrink-0 w-12 h-12 rounded-full bg-gradient-to-br from-[#8b6914] to-[#5c3a21] flex items-center justify-center text-primary-foreground font-bold text-xl shadow-lg border-2 border-[#ffecd2]">
-                        {index + 1}
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="text-xl font-bold text-[#3d2914]" style={{ fontFamily: "'Noto Serif JP', serif" }}>
-                          {location.store_name}
-                        </h3>
-                      </div>
-                    </div>
+                  CONTENTS
+                </span>
+              </div>
+              <motion.div
+                animate={{ rotate: isTocOpen ? 180 : 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <ChevronDown className="h-5 w-5" style={{ color: designTokens.colors.text.muted }} />
+              </motion.div>
+            </button>
 
-                    {/* 画像 */}
-                    {location.image_urls && location.image_urls.length > 0 && (
-                      <div className="relative aspect-[16/10] bg-gray-100 rounded-lg overflow-hidden mb-5 shadow-inner border-2 border-[#d4c4a8]">
-                        <img
+            <AnimatePresence>
+              {isTocOpen && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <div className="px-4 pb-4 space-y-1">
+                    {mapData.locations.map((location, index) => (
+                      <button
+                        key={index}
+                        onClick={() => {
+                          const element = document.getElementById(`spot-${index}`);
+                          if (element) {
+                            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            element.classList.add('highlight-flash');
+                            setTimeout(() => { element.classList.remove('highlight-flash'); }, 2000);
+                          }
+                        }}
+                        className="w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all hover:scale-[1.01]"
+                        style={{ background: 'transparent' }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = `${designTokens.colors.background.cloud}`; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                      >
+                        <span
+                          className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold"
+                          style={{
+                            background: `${designTokens.colors.accent.gold}20`,
+                            color: designTokens.colors.accent.goldDark,
+                          }}
+                        >
+                          {index + 1}
+                        </span>
+                        <span
+                          className="text-left font-medium text-sm"
+                          style={{ color: designTokens.colors.text.primary }}
+                        >
+                          {location.store_name}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
+        )}
+
+        {/* スポットカード一覧 */}
+        <div className="space-y-0">
+          {mapData.locations.map((location, index) => (
+            <div key={index}>
+              {/* スポットカード */}
+              <motion.article
+                id={`spot-${index}`}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-50px" }}
+                transition={{ type: "spring", stiffness: 100, damping: 15 }}
+                className="rounded-3xl overflow-hidden"
+                style={{
+                  background: designTokens.colors.background.white,
+                  boxShadow: designTokens.elevation.high,
+                }}
+              >
+                {/* 画像カルーセル */}
+                {location.image_urls && location.image_urls.length > 0 && (
+                  <div className="relative w-full aspect-[16/10]" style={{ background: designTokens.colors.background.cloud }}>
+                    <AnimatePresence mode="wait">
+                      <motion.div
+                        key={currentImageIndices[index] || 0}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="w-full h-full relative cursor-pointer"
+                        onClick={() => setExpandedImageIndex({ spotIndex: index, imageIndex: currentImageIndices[index] || 0 })}
+                      >
+                        <Image
                           src={optimizeCloudinaryImageUrl(location.image_urls[currentImageIndices[index] || 0])}
                           alt={location.store_name}
-                          className="w-full h-full object-cover cursor-pointer hover:scale-[1.03] transition-transform duration-500"
-                          onClick={() => setExpandedImageIndex({ spotIndex: index, imageIndex: currentImageIndices[index] || 0 })}
+                          fill
+                          className="object-cover"
+                          sizes="(max-width: 768px) 100vw, 768px"
                         />
-                        {location.image_urls.length > 1 && (
-                          <>
-                            <button onClick={(e) => { e.stopPropagation(); handleImageNav(index, 'prev', location.image_urls.length); }}
-                              className="absolute left-2 top-1/2 -translate-y-1/2 p-2 bg-black/50 hover:bg-primary rounded-full text-white transition-all shadow-lg"><ChevronLeft /></button>
-                            <button onClick={(e) => { e.stopPropagation(); handleImageNav(index, 'next', location.image_urls.length); }}
-                              className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-black/50 hover:bg-primary rounded-full text-white transition-all shadow-lg"><ChevronRight /></button>
-                            <div className="absolute bottom-3 right-3 flex items-center gap-1.5 px-3 py-1.5 bg-black/60 backdrop-blur-md rounded-full text-primary-foreground text-xs font-bold border border-white/20">
-                              <ImageIcon className="h-3.5 w-3.5" /> {(currentImageIndices[index] || 0) + 1} / {location.image_urls.length}
-                            </div>
-                          </>
-                        )}
-                      </div>
+                      </motion.div>
+                    </AnimatePresence>
+
+                    {location.image_urls.length > 1 && (
+                      <>
+                        <motion.button
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          onClick={(e) => { e.stopPropagation(); handleImageNav(index, 'prev', location.image_urls.length); }}
+                          className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center backdrop-blur-md"
+                          style={{
+                            background: `${designTokens.colors.background.white}90`,
+                            boxShadow: designTokens.elevation.medium,
+                          }}
+                        >
+                          <ChevronLeft className="h-5 w-5" style={{ color: designTokens.colors.text.primary }} />
+                        </motion.button>
+                        <motion.button
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          onClick={(e) => { e.stopPropagation(); handleImageNav(index, 'next', location.image_urls.length); }}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center backdrop-blur-md"
+                          style={{
+                            background: `${designTokens.colors.background.white}90`,
+                            boxShadow: designTokens.elevation.medium,
+                          }}
+                        >
+                          <ChevronRight className="h-5 w-5" style={{ color: designTokens.colors.text.primary }} />
+                        </motion.button>
+
+                        {/* インジケーター */}
+                        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+                          {location.image_urls.map((_, imgIdx) => (
+                            <button
+                              key={imgIdx}
+                              onClick={(e) => { e.stopPropagation(); setCurrentImageIndices(prev => ({ ...prev, [index]: imgIdx })); }}
+                              className="w-2 h-2 rounded-full transition-all"
+                              style={{
+                                background: imgIdx === (currentImageIndices[index] || 0) ? designTokens.colors.accent.gold : `${designTokens.colors.background.white}80`,
+                                transform: imgIdx === (currentImageIndices[index] || 0) ? 'scale(1.3)' : 'scale(1)',
+                              }}
+                            />
+                          ))}
+                        </div>
+                      </>
                     )}
 
-                    {/* コンテンツ（RPG風巻物デザイン） */}
-                    <div className="bg-[#fff8f0] border-l-4 border-primary rounded-r-lg p-4 mb-5 shadow-sm relative">
-                      <Feather className="absolute -top-2 -left-2 h-5 w-5 text-primary opacity-60" />
-                      <p className="text-muted-foreground text-base leading-relaxed whitespace-pre-wrap">
-                        {location.content}
-                      </p>
+                    {/* スポット番号バッジ */}
+                    <div
+                      className="absolute top-4 left-4 w-10 h-10 rounded-full flex items-center justify-center font-semibold text-lg backdrop-blur-md"
+                      style={{
+                        background: `${designTokens.colors.accent.gold}E0`,
+                        color: designTokens.colors.text.primary,
+                        boxShadow: designTokens.elevation.medium,
+                      }}
+                    >
+                      {index + 1}
                     </div>
+                  </div>
+                )}
+
+                {/* コンテンツ */}
+                <div className="p-6 sm:p-8">
+                  {/* 番号なしの場合のヘッダー */}
+                  {(!location.image_urls || location.image_urls.length === 0) && (
+                    <div className="flex items-center gap-3 mb-4">
+                      <div
+                        className="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-semibold text-lg"
+                        style={{
+                          background: `${designTokens.colors.accent.gold}20`,
+                          color: designTokens.colors.accent.goldDark,
+                        }}
+                      >
+                        {index + 1}
+                      </div>
+                      <h3
+                        className="text-xl font-semibold"
+                        style={{
+                          fontFamily: designTokens.typography.display,
+                          color: designTokens.colors.text.primary,
+                        }}
+                      >
+                        {location.store_name}
+                      </h3>
+                    </div>
+                  )}
+
+                  {/* 画像がある場合のタイトル */}
+                  {location.image_urls && location.image_urls.length > 0 && (
+                    <h3
+                      className="text-xl font-semibold mb-4"
+                      style={{
+                        fontFamily: designTokens.typography.display,
+                        color: designTokens.colors.text.primary,
+                      }}
+                    >
+                      {location.store_name}
+                    </h3>
+                  )}
+
+                  {/* 本文 */}
+                  <div
+                    className="mb-6 p-5 rounded-2xl"
+                    style={{ background: designTokens.colors.background.cloud }}
+                  >
+                    <p
+                      className="leading-relaxed whitespace-pre-wrap"
+                      style={{
+                        fontFamily: designTokens.typography.body,
+                        color: designTokens.colors.text.primary,
+                      }}
+                    >
+                      {location.content}
+                    </p>
+                  </div>
+
+                  {/* 詳細情報 */}
+                  <div className="space-y-5" style={{ borderTop: `1px dashed ${designTokens.colors.secondary.stone}50`, paddingTop: '1.25rem' }}>
+                    {/* 滞在時間 */}
+                    {location.stay_duration && (
+                      <InfoRow icon={Clock} label="Stay Duration" iconColor={designTokens.colors.accent.gold}>
+                        <p className="text-base font-semibold" style={{ color: designTokens.colors.text.primary }}>
+                          約{location.stay_duration}分
+                        </p>
+                      </InfoRow>
+                    )}
 
                     {/* リンク */}
                     {location.url && (
-                      <div className="mb-5">
-                        <a href={location.url} target="_blank" rel="noopener noreferrer"
-                          className="flex items-center gap-3 p-3 bg-white hover:bg-[#ffecd2] rounded-lg border-2 border-[#d4c4a8] transition-all group shadow-sm"
-                        >
-                          <img src={location.url.includes('instagram.com') ? 'https://res.cloudinary.com/dz9trbwma/image/upload/v1759308496/icons8-%E3%82%A4%E3%83%B3%E3%82%B9%E3%82%BF%E3%82%AF%E3%82%99%E3%83%A9%E3%83%A0-100_idedfz.png' : 'https://res.cloudinary.com/dz9trbwma/image/upload/v1759366399/icons8-%E3%82%A6%E3%82%A7%E3%83%95%E3%82%99-100_a6uwwq.png'}
-                            alt="link" className="w-8 h-8 flex-shrink-0" />
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-bold text-primary group-hover:underline truncate">
-                              {location.url.includes('instagram') ? 'CHECK INSTAGRAM' : 'OFFICIAL WEBSITE'}
-                            </p>
-                          </div>
-                          <ExternalLink className="h-4 w-4 text-primary" />
+                      <InfoRow icon={ExternalLink} label="Media" iconColor={designTokens.colors.accent.lilac}>
+                        <a href={location.url} target="_blank" rel="noopener noreferrer" className="inline-block mt-1 transition-transform hover:scale-110">
+                          <img
+                            src={location.url.includes('instagram.com')
+                              ? 'https://res.cloudinary.com/dz9trbwma/image/upload/v1759308496/icons8-%E3%82%A4%E3%83%B3%E3%82%B9%E3%82%BF%E3%82%AF%E3%82%99%E3%83%A9%E3%83%A0-100_idedfz.png'
+                              : 'https://res.cloudinary.com/dz9trbwma/image/upload/v1759366399/icons8-%E3%82%A6%E3%82%A7%E3%83%95%E3%82%99-100_a6uwwq.png'
+                            }
+                            alt="Media icon"
+                            className="h-10 w-10 rounded-xl p-1"
+                            style={{
+                              background: designTokens.colors.background.white,
+                              border: `1px solid ${designTokens.colors.secondary.stone}`,
+                            }}
+                          />
                         </a>
-                      </div>
+                      </InfoRow>
                     )}
 
-                    {/* Googleマップボタン */}
+                    {/* Googleマップ */}
                     {location.store_latitude && location.store_longitude && (
-                      <Button onClick={() => openInGoogleMaps(location)} className="w-full bg-gradient-to-r from-[#8b6914] to-[#5c3a21] hover:from-[#5c3a21] hover:to-[#3d2914] text-primary-foreground font-bold py-5 rounded-xl shadow-lg transition-all active:scale-95 border-2 border-[#ffecd2]/30">
-                        <Navigation className="mr-2 h-5 w-5" /> Googleマップで道案内
-                      </Button>
+                      <InfoRow icon={MapPin} label="Location" iconColor={designTokens.colors.functional.error}>
+                        <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                          <Button
+                            onClick={() => openInGoogleMaps(location)}
+                            className="w-full h-12 rounded-xl font-semibold"
+                            style={{
+                              background: designTokens.colors.accent.lilac,
+                              color: designTokens.colors.text.inverse,
+                              boxShadow: `0 4px 16px ${designTokens.colors.accent.lilac}40`,
+                            }}
+                          >
+                            <Navigation className="mr-2 h-5 w-5" /> Googleマップで道案内
+                          </Button>
+                        </motion.div>
+                      </InfoRow>
                     )}
                   </div>
-                </motion.article>
+                </div>
+              </motion.article>
 
-                {/* 🎮 RPG風タイムライン移動セクション（最後のスポット以外に表示） */}
-                {index < mapData.locations.length - 1 && (() => {
-                  // 現在のスポットの移動情報を取得（スポット1の移動手段 = スポット1→2への移動）
-                  let transportDetails: TransportDetails | null = null;
-                  
-                  // transport_detailsをパース（現在のスポットから取得）
-                  if (location?.transport_details) {
-                    if (typeof location.transport_details === 'string') {
-                      try {
-                        transportDetails = JSON.parse(location.transport_details);
-                      } catch {
-                        transportDetails = null;
-                      }
-                    } else {
-                      transportDetails = location.transport_details as TransportDetails;
+              {/* 移動セクション（最後のスポット以外に表示） */}
+              {index < mapData.locations.length - 1 && (() => {
+                let transportDetails: TransportDetails | null = null;
+
+                if (location?.transport_details) {
+                  if (typeof location.transport_details === 'string') {
+                    try {
+                      transportDetails = JSON.parse(location.transport_details);
+                    } catch {
+                      transportDetails = null;
                     }
+                  } else {
+                    transportDetails = location.transport_details as TransportDetails;
                   }
-                  
-                  // segments配列がある場合、最初のセグメントから情報を取得
-                  let segmentData: any = null;
-                  if (transportDetails && 'segments' in transportDetails && transportDetails.segments && transportDetails.segments.length > 0) {
-                    segmentData = transportDetails.segments[0];
-                    // segmentsから合計所要時間と合計運賃を計算
-                    const totalTravelTime = transportDetails.segments.reduce((sum: number, s: any) => sum + (s.travelTime || 0), 0);
-                    const totalFare = transportDetails.segments.reduce((sum: number, s: any) => sum + (s.fare || 0), 0);
-                    // segmentDataに合計値を設定（個別の値がない場合に使用）
-                    if (segmentData && !segmentData.travelTime && totalTravelTime > 0) {
-                      segmentData.travelTime = totalTravelTime;
-                    }
-                    if (segmentData && !segmentData.fare && totalFare > 0) {
-                      segmentData.fare = totalFare;
-                    }
+                }
+
+                let segmentData: any = null;
+                if (transportDetails && 'segments' in transportDetails && transportDetails.segments && transportDetails.segments.length > 0) {
+                  segmentData = transportDetails.segments[0];
+                  const totalTravelTime = transportDetails.segments.reduce((sum: number, s: any) => sum + (s.travelTime || 0), 0);
+                  const totalFare = transportDetails.segments.reduce((sum: number, s: any) => sum + (s.fare || 0), 0);
+                  if (segmentData && !segmentData.travelTime && totalTravelTime > 0) {
+                    segmentData.travelTime = totalTravelTime;
                   }
-                  
-                  // 移動手段の種類を取得（segmentsがある場合は最初のセグメントから、なければtransportDetailsから）
-                  const transportType = segmentData?.type || transportDetails?.type || location?.recommended_transport || location.next_transport;
-                  // 所要時間を取得（segmentsがある場合はsegmentDataから、なければtransportDetailsから）
-                  const travelTime = segmentData?.travelTime || transportDetails?.travelTime || location.next_travel_time;
-                  
-                  // 移動情報がない場合はシンプルな接続線のみ表示
-                  if (!transportType || transportType === 'none') {
-                    return (
-                      <div className="relative py-6">
-                        {/* シンプルな接続線 */}
-                        <div className="flex flex-col items-center">
-                          <div className="w-0.5 h-8 bg-gradient-to-b from-primary to-border" />
-                          <motion.div
-                            animate={{ y: [0, 4, 0] }}
-                            transition={{ duration: 1.5, repeat: Infinity }}
-                            className="text-primary text-xl"
-                          >
-                            ▼
-                          </motion.div>
-                          <div className="w-0.5 h-8 bg-gradient-to-b from-border to-primary" />
-                        </div>
-                      </div>
-                    );
+                  if (segmentData && !segmentData.fare && totalFare > 0) {
+                    segmentData.fare = totalFare;
                   }
-                  
+                }
+
+                const transportType = segmentData?.type || transportDetails?.type || location?.recommended_transport || location.next_transport;
+                const travelTime = segmentData?.travelTime || transportDetails?.travelTime || location.next_travel_time;
+
+                // 移動情報がない場合はシンプルな接続線
+                if (!transportType || transportType === 'none') {
                   return (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      viewport={{ once: true }}
-                      className="relative py-4"
-                    >
-                      {/* タイムラインの縦線 */}
-                      <div className="absolute left-1/2 top-0 bottom-0 w-1 bg-gradient-to-b from-primary via-border to-primary -translate-x-1/2" />
-                      
-                      {/* RPG風移動コマンドウィンドウ */}
-                      <div className="relative z-10 mx-auto max-w-[300px]">
-                        <div 
-                          className="bg-[#1a1a2e] border-4 border-[#ffecd2] shadow-[4px_4px_0px_0px_rgba(0,0,0,0.5),inset_2px_2px_0px_0px_rgba(255,255,255,0.1)] p-4"
-                          style={{ fontFamily: "'DotGothic16', 'Courier New', monospace" }}
+                    <div className="relative py-6">
+                      <div className="flex flex-col items-center">
+                        <div className="w-px h-6" style={{ background: `linear-gradient(to bottom, ${designTokens.colors.secondary.stone}, ${designTokens.colors.secondary.stoneLight})` }} />
+                        <motion.div
+                          animate={{ y: [0, 4, 0] }}
+                          transition={{ duration: 1.5, repeat: Infinity }}
                         >
-                          {/* ウィンドウヘッダー */}
-                          <div className="flex items-center gap-2 mb-3 pb-2 border-b border-[#ffecd2]/30">
-                            <Compass className="h-4 w-4 text-primary-foreground" />
-                            <span className="text-primary-foreground text-xs font-bold tracking-wider">MOVE TO NEXT</span>
-                          </div>
-                          
-                          {/* 移動情報 */}
-                          <div className="space-y-2">
-                            {/* 移動手段 */}
-                            <div className="flex items-center gap-3">
-                              <span className="text-primary-foreground text-lg">▶</span>
-                              <span className="text-2xl">
-                                {TRANSPORT_ICONS[transportType]?.icon || '🚶'}
-                              </span>
-                              <span className="text-primary-foreground text-sm font-bold">
-                                {TRANSPORT_ICONS[transportType]?.label || '移動'}
-                              </span>
-                            </div>
-                            
-                            {/* 所要時間 */}
-                            {travelTime && (
-                              <div className="flex items-center gap-3 pl-7">
-                                <Clock className="h-4 w-4 text-primary-foreground/70" />
-                                <span className="text-primary-foreground text-sm">
-                                  約 <span className="text-lg font-bold text-[#ffd700]">{travelTime}</span> 分
-                                </span>
-                              </div>
-                            )}
-                            
-                            {/* 詳細情報（バス停、駅、空港、船など） */}
-                            {(transportDetails || segmentData) && (
-                              <div className="mt-3 pt-2 border-t border-[#ffecd2]/20 space-y-1">
-                                {/* バス停情報 */}
-                                {transportType === 'bus' && (
-                                  (segmentData?.departureStop || segmentData?.arrivalStop || transportDetails?.departureStop || transportDetails?.arrivalStop) && (
-                                    <div className="text-xs text-primary-foreground/80">
-                                      <span className="text-[#ffd700]">🚏</span> {(segmentData?.departureStop || transportDetails?.departureStop) || '?'} → {(segmentData?.arrivalStop || transportDetails?.arrivalStop) || '?'}
-                                      {(segmentData?.busLine || transportDetails?.busLine) && (
-                                        <span className="ml-1 text-primary-foreground/60">({segmentData?.busLine || transportDetails?.busLine})</span>
-                                      )}
-                                    </div>
-                                  )
-                                )}
-                                
-                                {/* 駅情報 */}
-                                {transportType === 'train' && (
-                                  (segmentData?.departureStation || segmentData?.arrivalStation || transportDetails?.departureStation || transportDetails?.arrivalStation) && (
-                                    <div className="text-xs text-primary-foreground/80">
-                                      <span className="text-[#ffd700]">🚉</span> {(segmentData?.departureStation || transportDetails?.departureStation) || '?'} → {(segmentData?.arrivalStation || transportDetails?.arrivalStation) || '?'}
-                                      {(segmentData?.lineName || transportDetails?.lineName) && (
-                                        <span className="ml-1 text-primary-foreground/60">({segmentData?.lineName || transportDetails?.lineName})</span>
-                                      )}
-                                    </div>
-                                  )
-                                )}
-                                
-                                {/* 空港情報 */}
-                                {transportType === 'airplane' && (
-                                  (segmentData?.departureAirport || segmentData?.arrivalAirport || transportDetails?.departureAirport || transportDetails?.arrivalAirport) && (
-                                    <div className="text-xs text-primary-foreground/80">
-                                      <span className="text-[#ffd700]">✈️</span> {(segmentData?.departureAirport || transportDetails?.departureAirport) || '?'} → {(segmentData?.arrivalAirport || transportDetails?.arrivalAirport) || '?'}
-                                      {(segmentData?.flightNumber || transportDetails?.flightNumber) && (
-                                        <span className="ml-1 text-primary-foreground/60">({segmentData?.flightNumber || transportDetails?.flightNumber})</span>
-                                      )}
-                                    </div>
-                                  )
-                                )}
-                                
-                                {/* 🆕 変更点3: 船・フェリー情報の表示を追加（ferry と ship の両方に対応、segments配列にも対応） */}
-                                {(transportType === 'ferry' || transportType === 'ship') && (
-                                  (segmentData?.departurePort || segmentData?.arrivalPort || transportDetails?.departurePort || transportDetails?.arrivalPort) && (
-                                    <div className="text-xs text-primary-foreground/80">
-                                      <span className="text-[#ffd700]">⚓</span> {(segmentData?.departurePort || transportDetails?.departurePort) || '?'} → {(segmentData?.arrivalPort || transportDetails?.arrivalPort) || '?'}
-                                      {(segmentData?.ferryLine || segmentData?.shipName || transportDetails?.ferryLine || (transportDetails as any)?.ferryLine || transportDetails?.shipName) && (
-                                        <span className="ml-1 text-primary-foreground/60">
-                                          ({(segmentData?.ferryLine || transportDetails?.ferryLine || (transportDetails as any)?.ferryLine || transportDetails?.shipName || segmentData?.shipName)})
-                                        </span>
-                                      )}
-                                    </div>
-                                  )
-                                )}
-                                
-                                {/* 運賃（segments配列がある場合は合計、なければ個別の値） */}
-                                {(segmentData?.fare || transportDetails?.fare) && (
-                                  <div className="text-xs text-[#ffd700]">
-                                    💰 ¥{(segmentData?.fare || transportDetails?.fare).toLocaleString()}
-                                  </div>
-                                )}
-                                
-                                {/* 駐車場情報 */}
-                                {transportType === 'car' && (segmentData?.parkingInfo || transportDetails?.parkingInfo) && (
-                                  <div className="text-xs text-primary-foreground/80">
-                                    🅿️ {segmentData?.parkingInfo || transportDetails?.parkingInfo}
-                                  </div>
-                                )}
-                                
-                                {/* メモ */}
-                                {(segmentData?.note || transportDetails?.note) && (
-                                  <div className="text-xs text-primary-foreground/60 italic">
-                                    📝 {segmentData?.note || transportDetails?.note}
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                        
-                        {/* 装飾的な矢印 */}
-                        <div className="flex justify-center mt-2">
-                          <motion.div
-                            animate={{ y: [0, 4, 0] }}
-                            transition={{ duration: 1, repeat: Infinity }}
-                            className="text-primary text-2xl"
-                          >
-                            ▼
-                          </motion.div>
-                        </div>
+                          <ChevronDown className="h-5 w-5" style={{ color: designTokens.colors.accent.lilac }} />
+                        </motion.div>
+                        <div className="w-px h-6" style={{ background: `linear-gradient(to bottom, ${designTokens.colors.secondary.stoneLight}, ${designTokens.colors.secondary.stone})` }} />
                       </div>
-                    </motion.div>
+                    </div>
                   );
-                })()}
-              </div>
-            ))}
-          </div>
-        </motion.div>
-      </main>
+                }
 
-      {/* アクションボタン */}
-      <div className="fixed bottom-6 right-6 z-40 flex flex-col gap-3">
-        <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-          <Button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} size="icon" className="h-16 w-16 rounded-2xl shadow-2xl bg-[#5c3a21] border-2 border-[#ffecd2] flex flex-col items-center">
-            <ArrowUpFromLine className="h-6 w-6 text-primary-foreground" />
-            <span className="text-[10px] font-bold text-primary-foreground">TOP</span>
-          </Button>
-        </motion.div>
+                const transportIcon = TRANSPORT_ICONS[transportType];
+
+                return (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    whileInView={{ opacity: 1, scale: 1 }}
+                    viewport={{ once: true }}
+                    className="relative py-4"
+                  >
+                    {/* 上の接続線 */}
+                    <div className="flex flex-col items-center">
+                      <div className="w-px h-4" style={{ background: designTokens.colors.secondary.stone }} />
+                    </div>
+
+                    {/* 移動カード */}
+                    <div className="mx-auto max-w-[320px]">
+                      <div
+                        className="rounded-2xl p-4"
+                        style={{
+                          background: `${designTokens.colors.background.white}`,
+                          border: `1px dashed ${designTokens.colors.secondary.stone}`,
+                          boxShadow: designTokens.elevation.subtle,
+                        }}
+                      >
+                        {/* 移動手段 */}
+                        <div className="flex items-center gap-3 mb-2">
+                          <span className="text-2xl">{transportIcon?.icon || '🚶'}</span>
+                          <span
+                            className="text-sm font-semibold"
+                            style={{ color: designTokens.colors.text.primary }}
+                          >
+                            {transportIcon?.label || '移動'}
+                          </span>
+                          {travelTime && (
+                            <span
+                              className="ml-auto text-sm font-semibold px-3 py-1 rounded-full"
+                              style={{
+                                background: `${designTokens.colors.accent.gold}20`,
+                                color: designTokens.colors.accent.goldDark,
+                              }}
+                            >
+                              約{travelTime}分
+                            </span>
+                          )}
+                        </div>
+
+                        {/* 詳細情報 */}
+                        {(transportDetails || segmentData) && (
+                          <div className="space-y-1.5 pt-2" style={{ borderTop: `1px solid ${designTokens.colors.secondary.stone}30` }}>
+                            {/* バス停情報 */}
+                            {transportType === 'bus' && (segmentData?.departureStop || segmentData?.arrivalStop || transportDetails?.departureStop || transportDetails?.arrivalStop) && (
+                              <p className="text-xs" style={{ color: designTokens.colors.text.secondary }}>
+                                🚏 {(segmentData?.departureStop || transportDetails?.departureStop) || '?'} → {(segmentData?.arrivalStop || transportDetails?.arrivalStop) || '?'}
+                                {(segmentData?.busLine || transportDetails?.busLine) && (
+                                  <span style={{ color: designTokens.colors.text.muted }}> ({segmentData?.busLine || transportDetails?.busLine})</span>
+                                )}
+                              </p>
+                            )}
+
+                            {/* 駅情報 */}
+                            {transportType === 'train' && (segmentData?.departureStation || segmentData?.arrivalStation || transportDetails?.departureStation || transportDetails?.arrivalStation) && (
+                              <p className="text-xs" style={{ color: designTokens.colors.text.secondary }}>
+                                🚉 {(segmentData?.departureStation || transportDetails?.departureStation) || '?'} → {(segmentData?.arrivalStation || transportDetails?.arrivalStation) || '?'}
+                                {(segmentData?.lineName || transportDetails?.lineName) && (
+                                  <span style={{ color: designTokens.colors.text.muted }}> ({segmentData?.lineName || transportDetails?.lineName})</span>
+                                )}
+                              </p>
+                            )}
+
+                            {/* 空港情報 */}
+                            {transportType === 'airplane' && (segmentData?.departureAirport || segmentData?.arrivalAirport || transportDetails?.departureAirport || transportDetails?.arrivalAirport) && (
+                              <p className="text-xs" style={{ color: designTokens.colors.text.secondary }}>
+                                ✈️ {(segmentData?.departureAirport || transportDetails?.departureAirport) || '?'} → {(segmentData?.arrivalAirport || transportDetails?.arrivalAirport) || '?'}
+                                {(segmentData?.flightNumber || transportDetails?.flightNumber) && (
+                                  <span style={{ color: designTokens.colors.text.muted }}> ({segmentData?.flightNumber || transportDetails?.flightNumber})</span>
+                                )}
+                              </p>
+                            )}
+
+                            {/* 船・フェリー情報 */}
+                            {(transportType === 'ferry' || transportType === 'ship') && (segmentData?.departurePort || segmentData?.arrivalPort || transportDetails?.departurePort || transportDetails?.arrivalPort) && (
+                              <p className="text-xs" style={{ color: designTokens.colors.text.secondary }}>
+                                ⚓ {(segmentData?.departurePort || transportDetails?.departurePort) || '?'} → {(segmentData?.arrivalPort || transportDetails?.arrivalPort) || '?'}
+                                {(segmentData?.ferryLine || segmentData?.shipName || transportDetails?.ferryLine || transportDetails?.shipName) && (
+                                  <span style={{ color: designTokens.colors.text.muted }}>
+                                    {' '}({segmentData?.ferryLine || transportDetails?.ferryLine || transportDetails?.shipName || segmentData?.shipName})
+                                  </span>
+                                )}
+                              </p>
+                            )}
+
+                            {/* 運賃 */}
+                            {(segmentData?.fare || transportDetails?.fare) && (
+                              <p className="text-xs font-medium" style={{ color: designTokens.colors.accent.goldDark }}>
+                                💰 ¥{(segmentData?.fare || transportDetails?.fare).toLocaleString()}
+                              </p>
+                            )}
+
+                            {/* 駐車場情報 */}
+                            {transportType === 'car' && (segmentData?.parkingInfo || transportDetails?.parkingInfo) && (
+                              <p className="text-xs" style={{ color: designTokens.colors.text.secondary }}>
+                                🅿️ {segmentData?.parkingInfo || transportDetails?.parkingInfo}
+                              </p>
+                            )}
+
+                            {/* メモ */}
+                            {(segmentData?.note || transportDetails?.note) && (
+                              <p className="text-xs italic" style={{ color: designTokens.colors.text.muted }}>
+                                📝 {segmentData?.note || transportDetails?.note}
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* 下の接続線 + 矢印 */}
+                    <div className="flex flex-col items-center">
+                      <div className="w-px h-2" style={{ background: designTokens.colors.secondary.stone }} />
+                      <motion.div
+                        animate={{ y: [0, 4, 0] }}
+                        transition={{ duration: 1.5, repeat: Infinity }}
+                      >
+                        <ChevronDown className="h-5 w-5" style={{ color: designTokens.colors.accent.lilac }} />
+                      </motion.div>
+                    </div>
+                  </motion.div>
+                );
+              })()}
+            </div>
+          ))}
+        </div>
       </div>
+
+      {/* スクロールトップFAB */}
+      <motion.button
+        initial={{ opacity: 0, scale: 0 }}
+        animate={{ opacity: 1, scale: 1 }}
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.9 }}
+        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+        className="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full flex items-center justify-center backdrop-blur-md"
+        style={{
+          background: `${designTokens.colors.accent.lilac}E0`,
+          color: designTokens.colors.text.inverse,
+          boxShadow: `0 8px 24px ${designTokens.colors.accent.lilac}40`,
+        }}
+      >
+        <ArrowUpFromLine className="h-5 w-5" />
+      </motion.button>
 
       {/* 画像拡大モーダル */}
       <AnimatePresence>
         {expandedImageIndex !== null && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-4" onClick={() => setExpandedImageIndex(null)}>
-            <button className="absolute top-6 right-6 p-2 bg-white/10 rounded-full"><X className="text-white h-8 w-8" /></button>
-            <img 
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-4"
+            onClick={() => setExpandedImageIndex(null)}
+          >
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              className="absolute top-6 right-6 w-10 h-10 rounded-full flex items-center justify-center"
+              style={{ background: `${designTokens.colors.background.white}20` }}
+            >
+              <X className="h-6 w-6" style={{ color: designTokens.colors.text.inverse }} />
+            </motion.button>
+            <img
               src={optimizeCloudinaryImageUrl(mapData.locations[expandedImageIndex.spotIndex].image_urls[expandedImageIndex.imageIndex])}
               alt={mapData.locations[expandedImageIndex.spotIndex].store_name}
-              className="max-w-full max-h-full object-contain rounded shadow-2xl" 
-              onClick={(e) => e.stopPropagation()} 
+              className="max-w-full max-h-full object-contain rounded-2xl"
+              onClick={(e) => e.stopPropagation()}
+              style={{ boxShadow: designTokens.elevation.dramatic }}
             />
           </motion.div>
         )}
       </AnimatePresence>
+
+      <style jsx global>{`
+        @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=IBM+Plex+Sans+JP:wght@400;500;600&family=Noto+Sans+JP:wght@400;500;600;700&display=swap');
+      `}</style>
     </div>
   );
 }

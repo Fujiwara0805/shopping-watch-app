@@ -604,7 +604,7 @@ function ProfilePageContent() {
                 icon={Compass}
                 title="コースを編集"
                 description="既存のコースを編集・管理"
-                action={() => router.push('/my-maps')}
+                action={() => router.push('/my-course')}
               />
             </div>
           </motion.div>
