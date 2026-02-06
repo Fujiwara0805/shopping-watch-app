@@ -164,6 +164,8 @@ export async function getPublicSpots(
         is_deleted: spot.is_deleted,
         created_at: spot.created_at,
         updated_at: spot.updated_at,
+        tag_activities: spot.tag_activities ?? null,
+        reporter_id: spot.reporter_id ?? null,
         author_name: profile?.display_name || '匿名ユーザー',
         author_avatar_path: profile?.avatar_url || null,
       };
