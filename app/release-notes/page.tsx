@@ -22,7 +22,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { useFeedback } from '@/contexts/feedback-context';
+import { useFeedback } from '@/lib/contexts/feedback-context';
 import { Breadcrumb } from '@/components/seo/breadcrumb';
 
 // リリースノートのタイプ
