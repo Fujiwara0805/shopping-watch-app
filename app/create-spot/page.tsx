@@ -64,12 +64,7 @@ export default function CreateSpotPage() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
-  // ログインチェック
-  useEffect(() => {
-    if (status !== "loading" && !session) {
-      router.replace(`/login?callbackUrl=${encodeURIComponent(window.location.pathname)}`);
-    }
-  }, [session, status, router]);
+  // ログイン不要でスポット登録可能（未ログイン時はゲストとして登録）
 
   // Google Places Autocomplete
   useEffect(() => {
@@ -190,11 +185,11 @@ export default function CreateSpotPage() {
     setImagePreviewUrls(prev => prev.filter((_, idx) => idx !== imageIndex));
   }, [imagePreviewUrls]);
 
-  // 画像アップロード（Supabase Storage）
-  const uploadImageToStorage = async (file: File, userId: string): Promise<string> => {
+  // 画像アップロード（Supabase Storage）。未ログイン時は 'guest' フォルダを使用
+  const uploadImageToStorage = async (file: File, userIdOrGuest: string): Promise<string> => {
     const fileExt = file.name.split('.').pop();
     const uniqueFileName = `${uuidv4()}.${fileExt}`;
-    const objectPath = `${userId}/${uniqueFileName}`;
+    const objectPath = `${userIdOrGuest}/${uniqueFileName}`;
 
     const { error: uploadError } = await supabase.storage
       .from('images')
@@ -230,10 +225,8 @@ export default function CreateSpotPage() {
     );
   };
 
-  // 投稿処理
+  // 投稿処理（ログイン不要：未ログイン時はゲストとして登録）
   const handleSubmit = async (values: SpotFormValues) => {
-    if (!session?.user?.id) return;
-
     if (!storeId && (!storeLat || !storeLng)) {
       setSubmitError('スポットを選択または位置を指定してください');
       return;
@@ -249,17 +242,17 @@ export default function CreateSpotPage() {
     setIsSubmitting(true);
 
     try {
-      const userId = session.user.id;
+      const userIdOrGuest = session?.user?.id ?? 'guest';
 
       // 画像アップロード
       const imageUrls: string[] = [];
       for (const file of imageFiles) {
-        const url = await uploadImageToStorage(file, userId);
+        const url = await uploadImageToStorage(file, userIdOrGuest);
         imageUrls.push(url);
       }
 
       const spotInput: CreateSpotInput = {
-        userId,
+        userId: session?.user?.id ?? undefined,
         storeName: values.storeName,
         description: values.description,
         storeLatitude: storeLat!,
@@ -295,8 +288,6 @@ export default function CreateSpotPage() {
       </div>
     );
   }
-
-  if (!session) return null;
 
   return (
     <div className="container mx-auto max-w-2xl px-4 py-4 pb-8">

@@ -9,7 +9,8 @@ import type { Spot, SpotWithAuthor } from '@/types/spot';
 // =============================================================================
 
 export interface CreateSpotInput {
-  userId: string;
+  /** 未ログインの場合は null / 未指定 */
+  userId?: string | null;
   storeName: string;
   description: string;
   storeLatitude: number;
@@ -22,6 +23,28 @@ export interface CreateSpotInput {
   targetTags?: string[];
 }
 
+/**
+ * ゲスト（未ログイン）用のプロフィールIDを取得
+ * app_profiles に display_name = 'ゲスト' の1件があることを想定
+ */
+async function getGuestProfileId(): Promise<{ profileId: string | null; error: string | null }> {
+  try {
+    const { data, error } = await supabaseAnon
+      .from('app_profiles')
+      .select('id')
+      .eq('display_name', 'ゲスト')
+      .limit(1)
+      .maybeSingle();
+
+    if (error || !data?.id) {
+      return { profileId: null, error: 'ゲスト用プロフィールが見つかりません。ログインするか、管理者に問い合わせてください。' };
+    }
+    return { profileId: data.id, error: null };
+  } catch (err: any) {
+    return { profileId: null, error: err?.message || 'ゲストプロフィールの取得に失敗しました' };
+  }
+}
+
 // =============================================================================
 // スポット作成
 // =============================================================================
@@ -30,7 +53,19 @@ export async function createSpot(
   input: CreateSpotInput
 ): Promise<{ spotId: string | null; error: string | null }> {
   try {
-    const { profileId, error: profileError } = await getProfileIdByUserId(input.userId);
+    let profileId: string | null = null;
+    let profileError: string | null = null;
+
+    if (input.userId) {
+      const result = await getProfileIdByUserId(input.userId);
+      profileId = result.profileId;
+      profileError = result.error;
+    } else {
+      const result = await getGuestProfileId();
+      profileId = result.profileId;
+      profileError = result.error;
+    }
+
     if (profileError || !profileId) {
       return { spotId: null, error: profileError || 'プロフィール情報が見つかりません' };
     }

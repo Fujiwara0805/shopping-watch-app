@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Script from 'next/script';
 import { motion } from 'framer-motion';
-import { ChevronRight, Home, Map, Calendar, User, Settings, FileText, HelpCircle, MessageSquare, Compass } from 'lucide-react';
+import { ChevronRight, Home, Map, Calendar, User, Settings, FileText, HelpCircle, MessageSquare, Compass, MapPin } from 'lucide-react';
 
 // パス名からパンくず情報を生成するマッピング
 const BREADCRUMB_MAP: Record<string, { label: string; icon?: React.ElementType }> = {
@@ -17,6 +17,7 @@ const BREADCRUMB_MAP: Record<string, { label: string; icon?: React.ElementType }
   'setup': { label: '初期設定', icon: Settings },
   'my-maps': { label: 'マイコース', icon: Compass },
   'create-map': { label: 'コース作成', icon: Map },
+  'create-spot': { label: 'スポット作成', icon: MapPin },
   'complete': { label: '完了', icon: FileText },
   'public-maps': { label: 'コース一覧', icon: Map },
   'post': { label: '投稿', icon: FileText },

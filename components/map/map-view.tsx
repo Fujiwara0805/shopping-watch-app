@@ -4,7 +4,7 @@ import { useRef, useEffect, useState, useCallback } from 'react';
 import { useGeolocation } from '@/lib/hooks/use-geolocation';
 import { useGoogleMapsApi } from '@/components/providers/GoogleMapsApiProvider';
 import { Button } from '@/components/ui/button';
-import { MapPin, AlertTriangle, RefreshCw, Calendar, BookOpen, User, MapPinIcon, X, Loader2, Home, Share2, Link2, Check, Compass, Search, ScrollText, Library, Shield, Route, ArrowLeft, ExternalLink } from 'lucide-react';
+import { MapPin, AlertTriangle, RefreshCw, Calendar, BookOpen, User, MapPinIcon, X, Loader2, Home, Share2, Link2, Check, Compass, Search, ScrollText, Library, Shield, Route, ExternalLink, Camera } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabaseClient';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -1033,16 +1033,16 @@ export function MapView() {
               onClick={handleManualRefresh}
               size="icon"
               disabled={isRefreshing || loadingMaps}
-              className="h-10 w-10 rounded-full disabled:opacity-50"
+              className="h-12 w-12 rounded-full disabled:opacity-50"
               style={{ background: `${designTokens.colors.background.white}F0`, color: designTokens.colors.primary.base, boxShadow: designTokens.elevation.medium, border: `1px solid ${designTokens.colors.secondary.stone}40` }}
             >
-              <RefreshCw className={`h-4 w-4 ${(isRefreshing || loadingMaps) ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`h-6 w-6 ${(isRefreshing || loadingMaps) ? 'animate-spin' : ''}`} />
             </Button>
           </motion.div>
         </div>
       )}
 
-      {/* マイマップモード: ナビゲーションボタン（画面左下・テキスト幅に合わせてコンパクト） */}
+      {/* マイマップモード: ナビゲーションボタン（画面左下・アイコン下にテキスト） */}
       {map && mapInitialized && viewMode === 'myMaps' && isMapPublic && (
         <div className="absolute bottom-6 left-4 z-30 flex flex-col gap-2 w-max">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} whileTap={{ scale: 0.98 }}>
@@ -1057,10 +1057,10 @@ export function MapView() {
                 router.push('/map?view=spots');
                 fetchSpots();
               }}
-              className="min-w-[10rem] h-11 rounded-xl flex items-center justify-center gap-1.5 font-semibold text-sm px-5"
+              className="min-w-[5rem] h-16 rounded-2xl flex flex-col items-center justify-center gap-1 font-semibold text-xs px-4 py-3"
               style={{ background: designTokens.colors.secondary.fern, color: designTokens.colors.text.inverse, boxShadow: designTokens.elevation.high }}
             >
-              <MapPin className="h-4 w-4 flex-shrink-0" />
+              <MapPin className="h-6 w-6 flex-shrink-0" />
               スポット
             </Button>
           </motion.div>
@@ -1078,10 +1078,10 @@ export function MapView() {
                 const userLng = savedLocation?.lng || longitude;
                 if (userLat && userLng) setTimeout(() => fetchPosts(), 100);
               }}
-              className="min-w-[10rem] h-11 rounded-xl flex items-center justify-center gap-1.5 font-semibold text-sm px-5"
+              className="min-w-[5rem] h-16 rounded-2xl flex flex-col items-center justify-center gap-1 font-semibold text-xs px-4 py-3"
               style={{ background: designTokens.colors.accent.gold, color: designTokens.colors.text.primary, boxShadow: designTokens.elevation.high }}
             >
-              <Compass className="h-4 w-4 flex-shrink-0" />
+              <Compass className="h-6 w-6 flex-shrink-0" />
               イベント
             </Button>
           </motion.div>
@@ -1166,20 +1166,20 @@ export function MapView() {
           {/* 更新ボタン（右上） */}
           <div className="absolute top-20 right-4 z-30">
             <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} whileTap={{ scale: 0.95 }}>
-              <Button onClick={handleManualRefresh} size="icon" disabled={isRefreshing || loadingPosts} className="h-10 w-10 rounded-full disabled:opacity-50" style={{ background: `${designTokens.colors.background.white}F0`, color: designTokens.colors.primary.base, boxShadow: designTokens.elevation.medium, border: `1px solid ${designTokens.colors.secondary.stone}40` }}>
-                <RefreshCw className={`h-4 w-4 ${(isRefreshing || loadingPosts) ? 'animate-spin' : ''}`} />
+              <Button onClick={handleManualRefresh} size="icon" disabled={isRefreshing || loadingPosts} className="h-12 w-12 rounded-full disabled:opacity-50" style={{ background: `${designTokens.colors.background.white}F0`, color: designTokens.colors.primary.base, boxShadow: designTokens.elevation.medium, border: `1px solid ${designTokens.colors.secondary.stone}40` }}>
+                <RefreshCw className={`h-6 w-6 ${(isRefreshing || loadingPosts) ? 'animate-spin' : ''}`} />
               </Button>
             </motion.div>
           </div>
-          {/* 2つのメインボタン（画面左下・テキスト幅に合わせてコンパクト） */}
+          {/* 2つのメインボタン（画面左下・アイコン下にテキスト） */}
           <div className="absolute bottom-6 left-4 z-30 flex flex-col gap-2 w-max">
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} whileTap={{ scale: 0.98 }}>
               <Button
                 onClick={() => router.push('/public-maps')}
-                className="min-w-[8rem] h-11 rounded-xl flex items-center justify-center gap-1.5 font-semibold text-sm px-5"
-                style={{ background: designTokens.colors.accent.lilac, color: designTokens.colors.text.inverse, boxShadow: designTokens.elevation.high }}
+                className="min-w-[5rem] h-16 rounded-2xl flex flex-col items-center justify-center gap-1 font-semibold text-xs px-4 py-3"
+                style={{ background: '#999da8', color: designTokens.colors.text.inverse, boxShadow: designTokens.elevation.high }}
               >
-                <Route className="h-4 w-4 flex-shrink-0" />
+                <Route className="h-6 w-6 flex-shrink-0" />
                 コース
               </Button>
             </motion.div>
@@ -1193,10 +1193,10 @@ export function MapView() {
                   setPostMarkers([]);
                   fetchSpots();
                 }}
-                className="min-w-[8rem] h-11 rounded-xl flex items-center justify-center gap-1.5 font-semibold text-sm px-5"
+                className="min-w-[5rem] h-16 rounded-2xl flex flex-col items-center justify-center gap-1 font-semibold text-xs px-4 py-3"
                 style={{ background: designTokens.colors.secondary.fern, color: designTokens.colors.text.inverse, boxShadow: designTokens.elevation.high }}
               >
-                <MapPin className="h-4 w-4 flex-shrink-0" />
+                <MapPin className="h-6 w-6 flex-shrink-0" />
                 スポット
               </Button>
             </motion.div>
@@ -1204,48 +1204,28 @@ export function MapView() {
         </>
       )}
 
-      {/* スポットモード: ナビゲーション */}
+      {/* スポットモード: ナビゲーション（下中央に作成ボタンのみ・アイコン下にテキスト） */}
       {map && mapInitialized && viewMode === 'spots' && (
         <>
-          {/* 戻るボタン（左上） */}
-          <div className="absolute top-20 left-4 z-30">
-            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} whileTap={{ scale: 0.95 }}>
-              <Button
-                onClick={() => {
-                  setViewMode('events');
-                  setSelectedSpot(null);
-                  spotMarkers.forEach(marker => { if (marker?.setMap) marker.setMap(null); });
-                  setSpotMarkers([]);
-                  const userLat = savedLocation?.lat || latitude;
-                  const userLng = savedLocation?.lng || longitude;
-                  if (userLat && userLng) {
-                    if (map) map.panTo(new window.google.maps.LatLng(userLat, userLng));
-                    setTimeout(() => fetchPosts(), 100);
-                  }
-                }}
-                size="icon"
-                className="h-10 w-10 rounded-full"
-                style={{ background: `${designTokens.colors.background.white}F0`, color: designTokens.colors.text.primary, boxShadow: designTokens.elevation.medium, border: `1px solid ${designTokens.colors.secondary.stone}40` }}
-              >
-                <ArrowLeft className="h-4 w-4" />
-              </Button>
-            </motion.div>
-          </div>
           {/* 更新ボタン（右上） */}
           <div className="absolute top-20 right-4 z-30">
             <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} whileTap={{ scale: 0.95 }}>
-              <Button onClick={() => fetchSpots()} size="icon" disabled={loadingSpots} className="h-10 w-10 rounded-full disabled:opacity-50" style={{ background: `${designTokens.colors.background.white}F0`, color: designTokens.colors.primary.base, boxShadow: designTokens.elevation.medium, border: `1px solid ${designTokens.colors.secondary.stone}40` }}>
-                <RefreshCw className={`h-4 w-4 ${loadingSpots ? 'animate-spin' : ''}`} />
+              <Button onClick={() => fetchSpots()} size="icon" disabled={loadingSpots} className="h-12 w-12 rounded-full disabled:opacity-50" style={{ background: `${designTokens.colors.background.white}F0`, color: designTokens.colors.primary.base, boxShadow: designTokens.elevation.medium, border: `1px solid ${designTokens.colors.secondary.stone}40` }}>
+                <RefreshCw className={`h-6 w-6 ${loadingSpots ? 'animate-spin' : ''}`} />
               </Button>
             </motion.div>
           </div>
-          {/* スポットモードラベル */}
-          <div className="absolute top-20 left-1/2 -translate-x-1/2 z-30">
-            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="px-4 py-2 rounded-full" style={{ background: `${designTokens.colors.secondary.fern}E8`, boxShadow: designTokens.elevation.medium }}>
-              <span className="text-sm font-semibold" style={{ color: designTokens.colors.text.inverse }}>
-                <MapPin className="h-3.5 w-3.5 inline mr-1" />
-                スポット {spots.length > 0 ? `(${spots.length}件)` : ''}
-              </span>
+          {/* 画面下中央: 作成ボタン（カメラアイコンの下にテキスト） */}
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30">
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} whileTap={{ scale: 0.98 }}>
+              <Button
+                onClick={() => router.push('/create-spot')}
+                className="min-w-[5.5rem] h-16 rounded-2xl flex flex-col items-center justify-center gap-1 font-semibold text-xs px-4 py-3"
+                style={{ background: designTokens.colors.functional.info, color: designTokens.colors.text.inverse, boxShadow: designTokens.elevation.high }}
+              >
+                <Camera className="h-6 w-6 flex-shrink-0" />
+                作成
+              </Button>
             </motion.div>
           </div>
         </>
@@ -1263,9 +1243,9 @@ export function MapView() {
         )}
       </AnimatePresence>
 
-      {/* イベント詳細カード */}
+      {/* イベント詳細カード（イベントモード時のみ表示） */}
       <AnimatePresence>
-        {selectedPost && nearbyPosts.length > 0 && (
+        {viewMode === 'events' && selectedPost && nearbyPosts.length > 0 && (
           <motion.div initial={{ y: 100, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 100, opacity: 0 }} transition={{ duration: 0.4, type: "spring", damping: 20 }} className="absolute bottom-4 left-4 right-4 z-40">
             {nearbyPosts.map((post) => {
               const displayTitle = post.category === 'イベント情報' ? (post.event_name || post.content) : post.content;

@@ -918,15 +918,15 @@ export default function CalendarPage() {
                 >
                   <Button
                     size="icon"
-                    className="h-14 w-14 rounded-2xl flex flex-col items-center justify-center gap-0.5"
+                    className="h-16 w-16 rounded-2xl flex flex-col items-center justify-center gap-1"
                     style={{ 
                       background: designTokens.colors.secondary.fern,
                       color: designTokens.colors.text.inverse,
                       boxShadow: designTokens.elevation.high,
                     }}
                   >
-                    <SlidersHorizontal className="h-5 w-5" />
-                    <span className="text-[9px] font-medium">絞込</span>
+                    <SlidersHorizontal className="h-6 w-6" />
+                    <span className="text-xs font-medium">絞込</span>
                   </Button>
                 </motion.div>
               </SheetTrigger>
