@@ -37,6 +37,8 @@ interface PostMarkerData {
   enable_checkin?: boolean | null;
   city?: string | null;
   prefecture?: string | null;
+  /** 現在地からの距離（km）。APIでは返さず、クライアントで計算して付与する場合がある */
+  distance?: number | null;
 }
 
 interface MapLocationMarkerData {
