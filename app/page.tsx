@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence, useScroll, useTransform, useInView } from 'framer-motion';
-import { MapPin, Menu, X, ChevronRight, Calendar, LogOut, Search, Layers, Clock, MapPinOff, Map, Users, ArrowRight, Compass, ExternalLink, Sparkles, Route, Globe } from 'lucide-react';
+import { MapPin, Menu, X, ChevronRight, Calendar, LogOut, Search, Layers, Clock, MapPinOff, Map, Users, ArrowRight, Compass, ExternalLink, Sparkles, Route, Globe, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useSession, signOut } from 'next-auth/react';
 import { getPublicMaps } from '@/app/_actions/maps';
@@ -13,6 +13,8 @@ import { NoteArticlesSection } from '@/components/external-content';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { designTokens, OITA_MUNICIPALITIES, TARGET_AUDIENCE_OPTIONS } from '@/lib/constants';
+import { useFeedback } from '@/lib/contexts/feedback-context';
+import { FeedbackModal } from '@/components/feedback/feedback-modal';
 
 // ===================================================================
 // TYPE DEFINITIONS
@@ -1431,7 +1433,7 @@ const Footer = () => (
 // HEADER NAVIGATION
 // ===================================================================
 
-const Header = ({ scrollPosition }: { scrollPosition: number }) => {
+const Header = ({ scrollPosition, onFeedbackOpen }: { scrollPosition: number; onFeedbackOpen: () => void }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { data: session } = useSession();
   const isScrolled = scrollPosition > 50;
@@ -1536,6 +1538,22 @@ const Header = ({ scrollPosition }: { scrollPosition: number }) => {
                       {item.label}
                     </motion.a>
                   ))}
+
+                  {/* ご意見 */}
+                  <motion.button
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.25 }}
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      onFeedbackOpen();
+                    }}
+                    className="flex items-center w-full px-4 py-3 rounded-lg font-medium transition-colors"
+                    style={{ color: designTokens.colors.accent.lilacDark }}
+                  >
+                    <MessageSquare className="h-5 w-5 mr-2" />
+                    ご意見
+                  </motion.button>
 
                   {session && (
                     <motion.button
@@ -1662,10 +1680,11 @@ const LocationModal = ({
 
 export default function Home() {
   const router = useRouter();
+  const { showFeedbackModal, setShowFeedbackModal, openFeedbackModal } = useFeedback();
   const [scrollPosition, setScrollPosition] = useState(0);
   const [showLocationModal, setShowLocationModal] = useState(false);
   const [selectedMapId, setSelectedMapId] = useState<string | null>(null);
-  
+
   // Search form state（LP離脱・リロード時にリセット）
   const [city, setCity] = useState('all');
   const [target, setTarget] = useState('none');
@@ -1754,22 +1773,8 @@ export default function Home() {
         fontFamily: designTokens.typography.body,
       }}
     >
-      {/* Google Fonts */}
-      <style jsx global>{`
-        @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=IBM+Plex+Sans+JP:wght@400;500;600&family=Noto+Sans+JP:wght@400;500;600;700&display=swap');
-        
-        /* Hide scrollbar for Chrome, Safari and Opera */
-        .scrollbar-hide::-webkit-scrollbar {
-          display: none;
-        }
-        /* Hide scrollbar for IE, Edge and Firefox */
-        .scrollbar-hide {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-      `}</style>
 
-      <Header scrollPosition={scrollPosition} />
+      <Header scrollPosition={scrollPosition} onFeedbackOpen={openFeedbackModal} />
       
       <HeroSection
         onStart={handleStart}
@@ -1799,6 +1804,11 @@ export default function Home() {
         onClose={handleDenyLocation}
         onAllow={handleAllowLocation}
         onDeny={handleDenyLocation}
+      />
+
+      <FeedbackModal
+        isOpen={showFeedbackModal}
+        onClose={() => setShowFeedbackModal(false)}
       />
     </main>
   );

@@ -4,12 +4,13 @@ import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { Compass, MapPin, Calendar, ExternalLink, AlertCircle, Phone, FileText, DollarSign, Link as LinkIcon, ChevronLeft, ChevronRight, X, CalendarPlusIcon, Shield, ScrollText, Search, Home, ChevronRight as ChevronRightIcon, ArrowLeft, Share2, Users } from 'lucide-react';
+import { Compass, MapPin, Calendar, ExternalLink, AlertCircle, Phone, FileText, DollarSign, Link as LinkIcon, ChevronLeft, ChevronRight, X, CalendarPlusIcon, Shield, ScrollText, Search, Home, ChevronRight as ChevronRightIcon, ArrowLeft, Share2, Users, Tag, Sparkles } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import Script from 'next/script';
 import Link from 'next/link';
 import Image from 'next/image';
-import { designTokens, COLORS, TARGET_TAG_LABELS } from '@/lib/constants';
+import { designTokens, COLORS, TARGET_TAG_LABELS, TAG_ACTIVITY_LABELS } from '@/lib/constants';
+import { generateSemanticEventUrl } from '@/lib/seo/url-helper';
 
 interface EventDetail {
   id: string;
@@ -32,6 +33,20 @@ interface EventDetail {
   event_start_date?: string | null;
   event_end_date?: string | null;
   target_tags?: string[] | null;
+  tag_activities?: Record<string, string[]> | null;
+}
+
+interface NearbyEvent {
+  id: string;
+  event_name: string | null;
+  store_name: string;
+  image_urls: string[] | null;
+  event_start_date: string | null;
+  event_end_date: string | null;
+  city: string | null;
+  prefecture: string | null;
+  target_tags: string[] | null;
+  distance?: number;
 }
 
 interface EventDetailClientProps {
@@ -127,6 +142,8 @@ export function EventDetailClient({ eventId }: EventDetailClientProps) {
   const [error, setError] = useState<string | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [imageLoading, setImageLoading] = useState(true);
+  const [nearbyEvents, setNearbyEvents] = useState<NearbyEvent[]>([]);
+  const [recommendedEvents, setRecommendedEvents] = useState<NearbyEvent[]>([]);
 
   const handleBack = () => {
     if (typeof window !== 'undefined' && window.history.length > 1) {
@@ -180,12 +197,17 @@ export function EventDetailClient({ eventId }: EventDetailClientProps) {
           return val;
         };
 
-        setEvent({
+        const eventData: EventDetail = {
           ...data,
           image_urls: normalizeUrls(data.image_urls),
           file_urls: normalizeUrls(data.file_urls),
           target_tags: normalizeUrls(data.target_tags),
-        });
+          tag_activities: normalizeUrls(data.tag_activities),
+        };
+        setEvent(eventData);
+
+        // Fetch nearby events and recommended events
+        fetchRelatedEvents(eventData);
       } catch (error) {
         setError('予期しないエラーが発生しました。');
       } finally {
@@ -194,6 +216,73 @@ export function EventDetailClient({ eventId }: EventDetailClientProps) {
     };
     fetchEventDetail();
   }, [eventId]);
+
+  const fetchRelatedEvents = async (currentEvent: EventDetail) => {
+    try {
+      const now = new Date().toISOString();
+      const { data, error: fetchError } = await supabase
+        .from('posts')
+        .select('id, event_name, store_name, image_urls, event_start_date, event_end_date, city, prefecture, target_tags, store_latitude, store_longitude')
+        .eq('is_deleted', false)
+        .eq('category', 'イベント情報')
+        .neq('id', currentEvent.id)
+        .limit(30);
+
+      if (fetchError || !data) return;
+
+      const normalizeUrls = (val: any) => {
+        if (typeof val === 'string') { try { return JSON.parse(val); } catch { return null; } }
+        return val;
+      };
+
+      const nowDate = new Date();
+      const validEvents = data
+        .filter((e: any) => {
+          if (!e.event_start_date) return false;
+          const endDate = e.event_end_date ? new Date(e.event_end_date) : new Date(e.event_start_date);
+          endDate.setHours(23, 59, 59, 999);
+          return nowDate <= endDate;
+        })
+        .map((e: any) => {
+          let distance: number | undefined;
+          if (currentEvent.store_latitude && currentEvent.store_longitude && e.store_latitude && e.store_longitude) {
+            const R = 6371;
+            const dLat = (e.store_latitude - currentEvent.store_latitude) * Math.PI / 180;
+            const dLng = (e.store_longitude - currentEvent.store_longitude) * Math.PI / 180;
+            const a = Math.sin(dLat / 2) ** 2 + Math.cos(currentEvent.store_latitude * Math.PI / 180) * Math.cos(e.store_latitude * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+            distance = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+          }
+          return {
+            ...e,
+            image_urls: normalizeUrls(e.image_urls),
+            target_tags: normalizeUrls(e.target_tags),
+            distance,
+          } as NearbyEvent;
+        });
+
+      // Nearby: sorted by distance
+      const nearby = validEvents
+        .filter((e) => e.distance != null && e.distance < 30)
+        .sort((a, b) => (a.distance || 0) - (b.distance || 0))
+        .slice(0, 5);
+      setNearbyEvents(nearby);
+
+      // Recommended: events with matching tags
+      const currentTags = currentEvent.target_tags || [];
+      if (currentTags.length > 0) {
+        const recommended = validEvents
+          .filter((e) => {
+            const eTags = e.target_tags || [];
+            return eTags.some((t: string) => currentTags.includes(t));
+          })
+          .filter((e) => !nearby.find(n => n.id === e.id))
+          .slice(0, 5);
+        setRecommendedEvents(recommended);
+      }
+    } catch (err) {
+      console.error('関連イベント取得エラー:', err);
+    }
+  };
 
   const getEventStatus = () => {
     if (!event) return { status: '未定', color: 'gray', remainingTime: '' };
@@ -643,6 +732,160 @@ export function EventDetailClient({ eventId }: EventDetailClientProps) {
                 </InfoRow>
               )}
             </div>
+
+            {/* タグアクティビティ */}
+            {event.tag_activities && Object.keys(event.tag_activities).length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-8"
+              >
+                <div className="flex items-center gap-2 mb-4">
+                  <Tag className="h-5 w-5" style={{ color: designTokens.colors.secondary.fern }} />
+                  <h2 className="text-lg font-semibold" style={{ fontFamily: designTokens.typography.display, color: designTokens.colors.text.primary }}>
+                    おすすめアクティビティ
+                  </h2>
+                </div>
+                <div className="space-y-3">
+                  {Object.entries(event.tag_activities).map(([tagId, activityIds]) => {
+                    const tagLabel = TARGET_TAG_LABELS[tagId] || tagId;
+                    return (
+                      <div key={tagId} className="p-4 rounded-2xl" style={{ background: designTokens.colors.background.cloud }}>
+                        <p className="text-xs font-semibold tracking-wide mb-2" style={{ color: designTokens.colors.accent.lilacDark }}>
+                          {tagLabel}
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {(activityIds as string[]).map((actId) => (
+                            <span
+                              key={actId}
+                              className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium"
+                              style={{
+                                background: `${designTokens.colors.secondary.fern}15`,
+                                color: designTokens.colors.secondary.fernDark,
+                                border: `1px solid ${designTokens.colors.secondary.fern}30`,
+                              }}
+                            >
+                              {TAG_ACTIVITY_LABELS[actId] || actId}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </motion.div>
+            )}
+
+            {/* 周辺イベント */}
+            {nearbyEvents.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-8"
+              >
+                <div className="flex items-center gap-2 mb-4">
+                  <MapPin className="h-5 w-5" style={{ color: designTokens.colors.functional.error }} />
+                  <h2 className="text-lg font-semibold" style={{ fontFamily: designTokens.typography.display, color: designTokens.colors.text.primary }}>
+                    周辺イベント
+                  </h2>
+                </div>
+                <div className="space-y-3">
+                  {nearbyEvents.map((ne) => {
+                    const imgUrls = ne.image_urls;
+                    const firstImg = Array.isArray(imgUrls) && imgUrls.length > 0 ? imgUrls[0] : null;
+                    const distanceText = ne.distance != null ? (ne.distance < 1 ? `${Math.round(ne.distance * 1000)}m` : `${ne.distance.toFixed(1)}km`) : null;
+                    return (
+                      <motion.div
+                        key={ne.id}
+                        whileHover={{ scale: 1.01 }}
+                        whileTap={{ scale: 0.99 }}
+                        className="flex gap-3 p-3 rounded-xl cursor-pointer transition-all"
+                        style={{ background: designTokens.colors.background.cloud, border: `1px solid ${designTokens.colors.secondary.stone}20` }}
+                        onClick={() => {
+                          const url = generateSemanticEventUrl({ eventId: ne.id, eventName: ne.event_name || ne.store_name, city: ne.city || undefined, prefecture: ne.prefecture || '大分県' });
+                          router.push(url);
+                        }}
+                      >
+                        <div className="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden" style={{ background: designTokens.colors.background.white }}>
+                          {firstImg ? (
+                            <Image src={firstImg} alt={ne.event_name || ne.store_name} width={64} height={64} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center"><Calendar className="h-6 w-6" style={{ color: designTokens.colors.text.muted }} /></div>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold line-clamp-1" style={{ color: designTokens.colors.text.primary }}>{ne.event_name || ne.store_name}</p>
+                          <p className="text-xs line-clamp-1" style={{ color: designTokens.colors.text.secondary }}>{ne.store_name}</p>
+                          {distanceText && (
+                            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full mt-1 inline-block" style={{ background: `${designTokens.colors.accent.gold}20`, color: designTokens.colors.accent.goldDark }}>
+                              {distanceText}
+                            </span>
+                          )}
+                        </div>
+                        <ChevronRight className="h-4 w-4 flex-shrink-0 self-center" style={{ color: designTokens.colors.text.muted }} />
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              </motion.div>
+            )}
+
+            {/* おすすめイベント */}
+            {recommendedEvents.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-8"
+              >
+                <div className="flex items-center gap-2 mb-4">
+                  <Sparkles className="h-5 w-5" style={{ color: designTokens.colors.accent.gold }} />
+                  <h2 className="text-lg font-semibold" style={{ fontFamily: designTokens.typography.display, color: designTokens.colors.text.primary }}>
+                    おすすめイベント
+                  </h2>
+                </div>
+                <div className="space-y-3">
+                  {recommendedEvents.map((re) => {
+                    const imgUrls = re.image_urls;
+                    const firstImg = Array.isArray(imgUrls) && imgUrls.length > 0 ? imgUrls[0] : null;
+                    return (
+                      <motion.div
+                        key={re.id}
+                        whileHover={{ scale: 1.01 }}
+                        whileTap={{ scale: 0.99 }}
+                        className="flex gap-3 p-3 rounded-xl cursor-pointer transition-all"
+                        style={{ background: `${designTokens.colors.accent.gold}08`, border: `1px solid ${designTokens.colors.accent.gold}20` }}
+                        onClick={() => {
+                          const url = generateSemanticEventUrl({ eventId: re.id, eventName: re.event_name || re.store_name, city: re.city || undefined, prefecture: re.prefecture || '大分県' });
+                          router.push(url);
+                        }}
+                      >
+                        <div className="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden" style={{ background: designTokens.colors.background.white }}>
+                          {firstImg ? (
+                            <Image src={firstImg} alt={re.event_name || re.store_name} width={64} height={64} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center"><Sparkles className="h-6 w-6" style={{ color: designTokens.colors.accent.gold }} /></div>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold line-clamp-1" style={{ color: designTokens.colors.text.primary }}>{re.event_name || re.store_name}</p>
+                          <p className="text-xs line-clamp-1" style={{ color: designTokens.colors.text.secondary }}>{re.store_name}</p>
+                          {re.target_tags && re.target_tags.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {re.target_tags.slice(0, 3).map((tag: string) => (
+                                <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: `${designTokens.colors.accent.lilac}15`, color: designTokens.colors.accent.lilacDark }}>
+                                  {TARGET_TAG_LABELS[tag] || tag}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        <ChevronRight className="h-4 w-4 flex-shrink-0 self-center" style={{ color: designTokens.colors.text.muted }} />
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              </motion.div>
+            )}
 
             {/* アクションボタン */}
             <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 gap-4">

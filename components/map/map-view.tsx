@@ -400,6 +400,12 @@ export function MapView() {
   const [loadingSpots, setLoadingSpots] = useState(false);
   const [selectedSpot, setSelectedSpot] = useState<SpotMarkerData | null>(null);
 
+  // Event card swipe state
+  const [eventCardIndex, setEventCardIndex] = useState(0);
+  const eventCardTouchStartX = useRef<number>(0);
+  const eventCardTouchDeltaX = useRef<number>(0);
+  const selectedMarkerRef = useRef<google.maps.Marker | null>(null);
+
   // Effects
   useEffect(() => {
     if (viewMode === 'events') { setDeviceHeading(null); return; }
@@ -761,7 +767,18 @@ export function MapView() {
         const title = post.category === 'イベント情報' ? (post.event_name || post.content) : post.content;
         const markerIcon = await createCategoryPinIcon(post.image_urls, title, (post.category as PostCategory) || 'イベント情報');
         const marker = new window.google.maps.Marker({ position, map, title: `${post.store_name} - ${post.category || '投稿'}`, icon: markerIcon, animation: window.google.maps.Animation.DROP, zIndex: indexInGroup + 1 });
-        marker.addListener('click', () => { setSelectedPost(post); setNearbyPosts([post]); });
+        marker.addListener('click', () => {
+          // Stop previous marker bounce
+          if (selectedMarkerRef.current) { selectedMarkerRef.current.setAnimation(null); }
+          // Set bounce animation on selected marker
+          marker.setAnimation(window.google.maps.Animation.BOUNCE);
+          selectedMarkerRef.current = marker;
+          // Find this post's index in the distance-sorted list
+          const sortedIndex = posts.findIndex(p => p.id === post.id);
+          setEventCardIndex(sortedIndex >= 0 ? sortedIndex : 0);
+          setSelectedPost(post);
+          setNearbyPosts(posts);
+        });
         return marker;
       });
       const batchMarkers = await Promise.all(batchPromises);
@@ -1243,79 +1260,139 @@ export function MapView() {
         )}
       </AnimatePresence>
 
-      {/* イベント詳細カード（イベントモード時のみ表示） */}
+      {/* イベント詳細カード（イベントモード時・スワイプ対応・現在地近い順） */}
       <AnimatePresence>
-        {viewMode === 'events' && selectedPost && nearbyPosts.length > 0 && (
-          <motion.div initial={{ y: 100, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 100, opacity: 0 }} transition={{ duration: 0.4, type: "spring", damping: 20 }} className="absolute bottom-4 left-4 right-4 z-40">
-            {nearbyPosts.map((post) => {
-              const displayTitle = post.category === 'イベント情報' ? (post.event_name || post.content) : post.content;
-              const effectiveLatitude = savedLocation?.lat || latitude;
-              const effectiveLongitude = savedLocation?.lng || longitude;
-              let isWithinRangeResult = false;
-              if (effectiveLatitude && effectiveLongitude && post.store_latitude && post.store_longitude) {
-                isWithinRangeResult = isWithinRange(effectiveLatitude, effectiveLongitude, post.store_latitude, post.store_longitude, 1000);
-              }
-              const canCheckIn = !!session?.user?.id && post.enable_checkin === true && !!effectiveLatitude && !!effectiveLongitude && !!post.store_latitude && !!post.store_longitude && isWithinRangeResult;
-              const isCheckedIn = checkedInPosts.has(post.id);
-              return (
-                <div key={post.id} className="relative rounded-2xl overflow-hidden" style={{ background: designTokens.colors.background.white, boxShadow: designTokens.elevation.high }}>
-                  {canCheckIn && (
-                    <div onClick={(e) => { e.stopPropagation(); if (!isCheckedIn && checkingIn !== post.id) handleCheckIn(post); }} className={`absolute -top-3 left-4 z-30 cursor-pointer transition-all ${isCheckedIn || checkingIn === post.id ? 'cursor-default' : 'hover:scale-105'}`}>
-                      <div className="px-4 py-2 rounded-full font-semibold text-sm" style={{ background: isCheckedIn ? designTokens.colors.functional.success : designTokens.colors.accent.lilac, color: designTokens.colors.text.inverse, boxShadow: designTokens.elevation.medium }}>
-                        {checkingIn === post.id ? <Loader2 className="h-4 w-4 animate-spin" /> : isCheckedIn ? '✓ 完了' : 'Check In'}
-                      </div>
-                    </div>
-                  )}
-                  <div className="absolute top-4 right-4 z-10">
-                    <Button onClick={() => { setSelectedPost(null); setNearbyPosts([]); }} size="icon" className="h-8 w-8 rounded-full" style={{ background: designTokens.colors.background.cloud, color: designTokens.colors.text.secondary }}><X className="h-4 w-4" /></Button>
-                  </div>
-                  <div className="p-5">
-                    <div className="flex gap-4 mb-4">
-                      <div className="flex-shrink-0 relative w-24 h-24 rounded-xl overflow-hidden" style={{ background: designTokens.colors.background.cloud }}>
-                        {post.image_urls && post.image_urls.length > 0 ? (
-                          <img src={optimizeCloudinaryImageUrl(post.image_urls[0])} alt={post.store_name} className="w-full h-full object-cover" loading="eager" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center"><Calendar className="h-10 w-10" style={{ color: designTokens.colors.text.muted }} /></div>
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-lg font-semibold leading-tight line-clamp-2 mb-2" style={{ fontFamily: designTokens.typography.display, color: designTokens.colors.primary.dark }}>{displayTitle}</h3>
-                        <div className="flex items-center gap-2 text-sm mb-1" style={{ color: designTokens.colors.text.secondary }}>
-                          <MapPinIcon className="h-4 w-4 flex-shrink-0" style={{ color: designTokens.colors.functional.error }} />
-                          <span className="line-clamp-1">{post.store_name}</span>
-                        </div>
-                        {post.category === 'イベント情報' && post.event_start_date && (
-                          <div className="flex items-center gap-2 text-sm" style={{ color: designTokens.colors.text.secondary }}>
-                            <Calendar className="h-4 w-4 flex-shrink-0" style={{ color: designTokens.colors.functional.info }} />
-                            <span className="line-clamp-1">
-                              {new Date(post.event_start_date).toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' })}
-                              {post.event_end_date && post.event_end_date !== post.event_start_date && <> 〜 {new Date(post.event_end_date).toLocaleDateString('ja-JP', { month: 'long', day: 'numeric' })}</>}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    <motion.div whileHover={{ scale: navigatingToDetail === post.id ? 1 : 1.02 }} whileTap={{ scale: navigatingToDetail === post.id ? 1 : 0.98 }}>
-                      <Button 
-                        onClick={() => {
-                          if (navigatingToDetail) return;
-                          setNavigatingToDetail(post.id);
-                          const eventUrl = generateSemanticEventUrl({ eventId: post.id, eventName: post.event_name || post.content, city: post.city || undefined, prefecture: post.prefecture || '大分県' });
-                          router.push(eventUrl);
+        {viewMode === 'events' && selectedPost && posts.length > 0 && (() => {
+          const currentIdx = Math.min(eventCardIndex, posts.length - 1);
+          const post = posts[currentIdx];
+          if (!post) return null;
+          const displayTitle = post.category === 'イベント情報' ? (post.event_name || post.content) : post.content;
+          const effectiveLatitude = savedLocation?.lat || latitude;
+          const effectiveLongitude = savedLocation?.lng || longitude;
+          let isWithinRangeResult = false;
+          if (effectiveLatitude && effectiveLongitude && post.store_latitude && post.store_longitude) {
+            isWithinRangeResult = isWithinRange(effectiveLatitude, effectiveLongitude, post.store_latitude, post.store_longitude, 1000);
+          }
+          const canCheckIn = !!session?.user?.id && post.enable_checkin === true && !!effectiveLatitude && !!effectiveLongitude && !!post.store_latitude && !!post.store_longitude && isWithinRangeResult;
+          const isCheckedIn = checkedInPosts.has(post.id);
+          const distanceText = post.distance != null ? (post.distance < 1 ? `${Math.round(post.distance * 1000)}m` : `${post.distance.toFixed(1)}km`) : null;
+
+          const handleSwipe = (direction: 'left' | 'right') => {
+            if (selectedMarkerRef.current) { selectedMarkerRef.current.setAnimation(null); }
+            let newIdx: number;
+            if (direction === 'left') { newIdx = currentIdx < posts.length - 1 ? currentIdx + 1 : 0; }
+            else { newIdx = currentIdx > 0 ? currentIdx - 1 : posts.length - 1; }
+            setEventCardIndex(newIdx);
+            const nextPost = posts[newIdx];
+            setSelectedPost(nextPost);
+            // Bounce the new marker
+            const matchingMarker = postMarkers.find(m => m?.getTitle()?.includes(nextPost.store_name));
+            if (matchingMarker) { matchingMarker.setAnimation(window.google.maps.Animation.BOUNCE); selectedMarkerRef.current = matchingMarker; }
+            // Pan map to new post
+            if (map && nextPost.store_latitude && nextPost.store_longitude) {
+              map.panTo(new window.google.maps.LatLng(nextPost.store_latitude, nextPost.store_longitude));
+            }
+          };
+
+          return (
+            <motion.div
+              key={post.id}
+              initial={{ y: 100, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 100, opacity: 0 }}
+              transition={{ duration: 0.4, type: "spring", damping: 20 }}
+              className="absolute bottom-4 left-4 right-4 z-40"
+              onTouchStart={(e) => { eventCardTouchStartX.current = e.touches[0].clientX; eventCardTouchDeltaX.current = 0; }}
+              onTouchMove={(e) => { eventCardTouchDeltaX.current = e.touches[0].clientX - eventCardTouchStartX.current; }}
+              onTouchEnd={() => {
+                if (Math.abs(eventCardTouchDeltaX.current) > 50) {
+                  handleSwipe(eventCardTouchDeltaX.current < 0 ? 'left' : 'right');
+                }
+              }}
+            >
+              <div className="relative rounded-2xl overflow-hidden" style={{ background: designTokens.colors.background.white, boxShadow: designTokens.elevation.high }}>
+                {/* Card index indicator */}
+                {posts.length > 1 && (
+                  <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5">
+                    {posts.map((_, i) => (
+                      <div
+                        key={i}
+                        className="rounded-full transition-all"
+                        style={{
+                          width: i === currentIdx ? 16 : 6,
+                          height: 6,
+                          background: i === currentIdx ? designTokens.colors.accent.lilac : `${designTokens.colors.secondary.stone}60`,
                         }}
-                        disabled={navigatingToDetail === post.id}
-                        className="w-full py-3 rounded-xl font-semibold flex items-center justify-center gap-2 disabled:opacity-80"
-                        style={{ background: designTokens.colors.accent.lilac, color: designTokens.colors.text.inverse }}
-                      >
-                        {navigatingToDetail === post.id ? (<><Loader2 className="h-4 w-4 animate-spin" />読み込み中...</>) : (<><Search className="h-4 w-4" />詳細を見る</>)}
-                      </Button>
-                    </motion.div>
+                      />
+                    ))}
                   </div>
+                )}
+                {canCheckIn && (
+                  <div onClick={(e) => { e.stopPropagation(); if (!isCheckedIn && checkingIn !== post.id) handleCheckIn(post); }} className={`absolute -top-3 left-4 z-30 cursor-pointer transition-all ${isCheckedIn || checkingIn === post.id ? 'cursor-default' : 'hover:scale-105'}`}>
+                    <div className="px-4 py-2 rounded-full font-semibold text-sm" style={{ background: isCheckedIn ? designTokens.colors.functional.success : designTokens.colors.accent.lilac, color: designTokens.colors.text.inverse, boxShadow: designTokens.elevation.medium }}>
+                      {checkingIn === post.id ? <Loader2 className="h-4 w-4 animate-spin" /> : isCheckedIn ? '✓ 完了' : 'Check In'}
+                    </div>
+                  </div>
+                )}
+                <div className="absolute top-4 right-4 z-10">
+                  <Button onClick={() => { if (selectedMarkerRef.current) { selectedMarkerRef.current.setAnimation(null); selectedMarkerRef.current = null; } setSelectedPost(null); setNearbyPosts([]); }} size="icon" className="h-8 w-8 rounded-full" style={{ background: designTokens.colors.background.cloud, color: designTokens.colors.text.secondary }}><X className="h-4 w-4" /></Button>
                 </div>
-              );
-            })}
-          </motion.div>
-        )}
+                <div className="p-5 pt-8">
+                  <div className="flex gap-4 mb-3">
+                    <div className="flex-shrink-0 relative w-20 h-20 rounded-xl overflow-hidden" style={{ background: designTokens.colors.background.cloud }}>
+                      {post.image_urls && post.image_urls.length > 0 ? (
+                        <img src={optimizeCloudinaryImageUrl(post.image_urls[0])} alt={post.store_name} className="w-full h-full object-cover" loading="eager" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center"><Calendar className="h-8 w-8" style={{ color: designTokens.colors.text.muted }} /></div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-base font-semibold leading-tight line-clamp-2 mb-1.5" style={{ fontFamily: designTokens.typography.display, color: designTokens.colors.primary.dark }}>{displayTitle}</h3>
+                      <div className="flex items-center gap-2 text-sm mb-1" style={{ color: designTokens.colors.text.secondary }}>
+                        <MapPinIcon className="h-3.5 w-3.5 flex-shrink-0" style={{ color: designTokens.colors.functional.error }} />
+                        <span className="line-clamp-1">{post.store_name}</span>
+                        {distanceText && (
+                          <span className="flex-shrink-0 text-xs font-medium px-1.5 py-0.5 rounded-full" style={{ background: `${designTokens.colors.accent.gold}20`, color: designTokens.colors.accent.goldDark }}>
+                            {distanceText}
+                          </span>
+                        )}
+                      </div>
+                      {post.category === 'イベント情報' && post.event_start_date && (
+                        <div className="flex items-center gap-2 text-xs" style={{ color: designTokens.colors.text.secondary }}>
+                          <Calendar className="h-3.5 w-3.5 flex-shrink-0" style={{ color: designTokens.colors.functional.info }} />
+                          <span className="line-clamp-1">
+                            {new Date(post.event_start_date).toLocaleDateString('ja-JP', { month: 'long', day: 'numeric' })}
+                            {post.event_end_date && post.event_end_date !== post.event_start_date && <> 〜 {new Date(post.event_end_date).toLocaleDateString('ja-JP', { month: 'long', day: 'numeric' })}</>}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <motion.div whileHover={{ scale: navigatingToDetail === post.id ? 1 : 1.02 }} whileTap={{ scale: navigatingToDetail === post.id ? 1 : 0.98 }}>
+                    <Button
+                      onClick={() => {
+                        if (navigatingToDetail) return;
+                        setNavigatingToDetail(post.id);
+                        const eventUrl = generateSemanticEventUrl({ eventId: post.id, eventName: post.event_name || post.content, city: post.city || undefined, prefecture: post.prefecture || '大分県' });
+                        router.push(eventUrl);
+                      }}
+                      disabled={navigatingToDetail === post.id}
+                      className="w-full py-3 rounded-xl font-semibold flex items-center justify-center gap-2 disabled:opacity-80"
+                      style={{ background: designTokens.colors.accent.lilac, color: designTokens.colors.text.inverse }}
+                    >
+                      {navigatingToDetail === post.id ? (<><Loader2 className="h-4 w-4 animate-spin" />読み込み中...</>) : (<><Search className="h-4 w-4" />詳細を見る</>)}
+                    </Button>
+                  </motion.div>
+                  {posts.length > 1 && (
+                    <p className="text-center text-[10px] mt-2 font-medium" style={{ color: designTokens.colors.text.muted }}>
+                      スワイプで切り替え（{currentIdx + 1}/{posts.length}）
+                    </p>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          );
+        })()}
       </AnimatePresence>
 
       {/* コースロケーション詳細カード */}

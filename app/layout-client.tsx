@@ -8,7 +8,6 @@ import { GoogleMapsApiProvider } from '@/components/providers/GoogleMapsApiProvi
 import { LocationPermissionProvider } from '@/components/providers/LocationPermissionProvider';
 import { LoadingProvider } from '@/lib/contexts/loading-context';
 import { FeedbackProvider } from '@/lib/contexts/feedback-context';
-import { FeedbackIntegration } from '@/components/feedback/feedback-integration';
 import { usePathname } from 'next/navigation';
 import { useEffect } from 'react';
 import { AppHeader } from '@/components/layout/app-header';
@@ -92,7 +91,6 @@ export function RootLayoutClient({ children }: RootLayoutClientProps) {
                 {googleMapsApiKey ? (
                   <GoogleMapsApiProvider apiKey={googleMapsApiKey}>
                     <LayoutContent>{children}</LayoutContent>
-                    <FeedbackIntegration />
                   </GoogleMapsApiProvider>
                 ) : (
                   <>
@@ -100,7 +98,6 @@ export function RootLayoutClient({ children }: RootLayoutClientProps) {
                       Google Maps APIキーが設定されていません。
                     </div>
                     <LayoutContent>{children}</LayoutContent>
-                    <FeedbackIntegration />
                   </>
                 )}
                 <Toaster />

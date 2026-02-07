@@ -704,43 +704,43 @@ export default function CalendarPage() {
               >
                 <div
                   ref={dateStripRef}
-                  className="flex gap-3 overflow-x-auto overflow-y-hidden pb-2 snap-x snap-mandatory scroll-smooth scrollbar-hide"
+                  className="flex gap-1.5 overflow-x-auto overflow-y-hidden pb-2 snap-x snap-mandatory scroll-smooth scrollbar-hide"
                 >
                   {daysWithEvents.map((day, index) => {
                     const isSelected = index === selectedDayIndex;
                     const isToday = isSameDay(day, new Date());
                     const dayColor = getDayColor(day);
                     const dayKey = format(day, 'yyyy-MM-dd');
-                    
+
                     return (
                       <motion.button
                         key={dayKey}
                         data-day-index={index}
                         onClick={() => setSelectedDayIndex(index)}
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        className="flex-shrink-0 snap-center rounded-2xl px-5 py-3 min-w-[100px] transition-all"
+                        whileHover={{ scale: 1.03 }}
+                        whileTap={{ scale: 0.97 }}
+                        className="flex-shrink-0 snap-center rounded-xl px-2.5 py-1.5 min-w-[48px] transition-all text-center"
                         style={{
                           background: isSelected ? designTokens.colors.accent.lilac : designTokens.colors.background.white,
                           boxShadow: isSelected ? designTokens.elevation.medium : designTokens.elevation.subtle,
-                          border: `1px solid ${isSelected ? designTokens.colors.accent.lilac : designTokens.colors.secondary.stone}40`,
+                          border: `1px solid ${isSelected ? designTokens.colors.accent.lilac : designTokens.colors.secondary.stone}30`,
                         }}
                       >
-                        <span 
-                          className="block text-lg font-bold"
+                        <span
+                          className="block text-sm font-bold leading-tight"
                           style={{ color: isSelected ? designTokens.colors.text.inverse : designTokens.colors.text.primary }}
                         >
-                          {format(day, 'd')}日
+                          {format(day, 'd')}
                         </span>
-                        <span 
-                          className="block text-sm font-medium"
+                        <span
+                          className="block text-[10px] font-medium leading-tight"
                           style={{ color: isSelected ? `${designTokens.colors.text.inverse}CC` : dayColor }}
                         >
-                          （{getDayOfWeek(day)}）
+                          {getDayOfWeek(day)}
                         </span>
                         {isToday && (
-                          <span 
-                            className="block text-xs font-bold mt-0.5"
+                          <span
+                            className="block text-[9px] font-bold leading-tight mt-0.5"
                             style={{ color: isSelected ? designTokens.colors.accent.gold : designTokens.colors.functional.warning }}
                           >
                             今日

@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=IBM+Plex+Sans+JP:wght@400;500;600&family=Noto+Sans+JP:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -25,19 +27,29 @@
     --input: 38 16% 74%;
     --ring: 183 7% 47%;
     --radius: 0.5rem;
+
+    /* Typography tokens */
+    --font-display: 'Sora', 'Noto Sans JP', sans-serif;
+    --font-body: 'IBM Plex Sans JP', 'Noto Sans JP', sans-serif;
   }
 
   * {
     @apply border-border;
   }
-  
+
   html, body {
     @apply bg-background text-foreground;
     margin: 0;
     padding: 0;
     width: 100%;
     height: 100%;
-    font-family: 'Yu Gothic', YuGothic, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
   }
 
   /* モバイルでのズーム防止 */

@@ -7,7 +7,7 @@ export const TARGET_TAGS = [
   { id: 'tourist', label: '観光客向け' },
   { id: 'kids', label: '子ども向け' },
   { id: 'senior', label: 'シニア向け' },
-  { id: 'business', label: 'ビジネス向け' },
+  { id: 'business', label: 'インバウンド向け' },
   { id: 'local', label: '地元の方向け' },
 ] as const;
 
@@ -110,15 +110,15 @@ export const TAG_ACTIVITIES: Record<TargetTagId, { id: string; label: string }[]
     { id: 'senior_zen', label: '座禅体験' },
   ],
   business: [
-    { id: 'business_workation', label: 'ワーケーション' },
-    { id: 'business_meeting', label: '会議室' },
-    { id: 'business_wifi', label: 'Wi-Fiカフェ' },
-    { id: 'business_lunch', label: 'ランチ' },
-    { id: 'business_dinner', label: 'ディナー接待' },
-    { id: 'business_hotel', label: 'ホテル' },
-    { id: 'business_cowork', label: 'コワーキング' },
-    { id: 'business_access', label: '交通アクセス' },
-    { id: 'business_refresh', label: 'リフレッシュ' },
+    { id: 'business_onsen', label: '温泉体験' },
+    { id: 'business_culture', label: '日本文化体験' },
+    { id: 'business_gourmet', label: '和食・地元グルメ' },
+    { id: 'business_shrine', label: '神社仏閣巡り' },
+    { id: 'business_nature', label: '自然・絶景' },
+    { id: 'business_souvenir', label: 'お土産・ショッピング' },
+    { id: 'business_photo', label: 'フォトスポット' },
+    { id: 'business_festival', label: '祭り・伝統行事' },
+    { id: 'business_craft', label: '工芸・ものづくり体験' },
   ],
   local: [
     { id: 'local_hidden', label: '穴場スポット' },

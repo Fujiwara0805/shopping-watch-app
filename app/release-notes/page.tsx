@@ -1012,10 +1012,10 @@ const ReleaseNoteCard = ({ release, index }: { release: ReleaseNote; index: numb
 
 export default function ReleaseNotesPage() {
   const router = useRouter();
-  const { showFeedbackModalForced } = useFeedback();
+  const { openFeedbackModal } = useFeedback();
 
   const handleFeedbackClick = () => {
-    showFeedbackModalForced();
+    openFeedbackModal();
   };
 
   return (

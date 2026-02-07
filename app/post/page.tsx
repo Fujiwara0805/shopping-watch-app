@@ -25,7 +25,8 @@ import { useLoading } from '@/lib/contexts/loading-context';
 import { useGoogleMapsApi } from '@/components/providers/GoogleMapsApiProvider';
 import { createPost, type CreatePostInput, type PostCategory as ServerPostCategory } from '@/app/_actions/posts';
 import { Breadcrumb } from '@/components/seo/breadcrumb';
-import { TARGET_TAGS } from '@/lib/constants';
+import { TARGET_TAGS, TAG_ACTIVITIES } from '@/lib/constants';
+import type { TargetTagId } from '@/lib/constants/target-tags';
 
 declare global {
   interface Window {
@@ -163,6 +164,9 @@ export default function PostPage() {
 
   // 対象者タグ
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  // 対象者タグごとのアクティビティ
+  const [selectedTagActivities, setSelectedTagActivities] = useState<Record<string, string[]>>({});
+  const [expandedActivityTags, setExpandedActivityTags] = useState<Record<string, boolean>>({});
 
   const {
     latitude,
@@ -453,6 +457,7 @@ export default function PostPage() {
         customExpiryMinutes,
         expiresAt,
         targetTags: selectedTags.length > 0 ? selectedTags : undefined,
+        tagActivities: Object.keys(selectedTagActivities).length > 0 ? selectedTagActivities : undefined,
       };
 
       const { postId, error: createError } = await createPost(postInput);
@@ -1399,6 +1404,16 @@ export default function PostPage() {
                                                   setSelectedTags(prev => [...prev, tag.id]);
                                                 } else {
                                                   setSelectedTags(prev => prev.filter(t => t !== tag.id));
+                                                  setSelectedTagActivities(prev => {
+                                                    const next = { ...prev };
+                                                    delete next[tag.id];
+                                                    return next;
+                                                  });
+                                                  setExpandedActivityTags(prev => {
+                                                    const next = { ...prev };
+                                                    delete next[tag.id];
+                                                    return next;
+                                                  });
                                                 }
                                               }}
                                               className="h-4 w-4 rounded border-input text-primary focus:ring-primary"
@@ -1408,6 +1423,81 @@ export default function PostPage() {
                                         );
                                       })}
                                     </div>
+
+                                    {/* タグごとのアクティビティ選択 */}
+                                    {selectedTags.length > 0 && (
+                                      <div className="mt-4 space-y-3">
+                                        <p className="text-sm text-muted-foreground">
+                                          選択したタグのおすすめアクティビティを追加できます
+                                        </p>
+                                        {selectedTags.map((tagId) => {
+                                          const tagLabel = TARGET_TAGS.find(t => t.id === tagId)?.label || tagId;
+                                          const activities = TAG_ACTIVITIES[tagId as TargetTagId] || [];
+                                          const isExpanded = expandedActivityTags[tagId] || false;
+                                          const currentActivities = selectedTagActivities[tagId] || [];
+
+                                          return (
+                                            <div key={tagId} className="border rounded-lg overflow-hidden">
+                                              <button
+                                                type="button"
+                                                onClick={() => setExpandedActivityTags(prev => ({ ...prev, [tagId]: !prev[tagId] }))}
+                                                className={cn(
+                                                  "w-full flex items-center justify-between p-3 text-left transition-colors",
+                                                  isExpanded ? "bg-primary/5" : "bg-background hover:bg-muted/50"
+                                                )}
+                                              >
+                                                <div className="flex items-center gap-2">
+                                                  <Tag className="h-4 w-4 text-primary" />
+                                                  <span className="text-sm font-semibold">{tagLabel}</span>
+                                                  {currentActivities.length > 0 && (
+                                                    <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full">
+                                                      {currentActivities.length}件
+                                                    </span>
+                                                  )}
+                                                </div>
+                                                {isExpanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+                                              </button>
+                                              {isExpanded && (
+                                                <motion.div
+                                                  initial={{ opacity: 0, height: 0 }}
+                                                  animate={{ opacity: 1, height: "auto" }}
+                                                  className="p-3 border-t bg-white"
+                                                >
+                                                  <div className="flex flex-wrap gap-2">
+                                                    {activities.map((activity) => {
+                                                      const isActive = currentActivities.includes(activity.id);
+                                                      return (
+                                                        <button
+                                                          key={activity.id}
+                                                          type="button"
+                                                          onClick={() => {
+                                                            setSelectedTagActivities(prev => {
+                                                              const current = prev[tagId] || [];
+                                                              const updated = isActive
+                                                                ? current.filter(a => a !== activity.id)
+                                                                : [...current, activity.id];
+                                                              return { ...prev, [tagId]: updated };
+                                                            });
+                                                          }}
+                                                          className={cn(
+                                                            "px-3 py-1.5 rounded-full text-sm transition-all border",
+                                                            isActive
+                                                              ? "bg-primary text-primary-foreground border-primary font-medium"
+                                                              : "bg-background text-foreground border-border hover:border-primary/50"
+                                                          )}
+                                                        >
+                                                          {activity.label}
+                                                        </button>
+                                                      );
+                                                    })}
+                                                  </div>
+                                                </motion.div>
+                                              )}
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    )}
                                   </div>
                                 </div>
                                 </>
