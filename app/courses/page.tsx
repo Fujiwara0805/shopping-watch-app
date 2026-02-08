@@ -4,8 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
-import { MapPin, Calendar, Compass, User, Feather, Route } from 'lucide-react';
-import { supabase } from '@/lib/supabaseClient';
+import { MapPin, Calendar, Compass, Route } from 'lucide-react';
 import { getPublicMaps } from '@/app/_actions/maps';
 import { Breadcrumb } from '@/components/seo/breadcrumb';
 import { designTokens } from '@/lib/constants/colors';
@@ -73,19 +72,6 @@ export default function PublicMapsPage() {
     router.push(`/map?title_id=${mapId}`);
   };
 
-  const handleMapButtonClick = () => {
-    router.push('/map');
-  };
-
-  const handleMyPage = () => {
-    router.push('/profile');
-  };
-
-  const getAvatarPublicUrl = (avatarPath: string | null): string | null => {
-    if (!avatarPath) return null;
-    return supabase.storage.from('avatars').getPublicUrl(avatarPath).data.publicUrl;
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen" style={{ background: designTokens.colors.background.mist }}>
@@ -122,26 +108,6 @@ export default function PublicMapsPage() {
         <div className="px-4 pt-3 pb-2">
           <Breadcrumb />
         </div>
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="px-4 pb-4"
-        >
-          <div className="flex items-center gap-3 mb-1">
-            <Route className="h-5 w-5" style={{ color: designTokens.colors.accent.lilac }} />
-            <h1
-              className="text-xl font-semibold"
-              style={{ fontFamily: designTokens.typography.display, color: designTokens.colors.text.primary }}
-            >
-              モデルコース
-            </h1>
-          </div>
-          <div
-            className="w-16 h-1 rounded-full ml-8"
-            style={{ background: `linear-gradient(90deg, ${designTokens.colors.accent.gold}, transparent)` }}
-          />
-        </motion.div>
       </div>
 
       {/* マップ一覧 */}
@@ -275,59 +241,6 @@ export default function PublicMapsPage() {
             ))}
           </AnimatePresence>
         )}
-      </div>
-
-      {/* 右下のFABボタン */}
-      <div className="fixed bottom-6 right-4 sm:bottom-8 sm:right-8 z-50 flex flex-col gap-3">
-        {/* マイページボタン */}
-        <motion.button
-          initial={{ opacity: 0, scale: 0 }}
-          animate={{ opacity: 1, scale: 1 }}
-          whileHover={{ scale: 1.05, boxShadow: designTokens.elevation.high }}
-          whileTap={{ scale: 0.95 }}
-          transition={{ duration: 0.3, delay: 0.1 }}
-          onClick={handleMyPage}
-          className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl shadow-lg transition-colors flex flex-col items-center justify-center gap-1"
-          style={{ background: designTokens.colors.primary.dark, boxShadow: designTokens.elevation.high }}
-        >
-          <User className="h-6 w-6 sm:h-7 sm:w-7" style={{ color: designTokens.colors.text.inverse }} />
-          <span className="text-xs font-medium" style={{ color: designTokens.colors.text.inverse }}>MyPage</span>
-        </motion.button>
-
-        {/* モデルコース作成ボタン（アイコンのみ） */}
-        <motion.button
-          initial={{ opacity: 0, scale: 0 }}
-          animate={{ opacity: 1, scale: 1 }}
-          whileHover={{ scale: 1.05, boxShadow: designTokens.elevation.high }}
-          whileTap={{ scale: 0.95 }}
-          transition={{ duration: 0.3, delay: 0.2 }}
-          onClick={() => router.push('/create-map')}
-          className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl shadow-lg transition-colors flex items-center justify-center"
-          style={{
-            background: `linear-gradient(135deg, ${designTokens.colors.accent.lilacDark}, ${designTokens.colors.accent.lilac})`,
-            boxShadow: `0 8px 24px ${designTokens.colors.accent.lilac}40`,
-          }}
-        >
-          <Feather className="h-6 w-6 sm:h-7 sm:w-7" style={{ color: designTokens.colors.text.inverse }} />
-        </motion.button>
-
-        {/* Mapボタン */}
-        <motion.button
-          initial={{ opacity: 0, scale: 0 }}
-          animate={{ opacity: 1, scale: 1 }}
-          whileHover={{ scale: 1.05, boxShadow: designTokens.elevation.high }}
-          whileTap={{ scale: 0.95 }}
-          transition={{ duration: 0.3, delay: 0.3 }}
-          onClick={handleMapButtonClick}
-          className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl shadow-lg transition-colors flex flex-col items-center justify-center gap-1"
-          style={{
-            background: designTokens.colors.accent.gold,
-            boxShadow: `0 8px 24px ${designTokens.colors.accent.gold}40`,
-          }}
-        >
-          <Compass className="h-6 w-6 sm:h-7 sm:w-7" style={{ color: designTokens.colors.text.primary }} />
-          <span className="text-xs font-medium" style={{ color: designTokens.colors.text.primary }}>Map</span>
-        </motion.button>
       </div>
 
       <style jsx global>{`

@@ -370,10 +370,11 @@ export async function getMapForEdit(
 }
 
 /**
- * 公開マップ一覧を取得
+ * 公開マップ一覧を取得（掲載終了日を過ぎたものは表示しない）
  */
 export async function getPublicMaps(limit?: number): Promise<{ maps: any[]; error: string | null }> {
   try {
+    const nowIso = new Date().toISOString();
     let query = supabaseAnon
       .from('maps')
       .select(`
@@ -384,6 +385,7 @@ export async function getPublicMaps(limit?: number): Promise<{ maps: any[]; erro
         hashtags,
         app_profile_id,
         thumbnail_url,
+        publication_end_date,
         app_profiles (
           id,
           display_name,
@@ -392,6 +394,7 @@ export async function getPublicMaps(limit?: number): Promise<{ maps: any[]; erro
       `)
       .eq('is_deleted', false)
       .eq('is_public', true)
+      .or(`publication_end_date.is.null,publication_end_date.gte.${nowIso}`)
       .order('created_at', { ascending: false });
 
     if (limit) {

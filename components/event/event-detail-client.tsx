@@ -46,6 +46,8 @@ interface NearbyEvent {
   city: string | null;
   prefecture: string | null;
   target_tags: string[] | null;
+  store_latitude?: number | null;
+  store_longitude?: number | null;
   distance?: number;
 }
 
@@ -143,6 +145,7 @@ export function EventDetailClient({ eventId }: EventDetailClientProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [imageLoading, setImageLoading] = useState(true);
   const [nearbyEvents, setNearbyEvents] = useState<NearbyEvent[]>([]);
+  const [surroundingEvents, setSurroundingEvents] = useState<NearbyEvent[]>([]); // 同じ日付 & (同じ場所 or 同じ市町村)
   const [recommendedEvents, setRecommendedEvents] = useState<NearbyEvent[]>([]);
 
   const handleBack = () => {
@@ -260,12 +263,44 @@ export function EventDetailClient({ eventId }: EventDetailClientProps) {
           } as NearbyEvent;
         });
 
-      // Nearby: sorted by distance
+      // Nearby: sorted by distance (30km以内)
       const nearby = validEvents
         .filter((e) => e.distance != null && e.distance < 30)
         .sort((a, b) => (a.distance || 0) - (b.distance || 0))
         .slice(0, 5);
       setNearbyEvents(nearby);
+
+      // 周辺イベント: 同じ日付 かつ (同じ場所で開催 or 市町村が同じ)
+      const currentDateStr = currentEvent.event_start_date
+        ? new Date(currentEvent.event_start_date).toISOString().slice(0, 10)
+        : null;
+      const latLngTolerance = 0.0001; // 約10m程度
+      const samePlace = (e: any) => {
+        const sameCoords =
+          currentEvent.store_latitude != null &&
+          currentEvent.store_longitude != null &&
+          e.store_latitude != null &&
+          e.store_longitude != null &&
+          Math.abs(e.store_latitude - currentEvent.store_latitude) < latLngTolerance &&
+          Math.abs(e.store_longitude - currentEvent.store_longitude) < latLngTolerance;
+        const sameVenueName =
+          currentEvent.store_name != null &&
+          e.store_name != null &&
+          String(currentEvent.store_name).trim() === String(e.store_name).trim();
+        return sameCoords || sameVenueName;
+      };
+      const sameCity = (e: any) =>
+        currentEvent.city != null &&
+        e.city != null &&
+        String(currentEvent.city).trim() === String(e.city).trim();
+
+      const surrounding = validEvents.filter((e) => {
+        if (!e.event_start_date || !currentDateStr) return false;
+        const eDateStr = new Date(e.event_start_date).toISOString().slice(0, 10);
+        if (eDateStr !== currentDateStr) return false;
+        return samePlace(e) || sameCity(e);
+      });
+      setSurroundingEvents(surrounding.slice(0, 10));
 
       // Recommended: events with matching tags
       const currentTags = currentEvent.target_tags || [];
@@ -776,8 +811,8 @@ export function EventDetailClient({ eventId }: EventDetailClientProps) {
               </motion.div>
             )}
 
-            {/* 周辺イベント */}
-            {nearbyEvents.length > 0 && (
+            {/* 周辺イベント（同じ日付 & 同じ場所 or 同じ市町村） */}
+            {surroundingEvents.length > 0 && (
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -789,38 +824,46 @@ export function EventDetailClient({ eventId }: EventDetailClientProps) {
                     周辺イベント
                   </h2>
                 </div>
+                <p className="text-xs mb-3" style={{ color: designTokens.colors.text.secondary }}>
+                  同じ日付で、同じ会場または同じ市町村で開催のイベント
+                </p>
                 <div className="space-y-3">
-                  {nearbyEvents.map((ne) => {
-                    const imgUrls = ne.image_urls;
+                  {surroundingEvents.map((se) => {
+                    const imgUrls = se.image_urls;
                     const firstImg = Array.isArray(imgUrls) && imgUrls.length > 0 ? imgUrls[0] : null;
-                    const distanceText = ne.distance != null ? (ne.distance < 1 ? `${Math.round(ne.distance * 1000)}m` : `${ne.distance.toFixed(1)}km`) : null;
+                    const isSameVenue =
+                      event.store_latitude != null &&
+                      event.store_longitude != null &&
+                      se.store_latitude != null &&
+                      se.store_longitude != null &&
+                      Math.abs(se.store_latitude - event.store_latitude) < 0.0001 &&
+                      Math.abs(se.store_longitude - event.store_longitude) < 0.0001;
+                    const badgeText = isSameVenue ? '同じ会場' : se.city || '同エリア';
                     return (
                       <motion.div
-                        key={ne.id}
+                        key={se.id}
                         whileHover={{ scale: 1.01 }}
                         whileTap={{ scale: 0.99 }}
                         className="flex gap-3 p-3 rounded-xl cursor-pointer transition-all"
                         style={{ background: designTokens.colors.background.cloud, border: `1px solid ${designTokens.colors.secondary.stone}20` }}
                         onClick={() => {
-                          const url = generateSemanticEventUrl({ eventId: ne.id, eventName: ne.event_name || ne.store_name, city: ne.city || undefined, prefecture: ne.prefecture || '大分県' });
+                          const url = generateSemanticEventUrl({ eventId: se.id, eventName: se.event_name || se.store_name, city: se.city || undefined, prefecture: se.prefecture || '大分県' });
                           router.push(url);
                         }}
                       >
                         <div className="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden" style={{ background: designTokens.colors.background.white }}>
                           {firstImg ? (
-                            <Image src={firstImg} alt={ne.event_name || ne.store_name} width={64} height={64} className="w-full h-full object-cover" />
+                            <Image src={firstImg} alt={se.event_name || se.store_name} width={64} height={64} className="w-full h-full object-cover" />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center"><Calendar className="h-6 w-6" style={{ color: designTokens.colors.text.muted }} /></div>
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold line-clamp-1" style={{ color: designTokens.colors.text.primary }}>{ne.event_name || ne.store_name}</p>
-                          <p className="text-xs line-clamp-1" style={{ color: designTokens.colors.text.secondary }}>{ne.store_name}</p>
-                          {distanceText && (
-                            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full mt-1 inline-block" style={{ background: `${designTokens.colors.accent.gold}20`, color: designTokens.colors.accent.goldDark }}>
-                              {distanceText}
-                            </span>
-                          )}
+                          <p className="text-sm font-semibold line-clamp-1" style={{ color: designTokens.colors.text.primary }}>{se.event_name || se.store_name}</p>
+                          <p className="text-xs line-clamp-1" style={{ color: designTokens.colors.text.secondary }}>{se.store_name}</p>
+                          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full mt-1 inline-block" style={{ background: `${designTokens.colors.accent.gold}20`, color: designTokens.colors.accent.goldDark }}>
+                            {badgeText}
+                          </span>
                         </div>
                         <ChevronRight className="h-4 w-4 flex-shrink-0 self-center" style={{ color: designTokens.colors.text.muted }} />
                       </motion.div>

@@ -6,7 +6,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import {
   MapPin,
-  ExternalLink,
   AlertCircle,
   X,
   Navigation,
@@ -23,7 +22,6 @@ import {
   Home,
   ChevronRight as ChevronRightIcon,
   Ship,
-  ArrowLeft,
   Users,
   List,
   Activity
@@ -416,19 +414,6 @@ export function SpotDetailClient({ spotId }: SpotDetailClientProps) {
         >
           {/* ヘッダー部 */}
           <div className="p-6 sm:p-8">
-            {/* 戻るボタン */}
-            <motion.button
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              onClick={handleClose}
-              className="mb-6 w-10 h-10 rounded-full flex items-center justify-center"
-              style={{
-                background: designTokens.colors.background.cloud,
-              }}
-            >
-              <ArrowLeft className="h-5 w-5" style={{ color: designTokens.colors.text.primary }} />
-            </motion.button>
-
             {/* タイトル */}
             <h1
               className="text-2xl sm:text-3xl font-semibold leading-tight mb-2"
@@ -647,7 +632,7 @@ export function SpotDetailClient({ spotId }: SpotDetailClientProps) {
               >
                 {/* 画像カルーセル */}
                 {location.image_urls && location.image_urls.length > 0 && (
-                  <div className="relative w-full aspect-[16/10]" style={{ background: designTokens.colors.background.cloud }}>
+                  <div className="relative w-full aspect-square max-h-[600px]" style={{ background: designTokens.colors.background.cloud }}>
                     <AnimatePresence mode="wait">
                       <motion.div
                         key={currentImageIndices[index] || 0}
@@ -794,41 +779,51 @@ export function SpotDetailClient({ spotId }: SpotDetailClientProps) {
 
                     {/* リンク */}
                     {location.url && (
-                      <InfoRow icon={ExternalLink} label="Media" iconColor={designTokens.colors.accent.lilac}>
-                        <a href={location.url} target="_blank" rel="noopener noreferrer" className="inline-block mt-1 transition-transform hover:scale-110">
-                          <img
-                            src={location.url.includes('instagram.com')
-                              ? 'https://res.cloudinary.com/dz9trbwma/image/upload/v1759308496/icons8-%E3%82%A4%E3%83%B3%E3%82%B9%E3%82%BF%E3%82%AF%E3%82%99%E3%83%A9%E3%83%A0-100_idedfz.png'
-                              : 'https://res.cloudinary.com/dz9trbwma/image/upload/v1759366399/icons8-%E3%82%A6%E3%82%A7%E3%83%95%E3%82%99-100_a6uwwq.png'
-                            }
-                            alt="Media icon"
-                            className="h-10 w-10 rounded-xl p-1"
-                            style={{
-                              background: designTokens.colors.background.white,
-                              border: `1px solid ${designTokens.colors.secondary.stone}`,
-                            }}
-                          />
-                        </a>
-                      </InfoRow>
+                      <div className="flex items-start gap-4">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-semibold tracking-wide uppercase mb-1" style={{ color: designTokens.colors.text.muted }}>
+                            Media
+                          </p>
+                          <a href={location.url} target="_blank" rel="noopener noreferrer" className="inline-block mt-1 transition-transform hover:scale-110">
+                            <img
+                              src={location.url.includes('instagram.com')
+                                ? 'https://res.cloudinary.com/dz9trbwma/image/upload/v1759308496/icons8-%E3%82%A4%E3%83%B3%E3%82%B9%E3%82%BF%E3%82%AF%E3%82%99%E3%83%A9%E3%83%A0-100_idedfz.png'
+                                : 'https://res.cloudinary.com/dz9trbwma/image/upload/v1759366399/icons8-%E3%82%A6%E3%82%A7%E3%83%95%E3%82%99-100_a6uwwq.png'
+                              }
+                              alt="Media icon"
+                              className="h-10 w-10 rounded-xl p-1"
+                              style={{
+                                background: designTokens.colors.background.white,
+                                border: `1px solid ${designTokens.colors.secondary.stone}`,
+                              }}
+                            />
+                          </a>
+                        </div>
+                      </div>
                     )}
 
                     {/* Googleマップ */}
                     {location.store_latitude && location.store_longitude && (
-                      <InfoRow icon={MapPin} label="Location" iconColor={designTokens.colors.functional.error}>
-                        <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                          <Button
-                            onClick={() => openInGoogleMaps(location)}
-                            className="w-full h-12 rounded-xl font-semibold"
-                            style={{
-                              background: designTokens.colors.accent.lilac,
-                              color: designTokens.colors.text.inverse,
-                              boxShadow: `0 4px 16px ${designTokens.colors.accent.lilac}40`,
-                            }}
-                          >
-                            <Navigation className="mr-2 h-5 w-5" /> Googleマップで道案内
-                          </Button>
-                        </motion.div>
-                      </InfoRow>
+                      <div className="flex items-start gap-4">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-semibold tracking-wide uppercase mb-1" style={{ color: designTokens.colors.text.muted }}>
+                            Location
+                          </p>
+                          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                            <Button
+                              onClick={() => openInGoogleMaps(location)}
+                              className="w-full h-12 rounded-xl font-semibold"
+                              style={{
+                                background: designTokens.colors.accent.lilac,
+                                color: designTokens.colors.text.inverse,
+                                boxShadow: `0 4px 16px ${designTokens.colors.accent.lilac}40`,
+                              }}
+                            >
+                              <Navigation className="mr-2 h-5 w-5" /> Googleマップで道案内
+                            </Button>
+                          </motion.div>
+                        </div>
+                      </div>
                     )}
                   </div>
                 </div>

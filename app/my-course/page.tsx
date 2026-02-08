@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useSession } from "next-auth/react";
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
-import { Search, MapPin, Calendar, Trash2, Edit, Feather, User, Compass, Route } from 'lucide-react';
+import { Search, MapPin, Calendar, Trash2, Edit, Feather, Compass, Route } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/lib/hooks/use-toast';
 import { useLoading } from '@/lib/contexts/loading-context';
@@ -133,10 +133,6 @@ export default function CoursesPage() {
     router.push('/create-map');
   };
 
-  const handleMyPage = () => {
-    router.push('/profile');
-  };
-
   if (status === "loading" || loading) {
     return (
       <div className="flex items-center justify-center min-h-screen" style={{ background: designTokens.colors.background.mist }}>
@@ -172,29 +168,9 @@ export default function CoursesPage() {
 
       {/* ヘッダー */}
       <div className="relative z-10">
-        <div className="px-4 pt-3 pb-2">
+        <div className="px-4 pt-3 pb-4">
           <Breadcrumb />
         </div>
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="px-4 pb-4"
-        >
-          <div className="flex items-center gap-3 mb-1">
-            <Route className="h-5 w-5" style={{ color: designTokens.colors.accent.lilac }} />
-            <h1
-              className="text-xl font-semibold"
-              style={{ fontFamily: designTokens.typography.display, color: designTokens.colors.text.primary }}
-            >
-              マイコース
-            </h1>
-          </div>
-          <div
-            className="w-16 h-1 rounded-full ml-8"
-            style={{ background: `linear-gradient(90deg, ${designTokens.colors.accent.gold}, transparent)` }}
-          />
-        </motion.div>
       </div>
 
       {/* 検索バー */}
@@ -378,24 +354,8 @@ export default function CoursesPage() {
         )}
       </div>
 
-      {/* 右下のFABボタン */}
-      <div className="fixed bottom-6 right-4 sm:bottom-8 sm:right-8 z-50 flex flex-col gap-3">
-        {/* マイページボタン */}
-        <motion.button
-          initial={{ opacity: 0, scale: 0 }}
-          animate={{ opacity: 1, scale: 1 }}
-          whileHover={{ scale: 1.05, boxShadow: designTokens.elevation.high }}
-          whileTap={{ scale: 0.95 }}
-          transition={{ duration: 0.3, delay: 0.1 }}
-          onClick={handleMyPage}
-          className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl shadow-lg transition-colors flex flex-col items-center justify-center gap-1"
-          style={{ background: designTokens.colors.primary.dark, boxShadow: designTokens.elevation.high }}
-        >
-          <User className="h-6 w-6 sm:h-7 sm:w-7" style={{ color: designTokens.colors.text.inverse }} />
-          <span className="text-xs font-medium" style={{ color: designTokens.colors.text.inverse }}>MyPage</span>
-        </motion.button>
-
-        {/* 新規作成ボタン */}
+      {/* 右下のFABボタン（新規作成のみ） */}
+      <div className="fixed bottom-6 right-4 sm:bottom-8 sm:right-8 z-50">
         <motion.button
           initial={{ opacity: 0, scale: 0 }}
           animate={{ opacity: 1, scale: 1 }}

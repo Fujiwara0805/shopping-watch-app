@@ -827,37 +827,39 @@ const SpotsSection = () => {
       style={{ background: designTokens.colors.background.cloud }}
     >
       <div className="container mx-auto max-w-5xl relative z-10">
-        <div className="text-center mb-16">
-          <SectionLabel>Spots</SectionLabel>
-          <motion.h2
-            initial={{ opacity: 0, y: 30 }}
-            animate={isInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.6, delay: 0.1 }}
-            className="mt-4 text-3xl sm:text-4xl md:text-5xl font-semibold leading-tight"
-            style={{
-              fontFamily: designTokens.typography.display,
-              color: designTokens.colors.primary.base,
-            }}
-          >
-            あなたの発見が、
-            <br />
-            未来の名所になる。
-          </motion.h2>
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={isInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="mt-6 text-lg max-w-2xl mx-auto leading-relaxed"
-            style={{
-              fontFamily: designTokens.typography.body,
-              color: designTokens.colors.text.secondary,
-            }}
-          >
-            大分県内の魅力的なスポットをマップ上に記録。
-            <br className="hidden sm:block" />
-            5年後、10年後、20年後まで残り続ける新たな名所を、あなたの手で作りましょう。
-          </motion.p>
-        </div>
+        {spots.length > 0 && (
+          <div className="text-center mb-16">
+            <SectionLabel>Spots</SectionLabel>
+            <motion.h2
+              initial={{ opacity: 0, y: 30 }}
+              animate={isInView ? { opacity: 1, y: 0 } : {}}
+              transition={{ duration: 0.6, delay: 0.1 }}
+              className="mt-4 text-3xl sm:text-4xl md:text-5xl font-semibold leading-tight"
+              style={{
+                fontFamily: designTokens.typography.display,
+                color: designTokens.colors.primary.base,
+              }}
+            >
+              あなたの発見が、
+              <br />
+              未来の名所になる。
+            </motion.h2>
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={isInView ? { opacity: 1, y: 0 } : {}}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="mt-6 text-lg max-w-2xl mx-auto leading-relaxed"
+              style={{
+                fontFamily: designTokens.typography.body,
+                color: designTokens.colors.text.secondary,
+              }}
+            >
+              大分県内の魅力的なスポットをマップ上に記録。
+              <br className="hidden sm:block" />
+              5年後、10年後、20年後まで残り続ける新たな名所を、あなたの手で作りましょう。
+            </motion.p>
+          </div>
+        )}
 
         {loading ? (
           <div className="flex items-center justify-center py-20">
@@ -871,16 +873,7 @@ const SpotsSection = () => {
               }}
             />
           </div>
-        ) : spots.length === 0 ? (
-          <ElevationCard elevation="low" padding="xl" hover={false} className="max-w-md mx-auto text-center">
-            <MapPin className="w-12 h-12 mx-auto mb-4" style={{ color: designTokens.colors.text.muted }} />
-            <p style={{ color: designTokens.colors.text.secondary }}>
-              まだスポットが登録されていません。
-              <br />
-              最初の発見者になりましょう。
-            </p>
-          </ElevationCard>
-        ) : (
+        ) : spots.length === 0 ? null : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {spots.map((spot, index) => (
               <motion.div
@@ -940,28 +933,30 @@ const SpotsSection = () => {
           </div>
         )}
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.5, delay: 0.5 }}
-          className="text-center mt-12"
-        >
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => router.push('/create-spot')}
-            className="group inline-flex items-center gap-2 px-8 py-4 rounded-full font-semibold transition-all"
-            style={{
-              background: designTokens.colors.secondary.fern,
-              color: designTokens.colors.text.inverse,
-              boxShadow: `0 8px 32px ${designTokens.colors.secondary.fern}40`,
-            }}
+        {(!loading && (spots.length > 0 || spots.length === 0)) && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={isInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.5, delay: 0.5 }}
+            className={`text-center ${spots.length > 0 ? 'mt-12' : ''}`}
           >
-            <MapPin className="w-5 h-5" />
-            スポットを登録する
-            <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
-          </motion.button>
-        </motion.div>
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => router.push('/create-spot')}
+              className="group inline-flex items-center gap-2 px-8 py-4 rounded-full font-semibold transition-all"
+              style={{
+                background: designTokens.colors.secondary.fern,
+                color: designTokens.colors.text.inverse,
+                boxShadow: `0 8px 32px ${designTokens.colors.secondary.fern}40`,
+              }}
+            >
+              <MapPin className="w-5 h-5" />
+              スポットを登録する
+              <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
+            </motion.button>
+          </motion.div>
+        )}
       </div>
     </section>
   );
@@ -1091,7 +1086,7 @@ const ModelCourseSection = ({ onMapClick }: { onMapClick: (mapId: string) => voi
             ))}
           </div>
         ) : (
-          /* Desktop: Bento Grid */
+          /* Desktop: 全カード同一サイズのグリッド */
           <div className="grid grid-cols-2 lg:grid-cols-3 gap-6">
             {publicMaps.map((map, index) => (
               <motion.div
@@ -1100,9 +1095,9 @@ const ModelCourseSection = ({ onMapClick }: { onMapClick: (mapId: string) => voi
                 animate={isInView ? { opacity: 1, y: 0 } : {}}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
                 onClick={() => onMapClick(map.id)}
-                className={`cursor-pointer ${index === 0 ? 'lg:col-span-2 lg:row-span-2' : ''}`}
+                className="cursor-pointer"
               >
-                <MapCard map={map} featured={index === 0} />
+                <MapCard map={map} />
               </motion.div>
             ))}
           </div>
@@ -1135,15 +1130,15 @@ const ModelCourseSection = ({ onMapClick }: { onMapClick: (mapId: string) => voi
   );
 };
 
-// Map Card Component
-const MapCard = ({ map, featured = false }: { map: PublicMapData; featured?: boolean }) => (
+// Map Card Component（PCでは全カード同一サイズ）
+const MapCard = ({ map }: { map: PublicMapData }) => (
   <ElevationCard 
     elevation="medium" 
     padding="none" 
-    className={`overflow-hidden h-full group ${featured ? 'min-h-[420px]' : 'min-h-[300px]'}`}
+    className="overflow-hidden h-full group min-h-[300px]"
   >
     {/* Cover Image */}
-    <div className={`relative overflow-hidden ${featured ? 'h-3/5' : 'h-3/5'}`}>
+    <div className="relative overflow-hidden h-3/5">
       {map.cover_image_url ? (
         <img
           src={map.cover_image_url}
@@ -1180,9 +1175,9 @@ const MapCard = ({ map, featured = false }: { map: PublicMapData; featured?: boo
     </div>
 
     {/* Content */}
-    <div className={`p-5 ${featured ? 'p-6' : ''}`}>
+    <div className="p-5">
       <h3 
-        className={`font-semibold mb-2 line-clamp-2 transition-colors ${featured ? 'text-xl' : 'text-base'}`}
+        className="font-semibold mb-2 line-clamp-2 transition-colors text-base"
         style={{ 
           fontFamily: designTokens.typography.display,
           color: designTokens.colors.primary.base,
@@ -1193,7 +1188,7 @@ const MapCard = ({ map, featured = false }: { map: PublicMapData; featured?: boo
       
       {map.hashtags && map.hashtags.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mb-3">
-          {map.hashtags.slice(0, featured ? 4 : 2).map((tag, i) => (
+          {map.hashtags.slice(0, 2).map((tag, i) => (
             <span 
               key={i} 
               className="text-xs px-2 py-0.5 rounded-full"
