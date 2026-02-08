@@ -270,10 +270,13 @@ export function EventDetailClient({ eventId }: EventDetailClientProps) {
         .slice(0, 5);
       setNearbyEvents(nearby);
 
-      // 周辺イベント: 同じ日付 かつ (同じ場所で開催 or 市町村が同じ)
-      const currentDateStr = currentEvent.event_start_date
+      // 周辺イベント: 同じ日付（開催期間が重なる） かつ (同じ場所で開催 or 市町村が同じ)
+      const currentStartStr = currentEvent.event_start_date
         ? new Date(currentEvent.event_start_date).toISOString().slice(0, 10)
         : null;
+      const currentEndStr = currentEvent.event_end_date
+        ? new Date(currentEvent.event_end_date).toISOString().slice(0, 10)
+        : currentStartStr;
       const latLngTolerance = 0.0001; // 約10m程度
       const samePlace = (e: any) => {
         const sameCoords =
@@ -295,9 +298,17 @@ export function EventDetailClient({ eventId }: EventDetailClientProps) {
         String(currentEvent.city).trim() === String(e.city).trim();
 
       const surrounding = validEvents.filter((e) => {
-        if (!e.event_start_date || !currentDateStr) return false;
-        const eDateStr = new Date(e.event_start_date).toISOString().slice(0, 10);
-        if (eDateStr !== currentDateStr) return false;
+        if (!e.event_start_date || !currentStartStr || !currentEndStr) return false;
+        // 対象イベントの開催期間を取得
+        const eStartStr = new Date(e.event_start_date).toISOString().slice(0, 10);
+        const eEndStr = e.event_end_date
+          ? new Date(e.event_end_date).toISOString().slice(0, 10)
+          : eStartStr;
+        // 開催期間が重なるかチェック（期間の重なり判定）
+        // 例: 現在のイベントが2/8開催の場合、1/1〜3/31のイベントも周辺情報に表示
+        // 例: 現在のイベントが1/1〜3/31の場合、2/8のイベントも周辺情報に表示
+        const hasDateOverlap = currentStartStr <= eEndStr && eStartStr <= currentEndStr;
+        if (!hasDateOverlap) return false;
         return samePlace(e) || sameCity(e);
       });
       setSurroundingEvents(surrounding.slice(0, 10));
@@ -825,7 +836,7 @@ export function EventDetailClient({ eventId }: EventDetailClientProps) {
                   </h2>
                 </div>
                 <p className="text-xs mb-3" style={{ color: designTokens.colors.text.secondary }}>
-                  同じ日付で、同じ会場または同じ市町村で開催のイベント
+                  同じ開催期間中に、同じ会場または同じ市町村で開催のイベント
                 </p>
                 <div className="space-y-3">
                   {surroundingEvents.map((se) => {
