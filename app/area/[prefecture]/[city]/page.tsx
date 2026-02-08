@@ -6,10 +6,21 @@ import { AreaEventListClient } from '@/components/seo/area-event-list';
 import { SEOEventData } from '@/lib/seo/types';
 
 interface PageProps {
-  params: {
-    prefecture: string;
-    city: string;
-  };
+  params: Promise<{ prefecture: string; city: string }> | { prefecture: string; city: string };
+}
+
+/** 本番でURLエンコードされたparamsを確実にデコードする（二重エンコードにも対応） */
+function decodeSegment(value: string): string {
+  if (!value || typeof value !== 'string') return value;
+  let decoded = value;
+  try {
+    while (decoded !== decodeURIComponent(decoded)) {
+      decoded = decodeURIComponent(decoded);
+    }
+  } catch {
+    // デコード失敗時はそのまま返す
+  }
+  return decoded;
 }
 
 /**
@@ -52,12 +63,10 @@ async function getAreaEvents(prefecture: string, city: string): Promise<SEOEvent
  * 動的メタデータ生成
  */
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const prefecture = decodeURIComponent(params.prefecture);
-  const city = decodeURIComponent(params.city);
-  
-  // イベント数を取得
+  const resolved = await Promise.resolve(params);
+  const prefecture = decodeSegment(resolved.prefecture);
+  const city = decodeSegment(resolved.city);
   const events = await getAreaEvents(prefecture, city);
-  
   return generateAreaMetadata({
     prefecture,
     city,
@@ -98,16 +107,16 @@ export async function generateStaticParams() {
 }
 
 /**
- * ページコンポーネント
+ * ページコンポーネント（本番でparamsがエンコードされたまま渡る場合にもデコードして表示）
  */
 export default async function AreaPage({ params }: PageProps) {
-  const prefecture = decodeURIComponent(params.prefecture);
-  const city = decodeURIComponent(params.city);
-  
-  // イベントデータを取得
+  const resolved = await Promise.resolve(params);
+  const prefecture = decodeSegment(resolved.prefecture);
+  const city = decodeSegment(resolved.city);
+
   const events = await getAreaEvents(prefecture, city);
   const locationName = `${prefecture}${city}`;
-  const pageUrl = `https://tokudoku.com/area/${params.prefecture}/${params.city}`;
+  const pageUrl = `https://tokudoku.com/area/${encodeURIComponent(prefecture)}/${encodeURIComponent(city)}`;
   
   return (
     <>
