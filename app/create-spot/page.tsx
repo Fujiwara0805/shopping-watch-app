@@ -131,13 +131,15 @@ export default function CreateSpotPage() {
     }
   };
 
-  // Google Places Autocomplete
+  // Google Places Autocomplete（「別の方法で指定」展開時に入力がDOMに現れてから初期化）
   useEffect(() => {
-    if (!isLoaded || !inputRef.current || loadError) return;
+    if (!isLoaded || loadError) return;
+    if (!showAlternativeLocation) return;
+    if (!inputRef.current) return;
 
     const options: google.maps.places.AutocompleteOptions = {
       componentRestrictions: { country: 'jp' },
-      fields: ['place_id', 'name', 'geometry', 'address_components'],
+      fields: ['place_id', 'name', 'geometry'],
       types: ['establishment']
     };
 
@@ -176,7 +178,7 @@ export default function CreateSpotPage() {
         window.google.maps.event.removeListener(listener);
       }
     };
-  }, [isLoaded, loadError, latitude, longitude, form]);
+  }, [isLoaded, loadError, latitude, longitude, form, showAlternativeLocation]);
 
   // マーカーで位置を保存
   const handleMarkerSave = (lat: number, lng: number, spotName: string) => {

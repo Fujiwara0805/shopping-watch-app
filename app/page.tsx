@@ -377,21 +377,21 @@ const HeroSection = ({
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.8 }}
-            className="max-w-xl mx-auto mt-12"
+            className="max-w-md mx-auto mt-8"
           >
-            <ElevationCard elevation="high" padding="lg" hover={false} style={{ background: '#999da8' }}>
-              <div className="space-y-4">
+            <ElevationCard elevation="high" padding="md" hover={false} style={{ background: '#999da8' }}>
+              <div className="space-y-3">
                 {/* Area Select */}
-                <div className="space-y-2 text-left">
+                <div className="space-y-1.5 text-left">
                   <Label 
-                    className="text-sm font-semibold tracking-wide"
+                    className="text-xs font-semibold tracking-wide"
                     style={{ color: 'rgba(255,255,255,0.95)' }}
                   >
                     エリア
                   </Label>
                   <Select value={city} onValueChange={setCity}>
                     <SelectTrigger 
-                      className="h-12 rounded-xl"
+                      className="h-10 rounded-lg text-sm"
                       style={{ 
                         borderColor: `${designTokens.colors.secondary.stone}50`,
                         backgroundColor: designTokens.colors.background.mist,
@@ -410,16 +410,16 @@ const HeroSection = ({
                 </div>
 
                 {/* Target Audience */}
-                <div className="space-y-2 text-left">
+                <div className="space-y-1.5 text-left">
                   <Label 
-                    className="text-sm font-semibold tracking-wide"
+                    className="text-xs font-semibold tracking-wide"
                     style={{ color: 'rgba(255,255,255,0.95)' }}
                   >
                     対象（任意）
                   </Label>
                   <Select value={target} onValueChange={setTarget}>
                     <SelectTrigger 
-                      className="h-12 rounded-xl"
+                      className="h-10 rounded-lg text-sm"
                       style={{ 
                         borderColor: `${designTokens.colors.secondary.stone}50`,
                         backgroundColor: designTokens.colors.background.mist,
@@ -437,14 +437,14 @@ const HeroSection = ({
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex gap-3 pt-2">
+                <div className="flex gap-2 pt-1">
                   <Button
                     variant="outline"
                     onClick={() => {
                       setCity('all');
                       setTarget('none');
                     }}
-                    className="flex-1 h-12 rounded-xl font-medium transition-all hover:bg-opacity-10"
+                    className="flex-1 h-10 rounded-lg text-sm font-medium transition-all hover:bg-opacity-10"
                     style={{
                       borderColor: designTokens.colors.secondary.stone,
                       color: designTokens.colors.text.secondary,
@@ -457,13 +457,13 @@ const HeroSection = ({
                       city: city === 'all' ? '' : city,
                       target: target === 'none' ? '' : target,
                     })}
-                    className="flex-1 h-12 rounded-xl font-semibold transition-all hover:opacity-90"
+                    className="flex-1 h-10 rounded-lg text-sm font-semibold transition-all hover:opacity-90"
                     style={{ 
                       background: designTokens.colors.accent.lilac,
                       color: designTokens.colors.text.inverse,
                     }}
                   >
-                    <Search className="w-4 h-4 mr-2" />
+                    <Search className="w-3.5 h-3.5 mr-1.5" />
                     イベントを探す
                   </Button>
                 </div>

@@ -1314,20 +1314,12 @@ export function MapView() {
               }}
             >
               <div className="relative rounded-2xl overflow-hidden" style={{ background: designTokens.colors.background.white, boxShadow: designTokens.elevation.high }}>
-                {/* Card index indicator */}
+                {/* スワイプ案内 */}
                 {posts.length > 1 && (
-                  <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5">
-                    {posts.map((_, i) => (
-                      <div
-                        key={i}
-                        className="rounded-full transition-all"
-                        style={{
-                          width: i === currentIdx ? 16 : 6,
-                          height: 6,
-                          background: i === currentIdx ? designTokens.colors.accent.lilac : `${designTokens.colors.secondary.stone}60`,
-                        }}
-                      />
-                    ))}
+                  <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20">
+                    <p className="text-[10px] font-medium whitespace-nowrap" style={{ color: designTokens.colors.text.muted }}>
+                      ＜ーースワイプーー＞
+                    </p>
                   </div>
                 )}
                 {canCheckIn && (
@@ -1381,11 +1373,6 @@ export function MapView() {
                       {navigatingToDetail === post.id ? (<><Loader2 className="h-4 w-4 animate-spin" />読み込み中...</>) : (<><Search className="h-4 w-4" />詳細を見る</>)}
                     </Button>
                   </motion.div>
-                  {posts.length > 1 && (
-                    <p className="text-center text-[10px] mt-2 font-medium" style={{ color: designTokens.colors.text.muted }}>
-                      ＜ーースワイプーー＞（{currentIdx + 1}/{posts.length}）
-                    </p>
-                  )}
                 </div>
               </div>
             </motion.div>
