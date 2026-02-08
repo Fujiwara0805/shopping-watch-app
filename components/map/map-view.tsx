@@ -1080,7 +1080,7 @@ export function MapView() {
               className="min-w-[5rem] h-16 rounded-2xl flex flex-col items-center justify-center gap-1 font-semibold text-xs px-4 py-3"
               style={{ background: designTokens.colors.secondary.fern, color: designTokens.colors.text.inverse, boxShadow: designTokens.elevation.high }}
             >
-              <MapPin className="h-6 w-6 flex-shrink-0" />
+              <MapPin className="h-5 w-5 flex-shrink-0" />
               スポット
             </Button>
           </motion.div>
@@ -1101,7 +1101,7 @@ export function MapView() {
               className="min-w-[5rem] h-16 rounded-2xl flex flex-col items-center justify-center gap-1 font-semibold text-xs px-4 py-3"
               style={{ background: designTokens.colors.accent.gold, color: designTokens.colors.text.primary, boxShadow: designTokens.elevation.high }}
             >
-              <Compass className="h-6 w-6 flex-shrink-0" />
+              <Compass className="h-5 w-5 flex-shrink-0" />
               イベント
             </Button>
           </motion.div>
@@ -1199,7 +1199,7 @@ export function MapView() {
                 className="min-w-[5rem] h-16 rounded-2xl flex flex-col items-center justify-center gap-1 font-semibold text-xs px-4 py-3"
                 style={{ background: '#999da8', color: designTokens.colors.text.inverse, boxShadow: designTokens.elevation.high }}
               >
-                <Route className="h-6 w-6 flex-shrink-0" />
+                <Route className="h-5 w-5 flex-shrink-0" />
                 コース
               </Button>
             </motion.div>
@@ -1216,7 +1216,7 @@ export function MapView() {
                 className="min-w-[5rem] h-16 rounded-2xl flex flex-col items-center justify-center gap-1 font-semibold text-xs px-4 py-3"
                 style={{ background: designTokens.colors.secondary.fern, color: designTokens.colors.text.inverse, boxShadow: designTokens.elevation.high }}
               >
-                <MapPin className="h-6 w-6 flex-shrink-0" />
+                <MapPin className="h-5 w-5 flex-shrink-0" />
                 スポット
               </Button>
             </motion.div>
@@ -1243,7 +1243,7 @@ export function MapView() {
                 className="min-w-[5.5rem] h-16 rounded-2xl flex flex-col items-center justify-center gap-1 font-semibold text-xs px-4 py-3"
                 style={{ background: designTokens.colors.functional.info, color: designTokens.colors.text.inverse, boxShadow: designTokens.elevation.high }}
               >
-                <Camera className="h-6 w-6 flex-shrink-0" />
+                <Camera className="h-5 w-5 flex-shrink-0" />
                 作成
               </Button>
             </motion.div>

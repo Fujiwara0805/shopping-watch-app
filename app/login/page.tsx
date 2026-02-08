@@ -155,7 +155,7 @@ export default function LoginPage() {
             style={{ backgroundColor: designTokens.colors.background.white, borderColor: `${designTokens.colors.primary.base}20` }}
           >
             <motion.h1 
-              className="text-3xl sm:text-4xl font-bold mb-4"
+              className="text-2xl sm:text-3xl font-bold mb-4"
               style={{ color: designTokens.colors.text.primary }}
               initial={{ letterSpacing: "-0.05em" }}
               animate={{ letterSpacing: "0em" }}

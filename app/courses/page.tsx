@@ -294,7 +294,7 @@ export default function PublicMapsPage() {
           <span className="text-xs font-medium" style={{ color: designTokens.colors.text.inverse }}>MyPage</span>
         </motion.button>
 
-        {/* モデルコース作成ボタン */}
+        {/* モデルコース作成ボタン（アイコンのみ） */}
         <motion.button
           initial={{ opacity: 0, scale: 0 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -302,14 +302,13 @@ export default function PublicMapsPage() {
           whileTap={{ scale: 0.95 }}
           transition={{ duration: 0.3, delay: 0.2 }}
           onClick={() => router.push('/create-map')}
-          className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl shadow-lg transition-colors flex flex-col items-center justify-center gap-1"
+          className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl shadow-lg transition-colors flex items-center justify-center"
           style={{
             background: `linear-gradient(135deg, ${designTokens.colors.accent.lilacDark}, ${designTokens.colors.accent.lilac})`,
             boxShadow: `0 8px 24px ${designTokens.colors.accent.lilac}40`,
           }}
         >
           <Feather className="h-6 w-6 sm:h-7 sm:w-7" style={{ color: designTokens.colors.text.inverse }} />
-          <span className="text-xs font-medium" style={{ color: designTokens.colors.text.inverse }}>作成</span>
         </motion.button>
 
         {/* Mapボタン */}

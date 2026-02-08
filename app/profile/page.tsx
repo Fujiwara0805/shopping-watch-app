@@ -716,8 +716,8 @@ function ProfilePageContent() {
             className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg flex flex-col items-center justify-center gap-1"
             style={{ backgroundColor: COLORS.secondary }}
           >
-            <ShoppingBag className="h-6 w-6 sm:h-7 sm:w-7" style={{ color: COLORS.cream }} />
-            <span className="text-xs font-medium" style={{ color: COLORS.cream }}>メモ</span>
+            <ShoppingBag className="h-6 w-6 sm:h-7 sm:w-7" style={{ color: '#fff' }} />
+            <span className="text-xs font-medium text-white">メモ</span>
           </Button>
         </motion.div>
         
@@ -736,8 +736,8 @@ function ProfilePageContent() {
             className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg flex flex-col items-center justify-center gap-1"
             style={{ backgroundColor: COLORS.primary }}
           >
-            <Compass className="h-6 w-6 sm:h-7 sm:w-7" style={{ color: COLORS.cream }} />
-            <span className="text-xs font-medium" style={{ color: COLORS.cream }}>Map</span>
+            <Compass className="h-6 w-6 sm:h-7 sm:w-7" style={{ color: '#fff' }} />
+            <span className="text-xs font-medium text-white">マップ</span>
           </Button>
         </motion.div>
       </div>
