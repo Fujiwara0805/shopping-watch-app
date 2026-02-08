@@ -9,40 +9,22 @@ import { supabase } from '@/lib/supabaseClient';
 import { RelatedEvent } from '@/lib/seo/types';
 import { generateSemanticEventUrl } from '@/lib/seo/url-helper';
 
-// 隣接市町村のマッピング（内部リンク強化用）
-const ADJACENT_CITIES: Record<string, string[]> = {
-  '大分市': ['別府市', '由布市', '臼杵市', '豊後大野市'],
-  '別府市': ['大分市', '由布市', '杵築市', '日出町'],
-  '中津市': ['宇佐市', '豊後高田市'],
-  '日田市': ['玖珠町', '九重町'],
-  '佐伯市': ['臼杵市', '津久見市', '豊後大野市'],
-  '臼杵市': ['大分市', '佐伯市', '津久見市'],
-  '津久見市': ['臼杵市', '佐伯市'],
-  '竹田市': ['豊後大野市', '由布市', '九重町'],
-  '豊後高田市': ['宇佐市', '国東市', '杵築市'],
-  '杵築市': ['別府市', '日出町', '国東市', '豊後高田市'],
-  '宇佐市': ['中津市', '豊後高田市'],
-  '豊後大野市': ['大分市', '竹田市', '佐伯市'],
-  '由布市': ['大分市', '別府市', '竹田市', '九重町'],
-  '国東市': ['豊後高田市', '杵築市', '姫島村'],
-  '姫島村': ['国東市'],
-  '日出町': ['別府市', '杵築市'],
-  '九重町': ['由布市', '竹田市', '玖珠町', '日田市'],
-  '玖珠町': ['日田市', '九重町'],
-};
-
 interface RelatedEventsProps {
   currentEventId: string;
   city?: string;
   prefecture: string;
+  currentEventStartDate?: string | null;
+  currentEventEndDate?: string | null;
   maxItems?: number;
 }
 
-export function RelatedEvents({ 
-  currentEventId, 
-  city, 
+export function RelatedEvents({
+  currentEventId,
+  city,
   prefecture,
-  maxItems = 6 
+  currentEventStartDate,
+  currentEventEndDate,
+  maxItems = 6
 }: RelatedEventsProps) {
   const [events, setEvents] = useState<RelatedEvent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -50,54 +32,62 @@ export function RelatedEvents({
   useEffect(() => {
     const fetchRelatedEvents = async () => {
       setLoading(true);
-      
+
       try {
         const now = new Date();
-        
-        // 同じ市町村と隣接市町村のイベントを取得
-        const targetCities = city ? [city, ...(ADJACENT_CITIES[city] || [])] : [];
-        
+
+        // 現在のイベントの開催期間を取得（日付文字列 YYYY-MM-DD）
+        const currentStart = currentEventStartDate
+          ? new Date(currentEventStartDate).toISOString().slice(0, 10)
+          : now.toISOString().slice(0, 10);
+        const currentEnd = currentEventEndDate
+          ? new Date(currentEventEndDate).toISOString().slice(0, 10)
+          : currentStart;
+
         let query = supabase
           .from('posts')
-          .select('id, event_name, store_name, city, event_start_date, image_urls')
+          .select('id, event_name, store_name, city, event_start_date, event_end_date, image_urls')
           .eq('is_deleted', false)
           .eq('category', 'イベント情報')
           .eq('prefecture', prefecture)
           .neq('id', currentEventId)
           .order('event_start_date', { ascending: true })
-          .limit(maxItems * 2); // 多めに取得してフィルタリング
-        
-        // 市町村でフィルタリング
-        if (targetCities.length > 0) {
-          query = query.in('city', targetCities);
+          .limit(maxItems * 3); // 多めに取得してフィルタリング
+
+        // 同じ市町村でフィルタリング
+        if (city) {
+          query = query.eq('city', city);
         }
-        
+
         const { data, error } = await query;
-        
+
         if (error) {
           console.error('関連イベント取得エラー:', error);
           setEvents([]);
           return;
         }
-        
-        // 終了していないイベントのみフィルタリング
-        const activeEvents = (data || []).filter((event) => {
-          if (event.event_start_date) {
-            const startDate = new Date(event.event_start_date);
-            startDate.setHours(23, 59, 59, 999);
-            return now <= startDate;
-          }
-          return true;
+
+        // 開催期間が重なるイベントのみフィルタリング
+        // 例: 現在のイベントが2/8開催 → 1/1〜3/31のイベントも含む
+        // 例: 現在のイベントが1/1〜3/31 → 2/8のイベントも含む
+        const overlappingEvents = (data || []).filter((event) => {
+          if (!event.event_start_date) return false;
+
+          const eStart = new Date(event.event_start_date).toISOString().slice(0, 10);
+          const eEnd = event.event_end_date
+            ? new Date(event.event_end_date).toISOString().slice(0, 10)
+            : eStart;
+
+          // 終了済みイベントを除外
+          const endDate = new Date(eEnd);
+          endDate.setHours(23, 59, 59, 999);
+          if (now > endDate) return false;
+
+          // 開催期間の重なり判定: currentStart <= eEnd && eStart <= currentEnd
+          return currentStart <= eEnd && eStart <= currentEnd;
         });
-        
-        // 同じ市町村のイベントを優先
-        const sortedEvents = activeEvents.sort((a, b) => {
-          if (a.city === city && b.city !== city) return -1;
-          if (a.city !== city && b.city === city) return 1;
-          return 0;
-        });
-        
-        setEvents(sortedEvents.slice(0, maxItems) as RelatedEvent[]);
+
+        setEvents(overlappingEvents.slice(0, maxItems) as RelatedEvent[]);
       } catch (error) {
         console.error('関連イベント取得エラー:', error);
         setEvents([]);
@@ -105,9 +95,9 @@ export function RelatedEvents({
         setLoading(false);
       }
     };
-    
+
     fetchRelatedEvents();
-  }, [currentEventId, city, prefecture, maxItems]);
+  }, [currentEventId, city, prefecture, currentEventStartDate, currentEventEndDate, maxItems]);
 
   // 画像URLを取得
   const getImageUrl = (imageUrls: string | string[] | null): string | null => {
@@ -163,7 +153,7 @@ export function RelatedEvents({
     >
       <h2 className="text-lg font-bold text-[#3d2914] mb-4 flex items-center gap-2">
         <MapPin className="h-5 w-5 text-primary" />
-        {city ? `${city}周辺のイベント` : '関連イベント'}
+        {city ? `${city}の周辺イベント` : '周辺イベント'}
       </h2>
       
       <div className="grid grid-cols-2 gap-3">
@@ -221,7 +211,12 @@ export function RelatedEvents({
                   {event.event_start_date && (
                     <div className="flex items-center gap-1 text-xs text-gray-500 mt-1">
                       <Calendar className="h-3 w-3 flex-shrink-0" />
-                      <span>{formatDate(event.event_start_date)}</span>
+                      <span>
+                        {formatDate(event.event_start_date)}
+                        {event.event_end_date && event.event_end_date !== event.event_start_date && (
+                          <>〜{formatDate(event.event_end_date)}</>
+                        )}
+                      </span>
                     </div>
                   )}
                 </div>

@@ -166,6 +166,7 @@ export interface RelatedEvent {
   store_name: string;
   city: string | null;
   event_start_date: string | null;
+  event_end_date: string | null;
   image_urls: string | string[] | null;
 }
 
