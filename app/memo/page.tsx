@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, Plus, Trash2, History, WifiOff, Loader2, Edit, LogIn, X, CheckSquare, Sparkles, PackageCheck, ShoppingBag, TrainFront, Info, Map } from 'lucide-react';
+import { Check, Plus, Trash2, History, WifiOff, Loader2, Edit, LogIn, X, CheckSquare, Sparkles, PackageCheck, ShoppingBag, TrainFront, Info } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -437,23 +437,6 @@ export default function MemoPage() {
           {/* 削除: 掲示板への遷移ボタン */}
         </div>
 
-        {/* 🔥 画面右下のマップアイコン */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.3 }}
-          className="fixed bottom-6 right-6 z-50 flex flex-col items-center"
-        >
-          <Button
-            onClick={() => router.push('/map')}
-            size="icon"
-            className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl shadow-lg flex flex-col items-center justify-center gap-1"
-            style={{ backgroundColor: COLORS.primary }}
-          >
-            <Map className="h-6 w-6 sm:h-7 sm:w-7 text-white" />
-            <span className="text-xs text-white font-medium">Map</span>
-          </Button>
-        </motion.div>
       </div>
       
       <CustomModal isOpen={showFrequentItemModal} onClose={() => setShowFrequentItemModal(false)} title="「よく買うもの」を編集">

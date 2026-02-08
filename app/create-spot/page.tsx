@@ -202,14 +202,14 @@ export default function CreateSpotPage() {
       return;
     }
 
-    const maxSize = 5 * 1024 * 1024;
+    const maxSize = 10 * 1024 * 1024; // 10MB
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
 
     for (const file of files) {
       if (file.size > maxSize) {
         toast({
           title: "ファイルサイズが大きすぎます",
-          description: "各画像は5MB以下にしてください",
+          description: "各画像は10MB以下にしてください",
           duration: 3000,
         });
         return;
@@ -485,8 +485,55 @@ export default function CreateSpotPage() {
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-            {/* 位置情報 */}
             <div className="bg-white rounded-xl border-2 border-border p-4 space-y-4 shadow-sm">
+              {/* 画像アップロード */}
+              <div>
+                <Label className="text-sm font-semibold mb-2 block">
+                  <ImageIcon className="inline-block mr-1.5 h-4 w-4" />
+                  画像（最大3枚）<span className="text-destructive ml-1">*</span>
+                </Label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleImageUpload}
+                  className="hidden"
+                  id="spot-image-upload"
+                />
+                <label
+                  htmlFor="spot-image-upload"
+                  className="cursor-pointer flex items-center justify-center p-6 border-2 border-dashed border-input rounded-xl hover:border-primary hover:bg-background/80 transition-colors"
+                >
+                  <div className="text-center">
+                    <Upload className="mx-auto h-10 w-10 text-gray-400" />
+                    <p className="mt-2 text-sm text-gray-600">タップして画像を選択</p>
+                    <p className="text-xs text-gray-400">JPG, PNG, WEBP（各10MB以下）</p>
+                  </div>
+                </label>
+
+                {imagePreviewUrls.length > 0 && (
+                  <div className="mt-3 grid grid-cols-3 gap-2">
+                    {imagePreviewUrls.map((url, imgIndex) => (
+                      <div key={imgIndex} className="relative group" style={{ aspectRatio: '16/10' }}>
+                        <img
+                          src={url}
+                          alt={`Preview ${imgIndex + 1}`}
+                          className="w-full h-full object-cover rounded-lg border border-gray-200"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeImage(imgIndex)}
+                          className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full p-1 shadow-md"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* 位置情報 */}
               <div>
                 <Label className="text-sm font-semibold mb-2 block">
                   <MapPin className="inline-block mr-1.5 h-4 w-4" />
@@ -627,53 +674,6 @@ export default function CreateSpotPage() {
                   </FormItem>
                 )}
               />
-
-              {/* 画像アップロード */}
-              <div>
-                <Label className="text-sm font-semibold mb-2 block">
-                  <ImageIcon className="inline-block mr-1.5 h-4 w-4" />
-                  画像（最大3枚）<span className="text-destructive ml-1">*</span>
-                </Label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={handleImageUpload}
-                  className="hidden"
-                  id="spot-image-upload"
-                />
-                <label
-                  htmlFor="spot-image-upload"
-                  className="cursor-pointer flex items-center justify-center p-6 border-2 border-dashed border-input rounded-xl hover:border-primary hover:bg-background/80 transition-colors"
-                >
-                  <div className="text-center">
-                    <Upload className="mx-auto h-10 w-10 text-gray-400" />
-                    <p className="mt-2 text-sm text-gray-600">タップして画像を選択</p>
-                    <p className="text-xs text-gray-400">JPG, PNG, WEBP（各5MB以下）</p>
-                  </div>
-                </label>
-
-                {imagePreviewUrls.length > 0 && (
-                  <div className="mt-3 grid grid-cols-3 gap-2">
-                    {imagePreviewUrls.map((url, imgIndex) => (
-                      <div key={imgIndex} className="relative group" style={{ aspectRatio: '16/10' }}>
-                        <img
-                          src={url}
-                          alt={`Preview ${imgIndex + 1}`}
-                          className="w-full h-full object-cover rounded-lg border border-gray-200"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => removeImage(imgIndex)}
-                          className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full p-1 shadow-md"
-                        >
-                          <X className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
 
               {/* タグ選択（写真カテゴリベース） */}
               <div>

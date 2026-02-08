@@ -1077,7 +1077,7 @@ export function MapView() {
                 router.push('/map?view=spots');
                 fetchSpots();
               }}
-              className="min-w-[5rem] h-16 rounded-2xl flex flex-col items-center justify-center gap-1 font-semibold text-xs px-4 py-3"
+              className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl flex flex-col items-center justify-center gap-1 font-semibold text-xs shadow-lg"
               style={{ background: designTokens.colors.secondary.fern, color: designTokens.colors.text.inverse, boxShadow: designTokens.elevation.high }}
             >
               <MapPin className="h-5 w-5 flex-shrink-0" />
@@ -1098,7 +1098,7 @@ export function MapView() {
                 const userLng = savedLocation?.lng || longitude;
                 if (userLat && userLng) setTimeout(() => fetchPosts(), 100);
               }}
-              className="min-w-[5rem] h-16 rounded-2xl flex flex-col items-center justify-center gap-1 font-semibold text-xs px-4 py-3"
+              className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl flex flex-col items-center justify-center gap-1 font-semibold text-xs shadow-lg"
               style={{ background: designTokens.colors.accent.gold, color: designTokens.colors.text.primary, boxShadow: designTokens.elevation.high }}
             >
               <Compass className="h-5 w-5 flex-shrink-0" />
@@ -1196,7 +1196,7 @@ export function MapView() {
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} whileTap={{ scale: 0.98 }}>
               <Button
                 onClick={() => router.push('/courses')}
-                className="min-w-[5rem] h-16 rounded-2xl flex flex-col items-center justify-center gap-1 font-semibold text-xs px-4 py-3"
+                className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl flex flex-col items-center justify-center gap-1 font-semibold text-xs shadow-lg"
                 style={{ background: '#999da8', color: designTokens.colors.text.inverse, boxShadow: designTokens.elevation.high }}
               >
                 <Route className="h-5 w-5 flex-shrink-0" />
@@ -1213,7 +1213,7 @@ export function MapView() {
                   setPostMarkers([]);
                   fetchSpots();
                 }}
-                className="min-w-[5rem] h-16 rounded-2xl flex flex-col items-center justify-center gap-1 font-semibold text-xs px-4 py-3"
+                className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl flex flex-col items-center justify-center gap-1 font-semibold text-xs shadow-lg"
                 style={{ background: designTokens.colors.secondary.fern, color: designTokens.colors.text.inverse, boxShadow: designTokens.elevation.high }}
               >
                 <MapPin className="h-5 w-5 flex-shrink-0" />
@@ -1240,7 +1240,7 @@ export function MapView() {
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} whileTap={{ scale: 0.98 }}>
               <Button
                 onClick={() => router.push('/create-spot')}
-                className="min-w-[5.5rem] h-16 rounded-2xl flex flex-col items-center justify-center gap-1 font-semibold text-xs px-4 py-3"
+                className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl flex flex-col items-center justify-center gap-1 font-semibold text-xs shadow-lg"
                 style={{ background: designTokens.colors.functional.info, color: designTokens.colors.text.inverse, boxShadow: designTokens.elevation.high }}
               >
                 <Camera className="h-5 w-5 flex-shrink-0" />
