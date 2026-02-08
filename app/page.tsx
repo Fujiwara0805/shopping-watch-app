@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence, useScroll, useTransform, useInView } from 'framer-motion';
-import { MapPin, Menu, X, ChevronRight, Calendar, LogOut, Search, Layers, Clock, MapPinOff, Map, Users, ArrowRight, Compass, ExternalLink, Sparkles, Route, Globe, MessageSquare } from 'lucide-react';
+import { MapPin, Menu, X, ChevronRight, Calendar, LogOut, Search, Layers, Map, Users, ArrowRight, Compass, ExternalLink, Sparkles, Route, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useSession, signOut } from 'next-auth/react';
 import { getPublicMaps } from '@/app/_actions/maps';
@@ -540,17 +540,17 @@ const ChallengesSection = () => {
 
   const challenges = [
     {
-      icon: <Clock className="w-6 h-6" />,
+      imageUrl: 'https://res.cloudinary.com/dz9trbwma/image/upload/v1770516535/Gemini_Generated_Image_n5dwvwn5dwvwn5dw_nq711a.png',
       title: '消えゆく地域の文化遺産',
       description: '大分県内の魅力的なイベントや祭りが、記録されないまま人々の記憶から消えていく。後世に残すべき文化が、静かに失われている。',
     },
     {
-      icon: <Globe className="w-6 h-6" />,
+      imageUrl: 'https://res.cloudinary.com/dz9trbwma/image/upload/v1770516535/Gemini_Generated_Image_sauq56sauq56sauq_bgou7c.png',
       title: '旅行者が求める自由な旅',
       description: '一人旅やインバウンド観光客が増加する中、ツアーに頼らず自分のペースで観光名所やモデルコースを巡りたいというニーズに応える情報が不足している。',
     },
     {
-      icon: <MapPinOff className="w-6 h-6" />,
+      imageUrl: 'https://res.cloudinary.com/dz9trbwma/image/upload/v1770516536/Gemini_Generated_Image_tgqneqtgqneqtgqn_ekswrm.png',
       title: '埋もれたままの魅力的なスポット',
       description: '地域に数多く存在する魅力的な場所が、知られないまま観光資源として活かされていない。新たな名所を生み出す仕組みがない。',
     },
@@ -597,37 +597,37 @@ const ChallengesSection = () => {
         </div>
 
         {/* Challenges List */}
-        <div className="space-y-6">
+        <div className="space-y-8">
           {challenges.map((challenge, index) => (
             <motion.div
               key={challenge.title}
-              initial={{ opacity: 0, x: -30 }}
-              animate={isInView ? { opacity: 1, x: 0 } : {}}
+              initial={{ opacity: 0, y: 24 }}
+              animate={isInView ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.5, delay: 0.3 + index * 0.1 }}
             >
-              <ElevationCard elevation="low" padding="lg" hover={false} className="flex items-start gap-6">
-                <div 
-                  className="flex-shrink-0 w-14 h-14 rounded-2xl flex items-center justify-center"
-                  style={{ 
-                    background: `${designTokens.colors.secondary.fern}15`,
-                    color: designTokens.colors.secondary.fern,
-                  }}
-                >
-                  {challenge.icon}
+              <ElevationCard elevation="low" padding="none" hover={false} className="overflow-hidden">
+                {/* 画像を上部に配置 */}
+                <div className="aspect-[4/3] w-full overflow-hidden bg-white/80">
+                  <img
+                    src={challenge.imageUrl}
+                    alt=""
+                    className="w-full h-full object-cover"
+                  />
                 </div>
-                <div>
-                  <h3 
-                    className="text-xl font-semibold mb-2"
-                    style={{ 
+                {/* タイトル・説明は画像の下に縦配置・中央揃え */}
+                <div className="px-6 sm:px-8 py-6 sm:py-8 text-center">
+                  <h3
+                    className="text-xl sm:text-2xl font-semibold mb-4"
+                    style={{
                       fontFamily: designTokens.typography.display,
                       color: designTokens.colors.primary.base,
                     }}
                   >
                     {challenge.title}
                   </h3>
-                  <p 
-                    className="leading-relaxed"
-                    style={{ 
+                  <p
+                    className="leading-relaxed text-center max-w-2xl mx-auto"
+                    style={{
                       fontFamily: designTokens.typography.body,
                       color: designTokens.colors.text.secondary,
                     }}
@@ -657,21 +657,21 @@ const SolutionSection = () => {
       label: 'PRESERVE',
       title: 'イベントと祭りを後世に残す',
       description: '大分県内で開催される魅力的なイベントやお祭りを記録し、5年後、10年後、20年後まで残す。地域の文化遺産を未来へつなぎます。',
-      icon: <Sparkles className="w-8 h-8" />,
+      icon: <Sparkles className="w-5 h-5" />,
       color: designTokens.colors.accent.lilac,
     },
     {
       label: 'DISCOVER',
       title: 'スポットを登録し、新たな名所を作る',
       description: 'あなたが見つけた魅力的な場所をマップ上に記録。多くのユーザーの発見が集まり、新たな名所や観光地が生まれます。',
-      icon: <MapPin className="w-8 h-8" />,
+      icon: <MapPin className="w-5 h-5" />,
       color: designTokens.colors.secondary.fern,
     },
     {
       label: 'EXPLORE',
       title: 'モデルコースでツアーに頼らない旅',
       description: '一人旅やインバウンド観光客の増加に応え、ツアーに頼らず観光名所やモデルコースを自由に巡れる情報を提供します。',
-      icon: <Route className="w-8 h-8" />,
+      icon: <Route className="w-5 h-5" />,
       color: designTokens.colors.accent.gold,
     },
   ];
@@ -740,28 +740,26 @@ const SolutionSection = () => {
                   }}
                 />
                 
-                <div className="relative z-10 flex flex-col md:flex-row md:items-center gap-8">
-                  {/* Icon */}
-                  <div 
-                    className="flex-shrink-0 w-20 h-20 rounded-2xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110"
-                    style={{ 
-                      background: `${solution.color}18`,
-                      color: solution.color,
-                    }}
+                <div className="relative z-10">
+                  <span 
+                    className="text-xs font-bold tracking-[0.2em] mb-2 block"
+                    style={{ color: solution.color }}
                   >
-                    {solution.icon}
-                  </div>
-                  
-                  {/* Content */}
-                  <div className="flex-1">
-                    <span 
-                      className="text-xs font-bold tracking-[0.2em] mb-2 block"
-                      style={{ color: solution.color }}
+                    {solution.label}
+                  </span>
+                  {/* タイトルの横に小さなアイコンを配置（モバイルでも同様） */}
+                  <div className="flex items-center gap-3 mb-3">
+                    <div 
+                      className="flex-shrink-0 w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-105"
+                      style={{ 
+                        background: `${solution.color}18`,
+                        color: solution.color,
+                      }}
                     >
-                      {solution.label}
-                    </span>
+                      {solution.icon}
+                    </div>
                     <h3 
-                      className="text-2xl font-semibold mb-3"
+                      className="text-lg sm:text-xl md:text-2xl font-semibold leading-tight min-w-0"
                       style={{ 
                         fontFamily: designTokens.typography.display,
                         color: designTokens.colors.primary.base,
@@ -769,16 +767,16 @@ const SolutionSection = () => {
                     >
                       {solution.title}
                     </h3>
-                    <p 
-                      className="text-base leading-relaxed max-w-xl"
-                      style={{ 
-                        fontFamily: designTokens.typography.body,
-                        color: designTokens.colors.text.secondary,
-                      }}
-                    >
-                      {solution.description}
-                    </p>
                   </div>
+                  <p 
+                    className="text-base leading-relaxed max-w-xl"
+                    style={{ 
+                      fontFamily: designTokens.typography.body,
+                      color: designTokens.colors.text.secondary,
+                    }}
+                  >
+                    {solution.description}
+                  </p>
                 </div>
                 
                 {/* Bottom Accent Line */}
