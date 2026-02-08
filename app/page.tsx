@@ -827,39 +827,37 @@ const SpotsSection = () => {
       style={{ background: designTokens.colors.background.cloud }}
     >
       <div className="container mx-auto max-w-5xl relative z-10">
-        {spots.length > 0 && (
-          <div className="text-center mb-16">
-            <SectionLabel>Spots</SectionLabel>
-            <motion.h2
-              initial={{ opacity: 0, y: 30 }}
-              animate={isInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.6, delay: 0.1 }}
-              className="mt-4 text-3xl sm:text-4xl md:text-5xl font-semibold leading-tight"
-              style={{
-                fontFamily: designTokens.typography.display,
-                color: designTokens.colors.primary.base,
-              }}
-            >
-              あなたの発見が、
-              <br />
-              未来の名所になる。
-            </motion.h2>
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={isInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="mt-6 text-lg max-w-2xl mx-auto leading-relaxed"
-              style={{
-                fontFamily: designTokens.typography.body,
-                color: designTokens.colors.text.secondary,
-              }}
-            >
-              大分県内の魅力的なスポットをマップ上に記録。
-              <br className="hidden sm:block" />
-              5年後、10年後、20年後まで残り続ける新たな名所を、あなたの手で作りましょう。
-            </motion.p>
-          </div>
-        )}
+        <div className="text-center mb-16">
+          <SectionLabel>Spots</SectionLabel>
+          <motion.h2
+            initial={{ opacity: 0, y: 30 }}
+            animate={isInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.6, delay: 0.1 }}
+            className="mt-4 text-3xl sm:text-4xl md:text-5xl font-semibold leading-tight"
+            style={{
+              fontFamily: designTokens.typography.display,
+              color: designTokens.colors.primary.base,
+            }}
+          >
+            あなたの発見が、
+            <br />
+            未来の名所になる。
+          </motion.h2>
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={isInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="mt-6 text-lg max-w-2xl mx-auto leading-relaxed"
+            style={{
+              fontFamily: designTokens.typography.body,
+              color: designTokens.colors.text.secondary,
+            }}
+          >
+            大分県内の魅力的なスポットをマップ上に記録。
+            <br className="hidden sm:block" />
+            5年後、10年後、20年後まで残り続ける新たな名所を、あなたの手で作りましょう。
+          </motion.p>
+        </div>
 
         {loading ? (
           <div className="flex items-center justify-center py-20">
@@ -933,13 +931,12 @@ const SpotsSection = () => {
           </div>
         )}
 
-        {(!loading && (spots.length > 0 || spots.length === 0)) && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={isInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.5, delay: 0.5 }}
-            className={`text-center ${spots.length > 0 ? 'mt-12' : ''}`}
-          >
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={isInView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.5, delay: 0.5 }}
+          className="text-center mt-12"
+        >
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
@@ -956,7 +953,6 @@ const SpotsSection = () => {
               <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
             </motion.button>
           </motion.div>
-        )}
       </div>
     </section>
   );
