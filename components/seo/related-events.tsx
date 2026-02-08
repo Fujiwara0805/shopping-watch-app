@@ -8,6 +8,7 @@ import { MapPin, Calendar, ChevronRight } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { RelatedEvent } from '@/lib/seo/types';
 import { generateSemanticEventUrl } from '@/lib/seo/url-helper';
+import { designTokens } from '@/lib/constants';
 
 interface RelatedEventsProps {
   currentEventId: string;
@@ -32,11 +33,12 @@ export function RelatedEvents({
   useEffect(() => {
     const fetchRelatedEvents = async () => {
       setLoading(true);
-
       try {
         const now = new Date();
-
-        // 現在のイベントの開催期間を取得（日付文字列 YYYY-MM-DD）
+        const cityFilter =
+          city != null && String(city).trim() !== ''
+            ? String(city).trim()
+            : null;
         const currentStart = currentEventStartDate
           ? new Date(currentEventStartDate).toISOString().slice(0, 10)
           : now.toISOString().slice(0, 10);
@@ -52,50 +54,56 @@ export function RelatedEvents({
           .eq('prefecture', prefecture)
           .neq('id', currentEventId)
           .order('event_start_date', { ascending: true })
-          .limit(maxItems * 3); // 多めに取得してフィルタリング
+          .limit(Math.max(maxItems * 3, 50));
 
-        // 同じ市町村でフィルタリング
-        if (city) {
-          query = query.eq('city', city);
+        if (cityFilter != null) {
+          query = query.eq('city', cityFilter);
         }
 
-        const { data, error } = await query;
-
+        const { data: queryData, error } = await query;
         if (error) {
-          console.error('関連イベント取得エラー:', error);
           setEvents([]);
           return;
         }
 
-        // 開催期間が重なるイベントのみフィルタリング
-        // 例: 現在のイベントが2/8開催 → 1/1〜3/31のイベントも含む
-        // 例: 現在のイベントが1/1〜3/31 → 2/8のイベントも含む
-        const overlappingEvents = (data || []).filter((event) => {
-          if (!event.event_start_date) return false;
+        let data = queryData || [];
 
+        if (cityFilter != null && data.length === 0) {
+          const { data: fallbackData, error: fallbackError } = await supabase
+            .from('posts')
+            .select('id, event_name, store_name, city, event_start_date, event_end_date, image_urls')
+            .eq('is_deleted', false)
+            .eq('category', 'イベント情報')
+            .eq('prefecture', prefecture)
+            .neq('id', currentEventId)
+            .order('event_start_date', { ascending: true })
+            .limit(100);
+          if (!fallbackError && fallbackData) {
+            data = fallbackData.filter(
+              (e: { city?: string | null }) => e.city != null && String(e.city).trim() === cityFilter
+            );
+          }
+        }
+
+        const overlappingEvents = data.filter((event: { event_start_date?: string | null; event_end_date?: string | null }) => {
+          if (!event.event_start_date) return false;
           const eStart = new Date(event.event_start_date).toISOString().slice(0, 10);
           const eEnd = event.event_end_date
             ? new Date(event.event_end_date).toISOString().slice(0, 10)
             : eStart;
-
-          // 終了済みイベントを除外
           const endDate = new Date(eEnd);
           endDate.setHours(23, 59, 59, 999);
           if (now > endDate) return false;
-
-          // 開催期間の重なり判定: currentStart <= eEnd && eStart <= currentEnd
           return currentStart <= eEnd && eStart <= currentEnd;
         });
 
         setEvents(overlappingEvents.slice(0, maxItems) as RelatedEvent[]);
-      } catch (error) {
-        console.error('関連イベント取得エラー:', error);
+      } catch {
         setEvents([]);
       } finally {
         setLoading(false);
       }
     };
-
     fetchRelatedEvents();
   }, [currentEventId, city, prefecture, currentEventStartDate, currentEventEndDate, maxItems]);
 
@@ -129,10 +137,10 @@ export function RelatedEvents({
     return (
       <div className="mt-8 px-4">
         <div className="animate-pulse">
-          <div className="h-6 bg-gray-200 rounded w-32 mb-4"></div>
-          <div className="grid grid-cols-2 gap-4">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="bg-gray-100 rounded-lg h-40"></div>
+          <div className="h-6 rounded w-32 mb-4" style={{ background: designTokens.colors.background.cloud }} />
+          <div className="flex gap-3 overflow-hidden">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="flex-shrink-0 w-[calc(50%-6px)] rounded-xl h-36" style={{ background: designTokens.colors.background.cloud }} />
             ))}
           </div>
         </div>
@@ -151,65 +159,67 @@ export function RelatedEvents({
       transition={{ duration: 0.5, delay: 0.3 }}
       className="mt-8 px-4 pb-8"
     >
-      <h2 className="text-lg font-bold text-[#3d2914] mb-4 flex items-center gap-2">
-        <MapPin className="h-5 w-5 text-primary" />
+      <h2 className="text-lg font-bold mb-4 flex items-center gap-2" style={{ color: designTokens.colors.text.primary }}>
+        <MapPin className="h-5 w-5" style={{ color: designTokens.colors.primary.base }} />
         {city ? `${city}の周辺イベント` : '周辺イベント'}
       </h2>
-      
-      <div className="grid grid-cols-2 gap-3">
+
+      {/* スライド形式: モバイルで2枚表示、横スライドで閲覧 */}
+      <div
+        className="flex gap-3 overflow-x-auto overflow-y-hidden pb-2 snap-x snap-mandatory scroll-smooth scrollbar-hide -mx-4 px-4"
+        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+      >
         {events.map((event, index) => {
           const imageUrl = getImageUrl(event.image_urls);
           const eventName = event.event_name || '無題のイベント';
-          
-          // セマンティックURLを生成
           const eventUrl = generateSemanticEventUrl({
             eventId: event.id,
             eventName,
             city: event.city || undefined,
-            prefecture: prefecture,
+            prefecture,
           });
-          
           return (
             <motion.div
               key={event.id}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: index * 0.05 }}
+              className="flex-shrink-0 snap-center w-[calc(50%-6px)] min-w-[140px] sm:w-[calc(33.333%-8px)] sm:min-w-[160px]"
             >
               <Link
                 href={eventUrl}
-                className="block bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow border border-[#d4c4a8]"
+                className="block rounded-xl overflow-hidden transition-all h-full"
+                style={{
+                  background: designTokens.colors.background.white,
+                  boxShadow: designTokens.elevation.low,
+                  border: `1px solid ${designTokens.colors.secondary.stone}30`,
+                }}
               >
-                {/* 画像 */}
-                <div className="relative h-24 bg-[#ffecd2]">
+                <div className="relative h-24" style={{ background: designTokens.colors.background.cloud }}>
                   {imageUrl ? (
                     <Image
                       src={imageUrl}
                       alt={eventName}
                       fill
                       className="object-cover"
-                      sizes="(max-width: 768px) 50vw, 33vw"
+                      sizes="(max-width: 640px) 50vw, 33vw"
                     />
                   ) : (
                     <div className="flex items-center justify-center h-full">
-                      <Calendar className="h-8 w-8 text-primary/30" />
+                      <Calendar className="h-8 w-8" style={{ color: designTokens.colors.text.muted }} />
                     </div>
                   )}
                 </div>
-                
-                {/* 情報 */}
                 <div className="p-2">
-                  <h3 className="text-sm font-bold text-[#3d2914] line-clamp-2 mb-1">
+                  <h3 className="text-sm font-bold line-clamp-2 mb-1" style={{ color: designTokens.colors.text.primary }}>
                     {eventName}
                   </h3>
-                  
-                  <div className="flex items-center gap-1 text-xs text-gray-600">
-                    <MapPin className="h-3 w-3 text-red-500 flex-shrink-0" />
+                  <div className="flex items-center gap-1 text-xs" style={{ color: designTokens.colors.text.secondary }}>
+                    <MapPin className="h-3 w-3 flex-shrink-0" style={{ color: designTokens.colors.functional.error }} />
                     <span className="truncate">{event.city || prefecture}</span>
                   </div>
-                  
                   {event.event_start_date && (
-                    <div className="flex items-center gap-1 text-xs text-gray-500 mt-1">
+                    <div className="flex items-center gap-1 text-xs mt-1" style={{ color: designTokens.colors.text.muted }}>
                       <Calendar className="h-3 w-3 flex-shrink-0" />
                       <span>
                         {formatDate(event.event_start_date)}
@@ -225,12 +235,12 @@ export function RelatedEvents({
           );
         })}
       </div>
-      
-      {/* もっと見るリンク */}
+
       {city && (
         <Link
           href={`/area/${encodeURIComponent(prefecture)}/${encodeURIComponent(city)}`}
-          className="mt-4 flex items-center justify-center gap-1 text-sm text-primary hover:text-foreground transition-colors"
+          className="mt-4 flex items-center justify-center gap-1 text-sm transition-colors"
+          style={{ color: designTokens.colors.primary.base }}
         >
           <span>{city}のイベントをもっと見る</span>
           <ChevronRight className="h-4 w-4" />

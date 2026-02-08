@@ -1,27 +1,16 @@
 "use client";
 
-import React, { useState, useMemo } from 'react';
+import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
-import { 
-  MapPin, 
-  Calendar, 
-  ChevronLeft, 
-  Compass, 
-  ArrowUpFromLine,
-  Filter,
-  Search,
-  ScrollText
-} from 'lucide-react';
+import { MapPin, Calendar, ArrowUpFromLine, ScrollText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { SEOEventData } from '@/lib/seo/types';
 import { generateSemanticEventUrl } from '@/lib/seo/url-helper';
-
-import { COLORS } from '@/lib/constants/colors';
+import { designTokens } from '@/lib/constants';
+import { Breadcrumb } from '@/components/seo/breadcrumb';
 
 interface AreaEventListClientProps {
   prefecture: string;
@@ -29,26 +18,19 @@ interface AreaEventListClientProps {
   initialEvents: SEOEventData[];
 }
 
-export function AreaEventListClient({ 
-  prefecture, 
-  city, 
-  initialEvents 
+export function AreaEventListClient({
+  prefecture,
+  city,
+  initialEvents,
 }: AreaEventListClientProps) {
-  const router = useRouter();
-  const [searchQuery, setSearchQuery] = useState('');
   const locationName = `${prefecture}${city}`;
 
-  // 検索フィルタリング
-  const filteredEvents = useMemo(() => {
-    if (!searchQuery.trim()) return initialEvents;
-    
-    const query = searchQuery.toLowerCase();
-    return initialEvents.filter((event) => {
-      const eventName = (event.event_name || event.content || '').toLowerCase();
-      const storeName = (event.store_name || '').toLowerCase();
-      return eventName.includes(query) || storeName.includes(query);
-    });
-  }, [initialEvents, searchQuery]);
+  const breadcrumbItems = [
+    { label: 'ホーム', href: '/' },
+    { label: 'エリア', href: '/area' },
+    { label: prefecture, href: `/area/${encodeURIComponent(prefecture)}` },
+    { label: city, href: `/area/${encodeURIComponent(prefecture)}/${encodeURIComponent(city)}`, isCurrent: true },
+  ];
 
   // 画像URLを取得
   const getImageUrl = (imageUrls: string | string[] | null): string | null => {
@@ -94,85 +76,74 @@ export function AreaEventListClient({
   };
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: COLORS.background }}>
-      {/* ヘッダー */}
-      <header 
-        className="sticky top-0 z-50 border-b-4 border-double shadow-lg" 
-        style={{ backgroundColor: COLORS.secondary, borderColor: COLORS.primary }}
+    <div className="min-h-screen" style={{ background: designTokens.colors.background.mist }}>
+      {/* パンくず（都道府県名・市町村名を表示） */}
+      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="px-4 pt-3">
+        <Breadcrumb items={breadcrumbItems} />
+      </motion.div>
+
+      {/* ヘッダー（イベント一覧と同じトーン） */}
+      <motion.header
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="sticky top-0 z-40"
+        style={{
+          background: `${designTokens.colors.primary.base}F5`,
+          backdropFilter: 'blur(20px)',
+          borderBottom: `1px solid ${designTokens.colors.primary.dark}30`,
+        }}
       >
         <div className="max-w-4xl mx-auto px-4 py-4">
-          {/* パンくずリスト */}
-          <nav className="flex items-center gap-2 text-sm text-[#ffecd2]/80 mb-3">
-            <Link href="/" className="hover:text-[#ffecd2]">トップ</Link>
-            <span>/</span>
-            <Link href="/events" className="hover:text-[#ffecd2]">イベント</Link>
-            <span>/</span>
-            <Link 
-              href={`/area/${encodeURIComponent(prefecture)}`} 
-              className="hover:text-[#ffecd2]"
-            >
-              {prefecture}
-            </Link>
-            <span>/</span>
-            <span className="text-[#ffecd2]">{city}</span>
-          </nav>
-          
-          {/* タイトル */}
-          <div className="flex items-center justify-center gap-3 mb-3">
-            <ScrollText className="h-6 w-6 text-[#ffecd2]" />
-            <h1 
-              className="text-xl font-black text-[#ffecd2] tracking-widest" 
-              style={{ fontFamily: "'Noto Serif JP', serif" }}
+          <div className="flex items-center justify-center gap-3">
+            <ScrollText className="h-5 w-5" style={{ color: designTokens.colors.accent.gold }} />
+            <h1
+              className="text-xl font-semibold tracking-wide"
+              style={{
+                fontFamily: designTokens.typography.display,
+                color: designTokens.colors.text.inverse,
+              }}
             >
               {city}のイベント
             </h1>
-          </div>
-          
-          {/* 検索 */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <Input
-              type="text"
-              placeholder="イベント名で検索..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 bg-white/90 border-[#d4c4a8]"
-            />
+            <ScrollText className="h-5 w-5" style={{ color: designTokens.colors.accent.gold }} />
           </div>
         </div>
-      </header>
+      </motion.header>
 
-      {/* コンテンツ */}
-      <main className="container mx-auto px-4 py-6 max-w-4xl pb-24">
-        {/* イベント数 */}
+      <main className="container mx-auto px-4 py-6 max-w-4xl pb-28">
         <div className="mb-4 flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">
-            {filteredEvents.length}件のイベントが見つかりました
+          <p className="text-sm" style={{ color: designTokens.colors.text.secondary }}>
+            {initialEvents.length}件のイベント
           </p>
-          <Badge variant="outline" className="border-primary text-primary">
+          <Badge
+            variant="outline"
+            style={{
+              borderColor: designTokens.colors.primary.base,
+              color: designTokens.colors.primary.base,
+            }}
+          >
             {locationName}
           </Badge>
         </div>
 
-        {/* イベント一覧 */}
-        {filteredEvents.length === 0 ? (
+        {initialEvents.length === 0 ? (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="rounded-2xl shadow-xl p-8 text-center border-2"
-            style={{ backgroundColor: COLORS.surface, borderColor: COLORS.border }}
+            className="rounded-2xl p-8 text-center"
+            style={{
+              background: designTokens.colors.background.white,
+              boxShadow: designTokens.elevation.medium,
+              border: `1px solid ${designTokens.colors.secondary.stone}30`,
+            }}
           >
-            <Calendar className="h-16 w-16 mx-auto mb-4" style={{ color: `${COLORS.primary}50` }} />
-            <p className="text-lg" style={{ color: COLORS.secondary }}>
-              {searchQuery 
-                ? '検索条件に一致するイベントが見つかりません' 
-                : `${city}で開催予定のイベントはありません`}
+            <Calendar className="h-16 w-16 mx-auto mb-4" style={{ color: designTokens.colors.text.muted }} />
+            <p className="text-lg" style={{ color: designTokens.colors.text.secondary }}>
+              {city}で開催予定のイベントはありません
             </p>
             <Link href="/events">
-              <Button 
-                className="mt-4"
-                style={{ backgroundColor: COLORS.primary }}
-              >
+              <Button className="mt-4" style={{ background: designTokens.colors.primary.base, color: designTokens.colors.text.inverse }}>
                 すべてのイベントを見る
               </Button>
             </Link>
@@ -180,19 +151,16 @@ export function AreaEventListClient({
         ) : (
           <div className="space-y-4">
             <AnimatePresence mode="popLayout">
-              {filteredEvents.map((event, index) => {
+              {initialEvents.map((event, index) => {
                 const imageUrl = getImageUrl(event.image_urls);
                 const eventName = event.event_name || event.content || '無題のイベント';
                 const dateStr = formatDate(event.event_start_date, event.event_end_date);
-                
-                // セマンティックURLを生成
                 const eventUrl = generateSemanticEventUrl({
                   eventId: event.id,
                   eventName,
                   city: event.city || undefined,
                   prefecture: event.prefecture || prefecture,
                 });
-                
                 return (
                   <motion.article
                     key={event.id}
@@ -204,52 +172,42 @@ export function AreaEventListClient({
                   >
                     <Link
                       href={eventUrl}
-                      className="block bg-white rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-all border-2"
-                      style={{ borderColor: COLORS.border }}
+                      className="block rounded-xl overflow-hidden transition-all"
+                      style={{
+                        background: designTokens.colors.background.white,
+                        boxShadow: designTokens.elevation.low,
+                        border: `1px solid ${designTokens.colors.secondary.stone}30`,
+                      }}
                     >
                       <div className="flex">
-                        {/* 画像 */}
-                        <div className="relative w-32 h-32 flex-shrink-0" style={{ backgroundColor: COLORS.cream }}>
+                        <div
+                          className="relative w-32 h-32 flex-shrink-0"
+                          style={{ background: designTokens.colors.background.cloud }}
+                        >
                           {imageUrl ? (
-                            <Image
-                              src={imageUrl}
-                              alt={eventName}
-                              fill
-                              className="object-cover"
-                              sizes="128px"
-                            />
+                            <Image src={imageUrl} alt={eventName} fill className="object-cover" sizes="128px" />
                           ) : (
                             <div className="flex items-center justify-center h-full">
-                              <Calendar className="h-12 w-12" style={{ color: `${COLORS.primary}30` }} />
+                              <Calendar className="h-12 w-12" style={{ color: designTokens.colors.text.muted }} />
                             </div>
                           )}
                         </div>
-                        
-                        {/* 情報 */}
-                        <div className="flex-1 p-4">
-                          <h2 
-                            className="font-bold text-lg mb-2 line-clamp-2"
-                            style={{ color: COLORS.textPrimary }}
+                        <div className="flex-1 p-4 min-w-0">
+                          <h2
+                            className="font-semibold text-base mb-2 line-clamp-2"
+                            style={{ fontFamily: designTokens.typography.display, color: designTokens.colors.primary.dark }}
                           >
                             {eventName}
                           </h2>
-                          
                           <div className="space-y-1">
-                            <div className="flex items-center gap-2 text-sm text-gray-600">
-                              <MapPin className="h-4 w-4 text-red-500 flex-shrink-0" />
+                            <div className="flex items-center gap-2 text-sm" style={{ color: designTokens.colors.text.secondary }}>
+                              <MapPin className="h-4 w-4 flex-shrink-0" style={{ color: designTokens.colors.functional.error }} />
                               <span className="truncate">{event.store_name}</span>
                             </div>
-                            
                             {dateStr && (
-                              <div className="flex items-center gap-2 text-sm text-gray-500">
-                                <Calendar className="h-4 w-4 flex-shrink-0" style={{ color: COLORS.primary }} />
+                              <div className="flex items-center gap-2 text-sm" style={{ color: designTokens.colors.text.muted }}>
+                                <Calendar className="h-4 w-4 flex-shrink-0" style={{ color: designTokens.colors.primary.base }} />
                                 <span>{dateStr}</span>
-                              </div>
-                            )}
-                            
-                            {event.event_price && (
-                              <div className="text-sm font-medium" style={{ color: COLORS.primary }}>
-                                {event.event_price}
                               </div>
                             )}
                           </div>
@@ -263,74 +221,50 @@ export function AreaEventListClient({
           </div>
         )}
 
-        {/* 関連リンク */}
         <motion.section
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
-          className="mt-8 p-4 rounded-xl border-2"
-          style={{ backgroundColor: COLORS.surface, borderColor: COLORS.border }}
+          className="mt-8 p-4 rounded-xl"
+          style={{
+            background: designTokens.colors.background.white,
+            border: `1px solid ${designTokens.colors.secondary.stone}30`,
+            boxShadow: designTokens.elevation.subtle,
+          }}
         >
-          <h2 className="font-bold text-lg mb-3" style={{ color: COLORS.textPrimary }}>
+          <h2 className="font-bold text-lg mb-3" style={{ color: designTokens.colors.text.primary }}>
             {prefecture}の他の地域
           </h2>
           <div className="flex flex-wrap gap-2">
-            {[
-              '大分市', '別府市', '中津市', '日田市', '佐伯市',
-              '臼杵市', '竹田市', '由布市', '国東市', '宇佐市'
-            ].filter(c => c !== city).map((otherCity) => (
-              <Link
-                key={otherCity}
-                href={`/area/${encodeURIComponent(prefecture)}/${encodeURIComponent(otherCity)}`}
-                className="px-3 py-1 rounded-full text-sm transition-colors"
-                style={{ 
-                  backgroundColor: COLORS.cream,
-                  color: COLORS.textPrimary,
-                }}
-              >
-                {otherCity}
-              </Link>
-            ))}
+            {['大分市', '別府市', '中津市', '日田市', '佐伯市', '臼杵市', '竹田市', '由布市', '国東市', '宇佐市']
+              .filter((c) => c !== city)
+              .map((otherCity) => (
+                <Link
+                  key={otherCity}
+                  href={`/area/${encodeURIComponent(prefecture)}/${encodeURIComponent(otherCity)}`}
+                  className="px-3 py-1.5 rounded-full text-sm transition-colors"
+                  style={{
+                    background: `${designTokens.colors.accent.gold}20`,
+                    color: designTokens.colors.text.primary,
+                  }}
+                >
+                  {otherCity}
+                </Link>
+              ))}
           </div>
         </motion.section>
       </main>
 
-      {/* ナビゲーションボタン */}
-      <div className="fixed bottom-4 right-4 z-30 flex flex-col gap-2">
-        {/* 先頭に戻る */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-        >
+      <div className="fixed bottom-4 right-4 z-30">
+        <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
           <Button
             onClick={scrollToTop}
             size="icon"
             className="h-14 w-14 rounded-xl shadow-lg flex flex-col items-center justify-center gap-1"
-            style={{ backgroundColor: COLORS.textPrimary }}
+            style={{ background: designTokens.colors.text.primary, color: designTokens.colors.text.inverse }}
           >
-            <ArrowUpFromLine className="h-5 w-5" style={{ color: COLORS.cream }} />
-            <span className="text-[10px]" style={{ color: COLORS.cream }}>TOP</span>
-          </Button>
-        </motion.div>
-
-        {/* マップへ */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          transition={{ delay: 0.1 }}
-        >
-          <Button
-            onClick={() => router.push('/map')}
-            size="icon"
-            className="h-14 w-14 rounded-xl shadow-lg flex flex-col items-center justify-center gap-1"
-            style={{ backgroundColor: COLORS.primary }}
-          >
-            <Compass className="h-5 w-5" style={{ color: COLORS.cream }} />
-            <span className="text-[10px]" style={{ color: COLORS.cream }}>Map</span>
+            <ArrowUpFromLine className="h-5 w-5" />
+            <span className="text-[10px]">TOP</span>
           </Button>
         </motion.div>
       </div>
