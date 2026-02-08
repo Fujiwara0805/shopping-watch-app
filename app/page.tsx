@@ -381,22 +381,6 @@ const HeroSection = ({
           >
             <ElevationCard elevation="high" padding="lg" hover={false} style={{ background: '#999da8' }}>
               <div className="space-y-4">
-                {/* Search Description */}
-                <div
-                  className="text-center py-3 px-4 rounded-xl"
-                  style={{
-                    background: `${designTokens.colors.accent.goldLight}25`,
-                    border: `1px dashed ${designTokens.colors.accent.goldLight}50`,
-                  }}
-                >
-                  <p
-                    className="text-sm font-medium"
-                    style={{ color: 'rgba(255,255,255,0.95)' }}
-                  >
-                    条件を入力してイベントを探す
-                  </p>
-                </div>
-
                 {/* Area Select */}
                 <div className="space-y-2 text-left">
                   <Label 

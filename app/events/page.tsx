@@ -719,7 +719,8 @@ export default function CalendarPage() {
                         onClick={() => setSelectedDayIndex(index)}
                         whileHover={{ scale: 1.03 }}
                         whileTap={{ scale: 0.97 }}
-                        className="flex-shrink-0 snap-center rounded-xl px-2.5 py-1.5 min-w-[48px] transition-all text-center"
+                        className="flex-shrink-0 snap-center rounded-xl px-2.5 py-1.5 transition-all text-center"
+                        data-date-tab
                         style={{
                           background: isSelected ? designTokens.colors.accent.lilac : designTokens.colors.background.white,
                           boxShadow: isSelected ? designTokens.elevation.medium : designTokens.elevation.subtle,
@@ -976,6 +977,16 @@ export default function CalendarPage() {
         @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=IBM+Plex+Sans+JP:wght@400;500;600&family=Noto+Sans+JP:wght@400;500;600;700&display=swap');
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        [data-date-tab] {
+          min-width: calc((100vw - 32px - 18px) / 4);
+          max-width: calc((100vw - 32px - 18px) / 4);
+        }
+        @media (min-width: 640px) {
+          [data-date-tab] {
+            min-width: 64px;
+            max-width: none;
+          }
+        }
       `}</style>
     </div>
   );

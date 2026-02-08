@@ -772,8 +772,9 @@ export function MapView() {
         marker.addListener('click', () => {
           // Stop previous marker bounce
           if (selectedMarkerRef.current) { selectedMarkerRef.current.setAnimation(null); }
-          // Set bounce animation on selected marker
+          // Set bounce animation on selected marker (stop after ~2 bounces)
           marker.setAnimation(window.google.maps.Animation.BOUNCE);
+          setTimeout(() => { if (marker.getAnimation() !== null) marker.setAnimation(null); }, 1400);
           selectedMarkerRef.current = marker;
           // Find this post's index in the distance-sorted list
           const sortedIndex = posts.findIndex(p => p.id === post.id);
@@ -1287,9 +1288,9 @@ export function MapView() {
             setEventCardIndex(newIdx);
             const nextPost = posts[newIdx];
             setSelectedPost(nextPost);
-            // Bounce the new marker
+            // Bounce the new marker (stop after ~2 bounces)
             const matchingMarker = postMarkers.find(m => m?.getTitle()?.includes(nextPost.store_name));
-            if (matchingMarker) { matchingMarker.setAnimation(window.google.maps.Animation.BOUNCE); selectedMarkerRef.current = matchingMarker; }
+            if (matchingMarker) { matchingMarker.setAnimation(window.google.maps.Animation.BOUNCE); setTimeout(() => { if (matchingMarker.getAnimation() !== null) matchingMarker.setAnimation(null); }, 1400); selectedMarkerRef.current = matchingMarker; }
             // Pan map to new post
             if (map && nextPost.store_latitude && nextPost.store_longitude) {
               map.panTo(new window.google.maps.LatLng(nextPost.store_latitude, nextPost.store_longitude));
@@ -1353,11 +1354,6 @@ export function MapView() {
                       <div className="flex items-center gap-2 text-sm mb-1" style={{ color: designTokens.colors.text.secondary }}>
                         <MapPinIcon className="h-3.5 w-3.5 flex-shrink-0" style={{ color: designTokens.colors.functional.error }} />
                         <span className="line-clamp-1">{post.store_name}</span>
-                        {distanceText && (
-                          <span className="flex-shrink-0 text-xs font-medium px-1.5 py-0.5 rounded-full" style={{ background: `${designTokens.colors.accent.gold}20`, color: designTokens.colors.accent.goldDark }}>
-                            {distanceText}
-                          </span>
-                        )}
                       </div>
                       {post.category === 'イベント情報' && post.event_start_date && (
                         <div className="flex items-center gap-2 text-xs" style={{ color: designTokens.colors.text.secondary }}>
@@ -1387,7 +1383,7 @@ export function MapView() {
                   </motion.div>
                   {posts.length > 1 && (
                     <p className="text-center text-[10px] mt-2 font-medium" style={{ color: designTokens.colors.text.muted }}>
-                      スワイプで切り替え（{currentIdx + 1}/{posts.length}）
+                      ＜ーースワイプーー＞（{currentIdx + 1}/{posts.length}）
                     </p>
                   )}
                 </div>

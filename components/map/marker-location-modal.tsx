@@ -68,10 +68,13 @@ export function MarkerLocationModal({
         setCurrentLat(lat);
         setCurrentLng(lng);
 
-        if (mapRef.current && markerRef.current) {
+        if (mapRef.current) {
           const newPosition = new google.maps.LatLng(lat, lng);
-          mapRef.current.panTo(newPosition);
-          markerRef.current.setPosition(newPosition);
+          mapRef.current.setCenter(newPosition);
+          mapRef.current.setZoom(17);
+          if (markerRef.current) {
+            markerRef.current.setPosition(newPosition);
+          }
         }
 
         setIsGettingLocation(false);
@@ -79,11 +82,15 @@ export function MarkerLocationModal({
       (error) => {
         console.error('位置情報の取得に失敗:', error);
         setIsGettingLocation(false);
-        alert('位置情報の取得に失敗しました');
+        let message = '位置情報の取得に失敗しました';
+        if (error.code === 1) message = '位置情報へのアクセスが拒否されました。ブラウザの設定を確認してください。';
+        else if (error.code === 2) message = '位置情報を利用できません。';
+        else if (error.code === 3) message = '位置情報の取得がタイムアウトしました。';
+        alert(message);
       },
       {
         enableHighAccuracy: true,
-        timeout: 10000,
+        timeout: 15000,
         maximumAge: 0
       }
     );

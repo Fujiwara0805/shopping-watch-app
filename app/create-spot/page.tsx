@@ -32,7 +32,7 @@ import type { Reporter } from '@/types/reporter';
 import type { TargetTagId } from '@/lib/constants/target-tags';
 
 const createSpotSchema = z.object({
-  storeName: z.string().min(1, { message: 'スポット名は必須です' }).max(100, { message: '100文字以内で入力してください' }),
+  storeName: z.string().min(1, { message: 'タイトルは必須です' }).max(100, { message: '100文字以内で入力してください' }),
   description: z.string().min(5, { message: '説明は5文字以上入力してください' }).max(800, { message: '800文字以内で入力してください' }),
   url: z.string().url({ message: '有効なURLを入力してください' }).optional().or(z.literal('')),
 });
@@ -69,6 +69,9 @@ export default function CreateSpotPage() {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [selectedTagActivities, setSelectedTagActivities] = useState<Record<string, string[]>>({});
   const [expandedTags, setExpandedTags] = useState<string[]>([]);
+  const [customTagInput, setCustomTagInput] = useState('');
+  const [customTags, setCustomTags] = useState<string[]>([]);
+  const [showAlternativeLocation, setShowAlternativeLocation] = useState(false);
 
   // リポーターシステム
   const [reporter, setReporter] = useState<Reporter | null>(null);
@@ -275,6 +278,61 @@ export default function CreateSpotPage() {
     return publicUrlData.publicUrl;
   };
 
+  // 写真カテゴリベースのタグ定義（スポット登録用）
+  const SPOT_PHOTO_TAGS = [
+    { id: 'nature', label: '自然・風景' },
+    { id: 'gourmet', label: 'グルメ・カフェ' },
+    { id: 'temple', label: '神社・お寺' },
+    { id: 'onsen', label: '温泉・スパ' },
+    { id: 'art', label: 'アート・建築' },
+    { id: 'park', label: '公園・広場' },
+    { id: 'night', label: '夜景・イルミ' },
+    { id: 'animal', label: '動物・ふれあい' },
+    { id: 'shopping', label: 'ショップ・市場' },
+    { id: 'history', label: '歴史・文化' },
+    { id: 'flower', label: '花・季節' },
+    { id: 'sports', label: 'アウトドア・体験' },
+  ] as const;
+
+  // カスタムタグの追加
+  const handleAddCustomTag = () => {
+    const trimmed = customTagInput.trim();
+    if (!trimmed) return;
+    if (customTags.includes(trimmed)) return;
+    setCustomTags(prev => [...prev, trimmed]);
+    setCustomTagInput('');
+  };
+
+  // カスタムタグの削除
+  const handleRemoveCustomTag = (tag: string) => {
+    setCustomTags(prev => prev.filter(t => t !== tag));
+  };
+
+  // 現在地を指定
+  const handleSetCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      toast({ title: 'エラー', description: 'お使いのブラウザは位置情報をサポートしていません', duration: 3000 });
+      return;
+    }
+    setLocationStatus('getting');
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        setStoreLat(lat);
+        setStoreLng(lng);
+        setLocationStatus('success');
+        toast({ title: '位置情報を取得しました', description: '現在地を設定しました', duration: 2000 });
+      },
+      (error) => {
+        console.error('位置情報の取得に失敗:', error);
+        setLocationStatus('error');
+        toast({ title: 'エラー', description: '位置情報の取得に失敗しました', duration: 3000 });
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  };
+
   // タグ選択時にアクティビティ展開を制御
   const handleTagToggle = (tagId: string, checked: boolean) => {
     if (checked) {
@@ -359,7 +417,7 @@ export default function CreateSpotPage() {
         url: values.url && values.url.trim() !== '' ? values.url : null,
         city: null,
         prefecture: '大分県',
-        targetTags: selectedTags.length > 0 ? selectedTags : undefined,
+        targetTags: [...selectedTags, ...customTags].length > 0 ? [...selectedTags, ...customTags] : undefined,
         tagActivities: Object.keys(selectedTagActivities).length > 0 ? selectedTagActivities : undefined,
       };
 
@@ -425,53 +483,108 @@ export default function CreateSpotPage() {
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-            {/* スポット検索 */}
+            {/* 位置情報 */}
             <div className="bg-white rounded-xl border-2 border-border p-4 space-y-4 shadow-sm">
               <div>
                 <Label className="text-sm font-semibold mb-2 block">
                   <MapPin className="inline-block mr-1.5 h-4 w-4" />
-                  スポットを検索<span className="text-destructive ml-1">*</span>
+                  場所<span className="text-destructive ml-1">*</span>
                 </Label>
-                <div className="relative">
-                  <input
-                    ref={inputRef}
-                    type="text"
-                    placeholder="店舗名や施設名で検索..."
-                    className="w-full px-4 py-3 border border-input rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-base"
-                    defaultValue={form.watch('storeName')}
-                  />
-                  <MapPin className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
-                </div>
+
                 {locationStatus === 'success' && (
-                  <div className="mt-1.5 flex items-center text-xs text-green-600">
+                  <div className="mb-3 flex items-center text-xs text-green-600">
                     <CheckCircle className="h-3.5 w-3.5 mr-1" />
                     位置情報を取得しました
                   </div>
                 )}
+                {locationStatus === 'getting' && (
+                  <div className="mb-3 flex items-center text-xs text-gray-500">
+                    <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+                    位置情報を取得中...
+                  </div>
+                )}
 
+                {/* 現在地を指定ボタン */}
+                <button
+                  type="button"
+                  onClick={handleSetCurrentLocation}
+                  disabled={locationStatus === 'getting'}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3.5 rounded-xl font-semibold transition-colors disabled:opacity-50"
+                  style={{
+                    background: designTokens.colors.accent.lilac,
+                    color: designTokens.colors.text.inverse,
+                  }}
+                >
+                  <Navigation className="h-5 w-5" />
+                  <span>現在地を指定</span>
+                </button>
+
+                {/* 別の方法で指定 */}
                 <div className="mt-3">
                   <button
                     type="button"
-                    onClick={() => setIsMarkerModalOpen(true)}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-violet-50 hover:bg-violet-100 text-violet-700 border border-violet-200 rounded-xl transition-colors"
+                    onClick={() => setShowAlternativeLocation(prev => !prev)}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
+                    style={{
+                      background: designTokens.colors.background.cloud,
+                      color: designTokens.colors.text.secondary,
+                    }}
                   >
-                    <Navigation className="h-5 w-5" />
-                    <span className="font-semibold">マーカーピンで位置を指定する</span>
+                    {showAlternativeLocation ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                    <span>別の方法で指定</span>
                   </button>
-                  <p className="text-xs text-gray-500 mt-1.5 text-center">
-                    ※マップ上で直接位置を指定できます
-                  </p>
+
+                  <AnimatePresence>
+                    {showAlternativeLocation && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="mt-3 space-y-3">
+                          {/* 場所の指定（旧：スポットを検索） */}
+                          <div>
+                            <Label className="text-xs font-semibold mb-1.5 block text-gray-600">
+                              場所の指定
+                            </Label>
+                            <div className="relative">
+                              <input
+                                ref={inputRef}
+                                type="text"
+                                placeholder="店舗名や施設名で検索..."
+                                className="w-full px-4 py-3 border border-input rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-base"
+                                defaultValue={form.watch('storeName')}
+                              />
+                              <MapPin className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
+                            </div>
+                          </div>
+
+                          {/* マーカーピンで位置を指定 */}
+                          <button
+                            type="button"
+                            onClick={() => setIsMarkerModalOpen(true)}
+                            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-violet-50 hover:bg-violet-100 text-violet-700 border border-violet-200 rounded-xl transition-colors"
+                          >
+                            <Navigation className="h-5 w-5" />
+                            <span className="font-semibold">マーカーピンで位置を指定</span>
+                          </button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               </div>
 
-              {/* スポット名 */}
+              {/* タイトル */}
               <FormField
                 control={form.control}
                 name="storeName"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-sm font-semibold">
-                      スポット名<span className="text-destructive ml-1">*</span>
+                      タイトル<span className="text-destructive ml-1">*</span>
                     </FormLabel>
                     <FormControl>
                       <Input
@@ -560,122 +673,102 @@ export default function CreateSpotPage() {
                 )}
               </div>
 
-              {/* 対象者タグ + アクティビティ */}
+              {/* タグ選択（写真カテゴリベース） */}
               <div>
                 <Label className="text-sm font-semibold mb-2 block">
                   <Users className="inline-block mr-1.5 h-4 w-4" />
-                  対象者タグ（任意）
+                  タグ（任意）
                 </Label>
                 <p className="text-xs text-gray-500 mb-3">
-                  対象となるユーザー層を選択してください（複数選択可）
+                  写真に合ったカテゴリを選んでください（複数選択可）
                 </p>
-                <div className="space-y-2">
-                  {TARGET_TAGS.map((tag) => {
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {SPOT_PHOTO_TAGS.map((tag) => {
                     const isSelected = selectedTags.includes(tag.id);
-                    const isExpanded = expandedTags.includes(tag.id);
-                    const activities = TAG_ACTIVITIES[tag.id as TargetTagId] || [];
-                    const selectedActivitiesForTag = selectedTagActivities[tag.id] || [];
-
                     return (
-                      <div key={tag.id}>
-                        <label
-                          className={`flex items-center justify-between px-3 py-2.5 rounded-lg cursor-pointer transition-all border-2 text-sm ${
-                            isSelected
-                              ? 'border-primary bg-primary/10 font-medium'
-                              : 'border-transparent bg-gray-50 hover:bg-gray-100'
-                          }`}
-                        >
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="checkbox"
-                              checked={isSelected}
-                              onChange={(e) => handleTagToggle(tag.id, e.target.checked)}
-                              className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                            />
-                            <span style={{ fontSize: '16px' }}>{tag.label}</span>
-                            {selectedActivitiesForTag.length > 0 && (
-                              <span
-                                className="text-xs px-2 py-0.5 rounded-full"
-                                style={{
-                                  background: `${designTokens.colors.secondary.fern}20`,
-                                  color: designTokens.colors.secondary.fernDark,
-                                }}
-                              >
-                                {selectedActivitiesForTag.length}個選択
-                              </span>
-                            )}
-                          </div>
-                          {isSelected && (
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                setExpandedTags(prev =>
-                                  prev.includes(tag.id)
-                                    ? prev.filter(t => t !== tag.id)
-                                    : [...prev, tag.id]
-                                );
-                              }}
-                              className="p-1 hover:bg-primary/20 rounded transition-colors"
-                            >
-                              {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                            </button>
-                          )}
-                        </label>
-
-                        {/* アクティビティ要素（展開時） */}
-                        <AnimatePresence>
-                          {isSelected && isExpanded && (
-                            <motion.div
-                              initial={{ height: 0, opacity: 0 }}
-                              animate={{ height: 'auto', opacity: 1 }}
-                              exit={{ height: 0, opacity: 0 }}
-                              transition={{ duration: 0.2 }}
-                              className="overflow-hidden"
-                            >
-                              <div className="ml-4 mt-1 mb-2 p-3 rounded-lg border border-dashed border-gray-200 bg-gray-50/50">
-                                <p className="text-xs font-medium mb-2" style={{ color: designTokens.colors.text.secondary }}>
-                                  <Sparkles className="inline-block h-3 w-3 mr-1" />
-                                  おすすめアクティビティ
-                                </p>
-                                <div className="grid grid-cols-3 gap-1.5">
-                                  {activities.map((activity) => {
-                                    const isActivitySelected = selectedActivitiesForTag.includes(activity.id);
-                                    return (
-                                      <label
-                                        key={activity.id}
-                                        className={`flex items-center gap-1.5 px-2 py-1.5 rounded-md cursor-pointer transition-all text-xs ${
-                                          isActivitySelected
-                                            ? 'font-medium'
-                                            : 'hover:bg-white'
-                                        }`}
-                                        style={isActivitySelected ? {
-                                          background: `${designTokens.colors.secondary.fern}15`,
-                                          color: designTokens.colors.secondary.fernDark,
-                                          border: `1px solid ${designTokens.colors.secondary.fern}30`,
-                                        } : {
-                                          border: '1px solid transparent',
-                                        }}
-                                      >
-                                        <input
-                                          type="checkbox"
-                                          checked={isActivitySelected}
-                                          onChange={(e) => handleActivityToggle(tag.id, activity.id, e.target.checked)}
-                                          className="h-3 w-3 rounded border-gray-300 text-primary focus:ring-primary"
-                                        />
-                                        <span>{activity.label}</span>
-                                      </label>
-                                    );
-                                  })}
-                                </div>
-                              </div>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </div>
+                      <button
+                        key={tag.id}
+                        type="button"
+                        onClick={() => {
+                          if (isSelected) {
+                            setSelectedTags(prev => prev.filter(t => t !== tag.id));
+                          } else {
+                            setSelectedTags(prev => [...prev, tag.id]);
+                          }
+                        }}
+                        className={`px-3 py-2 rounded-full text-sm transition-all border ${
+                          isSelected
+                            ? 'font-medium'
+                            : 'hover:bg-gray-100'
+                        }`}
+                        style={isSelected ? {
+                          background: `${designTokens.colors.accent.lilac}20`,
+                          color: designTokens.colors.accent.lilacDark,
+                          borderColor: designTokens.colors.accent.lilac,
+                        } : {
+                          background: designTokens.colors.background.cloud,
+                          color: designTokens.colors.text.secondary,
+                          borderColor: 'transparent',
+                        }}
+                      >
+                        {tag.label}
+                      </button>
                     );
                   })}
                 </div>
+
+                {/* カスタムタグ入力 */}
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="自由にタグを入力..."
+                    value={customTagInput}
+                    onChange={(e) => setCustomTagInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddCustomTag();
+                      }
+                    }}
+                    className="h-10 text-sm rounded-xl flex-1"
+                    maxLength={20}
+                  />
+                  <Button
+                    type="button"
+                    onClick={handleAddCustomTag}
+                    disabled={!customTagInput.trim()}
+                    className="h-10 px-4 rounded-xl text-sm font-semibold"
+                    style={{
+                      background: customTagInput.trim() ? designTokens.colors.accent.lilac : undefined,
+                      color: customTagInput.trim() ? designTokens.colors.text.inverse : undefined,
+                    }}
+                  >
+                    追加
+                  </Button>
+                </div>
+                {customTags.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {customTags.map((tag) => (
+                      <span
+                        key={tag}
+                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium"
+                        style={{
+                          background: `${designTokens.colors.secondary.fern}15`,
+                          color: designTokens.colors.secondary.fernDark,
+                          border: `1px solid ${designTokens.colors.secondary.fern}30`,
+                        }}
+                      >
+                        {tag}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveCustomTag(tag)}
+                          className="ml-0.5 hover:opacity-70"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* リンク */}
