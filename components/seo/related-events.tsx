@@ -8,6 +8,7 @@ import { MapPin, Calendar, ChevronRight } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { RelatedEvent } from '@/lib/seo/types';
 import { generateSemanticEventUrl } from '@/lib/seo/url-helper';
+import { isEventNotEnded } from '@/lib/seo/utils';
 import { designTokens } from '@/lib/constants';
 
 interface RelatedEventsProps {
@@ -39,13 +40,8 @@ export function RelatedEvents({
           city != null && String(city).trim() !== ''
             ? String(city).trim()
             : null;
-        const currentStart = currentEventStartDate
-          ? new Date(currentEventStartDate).toISOString().slice(0, 10)
-          : now.toISOString().slice(0, 10);
-        const currentEnd = currentEventEndDate
-          ? new Date(currentEventEndDate).toISOString().slice(0, 10)
-          : currentStart;
 
+        // area/[prefecture]/[city]/page.tsx の getAreaEvents と同じ条件: posts, is_deleted, category, prefecture, city, 日付昇順
         let query = supabase
           .from('posts')
           .select('id, event_name, store_name, city, event_start_date, event_end_date, image_urls')
@@ -54,7 +50,7 @@ export function RelatedEvents({
           .eq('prefecture', prefecture)
           .neq('id', currentEventId)
           .order('event_start_date', { ascending: true })
-          .limit(Math.max(maxItems * 3, 50));
+          .limit(100);
 
         if (cityFilter != null) {
           query = query.eq('city', cityFilter);
@@ -85,19 +81,11 @@ export function RelatedEvents({
           }
         }
 
-        const overlappingEvents = data.filter((event: { event_start_date?: string | null; event_end_date?: string | null }) => {
-          if (!event.event_start_date) return false;
-          const eStart = new Date(event.event_start_date).toISOString().slice(0, 10);
-          const eEnd = event.event_end_date
-            ? new Date(event.event_end_date).toISOString().slice(0, 10)
-            : eStart;
-          const endDate = new Date(eEnd);
-          endDate.setHours(23, 59, 59, 999);
-          if (now > endDate) return false;
-          return currentStart <= eEnd && eStart <= currentEnd;
-        });
-
-        setEvents(overlappingEvents.slice(0, maxItems) as RelatedEvent[]);
+        // area/[prefecture]/[city]/page.tsx の getAreaEvents ロジックを踏襲: isEventNotEnded でフィルタ、日付順
+        const notEnded = data.filter((event: { event_start_date?: string | null; event_end_date?: string | null }) =>
+          isEventNotEnded(event, now)
+        );
+        setEvents(notEnded.slice(0, maxItems) as RelatedEvent[]);
       } catch {
         setEvents([]);
       } finally {
@@ -105,7 +93,7 @@ export function RelatedEvents({
       }
     };
     fetchRelatedEvents();
-  }, [currentEventId, city, prefecture, currentEventStartDate, currentEventEndDate, maxItems]);
+  }, [currentEventId, city, prefecture, maxItems]);
 
   // 画像URLを取得
   const getImageUrl = (imageUrls: string | string[] | null): string | null => {

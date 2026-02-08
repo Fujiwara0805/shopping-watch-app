@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -24,6 +24,15 @@ export function AreaEventListClient({
   initialEvents,
 }: AreaEventListClientProps) {
   const locationName = `${prefecture}${city}`;
+
+  // 日付順（event_start_date 昇順）で表示
+  const sortedEvents = useMemo(() => {
+    return [...initialEvents].sort((a, b) => {
+      const aDate = a.event_start_date ? new Date(a.event_start_date).getTime() : 0;
+      const bDate = b.event_start_date ? new Date(b.event_start_date).getTime() : 0;
+      return aDate - bDate;
+    });
+  }, [initialEvents]);
 
   const breadcrumbItems = [
     { label: 'ホーム', href: '/' },
@@ -114,7 +123,7 @@ export function AreaEventListClient({
       <main className="container mx-auto px-4 py-6 max-w-4xl pb-28">
         <div className="mb-4 flex items-center justify-between">
           <p className="text-sm" style={{ color: designTokens.colors.text.secondary }}>
-            {initialEvents.length}件のイベント
+            {sortedEvents.length}件のイベント
           </p>
           <Badge
             variant="outline"
@@ -127,7 +136,7 @@ export function AreaEventListClient({
           </Badge>
         </div>
 
-        {initialEvents.length === 0 ? (
+        {sortedEvents.length === 0 ? (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -151,7 +160,7 @@ export function AreaEventListClient({
         ) : (
           <div className="space-y-4">
             <AnimatePresence mode="popLayout">
-              {initialEvents.map((event, index) => {
+              {sortedEvents.map((event, index) => {
                 const imageUrl = getImageUrl(event.image_urls);
                 const eventName = event.event_name || event.content || '無題のイベント';
                 const dateStr = formatDate(event.event_start_date, event.event_end_date);

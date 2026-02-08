@@ -1,6 +1,7 @@
 import { Metadata } from 'next';
 import { supabase } from '@/lib/supabaseClient';
 import { generateAreaMetadata } from '@/lib/seo/metadata';
+import { isEventNotEnded } from '@/lib/seo/utils';
 import { AreaStructuredData, EventListStructuredData } from '@/components/seo/event-structured-data';
 import { AreaEventListClient } from '@/components/seo/area-event-list';
 import { SEOEventData } from '@/lib/seo/types';
@@ -49,20 +50,8 @@ async function getAreaEvents(prefecture: string, city: string): Promise<SEOEvent
     return [];
   }
 
-  // 終了していないイベントのみフィルタリング
-  return events.filter((event) => {
-    if (event.event_end_date) {
-      const endDate = new Date(event.event_end_date);
-      endDate.setHours(23, 59, 59, 999);
-      return now <= endDate;
-    }
-    if (event.event_start_date) {
-      const startDate = new Date(event.event_start_date);
-      startDate.setHours(23, 59, 59, 999);
-      return now <= startDate;
-    }
-    return true;
-  }) as SEOEventData[];
+  // 終了していないイベントのみフィルタリング（isEventNotEnded で共通化）
+  return events.filter((event) => isEventNotEnded(event, now)) as SEOEventData[];
 }
 
 /**

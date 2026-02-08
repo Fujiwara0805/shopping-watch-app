@@ -303,3 +303,24 @@ export function generateCanonicalUrl(path: string): string {
   return `${baseUrl}${path.startsWith('/') ? path : `/${path}`}`;
 }
 
+/**
+ * area/[prefecture]/[city]/page.tsx の getAreaEvents と同じ「終了していない」判定。
+ * 終了日あり → その日 23:59:59 まで表示。終了日なし → 開始日 23:59:59 まで表示。日付なし → 表示。
+ */
+export function isEventNotEnded(
+  event: { event_start_date?: string | null; event_end_date?: string | null },
+  now: Date = new Date()
+): boolean {
+  if (event.event_end_date) {
+    const endDate = new Date(event.event_end_date);
+    endDate.setHours(23, 59, 59, 999);
+    return now <= endDate;
+  }
+  if (event.event_start_date) {
+    const startDate = new Date(event.event_start_date);
+    startDate.setHours(23, 59, 59, 999);
+    return now <= startDate;
+  }
+  return true;
+}
+
