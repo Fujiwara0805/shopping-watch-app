@@ -28,7 +28,14 @@ function decodeSegment(value: string): string {
  */
 async function getAreaEvents(prefecture: string, city: string): Promise<SEOEventData[]> {
   const now = new Date();
-  
+  // 今日の日付（YYYY-MM-DD形式）を取得して、Supabase側で終了済みイベントを除外
+  const todayStr = now.toISOString().split('T')[0];
+
+  // event_end_dateがあるイベント：end_date >= 今日 のものを取得
+  // event_end_dateがないイベント：start_date >= 今日 のものを取得
+  // 日付がないイベント：すべて取得
+  // → Supabaseのorフィルタではこの複合条件が難しいため、
+  //   limit無しで全件取得し、クライアント側でフィルタリング
   const { data: events, error } = await supabase
     .from('posts')
     .select('*')
@@ -36,8 +43,7 @@ async function getAreaEvents(prefecture: string, city: string): Promise<SEOEvent
     .eq('category', 'イベント情報')
     .eq('prefecture', prefecture)
     .eq('city', city)
-    .order('event_start_date', { ascending: true })
-    .limit(100);
+    .order('event_start_date', { ascending: true });
 
   if (error || !events) {
     return [];
