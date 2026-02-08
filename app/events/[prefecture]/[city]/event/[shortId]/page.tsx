@@ -113,7 +113,7 @@ export default async function EventDetailPage({ params }: PageProps) {
       {/* イベント詳細クライアントコンポーネント */}
       <EventDetailClient eventId={event.id} />
 
-      {/* 関連イベント（同じ市町村かつ開催期間が重なるイベント） */}
+      {/* 周辺イベント（area ページと同じ条件・日付順、最大16件） */}
       {!ended && (
         <RelatedEvents
           currentEventId={event.id}
@@ -121,6 +121,7 @@ export default async function EventDetailPage({ params }: PageProps) {
           prefecture={event.prefecture || '大分県'}
           currentEventStartDate={event.event_start_date}
           currentEventEndDate={event.event_end_date}
+          maxItems={10}
         />
       )}
     </>
