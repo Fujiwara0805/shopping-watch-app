@@ -236,6 +236,7 @@ export function RelatedEvents({
         })}
       </div>
 
+      {/* 押下後は /area/[prefecture]/[city]/page.tsx に遷移 */}
       {city && (
         <Link
           href={`/area/${encodeURIComponent(prefecture)}/${encodeURIComponent(city)}`}
