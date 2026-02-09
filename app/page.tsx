@@ -542,7 +542,7 @@ const ChallengesSection = () => {
   const challenges = [
     {
       imageUrl: 'https://res.cloudinary.com/dz9trbwma/image/upload/v1770516535/Gemini_Generated_Image_n5dwvwn5dwvwn5dw_nq711a.png',
-      title: '5年後も、10年後も20年後も続くように',
+      title: '5年後も、10年後も続くように',
       description: '県内のお祭りやイベントがこれから5年後、10年後、20年後も続くように、情報を発信していきたい。',
     },
     {
@@ -1040,7 +1040,7 @@ const ModelCourseSection = ({ onMapClick }: { onMapClick: (mapId: string) => voi
               color: designTokens.colors.text.secondary,
             }}
           >
-            観光サイトでまとめられているモデルコースやスタンプラリーイベント、あなた自身が作成したおすすめルートまで、情報を掲載・閲覧できます。
+            観光サイトでまとめられているモデルコースやスタンプラリーイベント、あなたが作成したおすすめルートまで、情報を掲載・閲覧できます。
             <br className="hidden sm:block" />
             自治体の方はもちろん、個人で地図を作成することが可能です。
           </motion.p>
