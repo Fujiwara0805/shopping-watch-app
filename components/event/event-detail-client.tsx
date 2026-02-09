@@ -55,6 +55,26 @@ interface EventDetailClientProps {
   eventId: string;
 }
 
+/** おすすめアクティビティの対象者タグごとのボタン背景色（順序対応） */
+const TAG_ACTIVITY_BG_COLORS = [
+  '#E6E8EC',
+  '#5B4A7D',
+  '#A54A3F',
+  '#4A78B8',
+  '#5F8F6A',
+  '#6B6F73',
+  '#4E6B73',
+  '#8B2F2F',
+  '#2E1F47',
+];
+
+function isLightHex(hex: string): boolean {
+  const n = parseInt(hex.slice(1), 16);
+  const r = (n >> 16) & 0xff, g = (n >> 8) & 0xff, b = n & 0xff;
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return luminance > 0.6;
+}
+
 // パンくずリストコンポーネント
 interface EventBreadcrumbProps {
   event: EventDetail | null;
@@ -779,7 +799,7 @@ export function EventDetailClient({ eventId }: EventDetailClientProps) {
               )}
             </div>
 
-            {/* タグアクティビティ */}
+            {/* タグアクティビティ（アクティビティのみ表示・対象者タグごとの背景色） */}
             {event.tag_activities && Object.keys(event.tag_activities).length > 0 && (
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
@@ -792,31 +812,22 @@ export function EventDetailClient({ eventId }: EventDetailClientProps) {
                     おすすめアクティビティ
                   </h2>
                 </div>
-                <div className="space-y-3">
-                  {Object.entries(event.tag_activities).map(([tagId, activityIds]) => {
-                    const tagLabel = TARGET_TAG_LABELS[tagId] || tagId;
-                    return (
-                      <div key={tagId} className="p-4 rounded-2xl" style={{ background: designTokens.colors.background.cloud }}>
-                        <p className="text-xs font-semibold tracking-wide mb-2" style={{ color: designTokens.colors.accent.lilacDark }}>
-                          {tagLabel}
-                        </p>
-                        <div className="flex flex-wrap gap-2">
-                          {(activityIds as string[]).map((actId) => (
-                            <span
-                              key={actId}
-                              className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium"
-                              style={{
-                                background: `${designTokens.colors.secondary.fern}15`,
-                                color: designTokens.colors.secondary.fernDark,
-                                border: `1px solid ${designTokens.colors.secondary.fern}30`,
-                              }}
-                            >
-                              {TAG_ACTIVITY_LABELS[actId] || actId}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    );
+                <div className="flex flex-wrap gap-2">
+                  {Object.entries(event.tag_activities).map(([tagId, activityIds], tagIndex) => {
+                    const bgColor = TAG_ACTIVITY_BG_COLORS[tagIndex % TAG_ACTIVITY_BG_COLORS.length];
+                    const textColor = isLightHex(bgColor) ? '#1a1a1a' : '#ffffff';
+                    return (activityIds as string[]).map((actId) => (
+                      <span
+                        key={`${tagId}-${actId}`}
+                        className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium"
+                        style={{
+                          background: bgColor,
+                          color: textColor,
+                        }}
+                      >
+                        {TAG_ACTIVITY_LABELS[actId] || actId}
+                      </span>
+                    ));
                   })}
                 </div>
               </motion.div>
