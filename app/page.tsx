@@ -125,7 +125,7 @@ const SectionLabel = ({ children }: { children: string }) => {
       initial={{ opacity: 0, y: 10 }}
       animate={isInView ? { opacity: 1, y: 0 } : {}}
       transition={{ duration: 0.5 }}
-      className="inline-block text-xs font-semibold tracking-[0.3em] uppercase"
+      className="inline-block text-xs lg:text-sm font-semibold tracking-[0.3em] uppercase"
       style={{ 
         color: designTokens.colors.accent.gold,
         fontFamily: designTokens.typography.body,
@@ -312,7 +312,7 @@ const HeroSection = ({
       {/* Main Content */}
       <motion.div 
         style={{ opacity, y, scale }} 
-        className="relative z-10 container mx-auto max-w-5xl px-6 pt-28 pb-20"
+        className="relative z-10 container mx-auto max-w-5xl lg:max-w-6xl xl:max-w-7xl px-6 pt-28 pb-20"
       >
         {/* コンテンツ背景のグラス効果（モバイル対応） */}
         <div 
@@ -351,7 +351,7 @@ const HeroSection = ({
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.4 }}
-            className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-semibold leading-[1.1] tracking-tight"
+            className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-semibold leading-[1.1] tracking-tight"
             style={{
               fontFamily: designTokens.typography.display,
               color: designTokens.colors.text.primary,
@@ -483,7 +483,7 @@ const HeroSection = ({
               whileHover={{ scale: 1.03, y: -3 }}
               whileTap={{ scale: 0.98 }}
               onClick={onStart}
-              className="group inline-flex items-center gap-3 px-10 py-5 rounded-full font-semibold text-base transition-all"
+              className="group inline-flex items-center gap-3 px-10 py-5 lg:px-12 lg:py-6 lg:text-lg rounded-full font-semibold text-base transition-all"
               style={{
                 background: designTokens.colors.accent.gold,
                 color: designTokens.colors.text.primary,
@@ -495,7 +495,7 @@ const HeroSection = ({
               <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
             </motion.button>
             <p
-              className="text-sm mt-4"
+              className="text-sm lg:text-base mt-4"
               style={{ color: designTokens.colors.text.muted }}
             >
               登録不要・完全無料 ー 30秒で周辺イベントが見つかる
@@ -560,18 +560,18 @@ const ChallengesSection = () => {
   return (
     <section 
       ref={sectionRef}
-      className="py-24 sm:py-32 px-6 relative overflow-hidden"
+      className="py-24 sm:py-32 lg:py-40 px-6 relative overflow-hidden"
       style={{ background: designTokens.colors.background.cloud }}
     >
-      <div className="container mx-auto max-w-4xl relative z-10">
+      <div className="container mx-auto max-w-4xl lg:max-w-5xl xl:max-w-6xl relative z-10">
         {/* Section Header */}
-        <div className="text-center mb-20">
+        <div className="text-center mb-20 lg:mb-24">
           <SectionLabel>Challenges</SectionLabel>
           <motion.h2
             initial={{ opacity: 0, y: 30 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.6, delay: 0.1 }}
-            className="mt-4 text-3xl sm:text-4xl md:text-5xl font-semibold leading-tight"
+            className="mt-4 text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-semibold leading-tight"
             style={{
               fontFamily: designTokens.typography.display,
               color: designTokens.colors.primary.base,
@@ -585,7 +585,7 @@ const ChallengesSection = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="mt-6 text-lg max-w-2xl mx-auto leading-relaxed"
+            className="mt-6 text-lg lg:text-xl max-w-2xl lg:max-w-3xl mx-auto leading-relaxed"
             style={{
               fontFamily: designTokens.typography.body,
               color: designTokens.colors.text.secondary,
@@ -597,8 +597,8 @@ const ChallengesSection = () => {
           </motion.p>
         </div>
 
-        {/* Challenges List - PC: 3列グリッド / モバイル: 縦並び */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+        {/* Challenges List - PC: 3列グリッド・画像・テキスト大きく / モバイル: 縦並び */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 lg:gap-10">
           {challenges.map((challenge, index) => (
             <motion.div
               key={challenge.title}
@@ -607,16 +607,16 @@ const ChallengesSection = () => {
               transition={{ duration: 0.5, delay: 0.3 + index * 0.1 }}
             >
               <ElevationCard elevation="low" padding="none" hover={true} className="overflow-hidden h-full">
-                <div className="aspect-[4/3] w-full overflow-hidden bg-white/80">
+                <div className="aspect-[4/3] lg:aspect-[5/4] w-full overflow-hidden bg-white/80">
                   <img
                     src={challenge.imageUrl}
                     alt=""
                     className="w-full h-full object-cover"
                   />
                 </div>
-                <div className="px-5 sm:px-6 py-5 sm:py-6 text-center">
+                <div className="px-5 sm:px-6 lg:px-8 py-5 sm:py-6 lg:py-8 text-center">
                   <h3
-                    className="text-lg sm:text-xl font-semibold mb-3"
+                    className="text-lg sm:text-xl lg:text-2xl font-semibold mb-3"
                     style={{
                       fontFamily: designTokens.typography.display,
                       color: designTokens.colors.primary.base,
@@ -625,7 +625,7 @@ const ChallengesSection = () => {
                     {challenge.title}
                   </h3>
                   <p
-                    className="text-sm sm:text-base leading-relaxed text-center"
+                    className="text-sm sm:text-base lg:text-lg leading-relaxed text-center"
                     style={{
                       fontFamily: designTokens.typography.body,
                       color: designTokens.colors.text.secondary,
@@ -678,20 +678,20 @@ const SolutionSection = () => {
   return (
     <section 
       ref={sectionRef}
-      className="py-24 sm:py-32 px-6 relative overflow-hidden"
+      className="py-24 sm:py-32 lg:py-40 px-6 relative overflow-hidden"
       style={{ background: designTokens.colors.background.mist }}
     >
       <OrganicMeshBackground variant="mist" />
       
-      <div className="container mx-auto max-w-5xl relative z-10">
+      <div className="container mx-auto max-w-5xl lg:max-w-6xl relative z-10">
         {/* Section Header */}
-        <div className="text-center mb-20">
+        <div className="text-center mb-20 lg:mb-24">
           <SectionLabel>Solution</SectionLabel>
           <motion.h2
             initial={{ opacity: 0, y: 30 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.6, delay: 0.1 }}
-            className="mt-4 text-3xl sm:text-4xl md:text-5xl font-semibold leading-tight"
+            className="mt-4 text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-semibold leading-tight"
             style={{
               fontFamily: designTokens.typography.display,
               color: designTokens.colors.primary.base,
@@ -705,7 +705,7 @@ const SolutionSection = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="mt-6 text-lg max-w-2xl mx-auto leading-relaxed"
+            className="mt-6 text-lg lg:text-xl max-w-2xl lg:max-w-3xl mx-auto leading-relaxed"
             style={{
               fontFamily: designTokens.typography.body,
               color: designTokens.colors.text.secondary,
@@ -717,8 +717,8 @@ const SolutionSection = () => {
           </motion.p>
         </div>
 
-        {/* Solutions Grid - PC: 3列 / モバイル: 縦並び */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+        {/* Solutions Grid - PC: 3列・テキスト大きく / モバイル: 縦並び */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 xl:gap-10">
           {solutions.map((solution, index) => (
             <motion.div
               key={solution.label}
@@ -758,7 +758,7 @@ const SolutionSection = () => {
                       {solution.icon}
                     </div>
                     <h3 
-                      className="text-lg sm:text-xl md:text-2xl font-semibold leading-tight min-w-0"
+                      className="text-lg sm:text-xl md:text-2xl lg:text-2xl font-semibold leading-tight min-w-0"
                       style={{ 
                         fontFamily: designTokens.typography.display,
                         color: designTokens.colors.primary.base,
@@ -768,7 +768,7 @@ const SolutionSection = () => {
                     </h3>
                   </div>
                   <p 
-                    className="text-base leading-relaxed max-w-xl"
+                    className="text-base lg:text-lg leading-relaxed max-w-xl"
                     style={{ 
                       fontFamily: designTokens.typography.body,
                       color: designTokens.colors.text.secondary,
@@ -822,17 +822,17 @@ const SpotsSection = () => {
   return (
     <section
       ref={sectionRef}
-      className="py-24 sm:py-32 px-6 relative overflow-hidden"
+      className="py-24 sm:py-32 lg:py-40 px-6 relative overflow-hidden"
       style={{ background: designTokens.colors.background.cloud }}
     >
-      <div className="container mx-auto max-w-5xl relative z-10">
-        <div className="text-center mb-16">
+      <div className="container mx-auto max-w-5xl lg:max-w-6xl relative z-10">
+        <div className="text-center mb-16 lg:mb-20">
           <SectionLabel>Spots</SectionLabel>
           <motion.h2
             initial={{ opacity: 0, y: 30 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.6, delay: 0.1 }}
-            className="mt-4 text-3xl sm:text-4xl md:text-5xl font-semibold leading-tight"
+            className="mt-4 text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-semibold leading-tight"
             style={{
               fontFamily: designTokens.typography.display,
               color: designTokens.colors.primary.base,
@@ -846,7 +846,7 @@ const SpotsSection = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="mt-6 text-lg max-w-2xl mx-auto leading-relaxed"
+            className="mt-6 text-lg lg:text-xl max-w-2xl lg:max-w-3xl mx-auto leading-relaxed"
             style={{
               fontFamily: designTokens.typography.body,
               color: designTokens.colors.text.secondary,
@@ -871,7 +871,7 @@ const SpotsSection = () => {
             />
           </div>
         ) : spots.length === 0 ? null : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
             {spots.map((spot, index) => (
               <motion.div
                 key={spot.id}
@@ -880,7 +880,7 @@ const SpotsSection = () => {
                 transition={{ duration: 0.5, delay: index * 0.1 }}
               >
                 <ElevationCard elevation="medium" padding="none" className="overflow-hidden h-full group">
-                  <div className="relative overflow-hidden h-48">
+                  <div className="relative overflow-hidden h-48 lg:h-56">
                     {spot.image_urls && spot.image_urls.length > 0 ? (
                       <img
                         src={spot.image_urls[0]}
@@ -892,7 +892,7 @@ const SpotsSection = () => {
                         className="w-full h-full flex items-center justify-center"
                         style={{ background: designTokens.colors.background.cloud }}
                       >
-                        <MapPin className="w-12 h-12" style={{ color: designTokens.colors.text.muted }} />
+                        <MapPin className="w-12 h-12 lg:w-14 lg:h-14" style={{ color: designTokens.colors.text.muted }} />
                       </div>
                     )}
                     <div
@@ -900,9 +900,9 @@ const SpotsSection = () => {
                       style={{ background: `linear-gradient(to top, ${designTokens.colors.primary.base}50, transparent)` }}
                     />
                   </div>
-                  <div className="p-5">
+                  <div className="p-5 lg:p-6">
                     <h3
-                      className="font-semibold text-base mb-2 line-clamp-1"
+                      className="font-semibold text-base lg:text-lg mb-2 line-clamp-1"
                       style={{
                         fontFamily: designTokens.typography.display,
                         color: designTokens.colors.primary.base,
@@ -911,16 +911,16 @@ const SpotsSection = () => {
                       {spot.store_name}
                     </h3>
                     <p
-                      className="text-sm line-clamp-2 mb-3"
+                      className="text-sm lg:text-base line-clamp-2 mb-3"
                       style={{ color: designTokens.colors.text.secondary }}
                     >
                       {spot.description}
                     </p>
                     <div
-                      className="flex items-center text-xs"
+                      className="flex items-center text-xs lg:text-sm"
                       style={{ color: designTokens.colors.text.muted }}
                     >
-                      <Users className="w-3.5 h-3.5 mr-1.5" />
+                      <Users className="w-3.5 h-3.5 lg:w-4 lg:h-4 mr-1.5" />
                       {spot.author_name}
                     </div>
                   </div>
@@ -940,7 +940,7 @@ const SpotsSection = () => {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => router.push('/create-spot')}
-              className="group inline-flex items-center gap-2 px-8 py-4 rounded-full font-semibold transition-all"
+              className="group inline-flex items-center gap-2 px-8 py-4 lg:px-10 lg:py-5 lg:text-lg rounded-full font-semibold transition-all"
               style={{
                 background: designTokens.colors.secondary.fern,
                 color: designTokens.colors.text.inverse,
@@ -1006,21 +1006,24 @@ const ModelCourseSection = ({ onMapClick }: { onMapClick: (mapId: string) => voi
     }
   };
 
+  // 最大3件まで表示。1件は中央、2件は2列、3件は3列
+  const displayedMaps = publicMaps.slice(0, 3);
+
   return (
     <section 
       ref={sectionRef}
-      className="py-24 sm:py-32 px-6 relative overflow-hidden"
+      className="py-24 sm:py-32 lg:py-40 px-6 relative overflow-hidden"
       style={{ background: designTokens.colors.background.cloud }}
     >
-      <div className="container mx-auto max-w-6xl relative z-10">
+      <div className="container mx-auto max-w-6xl xl:max-w-7xl relative z-10">
         {/* Section Header */}
-        <div className="text-center mb-16">
+        <div className="text-center mb-16 lg:mb-20">
           <SectionLabel>Model Course</SectionLabel>
           <motion.h2
             initial={{ opacity: 0, y: 30 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.6, delay: 0.1 }}
-            className="mt-4 text-3xl sm:text-4xl md:text-5xl font-semibold leading-tight"
+            className="mt-4 text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-semibold leading-tight"
             style={{
               fontFamily: designTokens.typography.display,
               color: designTokens.colors.primary.base,
@@ -1034,7 +1037,7 @@ const ModelCourseSection = ({ onMapClick }: { onMapClick: (mapId: string) => voi
             initial={{ opacity: 0, y: 20 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="mt-6 text-lg max-w-2xl mx-auto leading-relaxed"
+            className="mt-6 text-lg lg:text-xl max-w-2xl lg:max-w-3xl mx-auto leading-relaxed"
             style={{
               fontFamily: designTokens.typography.body,
               color: designTokens.colors.text.secondary,
@@ -1046,7 +1049,7 @@ const ModelCourseSection = ({ onMapClick }: { onMapClick: (mapId: string) => voi
           </motion.p>
         </div>
 
-        {/* Maps Display */}
+        {/* Maps Display - 最大3件。1件:中央 / 2件:2列 / 3件:3列 */}
         {loading ? (
           <div className="flex items-center justify-center py-20">
             <motion.div
@@ -1065,9 +1068,9 @@ const ModelCourseSection = ({ onMapClick }: { onMapClick: (mapId: string) => voi
             <p style={{ color: designTokens.colors.text.secondary }}>まだマップが投稿されていません</p>
           </ElevationCard>
         ) : isMobile ? (
-          /* Mobile: Swipeable Cards */
+          /* Mobile: Swipeable Cards（最大3件） */
           <div className="overflow-x-auto pb-4 -mx-6 px-6 snap-x snap-mandatory flex gap-4 scrollbar-hide">
-            {publicMaps.map((map, index) => (
+            {displayedMaps.map((map, index) => (
               <motion.div
                 key={map.id}
                 initial={{ opacity: 0, x: 30 }}
@@ -1081,16 +1084,24 @@ const ModelCourseSection = ({ onMapClick }: { onMapClick: (mapId: string) => voi
             ))}
           </div>
         ) : (
-          /* Desktop: 全カード同一サイズのグリッド */
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-6">
-            {publicMaps.map((map, index) => (
+          /* Desktop: 1件=中央 / 2件=2列 / 3件=3列 */
+          <div
+            className={
+              displayedMaps.length === 1
+                ? 'flex justify-center'
+                : displayedMaps.length === 2
+                  ? 'grid grid-cols-2 gap-6 lg:gap-8 max-w-3xl xl:max-w-4xl mx-auto'
+                  : 'grid grid-cols-3 gap-6 lg:gap-8'
+            }
+          >
+            {displayedMaps.map((map, index) => (
               <motion.div
                 key={map.id}
                 initial={{ opacity: 0, y: 30 }}
                 animate={isInView ? { opacity: 1, y: 0 } : {}}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
                 onClick={() => onMapClick(map.id)}
-                className="cursor-pointer"
+                className={`cursor-pointer ${displayedMaps.length === 1 ? 'w-full max-w-md' : ''}`}
               >
                 <MapCard map={map} />
               </motion.div>
@@ -1103,13 +1114,13 @@ const ModelCourseSection = ({ onMapClick }: { onMapClick: (mapId: string) => voi
           initial={{ opacity: 0, y: 20 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.5, delay: 0.5 }}
-          className="text-center mt-12"
+          className="text-center mt-12 lg:mt-16"
         >
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => router.push('/courses')}
-            className="group inline-flex items-center gap-2 px-8 py-4 rounded-full font-semibold transition-all"
+            className="group inline-flex items-center gap-2 px-8 py-4 lg:px-10 lg:py-5 lg:text-lg rounded-full font-semibold transition-all"
             style={{ 
               border: `2px solid ${designTokens.colors.accent.lilac}60`,
               color: designTokens.colors.accent.lilacDark,
@@ -1130,10 +1141,10 @@ const MapCard = ({ map }: { map: PublicMapData }) => (
   <ElevationCard 
     elevation="medium" 
     padding="none" 
-    className="overflow-hidden h-full group min-h-[300px]"
+    className="overflow-hidden h-full group min-h-[300px] lg:min-h-[360px]"
   >
     {/* Cover Image */}
-    <div className="relative overflow-hidden h-3/5">
+    <div className="relative overflow-hidden h-3/5 lg:min-h-[220px]">
       {map.cover_image_url ? (
         <img
           src={map.cover_image_url}
@@ -1145,20 +1156,20 @@ const MapCard = ({ map }: { map: PublicMapData }) => (
           className="w-full h-full flex items-center justify-center"
           style={{ background: designTokens.colors.background.cloud }}
         >
-          <Map className="w-12 h-12" style={{ color: designTokens.colors.text.muted }} />
+          <Map className="w-12 h-12 lg:w-14 lg:h-14" style={{ color: designTokens.colors.text.muted }} />
         </div>
       )}
       
       {/* Spots Badge */}
       <div 
-        className="absolute top-4 left-4 px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5"
+        className="absolute top-4 left-4 lg:top-5 lg:left-5 px-3 py-1.5 lg:px-4 lg:py-2 rounded-full text-xs lg:text-sm font-semibold flex items-center gap-1.5"
         style={{ 
           background: 'rgba(255,255,255,0.95)',
           color: designTokens.colors.primary.base,
           boxShadow: designTokens.elevation.low,
         }}
       >
-        <MapPin className="w-3.5 h-3.5" style={{ color: designTokens.colors.accent.lilac }} />
+        <MapPin className="w-3.5 h-3.5 lg:w-4 lg:h-4" style={{ color: designTokens.colors.accent.lilac }} />
         {map.total_locations || 0}スポット
       </div>
       
@@ -1170,9 +1181,9 @@ const MapCard = ({ map }: { map: PublicMapData }) => (
     </div>
 
     {/* Content */}
-    <div className="p-5">
+    <div className="p-5 lg:p-6">
       <h3 
-        className="font-semibold mb-2 line-clamp-2 transition-colors text-base"
+        className="font-semibold mb-2 line-clamp-2 transition-colors text-base lg:text-lg"
         style={{ 
           fontFamily: designTokens.typography.display,
           color: designTokens.colors.primary.base,
@@ -1186,7 +1197,7 @@ const MapCard = ({ map }: { map: PublicMapData }) => (
           {map.hashtags.slice(0, 2).map((tag, i) => (
             <span 
               key={i} 
-              className="text-xs px-2 py-0.5 rounded-full"
+              className="text-xs lg:text-sm px-2 py-0.5 rounded-full"
               style={{ 
                 background: `${designTokens.colors.secondary.fern}15`,
                 color: designTokens.colors.secondary.fern,
@@ -1199,10 +1210,10 @@ const MapCard = ({ map }: { map: PublicMapData }) => (
       )}
 
       <div 
-        className="flex items-center text-xs"
+        className="flex items-center text-xs lg:text-sm"
         style={{ color: designTokens.colors.text.muted }}
       >
-        <Calendar className="w-3.5 h-3.5 mr-1.5" />
+        <Calendar className="w-3.5 h-3.5 lg:w-4 lg:h-4 mr-1.5" />
         {new Date(map.created_at).toLocaleDateString('ja-JP', {
           year: 'numeric',
           month: 'short',
@@ -1224,27 +1235,27 @@ const FinalCTASection = ({ onStart }: { onStart: () => void }) => {
   return (
     <section 
       ref={sectionRef}
-      className="py-32 sm:py-40 px-6 relative overflow-hidden"
+      className="py-32 sm:py-40 lg:py-48 px-6 relative overflow-hidden"
       style={{ background: designTokens.colors.primary.base }}
     >
       <OrganicMeshBackground variant="primary" />
 
-      <div className="container mx-auto max-w-3xl relative z-10 text-center">
+      <div className="container mx-auto max-w-3xl lg:max-w-4xl relative z-10 text-center">
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.8 }}
-          className="space-y-8"
+          className="space-y-8 lg:space-y-10"
         >
           <span 
-            className="inline-block text-xs font-semibold tracking-[0.3em] uppercase"
+            className="inline-block text-xs lg:text-sm font-semibold tracking-[0.3em] uppercase"
             style={{ color: designTokens.colors.accent.gold }}
           >
             Get Started
           </span>
 
           <h2
-            className="text-3xl sm:text-4xl md:text-5xl font-semibold leading-tight"
+            className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-semibold leading-tight"
             style={{
               fontFamily: designTokens.typography.display,
               color: designTokens.colors.text.inverse,
@@ -1254,7 +1265,7 @@ const FinalCTASection = ({ onStart }: { onStart: () => void }) => {
           </h2>
 
           <p
-            className="text-lg max-w-md mx-auto"
+            className="text-lg lg:text-xl max-w-md lg:max-w-lg mx-auto"
             style={{ color: `${designTokens.colors.text.inverse}90` }}
           >
             完全無料・登録不要で、今すぐスタート。
@@ -1264,7 +1275,7 @@ const FinalCTASection = ({ onStart }: { onStart: () => void }) => {
             whileHover={{ scale: 1.03, y: -4 }}
             whileTap={{ scale: 0.97 }}
             onClick={onStart}
-            className="group inline-flex items-center gap-3 px-12 py-5 rounded-xl font-semibold text-lg transition-all"
+            className="group inline-flex items-center gap-3 px-12 py-5 lg:px-16 lg:py-6 rounded-xl font-semibold text-lg lg:text-xl transition-all"
             style={{
               background: designTokens.colors.accent.gold,
               color: designTokens.colors.text.primary,
@@ -1287,24 +1298,24 @@ const FinalCTASection = ({ onStart }: { onStart: () => void }) => {
 
 const Footer = () => (
   <footer 
-    className="py-16 px-6"
+    className="py-16 lg:py-20 px-6"
     style={{ 
       background: designTokens.colors.background.mist,
       borderTop: `1px solid ${designTokens.colors.secondary.stone}30`,
     }}
   >
     <div className="container mx-auto max-w-6xl">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-12">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-12 lg:gap-16 mb-12">
         {/* Brand */}
         <div>
           <div className="flex items-center gap-3 mb-4">
             <img
               src="https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png"
               alt="TOKUDOKU"
-              className="h-10 w-10"
+              className="h-10 w-10 lg:h-12 lg:w-12"
             />
             <span 
-              className="font-bold text-xl tracking-wider"
+              className="font-bold text-xl lg:text-2xl tracking-wider"
               style={{ 
                 fontFamily: designTokens.typography.display,
                 color: designTokens.colors.primary.base,
@@ -1314,7 +1325,7 @@ const Footer = () => (
             </span>
           </div>
           <p
-            className="leading-relaxed max-w-xs"
+            className="leading-relaxed max-w-xs lg:max-w-sm lg:text-base"
             style={{
               fontFamily: designTokens.typography.body,
               color: designTokens.colors.text.secondary,
@@ -1327,10 +1338,10 @@ const Footer = () => (
         </div>
 
         {/* Links */}
-        <div className="grid grid-cols-2 gap-8">
+        <div className="grid grid-cols-2 gap-8 lg:gap-12">
           <div>
             <h4 
-              className="font-semibold mb-4 text-sm tracking-wide"
+              className="font-semibold mb-4 text-sm lg:text-base tracking-wide"
               style={{ color: designTokens.colors.primary.base }}
             >
               サービス
@@ -1345,7 +1356,7 @@ const Footer = () => (
                   <a 
                     href={link.href}
                     {...(link.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
-                    className="text-sm transition-colors hover:underline"
+                    className="text-sm lg:text-base transition-colors hover:underline"
                     style={{ color: designTokens.colors.text.secondary }}
                   >
                     {link.label}
@@ -1357,7 +1368,7 @@ const Footer = () => (
           </div>
           <div>
             <h4 
-              className="font-semibold mb-4 text-sm tracking-wide"
+              className="font-semibold mb-4 text-sm lg:text-base tracking-wide"
               style={{ color: designTokens.colors.primary.base }}
             >
               規約
@@ -1371,7 +1382,7 @@ const Footer = () => (
                 <li key={link.href}>
                   <a 
                     href={link.href}
-                    className="text-sm transition-colors hover:underline"
+                    className="text-sm lg:text-base transition-colors hover:underline"
                     style={{ color: designTokens.colors.text.secondary }}
                   >
                     {link.label}
