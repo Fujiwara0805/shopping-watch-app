@@ -879,8 +879,8 @@ const SpotsSection = () => {
                 animate={isInView ? { opacity: 1, y: 0 } : {}}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
               >
-                <ElevationCard elevation="medium" padding="none" className="overflow-hidden h-full group">
-                  <div className="relative overflow-hidden h-48 lg:h-56">
+                <ElevationCard elevation="medium" padding="none" className="overflow-hidden h-full group min-h-[300px] lg:min-h-[360px]">
+                  <div className="relative overflow-hidden h-3/5 lg:min-h-[220px]">
                     {spot.image_urls && spot.image_urls.length > 0 ? (
                       <img
                         src={spot.image_urls[0]}
