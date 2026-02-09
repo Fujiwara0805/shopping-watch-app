@@ -1,6 +1,6 @@
 "use server";
 
-import { supabaseAnon } from '@/lib/supabase-server';
+import { supabaseAnon, supabaseServer } from '@/lib/supabase-server';
 import { getProfileIdByUserId } from './maps';
 import type { Spot, SpotWithAuthor } from '@/types/spot';
 
@@ -29,10 +29,11 @@ export interface CreateSpotInput {
 
 /**
  * ゲスト（未ログイン）用のプロフィールIDを取得
- * app_profiles に display_name = 'ゲスト' の1件があることを想定
+ * app_profiles に display_name = 'ゲスト' がなければ自動作成する
  */
 async function getGuestProfileId(): Promise<{ profileId: string | null; error: string | null }> {
   try {
+    // まず既存のゲストプロフィールを検索
     const { data, error } = await supabaseAnon
       .from('app_profiles')
       .select('id')
@@ -40,10 +41,22 @@ async function getGuestProfileId(): Promise<{ profileId: string | null; error: s
       .limit(1)
       .maybeSingle();
 
-    if (error || !data?.id) {
-      return { profileId: null, error: 'ゲスト用プロフィールが見つかりません。ログインするか、管理者に問い合わせてください。' };
+    if (data?.id) {
+      return { profileId: data.id, error: null };
     }
-    return { profileId: data.id, error: null };
+
+    // 見つからない場合は自動作成（service roleで作成しRLSを回避）
+    const { data: newProfile, error: insertError } = await supabaseServer
+      .from('app_profiles')
+      .insert({ display_name: 'ゲスト' })
+      .select('id')
+      .single();
+
+    if (insertError || !newProfile?.id) {
+      return { profileId: null, error: `ゲストプロフィールの作成に失敗しました: ${insertError?.message}` };
+    }
+
+    return { profileId: newProfile.id, error: null };
   } catch (err: any) {
     return { profileId: null, error: err?.message || 'ゲストプロフィールの取得に失敗しました' };
   }
