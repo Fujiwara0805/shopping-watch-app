@@ -257,7 +257,7 @@ export function NoteArticlesSection({
               color: designTokens.colors.primary.base,
             }}
           >
-            旅の途中から。
+            思い出を振り返る。
           </motion.h2>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
@@ -269,9 +269,7 @@ export function NoteArticlesSection({
               color: designTokens.colors.text.secondary,
             }}
           >
-            TOKUDOKUを通じて見つけた体験、地域との出会い。
-            <br className="hidden sm:block" />
-            私たちのnoteで、その物語を綴っています。
+            私たちのnoteではこれまでに大分県内で開催されたイベント情報について綴っています。
           </motion.p>
         </div>
 

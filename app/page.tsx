@@ -351,16 +351,16 @@ const HeroSection = ({
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.4 }}
-            className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-semibold leading-[1.1] tracking-tight"
+            className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-semibold leading-[1.1] tracking-tight"
             style={{
               fontFamily: designTokens.typography.display,
               color: designTokens.colors.text.primary,
             }}
           >
-            今週末、どこ行く？
+            大分の魅力を発信
             <br />
             <span className="relative inline-block mt-2">
-              <span className="relative z-10">大分のイベントが見つかる</span>
+              <span className="relative z-10">県内のイベントを探そう</span>
               <motion.span
                 initial={{ scaleX: 0 }}
                 animate={{ scaleX: 1 }}
@@ -416,7 +416,7 @@ const HeroSection = ({
                     className="text-xs font-semibold tracking-wide"
                     style={{ color: 'rgba(255,255,255,0.95)' }}
                   >
-                    対象（任意）
+                    対象者（任意）
                   </Label>
                   <Select value={target} onValueChange={setTarget}>
                     <SelectTrigger
@@ -542,8 +542,8 @@ const ChallengesSection = () => {
   const challenges = [
     {
       imageUrl: 'https://res.cloudinary.com/dz9trbwma/image/upload/v1770516535/Gemini_Generated_Image_n5dwvwn5dwvwn5dw_nq711a.png',
-      title: '知らなかった、では遅すぎる',
-      description: '地元の人でさえ知らない祭りやイベントが、毎週のように開催されている。情報が届かないまま終わってしまう ー その損失は計り知れない。',
+      title: '「5年後も、10年後も20年後も続く」ように',
+      description: '地元にとって大切なお祭りやイベントがこれから5年後、10年後、20年後も続くように、地元の人以外にも情報を届け続けたい。',
     },
     {
       imageUrl: 'https://res.cloudinary.com/dz9trbwma/image/upload/v1770516535/Gemini_Generated_Image_sauq56sauq56sauq_bgou7c.png',
@@ -577,9 +577,9 @@ const ChallengesSection = () => {
               color: designTokens.colors.primary.base,
             }}
           >
-            もったいない、
+            もっと多くの人に
             <br />
-            が多すぎる。
+            大分の魅力を届けたい
           </motion.h2>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
@@ -591,9 +591,9 @@ const ChallengesSection = () => {
               color: designTokens.colors.text.secondary,
             }}
           >
-            大分には魅力があふれているのに、情報が届いていない。
+            各々の市町村が独自の観光サイトで魅力的な情報を発信していますが、
             <br className="hidden sm:block" />
-            知られざるイベント、隠れた名所、そして自由な旅のカタチ。
+            大分県内の魅力を一括で検索できるサイトがあれば、もっと多くの人に大分の魅力を届けられるのではないかと考えました。
           </motion.p>
         </div>
 
@@ -668,8 +668,8 @@ const SolutionSection = () => {
     },
     {
       label: 'EXPLORE',
-      title: 'ツアー不要。自分だけの旅を組み立てる',
-      description: '行きたい場所をつないで、あなただけのモデルコースを作成。一人旅でも、海外からの旅行者でも、自由に大分を楽しめます。',
+      title: '一人旅でも大分を存分に楽しめる情報を届けたい',
+      description: '各市町村のモデルコースやスタンプラリーなど、地図を必要とする情報を一覧で集約。一人旅や海外からの旅行者の方でも、大分を存分に楽しめる情報をお届けします。',
       icon: <Route className="w-5 h-5" />,
       color: designTokens.colors.accent.gold,
     },
@@ -697,9 +697,9 @@ const SolutionSection = () => {
               color: designTokens.colors.primary.base,
             }}
           >
-            TOKUDOKUなら、
+            大切な思い出を
             <br />
-            すべてが変わる。
+            後世まで語り続けたい
           </motion.h2>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
@@ -711,9 +711,9 @@ const SolutionSection = () => {
               color: designTokens.colors.text.secondary,
             }}
           >
-            イベントの発見から、穴場スポットの共有、自分だけの旅づくりまで。
+            地域イベント情報の発信から、地元の人だけが知っているスポットの発見まで。
             <br className="hidden sm:block" />
-            大分を120%楽しむための3つの機能。
+            あなたと一緒に作り上げていく大分の魅力を発信するサービスを作りたい。
           </motion.p>
         </div>
 
@@ -838,9 +838,9 @@ const SpotsSection = () => {
               color: designTokens.colors.primary.base,
             }}
           >
-            「ここ、最高！」を
+            あなたのお気に入りの
             <br />
-            みんなでシェア。
+            場所を紹介しよう。
           </motion.h2>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
@@ -852,9 +852,9 @@ const SpotsSection = () => {
               color: designTokens.colors.text.secondary,
             }}
           >
-            あなたのお気に入りスポットを地図にピン。
+            あなたのお気に入りスポットを地図に登録することができます。
             <br className="hidden sm:block" />
-            一人の発見が、たくさんの人の思い出になる。
+            一人の発見がたくさんの人の思い出になります。
           </motion.p>
         </div>
 
@@ -1026,23 +1026,23 @@ const ModelCourseSection = ({ onMapClick }: { onMapClick: (mapId: string) => voi
               color: designTokens.colors.primary.base,
             }}
           >
-            旅のプランは、
+            魅力的なルートを
             <br />
-            自分で作る時代。
+            探索しに出かけよう。
           </motion.h2>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="mt-6 text-lg max-w-xl mx-auto leading-relaxed"
+            className="mt-6 text-lg max-w-2xl mx-auto leading-relaxed"
             style={{
               fontFamily: designTokens.typography.body,
               color: designTokens.colors.text.secondary,
             }}
           >
-            行きたいスポットを繋げて、自分だけのルートを完成。
+            観光サイトでまとめられているモデルコースやスタンプラリーのイベント、あなた自身が作成したおすすめルートまで、情報も掲載できます。
             <br className="hidden sm:block" />
-            ガイドブックには載っていない、あなただけの大分旅。
+            自治体の方はもちろん、個人で地図を作成することが可能です。
           </motion.p>
         </div>
 
@@ -1250,15 +1250,13 @@ const FinalCTASection = ({ onStart }: { onStart: () => void }) => {
               color: designTokens.colors.text.inverse,
             }}
           >
-            さあ、大分を探しに行こう。
+            大分を楽しもう!
           </h2>
 
           <p
             className="text-lg max-w-md mx-auto"
             style={{ color: `${designTokens.colors.text.inverse}90` }}
           >
-            今日のイベントも、明日の旅先も、すべてここから。
-            <br />
             完全無料・登録不要で、今すぐスタート。
           </p>
 
