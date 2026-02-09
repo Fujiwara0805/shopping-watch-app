@@ -498,7 +498,7 @@ const HeroSection = ({
               className="text-sm lg:text-base mt-4"
               style={{ color: designTokens.colors.text.muted }}
             >
-              登録不要・完全無料 ー 30秒で周辺イベントが見つかる
+              登録不要 ー 30秒で周辺イベントが見つかる
             </p>
           </motion.div>
         </div>
