@@ -202,17 +202,19 @@ export function RelatedEvents({
                   <h3 className="text-sm font-bold line-clamp-2 mb-1" style={{ color: designTokens.colors.text.primary }}>
                     {eventName}
                   </h3>
-                  <div className="flex items-center gap-1 text-xs" style={{ color: designTokens.colors.text.secondary }}>
-                    <MapPin className="h-3 w-3 flex-shrink-0" style={{ color: designTokens.colors.functional.error }} />
-                    <span className="truncate">{event.city || prefecture}</span>
-                  </div>
+                  {event.store_name && (
+                    <div className="flex items-center gap-1 text-xs" style={{ color: designTokens.colors.text.secondary }}>
+                      <MapPin className="h-3 w-3 flex-shrink-0" style={{ color: designTokens.colors.functional.error }} />
+                      <span className="truncate">{event.store_name}</span>
+                    </div>
+                  )}
                   {event.event_start_date && (
                     <div className="flex items-center gap-1 text-xs mt-1" style={{ color: designTokens.colors.text.muted }}>
                       <Calendar className="h-3 w-3 flex-shrink-0" />
                       <span>
                         {formatDate(event.event_start_date)}
                         {event.event_end_date && event.event_end_date !== event.event_start_date && (
-                          <>〜{formatDate(event.event_end_date)}</>
+                          <> 〜 {formatDate(event.event_end_date)}</>
                         )}
                       </span>
                     </div>
