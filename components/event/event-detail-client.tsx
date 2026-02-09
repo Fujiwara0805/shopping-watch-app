@@ -809,7 +809,7 @@ export function EventDetailClient({ eventId }: EventDetailClientProps) {
                 <div className="flex items-center gap-2 mb-4">
                   <Tag className="h-5 w-5" style={{ color: designTokens.colors.secondary.fern }} />
                   <h2 className="text-lg font-semibold" style={{ fontFamily: designTokens.typography.display, color: designTokens.colors.text.primary }}>
-                    おすすめアクティビティ
+                    おすすめ
                   </h2>
                 </div>
                 <div className="flex flex-wrap gap-2">
