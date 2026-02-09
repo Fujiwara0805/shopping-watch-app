@@ -542,8 +542,8 @@ const ChallengesSection = () => {
   const challenges = [
     {
       imageUrl: 'https://res.cloudinary.com/dz9trbwma/image/upload/v1770516535/Gemini_Generated_Image_n5dwvwn5dwvwn5dw_nq711a.png',
-      title: '「5年後も、10年後も20年後も続く」ように',
-      description: '地元にとって大切なお祭りやイベントがこれから5年後、10年後、20年後も続くように、地元の人以外にも情報を届け続けたい。',
+      title: '5年後も、10年後も20年後も続くように',
+      description: '県内のお祭りやイベントがこれから5年後、10年後、20年後も続くように、情報を発信していきたい。',
     },
     {
       imageUrl: 'https://res.cloudinary.com/dz9trbwma/image/upload/v1770516535/Gemini_Generated_Image_sauq56sauq56sauq_bgou7c.png',
@@ -713,7 +713,7 @@ const SolutionSection = () => {
           >
             地域イベント情報の発信から、地元の人だけが知っているスポットの発見まで。
             <br className="hidden sm:block" />
-            あなたと一緒に作り上げていく大分の魅力を発信するサービスを作りたい。
+            あなたと一緒に作り上げていく大分の魅力を発信するサービスを作りました。
           </motion.p>
         </div>
 
@@ -1040,7 +1040,7 @@ const ModelCourseSection = ({ onMapClick }: { onMapClick: (mapId: string) => voi
               color: designTokens.colors.text.secondary,
             }}
           >
-            観光サイトでまとめられているモデルコースやスタンプラリーのイベント、あなた自身が作成したおすすめルートまで、情報も掲載できます。
+            観光サイトでまとめられているモデルコースやスタンプラリーイベント、あなた自身が作成したおすすめルートまで、情報を掲載・閲覧できます。
             <br className="hidden sm:block" />
             自治体の方はもちろん、個人で地図を作成することが可能です。
           </motion.p>

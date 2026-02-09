@@ -269,7 +269,7 @@ export function NoteArticlesSection({
               color: designTokens.colors.text.secondary,
             }}
           >
-            私たちのnoteではこれまでに大分県内で開催されたイベント情報について綴っています。
+            私たちのnoteではこれまでに県内で開催されたイベント情報について綴っています。
           </motion.p>
         </div>
 
