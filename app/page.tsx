@@ -333,7 +333,7 @@ const HeroSection = ({
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
           >
-            <span 
+            <span
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium"
               style={{
                 background: `${designTokens.colors.accent.gold}20`,
@@ -352,16 +352,16 @@ const HeroSection = ({
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.4 }}
             className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-semibold leading-[1.1] tracking-tight"
-            style={{ 
+            style={{
               fontFamily: designTokens.typography.display,
               color: designTokens.colors.text.primary,
             }}
           >
-            大分の魅力を
+            今週末、どこ行く？
             <br />
             <span className="relative inline-block mt-2">
-              <span className="relative z-10">未来へつなぐ</span>
-              <motion.span 
+              <span className="relative z-10">大分のイベントが見つかる</span>
+              <motion.span
                 initial={{ scaleX: 0 }}
                 animate={{ scaleX: 1 }}
                 transition={{ duration: 0.6, delay: 1.2 }}
@@ -377,22 +377,23 @@ const HeroSection = ({
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.8 }}
-            className="max-w-md mx-auto mt-8"
+            className="max-w-md md:max-w-2xl mx-auto mt-8"
           >
             <ElevationCard elevation="high" padding="md" hover={false} style={{ background: '#999da8' }}>
-              <div className="space-y-3">
+              {/* PC: 横並び / モバイル: 縦並び */}
+              <div className="space-y-3 md:space-y-0 md:flex md:items-end md:gap-4">
                 {/* Area Select */}
-                <div className="space-y-1.5 text-left">
-                  <Label 
+                <div className="space-y-1.5 text-left md:flex-1">
+                  <Label
                     className="text-xs font-semibold tracking-wide"
                     style={{ color: 'rgba(255,255,255,0.95)' }}
                   >
                     エリア
                   </Label>
                   <Select value={city} onValueChange={setCity}>
-                    <SelectTrigger 
+                    <SelectTrigger
                       className="h-10 rounded-lg text-sm"
-                      style={{ 
+                      style={{
                         borderColor: `${designTokens.colors.secondary.stone}50`,
                         backgroundColor: designTokens.colors.background.mist,
                         color: designTokens.colors.text.primary,
@@ -410,17 +411,17 @@ const HeroSection = ({
                 </div>
 
                 {/* Target Audience */}
-                <div className="space-y-1.5 text-left">
-                  <Label 
+                <div className="space-y-1.5 text-left md:flex-1">
+                  <Label
                     className="text-xs font-semibold tracking-wide"
                     style={{ color: 'rgba(255,255,255,0.95)' }}
                   >
                     対象（任意）
                   </Label>
                   <Select value={target} onValueChange={setTarget}>
-                    <SelectTrigger 
+                    <SelectTrigger
                       className="h-10 rounded-lg text-sm"
-                      style={{ 
+                      style={{
                         borderColor: `${designTokens.colors.secondary.stone}50`,
                         backgroundColor: designTokens.colors.background.mist,
                         color: designTokens.colors.text.primary,
@@ -437,14 +438,14 @@ const HeroSection = ({
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex gap-2 pt-1">
+                <div className="flex gap-2 pt-1 md:pt-0 md:flex-shrink-0">
                   <Button
                     variant="outline"
                     onClick={() => {
                       setCity('all');
                       setTarget('none');
                     }}
-                    className="flex-1 h-10 rounded-lg text-sm font-medium transition-all hover:bg-opacity-10"
+                    className="flex-1 md:flex-initial h-10 rounded-lg text-sm font-medium transition-all hover:bg-opacity-10 md:px-4"
                     style={{
                       borderColor: designTokens.colors.secondary.stone,
                       color: designTokens.colors.text.secondary,
@@ -457,8 +458,8 @@ const HeroSection = ({
                       city: city === 'all' ? '' : city,
                       target: target === 'none' ? '' : target,
                     })}
-                    className="flex-1 h-10 rounded-lg text-sm font-semibold transition-all hover:opacity-90"
-                    style={{ 
+                    className="flex-1 md:flex-initial h-10 rounded-lg text-sm font-semibold transition-all hover:opacity-90 md:px-6"
+                    style={{
                       background: designTokens.colors.accent.lilac,
                       color: designTokens.colors.text.inverse,
                     }}
@@ -493,11 +494,11 @@ const HeroSection = ({
               地図から探す
               <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
             </motion.button>
-            <p 
+            <p
               className="text-sm mt-4"
               style={{ color: designTokens.colors.text.muted }}
             >
-              登録不要・無料で今すぐ探索できます
+              登録不要・完全無料 ー 30秒で周辺イベントが見つかる
             </p>
           </motion.div>
         </div>
@@ -541,18 +542,18 @@ const ChallengesSection = () => {
   const challenges = [
     {
       imageUrl: 'https://res.cloudinary.com/dz9trbwma/image/upload/v1770516535/Gemini_Generated_Image_n5dwvwn5dwvwn5dw_nq711a.png',
-      title: '消えゆく地域の文化遺産',
-      description: '大分県内の魅力的なイベントや祭りが、記録されないまま人々の記憶から消えていく。後世に残すべき文化が、静かに失われている。',
+      title: '知らなかった、では遅すぎる',
+      description: '地元の人でさえ知らない祭りやイベントが、毎週のように開催されている。情報が届かないまま終わってしまう ー その損失は計り知れない。',
     },
     {
       imageUrl: 'https://res.cloudinary.com/dz9trbwma/image/upload/v1770516535/Gemini_Generated_Image_sauq56sauq56sauq_bgou7c.png',
-      title: '旅行者が求める自由な旅',
-      description: '一人旅やインバウンド観光客が増加する中、ツアーに頼らず自分のペースで観光名所やモデルコースを巡りたいというニーズに応える情報が不足している。',
+      title: '「自分だけの旅」を求めて',
+      description: 'ツアーではなく、自分のペースで巡りたい。一人旅もインバウンド旅行者も、本当に欲しいのは「地元の人だけが知る、生きた情報」。',
     },
     {
       imageUrl: 'https://res.cloudinary.com/dz9trbwma/image/upload/v1770516536/Gemini_Generated_Image_tgqneqtgqneqtgqn_ekswrm.png',
-      title: '埋もれたままの魅力的なスポット',
-      description: '地域に数多く存在する魅力的な場所が、知られないまま観光資源として活かされていない。新たな名所を生み出す仕組みがない。',
+      title: 'まだ誰も見つけていない名所',
+      description: '大分には、ガイドブックに載っていない絶景スポットや穴場がまだまだ眠っている。あなたの「発見」が、次の人気スポットになる。',
     },
   ];
 
@@ -571,33 +572,33 @@ const ChallengesSection = () => {
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.6, delay: 0.1 }}
             className="mt-4 text-3xl sm:text-4xl md:text-5xl font-semibold leading-tight"
-            style={{ 
+            style={{
               fontFamily: designTokens.typography.display,
               color: designTokens.colors.primary.base,
             }}
           >
-            失われゆく文化と、
+            もったいない、
             <br />
-            届かない魅力。
+            が多すぎる。
           </motion.h2>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.6, delay: 0.2 }}
             className="mt-6 text-lg max-w-2xl mx-auto leading-relaxed"
-            style={{ 
+            style={{
               fontFamily: designTokens.typography.body,
               color: designTokens.colors.text.secondary,
             }}
           >
-            地域の祭りやイベントが記録されないまま消え、魅力的な場所が知られないまま埋もれている。
+            大分には魅力があふれているのに、情報が届いていない。
             <br className="hidden sm:block" />
-            一人旅やインバウンド客が自由に巡れる情報も、まだ十分ではありません。
+            知られざるイベント、隠れた名所、そして自由な旅のカタチ。
           </motion.p>
         </div>
 
-        {/* Challenges List */}
-        <div className="space-y-8">
+        {/* Challenges List - PC: 3列グリッド / モバイル: 縦並び */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
           {challenges.map((challenge, index) => (
             <motion.div
               key={challenge.title}
@@ -605,8 +606,7 @@ const ChallengesSection = () => {
               animate={isInView ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.5, delay: 0.3 + index * 0.1 }}
             >
-              <ElevationCard elevation="low" padding="none" hover={false} className="overflow-hidden">
-                {/* 画像を上部に配置 */}
+              <ElevationCard elevation="low" padding="none" hover={true} className="overflow-hidden h-full">
                 <div className="aspect-[4/3] w-full overflow-hidden bg-white/80">
                   <img
                     src={challenge.imageUrl}
@@ -614,10 +614,9 @@ const ChallengesSection = () => {
                     className="w-full h-full object-cover"
                   />
                 </div>
-                {/* タイトル・説明は画像の下に縦配置・中央揃え */}
-                <div className="px-6 sm:px-8 py-6 sm:py-8 text-center">
+                <div className="px-5 sm:px-6 py-5 sm:py-6 text-center">
                   <h3
-                    className="text-xl sm:text-2xl font-semibold mb-4"
+                    className="text-lg sm:text-xl font-semibold mb-3"
                     style={{
                       fontFamily: designTokens.typography.display,
                       color: designTokens.colors.primary.base,
@@ -626,7 +625,7 @@ const ChallengesSection = () => {
                     {challenge.title}
                   </h3>
                   <p
-                    className="leading-relaxed text-center max-w-2xl mx-auto"
+                    className="text-sm sm:text-base leading-relaxed text-center"
                     style={{
                       fontFamily: designTokens.typography.body,
                       color: designTokens.colors.text.secondary,
@@ -655,22 +654,22 @@ const SolutionSection = () => {
   const solutions = [
     {
       label: 'PRESERVE',
-      title: 'イベントと祭りを後世に残す',
-      description: '大分県内で開催される魅力的なイベントやお祭りを記録し、5年後、10年後、20年後まで残す。地域の文化遺産を未来へつなぎます。',
+      title: '週末のイベント、もう見逃さない',
+      description: '大分県内のイベント・祭り・マルシェをリアルタイムで集約。「知らなかった」を「行ってきた！」に変える。地域の文化を未来へつなぎます。',
       icon: <Sparkles className="w-5 h-5" />,
       color: designTokens.colors.accent.lilac,
     },
     {
       label: 'DISCOVER',
-      title: 'スポットを登録し、新たな名所を作る',
-      description: 'あなたが見つけた魅力的な場所をマップ上に記録。多くのユーザーの発見が集まり、新たな名所や観光地が生まれます。',
+      title: 'あなたの「お気に入り」が名所になる',
+      description: '地元の人だからこそ知っている穴場をマップに登録。みんなの「発見」が集まると、まだ誰も知らない新しい名所が生まれます。',
       icon: <MapPin className="w-5 h-5" />,
       color: designTokens.colors.secondary.fern,
     },
     {
       label: 'EXPLORE',
-      title: 'モデルコースでツアーに頼らない旅',
-      description: '一人旅やインバウンド観光客の増加に応え、ツアーに頼らず観光名所やモデルコースを自由に巡れる情報を提供します。',
+      title: 'ツアー不要。自分だけの旅を組み立てる',
+      description: '行きたい場所をつないで、あなただけのモデルコースを作成。一人旅でも、海外からの旅行者でも、自由に大分を楽しめます。',
       icon: <Route className="w-5 h-5" />,
       color: designTokens.colors.accent.gold,
     },
@@ -693,33 +692,33 @@ const SolutionSection = () => {
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.6, delay: 0.1 }}
             className="mt-4 text-3xl sm:text-4xl md:text-5xl font-semibold leading-tight"
-            style={{ 
+            style={{
               fontFamily: designTokens.typography.display,
               color: designTokens.colors.primary.base,
             }}
           >
-            TOKUDOKUが届ける、
+            TOKUDOKUなら、
             <br />
-            3つの価値。
+            すべてが変わる。
           </motion.h2>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.6, delay: 0.2 }}
             className="mt-6 text-lg max-w-2xl mx-auto leading-relaxed"
-            style={{ 
+            style={{
               fontFamily: designTokens.typography.body,
               color: designTokens.colors.text.secondary,
             }}
           >
-            大分の魅力的なイベントや祭りを後世に残し、新たな名所を生み出し、
+            イベントの発見から、穴場スポットの共有、自分だけの旅づくりまで。
             <br className="hidden sm:block" />
-            自由な旅を実現する。TOKUDOKUが提供する3つのソリューション。
+            大分を120%楽しむための3つの機能。
           </motion.p>
         </div>
 
-        {/* Solutions Grid */}
-        <div className="space-y-8">
+        {/* Solutions Grid - PC: 3列 / モバイル: 縦並び */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
           {solutions.map((solution, index) => (
             <motion.div
               key={solution.label}
@@ -727,10 +726,10 @@ const SolutionSection = () => {
               animate={isInView ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.6, delay: 0.3 + index * 0.15 }}
             >
-              <ElevationCard 
-                elevation="medium" 
-                padding="xl" 
-                className="relative overflow-hidden group"
+              <ElevationCard
+                elevation="medium"
+                padding="lg"
+                className="relative overflow-hidden group h-full"
               >
                 {/* Background Accent */}
                 <div 
@@ -839,9 +838,9 @@ const SpotsSection = () => {
               color: designTokens.colors.primary.base,
             }}
           >
-            あなたの発見が、
+            「ここ、最高！」を
             <br />
-            未来の名所になる。
+            みんなでシェア。
           </motion.h2>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
@@ -853,9 +852,9 @@ const SpotsSection = () => {
               color: designTokens.colors.text.secondary,
             }}
           >
-            大分県内の魅力的なスポットをマップ上に記録。
+            あなたのお気に入りスポットを地図にピン。
             <br className="hidden sm:block" />
-            5年後、10年後、20年後まで残り続ける新たな名所を、あなたの手で作りましょう。
+            一人の発見が、たくさんの人の思い出になる。
           </motion.p>
         </div>
 
@@ -1022,28 +1021,28 @@ const ModelCourseSection = ({ onMapClick }: { onMapClick: (mapId: string) => voi
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.6, delay: 0.1 }}
             className="mt-4 text-3xl sm:text-4xl md:text-5xl font-semibold leading-tight"
-            style={{ 
+            style={{
               fontFamily: designTokens.typography.display,
               color: designTokens.colors.primary.base,
             }}
           >
-            モデルコースで、
+            旅のプランは、
             <br />
-            大分を巡る。
+            自分で作る時代。
           </motion.h2>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.6, delay: 0.2 }}
             className="mt-6 text-lg max-w-xl mx-auto leading-relaxed"
-            style={{ 
+            style={{
               fontFamily: designTokens.typography.body,
               color: designTokens.colors.text.secondary,
             }}
           >
-            ツアーに頼らず、自分のペースで大分を楽しむ。
+            行きたいスポットを繋げて、自分だけのルートを完成。
             <br className="hidden sm:block" />
-            一人旅やインバウンド観光客のためのモデルコース。
+            ガイドブックには載っていない、あなただけの大分旅。
           </motion.p>
         </div>
 
@@ -1244,21 +1243,23 @@ const FinalCTASection = ({ onStart }: { onStart: () => void }) => {
             Get Started
           </span>
 
-          <h2 
+          <h2
             className="text-3xl sm:text-4xl md:text-5xl font-semibold leading-tight"
-            style={{ 
+            style={{
               fontFamily: designTokens.typography.display,
               color: designTokens.colors.text.inverse,
             }}
           >
-            大分の魅力を、未来へ。
+            さあ、大分を探しに行こう。
           </h2>
-          
-          <p 
+
+          <p
             className="text-lg max-w-md mx-auto"
             style={{ color: `${designTokens.colors.text.inverse}90` }}
           >
-            イベントを記録し、スポットを登録し、モデルコースを共有する。今すぐ始めましょう。
+            今日のイベントも、明日の旅先も、すべてここから。
+            <br />
+            完全無料・登録不要で、今すぐスタート。
           </p>
 
           <motion.button
@@ -1314,16 +1315,16 @@ const Footer = () => (
               TOKUDOKU
             </span>
           </div>
-          <p 
+          <p
             className="leading-relaxed max-w-xs"
-            style={{ 
+            style={{
               fontFamily: designTokens.typography.body,
               color: designTokens.colors.text.secondary,
             }}
           >
-            大分の魅力を、
+            大分のイベント・スポット・旅を、
             <br />
-            未来へつなぐ。
+            もっと身近に。
           </p>
         </div>
 

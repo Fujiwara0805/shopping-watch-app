@@ -1,19 +1,80 @@
 import { Metadata } from 'next';
-import { redirect } from 'next/navigation';
+import { supabase } from '@/lib/supabaseClient';
+import { isEventNotEnded } from '@/lib/seo/utils';
+import { AreaStructuredData, EventListStructuredData } from '@/components/seo/event-structured-data';
+import { PrefectureEventListClient } from '@/components/seo/prefecture-event-list';
+import { SEOEventData } from '@/lib/seo/types';
 
 interface PageProps {
-  params: {
-    prefecture: string;
-  };
+  params: Promise<{ prefecture: string }> | { prefecture: string };
+}
+
+/** 本番でURLエンコードされたparamsを確実にデコードする（二重エンコードにも対応） */
+function decodeSegment(value: string): string {
+  if (!value || typeof value !== 'string') return value;
+  let decoded = value;
+  try {
+    while (decoded !== decodeURIComponent(decoded)) {
+      decoded = decodeURIComponent(decoded);
+    }
+  } catch {
+    // デコード失敗時はそのまま返す
+  }
+  return decoded;
+}
+
+/**
+ * 都道府県全体のイベントを取得（開催中・開催予定のみ）
+ */
+async function getPrefectureEvents(prefecture: string): Promise<SEOEventData[]> {
+  const now = new Date();
+  const { data: events, error } = await supabase
+    .from('posts')
+    .select('*')
+    .eq('is_deleted', false)
+    .eq('category', 'イベント情報')
+    .eq('prefecture', prefecture)
+    .order('event_start_date', { ascending: true });
+
+  if (error || !events) return [];
+
+  return events.filter((event) => isEventNotEnded(event, now)) as SEOEventData[];
+}
+
+/**
+ * 各市町村の開催中・開催予定イベント件数を取得
+ */
+async function getMunicipalityEventCounts(prefecture: string): Promise<Record<string, number>> {
+  const now = new Date();
+  const { data: events, error } = await supabase
+    .from('posts')
+    .select('city')
+    .eq('is_deleted', false)
+    .eq('category', 'イベント情報')
+    .eq('prefecture', prefecture);
+
+  if (error || !events) return {};
+
+  const counts: Record<string, number> = {};
+  events
+    .filter((event) => isEventNotEnded(event as any, now))
+    .forEach((event) => {
+      if (event.city) {
+        counts[event.city] = (counts[event.city] || 0) + 1;
+      }
+    });
+  return counts;
 }
 
 // 動的メタデータ生成
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const prefecture = decodeURIComponent(params.prefecture);
-  
+  const resolved = await Promise.resolve(params);
+  const prefecture = decodeSegment(resolved.prefecture);
+  const events = await getPrefectureEvents(prefecture);
+
   return {
     title: `${prefecture}のイベント情報 - お祭り・マルシェ・ワークショップ | トクドク`,
-    description: `${prefecture}で開催されるお祭り、マルシェ、ワークショップなどのイベント情報一覧。現在地から近いイベントを地図で検索。週末の予定探しに最適な地域密着イベントアプリ。`,
+    description: `${prefecture}で開催中・開催予定のイベント${events.length}件。お祭り、マルシェ、ワークショップなどの情報一覧。現在地から近いイベントを地図で検索。`,
     keywords: `${prefecture},イベント,お祭り,秋祭り,夏祭り,マルシェ,ワークショップ,フェスティバル,地域イベント,週末,予定,体験イベント,トクドク`,
     openGraph: {
       title: `${prefecture}のイベント情報 | トクドク`,
@@ -21,7 +82,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       type: 'website',
       locale: 'ja_JP',
       siteName: 'トクドク',
-      url: `https://tokudoku.com/area/${params.prefecture}`,
+      url: `https://tokudoku.com/area/${encodeURIComponent(prefecture)}`,
       images: [
         {
           url: 'https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png',
@@ -38,7 +99,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       images: ['https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png'],
     },
     alternates: {
-      canonical: `https://tokudoku.com/area/${params.prefecture}`,
+      canonical: `https://tokudoku.com/area/${encodeURIComponent(prefecture)}`,
     },
     robots: {
       index: true,
@@ -51,7 +112,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export async function generateStaticParams() {
   const prefectures = [
     '大分県',
-    // 将来的に他の都道府県を追加可能
   ];
 
   return prefectures.map((pref) => ({
@@ -59,9 +119,41 @@ export async function generateStaticParams() {
   }));
 }
 
-// ページコンポーネント - イベント一覧ページにリダイレクト
-export default function PrefecturePage({ params }: PageProps) {
-  // イベント一覧ページにリダイレクト
-  redirect('/events');
-}
+// ページコンポーネント
+export default async function PrefecturePage({ params }: PageProps) {
+  const resolved = await Promise.resolve(params);
+  const prefecture = decodeSegment(resolved.prefecture);
 
+  const [events, municipalityEventCounts] = await Promise.all([
+    getPrefectureEvents(prefecture),
+    getMunicipalityEventCounts(prefecture),
+  ]);
+
+  const pageUrl = `https://tokudoku.com/area/${encodeURIComponent(prefecture)}`;
+
+  return (
+    <>
+      {/* 構造化データ */}
+      <AreaStructuredData
+        prefecture={prefecture}
+        city=""
+        eventCount={events.length}
+      />
+
+      {events.length > 0 && (
+        <EventListStructuredData
+          events={events}
+          pageTitle={`${prefecture}のイベント情報`}
+          pageUrl={pageUrl}
+        />
+      )}
+
+      {/* クライアントコンポーネント */}
+      <PrefectureEventListClient
+        prefecture={prefecture}
+        initialEvents={events}
+        municipalityEventCounts={municipalityEventCounts}
+      />
+    </>
+  );
+}

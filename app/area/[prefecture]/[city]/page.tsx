@@ -5,6 +5,7 @@ import { isEventNotEnded } from '@/lib/seo/utils';
 import { AreaStructuredData, EventListStructuredData } from '@/components/seo/event-structured-data';
 import { AreaEventListClient } from '@/components/seo/area-event-list';
 import { SEOEventData } from '@/lib/seo/types';
+import { OITA_MUNICIPALITIES } from '@/lib/constants';
 
 interface PageProps {
   params: Promise<{ prefecture: string; city: string }> | { prefecture: string; city: string };
@@ -52,6 +53,32 @@ async function getAreaEvents(prefecture: string, city: string): Promise<SEOEvent
 
   // 終了していないイベントのみフィルタリング（isEventNotEnded で共通化）
   return events.filter((event) => isEventNotEnded(event, now)) as SEOEventData[];
+}
+
+/**
+ * 各市町村の開催中・開催予定イベント件数を取得
+ */
+async function getMunicipalityEventCounts(prefecture: string): Promise<Record<string, number>> {
+  const now = new Date();
+  const { data: events, error } = await supabase
+    .from('posts')
+    .select('city')
+    .eq('is_deleted', false)
+    .eq('category', 'イベント情報')
+    .eq('prefecture', prefecture);
+
+  if (error || !events) return {};
+
+  // isEventNotEnded でフィルタリング後、市町村ごとにカウント
+  const counts: Record<string, number> = {};
+  events
+    .filter((event) => isEventNotEnded(event as any, now))
+    .forEach((event) => {
+      if (event.city) {
+        counts[event.city] = (counts[event.city] || 0) + 1;
+      }
+    });
+  return counts;
 }
 
 /**
@@ -109,19 +136,22 @@ export default async function AreaPage({ params }: PageProps) {
   const prefecture = decodeSegment(resolved.prefecture);
   const city = decodeSegment(resolved.city);
 
-  const events = await getAreaEvents(prefecture, city);
+  const [events, municipalityEventCounts] = await Promise.all([
+    getAreaEvents(prefecture, city),
+    getMunicipalityEventCounts(prefecture),
+  ]);
   const locationName = `${prefecture}${city}`;
   const pageUrl = `https://tokudoku.com/area/${encodeURIComponent(prefecture)}/${encodeURIComponent(city)}`;
-  
+
   return (
     <>
       {/* 構造化データ */}
-      <AreaStructuredData 
-        prefecture={prefecture} 
-        city={city} 
-        eventCount={events.length} 
+      <AreaStructuredData
+        prefecture={prefecture}
+        city={city}
+        eventCount={events.length}
       />
-      
+
       {/* イベント一覧の構造化データ */}
       {events.length > 0 && (
         <EventListStructuredData
@@ -130,12 +160,13 @@ export default async function AreaPage({ params }: PageProps) {
           pageUrl={pageUrl}
         />
       )}
-      
+
       {/* クライアントコンポーネント */}
       <AreaEventListClient
         prefecture={prefecture}
         city={city}
         initialEvents={events}
+        municipalityEventCounts={municipalityEventCounts}
       />
     </>
   );

@@ -318,7 +318,7 @@ export default function CalendarPage() {
         .from('posts')
         .select(`
           id, app_profile_id, event_name, store_name, event_start_date, event_end_date,
-          city, prefecture, content, store_latitude, store_longitude, image_urls, enable_checkin,
+          city, prefecture, content, store_latitude, store_longitude, image_urls, enable_checkin, target_tags,
           author:app_profiles!posts_app_profile_id_fkey (user_id)
         `)
         .eq('is_deleted', false)

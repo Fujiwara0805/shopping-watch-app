@@ -12,27 +12,21 @@ import { generateSemanticEventUrl } from '@/lib/seo/url-helper';
 import { designTokens, OITA_MUNICIPALITIES } from '@/lib/constants';
 import { Breadcrumb } from '@/components/seo/breadcrumb';
 
-interface AreaEventListClientProps {
+interface PrefectureEventListClientProps {
   prefecture: string;
-  city: string;
   initialEvents: SEOEventData[];
-  /** 各市町村のイベント件数マップ（開催中・開催予定のみ） */
   municipalityEventCounts?: Record<string, number>;
 }
 
-/** デフォルトの初期表示件数 */
 const INITIAL_DISPLAY_COUNT = 12;
 
-export function AreaEventListClient({
+export function PrefectureEventListClient({
   prefecture,
-  city,
   initialEvents,
   municipalityEventCounts = {},
-}: AreaEventListClientProps) {
-  const locationName = `${prefecture}${city}`;
+}: PrefectureEventListClientProps) {
   const [showAllCities, setShowAllCities] = useState(false);
 
-  // 日付順（event_start_date 昇順）で表示
   const sortedEvents = useMemo(() => {
     return [...initialEvents].sort((a, b) => {
       const aDate = a.event_start_date ? new Date(a.event_start_date).getTime() : 0;
@@ -44,14 +38,11 @@ export function AreaEventListClient({
   const breadcrumbItems = [
     { label: 'ホーム', href: '/' },
     { label: 'エリア', href: '/area' },
-    { label: prefecture, href: `/area/${encodeURIComponent(prefecture)}` },
-    { label: city, href: `/area/${encodeURIComponent(prefecture)}/${encodeURIComponent(city)}`, isCurrent: true },
+    { label: prefecture, href: `/area/${encodeURIComponent(prefecture)}`, isCurrent: true },
   ];
 
-  // 画像URLを取得
   const getImageUrl = (imageUrls: string | string[] | null): string | null => {
     if (!imageUrls) return null;
-
     if (typeof imageUrls === 'string') {
       try {
         const parsed = JSON.parse(imageUrls);
@@ -60,53 +51,38 @@ export function AreaEventListClient({
         return null;
       }
     }
-
     return Array.isArray(imageUrls) && imageUrls.length > 0 ? imageUrls[0] : null;
   };
 
-  // 日付をフォーマット
   const formatDate = (startDate: string | null, endDate: string | null): string => {
     if (!startDate) return '';
-
     const start = new Date(startDate);
-    const startStr = start.toLocaleDateString('ja-JP', {
-      month: 'long',
-      day: 'numeric',
-    });
-
+    const startStr = start.toLocaleDateString('ja-JP', { month: 'long', day: 'numeric' });
     if (endDate && startDate !== endDate) {
       const end = new Date(endDate);
-      const endStr = end.toLocaleDateString('ja-JP', {
-        month: 'long',
-        day: 'numeric',
-      });
+      const endStr = end.toLocaleDateString('ja-JP', { month: 'long', day: 'numeric' });
       return `${startStr} 〜 ${endStr}`;
     }
-
     return startStr;
   };
 
-  // 先頭に戻る
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // 他の地域リスト: 全市町村から現在の市を除外し、イベント件数付きで表示
-  const otherCities = useMemo(() => {
-    return OITA_MUNICIPALITIES
-      .filter((c) => c !== city)
-      .map((c) => ({
-        name: c,
-        eventCount: municipalityEventCounts[c] || 0,
-      }));
-  }, [city, municipalityEventCounts]);
+  // 地域リスト
+  const allCities = useMemo(() => {
+    return OITA_MUNICIPALITIES.map((c) => ({
+      name: c,
+      eventCount: municipalityEventCounts[c] || 0,
+    }));
+  }, [municipalityEventCounts]);
 
-  const displayedCities = showAllCities ? otherCities : otherCities.slice(0, INITIAL_DISPLAY_COUNT);
-  const hasMoreCities = otherCities.length > INITIAL_DISPLAY_COUNT;
+  const displayedCities = showAllCities ? allCities : allCities.slice(0, INITIAL_DISPLAY_COUNT);
+  const hasMoreCities = allCities.length > INITIAL_DISPLAY_COUNT;
 
   return (
     <div className="min-h-screen" style={{ background: designTokens.colors.background.mist }}>
-      {/* パンくず（都道府県名・市町村名を表示） */}
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="px-4 pt-3">
         <Breadcrumb items={breadcrumbItems} />
       </motion.div>
@@ -126,9 +102,66 @@ export function AreaEventListClient({
               color: designTokens.colors.primary.dark,
             }}
           >
-            {city}のイベント
+            {prefecture}のイベント
           </h1>
         </motion.div>
+
+        {/* 地域から探す */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="mb-8 p-4 rounded-xl"
+          style={{
+            background: designTokens.colors.background.white,
+            border: `1px solid ${designTokens.colors.secondary.stone}30`,
+            boxShadow: designTokens.elevation.subtle,
+          }}
+        >
+          <h2 className="font-bold text-lg mb-3" style={{ color: designTokens.colors.text.primary }}>
+            地域から探す
+          </h2>
+          <div className="flex flex-wrap gap-2">
+            {displayedCities.map((item) => (
+              <Link
+                key={item.name}
+                href={`/area/${encodeURIComponent(prefecture)}/${encodeURIComponent(item.name)}`}
+                className="px-3 py-1.5 rounded-full text-sm transition-colors flex items-center gap-1.5"
+                style={{
+                  background: item.eventCount > 0
+                    ? `${designTokens.colors.accent.gold}20`
+                    : `${designTokens.colors.secondary.stone}15`,
+                  color: item.eventCount > 0
+                    ? designTokens.colors.text.primary
+                    : designTokens.colors.text.muted,
+                }}
+              >
+                {item.name}
+                {item.eventCount > 0 && (
+                  <span
+                    className="text-xs px-1.5 py-0.5 rounded-full font-medium"
+                    style={{
+                      background: `${designTokens.colors.secondary.fern}20`,
+                      color: designTokens.colors.secondary.fern,
+                    }}
+                  >
+                    {item.eventCount}
+                  </span>
+                )}
+              </Link>
+            ))}
+          </div>
+          {hasMoreCities && !showAllCities && (
+            <button
+              onClick={() => setShowAllCities(true)}
+              className="mt-3 flex items-center gap-1 text-sm font-medium transition-colors hover:opacity-80"
+              style={{ color: designTokens.colors.accent.lilacDark }}
+            >
+              <ChevronDown className="h-4 w-4" />
+              すべての地域を見る（{allCities.length}件）
+            </button>
+          )}
+        </motion.section>
 
         <div className="mb-4 flex items-center justify-between">
           <p className="text-sm" style={{ color: designTokens.colors.text.secondary }}>
@@ -141,7 +174,7 @@ export function AreaEventListClient({
               color: designTokens.colors.primary.base,
             }}
           >
-            {locationName}
+            {prefecture}
           </Badge>
         </div>
 
@@ -158,7 +191,7 @@ export function AreaEventListClient({
           >
             <Calendar className="h-16 w-16 mx-auto mb-4" style={{ color: designTokens.colors.text.muted }} />
             <p className="text-lg" style={{ color: designTokens.colors.text.secondary }}>
-              {city}で開催予定のイベントはありません
+              {prefecture}で開催予定のイベントはありません
             </p>
             <Link href="/events">
               <Button className="mt-4" style={{ background: designTokens.colors.primary.base, color: designTokens.colors.text.inverse }}>
@@ -220,7 +253,10 @@ export function AreaEventListClient({
                           <div className="space-y-1">
                             <div className="flex items-center gap-2 text-sm" style={{ color: designTokens.colors.text.secondary }}>
                               <MapPin className="h-4 w-4 flex-shrink-0" style={{ color: designTokens.colors.functional.error }} />
-                              <span className="truncate">{event.store_name}</span>
+                              <span className="truncate">
+                                {event.city && <span className="font-medium">{event.city} </span>}
+                                {event.store_name}
+                              </span>
                             </div>
                             {dateStr && (
                               <div className="flex items-center gap-2 text-sm" style={{ color: designTokens.colors.text.muted }}>
@@ -238,63 +274,6 @@ export function AreaEventListClient({
             </AnimatePresence>
           </div>
         )}
-
-        {/* 他の地域セクション - 全18市町村対応 */}
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-          className="mt-8 p-4 rounded-xl"
-          style={{
-            background: designTokens.colors.background.white,
-            border: `1px solid ${designTokens.colors.secondary.stone}30`,
-            boxShadow: designTokens.elevation.subtle,
-          }}
-        >
-          <h2 className="font-bold text-lg mb-3" style={{ color: designTokens.colors.text.primary }}>
-            {prefecture}の他の地域
-          </h2>
-          <div className="flex flex-wrap gap-2">
-            {displayedCities.map((item) => (
-              <Link
-                key={item.name}
-                href={`/area/${encodeURIComponent(prefecture)}/${encodeURIComponent(item.name)}`}
-                className="px-3 py-1.5 rounded-full text-sm transition-colors flex items-center gap-1.5"
-                style={{
-                  background: item.eventCount > 0
-                    ? `${designTokens.colors.accent.gold}20`
-                    : `${designTokens.colors.secondary.stone}15`,
-                  color: item.eventCount > 0
-                    ? designTokens.colors.text.primary
-                    : designTokens.colors.text.muted,
-                }}
-              >
-                {item.name}
-                {item.eventCount > 0 && (
-                  <span
-                    className="text-xs px-1.5 py-0.5 rounded-full font-medium"
-                    style={{
-                      background: `${designTokens.colors.secondary.fern}20`,
-                      color: designTokens.colors.secondary.fern,
-                    }}
-                  >
-                    {item.eventCount}
-                  </span>
-                )}
-              </Link>
-            ))}
-          </div>
-          {hasMoreCities && !showAllCities && (
-            <button
-              onClick={() => setShowAllCities(true)}
-              className="mt-3 flex items-center gap-1 text-sm font-medium transition-colors hover:opacity-80"
-              style={{ color: designTokens.colors.accent.lilacDark }}
-            >
-              <ChevronDown className="h-4 w-4" />
-              すべての地域を見る（{otherCities.length}件）
-            </button>
-          )}
-        </motion.section>
       </main>
 
       <div className="fixed bottom-4 right-4 z-30">
@@ -314,5 +293,4 @@ export function AreaEventListClient({
   );
 }
 
-export default AreaEventListClient;
-
+export default PrefectureEventListClient;
