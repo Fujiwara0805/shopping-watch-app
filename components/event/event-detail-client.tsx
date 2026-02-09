@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { Compass, MapPin, Calendar, ExternalLink, AlertCircle, Phone, FileText, DollarSign, Link as LinkIcon, ChevronLeft, ChevronRight, X, CalendarPlusIcon, Shield, ScrollText, Search, Home, ChevronRight as ChevronRightIcon, ArrowLeft, Share2, Users, Tag, Sparkles } from 'lucide-react';
+import { Compass, MapPin, Calendar, ExternalLink, AlertCircle, Phone, FileText, DollarSign, Link as LinkIcon, ChevronLeft, ChevronRight, X, CalendarPlusIcon, Shield, ScrollText, Search, Home, ChevronRight as ChevronRightIcon, ArrowLeft, Share2, Users, Sparkles } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import Script from 'next/script';
 import Link from 'next/link';
@@ -55,7 +55,7 @@ interface EventDetailClientProps {
   eventId: string;
 }
 
-/** おすすめアクティビティの対象者タグごとのボタン背景色（順序対応） */
+/** イベントの特徴（対象者タグごと）のボタン背景色（順序対応） */
 const TAG_ACTIVITY_BG_COLORS = [
   '#E6E8EC',
   '#5B4A7D',
@@ -799,7 +799,7 @@ export function EventDetailClient({ eventId }: EventDetailClientProps) {
               )}
             </div>
 
-            {/* タグアクティビティ（アクティビティのみ表示・対象者タグごとの背景色） */}
+            {/* イベントの特徴（アクティビティのみ表示・対象者タグごとの背景色） */}
             {event.tag_activities && Object.keys(event.tag_activities).length > 0 && (
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
@@ -807,9 +807,9 @@ export function EventDetailClient({ eventId }: EventDetailClientProps) {
                 className="mt-8"
               >
                 <div className="flex items-center gap-2 mb-4">
-                  <Tag className="h-5 w-5" style={{ color: designTokens.colors.secondary.fern }} />
+                  <Sparkles className="h-5 w-5" style={{ color: designTokens.colors.secondary.fern }} />
                   <h2 className="text-lg font-semibold" style={{ fontFamily: designTokens.typography.display, color: designTokens.colors.text.primary }}>
-                    おすすめ
+                    イベントの特徴
                   </h2>
                 </div>
                 <div className="flex flex-wrap gap-2">
