@@ -27,9 +27,12 @@ export interface CreateSpotInput {
   tagActivities?: Record<string, string[]>;
 }
 
+/** ゲスト用の固定 user_id（auth.users に存在しない決め打ちUUID） */
+const GUEST_USER_ID = '00000000-0000-0000-0000-000000000000';
+
 /**
  * ゲスト（未ログイン）用のプロフィールIDを取得
- * app_profiles に display_name = 'ゲスト' がなければ自動作成する
+ * app_profiles に user_id = GUEST_USER_ID がなければ自動作成する
  */
 async function getGuestProfileId(): Promise<{ profileId: string | null; error: string | null }> {
   try {
@@ -37,7 +40,7 @@ async function getGuestProfileId(): Promise<{ profileId: string | null; error: s
     const { data, error } = await supabaseAnon
       .from('app_profiles')
       .select('id')
-      .eq('display_name', 'ゲスト')
+      .eq('user_id', GUEST_USER_ID)
       .limit(1)
       .maybeSingle();
 
@@ -48,7 +51,7 @@ async function getGuestProfileId(): Promise<{ profileId: string | null; error: s
     // 見つからない場合は自動作成（service roleで作成しRLSを回避）
     const { data: newProfile, error: insertError } = await supabaseServer
       .from('app_profiles')
-      .insert({ display_name: 'ゲスト' })
+      .insert({ display_name: 'ゲスト', user_id: GUEST_USER_ID })
       .select('id')
       .single();
 
