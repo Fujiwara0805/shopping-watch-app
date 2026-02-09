@@ -112,24 +112,6 @@ export function AreaEventListClient({
       </motion.div>
 
       <main className="container mx-auto px-4 py-6 max-w-4xl pb-28">
-        {/* ページタイトル */}
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-          className="mb-6"
-        >
-          <h1
-            className="text-2xl font-bold"
-            style={{
-              fontFamily: designTokens.typography.display,
-              color: designTokens.colors.primary.dark,
-            }}
-          >
-            {city}のイベント
-          </h1>
-        </motion.div>
-
         <div className="mb-4 flex items-center justify-between">
           <p className="text-sm" style={{ color: designTokens.colors.text.secondary }}>
             {sortedEvents.length}件のイベント

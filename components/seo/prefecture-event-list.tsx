@@ -88,24 +88,6 @@ export function PrefectureEventListClient({
       </motion.div>
 
       <main className="container mx-auto px-4 py-6 max-w-4xl pb-28">
-        {/* ページタイトル */}
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-          className="mb-6"
-        >
-          <h1
-            className="text-2xl font-bold"
-            style={{
-              fontFamily: designTokens.typography.display,
-              color: designTokens.colors.primary.dark,
-            }}
-          >
-            {prefecture}のイベント
-          </h1>
-        </motion.div>
-
         {/* 地域から探す */}
         <motion.section
           initial={{ opacity: 0, y: 20 }}

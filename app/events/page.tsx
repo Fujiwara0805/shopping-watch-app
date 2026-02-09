@@ -719,7 +719,7 @@ export default function CalendarPage() {
                         onClick={() => setSelectedDayIndex(index)}
                         whileHover={{ scale: 1.03 }}
                         whileTap={{ scale: 0.97 }}
-                        className="flex-shrink-0 snap-center rounded-xl px-2.5 py-1.5 transition-all text-center"
+                        className="flex-shrink-0 snap-center rounded-xl px-3 py-2 transition-all text-center"
                         data-date-tab
                         style={{
                           background: isSelected ? designTokens.colors.accent.lilac : designTokens.colors.background.white,
@@ -728,20 +728,20 @@ export default function CalendarPage() {
                         }}
                       >
                         <span
-                          className="block text-sm font-bold leading-tight"
+                          className="block text-base font-bold leading-tight"
                           style={{ color: isSelected ? designTokens.colors.text.inverse : designTokens.colors.text.primary }}
                         >
                           {format(day, 'd')}
                         </span>
                         <span
-                          className="block text-[10px] font-medium leading-tight"
+                          className="block text-xs font-medium leading-tight"
                           style={{ color: isSelected ? `${designTokens.colors.text.inverse}CC` : dayColor }}
                         >
                           {getDayOfWeek(day)}
                         </span>
                         {isToday && (
                           <span
-                            className="block text-[9px] font-bold leading-tight mt-0.5"
+                            className="block text-[10px] font-bold leading-tight mt-0.5"
                             style={{ color: isSelected ? designTokens.colors.accent.gold : designTokens.colors.functional.warning }}
                           >
                             今日

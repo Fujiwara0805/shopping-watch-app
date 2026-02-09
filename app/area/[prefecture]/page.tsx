@@ -48,16 +48,17 @@ async function getMunicipalityEventCounts(prefecture: string): Promise<Record<st
   const now = new Date();
   const { data: events, error } = await supabase
     .from('posts')
-    .select('city')
+    .select('city, event_start_date, event_end_date')
     .eq('is_deleted', false)
     .eq('category', 'イベント情報')
     .eq('prefecture', prefecture);
 
   if (error || !events) return {};
 
+  // 開催中・開催予定のみでカウント
   const counts: Record<string, number> = {};
   events
-    .filter((event) => isEventNotEnded(event as any, now))
+    .filter((event) => isEventNotEnded(event as { event_start_date?: string | null; event_end_date?: string | null }, now))
     .forEach((event) => {
       if (event.city) {
         counts[event.city] = (counts[event.city] || 0) + 1;
