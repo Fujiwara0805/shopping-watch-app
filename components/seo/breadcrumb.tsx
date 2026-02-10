@@ -59,6 +59,8 @@ export interface BreadcrumbItem {
   href: string;
   icon?: React.ElementType;
   isCurrent?: boolean;
+  /** true のときはリンクにせず span で表示（クリック不可） */
+  disabled?: boolean;
 }
 
 interface BreadcrumbProps {
@@ -207,6 +209,13 @@ export function Breadcrumb({
                   >
                     {Icon && <Icon className="h-4 w-4 text-primary" />}
                     <span className="truncate max-w-[150px] sm:max-w-[200px]">
+                      {item.label}
+                    </span>
+                  </span>
+                ) : item.disabled ? (
+                  <span className="flex items-center gap-1.5 text-muted-foreground cursor-default">
+                    {Icon && <Icon className="h-4 w-4 text-muted-foreground" />}
+                    <span className="truncate max-w-[100px] sm:max-w-[150px]">
                       {item.label}
                     </span>
                   </span>
