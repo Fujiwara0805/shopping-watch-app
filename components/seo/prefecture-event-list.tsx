@@ -4,7 +4,7 @@ import React, { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import Image from 'next/image';
-import { MapPin, Calendar, ArrowUpFromLine, ChevronDown } from 'lucide-react';
+import { MapPin, Calendar, ArrowUpFromLine, ChevronDown, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { SEOEventData } from '@/lib/seo/types';
@@ -36,8 +36,8 @@ export function PrefectureEventListClient({
   }, [initialEvents]);
 
   const breadcrumbItems = [
-    { label: 'ホーム', href: '/' },
-    { label: 'エリア', href: '/area' },
+    { label: 'ホーム', href: '/', icon: Home },
+    { label: 'エリア', href: '/area', disabled: true },
     { label: prefecture, href: `/area/${encodeURIComponent(prefecture)}`, isCurrent: true },
   ];
 
