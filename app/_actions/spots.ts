@@ -231,6 +231,138 @@ export async function getSpotById(
   }
 }
 
+// =============================================================================
+// スポット更新
+// =============================================================================
+
+export interface UpdateSpotInput {
+  storeName: string;
+  description: string;
+  storeLatitude: number;
+  storeLongitude: number;
+  storeId: string | null;
+  imageUrls: string[];
+  url: string | null;
+  city: string | null;
+  prefecture: string;
+  targetTags?: string[];
+  tagActivities?: Record<string, string[]>;
+}
+
+export async function updateSpot(
+  spotId: string,
+  userId: string,
+  input: UpdateSpotInput
+): Promise<{ success: boolean; error: string | null }> {
+  try {
+    const { profileId, error: profileError } = await getProfileIdByUserId(userId);
+    if (profileError || !profileId) {
+      return { success: false, error: 'プロフィール情報が見つかりません' };
+    }
+
+    // 所有者チェック
+    const { data: spot, error: fetchError } = await supabaseServer
+      .from('spots')
+      .select('app_profile_id')
+      .eq('id', spotId)
+      .eq('is_deleted', false)
+      .single();
+
+    if (fetchError || !spot) {
+      return { success: false, error: 'スポットが見つかりません' };
+    }
+
+    if (spot.app_profile_id !== profileId) {
+      return { success: false, error: 'このスポットを編集する権限がありません' };
+    }
+
+    const updateData: any = {
+      store_name: input.storeName,
+      description: input.description,
+      store_latitude: input.storeLatitude,
+      store_longitude: input.storeLongitude,
+      store_id: input.storeId,
+      image_urls: input.imageUrls,
+      url: input.url,
+      city: input.city,
+      prefecture: input.prefecture,
+      updated_at: new Date().toISOString(),
+    };
+
+    if (input.targetTags && input.targetTags.length > 0) {
+      updateData.target_tags = JSON.stringify(input.targetTags);
+    }
+
+    if (input.tagActivities && Object.keys(input.tagActivities).length > 0) {
+      updateData.tag_activities = JSON.stringify(input.tagActivities);
+    }
+
+    const { error } = await supabaseServer
+      .from('spots')
+      .update(updateData)
+      .eq('id', spotId);
+
+    if (error) {
+      return { success: false, error: `スポットの更新に失敗しました: ${error.message}` };
+    }
+
+    return { success: true, error: null };
+  } catch (error: any) {
+    console.error('updateSpot error:', error);
+    return { success: false, error: error.message || 'スポット更新中にエラーが発生しました' };
+  }
+}
+
+// =============================================================================
+// スポット削除（ソフトデリート）
+// =============================================================================
+
+export async function deleteSpot(
+  spotId: string,
+  userId: string
+): Promise<{ success: boolean; error: string | null }> {
+  try {
+    const { profileId, error: profileError } = await getProfileIdByUserId(userId);
+    if (profileError || !profileId) {
+      return { success: false, error: 'プロフィール情報が見つかりません' };
+    }
+
+    // 所有者チェック
+    const { data: spot, error: fetchError } = await supabaseServer
+      .from('spots')
+      .select('app_profile_id')
+      .eq('id', spotId)
+      .eq('is_deleted', false)
+      .single();
+
+    if (fetchError || !spot) {
+      return { success: false, error: 'スポットが見つかりません' };
+    }
+
+    if (spot.app_profile_id !== profileId) {
+      return { success: false, error: 'このスポットを削除する権限がありません' };
+    }
+
+    const { error } = await supabaseServer
+      .from('spots')
+      .update({ is_deleted: true, updated_at: new Date().toISOString() })
+      .eq('id', spotId);
+
+    if (error) {
+      return { success: false, error: `スポットの削除に失敗しました: ${error.message}` };
+    }
+
+    return { success: true, error: null };
+  } catch (error: any) {
+    console.error('deleteSpot error:', error);
+    return { success: false, error: error.message || 'スポット削除中にエラーが発生しました' };
+  }
+}
+
+// =============================================================================
+// スポット取得（ユーザー別）
+// =============================================================================
+
 export async function getSpotsByUserId(
   userId: string
 ): Promise<{ spots: Spot[]; error: string | null }> {

@@ -4,7 +4,8 @@ import { useRef, useEffect, useState, useCallback } from 'react';
 import { useGeolocation } from '@/lib/hooks/use-geolocation';
 import { useGoogleMapsApi } from '@/components/providers/GoogleMapsApiProvider';
 import { Button } from '@/components/ui/button';
-import { MapPin, AlertTriangle, RefreshCw, Calendar, BookOpen, User, MapPinIcon, X, Loader2, Home, Share2, Link2, Check, Compass, Search, ScrollText, Library, Shield, Route, ExternalLink, Camera } from 'lucide-react';
+import { MapPin, AlertTriangle, RefreshCw, Calendar, BookOpen, User, MapPinIcon, X, Loader2, Home, Share2, Link2, Check, Compass, Search, ScrollText, Library, Shield, Route, ExternalLink, Camera, Pencil, Trash2 } from 'lucide-react';
+import { deleteSpot } from '@/app/_actions/spots';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabaseClient';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -75,6 +76,7 @@ interface SpotMarkerData {
   created_at: string;
   author_name: string;
   author_avatar_path: string | null;
+  author_user_id: string | null;
 }
 
 type PostCategory = 'イベント情報';
@@ -608,6 +610,7 @@ export function MapView() {
           *,
           app_profiles (
             id,
+            user_id,
             display_name,
             avatar_url
           )
@@ -621,7 +624,7 @@ export function MapView() {
       }
 
       const spotsData: SpotMarkerData[] = data.map((spot: any) => {
-        const profile = spot.app_profiles as { id: string; display_name: string | null; avatar_url: string | null } | null;
+        const profile = spot.app_profiles as { id: string; user_id: string | null; display_name: string | null; avatar_url: string | null } | null;
         return {
           id: spot.id,
           store_name: spot.store_name,
@@ -635,6 +638,7 @@ export function MapView() {
           created_at: spot.created_at,
           author_name: profile?.display_name || '匿名ユーザー',
           author_avatar_path: profile?.avatar_url || null,
+          author_user_id: profile?.user_id || null,
         };
       });
 
@@ -1479,6 +1483,38 @@ export function MapView() {
                     </motion.div>
                   )}
                 </div>
+                {/* 所有者用: 編集・削除ボタン */}
+                {session?.user?.id && selectedSpot.author_user_id === session.user.id && (
+                  <div className="flex gap-2 mt-3 pt-3" style={{ borderTop: `1px solid ${designTokens.colors.secondary.stone}30` }}>
+                    <Button
+                      onClick={() => router.push(`/edit-spot/${selectedSpot.id}`)}
+                      variant="outline"
+                      className="flex-1 rounded-xl font-semibold flex items-center justify-center gap-2"
+                    >
+                      <Pencil className="h-4 w-4" />
+                      編集
+                    </Button>
+                    <Button
+                      onClick={async () => {
+                        if (!confirm('このスポットを削除してもよろしいですか？\nこの操作は取り消せません。')) return;
+                        const { success, error } = await deleteSpot(selectedSpot.id, session.user.id!);
+                        if (success) {
+                          toast({ title: '削除完了', description: 'スポットを削除しました', duration: 2000 });
+                          setSelectedSpot(null);
+                          fetchSpots();
+                        } else {
+                          toast({ title: 'エラー', description: error || '削除に失敗しました', variant: 'destructive' });
+                        }
+                      }}
+                      variant="outline"
+                      className="rounded-xl font-semibold flex items-center justify-center gap-2"
+                      style={{ color: designTokens.colors.functional.error, borderColor: `${designTokens.colors.functional.error}50` }}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      削除
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
           </motion.div>

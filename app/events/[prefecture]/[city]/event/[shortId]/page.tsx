@@ -75,7 +75,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     return generateNotFoundMetadata();
   }
 
-  // 終了したイベントはnoindex
+  // 終了したイベント（SEO: インデックス対象にして最新イベントへ誘導）
   if (isEventEnded(event)) {
     const eventName = event.event_name || event.content || 'イベント';
     return generateExpiredEventMetadata(eventName);
@@ -105,25 +105,25 @@ export default async function EventDetailPage({ params }: PageProps) {
 
   return (
     <>
-      {/* 構造化データ（終了していないイベントのみ） */}
-      {!ended && (
-        <EventStructuredDataEnhanced event={event} includesBreadcrumb={true} />
-      )}
+      {/* 構造化データ */}
+      <EventStructuredDataEnhanced
+        event={event}
+        includesBreadcrumb={true}
+        {...(ended ? { eventStatusOverride: 'https://schema.org/EventCancelled' } : {})}
+      />
 
       {/* イベント詳細クライアントコンポーネント */}
       <EventDetailClient eventId={event.id} />
 
-      {/* 周辺イベント（area ページと同じ条件・日付順、最大16件） */}
-      {!ended && (
-        <RelatedEvents
-          currentEventId={event.id}
-          city={event.city || undefined}
-          prefecture={event.prefecture || '大分県'}
-          currentEventStartDate={event.event_start_date}
-          currentEventEndDate={event.event_end_date}
-          maxItems={10}
-        />
-      )}
+      {/* 周辺イベント（終了イベントでも表示してSEOリンクジュースを維持） */}
+      <RelatedEvents
+        currentEventId={event.id}
+        city={event.city || undefined}
+        prefecture={event.prefecture || '大分県'}
+        currentEventStartDate={event.event_start_date}
+        currentEventEndDate={event.event_end_date}
+        maxItems={10}
+      />
     </>
   );
 }

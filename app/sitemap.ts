@@ -160,6 +160,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'daily',
       priority: 0.4,
     },
+    // 今日のイベント（SEO重要）
+    {
+      url: `${baseUrl}/events/today`,
+      lastModified: currentDate,
+      changeFrequency: 'hourly',
+      priority: 0.9,
+    },
   ];
 
   // イベントページの動的生成
@@ -197,19 +204,45 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       return true;
     });
 
-    // 新しいセマンティックURLのイベントページ（短縮ID使用）
-    // URL形式: /events/oita/{city}/event/{shortId}
+    // アクティブイベントページ（短縮ID使用）
     const semanticEventPages: MetadataRoute.Sitemap = activeEvents.map((event) => {
       const city = event.city || '';
       const citySlug = cityToSlug(city) || 'all';
-      // UUIDの最初の8文字を短縮IDとして使用
       const shortId = event.id.split('-')[0];
-      
+
       return {
         url: `${baseUrl}/events/oita/${citySlug}/event/${shortId}`,
         lastModified: new Date(event.created_at),
         changeFrequency: 'daily' as const,
         priority: 0.85,
+      };
+    });
+
+    // 終了イベントページ（SEOリンクジュース維持のためインデックス対象）
+    const endedEvents = events.filter((event) => {
+      if (event.event_end_date) {
+        const endDate = new Date(event.event_end_date);
+        endDate.setHours(23, 59, 59, 999);
+        return now > endDate;
+      }
+      if (event.event_start_date) {
+        const startDate = new Date(event.event_start_date);
+        startDate.setHours(23, 59, 59, 999);
+        return now > startDate;
+      }
+      return false;
+    });
+
+    const endedEventPages: MetadataRoute.Sitemap = endedEvents.map((event) => {
+      const city = event.city || '';
+      const citySlug = cityToSlug(city) || 'all';
+      const shortId = event.id.split('-')[0];
+
+      return {
+        url: `${baseUrl}/events/oita/${citySlug}/event/${shortId}`,
+        lastModified: new Date(event.created_at),
+        changeFrequency: 'monthly' as const,
+        priority: 0.3,
       };
     });
 
@@ -258,8 +291,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     );
     
     return [
-      ...staticPages, 
+      ...staticPages,
       ...semanticEventPages,
+      ...endedEventPages,
       ...areaPages,
       ...regionEventPages,
       ...categoryPages,

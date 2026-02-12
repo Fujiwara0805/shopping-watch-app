@@ -15,6 +15,7 @@ import {
 interface EventStructuredDataEnhancedProps {
   event: SEOEventData;
   includesBreadcrumb?: boolean;
+  eventStatusOverride?: string;
 }
 
 /**
@@ -184,11 +185,15 @@ function generateBreadcrumbStructuredData(event: SEOEventData): BreadcrumbJsonLd
 /**
  * 拡張版イベント構造化データコンポーネント
  */
-export function EventStructuredDataEnhanced({ 
-  event, 
-  includesBreadcrumb = true 
+export function EventStructuredDataEnhanced({
+  event,
+  includesBreadcrumb = true,
+  eventStatusOverride,
 }: EventStructuredDataEnhancedProps) {
   const eventData = generateEventStructuredData(event);
+  if (eventStatusOverride) {
+    eventData.eventStatus = eventStatusOverride;
+  }
   const breadcrumbData = includesBreadcrumb ? generateBreadcrumbStructuredData(event) : null;
   
   // 複数のスキーマを@graphで統合

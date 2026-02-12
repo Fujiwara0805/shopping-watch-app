@@ -34,7 +34,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
     // マップページの場合、bodyのスクロールを無効化
     if (isMapPage) {
       document.body.style.overflow = 'hidden';
-      document.body.style.height = '100vh';
+      document.body.style.height = 'calc(var(--vh, 1vh) * 100)';
     } else {
       document.body.style.overflow = '';
       document.body.style.height = '';
@@ -49,7 +49,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
   // マップページ専用レイアウト
   if (isMapPage) {
     return (
-      <div className="h-screen w-screen overflow-hidden">
+      <div className="w-screen overflow-hidden" style={{ height: 'calc(var(--vh, 1vh) * 100)' }}>
         {children}
       </div>
     );
@@ -57,7 +57,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
 
   // 通常ページレイアウト
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-dvh flex flex-col">
       {!hideHeader && (
         <div className="sticky top-0 z-50">
           <AppHeader />

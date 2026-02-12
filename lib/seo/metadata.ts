@@ -142,7 +142,7 @@ export function generateAreaMetadata(params: {
     ? `${city}のイベント情報 - お祭り・マルシェ | トクドク`
     : `${prefecture}のイベント情報 - お祭り・マルシェ | トクドク`;
   
-  const description = `${locationName}で開催されるお祭り、マルシェ、ワークショップなどのイベント情報一覧。${eventCount > 0 ? `現在${eventCount}件のイベントが掲載中。` : ''}現在地から近いイベントを地図で検索。週末の予定探しに最適。リアルタイム更新の地域密着イベント情報。`;
+  const description = `${locationName}で今日・今週末に開催されるお祭り、マルシェ、ワークショップなどのイベント情報一覧。${eventCount > 0 ? `現在${eventCount}件のイベントが掲載中。` : ''}近日開催のイベントを地図で検索。リアルタイム更新の地域密着イベント情報。`;
   
   const keywords = [
     prefecture,
@@ -289,15 +289,34 @@ export function generateEventsListMetadata(params?: {
 }
 
 /**
- * 終了したイベントのメタデータを生成（noindex）
+ * 終了したイベントのメタデータを生成
+ * SEO: リンクジュース維持のためインデックス対象にし、最新イベントへ誘導
  */
 export function generateExpiredEventMetadata(eventName: string): Metadata {
+  const title = `${eventName}（終了）| 大分のイベント情報 - トクドク`;
+  const description = `「${eventName}」は終了しました。大分県の最新イベント・お祭り・マルシェ情報はトクドクでチェック。今日開催中のイベントも確認できます。`;
+
   return {
-    title: `${eventName}（終了） | トクドク`,
-    description: 'このイベントは終了しました。',
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: 'article',
+      siteName: 'トクドク',
+      locale: 'ja_JP',
+      images: [
+        {
+          url: 'https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png',
+          width: 1200,
+          height: 630,
+          alt: `${eventName}（終了） - トクドク`,
+        },
+      ],
+    },
     robots: {
-      index: false,
-      follow: false,
+      index: true,
+      follow: true,
     },
   };
 }
