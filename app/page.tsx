@@ -871,7 +871,7 @@ const SpotsSection = () => {
             />
           </div>
         ) : spots.length === 0 ? null : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 xl:gap-10">
             {spots.map((spot, index) => (
               <motion.div
                 key={spot.id}
@@ -879,8 +879,8 @@ const SpotsSection = () => {
                 animate={isInView ? { opacity: 1, y: 0 } : {}}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
               >
-                <ElevationCard elevation="medium" padding="none" className="overflow-hidden h-full group min-h-[300px] lg:min-h-[360px]">
-                  <div className="relative overflow-hidden h-3/5 lg:min-h-[220px]">
+                <ElevationCard elevation="medium" padding="none" className="overflow-hidden h-full group">
+                  <div className="relative overflow-hidden" style={{ height: '160px' }}>
                     {spot.image_urls && spot.image_urls.length > 0 ? (
                       <img
                         src={spot.image_urls[0]}
@@ -892,7 +892,7 @@ const SpotsSection = () => {
                         className="w-full h-full flex items-center justify-center"
                         style={{ background: designTokens.colors.background.cloud }}
                       >
-                        <MapPin className="w-12 h-12 lg:w-14 lg:h-14" style={{ color: designTokens.colors.text.muted }} />
+                        <MapPin className="w-10 h-10" style={{ color: designTokens.colors.text.muted }} />
                       </div>
                     )}
                     <div
@@ -900,9 +900,9 @@ const SpotsSection = () => {
                       style={{ background: `linear-gradient(to top, ${designTokens.colors.primary.base}50, transparent)` }}
                     />
                   </div>
-                  <div className="p-5 lg:p-6">
+                  <div className="p-4 lg:p-5">
                     <h3
-                      className="font-semibold text-base lg:text-lg mb-2 line-clamp-1"
+                      className="font-semibold text-sm lg:text-base mb-1.5 line-clamp-1"
                       style={{
                         fontFamily: designTokens.typography.display,
                         color: designTokens.colors.primary.base,
@@ -911,17 +911,17 @@ const SpotsSection = () => {
                       {spot.store_name}
                     </h3>
                     <p
-                      className="text-sm lg:text-base line-clamp-2 mb-3"
+                      className="text-xs lg:text-sm line-clamp-2 mb-2"
                       style={{ color: designTokens.colors.text.secondary }}
                     >
                       {spot.description}
                     </p>
                     <div
-                      className="flex items-center text-xs lg:text-sm"
+                      className="flex items-center text-xs"
                       style={{ color: designTokens.colors.text.muted }}
                     >
-                      <Users className="w-3.5 h-3.5 lg:w-4 lg:h-4 mr-1.5" />
-                      {spot.author_name}
+                      <Users className="w-3 h-3 mr-1" />
+                      {spot.reporter_nickname || spot.author_name}
                     </div>
                   </div>
                 </ElevationCard>

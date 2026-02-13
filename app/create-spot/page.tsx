@@ -310,7 +310,7 @@ export default function CreateSpotPage() {
     setCustomTags(prev => prev.filter(t => t !== tag));
   };
 
-  // 現在地を指定
+  // 現在地を指定（取得後にマーカーモーダルを表示してマーカーを移動可能にする）
   const handleSetCurrentLocation = () => {
     if (!navigator.geolocation) {
       toast({ title: 'エラー', description: 'お使いのブラウザは位置情報をサポートしていません', duration: 3000 });
@@ -324,7 +324,8 @@ export default function CreateSpotPage() {
         setStoreLat(lat);
         setStoreLng(lng);
         setLocationStatus('success');
-        toast({ title: '位置情報を取得しました', description: '現在地を設定しました', duration: 2000 });
+        // 現在地取得後にマーカーモーダルを開いてマーカーを移動可能にする
+        setIsMarkerModalOpen(true);
       },
       (error) => {
         console.error('位置情報の取得に失敗:', error);

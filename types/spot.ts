@@ -20,4 +20,6 @@ export interface Spot {
 export interface SpotWithAuthor extends Spot {
   author_name: string;
   author_avatar_path: string | null;
+  reporter_nickname: string | null;
+  author_user_id: string | null;
 }

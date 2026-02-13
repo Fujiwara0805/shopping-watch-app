@@ -77,7 +77,17 @@ interface SpotMarkerData {
   author_name: string;
   author_avatar_path: string | null;
   author_user_id: string | null;
+  reporter_nickname: string | null;
 }
+
+// 季節を判定するヘルパー関数
+const getSeasonFromDate = (dateStr: string): { label: string; color: string } => {
+  const month = new Date(dateStr).getMonth() + 1;
+  if (month >= 3 && month <= 5) return { label: '春', color: '#F472B6' };
+  if (month >= 6 && month <= 8) return { label: '夏', color: '#38BDF8' };
+  if (month >= 9 && month <= 11) return { label: '秋', color: '#FB923C' };
+  return { label: '冬', color: '#94A3B8' };
+};
 
 type PostCategory = 'イベント情報';
 type ViewMode = 'events' | 'myMaps' | 'spots';
@@ -613,6 +623,10 @@ export function MapView() {
             user_id,
             display_name,
             avatar_url
+          ),
+          reporters (
+            id,
+            nickname
           )
         `)
         .eq('is_deleted', false)
@@ -625,6 +639,7 @@ export function MapView() {
 
       const spotsData: SpotMarkerData[] = data.map((spot: any) => {
         const profile = spot.app_profiles as { id: string; user_id: string | null; display_name: string | null; avatar_url: string | null } | null;
+        const reporter = spot.reporters as { id: string; nickname: string } | null;
         return {
           id: spot.id,
           store_name: spot.store_name,
@@ -639,6 +654,7 @@ export function MapView() {
           author_name: profile?.display_name || '匿名ユーザー',
           author_avatar_path: profile?.avatar_url || null,
           author_user_id: profile?.user_id || null,
+          reporter_nickname: reporter?.nickname || null,
         };
       });
 
@@ -1406,12 +1422,11 @@ export function MapView() {
                       <BookOpen className="h-4 w-4 flex-shrink-0" style={{ color: designTokens.colors.accent.goldDark }} />
                       <span className="text-xs font-medium line-clamp-1" style={{ color: designTokens.colors.text.muted }}>{selectedMapLocation.map_title}</span>
                     </div>
-                    <h3 className="text-lg font-semibold leading-tight line-clamp-2 mb-2" style={{ fontFamily: designTokens.typography.display, color: designTokens.colors.text.primary }}>{selectedMapLocation.store_name}</h3>
-                    {selectedMapLocation.url && (
-                      <div className="flex items-center gap-1.5">
-                        <img src={getSocialIconUrl(normalizeUrl(selectedMapLocation.url) || '')} alt="link" className="w-4 h-4 grayscale opacity-70" />
-                        <span className="text-xs font-medium" style={{ color: designTokens.colors.text.muted }}>Link available</span>
-                      </div>
+                    <h3 className="text-lg font-semibold leading-tight line-clamp-2 mb-1.5" style={{ fontFamily: designTokens.typography.display, color: designTokens.colors.text.primary }}>{selectedMapLocation.store_name}</h3>
+                    {selectedMapLocation.content && (
+                      <p className="text-xs leading-relaxed line-clamp-2" style={{ color: designTokens.colors.text.secondary }}>
+                        {selectedMapLocation.content.length > 30 ? selectedMapLocation.content.slice(0, 30) + '…' : selectedMapLocation.content}
+                      </p>
                     )}
                   </div>
                 </div>
@@ -1437,7 +1452,10 @@ export function MapView() {
 
       {/* スポット詳細カード */}
       <AnimatePresence>
-        {selectedSpot && viewMode === 'spots' && (
+        {selectedSpot && viewMode === 'spots' && (() => {
+          const season = getSeasonFromDate(selectedSpot.created_at);
+          const displayNickname = selectedSpot.reporter_nickname || selectedSpot.author_name;
+          return (
           <motion.div initial={{ y: 100, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 100, opacity: 0 }} transition={{ duration: 0.4, type: "spring", damping: 20 }} className="absolute bottom-4 left-4 right-4 z-40">
             <div className="relative rounded-2xl overflow-hidden" style={{ background: designTokens.colors.background.white, boxShadow: designTokens.elevation.high }}>
               <div className="absolute top-4 right-4 z-10">
@@ -1451,6 +1469,10 @@ export function MapView() {
                     ) : (
                       <div className="w-full h-full flex items-center justify-center"><MapPin className="h-12 w-12" style={{ color: designTokens.colors.text.muted }} /></div>
                     )}
+                    {/* 季節バッジ */}
+                    <div className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-full text-xs font-bold" style={{ background: season.color, color: '#fff' }}>
+                      {season.label}
+                    </div>
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="text-lg font-semibold leading-tight line-clamp-2 mb-1.5" style={{ fontFamily: designTokens.typography.display, color: designTokens.colors.text.primary }}>{selectedSpot.store_name}</h3>
@@ -1460,9 +1482,15 @@ export function MapView() {
                         <span>{selectedSpot.city}</span>
                       </div>
                     )}
-                    <div className="flex items-center gap-1.5 text-xs" style={{ color: designTokens.colors.text.muted }}>
-                      <User className="h-3 w-3 flex-shrink-0" />
-                      <span>{selectedSpot.author_name}</span>
+                    <div className="flex items-center gap-3 text-xs" style={{ color: designTokens.colors.text.muted }}>
+                      <div className="flex items-center gap-1">
+                        <User className="h-3 w-3 flex-shrink-0" />
+                        <span>{displayNickname}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Calendar className="h-3 w-3 flex-shrink-0" />
+                        <span>{new Date(selectedSpot.created_at).toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' })}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1518,7 +1546,8 @@ export function MapView() {
               </div>
             </div>
           </motion.div>
-        )}
+          );
+        })()}
       </AnimatePresence>
 
       <style jsx global>{`

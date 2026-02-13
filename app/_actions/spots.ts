@@ -144,8 +144,13 @@ export async function getPublicSpots(
         *,
         app_profiles (
           id,
+          user_id,
           display_name,
           avatar_url
+        ),
+        reporters (
+          id,
+          nickname
         )
       `)
       .eq('is_deleted', false)
@@ -162,7 +167,8 @@ export async function getPublicSpots(
     }
 
     const spotsWithAuthor: SpotWithAuthor[] = (data || []).map((spot: any) => {
-      const profile = spot.app_profiles as { id: string; display_name: string | null; avatar_url: string | null } | null;
+      const profile = spot.app_profiles as { id: string; user_id: string | null; display_name: string | null; avatar_url: string | null } | null;
+      const reporter = spot.reporters as { id: string; nickname: string } | null;
       return {
         id: spot.id,
         app_profile_id: spot.app_profile_id,
@@ -182,6 +188,8 @@ export async function getPublicSpots(
         reporter_id: spot.reporter_id ?? null,
         author_name: profile?.display_name || '匿名ユーザー',
         author_avatar_path: profile?.avatar_url || null,
+        reporter_nickname: reporter?.nickname || null,
+        author_user_id: profile?.user_id || null,
       };
     });
 
@@ -202,8 +210,13 @@ export async function getSpotById(
         *,
         app_profiles (
           id,
+          user_id,
           display_name,
           avatar_url
+        ),
+        reporters (
+          id,
+          nickname
         )
       `)
       .eq('id', spotId)
@@ -214,7 +227,8 @@ export async function getSpotById(
       return { spot: null, error: 'スポットが見つかりません' };
     }
 
-    const profile = data.app_profiles as { id: string; display_name: string | null; avatar_url: string | null } | null;
+    const profile = data.app_profiles as { id: string; user_id: string | null; display_name: string | null; avatar_url: string | null } | null;
+    const reporter = data.reporters as { id: string; nickname: string } | null;
 
     return {
       spot: {
@@ -222,6 +236,8 @@ export async function getSpotById(
         image_urls: data.image_urls || [],
         author_name: profile?.display_name || '匿名ユーザー',
         author_avatar_path: profile?.avatar_url || null,
+        reporter_nickname: reporter?.nickname || null,
+        author_user_id: profile?.user_id || null,
       } as SpotWithAuthor,
       error: null,
     };
