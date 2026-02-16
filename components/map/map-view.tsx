@@ -4,18 +4,19 @@ import { useRef, useEffect, useState, useCallback } from 'react';
 import { useGeolocation } from '@/lib/hooks/use-geolocation';
 import { useGoogleMapsApi } from '@/components/providers/GoogleMapsApiProvider';
 import { Button } from '@/components/ui/button';
-import { MapPin, AlertTriangle, RefreshCw, Calendar, BookOpen, User, MapPinIcon, X, Loader2, Home, Share2, Link2, Check, Compass, Search, ScrollText, Library, Shield, Route, ExternalLink, Camera, Pencil, Trash2 } from 'lucide-react';
-import { deleteSpot } from '@/app/_actions/spots';
+import { MapPin, AlertTriangle, RefreshCw, Calendar, User, MapPinIcon, X, Loader2, Compass, Search, Trash2, Bus, TrainFront, Coffee } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabaseClient';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { useToast } from '@/lib/hooks/use-toast';
-import { isWithinRange, calculateDistance } from '@/lib/utils/distance';
-import { Map as MapData, MapLocation } from '@/types/map';
+import { isWithinRange } from '@/lib/utils/distance';
 import { generateSemanticEventUrl } from '@/lib/seo/url-helper';
 import { designTokens } from '@/lib/constants';
+import { FacilityLayerToggles } from '@/components/map/facility-layer-toggles';
+import { FacilityReportForm } from '@/components/map/facility-report-form';
+import { usePlacesSearch, PlaceResult } from '@/lib/hooks/use-places-search';
+import type { FacilityLayerType, FacilityReportWithAuthor } from '@/types/facility-report';
 
 declare global {
   interface Window { google: any; }
@@ -38,86 +39,10 @@ interface PostMarkerData {
   enable_checkin?: boolean | null;
   city?: string | null;
   prefecture?: string | null;
-  /** 現在地からの距離（km）。APIでは返さず、クライアントで計算して付与する場合がある */
   distance?: number | null;
 }
 
-interface MapLocationMarkerData {
-  id: string;
-  map_id: string;
-  map_title: string;
-  store_name: string;
-  content: string;
-  store_latitude: number;
-  store_longitude: number;
-  image_urls: string[];
-  url: string | null;
-  order: number;
-}
-
-interface MapCreatorProfile {
-  id: string;
-  user_id: string;
-  display_name: string;
-  avatar_path: string | null;
-  url: string | null;
-}
-
-interface SpotMarkerData {
-  id: string;
-  store_name: string;
-  description: string;
-  store_latitude: number;
-  store_longitude: number;
-  image_urls: string[];
-  url: string | null;
-  city: string | null;
-  prefecture: string;
-  created_at: string;
-  author_name: string;
-  author_avatar_path: string | null;
-  author_user_id: string | null;
-  reporter_nickname: string | null;
-}
-
-// 季節を判定するヘルパー関数
-const getSeasonFromDate = (dateStr: string): { label: string; color: string } => {
-  const month = new Date(dateStr).getMonth() + 1;
-  if (month >= 3 && month <= 5) return { label: '春', color: '#F472B6' };
-  if (month >= 6 && month <= 8) return { label: '夏', color: '#38BDF8' };
-  if (month >= 9 && month <= 11) return { label: '秋', color: '#FB923C' };
-  return { label: '冬', color: '#94A3B8' };
-};
-
 type PostCategory = 'イベント情報';
-type ViewMode = 'events' | 'myMaps' | 'spots';
-
-// ヘルパー関数
-const getAvatarPublicUrl = (avatarPath: string | null): string | null => {
-  if (!avatarPath) return null;
-  return supabase.storage.from('avatars').getPublicUrl(avatarPath).data.publicUrl;
-};
-
-const normalizeUrl = (url: string | null): string | null => {
-  if (!url) return null;
-  try {
-    const parsed = JSON.parse(url);
-    if (Array.isArray(parsed) && parsed.length > 0) return parsed[0];
-    return url;
-  } catch { return url; }
-};
-
-const getSocialIconUrl = (url: string): string => {
-  const lowerUrl = url.toLowerCase();
-  if (lowerUrl.includes('instagram.com') || lowerUrl.includes('instagr.am')) {
-    return 'https://res.cloudinary.com/dz9trbwma/image/upload/v1759308496/icons8-%E3%82%A4%E3%83%B3%E3%82%B9%E3%82%BF%E3%82%AF%E3%82%99%E3%83%A9%E3%83%A0-100_idedfz.png';
-  } else if (lowerUrl.includes('facebook.com') || lowerUrl.includes('fb.com')) {
-    return 'https://res.cloudinary.com/dz9trbwma/image/upload/v1759308615/icons8-facebook%E3%81%AE%E6%96%B0%E3%81%97%E3%81%84-100_2_pps86o.png';
-  } else if (lowerUrl.includes('twitter.com') || lowerUrl.includes('x.com')) {
-    return 'https://res.cloudinary.com/dz9trbwma/image/upload/v1759308507/icons8-%E3%83%84%E3%82%A4%E3%83%83%E3%82%BF%E3%83%BCx-100_x18dc0.png';
-  }
-  return 'https://res.cloudinary.com/dz9trbwma/image/upload/v1759366399/icons8-%E3%82%A6%E3%82%A7%E3%83%95%E3%82%99-100_a6uwwq.png';
-};
 
 const getCategoryConfig = (category: PostCategory) => ({
   'イベント情報': { color: designTokens.colors.accent.lilacDark, icon: 'calendar' },
@@ -186,7 +111,7 @@ const createCategoryPinIcon = async (imageUrls: string[] | null, title: string |
   const maxTextWidth = 80;
   const lineHeight = 12;
   const displayTitle = title || '';
-  
+
   return new Promise<google.maps.Icon>((resolve) => {
     const img = new Image();
     img.crossOrigin = 'anonymous';
@@ -271,7 +196,7 @@ const createDirectionalLocationIcon = (heading: number | null): google.maps.Icon
   const base1Y = centerY + Math.sin(baseAngle1) * baseRadius;
   const base2X = centerX + Math.cos(baseAngle2) * baseRadius;
   const base2Y = centerY + Math.sin(baseAngle2) * baseRadius;
-  
+
   const svgIcon = `<svg width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg">
     <defs><filter id="shadow" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="1" stdDeviation="2" flood-opacity="0.3"/></filter></defs>
     <polygon points="${tipX},${tipY} ${base1X},${base1Y} ${base2X},${base2Y}" fill="${designTokens.colors.accent.lilac}" fill-opacity="0.4" filter="url(#shadow)"/>
@@ -279,7 +204,7 @@ const createDirectionalLocationIcon = (heading: number | null): google.maps.Icon
     <circle cx="${centerX}" cy="${centerY}" r="${innerRadius}" fill="white" filter="url(#shadow)"/>
     <circle cx="${centerX}" cy="${centerY}" r="${innerRadius - 3}" fill="${designTokens.colors.accent.lilac}"/>
   </svg>`;
-  
+
   return {
     url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svgIcon),
     scaledSize: new window.google.maps.Size(size, size),
@@ -287,58 +212,38 @@ const createDirectionalLocationIcon = (heading: number | null): google.maps.Icon
   };
 };
 
-// カスタムモーダル
-const CustomModal = ({ isOpen, onClose, children }: { isOpen: boolean; onClose: () => void; children: React.ReactNode }) => {
-  if (!isOpen) return null;
-  
-  return (
-    <AnimatePresence>
-      {isOpen && (
-        <motion.div 
-          initial={{ opacity: 0 }} 
-          animate={{ opacity: 1 }} 
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[100] flex items-center justify-center p-4"
-          onClick={onClose}
-        >
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="absolute inset-0 backdrop-blur-sm"
-            style={{ background: `${designTokens.colors.primary.base}40` }}
-          />
-          <motion.div 
-            initial={{ scale: 0.9, opacity: 0, y: 20 }}
-            animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.9, opacity: 0, y: 20 }}
-            transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="relative rounded-3xl w-full max-w-sm overflow-hidden"
-            style={{ 
-              background: designTokens.colors.background.white,
-              boxShadow: designTokens.elevation.dramatic,
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button 
-              onClick={onClose}
-              className="absolute top-4 right-4 z-10 w-8 h-8 flex items-center justify-center rounded-full transition-colors"
-              style={{ background: designTokens.colors.background.cloud }}
-            >
-              <X className="w-4 h-4" style={{ color: designTokens.colors.text.secondary }} />
-            </button>
-            {children}
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  );
+// 施設マーカーアイコン生成
+const FACILITY_ICON_CONFIGS: Record<FacilityLayerType, { color: string; svgPath: string }> = {
+  trash_can: {
+    color: '#6B7280',
+    svgPath: '<path d="M5 6h14M9 6V4h6v2M7 6l1 12h8l1-12" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>',
+  },
+  bus_stop: {
+    color: '#3B82F6',
+    svgPath: '<path d="M6 6h12a1 1 0 011 1v8a1 1 0 01-1 1H6a1 1 0 01-1-1V7a1 1 0 011-1zM7 16v2M17 16v2M8 12h2M14 12h2M5 10h14" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>',
+  },
+  train_station: {
+    color: '#EF4444',
+    svgPath: '<path d="M7 5h10a2 2 0 012 2v8a2 2 0 01-2 2H7a2 2 0 01-2-2V7a2 2 0 012-2zM9 17l-2 2M15 17l2 2M9 13h0M15 13h0M5 10h14" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>',
+  },
+  rest_spot: {
+    color: '#10B981',
+    svgPath: '<path d="M8 18h8M10 18V8h0a4 4 0 014 0M18 8a3 3 0 01-3 3h-1" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>',
+  },
 };
 
-const ROUTE_STYLES = {
-  strokeColor: designTokens.colors.secondary.fern,
-  strokeOpacity: 0.8,
-  strokeWeight: 4,
+const createFacilityMarkerIcon = (type: FacilityLayerType): google.maps.Icon => {
+  const size = 36;
+  const config = FACILITY_ICON_CONFIGS[type];
+  const svgIcon = `<svg width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="${config.color}" stroke="#ffffff" stroke-width="2"/>
+    <g transform="translate(${size/2 - 12}, ${size/2 - 12})">${config.svgPath}</g>
+  </svg>`;
+  return {
+    url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svgIcon),
+    scaledSize: new window.google.maps.Size(size, size),
+    anchor: new window.google.maps.Point(size / 2, size / 2),
+  };
 };
 
 // マップスタイル
@@ -362,6 +267,13 @@ const organicMapStyles: google.maps.MapTypeStyle[] = [
   { featureType: "transit.station", elementType: "labels", stylers: [{ visibility: "off" }] }
 ];
 
+// Places API type mapping
+const FACILITY_PLACES_TYPE: Record<string, string> = {
+  bus_stop: 'bus_station',
+  train_station: 'train_station',
+  rest_spot: 'shopping_mall',
+};
+
 export function MapView() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -377,42 +289,18 @@ export function MapView() {
   const [initializationError, setInitializationError] = useState<string | null>(null);
   const [containerDimensions, setContainerDimensions] = useState({ width: 0, height: 0 });
   const [userLocationMarker, setUserLocationMarker] = useState<google.maps.Marker | null>(null);
-  const [deviceHeading, setDeviceHeading] = useState<number | null>(null);
   const [posts, setPosts] = useState<PostMarkerData[]>([]);
   const [postMarkers, setPostMarkers] = useState<google.maps.Marker[]>([]);
   const [loadingPosts, setLoadingPosts] = useState(false);
   const [selectedPost, setSelectedPost] = useState<PostMarkerData | null>(null);
   const [nearbyPosts, setNearbyPosts] = useState<PostMarkerData[]>([]);
-  const [mapLocations, setMapLocations] = useState<MapLocationMarkerData[]>([]);
-  const [mapMarkers, setMapMarkers] = useState<google.maps.Marker[]>([]);
-  const [loadingMaps, setLoadingMaps] = useState(false);
-  const [selectedMapLocation, setSelectedMapLocation] = useState<MapLocationMarkerData | null>(null);
   const [savedLocation, setSavedLocation] = useState<{lat: number, lng: number} | null>(null);
   const hasInitialLoadedRef = useRef(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const titleId = searchParams.get('title_id');
-  const viewParam = searchParams.get('view');
-  const [viewMode, setViewMode] = useState<ViewMode>(titleId ? 'myMaps' : viewParam === 'spots' ? 'spots' : 'events');
   const selectedCategory: PostCategory = 'イベント情報';
   const [checkingIn, setCheckingIn] = useState<string | null>(null);
   const [checkedInPosts, setCheckedInPosts] = useState<Set<string>>(new Set());
   const [navigatingToDetail, setNavigatingToDetail] = useState<string | null>(null);
-  const [navigatingToMapDetail, setNavigatingToMapDetail] = useState<string | null>(null);
-  const [mapCreatorProfile, setMapCreatorProfile] = useState<MapCreatorProfile | null>(null);
-  const [currentMapTitle, setCurrentMapTitle] = useState<string>('');
-  const [isMapPublic, setIsMapPublic] = useState<boolean>(true);
-  const hasShownLocationModalRef = useRef<boolean>(false);
-  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
-  const [isCopied, setIsCopied] = useState(false);
-  const [isLocationPermissionModalOpen, setIsLocationPermissionModalOpen] = useState(false);
-  const [routePolylines, setRoutePolylines] = useState<google.maps.Polyline[]>([]);
-  const directionsServiceRef = useRef<google.maps.DirectionsService | null>(null);
-
-  // Spots mode state
-  const [spots, setSpots] = useState<SpotMarkerData[]>([]);
-  const [spotMarkers, setSpotMarkers] = useState<google.maps.Marker[]>([]);
-  const [loadingSpots, setLoadingSpots] = useState(false);
-  const [selectedSpot, setSelectedSpot] = useState<SpotMarkerData | null>(null);
 
   // Event card swipe state
   const [eventCardIndex, setEventCardIndex] = useState(0);
@@ -420,32 +308,17 @@ export function MapView() {
   const eventCardTouchDeltaX = useRef<number>(0);
   const selectedMarkerRef = useRef<google.maps.Marker | null>(null);
 
-  // Effects
-  useEffect(() => {
-    if (viewMode === 'events') { setDeviceHeading(null); return; }
-    const handleDeviceOrientation = (event: DeviceOrientationEvent) => {
-      let heading: number | null = null;
-      if ('webkitCompassHeading' in event && typeof (event as any).webkitCompassHeading === 'number') {
-        heading = (event as any).webkitCompassHeading;
-      } else if (event.alpha !== null) {
-        heading = 360 - event.alpha;
-      }
-      if (heading !== null) setDeviceHeading(heading);
-    };
-    const requestOrientationPermission = async () => {
-      if (typeof (DeviceOrientationEvent as any).requestPermission === 'function') {
-        try {
-          const permission = await (DeviceOrientationEvent as any).requestPermission();
-          if (permission === 'granted') window.addEventListener('deviceorientation', handleDeviceOrientation, true);
-        } catch (error) { console.error('DeviceOrientation permission denied:', error); }
-      } else {
-        window.addEventListener('deviceorientation', handleDeviceOrientation, true);
-      }
-    };
-    requestOrientationPermission();
-    return () => { window.removeEventListener('deviceorientation', handleDeviceOrientation, true); };
-  }, [viewMode]);
+  // Facility layer state
+  const [activeFacilityLayers, setActiveFacilityLayers] = useState<Set<FacilityLayerType>>(new Set());
+  const [facilityMarkers, setFacilityMarkers] = useState<Map<string, google.maps.Marker[]>>(new Map());
+  const [trashCanReports, setTrashCanReports] = useState<FacilityReportWithAuthor[]>([]);
+  const [loadingFacility, setLoadingFacility] = useState<Set<string>>(new Set());
+  const [showReportForm, setShowReportForm] = useState(false);
+  const [selectedFacility, setSelectedFacility] = useState<{ type: FacilityLayerType; data: PlaceResult | FacilityReportWithAuthor } | null>(null);
 
+  const { results: placesResults, loading: placesLoading, searchNearby, clearResults } = usePlacesSearch();
+
+  // Effects
   useEffect(() => {
     try {
       const savedData = localStorage.getItem('userLocation');
@@ -514,71 +387,6 @@ export function MapView() {
     return () => { clearTimeout(timer); window.removeEventListener('resize', handleResize); window.removeEventListener('orientationchange', handleResize); };
   }, [updateContainerDimensions]);
 
-  const fetchMapCreatorProfile = useCallback(async (mapId: string) => {
-    try {
-      const { data: mapData, error: mapError } = await supabase.from('maps').select('app_profile_id, title, is_public').eq('id', mapId).single();
-      if (mapError || !mapData) return;
-      setCurrentMapTitle(mapData.title || '');
-      setIsMapPublic(mapData.is_public ?? true);
-      if (mapData.is_public === false && !hasShownLocationModalRef.current) {
-        setIsLocationPermissionModalOpen(true);
-        hasShownLocationModalRef.current = true;
-      }
-      const { data: profileData, error: profileError } = await supabase.from('app_profiles').select('id, user_id, display_name, avatar_url, url').eq('id', mapData.app_profile_id).single();
-      if (profileError || !profileData) return;
-      setMapCreatorProfile({
-        id: profileData.id,
-        user_id: profileData.user_id,
-        display_name: profileData.display_name || '匿名ユーザー',
-        avatar_path: profileData.avatar_url,
-        url: profileData.url || null,
-      });
-    } catch (error) { console.error('プロフィール取得エラー:', error); }
-  }, []);
-
-  const fetchMapLocations = useCallback(async () => {
-    const currentTitleId = searchParams.get('title_id');
-    if (currentTitleId) {
-      setLoadingMaps(true);
-      await fetchMapCreatorProfile(currentTitleId);
-      try {
-        const { data: mapData, error: mapError } = await supabase.from('maps').select('id, title, locations').eq('id', currentTitleId).eq('is_deleted', false).single();
-        if (mapError || !mapData) { setMapLocations([]); setLoadingMaps(false); return; }
-        const allLocations: MapLocationMarkerData[] = [];
-        if (mapData.locations && Array.isArray(mapData.locations)) {
-          mapData.locations.forEach((location: MapLocation) => {
-            if (location.store_latitude && location.store_longitude) {
-              allLocations.push({ id: `${mapData.id}_${location.order}`, map_id: mapData.id, map_title: mapData.title, store_name: location.store_name, content: location.content, store_latitude: location.store_latitude, store_longitude: location.store_longitude, image_urls: location.image_urls, url: location.url || null, order: location.order });
-            }
-          });
-        }
-        setMapLocations(allLocations);
-      } catch (error) { console.error('公開マップデータの取得中にエラー:', error); }
-      finally { setLoadingMaps(false); }
-      return;
-    }
-    if (!session?.user?.id) { setMapLocations([]); return; }
-    setLoadingMaps(true);
-    try {
-      const { data: profile } = await supabase.from('app_profiles').select('id').eq('user_id', session.user.id).single();
-      if (!profile) { setLoadingMaps(false); return; }
-      const { data: maps } = await supabase.from('maps').select('id, title, locations').eq('app_profile_id', profile.id).eq('is_deleted', false);
-      if (!maps || maps.length === 0) { setMapLocations([]); setLoadingMaps(false); return; }
-      const allLocations: MapLocationMarkerData[] = [];
-      maps.forEach((map: any) => {
-        if (map.locations && Array.isArray(map.locations)) {
-          map.locations.forEach((location: MapLocation) => {
-            if (location.store_latitude && location.store_longitude) {
-              allLocations.push({ id: `${map.id}_${location.order}`, map_id: map.id, map_title: map.title, store_name: location.store_name, content: location.content, store_latitude: location.store_latitude, store_longitude: location.store_longitude, image_urls: location.image_urls, url: location.url || null, order: location.order });
-            }
-          });
-        }
-      });
-      setMapLocations(allLocations);
-    } catch (error) { console.error('コースデータの取得中にエラー:', error); }
-    finally { setLoadingMaps(false); }
-  }, [session?.user?.id, searchParams, fetchMapCreatorProfile]);
-
   const fetchPosts = useCallback(async () => {
     const userLat = savedLocation?.lat || latitude;
     const userLng = savedLocation?.lng || longitude;
@@ -611,61 +419,6 @@ export function MapView() {
     finally { setLoadingPosts(false); }
   }, [latitude, longitude, savedLocation, selectedCategory]);
 
-  const fetchSpots = useCallback(async () => {
-    setLoadingSpots(true);
-    try {
-      const { data, error } = await supabase
-        .from('spots')
-        .select(`
-          *,
-          app_profiles (
-            id,
-            user_id,
-            display_name,
-            avatar_url
-          ),
-          reporters (
-            id,
-            nickname
-          )
-        `)
-        .eq('is_deleted', false)
-        .order('created_at', { ascending: false });
-
-      if (error || !data) {
-        setSpots([]);
-        return;
-      }
-
-      const spotsData: SpotMarkerData[] = data.map((spot: any) => {
-        const profile = spot.app_profiles as { id: string; user_id: string | null; display_name: string | null; avatar_url: string | null } | null;
-        const reporter = spot.reporters as { id: string; nickname: string } | null;
-        return {
-          id: spot.id,
-          store_name: spot.store_name,
-          description: spot.description,
-          store_latitude: spot.store_latitude,
-          store_longitude: spot.store_longitude,
-          image_urls: spot.image_urls || [],
-          url: spot.url,
-          city: spot.city,
-          prefecture: spot.prefecture,
-          created_at: spot.created_at,
-          author_name: profile?.display_name || '匿名ユーザー',
-          author_avatar_path: profile?.avatar_url || null,
-          author_user_id: profile?.user_id || null,
-          reporter_nickname: reporter?.nickname || null,
-        };
-      });
-
-      setSpots(spotsData);
-    } catch (error) {
-      console.error('スポットデータの取得中にエラー:', error);
-    } finally {
-      setLoadingSpots(false);
-    }
-  }, []);
-
   const groupPostsByLocation = (posts: any[]) => {
     const locationGroups: { [key: string]: any[] } = {};
     posts.forEach(post => {
@@ -685,87 +438,6 @@ export function MapView() {
     const angle = (2 * Math.PI * index) / total;
     return { lat: baseLat + offsetDistance * Math.cos(angle), lng: baseLng + offsetDistance * Math.sin(angle) / Math.cos(baseLat * Math.PI / 180) };
   };
-
-  const calculateAndDrawRoute = useCallback(async (locations: MapLocationMarkerData[]) => {
-    if (!map || !window.google?.maps || locations.length < 2) {
-      routePolylines.forEach(polyline => polyline.setMap(null));
-      setRoutePolylines([]);
-      return;
-    }
-    routePolylines.forEach(polyline => polyline.setMap(null));
-    if (!directionsServiceRef.current) {
-      directionsServiceRef.current = new window.google.maps.DirectionsService();
-    }
-    const sortedLocations = [...locations].sort((a, b) => a.order - b.order);
-    const newPolylines: google.maps.Polyline[] = [];
-    for (let i = 0; i < sortedLocations.length - 1; i++) {
-      const origin = sortedLocations[i];
-      const destination = sortedLocations[i + 1];
-      try {
-        const result = await new Promise<google.maps.DirectionsResult>((resolve, reject) => {
-          directionsServiceRef.current!.route({
-            origin: new window.google.maps.LatLng(origin.store_latitude, origin.store_longitude),
-            destination: new window.google.maps.LatLng(destination.store_latitude, destination.store_longitude),
-            travelMode: window.google.maps.TravelMode.WALKING,
-          }, (response, status) => {
-            if (status === window.google.maps.DirectionsStatus.OK && response) resolve(response);
-            else reject(new Error(`Directions request failed: ${status}`));
-          });
-        });
-        const route = result.routes[0];
-        if (route && route.overview_path) {
-          const polyline = new window.google.maps.Polyline({
-            path: route.overview_path,
-            strokeColor: ROUTE_STYLES.strokeColor,
-            strokeOpacity: ROUTE_STYLES.strokeOpacity,
-            strokeWeight: ROUTE_STYLES.strokeWeight,
-            map: map,
-            zIndex: 1,
-          });
-          newPolylines.push(polyline);
-        }
-      } catch (error) {
-        const fallbackPolyline = new window.google.maps.Polyline({
-          path: [
-            new window.google.maps.LatLng(origin.store_latitude, origin.store_longitude),
-            new window.google.maps.LatLng(destination.store_latitude, destination.store_longitude),
-          ],
-          strokeColor: ROUTE_STYLES.strokeColor,
-          strokeOpacity: 0.5,
-          strokeWeight: 2,
-          map: map,
-          zIndex: 1,
-        });
-        newPolylines.push(fallbackPolyline);
-      }
-    }
-    setRoutePolylines(newPolylines);
-  }, [map, routePolylines]);
-
-  const createMapMarkers = useCallback(async () => {
-    if (!map || !mapLocations.length || !window.google?.maps) return;
-    mapMarkers.forEach(marker => { if (marker?.setMap) marker.setMap(null); });
-    const newMarkers: google.maps.Marker[] = [];
-    const locationGroups = groupPostsByLocation(mapLocations as any);
-    const markerPromises = mapLocations.map(async (location) => {
-      if (!location.store_latitude || !location.store_longitude) return;
-      const lat = Math.round(location.store_latitude * 10000) / 10000;
-      const lng = Math.round(location.store_longitude * 10000) / 10000;
-      const locationKey = `${lat},${lng}`;
-      const groupLocations = locationGroups[locationKey] || [location];
-      const indexInGroup = groupLocations.findIndex((l: any) => l.id === location.id);
-      const offsetPosition = getOffsetPosition(location.store_latitude, location.store_longitude, indexInGroup, groupLocations.length);
-      const position = new window.google.maps.LatLng(offsetPosition.lat, offsetPosition.lng);
-      const markerIcon = await createCategoryPinIcon(location.image_urls, location.store_name, 'イベント情報');
-      const marker = new window.google.maps.Marker({ position, map, title: `${location.store_name} - ${location.map_title}`, icon: markerIcon, animation: window.google.maps.Animation.DROP, zIndex: indexInGroup + 10 });
-      marker.addListener('click', () => { setSelectedMapLocation(location); });
-      return marker;
-    });
-    const markers = await Promise.all(markerPromises);
-    newMarkers.push(...markers.filter((m): m is google.maps.Marker => m != null));
-    setMapMarkers(newMarkers);
-    await calculateAndDrawRoute(mapLocations);
-  }, [map, mapLocations, calculateAndDrawRoute]);
 
   const createPostMarkers = useCallback(async () => {
     if (!map || !posts.length || !window.google?.maps) return;
@@ -790,13 +462,10 @@ export function MapView() {
         const markerIcon = await createCategoryPinIcon(post.image_urls, title, (post.category as PostCategory) || 'イベント情報');
         const marker = new window.google.maps.Marker({ position, map, title: `${post.store_name} - ${post.category || '投稿'}`, icon: markerIcon, animation: window.google.maps.Animation.DROP, zIndex: indexInGroup + 1 });
         marker.addListener('click', () => {
-          // Stop previous marker bounce
           if (selectedMarkerRef.current) { selectedMarkerRef.current.setAnimation(null); }
-          // Set bounce animation on selected marker (stop after ~2 bounces)
           marker.setAnimation(window.google.maps.Animation.BOUNCE);
           setTimeout(() => { if (marker.getAnimation() !== null) marker.setAnimation(null); }, 1400);
           selectedMarkerRef.current = marker;
-          // Find this post's index in the distance-sorted list
           const sortedIndex = posts.findIndex(p => p.id === post.id);
           setEventCardIndex(sortedIndex >= 0 ? sortedIndex : 0);
           setSelectedPost(post);
@@ -812,55 +481,147 @@ export function MapView() {
     processNextBatch();
   }, [map, posts]);
 
-  const createSpotMarkers = useCallback(async () => {
-    if (!map || !spots.length || !window.google?.maps) return;
-    spotMarkers.forEach(marker => { if (marker?.setMap) marker.setMap(null); });
-    const newMarkers: google.maps.Marker[] = [];
-    const locationGroups = groupPostsByLocation(spots as any);
-
-    const markerPromises = spots.map(async (spot) => {
-      if (!spot.store_latitude || !spot.store_longitude) return;
-      const lat = Math.round(spot.store_latitude * 10000) / 10000;
-      const lng = Math.round(spot.store_longitude * 10000) / 10000;
-      const locationKey = `${lat},${lng}`;
-      const groupSpots = locationGroups[locationKey] || [spot];
-      const indexInGroup = groupSpots.findIndex((s: any) => s.id === spot.id);
-      const offsetPosition = getOffsetPosition(spot.store_latitude, spot.store_longitude, indexInGroup, groupSpots.length);
-      const position = new window.google.maps.LatLng(offsetPosition.lat, offsetPosition.lng);
-      const markerIcon = await createCategoryPinIcon(spot.image_urls, spot.store_name, 'イベント情報');
-      const marker = new window.google.maps.Marker({
-        position,
-        map,
-        title: spot.store_name,
-        icon: markerIcon,
-        animation: window.google.maps.Animation.DROP,
-        zIndex: indexInGroup + 10,
+  // Facility data fetch
+  const fetchTrashCanReports = useCallback(async () => {
+    setLoadingFacility(prev => new Set(prev).add('trash_can'));
+    try {
+      const res = await fetch('/api/facility-reports?type=trash_can');
+      const data = await res.json();
+      if (res.ok && data.reports) {
+        setTrashCanReports(data.reports);
+      }
+    } catch (error) {
+      console.error('ゴミ箱データの取得中にエラー:', error);
+    } finally {
+      setLoadingFacility(prev => {
+        const next = new Set(prev);
+        next.delete('trash_can');
+        return next;
       });
-      marker.addListener('click', () => { setSelectedSpot(spot); });
-      return marker;
+    }
+  }, []);
+
+  // Create facility markers for a given type
+  const createFacilityMarkersForType = useCallback((type: FacilityLayerType, items: Array<{ lat: number; lng: number; name: string; id: string; data: PlaceResult | FacilityReportWithAuthor }>) => {
+    if (!map || !window.google?.maps) return;
+
+    // Clear existing markers for this type
+    const existing = facilityMarkers.get(type);
+    if (existing) {
+      existing.forEach(m => m.setMap(null));
+    }
+
+    const icon = createFacilityMarkerIcon(type);
+    const newMarkers: google.maps.Marker[] = [];
+
+    items.forEach(item => {
+      const marker = new window.google.maps.Marker({
+        position: new window.google.maps.LatLng(item.lat, item.lng),
+        map,
+        title: item.name,
+        icon,
+        zIndex: 5,
+      });
+      marker.addListener('click', () => {
+        setSelectedFacility({ type, data: item.data });
+        setSelectedPost(null);
+      });
+      newMarkers.push(marker);
     });
 
-    const markers = await Promise.all(markerPromises);
-    newMarkers.push(...markers.filter((m): m is google.maps.Marker => m != null));
-    setSpotMarkers(newMarkers);
+    setFacilityMarkers(prev => new Map(prev).set(type, newMarkers));
+  }, [map, facilityMarkers]);
 
-    // Fit bounds to show all spots
-    if (newMarkers.length > 0) {
-      const bounds = new window.google.maps.LatLngBounds();
-      spots.forEach(spot => {
-        if (spot.store_latitude && spot.store_longitude) {
-          bounds.extend(new window.google.maps.LatLng(spot.store_latitude, spot.store_longitude));
+  // Handle facility layer toggle
+  const handleFacilityToggle = useCallback((type: FacilityLayerType) => {
+    setActiveFacilityLayers(prev => {
+      const next = new Set(prev);
+      if (next.has(type)) {
+        // Turn off
+        next.delete(type);
+        const existing = facilityMarkers.get(type);
+        if (existing) {
+          existing.forEach(m => m.setMap(null));
+          setFacilityMarkers(prev => {
+            const next = new Map(prev);
+            next.delete(type);
+            return next;
+          });
+        }
+        if (type !== 'trash_can') {
+          clearResults(FACILITY_PLACES_TYPE[type]);
+        }
+        if (selectedFacility?.type === type) {
+          setSelectedFacility(null);
+        }
+      } else {
+        // Turn on
+        next.add(type);
+        if (type === 'trash_can') {
+          fetchTrashCanReports();
+        } else if (map) {
+          const center = map.getCenter();
+          if (center) {
+            searchNearby(map, center, FACILITY_PLACES_TYPE[type], 5000);
+          }
+        }
+      }
+      return next;
+    });
+  }, [map, facilityMarkers, fetchTrashCanReports, searchNearby, clearResults, selectedFacility]);
+
+  // Effect: create trash can markers when reports change
+  useEffect(() => {
+    if (!activeFacilityLayers.has('trash_can') || !map) return;
+    const items = trashCanReports.map(r => ({
+      lat: r.store_latitude,
+      lng: r.store_longitude,
+      name: r.store_name,
+      id: r.id,
+      data: r as FacilityReportWithAuthor,
+    }));
+    createFacilityMarkersForType('trash_can', items);
+  }, [trashCanReports, activeFacilityLayers, map]);
+
+  // Effect: create Places API markers when results change
+  useEffect(() => {
+    if (!map) return;
+    const placesTypeMap: Record<string, FacilityLayerType> = {
+      bus_station: 'bus_stop',
+      train_station: 'train_station',
+      shopping_mall: 'rest_spot',
+    };
+    placesResults.forEach((results, placeType) => {
+      const facilityType = placesTypeMap[placeType];
+      if (!facilityType || !activeFacilityLayers.has(facilityType)) return;
+      const items = results.map(r => ({
+        lat: r.lat,
+        lng: r.lng,
+        name: r.name,
+        id: r.id,
+        data: r as PlaceResult,
+      }));
+      createFacilityMarkersForType(facilityType, items);
+    });
+  }, [placesResults, activeFacilityLayers, map]);
+
+  // Effect: re-search Places on map idle
+  useEffect(() => {
+    if (!map) return;
+    const listener = map.addListener('idle', () => {
+      const center = map.getCenter();
+      if (!center) return;
+      activeFacilityLayers.forEach(type => {
+        if (type !== 'trash_can') {
+          const placeType = FACILITY_PLACES_TYPE[type];
+          if (placeType) {
+            searchNearby(map, center, placeType, 5000);
+          }
         }
       });
-      // Also include user location if available
-      const userLat = savedLocation?.lat || latitude;
-      const userLng = savedLocation?.lng || longitude;
-      if (userLat && userLng) {
-        bounds.extend(new window.google.maps.LatLng(userLat, userLng));
-      }
-      map.fitBounds(bounds, 60);
-    }
-  }, [map, spots, latitude, longitude, savedLocation]);
+    });
+    return () => { window.google?.maps?.event?.removeListener(listener); };
+  }, [map, activeFacilityLayers, searchNearby]);
 
   const initializeMap = useCallback(() => {
     if (!mapContainerRef.current || mapInstanceRef.current || !googleMapsLoaded || containerDimensions.height < 200 || initializationTriedRef.current) return false;
@@ -888,11 +649,12 @@ export function MapView() {
     if (mapInitialized && !hasInitialLoadedRef.current) {
       const userLat = savedLocation?.lat || latitude;
       const userLng = savedLocation?.lng || longitude;
-      if (viewMode === 'events') { if (userLat && userLng) { hasInitialLoadedRef.current = true; fetchPosts(); } }
-      else if (viewMode === 'spots') { hasInitialLoadedRef.current = true; fetchSpots(); }
-      else { hasInitialLoadedRef.current = true; fetchMapLocations(); }
+      if (userLat && userLng) {
+        hasInitialLoadedRef.current = true;
+        fetchPosts();
+      }
     }
-  }, [latitude, longitude, savedLocation, mapInitialized, viewMode, fetchPosts, fetchMapLocations, fetchSpots]);
+  }, [latitude, longitude, savedLocation, mapInitialized, fetchPosts]);
 
   const handleManualRefresh = async () => {
     setIsRefreshing(true);
@@ -904,64 +666,25 @@ export function MapView() {
         if (map) map.panTo(new window.google.maps.LatLng(position.coords.latitude, position.coords.longitude));
       } catch (error) { console.error('位置情報の取得に失敗:', error); }
     }
-    if (viewMode === 'events') await fetchPosts();
-    else if (viewMode === 'spots') await fetchSpots();
-    else await fetchMapLocations();
+    await fetchPosts();
+    // Also refresh trash can reports if layer is active
+    if (activeFacilityLayers.has('trash_can')) {
+      await fetchTrashCanReports();
+    }
     setTimeout(() => { setIsRefreshing(false); }, 500);
   };
 
   useEffect(() => {
-    const newTitleId = searchParams.get('title_id');
-    const newViewParam = searchParams.get('view');
-    if (newTitleId) setViewMode('myMaps');
-    else if (newViewParam === 'spots') setViewMode('spots');
-    else setViewMode('events');
-  }, [searchParams]);
-
-  useEffect(() => {
-    if (viewMode === 'events' && posts.length > 0 && map && window.google?.maps) createPostMarkers();
-    else if (viewMode === 'events' && posts.length === 0 && map && window.google?.maps) { postMarkers.forEach(marker => { if (marker?.setMap) marker.setMap(null); }); setPostMarkers([]); }
-  }, [posts, map, viewMode]);
-
-  useEffect(() => {
-    if (viewMode === 'myMaps' && mapLocations.length > 0 && map && window.google?.maps) createMapMarkers();
-    else if (viewMode === 'myMaps' && mapLocations.length === 0 && map && window.google?.maps) { 
-      mapMarkers.forEach(marker => { if (marker?.setMap) marker.setMap(null); }); 
-      setMapMarkers([]); 
-      routePolylines.forEach(polyline => polyline.setMap(null));
-      setRoutePolylines([]);
-    }
-  }, [mapLocations, map, viewMode]);
-
-  // Spots mode: create/clear markers
-  useEffect(() => {
-    if (viewMode === 'spots' && spots.length > 0 && map && window.google?.maps) createSpotMarkers();
-    else if (viewMode === 'spots' && spots.length === 0 && map && window.google?.maps) {
-      spotMarkers.forEach(marker => { if (marker?.setMap) marker.setMap(null); });
-      setSpotMarkers([]);
-    }
-  }, [spots, map, viewMode]);
-
-  useEffect(() => {
-    if (viewMode === 'events') {
-      routePolylines.forEach(polyline => polyline.setMap(null));
-      setRoutePolylines([]);
-    }
-    // Clear spot markers when leaving spots mode
-    if (viewMode !== 'spots') {
-      spotMarkers.forEach(marker => { if (marker?.setMap) marker.setMap(null); });
-      setSpotMarkers([]);
-      setSelectedSpot(null);
-    }
-  }, [viewMode]);
+    if (posts.length > 0 && map && window.google?.maps) createPostMarkers();
+    else if (posts.length === 0 && map && window.google?.maps) { postMarkers.forEach(marker => { if (marker?.setMap) marker.setMap(null); }); setPostMarkers([]); }
+  }, [posts, map]);
 
   useEffect(() => {
     const userLat = savedLocation?.lat || latitude;
     const userLng = savedLocation?.lng || longitude;
     if (map && userLat && userLng && mapInitialized && window.google?.maps) {
       const userPosition = new window.google.maps.LatLng(userLat, userLng);
-      const headingForIcon = viewMode === 'myMaps' ? deviceHeading : null;
-      const directionalIcon = createDirectionalLocationIcon(headingForIcon);
+      const directionalIcon = createDirectionalLocationIcon(null);
       if (userLocationMarker) { userLocationMarker.setPosition(userPosition); userLocationMarker.setIcon(directionalIcon); userLocationMarker.setMap(map); userLocationMarker.setZIndex(9999); }
       else {
         try {
@@ -969,31 +692,22 @@ export function MapView() {
           setUserLocationMarker(marker);
         } catch (error) { console.error('Failed to create user location marker:', error); }
       }
-      if (viewMode === 'events') { map.panTo(userPosition); const currentZoom = map.getZoom(); if (currentZoom !== undefined && currentZoom < 11) map.setZoom(11); }
+      map.panTo(userPosition);
+      const currentZoom = map.getZoom();
+      if (currentZoom !== undefined && currentZoom < 11) map.setZoom(11);
     }
-  }, [map, latitude, longitude, savedLocation, mapInitialized, userLocationMarker, viewMode, deviceHeading]);
+  }, [map, latitude, longitude, savedLocation, mapInitialized, userLocationMarker]);
 
   const handleRetry = () => {
     setInitializationError(null); setMapInitialized(false); initializationTriedRef.current = false; mapInstanceRef.current = null; setMap(null);
     if (userLocationMarker) { userLocationMarker.setMap(null); setUserLocationMarker(null); }
     postMarkers.forEach(marker => { if (marker?.setMap) marker.setMap(null); });
     setPostMarkers([]); setPosts([]);
-    routePolylines.forEach(polyline => polyline.setMap(null));
-    setRoutePolylines([]);
+    // Clear facility markers
+    facilityMarkers.forEach(markers => markers.forEach(m => m.setMap(null)));
+    setFacilityMarkers(new Map());
     if (mapContainerRef.current) mapContainerRef.current.innerHTML = '';
     setTimeout(() => { updateContainerDimensions(); if (!latitude || !longitude) requestLocation(); }, 100);
-  };
-
-  const handleCopyUrl = async () => {
-    const currentUrl = typeof window !== 'undefined' ? window.location.href : '';
-    try {
-      await navigator.clipboard.writeText(currentUrl);
-      setIsCopied(true);
-      toast({ title: '✅ コピー完了！', description: 'URLをクリップボードにコピーしました' });
-      setTimeout(() => setIsCopied(false), 1000);
-    } catch (error) {
-      toast({ title: '⚠️ エラー', description: 'URLのコピーに失敗しました', variant: 'destructive' });
-    }
   };
 
   const MessageCard = ({ icon: Icon, title, message, children, variant = 'default' }: { icon?: React.ElementType; title: string; message: string | React.ReactNode; children?: React.ReactNode; variant?: 'default' | 'destructive' | 'warning'; }) => {
@@ -1008,6 +722,37 @@ export function MapView() {
         </div>
       </div>
     );
+  };
+
+  // Helper to get facility type label
+  const getFacilityTypeLabel = (type: FacilityLayerType): string => {
+    const labels: Record<FacilityLayerType, string> = {
+      trash_can: 'ゴミ箱',
+      bus_stop: 'バス停',
+      train_station: '駅',
+      rest_spot: '休憩スポット',
+    };
+    return labels[type];
+  };
+
+  const getFacilityTypeIcon = (type: FacilityLayerType) => {
+    const icons: Record<FacilityLayerType, React.ElementType> = {
+      trash_can: Trash2,
+      bus_stop: Bus,
+      train_station: TrainFront,
+      rest_spot: Coffee,
+    };
+    return icons[type];
+  };
+
+  const getFacilityTypeColor = (type: FacilityLayerType): string => {
+    const colors: Record<FacilityLayerType, string> = {
+      trash_can: '#6B7280',
+      bus_stop: '#3B82F6',
+      train_station: '#EF4444',
+      rest_spot: '#10B981',
+    };
+    return colors[type];
   };
 
   if (googleMapsLoadError) return <MessageCard title="Google Maps APIエラー" message="Google Maps APIの読み込みに失敗しました。" variant="destructive" icon={AlertTriangle}><Button onClick={handleRetry} className="mt-4" style={{ background: designTokens.colors.accent.lilac, color: designTokens.colors.text.inverse }}><RefreshCw className="mr-2 h-4 w-4" />再試行</Button></MessageCard>;
@@ -1033,247 +778,47 @@ export function MapView() {
     <div className="w-full h-full relative" style={{ background: designTokens.colors.background.mist }}>
       <div ref={mapContainerRef} className="w-full h-full" style={{ touchAction: 'manipulation', WebkitOverflowScrolling: 'touch', WebkitTouchCallout: 'none', WebkitUserSelect: 'none', userSelect: 'none' }} />
 
-      {/* コースモード: 作成者アバター */}
-      {map && mapInitialized && viewMode === 'myMaps' && mapCreatorProfile && (
-        <div className="absolute top-4 right-4 z-30">
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <Button
-              onClick={() => setIsProfileModalOpen(true)}
-              size="icon"
-              className="h-16 w-16 rounded-2xl p-0 overflow-hidden"
-              style={{ 
-                background: designTokens.colors.background.white,
-                boxShadow: designTokens.elevation.high,
-                border: `2px solid ${designTokens.colors.accent.gold}`,
-              }}
-            >
-              <Avatar className="h-12 w-12">
-                {mapCreatorProfile.avatar_path ? (
-                  <AvatarImage src={getAvatarPublicUrl(mapCreatorProfile.avatar_path) || ''} alt={mapCreatorProfile.display_name} />
-                ) : null}
-                <AvatarFallback style={{ background: designTokens.colors.primary.base, color: designTokens.colors.text.inverse }}>
-                  {mapCreatorProfile.display_name.charAt(0).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-            </Button>
-          </motion.div>
-        </div>
-      )}
-
-      {/* コースモード: 更新ボタン（右上・開発者アイコンの下） */}
-      {map && mapInitialized && viewMode === 'myMaps' && (
-        <div className="absolute top-24 right-4 z-30">
+      {/* 更新ボタン（右上） */}
+      {map && mapInitialized && (
+        <div className="absolute top-20 right-4 z-30">
           <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} whileTap={{ scale: 0.95 }}>
-            <Button
-              onClick={handleManualRefresh}
-              size="icon"
-              disabled={isRefreshing || loadingMaps}
-              className="h-12 w-12 rounded-full disabled:opacity-50"
-              style={{ background: `${designTokens.colors.background.white}F0`, color: designTokens.colors.primary.base, boxShadow: designTokens.elevation.medium, border: `1px solid ${designTokens.colors.secondary.stone}40` }}
-            >
-              <RefreshCw className={`h-6 w-6 ${(isRefreshing || loadingMaps) ? 'animate-spin' : ''}`} />
+            <Button onClick={handleManualRefresh} size="icon" disabled={isRefreshing || loadingPosts} className="h-12 w-12 rounded-full disabled:opacity-50" style={{ background: `${designTokens.colors.background.white}F0`, color: designTokens.colors.primary.base, boxShadow: designTokens.elevation.medium, border: `1px solid ${designTokens.colors.secondary.stone}40` }}>
+              <RefreshCw className={`h-6 w-6 ${(isRefreshing || loadingPosts) ? 'animate-spin' : ''}`} />
             </Button>
           </motion.div>
         </div>
       )}
 
-      {/* コースモード: ナビゲーションボタン（画面左下・アイコン下にテキスト） */}
-      {map && mapInitialized && viewMode === 'myMaps' && isMapPublic && (
-        <div className="absolute bottom-6 left-4 z-30 flex flex-col gap-2 w-max">
+      {/* 施設レイヤートグル（左上） */}
+      {map && mapInitialized && (
+        <div className="absolute top-20 left-4 z-30">
+          <FacilityLayerToggles
+            activeLayers={activeFacilityLayers}
+            onToggle={handleFacilityToggle}
+            loadingLayers={loadingFacility}
+          />
+        </div>
+      )}
+
+      {/* ゴミ箱報告ボタン（下部中央）- ゴミ箱レイヤーがONの時のみ */}
+      {map && mapInitialized && activeFacilityLayers.has('trash_can') && !selectedPost && !selectedFacility && (
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} whileTap={{ scale: 0.98 }}>
             <Button
-              onClick={() => {
-                setViewMode('spots');
-                setSelectedMapLocation(null);
-                mapMarkers.forEach(marker => { if (marker?.setMap) marker.setMap(null); });
-                setMapMarkers([]);
-                routePolylines.forEach(polyline => polyline.setMap(null));
-                setRoutePolylines([]);
-                router.push('/map?view=spots');
-                fetchSpots();
-              }}
-              className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl flex flex-col items-center justify-center gap-1 font-semibold text-xs shadow-lg"
-              style={{ background: designTokens.colors.secondary.fern, color: designTokens.colors.text.inverse, boxShadow: designTokens.elevation.high }}
+              onClick={() => setShowReportForm(true)}
+              className="h-14 rounded-xl flex items-center justify-center gap-2 px-6 font-semibold text-sm shadow-lg"
+              style={{ background: '#6B7280', color: designTokens.colors.text.inverse, boxShadow: designTokens.elevation.high }}
             >
-              <MapPin className="h-5 w-5 flex-shrink-0" />
-              スポット
-            </Button>
-          </motion.div>
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} whileTap={{ scale: 0.98 }} transition={{ delay: 0.05 }}>
-            <Button
-              onClick={() => {
-                setViewMode('events');
-                setSelectedMapLocation(null);
-                mapMarkers.forEach(marker => { if (marker?.setMap) marker.setMap(null); });
-                setMapMarkers([]);
-                routePolylines.forEach(polyline => polyline.setMap(null));
-                setRoutePolylines([]);
-                router.push('/map');
-                const userLat = savedLocation?.lat || latitude;
-                const userLng = savedLocation?.lng || longitude;
-                if (userLat && userLng) setTimeout(() => fetchPosts(), 100);
-              }}
-              className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl flex flex-col items-center justify-center gap-1 font-semibold text-xs shadow-lg"
-              style={{ background: designTokens.colors.accent.gold, color: designTokens.colors.text.primary, boxShadow: designTokens.elevation.high }}
-            >
-              <Compass className="h-5 w-5 flex-shrink-0" />
-              イベント
+              <Trash2 className="h-5 w-5 flex-shrink-0" />
+              ゴミ箱を報告
             </Button>
           </motion.div>
         </div>
-      )}
-
-      {/* プロフィール&共有モーダル */}
-      <CustomModal isOpen={isProfileModalOpen} onClose={() => setIsProfileModalOpen(false)}>
-        <div className="p-6 pt-12">
-          <div className="flex flex-col items-center mb-6">
-            <Avatar className="w-20 h-20 mb-3" style={{ border: `3px solid ${designTokens.colors.accent.gold}` }}>
-              {mapCreatorProfile?.avatar_path ? (
-                <AvatarImage src={getAvatarPublicUrl(mapCreatorProfile.avatar_path) || ''} alt={mapCreatorProfile?.display_name} />
-              ) : null}
-              <AvatarFallback style={{ background: designTokens.colors.primary.base, color: designTokens.colors.text.inverse, fontSize: '1.5rem' }}>
-                {mapCreatorProfile?.display_name?.charAt(0).toUpperCase() || 'U'}
-              </AvatarFallback>
-            </Avatar>
-            <h3 className="text-xl font-semibold mb-1" style={{ fontFamily: designTokens.typography.display, color: designTokens.colors.text.primary }}>
-              {mapCreatorProfile?.display_name || '匿名ユーザー'}
-            </h3>
-            <p className="text-xs font-medium tracking-wide" style={{ color: designTokens.colors.accent.goldDark }}>Map Creator</p>
-            {mapCreatorProfile?.url && (() => {
-              const normalizedUrl = normalizeUrl(mapCreatorProfile.url);
-              if (!normalizedUrl) return null;
-              return (
-                <a href={normalizedUrl} target="_blank" rel="noopener noreferrer" className="mt-2 transition-transform hover:scale-110">
-                  <img src={getSocialIconUrl(normalizedUrl)} alt="SNS" className="w-8 h-8 rounded-lg" style={{ border: `1px solid ${designTokens.colors.secondary.stone}` }} />
-                </a>
-              );
-            })()}
-          </div>
-          <div className="p-4 rounded-xl mb-6" style={{ background: designTokens.colors.background.cloud }}>
-            <div className="flex items-center gap-2 mb-1">
-              <BookOpen className="h-4 w-4" style={{ color: designTokens.colors.accent.goldDark }} />
-              <span className="text-xs font-medium" style={{ color: designTokens.colors.text.muted }}>Current Map</span>
-            </div>
-            <p className="font-semibold" style={{ fontFamily: designTokens.typography.display, color: designTokens.colors.text.primary }}>{currentMapTitle}</p>
-          </div>
-          <div className="space-y-3">
-            <div className="flex items-center gap-2 mb-2">
-              <Share2 className="h-4 w-4" style={{ color: designTokens.colors.text.muted }} />
-              <span className="text-xs font-medium tracking-wide" style={{ color: designTokens.colors.text.muted }}>SHARE</span>
-            </div>
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={handleCopyUrl}
-              className="flex items-center justify-center gap-3 w-full py-4 rounded-xl font-semibold transition-all"
-              style={{ 
-                background: isCopied ? designTokens.colors.functional.success : designTokens.colors.accent.lilac,
-                color: designTokens.colors.text.inverse,
-              }}
-            >
-              {isCopied ? (<><Check className="h-5 w-5" />コピー完了！</>) : (<><Link2 className="h-5 w-5" />URLをコピー</>)}
-            </motion.button>
-          </div>
-        </div>
-      </CustomModal>
-
-      {/* 位置情報許可モーダル */}
-      <AnimatePresence>
-        {isLocationPermissionModalOpen && !isMapPublic && viewMode === 'myMaps' && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 backdrop-blur-sm" style={{ background: `${designTokens.colors.primary.base}60` }} />
-            <motion.div initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 20 }} transition={{ type: "spring", damping: 25, stiffness: 300 }} className="relative rounded-3xl w-full max-w-sm overflow-hidden" style={{ background: designTokens.colors.background.white, boxShadow: designTokens.elevation.dramatic }}>
-              <div className="p-6">
-                <h3 className="text-xl font-semibold text-center mb-3" style={{ fontFamily: designTokens.typography.display, color: designTokens.colors.text.primary }}>位置情報を許可してください</h3>
-                <p className="text-sm text-center mb-6 leading-relaxed" style={{ color: designTokens.colors.text.secondary }}>
-                  このコースを表示するには、位置情報の許可が必要です。左下の「更新」ボタンを押して、位置情報を許可してください。
-                </p>
-                <Button onClick={() => setIsLocationPermissionModalOpen(false)} className="w-full py-3 rounded-xl font-medium" style={{ background: designTokens.colors.accent.lilac, color: designTokens.colors.text.inverse }}>閉じる</Button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* イベントモード: ナビゲーション（2つのテキストボタン + 更新） */}
-      {map && mapInitialized && viewMode === 'events' && (
-        <>
-          {/* 更新ボタン（右上） */}
-          <div className="absolute top-20 right-4 z-30">
-            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} whileTap={{ scale: 0.95 }}>
-              <Button onClick={handleManualRefresh} size="icon" disabled={isRefreshing || loadingPosts} className="h-12 w-12 rounded-full disabled:opacity-50" style={{ background: `${designTokens.colors.background.white}F0`, color: designTokens.colors.primary.base, boxShadow: designTokens.elevation.medium, border: `1px solid ${designTokens.colors.secondary.stone}40` }}>
-                <RefreshCw className={`h-6 w-6 ${(isRefreshing || loadingPosts) ? 'animate-spin' : ''}`} />
-              </Button>
-            </motion.div>
-          </div>
-          {/* 2つのメインボタン（画面左下・アイコン下にテキスト） */}
-          <div className="absolute bottom-6 left-4 z-30 flex flex-col gap-2 w-max">
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} whileTap={{ scale: 0.98 }}>
-              <Button
-                onClick={() => router.push('/courses')}
-                className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl flex flex-col items-center justify-center gap-1 font-semibold text-xs shadow-lg"
-                style={{ background: '#999da8', color: designTokens.colors.text.inverse, boxShadow: designTokens.elevation.high }}
-              >
-                <Route className="h-5 w-5 flex-shrink-0" />
-                コース
-              </Button>
-            </motion.div>
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} whileTap={{ scale: 0.98 }} transition={{ delay: 0.05 }}>
-              <Button
-                onClick={() => {
-                  setViewMode('spots');
-                  setSelectedPost(null);
-                  setNearbyPosts([]);
-                  postMarkers.forEach(marker => { if (marker?.setMap) marker.setMap(null); });
-                  setPostMarkers([]);
-                  fetchSpots();
-                }}
-                className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl flex flex-col items-center justify-center gap-1 font-semibold text-xs shadow-lg"
-                style={{ background: designTokens.colors.secondary.fern, color: designTokens.colors.text.inverse, boxShadow: designTokens.elevation.high }}
-              >
-                <MapPin className="h-5 w-5 flex-shrink-0" />
-                スポット
-              </Button>
-            </motion.div>
-          </div>
-        </>
-      )}
-
-      {/* スポットモード: ナビゲーション（下中央に作成ボタンのみ・アイコン下にテキスト） */}
-      {map && mapInitialized && viewMode === 'spots' && (
-        <>
-          {/* 更新ボタン（右上） */}
-          <div className="absolute top-20 right-4 z-30">
-            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} whileTap={{ scale: 0.95 }}>
-              <Button onClick={() => fetchSpots()} size="icon" disabled={loadingSpots} className="h-12 w-12 rounded-full disabled:opacity-50" style={{ background: `${designTokens.colors.background.white}F0`, color: designTokens.colors.primary.base, boxShadow: designTokens.elevation.medium, border: `1px solid ${designTokens.colors.secondary.stone}40` }}>
-                <RefreshCw className={`h-6 w-6 ${loadingSpots ? 'animate-spin' : ''}`} />
-              </Button>
-            </motion.div>
-          </div>
-          {/* 画面下中央: 作成ボタン（カメラアイコンの下にテキスト） */}
-          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30">
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} whileTap={{ scale: 0.98 }}>
-              <Button
-                onClick={() => router.push('/create-spot')}
-                className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl flex flex-col items-center justify-center gap-1 font-semibold text-xs shadow-lg"
-                style={{ background: designTokens.colors.functional.info, color: designTokens.colors.text.inverse, boxShadow: designTokens.elevation.high }}
-              >
-                <Camera className="h-5 w-5 flex-shrink-0" />
-                作成
-              </Button>
-            </motion.div>
-          </div>
-        </>
       )}
 
       {/* 更新中表示 */}
       <AnimatePresence>
-        {(isRefreshing || loadingPosts || loadingMaps || loadingSpots) && (
+        {(isRefreshing || loadingPosts) && (
           <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="absolute top-20 left-1/2 transform -translate-x-1/2 z-40 backdrop-blur-sm px-6 py-3 rounded-full" style={{ background: `${designTokens.colors.background.white}F5`, boxShadow: designTokens.elevation.medium }}>
             <div className="flex items-center gap-2">
               <RefreshCw className="h-4 w-4 animate-spin" style={{ color: designTokens.colors.accent.gold }} />
@@ -1283,9 +828,9 @@ export function MapView() {
         )}
       </AnimatePresence>
 
-      {/* イベント詳細カード（イベントモード時・スワイプ対応・現在地近い順） */}
+      {/* イベント詳細カード（スワイプ対応・現在地近い順） */}
       <AnimatePresence>
-        {viewMode === 'events' && selectedPost && posts.length > 0 && (() => {
+        {selectedPost && posts.length > 0 && (() => {
           const currentIdx = Math.min(eventCardIndex, posts.length - 1);
           const post = posts[currentIdx];
           if (!post) return null;
@@ -1298,7 +843,6 @@ export function MapView() {
           }
           const canCheckIn = !!session?.user?.id && post.enable_checkin === true && !!effectiveLatitude && !!effectiveLongitude && !!post.store_latitude && !!post.store_longitude && isWithinRangeResult;
           const isCheckedIn = checkedInPosts.has(post.id);
-          const distanceText = post.distance != null ? (post.distance < 1 ? `${Math.round(post.distance * 1000)}m` : `${post.distance.toFixed(1)}km`) : null;
 
           const handleSwipe = (direction: 'left' | 'right') => {
             if (selectedMarkerRef.current) { selectedMarkerRef.current.setAnimation(null); }
@@ -1308,10 +852,8 @@ export function MapView() {
             setEventCardIndex(newIdx);
             const nextPost = posts[newIdx];
             setSelectedPost(nextPost);
-            // Bounce the new marker (stop after ~2 bounces)
             const matchingMarker = postMarkers.find(m => m?.getTitle()?.includes(nextPost.store_name));
             if (matchingMarker) { matchingMarker.setAnimation(window.google.maps.Animation.BOUNCE); setTimeout(() => { if (matchingMarker.getAnimation() !== null) matchingMarker.setAnimation(null); }, 1400); selectedMarkerRef.current = matchingMarker; }
-            // Pan map to new post
             if (map && nextPost.store_latitude && nextPost.store_longitude) {
               map.panTo(new window.google.maps.LatLng(nextPost.store_latitude, nextPost.store_longitude));
             }
@@ -1334,7 +876,6 @@ export function MapView() {
               }}
             >
               <div className="relative rounded-2xl overflow-hidden" style={{ background: designTokens.colors.background.white, boxShadow: designTokens.elevation.high }}>
-                {/* スワイプ案内 */}
                 {posts.length > 1 && (
                   <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20">
                     <p className="text-[10px] font-medium whitespace-nowrap" style={{ color: designTokens.colors.text.muted }}>
@@ -1400,152 +941,116 @@ export function MapView() {
         })()}
       </AnimatePresence>
 
-      {/* コースロケーション詳細カード */}
+      {/* 施設詳細カード */}
       <AnimatePresence>
-        {selectedMapLocation && viewMode === 'myMaps' && (
-          <motion.div initial={{ y: 100, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 100, opacity: 0 }} transition={{ duration: 0.4, type: "spring", damping: 20 }} className="absolute bottom-4 left-4 right-4 z-40">
-            <div className="relative rounded-2xl overflow-hidden" style={{ background: designTokens.colors.background.white, boxShadow: designTokens.elevation.high }}>
-              <div className="absolute top-4 right-4 z-10">
-                <Button onClick={() => setSelectedMapLocation(null)} size="icon" className="h-8 w-8 rounded-full" style={{ background: designTokens.colors.background.cloud, color: designTokens.colors.text.secondary }}><X className="h-4 w-4" /></Button>
-              </div>
-              <div className="p-5">
-                <div className="flex gap-4 mb-4">
-                  <div className="flex-shrink-0 relative w-24 h-24 rounded-xl overflow-hidden" style={{ background: designTokens.colors.background.cloud }}>
-                    {selectedMapLocation.image_urls && selectedMapLocation.image_urls.length > 0 ? (
-                      <img src={optimizeCloudinaryImageUrl(selectedMapLocation.image_urls[0])} alt={selectedMapLocation.store_name} className="w-full h-full object-cover" loading="eager" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center"><MapPin className="h-12 w-12" style={{ color: designTokens.colors.text.muted }} /></div>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <BookOpen className="h-4 w-4 flex-shrink-0" style={{ color: designTokens.colors.accent.goldDark }} />
-                      <span className="text-xs font-medium line-clamp-1" style={{ color: designTokens.colors.text.muted }}>{selectedMapLocation.map_title}</span>
-                    </div>
-                    <h3 className="text-lg font-semibold leading-tight line-clamp-2 mb-1.5" style={{ fontFamily: designTokens.typography.display, color: designTokens.colors.text.primary }}>{selectedMapLocation.store_name}</h3>
-                    {selectedMapLocation.content && (
-                      <p className="text-xs leading-relaxed line-clamp-2" style={{ color: designTokens.colors.text.secondary }}>
-                        {selectedMapLocation.content.length > 30 ? selectedMapLocation.content.slice(0, 30) + '…' : selectedMapLocation.content}
-                      </p>
-                    )}
-                  </div>
-                </div>
-                <motion.div whileHover={{ scale: navigatingToMapDetail === selectedMapLocation.id ? 1 : 1.02 }} whileTap={{ scale: navigatingToMapDetail === selectedMapLocation.id ? 1 : 0.98 }}>
-                  <Button 
-                    onClick={() => {
-                      if (navigatingToMapDetail) return;
-                      setNavigatingToMapDetail(selectedMapLocation.id);
-                      router.push(`/map/spot/${selectedMapLocation.id}`);
-                    }}
-                    disabled={navigatingToMapDetail === selectedMapLocation.id}
-                    className="w-full py-3 rounded-xl font-semibold flex items-center justify-center gap-2 disabled:opacity-80"
-                    style={{ background: designTokens.colors.accent.lilac, color: designTokens.colors.text.inverse }}
-                  >
-                    {navigatingToMapDetail === selectedMapLocation.id ? (<><Loader2 className="h-4 w-4 animate-spin" />読み込み中...</>) : (<><Search className="h-4 w-4" />詳細を見る</>)}
-                  </Button>
-                </motion.div>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+        {selectedFacility && (() => {
+          const FacilityIcon = getFacilityTypeIcon(selectedFacility.type);
+          const facilityColor = getFacilityTypeColor(selectedFacility.type);
+          const isTrashCan = selectedFacility.type === 'trash_can';
+          const data = selectedFacility.data;
+          const name = isTrashCan ? (data as FacilityReportWithAuthor).store_name : (data as PlaceResult).name;
+          const subtitle = isTrashCan
+            ? (data as FacilityReportWithAuthor).description || ''
+            : (data as PlaceResult).vicinity || '';
+          const authorName = isTrashCan ? ((data as FacilityReportWithAuthor).author_name || (data as FacilityReportWithAuthor).reporter_nickname || '匿名') : null;
+          const createdAt = isTrashCan ? (data as FacilityReportWithAuthor).created_at : null;
+          const facilityLat = isTrashCan ? (data as FacilityReportWithAuthor).store_latitude : (data as PlaceResult).lat;
+          const facilityLng = isTrashCan ? (data as FacilityReportWithAuthor).store_longitude : (data as PlaceResult).lng;
 
-      {/* スポット詳細カード */}
-      <AnimatePresence>
-        {selectedSpot && viewMode === 'spots' && (() => {
-          const season = getSeasonFromDate(selectedSpot.created_at);
-          const displayNickname = selectedSpot.reporter_nickname || selectedSpot.author_name;
           return (
-          <motion.div initial={{ y: 100, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 100, opacity: 0 }} transition={{ duration: 0.4, type: "spring", damping: 20 }} className="absolute bottom-4 left-4 right-4 z-40">
-            <div className="relative rounded-2xl overflow-hidden" style={{ background: designTokens.colors.background.white, boxShadow: designTokens.elevation.high }}>
-              <div className="absolute top-4 right-4 z-10">
-                <Button onClick={() => setSelectedSpot(null)} size="icon" className="h-8 w-8 rounded-full" style={{ background: designTokens.colors.background.cloud, color: designTokens.colors.text.secondary }}><X className="h-4 w-4" /></Button>
-              </div>
-              <div className="p-5">
-                <div className="flex gap-4 mb-3">
-                  <div className="flex-shrink-0 relative w-24 h-24 rounded-xl overflow-hidden" style={{ background: designTokens.colors.background.cloud }}>
-                    {selectedSpot.image_urls && selectedSpot.image_urls.length > 0 ? (
-                      <img src={optimizeCloudinaryImageUrl(selectedSpot.image_urls[0])} alt={selectedSpot.store_name} className="w-full h-full object-cover" loading="eager" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center"><MapPin className="h-12 w-12" style={{ color: designTokens.colors.text.muted }} /></div>
-                    )}
-                    {/* 季節バッジ */}
-                    <div className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-full text-xs font-bold" style={{ background: season.color, color: '#fff' }}>
-                      {season.label}
-                    </div>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-lg font-semibold leading-tight line-clamp-2 mb-1.5" style={{ fontFamily: designTokens.typography.display, color: designTokens.colors.text.primary }}>{selectedSpot.store_name}</h3>
-                    {selectedSpot.city && (
-                      <div className="flex items-center gap-1.5 text-sm mb-1" style={{ color: designTokens.colors.text.secondary }}>
-                        <MapPinIcon className="h-3.5 w-3.5 flex-shrink-0" style={{ color: designTokens.colors.functional.error }} />
-                        <span>{selectedSpot.city}</span>
-                      </div>
-                    )}
-                    <div className="flex items-center gap-3 text-xs" style={{ color: designTokens.colors.text.muted }}>
-                      <div className="flex items-center gap-1">
-                        <User className="h-3 w-3 flex-shrink-0" />
-                        <span>{displayNickname}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Calendar className="h-3 w-3 flex-shrink-0" />
-                        <span>{new Date(selectedSpot.created_at).toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' })}</span>
-                      </div>
-                    </div>
-                  </div>
+            <motion.div
+              key={`facility-${name}`}
+              initial={{ y: 100, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 100, opacity: 0 }}
+              transition={{ duration: 0.4, type: "spring", damping: 20 }}
+              className="absolute bottom-4 left-4 right-4 z-40"
+            >
+              <div className="relative rounded-2xl overflow-hidden" style={{ background: designTokens.colors.background.white, boxShadow: designTokens.elevation.high }}>
+                <div className="absolute top-4 right-4 z-10">
+                  <Button onClick={() => setSelectedFacility(null)} size="icon" className="h-8 w-8 rounded-full" style={{ background: designTokens.colors.background.cloud, color: designTokens.colors.text.secondary }}>
+                    <X className="h-4 w-4" />
+                  </Button>
                 </div>
-                {selectedSpot.description && (
-                  <p className="text-sm line-clamp-2 mb-3 leading-relaxed" style={{ color: designTokens.colors.text.secondary }}>{selectedSpot.description}</p>
-                )}
-                <div className="flex gap-2">
-                  {selectedSpot.url && (
-                    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="flex-1">
+                <div className="p-5">
+                  <div className="flex gap-4 mb-3">
+                    <div
+                      className="flex-shrink-0 w-14 h-14 rounded-xl flex items-center justify-center"
+                      style={{ background: `${facilityColor}15` }}
+                    >
+                      <FacilityIcon className="h-7 w-7" style={{ color: facilityColor }} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-xs font-medium px-2 py-0.5 rounded-full" style={{ background: facilityColor, color: '#fff' }}>
+                          {getFacilityTypeLabel(selectedFacility.type)}
+                        </span>
+                      </div>
+                      <h3 className="text-lg font-semibold leading-tight line-clamp-2 mb-1" style={{ fontFamily: designTokens.typography.display, color: designTokens.colors.text.primary }}>
+                        {name}
+                      </h3>
+                      {subtitle && (
+                        <p className="text-xs line-clamp-2 leading-relaxed" style={{ color: designTokens.colors.text.secondary }}>
+                          {subtitle}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  {/* Author info for trash cans */}
+                  {isTrashCan && (
+                    <div className="flex items-center gap-3 text-xs mb-3" style={{ color: designTokens.colors.text.muted }}>
+                      {authorName && (
+                        <div className="flex items-center gap-1">
+                          <User className="h-3 w-3 flex-shrink-0" />
+                          <span>{authorName}</span>
+                        </div>
+                      )}
+                      {createdAt && (
+                        <div className="flex items-center gap-1">
+                          <Calendar className="h-3 w-3 flex-shrink-0" />
+                          <span>{new Date(createdAt).toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' })}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {/* Google Maps direction link */}
+                  {!isTrashCan && (
+                    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                       <Button
-                        onClick={() => { if (selectedSpot.url) window.open(selectedSpot.url, '_blank'); }}
+                        onClick={() => {
+                          window.open(`https://www.google.com/maps/dir/?api=1&destination=${facilityLat},${facilityLng}`, '_blank');
+                        }}
                         className="w-full py-3 rounded-xl font-semibold flex items-center justify-center gap-2"
-                        style={{ background: designTokens.colors.secondary.fern, color: designTokens.colors.text.inverse }}
+                        style={{ background: facilityColor, color: '#fff' }}
                       >
-                        <ExternalLink className="h-4 w-4" />
-                        リンクを開く
+                        <MapPin className="h-4 w-4" />
+                        ここへのルート
                       </Button>
                     </motion.div>
                   )}
                 </div>
-                {/* 所有者用: 編集・削除ボタン */}
-                {session?.user?.id && selectedSpot.author_user_id === session.user.id && (
-                  <div className="flex gap-2 mt-3 pt-3" style={{ borderTop: `1px solid ${designTokens.colors.secondary.stone}30` }}>
-                    <Button
-                      onClick={() => router.push(`/edit-spot/${selectedSpot.id}`)}
-                      variant="outline"
-                      className="flex-1 rounded-xl font-semibold flex items-center justify-center gap-2"
-                    >
-                      <Pencil className="h-4 w-4" />
-                      編集
-                    </Button>
-                    <Button
-                      onClick={async () => {
-                        if (!confirm('このスポットを削除してもよろしいですか？\nこの操作は取り消せません。')) return;
-                        const { success, error } = await deleteSpot(selectedSpot.id, session.user.id!);
-                        if (success) {
-                          toast({ title: '削除完了', description: 'スポットを削除しました', duration: 2000 });
-                          setSelectedSpot(null);
-                          fetchSpots();
-                        } else {
-                          toast({ title: 'エラー', description: error || '削除に失敗しました', variant: 'destructive' });
-                        }
-                      }}
-                      variant="outline"
-                      className="rounded-xl font-semibold flex items-center justify-center gap-2"
-                      style={{ color: designTokens.colors.functional.error, borderColor: `${designTokens.colors.functional.error}50` }}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                      削除
-                    </Button>
-                  </div>
-                )}
               </div>
-            </div>
-          </motion.div>
+            </motion.div>
+          );
+        })()}
+      </AnimatePresence>
+
+      {/* ゴミ箱報告フォーム */}
+      <AnimatePresence>
+        {showReportForm && map && (() => {
+          const center = map.getCenter();
+          const lat = center?.lat() || savedLocation?.lat || latitude || 35.6812;
+          const lng = center?.lng() || savedLocation?.lng || longitude || 139.7671;
+          return (
+            <FacilityReportForm
+              latitude={lat}
+              longitude={lng}
+              onClose={() => setShowReportForm(false)}
+              onSuccess={() => {
+                fetchTrashCanReports();
+                toast({ title: '📍 報告完了！', description: 'ゴミ箱の場所を報告しました。ありがとうございます！' });
+              }}
+            />
           );
         })()}
       </AnimatePresence>

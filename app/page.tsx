@@ -3,12 +3,9 @@
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence, useScroll, useTransform, useInView } from 'framer-motion';
-import { MapPin, Menu, X, ChevronRight, Calendar, LogOut, Search, Layers, Map, Users, ArrowRight, Compass, ExternalLink, Sparkles, Route, MessageSquare } from 'lucide-react';
+import { MapPin, Menu, X, ChevronRight, Calendar, LogOut, Search, Layers, Map, Users, ArrowRight, Compass, ExternalLink, Sparkles, MessageSquare, Trash2, Bus, TrainFront } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useSession, signOut } from 'next-auth/react';
-import { getPublicMaps } from '@/app/_actions/maps';
-import { getPublicSpots } from '@/app/_actions/spots';
-import type { SpotWithAuthor } from '@/types/spot';
 import { NoteArticlesSection } from '@/components/external-content';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -19,19 +16,6 @@ import { FeedbackModal } from '@/components/feedback/feedback-modal';
 // ===================================================================
 // TYPE DEFINITIONS
 // ===================================================================
-
-interface PublicMapData {
-  id: string;
-  title: string;
-  locations: any[];
-  created_at: string;
-  hashtags: string[] | null;
-  app_profile_id: string;
-  cover_image_url: string | null;
-  total_locations: number;
-  author_name: string;
-  author_avatar_path: string | null;
-}
 
 // ===================================================================
 // DECORATIVE COMPONENTS
@@ -660,17 +644,17 @@ const SolutionSection = () => {
       color: designTokens.colors.accent.lilac,
     },
     {
-      label: 'DISCOVER',
-      title: 'あなたの「お気に入り」が名所になる',
-      description: '地元の人だからこそ知っている穴場をマップに登録。みんなの「発見」が集まると、まだ誰も知らない新しい名所が生まれます。',
+      label: 'NAVIGATE',
+      title: 'お出かけ先で困らないために',
+      description: '近くのゴミ箱、バス停、駅、休憩スポットを地図上でかんたんに確認。「ゴミ箱どこ？」「次のバスは？」をその場で解決します。',
       icon: <MapPin className="w-5 h-5" />,
       color: designTokens.colors.secondary.fern,
     },
     {
-      label: 'EXPLORE',
-      title: '一人旅でも大分を存分に楽しめる情報を届けたい',
-      description: '各市町村のモデルコースやスタンプラリーなど、地図を必要とする情報を一覧で集約。一人旅や海外からの旅行者の方でも、大分を存分に楽しめる情報をお届けします。',
-      icon: <Route className="w-5 h-5" />,
+      label: 'CONTRIBUTE',
+      title: 'みんなの情報で街がもっと便利に',
+      description: '「ここにゴミ箱がありました」の一言が、次に訪れる人の助けに。ユーザー同士で共有する街の便利情報で、大分をもっと快適に。',
+      icon: <Trash2 className="w-5 h-5" />,
       color: designTokens.colors.accent.gold,
     },
   ];
@@ -711,7 +695,7 @@ const SolutionSection = () => {
               color: designTokens.colors.text.secondary,
             }}
           >
-            地域イベント情報の発信から、地元の人だけが知っているスポットの発見まで。
+            地域イベント情報の発信から、お出かけ先で役立つ施設情報まで。
             <br className="hidden sm:block" />
             あなたと一緒に作り上げていく大分の魅力を発信するサービスを作りました。
           </motion.p>
@@ -792,437 +776,6 @@ const SolutionSection = () => {
   );
 };
 
-// ===================================================================
-// SPOTS SECTION
-// ===================================================================
-
-const SpotsSection = () => {
-  const router = useRouter();
-  const [spots, setSpots] = useState<SpotWithAuthor[]>([]);
-  const [loading, setLoading] = useState(true);
-  const sectionRef = useRef<HTMLElement>(null);
-  const isInView = useInView(sectionRef, { once: true, margin: '-100px' });
-
-  useEffect(() => {
-    fetchSpots();
-  }, []);
-
-  const fetchSpots = async () => {
-    try {
-      const { spots: fetchedSpots, error } = await getPublicSpots(6);
-      if (error) throw new Error(error);
-      setSpots(fetchedSpots);
-    } catch (error: any) {
-      console.error('スポット取得エラー:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <section
-      ref={sectionRef}
-      className="py-24 sm:py-32 lg:py-40 px-6 relative overflow-hidden"
-      style={{ background: designTokens.colors.background.cloud }}
-    >
-      <div className="container mx-auto max-w-5xl lg:max-w-6xl relative z-10">
-        <div className="text-center mb-16 lg:mb-20">
-          <SectionLabel>Spots</SectionLabel>
-          <motion.h2
-            initial={{ opacity: 0, y: 30 }}
-            animate={isInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.6, delay: 0.1 }}
-            className="mt-4 text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-semibold leading-tight"
-            style={{
-              fontFamily: designTokens.typography.display,
-              color: designTokens.colors.primary.base,
-            }}
-          >
-            あなたのお気に入りの
-            <br />
-            場所を紹介しよう。
-          </motion.h2>
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={isInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="mt-6 text-lg lg:text-xl max-w-2xl lg:max-w-3xl mx-auto leading-relaxed"
-            style={{
-              fontFamily: designTokens.typography.body,
-              color: designTokens.colors.text.secondary,
-            }}
-          >
-            あなたのお気に入りスポットを地図に登録することができます。
-            <br className="hidden sm:block" />
-            一人の発見がたくさんの人の思い出になります。
-          </motion.p>
-        </div>
-
-        {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
-              className="w-10 h-10 border-2 rounded-full"
-              style={{
-                borderColor: `${designTokens.colors.secondary.stone}50`,
-                borderTopColor: designTokens.colors.secondary.fern,
-              }}
-            />
-          </div>
-        ) : spots.length === 0 ? null : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 xl:gap-10">
-            {spots.map((spot, index) => (
-              <motion.div
-                key={spot.id}
-                initial={{ opacity: 0, y: 30 }}
-                animate={isInView ? { opacity: 1, y: 0 } : {}}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-              >
-                <ElevationCard elevation="medium" padding="none" className="overflow-hidden h-full group">
-                  <div className="relative overflow-hidden" style={{ height: '160px' }}>
-                    {spot.image_urls && spot.image_urls.length > 0 ? (
-                      <img
-                        src={spot.image_urls[0]}
-                        alt={spot.store_name}
-                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                      />
-                    ) : (
-                      <div
-                        className="w-full h-full flex items-center justify-center"
-                        style={{ background: designTokens.colors.background.cloud }}
-                      >
-                        <MapPin className="w-10 h-10" style={{ color: designTokens.colors.text.muted }} />
-                      </div>
-                    )}
-                    <div
-                      className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                      style={{ background: `linear-gradient(to top, ${designTokens.colors.primary.base}50, transparent)` }}
-                    />
-                  </div>
-                  <div className="p-4 lg:p-5">
-                    <h3
-                      className="font-semibold text-sm lg:text-base mb-1.5 line-clamp-1"
-                      style={{
-                        fontFamily: designTokens.typography.display,
-                        color: designTokens.colors.primary.base,
-                      }}
-                    >
-                      {spot.store_name}
-                    </h3>
-                    <p
-                      className="text-xs lg:text-sm line-clamp-2 mb-2"
-                      style={{ color: designTokens.colors.text.secondary }}
-                    >
-                      {spot.description}
-                    </p>
-                    <div
-                      className="flex items-center text-xs"
-                      style={{ color: designTokens.colors.text.muted }}
-                    >
-                      <Users className="w-3 h-3 mr-1" />
-                      {spot.reporter_nickname || spot.author_name}
-                    </div>
-                  </div>
-                </ElevationCard>
-              </motion.div>
-            ))}
-          </div>
-        )}
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.5, delay: 0.5 }}
-          className="text-center mt-12"
-        >
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => router.push('/create-spot')}
-              className="group inline-flex items-center gap-2 px-8 py-4 lg:px-10 lg:py-5 lg:text-lg rounded-full font-semibold transition-all"
-              style={{
-                background: designTokens.colors.secondary.fern,
-                color: designTokens.colors.text.inverse,
-                boxShadow: `0 8px 32px ${designTokens.colors.secondary.fern}40`,
-              }}
-            >
-              <MapPin className="w-5 h-5" />
-              スポットを登録する
-              <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
-            </motion.button>
-          </motion.div>
-      </div>
-    </section>
-  );
-};
-
-// ===================================================================
-// MODEL COURSE SECTION (Public Maps)
-// ===================================================================
-
-const ModelCourseSection = ({ onMapClick }: { onMapClick: (mapId: string) => void }) => {
-  const router = useRouter();
-  const [publicMaps, setPublicMaps] = useState<PublicMapData[]>([]);
-  const [loading, setLoading] = useState(true);
-  const sectionRef = useRef<HTMLElement>(null);
-  const isInView = useInView(sectionRef, { once: true, margin: '-100px' });
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 768);
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
-
-  useEffect(() => {
-    fetchPublicMaps();
-  }, []);
-
-  const fetchPublicMaps = async () => {
-    try {
-      const { maps, error } = await getPublicMaps(6);
-      if (error) throw new Error(error);
-      
-      const mapsWithMetadata: PublicMapData[] = maps.map((map: any) => ({
-        id: map.id,
-        title: map.title,
-        locations: map.locations || [],
-        created_at: map.created_at,
-        hashtags: map.hashtags,
-        app_profile_id: map.app_profile_id,
-        cover_image_url: map.cover_image_url,
-        total_locations: map.total_locations,
-        author_name: map.author_name,
-        author_avatar_path: map.author_avatar_path,
-      }));
-      
-      setPublicMaps(mapsWithMetadata);
-    } catch (error: any) {
-      console.error('公開マップ取得エラー:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // 最大3件まで表示。1件は中央、2件は2列、3件は3列
-  const displayedMaps = publicMaps.slice(0, 3);
-
-  return (
-    <section 
-      ref={sectionRef}
-      className="py-24 sm:py-32 lg:py-40 px-6 relative overflow-hidden"
-      style={{ background: designTokens.colors.background.cloud }}
-    >
-      <div className="container mx-auto max-w-6xl xl:max-w-7xl relative z-10">
-        {/* Section Header */}
-        <div className="text-center mb-16 lg:mb-20">
-          <SectionLabel>Model Course</SectionLabel>
-          <motion.h2
-            initial={{ opacity: 0, y: 30 }}
-            animate={isInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.6, delay: 0.1 }}
-            className="mt-4 text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-semibold leading-tight"
-            style={{
-              fontFamily: designTokens.typography.display,
-              color: designTokens.colors.primary.base,
-            }}
-          >
-            魅力的なルートを
-            <br />
-            探索しに出かけよう。
-          </motion.h2>
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={isInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="mt-6 text-lg lg:text-xl max-w-2xl lg:max-w-3xl mx-auto leading-relaxed"
-            style={{
-              fontFamily: designTokens.typography.body,
-              color: designTokens.colors.text.secondary,
-            }}
-          >
-            観光サイトでまとめられているモデルコースやスタンプラリーイベント、あなたが作成したおすすめルートまで、情報を掲載・閲覧できます。
-            <br className="hidden sm:block" />
-            自治体の方はもちろん、個人で地図を作成することが可能です。
-          </motion.p>
-        </div>
-
-        {/* Maps Display - 最大3件。1件:中央 / 2件:2列 / 3件:3列 */}
-        {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
-              className="w-10 h-10 border-2 rounded-full"
-              style={{ 
-                borderColor: `${designTokens.colors.secondary.stone}50`,
-                borderTopColor: designTokens.colors.accent.gold,
-              }}
-            />
-          </div>
-        ) : publicMaps.length === 0 ? (
-          <ElevationCard elevation="low" padding="xl" hover={false} className="max-w-md mx-auto text-center">
-            <Map className="w-12 h-12 mx-auto mb-4" style={{ color: designTokens.colors.text.muted }} />
-            <p style={{ color: designTokens.colors.text.secondary }}>まだマップが投稿されていません</p>
-          </ElevationCard>
-        ) : isMobile ? (
-          /* Mobile: Swipeable Cards（最大3件） */
-          <div className="overflow-x-auto pb-4 -mx-6 px-6 snap-x snap-mandatory flex gap-4 scrollbar-hide">
-            {displayedMaps.map((map, index) => (
-              <motion.div
-                key={map.id}
-                initial={{ opacity: 0, x: 30 }}
-                animate={isInView ? { opacity: 1, x: 0 } : {}}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-                onClick={() => onMapClick(map.id)}
-                className="snap-center flex-shrink-0 w-[80vw] max-w-sm cursor-pointer"
-              >
-                <MapCard map={map} />
-              </motion.div>
-            ))}
-          </div>
-        ) : (
-          /* Desktop: 1件=中央 / 2件=2列 / 3件=3列 */
-          <div
-            className={
-              displayedMaps.length === 1
-                ? 'flex justify-center'
-                : displayedMaps.length === 2
-                  ? 'grid grid-cols-2 gap-6 lg:gap-8 max-w-3xl xl:max-w-4xl mx-auto'
-                  : 'grid grid-cols-3 gap-6 lg:gap-8'
-            }
-          >
-            {displayedMaps.map((map, index) => (
-              <motion.div
-                key={map.id}
-                initial={{ opacity: 0, y: 30 }}
-                animate={isInView ? { opacity: 1, y: 0 } : {}}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-                onClick={() => onMapClick(map.id)}
-                className={`cursor-pointer ${displayedMaps.length === 1 ? 'w-full max-w-md' : ''}`}
-              >
-                <MapCard map={map} />
-              </motion.div>
-            ))}
-          </div>
-        )}
-
-        {/* View All Button */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.5, delay: 0.5 }}
-          className="text-center mt-12 lg:mt-16"
-        >
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => router.push('/courses')}
-            className="group inline-flex items-center gap-2 px-8 py-4 lg:px-10 lg:py-5 lg:text-lg rounded-full font-semibold transition-all"
-            style={{ 
-              border: `2px solid ${designTokens.colors.accent.lilac}60`,
-              color: designTokens.colors.accent.lilacDark,
-              background: `${designTokens.colors.accent.lilac}10`,
-            }}
-          >
-            すべてのモデルコースを見る
-            <ChevronRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
-          </motion.button>
-        </motion.div>
-      </div>
-    </section>
-  );
-};
-
-// Map Card Component（PCでは全カード同一サイズ）
-const MapCard = ({ map }: { map: PublicMapData }) => (
-  <ElevationCard 
-    elevation="medium" 
-    padding="none" 
-    className="overflow-hidden h-full group min-h-[300px] lg:min-h-[360px]"
-  >
-    {/* Cover Image */}
-    <div className="relative overflow-hidden h-3/5 lg:min-h-[220px]">
-      {map.cover_image_url ? (
-        <img
-          src={map.cover_image_url}
-          alt={map.title}
-          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-        />
-      ) : (
-        <div 
-          className="w-full h-full flex items-center justify-center"
-          style={{ background: designTokens.colors.background.cloud }}
-        >
-          <Map className="w-12 h-12 lg:w-14 lg:h-14" style={{ color: designTokens.colors.text.muted }} />
-        </div>
-      )}
-      
-      {/* Spots Badge */}
-      <div 
-        className="absolute top-4 left-4 lg:top-5 lg:left-5 px-3 py-1.5 lg:px-4 lg:py-2 rounded-full text-xs lg:text-sm font-semibold flex items-center gap-1.5"
-        style={{ 
-          background: 'rgba(255,255,255,0.95)',
-          color: designTokens.colors.primary.base,
-          boxShadow: designTokens.elevation.low,
-        }}
-      >
-        <MapPin className="w-3.5 h-3.5 lg:w-4 lg:h-4" style={{ color: designTokens.colors.accent.lilac }} />
-        {map.total_locations || 0}スポット
-      </div>
-      
-      {/* Hover Overlay */}
-      <div 
-        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-        style={{ background: `linear-gradient(to top, ${designTokens.colors.primary.base}50, transparent)` }}
-      />
-    </div>
-
-    {/* Content */}
-    <div className="p-5 lg:p-6">
-      <h3 
-        className="font-semibold mb-2 line-clamp-2 transition-colors text-base lg:text-lg"
-        style={{ 
-          fontFamily: designTokens.typography.display,
-          color: designTokens.colors.primary.base,
-        }}
-      >
-        {map.title}
-      </h3>
-      
-      {map.hashtags && map.hashtags.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 mb-3">
-          {map.hashtags.slice(0, 2).map((tag, i) => (
-            <span 
-              key={i} 
-              className="text-xs lg:text-sm px-2 py-0.5 rounded-full"
-              style={{ 
-                background: `${designTokens.colors.secondary.fern}15`,
-                color: designTokens.colors.secondary.fern,
-              }}
-            >
-              #{tag}
-            </span>
-          ))}
-        </div>
-      )}
-
-      <div 
-        className="flex items-center text-xs lg:text-sm"
-        style={{ color: designTokens.colors.text.muted }}
-      >
-        <Calendar className="w-3.5 h-3.5 lg:w-4 lg:h-4 mr-1.5" />
-        {new Date(map.created_at).toLocaleDateString('ja-JP', {
-          year: 'numeric',
-          month: 'short',
-          day: 'numeric',
-        })}
-      </div>
-    </div>
-  </ElevationCard>
-);
 
 // ===================================================================
 // FINAL CTA SECTION
@@ -1666,7 +1219,6 @@ export default function Home() {
   const { showFeedbackModal, setShowFeedbackModal, openFeedbackModal } = useFeedback();
   const [scrollPosition, setScrollPosition] = useState(0);
   const [showLocationModal, setShowLocationModal] = useState(false);
-  const [selectedMapId, setSelectedMapId] = useState<string | null>(null);
 
   // Search form state（LP離脱・リロード時にリセット）
   const [city, setCity] = useState('all');
@@ -1690,13 +1242,7 @@ export default function Home() {
     return () => window.removeEventListener('pageshow', handlePageShow);
   }, []);
 
-  const handleMapClick = (mapId: string) => {
-    setSelectedMapId(mapId);
-    setShowLocationModal(true);
-  };
-
   const handleStart = () => {
-    setSelectedMapId(null);
     setShowLocationModal(true);
   };
 
@@ -1731,21 +1277,21 @@ export default function Home() {
         }));
 
         setShowLocationModal(false);
-        router.push(selectedMapId ? `/map?title_id=${selectedMapId}` : '/map');
+        router.push('/map');
       } catch (error) {
         console.error('位置情報の取得に失敗:', error);
         setShowLocationModal(false);
-        router.push(selectedMapId ? `/map?title_id=${selectedMapId}` : '/');
+        router.push('/map');
       }
     } else {
       setShowLocationModal(false);
-      router.push(selectedMapId ? `/map?title_id=${selectedMapId}` : '/');
+      router.push('/map');
     }
   };
 
   const handleDenyLocation = () => {
     setShowLocationModal(false);
-    router.push(selectedMapId ? `/map?title_id=${selectedMapId}` : '/');
+    router.push('/map');
   };
 
   return (
@@ -1772,10 +1318,6 @@ export default function Home() {
       
       <SolutionSection />
 
-      <SpotsSection />
-
-      <ModelCourseSection onMapClick={handleMapClick} />
-      
       <NoteArticlesSection username="kind_ixora3833" maxItems={4} />
       
       <FinalCTASection onStart={handleStart} />

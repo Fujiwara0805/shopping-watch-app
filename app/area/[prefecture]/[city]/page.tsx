@@ -7,6 +7,9 @@ import { AreaEventListClient } from '@/components/seo/area-event-list';
 import { SEOEventData } from '@/lib/seo/types';
 import { OITA_MUNICIPALITIES } from '@/lib/constants';
 
+/** 1時間ごとにISR再生成し、終了イベントを除外 */
+export const revalidate = 3600;
+
 interface PageProps {
   params: Promise<{ prefecture: string; city: string }> | { prefecture: string; city: string };
 }

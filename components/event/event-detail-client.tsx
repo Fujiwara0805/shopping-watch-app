@@ -5,6 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Compass, MapPin, Calendar, ExternalLink, AlertCircle, Phone, FileText, DollarSign, Link as LinkIcon, ChevronLeft, ChevronRight, X, CalendarPlusIcon, Shield, ScrollText, Search, Home, ChevronRight as ChevronRightIcon, ArrowLeft, Share2, Users, Sparkles } from 'lucide-react';
+import { EventReviewSection } from '@/components/event/event-review-section';
 import { supabase } from '@/lib/supabaseClient';
 import Script from 'next/script';
 import Link from 'next/link';
@@ -832,6 +833,11 @@ export function EventDetailClient({ eventId }: EventDetailClientProps) {
                 </div>
               </motion.div>
             )}
+
+            {/* 感想・レビューセクション */}
+            <div style={{ borderTop: `1px dashed ${designTokens.colors.secondary.stone}50` }} className="pt-6">
+              <EventReviewSection postId={eventId} />
+            </div>
 
             {/* 周辺イベント（同じ日付 & 同じ場所 or 同じ市町村） */}
             {surroundingEvents.length > 0 && (

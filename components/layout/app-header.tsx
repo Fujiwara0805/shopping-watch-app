@@ -41,24 +41,11 @@ export function AppHeader() {
   
   // Get page title based on current path
   const getPageTitle = () => {
-    // 動的ルートのチェック（先にチェックする必要がある）
-    if (pathname.startsWith('/my-course/edit/')) {
-      return 'コース編集';
-    }
-
     switch (pathname) {
       case '/post':
         return '新規投稿';
       case '/events':
         return 'イベント一覧';
-      case '/create-map':
-        return 'コース作成';
-      case '/my-course':
-        return 'コース';
-      case '/courses':
-        return 'コース一覧';
-      case '/create-spot':
-        return 'スポット作成';
       case '/profile':
         return 'マイページ';
       case '/profile/edit':

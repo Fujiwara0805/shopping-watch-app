@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Bell, LogOut, Settings, Edit,  Store as StoreIcon, Calendar,  User, CheckCircle,  ArrowRight, Trophy, Compass, ShoppingBag, Megaphone, Feather, Trash2 } from 'lucide-react';
+import { Bell, LogOut, Settings, Edit,  Store as StoreIcon, Calendar,  User, CheckCircle,  ArrowRight, Trophy, Compass, ShoppingBag, Megaphone, Trash2 } from 'lucide-react';
 
 import { COLORS } from '@/lib/constants/colors';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -577,40 +577,7 @@ function ProfilePageContent() {
           </motion.div>
           
           <Separator className="my-3" />
-          
-          {/* コースセクション */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15 }}
-            className="space-y-2"
-          >
-            <h3 className="text-lg font-bold flex items-center mb-2" style={{ color: COLORS.textPrimary, fontFamily: "'Noto Serif JP', serif" }}>
-              <Compass className="h-5 w-5 mr-2" style={{ color: COLORS.primary }} />
-              コース設定
-            </h3>
-            
-            <div className="space-y-2">
-              {/* コース作成ボタン（羽ペンアイコン） */}
-              <SettingItem
-                icon={Feather}
-                title="コースを作成"
-                description="新しいコースを作成"
-                action={() => router.push('/create-map')}
-              />
-              
-              {/* コース編集ボタン（羅針盤アイコン） */}
-              <SettingItem
-                icon={Compass}
-                title="コースを編集"
-                description="既存のコースを編集・管理"
-                action={() => router.push('/my-course')}
-              />
-            </div>
-          </motion.div>
-          
-          <Separator className="my-3" />
-          
+
           {/* アカウント設定セクション */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}

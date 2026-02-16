@@ -5,6 +5,9 @@ import { AreaStructuredData, EventListStructuredData } from '@/components/seo/ev
 import { PrefectureEventListClient } from '@/components/seo/prefecture-event-list';
 import { SEOEventData } from '@/lib/seo/types';
 
+/** 1時間ごとにISR再生成し、終了イベントを除外 */
+export const revalidate = 3600;
+
 interface PageProps {
   params: Promise<{ prefecture: string }> | { prefecture: string };
 }
