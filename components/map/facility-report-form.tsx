@@ -1,13 +1,14 @@
 "use client";
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { X, MapPin, Trash2, Camera, Image as ImageIcon } from 'lucide-react';
+import { X, MapPin, Trash2, Camera, Navigation, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useSession } from 'next-auth/react';
 import { supabase } from '@/lib/supabaseClient';
 import { designTokens } from '@/lib/constants';
 import { v4 as uuidv4 } from 'uuid';
+import { useGoogleMapsApi } from '@/components/providers/GoogleMapsApiProvider';
 
 interface FacilityReportFormProps {
   latitude: number;
@@ -19,8 +20,9 @@ interface FacilityReportFormProps {
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
-export function FacilityReportForm({ latitude, longitude, map, onClose, onSuccess }: FacilityReportFormProps) {
+export function FacilityReportForm({ latitude, longitude, map: _parentMap, onClose, onSuccess }: FacilityReportFormProps) {
   const { data: session } = useSession();
+  const { isLoaded: googleMapsLoaded } = useGoogleMapsApi();
   const [storeName, setStoreName] = useState('');
   const [description, setDescription] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -29,16 +31,28 @@ export function FacilityReportForm({ latitude, longitude, map, onClose, onSucces
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [gettingLocation, setGettingLocation] = useState(false);
+  const miniMapContainerRef = useRef<HTMLDivElement | null>(null);
+  const miniMapRef = useRef<google.maps.Map | null>(null);
   const markerRef = useRef<google.maps.Marker | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Create draggable marker on the map
+  // Initialize mini-map inside the form
   useEffect(() => {
-    if (!map || !window.google?.maps) return;
+    if (!miniMapContainerRef.current || !googleMapsLoaded || !window.google?.maps?.Map) return;
+
+    const miniMap = new window.google.maps.Map(miniMapContainerRef.current, {
+      center: { lat: markerPosition.lat, lng: markerPosition.lng },
+      zoom: 17,
+      disableDefaultUI: true,
+      zoomControl: true,
+      gestureHandling: 'greedy',
+      mapTypeId: window.google.maps.MapTypeId.ROADMAP,
+    });
 
     const marker = new window.google.maps.Marker({
-      position: { lat: latitude, lng: longitude },
-      map,
+      position: { lat: markerPosition.lat, lng: markerPosition.lng },
+      map: miniMap,
       draggable: true,
       title: 'ゴミ箱の位置をドラッグで調整',
       icon: {
@@ -60,13 +74,52 @@ export function FacilityReportForm({ latitude, longitude, map, onClose, onSucces
       }
     });
 
+    miniMapRef.current = miniMap;
     markerRef.current = marker;
 
     return () => {
       marker.setMap(null);
       markerRef.current = null;
+      miniMapRef.current = null;
     };
-  }, [map, latitude, longitude]);
+  }, [googleMapsLoaded]);
+
+  // Update marker position when markerPosition changes (from "現在地を指定" button)
+  const updateMarkerOnMap = useCallback((lat: number, lng: number) => {
+    const pos = new window.google.maps.LatLng(lat, lng);
+    if (markerRef.current) {
+      markerRef.current.setPosition(pos);
+    }
+    if (miniMapRef.current) {
+      miniMapRef.current.panTo(pos);
+      miniMapRef.current.setZoom(17);
+    }
+  }, []);
+
+  const handleUseCurrentLocation = useCallback(() => {
+    if (!('geolocation' in navigator)) {
+      setError('お使いのブラウザは位置情報に対応していません。');
+      return;
+    }
+
+    setGettingLocation(true);
+    setError(null);
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        setMarkerPosition({ lat, lng });
+        updateMarkerOnMap(lat, lng);
+        setGettingLocation(false);
+      },
+      (err) => {
+        setError('現在地の取得に失敗しました。位置情報の許可を確認してください。');
+        setGettingLocation(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  }, [updateMarkerOnMap]);
 
   // Clean up image preview URL on unmount
   useEffect(() => {
@@ -230,19 +283,47 @@ export function FacilityReportForm({ latitude, longitude, map, onClose, onSucces
         </div>
 
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
-          {/* Location info with marker hint */}
-          <div
-            className="p-3 rounded-xl text-sm"
-            style={{ background: designTokens.colors.background.mist, color: designTokens.colors.text.secondary }}
-          >
-            <div className="flex items-center gap-2 mb-1">
+          {/* Location section with mini-map */}
+          <div>
+            <div className="flex items-center gap-2 mb-2">
               <MapPin className="h-4 w-4 flex-shrink-0" style={{ color: designTokens.colors.functional.error }} />
-              <span className="font-medium">位置情報</span>
+              <span className="text-sm font-medium" style={{ color: designTokens.colors.text.secondary }}>位置情報</span>
             </div>
-            <p className="text-xs ml-6" style={{ color: designTokens.colors.text.muted }}>
-              地図上のマーカーをドラッグして正確な位置を指定できます
+
+            {/* "現在地を指定" button */}
+            <Button
+              type="button"
+              onClick={handleUseCurrentLocation}
+              disabled={gettingLocation}
+              className="w-full h-10 rounded-xl font-medium text-sm flex items-center justify-center gap-2 mb-2"
+              style={{
+                background: `${designTokens.colors.accent.lilac}15`,
+                color: designTokens.colors.accent.lilac,
+                border: `1px solid ${designTokens.colors.accent.lilac}40`,
+              }}
+            >
+              {gettingLocation ? (
+                <><Loader2 className="h-4 w-4 animate-spin" />現在地を取得中...</>
+              ) : (
+                <><Navigation className="h-4 w-4" />現在地を指定</>
+              )}
+            </Button>
+
+            {/* Mini-map for marker positioning */}
+            <div
+              className="rounded-xl overflow-hidden border"
+              style={{ borderColor: `${designTokens.colors.secondary.stone}40` }}
+            >
+              <div
+                ref={miniMapContainerRef}
+                className="w-full"
+                style={{ height: '180px' }}
+              />
+            </div>
+            <p className="text-xs mt-1.5" style={{ color: designTokens.colors.text.muted }}>
+              マーカーをドラッグして正確な位置を指定できます
             </p>
-            <p className="text-xs ml-6 mt-1" style={{ color: designTokens.colors.text.muted }}>
+            <p className="text-xs mt-0.5" style={{ color: designTokens.colors.text.muted }}>
               緯度: {markerPosition.lat.toFixed(6)}, 経度: {markerPosition.lng.toFixed(6)}
             </p>
           </div>

@@ -844,9 +844,9 @@ export function MapView() {
         </div>
       )}
 
-      {/* 施設レイヤートグル（左上） */}
+      {/* 施設レイヤートグル（左下） */}
       {map && mapInitialized && (
-        <div className="absolute top-20 left-4 z-30">
+        <div className="absolute bottom-6 left-4 z-30">
           <FacilityLayerToggles
             activeLayers={activeFacilityLayers}
             onToggle={handleFacilityToggle}
@@ -1103,14 +1103,14 @@ export function MapView() {
                           <Button
                             onClick={() => {
                               const stationName = encodeURIComponent(name.replace(/駅$/, ''));
-                              window.open(`https://transit.yahoo.co.jp/station/timetable?q=${stationName}`, '_blank');
+                              window.open(`https://www.jrkyushu.co.jp/railway/station/${stationName}/timetable/`, '_blank');
                             }}
                             variant="outline"
                             className="w-full py-3 rounded-xl font-semibold flex items-center justify-center gap-2"
                             style={{ borderColor: facilityColor, color: facilityColor }}
                           >
                             <Clock className="h-4 w-4" />
-                            時刻表を見る
+                            JR九州 時刻表を見る
                           </Button>
                         </motion.div>
                       )}

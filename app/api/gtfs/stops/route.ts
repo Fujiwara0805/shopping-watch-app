@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     .lte('stop_lat', neLat)
     .gte('stop_lon', swLng)
     .lte('stop_lon', neLng)
-    .in('location_type', [0, 1]) // 0=stop, 1=station
+    .or('location_type.eq.0,location_type.eq.1,location_type.is.null')
     .limit(200);
 
   if (error) {

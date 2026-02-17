@@ -20,7 +20,7 @@ const FACILITY_CONFIGS: { type: FacilityLayerType; label: string; icon: React.El
 
 export function FacilityLayerToggles({ activeLayers, onToggle, loadingLayers }: FacilityLayerTogglesProps) {
   return (
-    <div className="flex gap-2 flex-wrap">
+    <div className="flex flex-col gap-2">
       {FACILITY_CONFIGS.map(config => {
         const isActive = activeLayers.has(config.type);
         const isLoading = loadingLayers?.has(config.type);

@@ -367,7 +367,7 @@ export function EventReviewSection({ postId }: EventReviewSectionProps) {
         >
           <MessageSquarePlus className="h-10 w-10 mx-auto mb-3" style={{ color: designTokens.colors.text.muted }} />
           <p className="text-sm" style={{ color: designTokens.colors.text.secondary }}>
-            まだレビューはありません。最初のレビューを書いてみましょう！
+            まだレビューはありません。<br />最初のレビューを書いてみましょう！
           </p>
         </div>
       ) : (
