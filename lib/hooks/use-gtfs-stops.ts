@@ -13,10 +13,13 @@ export function useGtfsStops(options: UseGtfsStopsOptions = {}) {
   const { debounceMs = 500, cacheTtlMs = 300000, minZoom = 12 } = options;
   const [stops, setStops] = useState<GtfsBusStop[]>([]);
   const [loading, setLoading] = useState(false);
+  const [dataEmpty, setDataEmpty] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const cacheRef = useRef<Map<string, { data: GtfsBusStop[]; timestamp: number }>>(new Map());
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isFirstFetchRef = useRef(true);
   const userLocationRef = useRef<{ lat: number; lng: number } | null>(null);
+  const emptyFetchCountRef = useRef(0);
 
   const fetchStopsInBounds = useCallback((map: google.maps.Map) => {
     const bounds = map.getBounds();
@@ -51,6 +54,7 @@ export function useGtfsStops(options: UseGtfsStopsOptions = {}) {
     debounceTimerRef.current = setTimeout(async () => {
       isFirstFetchRef.current = false;
       setLoading(true);
+      setFetchError(null);
       try {
         const res = await fetch(
           `/api/gtfs/stops?swLat=${sw.lat()}&swLng=${sw.lng()}&neLat=${ne.lat()}&neLng=${ne.lng()}`
@@ -58,6 +62,18 @@ export function useGtfsStops(options: UseGtfsStopsOptions = {}) {
         if (res.ok) {
           const data = await res.json();
           let stopsData = data.stops as GtfsBusStop[];
+
+          // データが空かどうかを追跡（連続で空なら「データ未投入」と判断）
+          if (stopsData.length === 0) {
+            emptyFetchCountRef.current++;
+            if (emptyFetchCountRef.current >= 2) {
+              setDataEmpty(true);
+            }
+          } else {
+            emptyFetchCountRef.current = 0;
+            setDataEmpty(false);
+          }
+
           // Sort by distance from user location if available (5km priority)
           const userLoc = userLocationRef.current;
           if (userLoc) {
@@ -69,9 +85,12 @@ export function useGtfsStops(options: UseGtfsStopsOptions = {}) {
           }
           cacheRef.current.set(cacheKey, { data: stopsData, timestamp: Date.now() });
           setStops(stopsData);
+        } else {
+          setFetchError('バス停データの取得に失敗しました');
         }
       } catch (err) {
         console.error('GTFSバス停データの取得に失敗:', err);
+        setFetchError('通信エラーが発生しました');
       } finally {
         setLoading(false);
       }
@@ -80,6 +99,9 @@ export function useGtfsStops(options: UseGtfsStopsOptions = {}) {
 
   const clearStops = useCallback(() => {
     setStops([]);
+    setDataEmpty(false);
+    setFetchError(null);
+    emptyFetchCountRef.current = 0;
     isFirstFetchRef.current = true;
   }, []);
 
@@ -87,5 +109,5 @@ export function useGtfsStops(options: UseGtfsStopsOptions = {}) {
     userLocationRef.current = { lat, lng };
   }, []);
 
-  return { stops, loading, fetchStopsInBounds, clearStops, setUserLocation };
+  return { stops, loading, dataEmpty, fetchError, fetchStopsInBounds, clearStops, setUserLocation };
 }

@@ -7,6 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "import-gtfs": "npx tsx scripts/import-gtfs.ts",
+    "import-gtfs:dry": "npx tsx scripts/import-gtfs.ts --dry-run",
     "seo:check": "echo 'SEO設定を確認しています...' && curl -s https://tokudoku.com/sitemap.xml | head -20",
     "seo:robots": "echo 'robots.txt を確認しています...' && curl -s https://tokudoku.com/robots.txt"
   },

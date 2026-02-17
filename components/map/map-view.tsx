@@ -322,7 +322,7 @@ export function MapView() {
   const { results: placesResults, loading: placesLoading, searchNearby, clearResults } = usePlacesSearch();
 
   // GTFS bus stop state
-  const { stops: gtfsBusStops, loading: gtfsLoading, fetchStopsInBounds, clearStops: clearGtfsStops, setUserLocation: setGtfsUserLocation } = useGtfsStops();
+  const { stops: gtfsBusStops, loading: gtfsLoading, dataEmpty: gtfsDataEmpty, fetchError: gtfsFetchError, fetchStopsInBounds, clearStops: clearGtfsStops, setUserLocation: setGtfsUserLocation } = useGtfsStops();
   const [selectedGtfsBusStop, setSelectedGtfsBusStop] = useState<GtfsBusStop | null>(null);
   const gtfsMarkersRef = useRef<google.maps.Marker[]>([]);
 
@@ -1184,6 +1184,38 @@ export function MapView() {
             stop={selectedGtfsBusStop}
             onClose={() => setSelectedGtfsBusStop(null)}
           />
+        )}
+      </AnimatePresence>
+
+      {/* GTFSデータ未投入の通知 */}
+      <AnimatePresence>
+        {activeFacilityLayers.has('bus_stop') && gtfsDataEmpty && !gtfsLoading && !selectedGtfsBusStop && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="absolute top-32 left-4 right-4 z-40"
+          >
+            <div className="p-4 rounded-xl" style={{ background: `${designTokens.colors.background.white}F5`, boxShadow: designTokens.elevation.medium, border: `1px solid #3B82F630` }}>
+              <div className="flex items-start gap-3">
+                <Bus className="h-5 w-5 flex-shrink-0 mt-0.5" style={{ color: '#3B82F6' }} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold mb-1" style={{ color: designTokens.colors.text.primary }}>
+                    バス停データを準備中です
+                  </p>
+                  <p className="text-xs leading-relaxed" style={{ color: designTokens.colors.text.secondary }}>
+                    大分県内のバス停データ（BODIK ODCS提供）をただいま準備中です。しばらくお待ちください。
+                  </p>
+                </div>
+                <button
+                  onClick={() => handleFacilityToggle('bus_stop')}
+                  className="flex-shrink-0"
+                >
+                  <X className="h-4 w-4" style={{ color: designTokens.colors.text.muted }} />
+                </button>
+              </div>
+            </div>
+          </motion.div>
         )}
       </AnimatePresence>
 
