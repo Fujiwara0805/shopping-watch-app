@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { motion } from 'framer-motion';
-import { X, MapPin, Trash2, Camera, Navigation, Loader2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { X, MapPin, Trash2, Camera, Navigation, Loader2, Map as MapIcon, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useSession } from 'next-auth/react';
 import { supabase } from '@/lib/supabaseClient';
@@ -20,6 +20,8 @@ interface FacilityReportFormProps {
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
+type LocationMode = 'initial' | 'current_location' | 'map_marker';
+
 export function FacilityReportForm({ latitude, longitude, map: _parentMap, onClose, onSuccess }: FacilityReportFormProps) {
   const { data: session } = useSession();
   const { isLoaded: googleMapsLoaded } = useGoogleMapsApi();
@@ -32,14 +34,20 @@ export function FacilityReportForm({ latitude, longitude, map: _parentMap, onClo
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [gettingLocation, setGettingLocation] = useState(false);
+  const [locationMode, setLocationMode] = useState<LocationMode>('initial');
+  const [locationSet, setLocationSet] = useState(false);
   const miniMapContainerRef = useRef<HTMLDivElement | null>(null);
   const miniMapRef = useRef<google.maps.Map | null>(null);
   const markerRef = useRef<google.maps.Marker | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const miniMapInitializedRef = useRef(false);
 
-  // Initialize mini-map inside the form
+  // Initialize mini-map when switching to map_marker mode
   useEffect(() => {
+    if (locationMode !== 'map_marker') return;
     if (!miniMapContainerRef.current || !googleMapsLoaded || !window.google?.maps?.Map) return;
+    if (miniMapInitializedRef.current) return;
+    miniMapInitializedRef.current = true;
 
     const miniMap = new window.google.maps.Map(miniMapContainerRef.current, {
       center: { lat: markerPosition.lat, lng: markerPosition.lng },
@@ -71,6 +79,7 @@ export function FacilityReportForm({ latitude, longitude, map: _parentMap, onClo
       const pos = marker.getPosition();
       if (pos) {
         setMarkerPosition({ lat: pos.lat(), lng: pos.lng() });
+        setLocationSet(true);
       }
     });
 
@@ -81,10 +90,11 @@ export function FacilityReportForm({ latitude, longitude, map: _parentMap, onClo
       marker.setMap(null);
       markerRef.current = null;
       miniMapRef.current = null;
+      miniMapInitializedRef.current = false;
     };
-  }, [googleMapsLoaded]);
+  }, [locationMode, googleMapsLoaded]);
 
-  // Update marker position when markerPosition changes (from "現在地を指定" button)
+  // Update marker position on mini-map
   const updateMarkerOnMap = useCallback((lat: number, lng: number) => {
     const pos = new window.google.maps.LatLng(lat, lng);
     if (markerRef.current) {
@@ -110,16 +120,29 @@ export function FacilityReportForm({ latitude, longitude, map: _parentMap, onClo
         const lat = position.coords.latitude;
         const lng = position.coords.longitude;
         setMarkerPosition({ lat, lng });
-        updateMarkerOnMap(lat, lng);
+        setLocationSet(true);
+        setLocationMode('current_location');
         setGettingLocation(false);
       },
-      (err) => {
+      () => {
         setError('現在地の取得に失敗しました。位置情報の許可を確認してください。');
         setGettingLocation(false);
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
-  }, [updateMarkerOnMap]);
+  }, []);
+
+  const handleSwitchToMapMarker = useCallback(() => {
+    setLocationMode('map_marker');
+    setLocationSet(true);
+  }, []);
+
+  // When switching to map mode and already have current location, update marker
+  useEffect(() => {
+    if (locationMode === 'map_marker' && miniMapRef.current && markerRef.current) {
+      updateMarkerOnMap(markerPosition.lat, markerPosition.lng);
+    }
+  }, [locationMode, markerPosition.lat, markerPosition.lng, updateMarkerOnMap]);
 
   // Clean up image preview URL on unmount
   useEffect(() => {
@@ -200,7 +223,6 @@ export function FacilityReportForm({ latitude, longitude, map: _parentMap, onClo
     try {
       let imageUrls: string[] | undefined;
 
-      // Upload image if selected
       if (imageFile) {
         setUploading(true);
         try {
@@ -283,49 +305,122 @@ export function FacilityReportForm({ latitude, longitude, map: _parentMap, onClo
         </div>
 
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
-          {/* Location section with mini-map */}
+          {/* Location section */}
           <div>
-            <div className="flex items-center gap-2 mb-2">
+            <div className="flex items-center gap-2 mb-3">
               <MapPin className="h-4 w-4 flex-shrink-0" style={{ color: designTokens.colors.functional.error }} />
               <span className="text-sm font-medium" style={{ color: designTokens.colors.text.secondary }}>位置情報</span>
             </div>
 
-            {/* "現在地を指定" button */}
+            {/* Current location set confirmation */}
+            <AnimatePresence mode="wait">
+              {locationMode === 'current_location' && locationSet && (
+                <motion.div
+                  key="location-set"
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="flex items-center gap-2 p-3 rounded-xl mb-3"
+                  style={{ background: '#10B98115', border: '1px solid #10B98140' }}
+                >
+                  <CheckCircle2 className="h-4 w-4 flex-shrink-0" style={{ color: '#10B981' }} />
+                  <span className="text-sm font-medium" style={{ color: '#10B981' }}>
+                    現在地が設定されました
+                  </span>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* "現在地を指定" button - always visible and prominent */}
             <Button
               type="button"
               onClick={handleUseCurrentLocation}
               disabled={gettingLocation}
-              className="w-full h-10 rounded-xl font-medium text-sm flex items-center justify-center gap-2 mb-2"
+              className="w-full h-12 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 mb-2"
               style={{
-                background: `${designTokens.colors.accent.lilac}15`,
-                color: designTokens.colors.accent.lilac,
-                border: `1px solid ${designTokens.colors.accent.lilac}40`,
+                background: locationMode === 'current_location' ? `${designTokens.colors.accent.lilac}15` : designTokens.colors.accent.lilac,
+                color: locationMode === 'current_location' ? designTokens.colors.accent.lilac : designTokens.colors.text.inverse,
+                border: locationMode === 'current_location' ? `1px solid ${designTokens.colors.accent.lilac}40` : 'none',
               }}
             >
               {gettingLocation ? (
                 <><Loader2 className="h-4 w-4 animate-spin" />現在地を取得中...</>
+              ) : locationMode === 'current_location' ? (
+                <><Navigation className="h-4 w-4" />現在地を再取得</>
               ) : (
                 <><Navigation className="h-4 w-4" />現在地を指定</>
               )}
             </Button>
 
-            {/* Mini-map for marker positioning */}
-            <div
-              className="rounded-xl overflow-hidden border"
-              style={{ borderColor: `${designTokens.colors.secondary.stone}40` }}
-            >
-              <div
-                ref={miniMapContainerRef}
-                className="w-full"
-                style={{ height: '180px' }}
-              />
-            </div>
-            <p className="text-xs mt-1.5" style={{ color: designTokens.colors.text.muted }}>
-              マーカーをドラッグして正確な位置を指定できます
-            </p>
-            <p className="text-xs mt-0.5" style={{ color: designTokens.colors.text.muted }}>
-              緯度: {markerPosition.lat.toFixed(6)}, 経度: {markerPosition.lng.toFixed(6)}
-            </p>
+            {/* "別の方法で設定" button */}
+            {locationMode !== 'map_marker' && (
+              <button
+                type="button"
+                onClick={handleSwitchToMapMarker}
+                className="w-full text-center py-2 text-xs font-medium transition-colors hover:underline"
+                style={{ color: designTokens.colors.text.muted }}
+              >
+                <span className="flex items-center justify-center gap-1.5">
+                  <MapIcon className="h-3.5 w-3.5" />
+                  別の方法で設定（マップ上で指定）
+                </span>
+              </button>
+            )}
+
+            {/* Mini-map for marker positioning (shown when "別の方法で設定" is clicked) */}
+            <AnimatePresence>
+              {locationMode === 'map_marker' && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="overflow-hidden"
+                >
+                  <div
+                    className="rounded-xl overflow-hidden border mt-2"
+                    style={{ borderColor: `${designTokens.colors.secondary.stone}40` }}
+                  >
+                    <div
+                      ref={miniMapContainerRef}
+                      className="w-full"
+                      style={{ height: '180px' }}
+                    />
+                  </div>
+                  <p className="text-xs mt-1.5" style={{ color: designTokens.colors.text.muted }}>
+                    マーカーをドラッグして正確な位置を指定できます
+                  </p>
+
+                  {/* "現在地を指定" button inside map mode */}
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      handleUseCurrentLocation();
+                    }}
+                    disabled={gettingLocation}
+                    className="w-full h-9 rounded-lg font-medium text-xs flex items-center justify-center gap-1.5 mt-2"
+                    style={{
+                      background: `${designTokens.colors.accent.lilac}15`,
+                      color: designTokens.colors.accent.lilac,
+                      border: `1px solid ${designTokens.colors.accent.lilac}40`,
+                    }}
+                  >
+                    {gettingLocation ? (
+                      <><Loader2 className="h-3.5 w-3.5 animate-spin" />取得中...</>
+                    ) : (
+                      <><Navigation className="h-3.5 w-3.5" />現在地をマーカーに反映</>
+                    )}
+                  </Button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Location coordinates display */}
+            {locationSet && (
+              <p className="text-xs mt-1" style={{ color: designTokens.colors.text.muted }}>
+                緯度: {markerPosition.lat.toFixed(6)}, 経度: {markerPosition.lng.toFixed(6)}
+              </p>
+            )}
           </div>
 
           {/* Name */}

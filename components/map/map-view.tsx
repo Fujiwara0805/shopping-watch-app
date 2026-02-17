@@ -322,9 +322,18 @@ export function MapView() {
   const { results: placesResults, loading: placesLoading, searchNearby, clearResults } = usePlacesSearch();
 
   // GTFS bus stop state
-  const { stops: gtfsBusStops, loading: gtfsLoading, fetchStopsInBounds, clearStops: clearGtfsStops } = useGtfsStops();
+  const { stops: gtfsBusStops, loading: gtfsLoading, fetchStopsInBounds, clearStops: clearGtfsStops, setUserLocation: setGtfsUserLocation } = useGtfsStops();
   const [selectedGtfsBusStop, setSelectedGtfsBusStop] = useState<GtfsBusStop | null>(null);
   const gtfsMarkersRef = useRef<google.maps.Marker[]>([]);
+
+  // Set user location for GTFS distance sorting
+  useEffect(() => {
+    const userLat = savedLocation?.lat || latitude;
+    const userLng = savedLocation?.lng || longitude;
+    if (userLat && userLng) {
+      setGtfsUserLocation(userLat, userLng);
+    }
+  }, [savedLocation, latitude, longitude, setGtfsUserLocation]);
 
   // Effects
   useEffect(() => {
@@ -540,6 +549,16 @@ export function MapView() {
     setFacilityMarkers(prev => new Map(prev).set(type, newMarkers));
   }, [map, facilityMarkers]);
 
+  // Helper: get user's current location as LatLng (for 5km radius priority)
+  const getUserLocationCenter = useCallback((): google.maps.LatLng | null => {
+    const userLat = savedLocation?.lat || latitude;
+    const userLng = savedLocation?.lng || longitude;
+    if (userLat && userLng && window.google?.maps) {
+      return new window.google.maps.LatLng(userLat, userLng);
+    }
+    return null;
+  }, [savedLocation, latitude, longitude]);
+
   // Handle facility layer toggle
   const handleFacilityToggle = useCallback((type: FacilityLayerType) => {
     setActiveFacilityLayers(prev => {
@@ -569,30 +588,60 @@ export function MapView() {
           setSelectedFacility(null);
         }
       } else {
-        // Turn on
+        // Turn on - prioritize 5km radius from user location
         next.add(type);
         if (type === 'trash_can') {
           fetchTrashCanReports();
         } else if (type === 'bus_stop') {
-          // Fetch GTFS bus stops in current bounds
+          // Fetch GTFS bus stops - zoom to user location area if needed
           if (map) {
-            fetchStopsInBounds(map);
+            const userCenter = getUserLocationCenter();
+            const zoom = map.getZoom();
+            if (zoom !== undefined && zoom < 12) {
+              if (userCenter) map.panTo(userCenter);
+              map.setZoom(12);
+              window.google?.maps?.event?.addListenerOnce(map, 'idle', () => {
+                fetchStopsInBounds(map);
+              });
+            } else {
+              fetchStopsInBounds(map);
+            }
           }
         } else if (map) {
-          const center = map.getCenter();
-          if (center) {
-            searchNearby(map, center, FACILITY_PLACES_TYPE[type], 5000);
+          // Use user location as center for Places API (5km radius priority)
+          const userCenter = getUserLocationCenter();
+          const searchCenter = userCenter || map.getCenter();
+          if (searchCenter) {
+            searchNearby(map, searchCenter, FACILITY_PLACES_TYPE[type], 5000);
           }
         }
       }
       return next;
     });
-  }, [map, facilityMarkers, fetchTrashCanReports, searchNearby, clearResults, selectedFacility, fetchStopsInBounds, clearGtfsStops]);
+  }, [map, facilityMarkers, fetchTrashCanReports, searchNearby, clearResults, selectedFacility, fetchStopsInBounds, clearGtfsStops, getUserLocationCenter]);
 
-  // Effect: create trash can markers when reports change
+  // Effect: create trash can markers when reports change (prioritize 5km from user)
   useEffect(() => {
     if (!activeFacilityLayers.has('trash_can') || !map) return;
-    const items = trashCanReports.map(r => ({
+    const userLat = savedLocation?.lat || latitude;
+    const userLng = savedLocation?.lng || longitude;
+
+    // Sort by distance from user, prioritize within 5km
+    let sortedReports = [...trashCanReports];
+    if (userLat && userLng) {
+      sortedReports = sortedReports
+        .map(r => {
+          const R = 6371;
+          const dLat = (r.store_latitude - userLat) * Math.PI / 180;
+          const dLng = (r.store_longitude - userLng) * Math.PI / 180;
+          const a = Math.sin(dLat / 2) ** 2 + Math.cos(userLat * Math.PI / 180) * Math.cos(r.store_latitude * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+          const dist = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+          return { ...r, _distance: dist };
+        })
+        .sort((a, b) => a._distance - b._distance);
+    }
+
+    const items = sortedReports.map(r => ({
       lat: r.store_latitude,
       lng: r.store_longitude,
       name: r.store_name,
@@ -600,7 +649,7 @@ export function MapView() {
       data: r as FacilityReportWithAuthor,
     }));
     createFacilityMarkersForType('trash_can', items);
-  }, [trashCanReports, activeFacilityLayers, map]);
+  }, [trashCanReports, activeFacilityLayers, map, savedLocation, latitude, longitude]);
 
   // Effect: create Places API markers when results change
   useEffect(() => {
@@ -654,25 +703,30 @@ export function MapView() {
     gtfsMarkersRef.current = newMarkers;
   }, [gtfsBusStops, activeFacilityLayers, map]);
 
-  // Effect: re-search Places and GTFS on map idle
+  // Effect: re-search Places and GTFS on map idle (prioritize user location 5km radius)
   useEffect(() => {
     if (!map) return;
     const listener = map.addListener('idle', () => {
-      const center = map.getCenter();
-      if (!center) return;
+      const mapCenter = map.getCenter();
+      if (!mapCenter) return;
+      // Use user location when available for Places API (5km radius priority)
+      const userCenter = getUserLocationCenter();
       activeFacilityLayers.forEach(type => {
         if (type === 'bus_stop') {
           fetchStopsInBounds(map);
         } else if (type !== 'trash_can') {
           const placeType = FACILITY_PLACES_TYPE[type];
           if (placeType) {
-            searchNearby(map, center, placeType, 5000);
+            // Use user location center if within reasonable distance of map view,
+            // otherwise fall back to map center
+            const searchCenter = userCenter || mapCenter;
+            searchNearby(map, searchCenter, placeType, 5000);
           }
         }
       });
     });
     return () => { window.google?.maps?.event?.removeListener(listener); };
-  }, [map, activeFacilityLayers, searchNearby, fetchStopsInBounds]);
+  }, [map, activeFacilityLayers, searchNearby, fetchStopsInBounds, getUserLocationCenter]);
 
   const initializeMap = useCallback(() => {
     if (!mapContainerRef.current || mapInstanceRef.current || !googleMapsLoaded || containerDimensions.height < 200 || initializationTriedRef.current) return false;
@@ -1103,7 +1157,7 @@ export function MapView() {
                           <Button
                             onClick={() => {
                               const stationName = encodeURIComponent(name.replace(/駅$/, ''));
-                              window.open(`https://www.jrkyushu.co.jp/railway/station/${stationName}/timetable/`, '_blank');
+                              window.open(`https://www.jrkyushu.co.jp/railway/station/${stationName}/timetable`, '_blank');
                             }}
                             variant="outline"
                             className="w-full py-3 rounded-xl font-semibold flex items-center justify-center gap-2"

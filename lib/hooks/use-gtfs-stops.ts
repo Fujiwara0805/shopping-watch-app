@@ -6,18 +6,29 @@ import type { GtfsBusStop } from '@/types/gtfs';
 interface UseGtfsStopsOptions {
   debounceMs?: number;
   cacheTtlMs?: number;
+  minZoom?: number;
 }
 
 export function useGtfsStops(options: UseGtfsStopsOptions = {}) {
-  const { debounceMs = 500, cacheTtlMs = 300000 } = options;
+  const { debounceMs = 500, cacheTtlMs = 300000, minZoom = 12 } = options;
   const [stops, setStops] = useState<GtfsBusStop[]>([]);
   const [loading, setLoading] = useState(false);
   const cacheRef = useRef<Map<string, { data: GtfsBusStop[]; timestamp: number }>>(new Map());
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const isFirstFetchRef = useRef(true);
+  const userLocationRef = useRef<{ lat: number; lng: number } | null>(null);
 
   const fetchStopsInBounds = useCallback((map: google.maps.Map) => {
     const bounds = map.getBounds();
     if (!bounds) return;
+
+    // Skip fetch if zoom is too low (too wide area)
+    const zoom = map.getZoom();
+    if (zoom !== undefined && zoom < minZoom) {
+      // If zoomed out too far, clear stops to avoid stale data
+      setStops([]);
+      return;
+    }
 
     const sw = bounds.getSouthWest();
     const ne = bounds.getNorthEast();
@@ -30,12 +41,15 @@ export function useGtfsStops(options: UseGtfsStopsOptions = {}) {
       return;
     }
 
-    // Debounce
+    // Debounce (shorter for first fetch)
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
     }
 
+    const delay = isFirstFetchRef.current ? 100 : debounceMs;
+
     debounceTimerRef.current = setTimeout(async () => {
+      isFirstFetchRef.current = false;
       setLoading(true);
       try {
         const res = await fetch(
@@ -43,7 +57,16 @@ export function useGtfsStops(options: UseGtfsStopsOptions = {}) {
         );
         if (res.ok) {
           const data = await res.json();
-          const stopsData = data.stops as GtfsBusStop[];
+          let stopsData = data.stops as GtfsBusStop[];
+          // Sort by distance from user location if available (5km priority)
+          const userLoc = userLocationRef.current;
+          if (userLoc) {
+            stopsData = stopsData.sort((a, b) => {
+              const dA = Math.pow(a.stop_lat - userLoc.lat, 2) + Math.pow(a.stop_lon - userLoc.lng, 2);
+              const dB = Math.pow(b.stop_lat - userLoc.lat, 2) + Math.pow(b.stop_lon - userLoc.lng, 2);
+              return dA - dB;
+            });
+          }
           cacheRef.current.set(cacheKey, { data: stopsData, timestamp: Date.now() });
           setStops(stopsData);
         }
@@ -52,12 +75,17 @@ export function useGtfsStops(options: UseGtfsStopsOptions = {}) {
       } finally {
         setLoading(false);
       }
-    }, debounceMs);
-  }, [debounceMs, cacheTtlMs]);
+    }, delay);
+  }, [debounceMs, cacheTtlMs, minZoom]);
 
   const clearStops = useCallback(() => {
     setStops([]);
+    isFirstFetchRef.current = true;
   }, []);
 
-  return { stops, loading, fetchStopsInBounds, clearStops };
+  const setUserLocation = useCallback((lat: number, lng: number) => {
+    userLocationRef.current = { lat, lng };
+  }, []);
+
+  return { stops, loading, fetchStopsInBounds, clearStops, setUserLocation };
 }

@@ -22,12 +22,13 @@ export function usePlacesSearch(options: UsePlacesSearchOptions = {}) {
   const [loading, setLoading] = useState<Set<string>>(new Set());
   const cacheRef = useRef<Map<string, { data: PlaceResult[]; timestamp: number }>>(new Map());
   const debounceTimerRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
+  const isFirstSearchRef = useRef<Map<string, boolean>>(new Map());
 
   const searchNearby = useCallback((
     map: google.maps.Map,
     center: google.maps.LatLng,
     placeType: string,
-    radius: number = 3000
+    radius: number = 5000
   ) => {
     const cacheKey = `${center.lat().toFixed(3)},${center.lng().toFixed(3)}_${placeType}`;
     const cached = cacheRef.current.get(cacheKey);
@@ -40,9 +41,14 @@ export function usePlacesSearch(options: UsePlacesSearchOptions = {}) {
     const existingTimer = debounceTimerRef.current.get(placeType);
     if (existingTimer) clearTimeout(existingTimer);
 
+    // Shorter debounce for first search of each type
+    const isFirst = !isFirstSearchRef.current.get(placeType);
+    const delay = isFirst ? 100 : debounceMs;
+
     const timer = setTimeout(() => {
       if (!window.google?.maps?.places) return;
 
+      isFirstSearchRef.current.set(placeType, true);
       const service = new window.google.maps.places.PlacesService(map);
       setLoading(prev => new Set(prev).add(placeType));
 
@@ -69,7 +75,7 @@ export function usePlacesSearch(options: UsePlacesSearchOptions = {}) {
           }
         }
       );
-    }, debounceMs);
+    }, delay);
 
     debounceTimerRef.current.set(placeType, timer);
   }, [debounceMs, cacheTtlMs]);
@@ -81,8 +87,10 @@ export function usePlacesSearch(options: UsePlacesSearchOptions = {}) {
         next.delete(placeType);
         return next;
       });
+      isFirstSearchRef.current.delete(placeType);
     } else {
       setResults(new Map());
+      isFirstSearchRef.current.clear();
     }
   }, []);
 
