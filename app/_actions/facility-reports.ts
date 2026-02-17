@@ -29,7 +29,7 @@ async function getProfileIdByUserId(userId: string): Promise<string | null> {
 /**
  * ゲスト用プロフィールIDを取得（なければ作成）
  */
-async function getGuestProfileId(): Promise<string | null> {
+export async function getGuestProfileId(): Promise<string | null> {
   const { data: existing } = await supabaseServer
     .from('app_profiles')
     .select('id')

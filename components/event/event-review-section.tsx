@@ -15,6 +15,7 @@ interface ReviewData {
   comment: string | null;
   visited_date: string | null;
   created_at: string;
+  guest_nickname: string | null;
   app_profiles: {
     id: string;
     display_name: string | null;
@@ -69,10 +70,12 @@ function ReviewFormModal({ postId, onClose, onSubmitted }: {
   onClose: () => void;
   onSubmitted: () => void;
 }) {
+  const { data: session } = useSession();
   const [rating, setRating] = useState(0);
   const [title, setTitle] = useState('');
   const [comment, setComment] = useState('');
   const [visitedDate, setVisitedDate] = useState('');
+  const [nickname, setNickname] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -95,6 +98,7 @@ function ReviewFormModal({ postId, onClose, onSubmitted }: {
           title: title.trim() || null,
           comment: comment.trim() || null,
           visited_date: visitedDate || null,
+          guest_nickname: !session?.user ? nickname.trim() || null : null,
         }),
       });
 
@@ -126,7 +130,7 @@ function ReviewFormModal({ postId, onClose, onSubmitted }: {
         initial={{ y: 100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: 100, opacity: 0 }}
-        className="w-full max-w-lg rounded-t-3xl sm:rounded-3xl overflow-hidden"
+        className="w-full max-w-lg rounded-t-3xl sm:rounded-3xl overflow-hidden max-h-[90vh] overflow-y-auto"
         style={{
           background: designTokens.colors.background.white,
           boxShadow: designTokens.elevation.high,
@@ -143,6 +147,31 @@ function ReviewFormModal({ postId, onClose, onSubmitted }: {
         </div>
 
         <form onSubmit={handleSubmit} className="p-5 space-y-5">
+          {/* Nickname for guests */}
+          {!session?.user && (
+            <div>
+              <label className="block text-sm font-medium mb-2" style={{ color: designTokens.colors.text.secondary }}>
+                ニックネーム（任意）
+              </label>
+              <input
+                type="text"
+                value={nickname}
+                onChange={(e) => setNickname(e.target.value)}
+                maxLength={30}
+                placeholder="匿名さん"
+                className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-all focus:ring-2"
+                style={{
+                  background: designTokens.colors.background.mist,
+                  border: `1px solid ${designTokens.colors.secondary.stone}40`,
+                  color: designTokens.colors.text.primary,
+                }}
+              />
+              <p className="text-xs mt-1" style={{ color: designTokens.colors.text.muted }}>
+                未入力の場合「匿名ユーザー」として投稿されます
+              </p>
+            </div>
+          )}
+
           {/* Rating */}
           <div>
             <label className="block text-sm font-medium mb-2" style={{ color: designTokens.colors.text.secondary }}>
@@ -230,6 +259,12 @@ function ReviewFormModal({ postId, onClose, onSubmitted }: {
           >
             {submitting ? '投稿中...' : 'レビューを投稿'}
           </Button>
+
+          {!session?.user && (
+            <p className="text-xs text-center" style={{ color: designTokens.colors.text.muted }}>
+              ログインなしで投稿できます
+            </p>
+          )}
         </form>
       </motion.div>
     </motion.div>
@@ -264,6 +299,16 @@ export function EventReviewSection({ postId }: EventReviewSectionProps) {
     ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
     : 0;
 
+  const getReviewerName = (review: ReviewData): string => {
+    if (review.app_profiles?.display_name && review.app_profiles.display_name !== 'ゲスト') {
+      return review.app_profiles.display_name;
+    }
+    if (review.guest_nickname) {
+      return review.guest_nickname;
+    }
+    return '匿名ユーザー';
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -297,13 +342,7 @@ export function EventReviewSection({ postId }: EventReviewSectionProps) {
       {/* Write Review Button */}
       <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }} className="mb-5">
         <Button
-          onClick={() => {
-            if (!session?.user) {
-              window.location.href = '/login';
-              return;
-            }
-            setShowForm(true);
-          }}
+          onClick={() => setShowForm(true)}
           className="w-full h-12 rounded-xl font-semibold text-base"
           style={{
             background: `${designTokens.colors.accent.gold}15`,
@@ -312,7 +351,7 @@ export function EventReviewSection({ postId }: EventReviewSectionProps) {
           }}
         >
           <MessageSquarePlus className="mr-2 h-5 w-5" />
-          {session?.user ? '感想・レビューを書く' : 'ログインしてレビューを書く'}
+          感想・レビューを書く
         </Button>
       </motion.div>
 
@@ -362,7 +401,7 @@ export function EventReviewSection({ postId }: EventReviewSectionProps) {
                     )}
                   </div>
                   <span className="text-sm font-medium" style={{ color: designTokens.colors.text.primary }}>
-                    {review.app_profiles?.display_name || '匿名ユーザー'}
+                    {getReviewerName(review)}
                   </span>
                 </div>
                 <StarRating rating={review.rating} size="sm" />
