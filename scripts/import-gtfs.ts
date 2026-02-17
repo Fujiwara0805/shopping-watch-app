@@ -421,7 +421,7 @@ async function importGTFSData(gtfsDir: string, agencyId: string): Promise<Import
       const missingServiceIds: typeof calendarServiceIds extends Set<infer T> ? T[] : never = [];
       const supplementalCalendar: any[] = [];
 
-      for (const [sid, dates] of serviceIdDates) {
+      for (const [sid, dates] of Array.from(serviceIdDates.entries())) {
         if (calendarServiceIds.has(sid)) continue;
         missingServiceIds.push(sid);
 
