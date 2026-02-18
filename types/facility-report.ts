@@ -19,4 +19,13 @@ export interface FacilityReportWithAuthor extends FacilityReport {
   reporter_nickname: string | null;
 }
 
-export type FacilityLayerType = 'trash_can' | 'bus_stop' | 'train_station' | 'rest_spot';
+export type FacilityLayerType =
+  | 'trash_can'
+  | 'bus_stop'
+  | 'train_station'
+  | 'rest_spot'
+  | 'convenience_store'
+  | 'evacuation_site'
+  | 'hot_spring'
+  | 'cafe'
+  | 'bar';

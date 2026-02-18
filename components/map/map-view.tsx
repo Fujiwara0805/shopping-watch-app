@@ -1,10 +1,10 @@
 "use client";
 
-import { useRef, useEffect, useState, useCallback } from 'react';
+import { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import { useGeolocation } from '@/lib/hooks/use-geolocation';
 import { useGoogleMapsApi } from '@/components/providers/GoogleMapsApiProvider';
 import { Button } from '@/components/ui/button';
-import { MapPin, AlertTriangle, RefreshCw, Calendar, User, MapPinIcon, X, Loader2, Compass, Search, Trash2, Bus, TrainFront, Coffee, Clock } from 'lucide-react';
+import { MapPin, AlertTriangle, RefreshCw, Calendar, User, MapPinIcon, X, Loader2, Compass, Search, Trash2, Bus, TrainFront, Coffee, Clock, ShoppingBag, Shield, Droplets, Beer } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -13,7 +13,7 @@ import { useToast } from '@/lib/hooks/use-toast';
 import { isWithinRange } from '@/lib/utils/distance';
 import { generateSemanticEventUrl } from '@/lib/seo/url-helper';
 import { designTokens } from '@/lib/constants';
-import { FacilityLayerToggles } from '@/components/map/facility-layer-toggles';
+import { SpotSelector } from '@/components/map/spot-selector';
 import { FacilityReportForm } from '@/components/map/facility-report-form';
 import { FacilityVoteButtons } from '@/components/map/facility-vote-buttons';
 import { usePlacesSearch, PlaceResult } from '@/lib/hooks/use-places-search';
@@ -21,6 +21,7 @@ import { useGtfsStops } from '@/lib/hooks/use-gtfs-stops';
 import { BusStopTimetableCard } from '@/components/map/bus-stop-timetable-card';
 import type { FacilityLayerType, FacilityReportWithAuthor } from '@/types/facility-report';
 import type { GtfsBusStop } from '@/types/gtfs';
+import { evacuationSites } from '@/lib/data/evacuation-sites-oita';
 
 declare global {
   interface Window { google: any; }
@@ -234,6 +235,26 @@ const FACILITY_ICON_CONFIGS: Record<FacilityLayerType, { color: string; svgPath:
     color: '#10B981',
     svgPath: '<path d="M8 18h8M10 18V8h0a4 4 0 014 0M18 8a3 3 0 01-3 3h-1" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>',
   },
+  convenience_store: {
+    color: '#F59E0B',
+    svgPath: '<path d="M6 2h12l2 4v14a1 1 0 01-1 1H5a1 1 0 01-1-1V6l2-4zM3 6h18M9 10v7M15 10v7" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>',
+  },
+  evacuation_site: {
+    color: '#8B5CF6',
+    svgPath: '<path d="M12 3l8 14H4L12 3z" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 9v4M12 15h0" stroke="white" stroke-width="1.5" stroke-linecap="round"/>',
+  },
+  hot_spring: {
+    color: '#06B6D4',
+    svgPath: '<path d="M8 10c0-2 2-4 4-4s4 2 4 4M12 6V3M8 6c0 0-2-1-2-3M16 6c0 0 2-1 2-3M6 20h12M8 14c0 2 2 6 4 6s4-4 4-6" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>',
+  },
+  cafe: {
+    color: '#D97706',
+    svgPath: '<path d="M8 18h8M10 18V8h0a4 4 0 014 0M18 8a3 3 0 01-3 3h-1" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>',
+  },
+  bar: {
+    color: '#DC2626',
+    svgPath: '<path d="M7 3h10l-2 8H9L7 3zM9 11v8M15 11v8M7 19h10" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>',
+  },
 };
 
 const createFacilityMarkerIcon = (type: FacilityLayerType): google.maps.Icon => {
@@ -271,10 +292,14 @@ const organicMapStyles: google.maps.MapTypeStyle[] = [
   { featureType: "transit.station", elementType: "labels", stylers: [{ visibility: "off" }] }
 ];
 
-// Places API type mapping (bus_stop uses GTFS instead)
+// Places API type mapping (bus_stop uses GTFS instead, evacuation_site uses static data)
 const FACILITY_PLACES_TYPE: Record<string, string> = {
   train_station: 'train_station',
   rest_spot: 'shopping_mall',
+  convenience_store: 'convenience_store',
+  hot_spring: 'spa',
+  cafe: 'cafe',
+  bar: 'bar',
 };
 
 export function MapView() {
@@ -311,15 +336,16 @@ export function MapView() {
   const eventCardTouchDeltaX = useRef<number>(0);
   const selectedMarkerRef = useRef<google.maps.Marker | null>(null);
 
-  // Facility layer state
-  const [activeFacilityLayers, setActiveFacilityLayers] = useState<Set<FacilityLayerType>>(new Set());
+  // Spot (facility) layer state - single selection
+  const [activeSpot, setActiveSpot] = useState<FacilityLayerType | null>(null);
+  const [spotSelectorOpen, setSpotSelectorOpen] = useState(false);
   const [facilityMarkers, setFacilityMarkers] = useState<Map<string, google.maps.Marker[]>>(new Map());
   const [trashCanReports, setTrashCanReports] = useState<FacilityReportWithAuthor[]>([]);
-  const [loadingFacility, setLoadingFacility] = useState<Set<string>>(new Set());
+  const [loadingSpot, setLoadingSpot] = useState<FacilityLayerType | null>(null);
   const [showReportForm, setShowReportForm] = useState(false);
   const [selectedFacility, setSelectedFacility] = useState<{ type: FacilityLayerType; data: PlaceResult | FacilityReportWithAuthor } | null>(null);
 
-  const { results: placesResults, loading: placesLoading, searchNearby, clearResults } = usePlacesSearch();
+  const { results: placesResults, searchNearby, clearResults } = usePlacesSearch();
 
   // GTFS bus stop state
   const { stops: gtfsBusStops, loading: gtfsLoading, dataEmpty: gtfsDataEmpty, fetchError: gtfsFetchError, fetchStopsInBounds, clearStops: clearGtfsStops, setUserLocation: setGtfsUserLocation } = useGtfsStops();
@@ -500,7 +526,6 @@ export function MapView() {
 
   // Facility data fetch
   const fetchTrashCanReports = useCallback(async () => {
-    setLoadingFacility(prev => new Set(prev).add('trash_can'));
     try {
       const res = await fetch('/api/facility-reports?type=trash_can');
       const data = await res.json();
@@ -509,12 +534,6 @@ export function MapView() {
       }
     } catch (error) {
       console.error('ゴミ箱データの取得中にエラー:', error);
-    } finally {
-      setLoadingFacility(prev => {
-        const next = new Set(prev);
-        next.delete('trash_can');
-        return next;
-      });
     }
   }, []);
 
@@ -559,70 +578,86 @@ export function MapView() {
     return null;
   }, [savedLocation, latitude, longitude]);
 
-  // Handle facility layer toggle
-  const handleFacilityToggle = useCallback((type: FacilityLayerType) => {
-    setActiveFacilityLayers(prev => {
-      const next = new Set(prev);
-      if (next.has(type)) {
-        // Turn off
+  // Clear all facility markers for current activeSpot
+  const clearActiveSpotMarkers = useCallback((type: FacilityLayerType) => {
+    const existing = facilityMarkers.get(type);
+    if (existing) {
+      existing.forEach(m => m.setMap(null));
+      setFacilityMarkers(prev => {
+        const next = new Map(prev);
         next.delete(type);
-        const existing = facilityMarkers.get(type);
-        if (existing) {
-          existing.forEach(m => m.setMap(null));
-          setFacilityMarkers(prev => {
-            const next = new Map(prev);
-            next.delete(type);
-            return next;
+        return next;
+      });
+    }
+    if (type === 'bus_stop') {
+      gtfsMarkersRef.current.forEach(m => m.setMap(null));
+      gtfsMarkersRef.current = [];
+      clearGtfsStops();
+      setSelectedGtfsBusStop(null);
+    } else if (type !== 'trash_can' && type !== 'evacuation_site') {
+      clearResults(FACILITY_PLACES_TYPE[type]);
+    }
+    if (selectedFacility?.type === type) {
+      setSelectedFacility(null);
+    }
+  }, [facilityMarkers, clearGtfsStops, clearResults, selectedFacility]);
+
+  // Handle spot selection (single selection)
+  const handleSpotSelect = useCallback((type: FacilityLayerType | null) => {
+    // Clear previous spot
+    if (activeSpot) {
+      clearActiveSpotMarkers(activeSpot);
+    }
+
+    if (type === null || type === activeSpot) {
+      // Deselect
+      setActiveSpot(null);
+      return;
+    }
+
+    setActiveSpot(type);
+    setLoadingSpot(type);
+
+    if (type === 'trash_can') {
+      fetchTrashCanReports().finally(() => setLoadingSpot(null));
+    } else if (type === 'bus_stop') {
+      // Fetch GTFS bus stops - zoom to user location area if needed
+      if (map) {
+        const userCenter = getUserLocationCenter();
+        const zoom = map.getZoom();
+        if (zoom !== undefined && zoom < 12) {
+          if (userCenter) map.panTo(userCenter);
+          map.setZoom(12);
+          window.google?.maps?.event?.addListenerOnce(map, 'idle', () => {
+            fetchStopsInBounds(map);
+            setLoadingSpot(null);
           });
-        }
-        if (type === 'bus_stop') {
-          // Clear GTFS markers
-          gtfsMarkersRef.current.forEach(m => m.setMap(null));
-          gtfsMarkersRef.current = [];
-          clearGtfsStops();
-          setSelectedGtfsBusStop(null);
-        } else if (type !== 'trash_can') {
-          clearResults(FACILITY_PLACES_TYPE[type]);
-        }
-        if (selectedFacility?.type === type) {
-          setSelectedFacility(null);
+        } else {
+          fetchStopsInBounds(map);
+          setLoadingSpot(null);
         }
       } else {
-        // Turn on - prioritize 5km radius from user location
-        next.add(type);
-        if (type === 'trash_can') {
-          fetchTrashCanReports();
-        } else if (type === 'bus_stop') {
-          // Fetch GTFS bus stops - zoom to user location area if needed
-          if (map) {
-            const userCenter = getUserLocationCenter();
-            const zoom = map.getZoom();
-            if (zoom !== undefined && zoom < 12) {
-              if (userCenter) map.panTo(userCenter);
-              map.setZoom(12);
-              window.google?.maps?.event?.addListenerOnce(map, 'idle', () => {
-                fetchStopsInBounds(map);
-              });
-            } else {
-              fetchStopsInBounds(map);
-            }
-          }
-        } else if (map) {
-          // Use user location as center for Places API (5km radius priority)
-          const userCenter = getUserLocationCenter();
-          const searchCenter = userCenter || map.getCenter();
-          if (searchCenter) {
-            searchNearby(map, searchCenter, FACILITY_PLACES_TYPE[type], 5000);
-          }
-        }
+        setLoadingSpot(null);
       }
-      return next;
-    });
-  }, [map, facilityMarkers, fetchTrashCanReports, searchNearby, clearResults, selectedFacility, fetchStopsInBounds, clearGtfsStops, getUserLocationCenter]);
+    } else if (type === 'evacuation_site') {
+      // Static data - markers created in effect
+      setLoadingSpot(null);
+    } else if (map) {
+      // Use user location as center for Places API (5km radius priority)
+      const userCenter = getUserLocationCenter();
+      const searchCenter = userCenter || map.getCenter();
+      if (searchCenter) {
+        searchNearby(map, searchCenter, FACILITY_PLACES_TYPE[type], 5000);
+      }
+      setLoadingSpot(null);
+    } else {
+      setLoadingSpot(null);
+    }
+  }, [activeSpot, map, facilityMarkers, fetchTrashCanReports, searchNearby, clearActiveSpotMarkers, fetchStopsInBounds, getUserLocationCenter]);
 
   // Effect: create trash can markers when reports change (prioritize 5km from user)
   useEffect(() => {
-    if (!activeFacilityLayers.has('trash_can') || !map) return;
+    if (activeSpot !== 'trash_can' || !map) return;
     const userLat = savedLocation?.lat || latitude;
     const userLng = savedLocation?.lng || longitude;
 
@@ -649,7 +684,7 @@ export function MapView() {
       data: r as FacilityReportWithAuthor,
     }));
     createFacilityMarkersForType('trash_can', items);
-  }, [trashCanReports, activeFacilityLayers, map, savedLocation, latitude, longitude]);
+  }, [trashCanReports, activeSpot, map, savedLocation, latitude, longitude]);
 
   // Effect: create Places API markers when results change
   useEffect(() => {
@@ -658,10 +693,14 @@ export function MapView() {
       bus_station: 'bus_stop',
       train_station: 'train_station',
       shopping_mall: 'rest_spot',
+      convenience_store: 'convenience_store',
+      spa: 'hot_spring',
+      cafe: 'cafe',
+      bar: 'bar',
     };
     placesResults.forEach((results, placeType) => {
       const facilityType = placesTypeMap[placeType];
-      if (!facilityType || !activeFacilityLayers.has(facilityType)) return;
+      if (!facilityType || activeSpot !== facilityType) return;
       const items = results.map(r => ({
         lat: r.lat,
         lng: r.lng,
@@ -671,11 +710,27 @@ export function MapView() {
       }));
       createFacilityMarkersForType(facilityType, items);
     });
-  }, [placesResults, activeFacilityLayers, map]);
+  }, [placesResults, activeSpot, map]);
 
-  // Effect: create GTFS bus stop markers when stops data changes
+  // Filtered GTFS bus stops: within 2km of user location
+  const filteredGtfsBusStops = useMemo(() => {
+    if (!gtfsBusStops.length) return [];
+    const userLat = savedLocation?.lat || latitude;
+    const userLng = savedLocation?.lng || longitude;
+    if (!userLat || !userLng) return gtfsBusStops;
+    return gtfsBusStops.filter(stop => {
+      const R = 6371;
+      const dLat = (stop.stop_lat - userLat) * Math.PI / 180;
+      const dLng = (stop.stop_lon - userLng) * Math.PI / 180;
+      const a = Math.sin(dLat / 2) ** 2 + Math.cos(userLat * Math.PI / 180) * Math.cos(stop.stop_lat * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+      const dist = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return dist <= 2;
+    });
+  }, [gtfsBusStops, savedLocation, latitude, longitude]);
+
+  // Effect: create GTFS bus stop markers when stops data changes (2km filter applied)
   useEffect(() => {
-    if (!map || !window.google?.maps || !activeFacilityLayers.has('bus_stop')) return;
+    if (!map || !window.google?.maps || activeSpot !== 'bus_stop') return;
 
     // Clear old GTFS markers
     gtfsMarkersRef.current.forEach(m => m.setMap(null));
@@ -684,7 +739,7 @@ export function MapView() {
     const icon = createFacilityMarkerIcon('bus_stop');
     const newMarkers: google.maps.Marker[] = [];
 
-    gtfsBusStops.forEach(stop => {
+    filteredGtfsBusStops.forEach(stop => {
       const marker = new window.google.maps.Marker({
         position: new window.google.maps.LatLng(stop.stop_lat, stop.stop_lon),
         map,
@@ -701,32 +756,66 @@ export function MapView() {
     });
 
     gtfsMarkersRef.current = newMarkers;
-  }, [gtfsBusStops, activeFacilityLayers, map]);
+  }, [filteredGtfsBusStops, activeSpot, map]);
+
+  // Effect: create evacuation site markers from static data
+  useEffect(() => {
+    if (!map || !window.google?.maps || activeSpot !== 'evacuation_site') return;
+
+    const existing = facilityMarkers.get('evacuation_site');
+    if (existing) {
+      existing.forEach(m => m.setMap(null));
+    }
+
+    const icon = createFacilityMarkerIcon('evacuation_site');
+    const newMarkers: google.maps.Marker[] = [];
+
+    evacuationSites.forEach(site => {
+      const marker = new window.google.maps.Marker({
+        position: new window.google.maps.LatLng(site.lat, site.lng),
+        map,
+        title: site.name,
+        icon,
+        zIndex: 5,
+      });
+      const placeResult: PlaceResult = {
+        id: site.id,
+        name: site.name,
+        lat: site.lat,
+        lng: site.lng,
+        types: ['evacuation_site'],
+        vicinity: site.address,
+      };
+      marker.addListener('click', () => {
+        setSelectedFacility({ type: 'evacuation_site', data: placeResult });
+        setSelectedPost(null);
+        setSelectedGtfsBusStop(null);
+      });
+      newMarkers.push(marker);
+    });
+
+    setFacilityMarkers(prev => new Map(prev).set('evacuation_site', newMarkers));
+  }, [activeSpot, map]);
 
   // Effect: re-search Places and GTFS on map idle (prioritize user location 5km radius)
   useEffect(() => {
     if (!map) return;
     const listener = map.addListener('idle', () => {
       const mapCenter = map.getCenter();
-      if (!mapCenter) return;
-      // Use user location when available for Places API (5km radius priority)
+      if (!mapCenter || !activeSpot) return;
       const userCenter = getUserLocationCenter();
-      activeFacilityLayers.forEach(type => {
-        if (type === 'bus_stop') {
-          fetchStopsInBounds(map);
-        } else if (type !== 'trash_can') {
-          const placeType = FACILITY_PLACES_TYPE[type];
-          if (placeType) {
-            // Use user location center if within reasonable distance of map view,
-            // otherwise fall back to map center
-            const searchCenter = userCenter || mapCenter;
-            searchNearby(map, searchCenter, placeType, 5000);
-          }
+      if (activeSpot === 'bus_stop') {
+        fetchStopsInBounds(map);
+      } else if (activeSpot !== 'trash_can' && activeSpot !== 'evacuation_site') {
+        const placeType = FACILITY_PLACES_TYPE[activeSpot];
+        if (placeType) {
+          const searchCenter = userCenter || mapCenter;
+          searchNearby(map, searchCenter, placeType, 5000);
         }
-      });
+      }
     });
     return () => { window.google?.maps?.event?.removeListener(listener); };
-  }, [map, activeFacilityLayers, searchNearby, fetchStopsInBounds, getUserLocationCenter]);
+  }, [map, activeSpot, searchNearby, fetchStopsInBounds, getUserLocationCenter]);
 
   const initializeMap = useCallback(() => {
     if (!mapContainerRef.current || mapInstanceRef.current || !googleMapsLoaded || containerDimensions.height < 200 || initializationTriedRef.current) return false;
@@ -772,8 +861,8 @@ export function MapView() {
       } catch (error) { console.error('位置情報の取得に失敗:', error); }
     }
     await fetchPosts();
-    // Also refresh trash can reports if layer is active
-    if (activeFacilityLayers.has('trash_can')) {
+    // Also refresh trash can reports if spot is active
+    if (activeSpot === 'trash_can') {
       await fetchTrashCanReports();
     }
     setTimeout(() => { setIsRefreshing(false); }, 500);
@@ -840,6 +929,11 @@ export function MapView() {
       bus_stop: 'バス停',
       train_station: '駅',
       rest_spot: '休憩スポット',
+      convenience_store: 'コンビニ',
+      evacuation_site: '避難所',
+      hot_spring: '温泉',
+      cafe: 'カフェ',
+      bar: '居酒屋・バー',
     };
     return labels[type];
   };
@@ -850,6 +944,11 @@ export function MapView() {
       bus_stop: Bus,
       train_station: TrainFront,
       rest_spot: Coffee,
+      convenience_store: ShoppingBag,
+      evacuation_site: Shield,
+      hot_spring: Droplets,
+      cafe: Coffee,
+      bar: Beer,
     };
     return icons[type];
   };
@@ -860,6 +959,11 @@ export function MapView() {
       bus_stop: '#3B82F6',
       train_station: '#EF4444',
       rest_spot: '#10B981',
+      convenience_store: '#F59E0B',
+      evacuation_site: '#8B5CF6',
+      hot_spring: '#06B6D4',
+      cafe: '#D97706',
+      bar: '#DC2626',
     };
     return colors[type];
   };
@@ -898,19 +1002,21 @@ export function MapView() {
         </div>
       )}
 
-      {/* 施設レイヤートグル（左下） */}
+      {/* スポットセレクター（左下） */}
       {map && mapInitialized && (
         <div className="absolute bottom-6 left-4 z-30">
-          <FacilityLayerToggles
-            activeLayers={activeFacilityLayers}
-            onToggle={handleFacilityToggle}
-            loadingLayers={loadingFacility}
+          <SpotSelector
+            activeSpot={activeSpot}
+            onSelect={handleSpotSelect}
+            loadingSpot={loadingSpot}
+            isOpen={spotSelectorOpen}
+            onOpenChange={setSpotSelectorOpen}
           />
         </div>
       )}
 
-      {/* ゴミ箱報告ボタン（下部中央）- ゴミ箱レイヤーがONの時のみ */}
-      {map && mapInitialized && activeFacilityLayers.has('trash_can') && !selectedPost && !selectedFacility && (
+      {/* ゴミ箱報告ボタン（下部中央）- ゴミ箱スポットがONの時のみ */}
+      {map && mapInitialized && activeSpot === 'trash_can' && !selectedPost && !selectedFacility && !spotSelectorOpen && (
         <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} whileTap={{ scale: 0.98 }}>
             <Button
@@ -1189,7 +1295,7 @@ export function MapView() {
 
       {/* GTFSデータ未投入の通知 */}
       <AnimatePresence>
-        {activeFacilityLayers.has('bus_stop') && gtfsDataEmpty && !gtfsLoading && !selectedGtfsBusStop && (
+        {activeSpot === 'bus_stop' && gtfsDataEmpty && !gtfsLoading && !selectedGtfsBusStop && (
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -1208,7 +1314,7 @@ export function MapView() {
                   </p>
                 </div>
                 <button
-                  onClick={() => handleFacilityToggle('bus_stop')}
+                  onClick={() => handleSpotSelect(null)}
                   className="flex-shrink-0"
                 >
                   <X className="h-4 w-4" style={{ color: designTokens.colors.text.muted }} />
