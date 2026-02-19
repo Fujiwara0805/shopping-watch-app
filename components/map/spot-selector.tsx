@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trash2, Bus, TrainFront, Coffee, ShoppingBag, Shield, Droplets, MapPin, X, Beer } from 'lucide-react';
+import { Trash2, Bus, TrainFront, Shield, Droplets, MapPin, X, Camera, Utensils } from 'lucide-react';
 import { designTokens } from '@/lib/constants';
 import type { FacilityLayerType } from '@/types/facility-report';
 
@@ -16,12 +16,10 @@ export const SPOT_CONFIGS: SpotConfig[] = [
   { type: 'trash_can', label: 'ゴミ箱', icon: Trash2, color: '#6B7280' },
   { type: 'bus_stop', label: 'バス停', icon: Bus, color: '#3B82F6' },
   { type: 'train_station', label: '駅', icon: TrainFront, color: '#EF4444' },
-  { type: 'rest_spot', label: '休憩所', icon: Coffee, color: '#10B981' },
-  { type: 'convenience_store', label: 'コンビニ', icon: ShoppingBag, color: '#F59E0B' },
   { type: 'evacuation_site', label: '避難所', icon: Shield, color: '#8B5CF6' },
   { type: 'hot_spring', label: '温泉', icon: Droplets, color: '#06B6D4' },
-  { type: 'cafe', label: 'カフェ', icon: Coffee, color: '#D97706' },
-  { type: 'bar', label: '居酒屋・バー', icon: Beer, color: '#DC2626' },
+  { type: 'tourism_spot', label: '観光', icon: Camera, color: '#059669' },
+  { type: 'restaurant', label: '食事処', icon: Utensils, color: '#EA580C' },
 ];
 
 interface SpotSelectorProps {

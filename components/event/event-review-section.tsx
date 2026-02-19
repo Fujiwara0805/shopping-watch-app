@@ -247,6 +247,17 @@ function ReviewFormModal({ postId, onClose, onSubmitted }: {
             </p>
           )}
 
+          <div
+            className="px-4 py-3 rounded-xl text-xs leading-relaxed"
+            style={{
+              background: `${designTokens.colors.accent.gold}10`,
+              border: `1px solid ${designTokens.colors.accent.gold}30`,
+              color: designTokens.colors.text.secondary,
+            }}
+          >
+            ⚠️ 投稿したレビューは後から削除・編集することができません。内容をよくご確認のうえ投稿してください。
+          </div>
+
           <Button
             type="submit"
             disabled={submitting || rating === 0}
