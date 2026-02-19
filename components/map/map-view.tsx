@@ -4,7 +4,7 @@ import { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import { useGeolocation } from '@/lib/hooks/use-geolocation';
 import { useGoogleMapsApi } from '@/components/providers/GoogleMapsApiProvider';
 import { Button } from '@/components/ui/button';
-import { MapPin, AlertTriangle, RefreshCw, Calendar, User, MapPinIcon, X, Loader2, Compass, Search, Trash2, Bus, TrainFront, Coffee, Clock, ShoppingBag, Shield, Droplets, Beer } from 'lucide-react';
+import { MapPin, AlertTriangle, RefreshCw, Calendar, User, MapPinIcon, X, Loader2, Compass, Search, Trash2, Bus, TrainFront, Clock, Shield, Droplets, Camera, Utensils } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -231,14 +231,6 @@ const FACILITY_ICON_CONFIGS: Record<FacilityLayerType, { color: string; svgPath:
     color: '#EF4444',
     svgPath: '<path d="M7 5h10a2 2 0 012 2v8a2 2 0 01-2 2H7a2 2 0 01-2-2V7a2 2 0 012-2zM9 17l-2 2M15 17l2 2M9 13h0M15 13h0M5 10h14" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>',
   },
-  rest_spot: {
-    color: '#10B981',
-    svgPath: '<path d="M8 18h8M10 18V8h0a4 4 0 014 0M18 8a3 3 0 01-3 3h-1" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>',
-  },
-  convenience_store: {
-    color: '#F59E0B',
-    svgPath: '<path d="M6 2h12l2 4v14a1 1 0 01-1 1H5a1 1 0 01-1-1V6l2-4zM3 6h18M9 10v7M15 10v7" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>',
-  },
   evacuation_site: {
     color: '#8B5CF6',
     svgPath: '<path d="M12 3l8 14H4L12 3z" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 9v4M12 15h0" stroke="white" stroke-width="1.5" stroke-linecap="round"/>',
@@ -247,13 +239,13 @@ const FACILITY_ICON_CONFIGS: Record<FacilityLayerType, { color: string; svgPath:
     color: '#06B6D4',
     svgPath: '<path d="M8 10c0-2 2-4 4-4s4 2 4 4M12 6V3M8 6c0 0-2-1-2-3M16 6c0 0 2-1 2-3M6 20h12M8 14c0 2 2 6 4 6s4-4 4-6" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>',
   },
-  cafe: {
-    color: '#D97706',
-    svgPath: '<path d="M8 18h8M10 18V8h0a4 4 0 014 0M18 8a3 3 0 01-3 3h-1" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>',
+  tourism_spot: {
+    color: '#059669',
+    svgPath: '<path d="M12 2a8 8 0 018 8c0 5-8 13-8 13S4 15 4 10a8 8 0 018-8z" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="10" r="2.5" fill="white"/>',
   },
-  bar: {
-    color: '#DC2626',
-    svgPath: '<path d="M7 3h10l-2 8H9L7 3zM9 11v8M15 11v8M7 19h10" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>',
+  restaurant: {
+    color: '#EA580C',
+    svgPath: '<path d="M12 2v8M8 4c0 4 4 6 4 6s4-2 4-6M6 2v4a4 4 0 008 0V2M6 20h12M9 12v8M15 12v8" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>',
   },
 };
 
@@ -295,11 +287,9 @@ const organicMapStyles: google.maps.MapTypeStyle[] = [
 // Places API type mapping (bus_stop uses GTFS instead, evacuation_site uses static data)
 const FACILITY_PLACES_TYPE: Record<string, string> = {
   train_station: 'train_station',
-  rest_spot: 'shopping_mall',
-  convenience_store: 'convenience_store',
   hot_spring: 'spa',
-  cafe: 'cafe',
-  bar: 'bar',
+  tourism_spot: 'tourist_attraction',
+  restaurant: 'restaurant',
 };
 
 export function MapView() {
@@ -692,11 +682,9 @@ export function MapView() {
     const placesTypeMap: Record<string, FacilityLayerType> = {
       bus_station: 'bus_stop',
       train_station: 'train_station',
-      shopping_mall: 'rest_spot',
-      convenience_store: 'convenience_store',
       spa: 'hot_spring',
-      cafe: 'cafe',
-      bar: 'bar',
+      tourist_attraction: 'tourism_spot',
+      restaurant: 'restaurant',
     };
     placesResults.forEach((results, placeType) => {
       const facilityType = placesTypeMap[placeType];
@@ -928,12 +916,10 @@ export function MapView() {
       trash_can: 'ゴミ箱',
       bus_stop: 'バス停',
       train_station: '駅',
-      rest_spot: '休憩スポット',
-      convenience_store: 'コンビニ',
       evacuation_site: '避難所',
       hot_spring: '温泉',
-      cafe: 'カフェ',
-      bar: '居酒屋・バー',
+      tourism_spot: '観光',
+      restaurant: '食事処',
     };
     return labels[type];
   };
@@ -943,12 +929,10 @@ export function MapView() {
       trash_can: Trash2,
       bus_stop: Bus,
       train_station: TrainFront,
-      rest_spot: Coffee,
-      convenience_store: ShoppingBag,
       evacuation_site: Shield,
       hot_spring: Droplets,
-      cafe: Coffee,
-      bar: Beer,
+      tourism_spot: Camera,
+      restaurant: Utensils,
     };
     return icons[type];
   };
@@ -958,12 +942,10 @@ export function MapView() {
       trash_can: '#6B7280',
       bus_stop: '#3B82F6',
       train_station: '#EF4444',
-      rest_spot: '#10B981',
-      convenience_store: '#F59E0B',
       evacuation_site: '#8B5CF6',
       hot_spring: '#06B6D4',
-      cafe: '#D97706',
-      bar: '#DC2626',
+      tourism_spot: '#059669',
+      restaurant: '#EA580C',
     };
     return colors[type];
   };
@@ -1002,9 +984,24 @@ export function MapView() {
         </div>
       )}
 
-      {/* スポットセレクター（左下） */}
+      {/* スポットセレクター＆ゴミ箱報告ボタン（左下） */}
       {map && mapInitialized && (
-        <div className="absolute bottom-6 left-4 z-30">
+        <div className="absolute bottom-6 left-4 z-30 flex flex-col items-start gap-2">
+          {/* ゴミ箱報告ボタン - ゴミ箱スポットがONかつ他のUIが非表示の時のみ */}
+          <AnimatePresence>
+            {activeSpot === 'trash_can' && !selectedPost && !selectedFacility && !spotSelectorOpen && (
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} whileTap={{ scale: 0.98 }}>
+                <Button
+                  onClick={() => setShowReportForm(true)}
+                  className="h-12 rounded-xl flex items-center justify-center gap-2 px-5 font-semibold text-sm shadow-lg"
+                  style={{ background: '#6B7280', color: designTokens.colors.text.inverse, boxShadow: designTokens.elevation.high }}
+                >
+                  <Trash2 className="h-4 w-4 flex-shrink-0" />
+                  ゴミ箱を報告
+                </Button>
+              </motion.div>
+            )}
+          </AnimatePresence>
           <SpotSelector
             activeSpot={activeSpot}
             onSelect={handleSpotSelect}
@@ -1012,22 +1009,6 @@ export function MapView() {
             isOpen={spotSelectorOpen}
             onOpenChange={setSpotSelectorOpen}
           />
-        </div>
-      )}
-
-      {/* ゴミ箱報告ボタン（下部中央）- ゴミ箱スポットがONの時のみ */}
-      {map && mapInitialized && activeSpot === 'trash_can' && !selectedPost && !selectedFacility && !spotSelectorOpen && (
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} whileTap={{ scale: 0.98 }}>
-            <Button
-              onClick={() => setShowReportForm(true)}
-              className="h-14 rounded-xl flex items-center justify-center gap-2 px-6 font-semibold text-sm shadow-lg"
-              style={{ background: '#6B7280', color: designTokens.colors.text.inverse, boxShadow: designTokens.elevation.high }}
-            >
-              <Trash2 className="h-5 w-5 flex-shrink-0" />
-              ゴミ箱を報告
-            </Button>
-          </motion.div>
         </div>
       )}
 

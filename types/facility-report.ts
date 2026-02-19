@@ -23,9 +23,7 @@ export type FacilityLayerType =
   | 'trash_can'
   | 'bus_stop'
   | 'train_station'
-  | 'rest_spot'
-  | 'convenience_store'
   | 'evacuation_site'
   | 'hot_spring'
-  | 'cafe'
-  | 'bar';
+  | 'tourism_spot'
+  | 'restaurant';
