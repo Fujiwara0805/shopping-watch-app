@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trash2, Bus, TrainFront, Shield, Droplets, MapPin, X, Camera, Utensils } from 'lucide-react';
+import { Trash2, Bus, TrainFront, Shield, Droplets, MapPin, X, Camera, Utensils, Bath } from 'lucide-react';
 import { designTokens } from '@/lib/constants';
 import type { FacilityLayerType } from '@/types/facility-report';
 
@@ -13,13 +13,14 @@ interface SpotConfig {
 }
 
 export const SPOT_CONFIGS: SpotConfig[] = [
-  { type: 'trash_can', label: 'ゴミ箱', icon: Trash2, color: '#6B7280' },
+  { type: 'tourism_spot', label: '観光', icon: Camera, color: '#059669' },
+  { type: 'restaurant', label: 'グルメ', icon: Utensils, color: '#EA580C' },
+  { type: 'hot_spring', label: '温泉', icon: Droplets, color: '#06B6D4' },
+  { type: 'toilet', label: 'トイレ', icon: Bath, color: '#8B5CF6' },
   { type: 'bus_stop', label: 'バス停', icon: Bus, color: '#3B82F6' },
   { type: 'train_station', label: '駅', icon: TrainFront, color: '#EF4444' },
-  { type: 'evacuation_site', label: '避難所', icon: Shield, color: '#8B5CF6' },
-  { type: 'hot_spring', label: '温泉', icon: Droplets, color: '#06B6D4' },
-  { type: 'tourism_spot', label: '観光', icon: Camera, color: '#059669' },
-  { type: 'restaurant', label: '食事処', icon: Utensils, color: '#EA580C' },
+  { type: 'evacuation_site', label: '避難所', icon: Shield, color: '#F59E0B' },
+  { type: 'trash_can', label: 'ゴミ箱', icon: Trash2, color: '#6B7280' },
 ];
 
 interface SpotSelectorProps {
@@ -136,8 +137,8 @@ export function SpotSelector({ activeSpot, onSelect, loadingSpot, isOpen, onOpen
                   </button>
                 </div>
 
-                {/* スポット選択グリッド（3列） */}
-                <div className="grid grid-cols-3 gap-3">
+                {/* スポット選択グリッド（4列） */}
+                <div className="grid grid-cols-4 gap-2">
                   {SPOT_CONFIGS.map(config => {
                     const isActive = activeSpot === config.type;
                     const isLoading = loadingSpot === config.type;

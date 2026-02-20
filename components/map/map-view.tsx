@@ -4,7 +4,7 @@ import { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import { useGeolocation } from '@/lib/hooks/use-geolocation';
 import { useGoogleMapsApi } from '@/components/providers/GoogleMapsApiProvider';
 import { Button } from '@/components/ui/button';
-import { MapPin, AlertTriangle, RefreshCw, Calendar, User, MapPinIcon, X, Loader2, Compass, Search, Trash2, Bus, TrainFront, Clock, Shield, Droplets, Camera, Utensils } from 'lucide-react';
+import { MapPin, AlertTriangle, RefreshCw, Calendar, User, MapPinIcon, X, Loader2, Compass, Search, Trash2, Bus, TrainFront, Clock, Shield, Droplets, Camera, Utensils, Bath, ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -18,6 +18,7 @@ import { FacilityReportForm } from '@/components/map/facility-report-form';
 import { FacilityVoteButtons } from '@/components/map/facility-vote-buttons';
 import { usePlacesSearch, PlaceResult } from '@/lib/hooks/use-places-search';
 import { useGtfsStops } from '@/lib/hooks/use-gtfs-stops';
+import { useSupabaseSpots, SupabaseSpotResult, isSupabaseSpotType } from '@/lib/hooks/use-supabase-spots';
 import { BusStopTimetableCard } from '@/components/map/bus-stop-timetable-card';
 import type { FacilityLayerType, FacilityReportWithAuthor } from '@/types/facility-report';
 import type { GtfsBusStop } from '@/types/gtfs';
@@ -247,6 +248,10 @@ const FACILITY_ICON_CONFIGS: Record<FacilityLayerType, { color: string; svgPath:
     color: '#EA580C',
     svgPath: '<path d="M12 2v8M8 4c0 4 4 6 4 6s4-2 4-6M6 2v4a4 4 0 008 0V2M6 20h12M9 12v8M15 12v8" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>',
   },
+  toilet: {
+    color: '#8B5CF6',
+    svgPath: '<path d="M6 3h4v4H6zM14 3h4v4h-4zM5 8h6l-1 12H6L5 8zM13 8h6l-1 12h-4l-1-12z" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>',
+  },
 };
 
 const createFacilityMarkerIcon = (type: FacilityLayerType): google.maps.Icon => {
@@ -284,12 +289,10 @@ const organicMapStyles: google.maps.MapTypeStyle[] = [
   { featureType: "transit.station", elementType: "labels", stylers: [{ visibility: "off" }] }
 ];
 
-// Places API type mapping (bus_stop uses GTFS instead, evacuation_site uses static data)
+// Places API type mapping (only train_station uses Places API now)
+// hot_spring, tourism_spot, restaurant, toilet → Supabase DB
 const FACILITY_PLACES_TYPE: Record<string, string> = {
   train_station: 'train_station',
-  hot_spring: 'spa',
-  tourism_spot: 'tourist_attraction',
-  restaurant: 'restaurant',
 };
 
 export function MapView() {
@@ -333,9 +336,10 @@ export function MapView() {
   const [trashCanReports, setTrashCanReports] = useState<FacilityReportWithAuthor[]>([]);
   const [loadingSpot, setLoadingSpot] = useState<FacilityLayerType | null>(null);
   const [showReportForm, setShowReportForm] = useState(false);
-  const [selectedFacility, setSelectedFacility] = useState<{ type: FacilityLayerType; data: PlaceResult | FacilityReportWithAuthor } | null>(null);
+  const [selectedFacility, setSelectedFacility] = useState<{ type: FacilityLayerType; data: PlaceResult | FacilityReportWithAuthor | SupabaseSpotResult } | null>(null);
 
   const { results: placesResults, searchNearby, clearResults } = usePlacesSearch();
+  const { spots: supabaseSpots, fetchSpots: fetchSupabaseSpots, clearSpots: clearSupabaseSpots } = useSupabaseSpots();
 
   // GTFS bus stop state
   const { stops: gtfsBusStops, loading: gtfsLoading, dataEmpty: gtfsDataEmpty, fetchError: gtfsFetchError, fetchStopsInBounds, clearStops: clearGtfsStops, setUserLocation: setGtfsUserLocation } = useGtfsStops();
@@ -528,7 +532,7 @@ export function MapView() {
   }, []);
 
   // Create facility markers for a given type
-  const createFacilityMarkersForType = useCallback((type: FacilityLayerType, items: Array<{ lat: number; lng: number; name: string; id: string; data: PlaceResult | FacilityReportWithAuthor }>) => {
+  const createFacilityMarkersForType = useCallback((type: FacilityLayerType, items: Array<{ lat: number; lng: number; name: string; id: string; data: PlaceResult | FacilityReportWithAuthor | SupabaseSpotResult }>) => {
     if (!map || !window.google?.maps) return;
 
     // Clear existing markers for this type
@@ -584,13 +588,15 @@ export function MapView() {
       gtfsMarkersRef.current = [];
       clearGtfsStops();
       setSelectedGtfsBusStop(null);
-    } else if (type !== 'trash_can' && type !== 'evacuation_site') {
+    } else if (isSupabaseSpotType(type)) {
+      clearSupabaseSpots(type);
+    } else if (FACILITY_PLACES_TYPE[type]) {
       clearResults(FACILITY_PLACES_TYPE[type]);
     }
     if (selectedFacility?.type === type) {
       setSelectedFacility(null);
     }
-  }, [facilityMarkers, clearGtfsStops, clearResults, selectedFacility]);
+  }, [facilityMarkers, clearGtfsStops, clearResults, clearSupabaseSpots, selectedFacility]);
 
   // Handle spot selection (single selection)
   const handleSpotSelect = useCallback((type: FacilityLayerType | null) => {
@@ -632,8 +638,14 @@ export function MapView() {
     } else if (type === 'evacuation_site') {
       // Static data - markers created in effect
       setLoadingSpot(null);
-    } else if (map) {
-      // Use user location as center for Places API (5km radius priority)
+    } else if (isSupabaseSpotType(type)) {
+      // Fetch from Supabase DB (tourism_spot, hot_spring, restaurant, toilet)
+      const userLat = savedLocation?.lat || latitude;
+      const userLng = savedLocation?.lng || longitude;
+      fetchSupabaseSpots(type, userLat || undefined, userLng || undefined, 15)
+        .finally(() => setLoadingSpot(null));
+    } else if (map && FACILITY_PLACES_TYPE[type]) {
+      // Use Google Places API (only train_station now)
       const userCenter = getUserLocationCenter();
       const searchCenter = userCenter || map.getCenter();
       if (searchCenter) {
@@ -643,7 +655,7 @@ export function MapView() {
     } else {
       setLoadingSpot(null);
     }
-  }, [activeSpot, map, facilityMarkers, fetchTrashCanReports, searchNearby, clearActiveSpotMarkers, fetchStopsInBounds, getUserLocationCenter]);
+  }, [activeSpot, map, facilityMarkers, fetchTrashCanReports, searchNearby, clearActiveSpotMarkers, fetchStopsInBounds, getUserLocationCenter, fetchSupabaseSpots, savedLocation, latitude, longitude]);
 
   // Effect: create trash can markers when reports change (prioritize 5km from user)
   useEffect(() => {
@@ -680,11 +692,7 @@ export function MapView() {
   useEffect(() => {
     if (!map) return;
     const placesTypeMap: Record<string, FacilityLayerType> = {
-      bus_station: 'bus_stop',
       train_station: 'train_station',
-      spa: 'hot_spring',
-      tourist_attraction: 'tourism_spot',
-      restaurant: 'restaurant',
     };
     placesResults.forEach((results, placeType) => {
       const facilityType = placesTypeMap[placeType];
@@ -699,6 +707,22 @@ export function MapView() {
       createFacilityMarkersForType(facilityType, items);
     });
   }, [placesResults, activeSpot, map]);
+
+  // Effect: create Supabase spot markers when data changes
+  useEffect(() => {
+    if (!map || !activeSpot || !isSupabaseSpotType(activeSpot)) return;
+    const spotData = supabaseSpots.get(activeSpot);
+    if (!spotData) return;
+
+    const items = spotData.map(s => ({
+      lat: s.lat,
+      lng: s.lng,
+      name: s.name,
+      id: s.id,
+      data: s as SupabaseSpotResult,
+    }));
+    createFacilityMarkersForType(activeSpot, items);
+  }, [supabaseSpots, activeSpot, map]);
 
   // Filtered GTFS bus stops: within 2km of user location
   const filteredGtfsBusStops = useMemo(() => {
@@ -785,7 +809,7 @@ export function MapView() {
     setFacilityMarkers(prev => new Map(prev).set('evacuation_site', newMarkers));
   }, [activeSpot, map]);
 
-  // Effect: re-search Places and GTFS on map idle (prioritize user location 5km radius)
+  // Effect: re-search on map idle (prioritize user location)
   useEffect(() => {
     if (!map) return;
     const listener = map.addListener('idle', () => {
@@ -794,6 +818,11 @@ export function MapView() {
       const userCenter = getUserLocationCenter();
       if (activeSpot === 'bus_stop') {
         fetchStopsInBounds(map);
+      } else if (isSupabaseSpotType(activeSpot)) {
+        // Supabase spots: re-fetch with map center for distance sorting
+        const centerLat = userCenter?.lat() || mapCenter.lat();
+        const centerLng = userCenter?.lng() || mapCenter.lng();
+        fetchSupabaseSpots(activeSpot, centerLat, centerLng, 15);
       } else if (activeSpot !== 'trash_can' && activeSpot !== 'evacuation_site') {
         const placeType = FACILITY_PLACES_TYPE[activeSpot];
         if (placeType) {
@@ -803,7 +832,7 @@ export function MapView() {
       }
     });
     return () => { window.google?.maps?.event?.removeListener(listener); };
-  }, [map, activeSpot, searchNearby, fetchStopsInBounds, getUserLocationCenter]);
+  }, [map, activeSpot, searchNearby, fetchStopsInBounds, getUserLocationCenter, fetchSupabaseSpots]);
 
   const initializeMap = useCallback(() => {
     if (!mapContainerRef.current || mapInstanceRef.current || !googleMapsLoaded || containerDimensions.height < 200 || initializationTriedRef.current) return false;
@@ -913,39 +942,42 @@ export function MapView() {
   // Helper to get facility type label
   const getFacilityTypeLabel = (type: FacilityLayerType): string => {
     const labels: Record<FacilityLayerType, string> = {
-      trash_can: 'ゴミ箱',
+      tourism_spot: '観光',
+      restaurant: 'グルメ',
+      hot_spring: '温泉',
+      toilet: 'トイレ',
       bus_stop: 'バス停',
       train_station: '駅',
       evacuation_site: '避難所',
-      hot_spring: '温泉',
-      tourism_spot: '観光',
-      restaurant: '食事処',
+      trash_can: 'ゴミ箱',
     };
     return labels[type];
   };
 
   const getFacilityTypeIcon = (type: FacilityLayerType) => {
     const icons: Record<FacilityLayerType, React.ElementType> = {
-      trash_can: Trash2,
+      tourism_spot: Camera,
+      restaurant: Utensils,
+      hot_spring: Droplets,
+      toilet: Bath,
       bus_stop: Bus,
       train_station: TrainFront,
       evacuation_site: Shield,
-      hot_spring: Droplets,
-      tourism_spot: Camera,
-      restaurant: Utensils,
+      trash_can: Trash2,
     };
     return icons[type];
   };
 
   const getFacilityTypeColor = (type: FacilityLayerType): string => {
     const colors: Record<FacilityLayerType, string> = {
-      trash_can: '#6B7280',
-      bus_stop: '#3B82F6',
-      train_station: '#EF4444',
-      evacuation_site: '#8B5CF6',
-      hot_spring: '#06B6D4',
       tourism_spot: '#059669',
       restaurant: '#EA580C',
+      hot_spring: '#06B6D4',
+      toilet: '#8B5CF6',
+      bus_stop: '#3B82F6',
+      train_station: '#EF4444',
+      evacuation_site: '#F59E0B',
+      trash_can: '#6B7280',
     };
     return colors[type];
   };
@@ -1143,15 +1175,48 @@ export function MapView() {
           const FacilityIcon = getFacilityTypeIcon(selectedFacility.type);
           const facilityColor = getFacilityTypeColor(selectedFacility.type);
           const isTrashCan = selectedFacility.type === 'trash_can';
+          const isSupabaseType = isSupabaseSpotType(selectedFacility.type);
           const data = selectedFacility.data;
-          const name = isTrashCan ? (data as FacilityReportWithAuthor).store_name : (data as PlaceResult).name;
-          const subtitle = isTrashCan
-            ? (data as FacilityReportWithAuthor).description || ''
-            : (data as PlaceResult).vicinity || '';
+
+          let name = '';
+          let subtitle = '';
+          let facilityLat = 0;
+          let facilityLng = 0;
+          let businessHours: string | null = null;
+          let closedDays: string | null = null;
+          let fee: string | null = null;
+          let phone: string | null = null;
+          let website: string | null = null;
+          let sourceUrl: string | null = null;
+          let accessInfo: string | null = null;
+
+          if (isTrashCan) {
+            name = (data as FacilityReportWithAuthor).store_name;
+            subtitle = (data as FacilityReportWithAuthor).description || '';
+            facilityLat = (data as FacilityReportWithAuthor).store_latitude;
+            facilityLng = (data as FacilityReportWithAuthor).store_longitude;
+          } else if (isSupabaseType) {
+            const sData = data as SupabaseSpotResult;
+            name = sData.name;
+            subtitle = sData.address || sData.municipality || '';
+            facilityLat = sData.lat;
+            facilityLng = sData.lng;
+            businessHours = sData.business_hours || null;
+            closedDays = sData.closed_days || null;
+            fee = sData.fee || null;
+            phone = sData.phone || null;
+            website = sData.website || null;
+            sourceUrl = sData.source_url || null;
+            accessInfo = sData.access || null;
+          } else {
+            name = (data as PlaceResult).name;
+            subtitle = (data as PlaceResult).vicinity || '';
+            facilityLat = (data as PlaceResult).lat;
+            facilityLng = (data as PlaceResult).lng;
+          }
+
           const authorName = isTrashCan ? ((data as FacilityReportWithAuthor).author_name || (data as FacilityReportWithAuthor).reporter_nickname || '匿名') : null;
           const createdAt = isTrashCan ? (data as FacilityReportWithAuthor).created_at : null;
-          const facilityLat = isTrashCan ? (data as FacilityReportWithAuthor).store_latitude : (data as PlaceResult).lat;
-          const facilityLng = isTrashCan ? (data as FacilityReportWithAuthor).store_longitude : (data as PlaceResult).lng;
 
           return (
             <motion.div
@@ -1162,7 +1227,7 @@ export function MapView() {
               transition={{ duration: 0.4, type: "spring", damping: 20 }}
               className="absolute bottom-4 left-4 right-4 z-40"
             >
-              <div className="relative rounded-2xl overflow-hidden" style={{ background: designTokens.colors.background.white, boxShadow: designTokens.elevation.high }}>
+              <div className="relative rounded-2xl overflow-hidden max-h-[70vh] overflow-y-auto" style={{ background: designTokens.colors.background.white, boxShadow: designTokens.elevation.high }}>
                 <div className="absolute top-4 right-4 z-10">
                   <Button onClick={() => setSelectedFacility(null)} size="icon" className="h-8 w-8 rounded-full" style={{ background: designTokens.colors.background.cloud, color: designTokens.colors.text.secondary }}>
                     <X className="h-4 w-4" />
@@ -1192,6 +1257,31 @@ export function MapView() {
                       )}
                     </div>
                   </div>
+
+                  {/* Supabase spot details */}
+                  {isSupabaseType && (
+                    <div className="space-y-2 mb-3">
+                      {businessHours && (
+                        <div className="flex items-start gap-2 text-xs" style={{ color: designTokens.colors.text.secondary }}>
+                          <Clock className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
+                          <span className="line-clamp-2">{businessHours}</span>
+                        </div>
+                      )}
+                      {closedDays && (
+                        <div className="flex items-start gap-2 text-xs" style={{ color: designTokens.colors.text.secondary }}>
+                          <Calendar className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
+                          <span>定休日: {closedDays}</span>
+                        </div>
+                      )}
+                      {fee && (
+                        <div className="flex items-start gap-2 text-xs" style={{ color: designTokens.colors.text.secondary }}>
+                          <span className="flex-shrink-0 mt-0.5 font-medium">¥</span>
+                          <span className="line-clamp-2">{fee}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {/* Author info + vote buttons for trash cans */}
                   {isTrashCan && (
                     <>
@@ -1209,7 +1299,6 @@ export function MapView() {
                           </div>
                         )}
                       </div>
-                      {/* Trash can image preview */}
                       {(data as FacilityReportWithAuthor).image_urls && (data as FacilityReportWithAuthor).image_urls!.length > 0 && (
                         <div className="mb-3 rounded-xl overflow-hidden" style={{ maxHeight: '120px' }}>
                           <img
@@ -1220,11 +1309,10 @@ export function MapView() {
                           />
                         </div>
                       )}
-                      {/* Vote buttons */}
                       <FacilityVoteButtons facilityReportId={(data as FacilityReportWithAuthor).id} />
                     </>
                   )}
-                  {/* Google Maps direction link + timetable for stations */}
+                  {/* Action buttons */}
                   {!isTrashCan && (
                     <div className="space-y-2">
                       <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
@@ -1239,11 +1327,26 @@ export function MapView() {
                           ここへのルート
                         </Button>
                       </motion.div>
+                      {/* Website link for Supabase spots */}
+                      {isSupabaseType && (website || sourceUrl) && (
+                        <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                          <Button
+                            onClick={() => {
+                              window.open(website || sourceUrl!, '_blank');
+                            }}
+                            variant="outline"
+                            className="w-full py-3 rounded-xl font-semibold flex items-center justify-center gap-2"
+                            style={{ borderColor: facilityColor, color: facilityColor }}
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                            詳細を見る
+                          </Button>
+                        </motion.div>
+                      )}
                       {selectedFacility.type === 'train_station' && (
                         <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                           <Button
                             onClick={() => {
-                              const stationName = encodeURIComponent(name.replace(/駅$/, ''));
                               window.open(`https://www.jrkyushu.co.jp`, '_blank');
                             }}
                             variant="outline"
