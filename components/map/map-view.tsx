@@ -4,7 +4,7 @@ import { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import { useGeolocation } from '@/lib/hooks/use-geolocation';
 import { useGoogleMapsApi } from '@/components/providers/GoogleMapsApiProvider';
 import { Button } from '@/components/ui/button';
-import { MapPin, AlertTriangle, RefreshCw, Calendar, User, MapPinIcon, X, Loader2, Compass, Search, Trash2, Bus, TrainFront, Clock, University, MapPinned, Camera, Utensils, Toilet, ExternalLink } from 'lucide-react';
+import { MapPin, AlertTriangle, RefreshCw, Calendar, User, MapPinIcon, X, Loader2, Compass, Search, Trash2, Bus, Clock, ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -12,7 +12,7 @@ import { useSession } from 'next-auth/react';
 import { useToast } from '@/lib/hooks/use-toast';
 import { isWithinRange } from '@/lib/utils/distance';
 import { generateSemanticEventUrl } from '@/lib/seo/url-helper';
-import { designTokens } from '@/lib/constants';
+import { designTokens, FACILITY_ICON_URLS } from '@/lib/constants';
 import { SpotSelector } from '@/components/map/spot-selector';
 import { FacilityReportForm } from '@/components/map/facility-report-form';
 import { FacilityVoteButtons } from '@/components/map/facility-vote-buttons';
@@ -218,59 +218,12 @@ const createDirectionalLocationIcon = (heading: number | null): google.maps.Icon
   };
 };
 
-// 施設マーカーアイコン生成（Lucide アイコンと統一した SVG パス）
-const FACILITY_ICON_CONFIGS: Record<FacilityLayerType, { color: string; svgPath: string }> = {
-  trash_can: {
-    color: '#6B7280',
-    // Lucide Trash2
-    svgPath: '<path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2M19 6l-1.5 14a2 2 0 01-2 2h-7a2 2 0 01-2-2L5 6M10 11v6M14 11v6" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>',
-  },
-  bus_stop: {
-    color: '#3B82F6',
-    // Lucide Bus
-    svgPath: '<path d="M8 6v6M15 6v6M2 12h19.6M18 18h3s.5-1.7.8-2.8c.1-.4.2-.8.2-1.2 0-.4-.1-.8-.2-1.2l-1.4-5C20.1 6.8 19.1 6 18 6H4a2 2 0 00-2 2v10h3M7 18h10M9 18a2.5 2.5 0 00-5 0M22 18a2.5 2.5 0 00-5 0" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>',
-  },
-  train_station: {
-    color: '#06B6D4',
-    // Lucide TrainFront
-    svgPath: '<path d="M8 3.1V7a4 4 0 008 0V3.1M9 15l-1.5 3M15 15l1.5 3M9 19h6M21 3V2l-2 .5M3 3V2l2 .5M11.8 1.2A.5.5 0 0012.5 1h-1a.5.5 0 00.3.2z" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><rect x="4" y="3" width="16" height="12" rx="4" fill="none" stroke="white" stroke-width="1.5"/><path d="M9 13h.01M15 13h.01" stroke="white" stroke-width="2" stroke-linecap="round"/>',
-  },
-  evacuation_site: {
-    color: '#F59E0B',
-    // Lucide University
-    svgPath: '<circle cx="12" cy="10" r="1" fill="none" stroke="white" stroke-width="1.5"/><path d="M22 20V8h-4l-6-4-6 4H2v12a2 2 0 002 2h16a2 2 0 002-2" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 17v.01" fill="none" stroke="white" stroke-width="1.5"/><path d="M6 13v.01" fill="none" stroke="white" stroke-width="1.5"/><path d="M18 17v.01" fill="none" stroke="white" stroke-width="1.5"/><path d="M18 13v.01" fill="none" stroke="white" stroke-width="1.5"/><path d="M14 22v-5a2 2 0 00-2-2a2 2 0 00-2 2v5" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>',
-  },
-  hot_spring: {
-    color: '#EF4444',
-    // Lucide MapPinned
-    svgPath: '<path d="M18 8c0 3.613-3.869 7.429-5.393 8.795a1 1 0 01-1.214 0C9.87 15.429 6 11.613 6 8a6 6 0 0112 0" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="8" r="2" fill="none" stroke="white" stroke-width="1.5"/><path d="M8.714 14h-3.71a1 1 0 00-.948.683l-2.004 6A1 1 0 003 22h18a1 1 0 00.948-1.316l-2-6a1 1 0 00-.949-.684h-3.712" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>',
-  },
-  tourism_spot: {
-    color: '#059669',
-    // Lucide Camera
-    svgPath: '<path d="M14.5 4h-5L7 7H4a2 2 0 00-2 2v9a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2h-3l-2.5-3z" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="13" r="3" fill="none" stroke="white" stroke-width="1.5"/>',
-  },
-  restaurant: {
-    color: '#EA580C',
-    // Lucide Utensils
-    svgPath: '<path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 002-2V2M7 2v20M21 15V2v0a5 5 0 00-5 5v6c0 1.1.9 2 2 2h3zm0 0v7" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>',
-  },
-  toilet: {
-    color: '#8B5CF6',
-    // Lucide Toilet
-    svgPath: '<path d="M7 12h13a1 1 0 011 1 5 5 0 01-5 5h-.598a.5.5 0 00-.424.765l1.544 2.47a.5.5 0 01-.424.765H5.402a.5.5 0 01-.424-.765L7 18" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 18a5 5 0 01-5-5V4a2 2 0 012-2h8a2 2 0 012 2v8" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>',
-  },
-};
-
+// 施設マーカーアイコン（Cloudinary画像）
 const createFacilityMarkerIcon = (type: FacilityLayerType): google.maps.Icon => {
   const size = 36;
-  const config = FACILITY_ICON_CONFIGS[type];
-  const svgIcon = `<svg width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="${config.color}" stroke="#ffffff" stroke-width="2"/>
-    <g transform="translate(${size/2 - 12}, ${size/2 - 12})">${config.svgPath}</g>
-  </svg>`;
+  const url = FACILITY_ICON_URLS[type];
   return {
-    url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svgIcon),
+    url,
     scaledSize: new window.google.maps.Size(size, size),
     anchor: new window.google.maps.Point(size / 2, size / 2),
   };
@@ -992,19 +945,7 @@ export function MapView() {
     return labels[type];
   };
 
-  const getFacilityTypeIcon = (type: FacilityLayerType) => {
-    const icons: Record<FacilityLayerType, React.ElementType> = {
-      tourism_spot: Camera,
-      restaurant: Utensils,
-      hot_spring: MapPinned,
-      toilet: Toilet,
-      bus_stop: Bus,
-      train_station: TrainFront,
-      evacuation_site: University,
-      trash_can: Trash2,
-    };
-    return icons[type];
-  };
+  const getFacilityTypeIconUrl = (type: FacilityLayerType): string => FACILITY_ICON_URLS[type];
 
   const getFacilityTypeColor = (type: FacilityLayerType): string => {
     const colors: Record<FacilityLayerType, string> = {
@@ -1210,7 +1151,7 @@ export function MapView() {
       {/* 施設詳細カード */}
       <AnimatePresence>
         {selectedFacility && (() => {
-          const FacilityIcon = getFacilityTypeIcon(selectedFacility.type);
+          const facilityIconUrl = getFacilityTypeIconUrl(selectedFacility.type);
           const facilityColor = getFacilityTypeColor(selectedFacility.type);
           const isTrashCan = selectedFacility.type === 'trash_can';
           const isSupabaseType = isSupabaseSpotType(selectedFacility.type);
@@ -1260,10 +1201,10 @@ export function MapView() {
                 <div className="p-5">
                   <div className="flex gap-4 mb-3">
                     <div
-                      className="flex-shrink-0 w-14 h-14 rounded-xl flex items-center justify-center"
+                      className="flex-shrink-0 w-14 h-14 rounded-xl flex items-center justify-center overflow-hidden"
                       style={{ background: `${facilityColor}15` }}
                     >
-                      <FacilityIcon className="h-7 w-7" style={{ color: facilityColor }} />
+                      <img src={facilityIconUrl} alt={getFacilityTypeLabel(selectedFacility.type)} className="h-8 w-8 object-contain" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">

@@ -1,26 +1,26 @@
 "use client";
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trash2, Bus, TrainFront, University, MapPinned, MapPin, X, Camera, Utensils, Toilet } from 'lucide-react';
-import { designTokens } from '@/lib/constants';
+import { MapPin, X } from 'lucide-react';
+import { designTokens, FACILITY_ICON_URLS } from '@/lib/constants';
 import type { FacilityLayerType } from '@/types/facility-report';
 
 interface SpotConfig {
   type: FacilityLayerType;
   label: string;
-  icon: React.ElementType;
+  iconUrl: string;
   color: string;
 }
 
 export const SPOT_CONFIGS: SpotConfig[] = [
-  { type: 'tourism_spot', label: '観光', icon: Camera, color: '#059669' },
-  { type: 'restaurant', label: 'グルメ', icon: Utensils, color: '#EA580C' },
-  { type: 'hot_spring', label: '温泉', icon: MapPinned, color: '#EF4444' },
-  { type: 'toilet', label: 'トイレ', icon: Toilet, color: '#8B5CF6' },
-  { type: 'bus_stop', label: 'バス停', icon: Bus, color: '#3B82F6' },
-  { type: 'train_station', label: '駅', icon: TrainFront, color: '#06B6D4' },
-  { type: 'evacuation_site', label: '避難所', icon: University, color: '#F59E0B' },
-  { type: 'trash_can', label: 'ゴミ箱', icon: Trash2, color: '#6B7280' },
+  { type: 'tourism_spot', label: '観光', iconUrl: FACILITY_ICON_URLS.tourism_spot, color: '#059669' },
+  { type: 'restaurant', label: 'グルメ', iconUrl: FACILITY_ICON_URLS.restaurant, color: '#EA580C' },
+  { type: 'hot_spring', label: '温泉', iconUrl: FACILITY_ICON_URLS.hot_spring, color: '#EF4444' },
+  { type: 'toilet', label: 'トイレ', iconUrl: FACILITY_ICON_URLS.toilet, color: '#8B5CF6' },
+  { type: 'bus_stop', label: 'バス停', iconUrl: FACILITY_ICON_URLS.bus_stop, color: '#3B82F6' },
+  { type: 'train_station', label: '駅', iconUrl: FACILITY_ICON_URLS.train_station, color: '#06B6D4' },
+  { type: 'evacuation_site', label: '避難所', iconUrl: FACILITY_ICON_URLS.evacuation_site, color: '#F59E0B' },
+  { type: 'trash_can', label: 'ゴミ箱', iconUrl: FACILITY_ICON_URLS.trash_can, color: '#6B7280' },
 ];
 
 interface SpotSelectorProps {
@@ -52,17 +52,15 @@ export function SpotSelector({ activeSpot, onSelect, loadingSpot, isOpen, onOpen
         className="flex flex-col items-center gap-1 relative"
       >
         <div
-          className="w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-all"
+          className="w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-all overflow-hidden"
           style={{
-            background: activeSpot
-              ? (activeConfig?.color || designTokens.colors.accent.lilac)
-              : designTokens.colors.background.white,
-            border: `1px solid ${activeSpot ? 'transparent' : designTokens.colors.secondary.stone}40`,
+            background: designTokens.colors.background.white,
+            border: `2px solid ${activeSpot ? (activeConfig?.color || designTokens.colors.accent.lilac) : designTokens.colors.secondary.stone}40`,
             boxShadow: designTokens.elevation.medium,
           }}
         >
           {activeConfig ? (
-            <activeConfig.icon className="h-5 w-5 flex-shrink-0" style={{ color: '#fff' }} />
+            <img src={activeConfig.iconUrl} alt={activeConfig.label} className="h-6 w-6 object-contain flex-shrink-0" />
           ) : (
             <MapPin className="h-5 w-5 flex-shrink-0" style={{ color: designTokens.colors.text.primary }} />
           )}
@@ -148,7 +146,6 @@ export function SpotSelector({ activeSpot, onSelect, loadingSpot, isOpen, onOpen
                   {SPOT_CONFIGS.map(config => {
                     const isActive = activeSpot === config.type;
                     const isLoading = loadingSpot === config.type;
-                    const Icon = config.icon;
                     return (
                       <motion.button
                         key={config.type}
@@ -161,12 +158,16 @@ export function SpotSelector({ activeSpot, onSelect, loadingSpot, isOpen, onOpen
                         }}
                       >
                         <div
-                          className="w-10 h-10 rounded-full flex items-center justify-center"
-                          style={{ background: isActive ? config.color : `${config.color}20` }}
+                          className="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden"
+                          style={{
+                            background: designTokens.colors.background.white,
+                            border: `2px solid ${isActive ? config.color : `${config.color}25`}`,
+                          }}
                         >
-                          <Icon
-                            className={`h-5 w-5 ${isLoading ? 'animate-pulse' : ''}`}
-                            style={{ color: isActive ? '#fff' : config.color }}
+                          <img
+                            src={config.iconUrl}
+                            alt={config.label}
+                            className={`h-5 w-5 object-contain ${isLoading ? 'animate-pulse' : ''}`}
                           />
                         </div>
                         <span

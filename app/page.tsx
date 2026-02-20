@@ -3,13 +3,13 @@
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence, useScroll, useTransform, useInView } from 'framer-motion';
-import { MapPin, Menu, X, ChevronRight, Calendar, LogOut, Search, Layers, Map, Users, ArrowRight, Compass, ExternalLink, Sparkles, MessageSquare, Trash2, Bus, TrainFront, MapPinned, Camera, Utensils, Toilet } from 'lucide-react';
+import { MapPin, Menu, X, ChevronRight, Calendar, LogOut, Search, Layers, Map, Users, ArrowRight, Compass, ExternalLink, Sparkles, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useSession, signOut } from 'next-auth/react';
 import { NoteArticlesSection } from '@/components/external-content';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { designTokens, OITA_MUNICIPALITIES, TARGET_AUDIENCE_OPTIONS } from '@/lib/constants';
+import { designTokens, OITA_MUNICIPALITIES, TARGET_AUDIENCE_OPTIONS, FACILITY_ICON_URLS } from '@/lib/constants';
 import { useFeedback } from '@/lib/contexts/feedback-context';
 import { FeedbackModal } from '@/components/feedback/feedback-modal';
 
@@ -640,28 +640,28 @@ const SolutionSection = () => {
       label: 'DISCOVER',
       title: '1,000件超の観光スポットを地図で',
       description: '歴史・神社仏閣、自然景観、レジャーなど大分県内1,000件以上の観光スポットを地図上に集約。行きたい場所がすぐに見つかります。',
-      icon: <Camera className="w-5 h-5" />,
+      iconUrl: FACILITY_ICON_URLS.tourism_spot,
       color: '#059669',
     },
     {
       label: 'TASTE',
       title: '地元のグルメ・温泉を探す',
       description: '100軒以上の飲食店と180箇所以上の温泉データを搭載。「この近くで何か食べたい」「温泉に入りたい」をすぐに解決。',
-      icon: <Utensils className="w-5 h-5" />,
+      iconUrl: FACILITY_ICON_URLS.restaurant,
       color: '#EA580C',
     },
     {
       label: 'PRESERVE',
       title: '週末のイベント、もう見逃さない',
       description: '大分県内のイベント・祭り・マルシェをリアルタイムで集約。「知らなかった」を「行ってきた！」に変える。地域の文化を未来へつなぎます。',
-      icon: <Sparkles className="w-5 h-5" />,
+      iconElement: <Sparkles className="w-5 h-5" />,
       color: designTokens.colors.accent.lilac,
     },
     {
       label: 'NAVIGATE',
       title: 'お出かけ先で困らないために',
       description: 'トイレ・ゴミ箱・バス停・駅・避難所を地図上でかんたんに確認。旅先での「困った」をその場で解決します。',
-      icon: <MapPin className="w-5 h-5" />,
+      iconUrl: FACILITY_ICON_URLS.toilet,
       color: designTokens.colors.secondary.fern,
     },
   ];
@@ -739,13 +739,17 @@ const SolutionSection = () => {
                   </span>
                   <div className="flex items-center gap-3 mb-3">
                     <div
-                      className="flex-shrink-0 w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-105"
+                      className="flex-shrink-0 w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center overflow-hidden transition-transform duration-300 group-hover:scale-105"
                       style={{
                         background: `${solution.color}18`,
                         color: solution.color,
                       }}
                     >
-                      {solution.icon}
+                      {'iconUrl' in solution ? (
+                        <img src={solution.iconUrl} alt={solution.label} className="w-5 h-5 object-contain" />
+                      ) : (
+                        solution.iconElement
+                      )}
                     </div>
                     <h3
                       className="text-lg sm:text-xl md:text-2xl lg:text-2xl font-semibold leading-tight min-w-0"
@@ -793,42 +797,42 @@ const SpotShowcaseSection = ({ onStart }: { onStart: () => void }) => {
 
   const spotCategories = [
     {
-      icon: Camera,
+      iconUrl: FACILITY_ICON_URLS.tourism_spot,
       label: '観光スポット',
       count: '1,000+',
       description: '自然景観・歴史・文化・レジャー',
       color: '#059669',
     },
     {
-      icon: MapPinned,
+      iconUrl: FACILITY_ICON_URLS.hot_spring,
       label: '温泉',
       count: '180+',
       description: '公衆浴場から名湯まで',
       color: '#EF4444',
     },
     {
-      icon: Utensils,
+      iconUrl: FACILITY_ICON_URLS.restaurant,
       label: 'グルメ',
       count: '100+',
       description: '郷土料理・カフェ・飲食店',
       color: '#EA580C',
     },
     {
-      icon: Toilet,
+      iconUrl: FACILITY_ICON_URLS.toilet,
       label: 'トイレ',
       count: '160+',
       description: '公共トイレの場所を地図で確認',
       color: '#8B5CF6',
     },
     {
-      icon: Bus,
+      iconUrl: FACILITY_ICON_URLS.bus_stop,
       label: 'バス停',
       count: 'GTFS連携',
       description: 'リアルタイム時刻表対応',
       color: '#3B82F6',
     },
     {
-      icon: TrainFront,
+      iconUrl: FACILITY_ICON_URLS.train_station,
       label: '駅',
       count: '大分県内',
       description: 'JR九州の各駅を表示',
@@ -875,9 +879,7 @@ const SpotShowcaseSection = ({ onStart }: { onStart: () => void }) => {
 
         {/* Spot Category Grid */}
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4 lg:gap-6 mb-12">
-          {spotCategories.map((cat, index) => {
-            const Icon = cat.icon;
-            return (
+          {spotCategories.map((cat, index) => (
               <motion.div
                 key={cat.label}
                 initial={{ opacity: 0, y: 20 }}
@@ -886,10 +888,10 @@ const SpotShowcaseSection = ({ onStart }: { onStart: () => void }) => {
               >
                 <ElevationCard elevation="low" padding="md" hover={true} className="text-center h-full">
                   <div
-                    className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3"
+                    className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3 overflow-hidden"
                     style={{ background: `${cat.color}15` }}
                   >
-                    <Icon className="h-6 w-6" style={{ color: cat.color }} />
+                    <img src={cat.iconUrl} alt={cat.label} className="h-6 w-6 object-contain" />
                   </div>
                   <p
                     className="text-2xl font-bold mb-1"
@@ -911,8 +913,7 @@ const SpotShowcaseSection = ({ onStart }: { onStart: () => void }) => {
                   </p>
                 </ElevationCard>
               </motion.div>
-            );
-          })}
+          ))}
         </div>
 
         {/* CTA */}
