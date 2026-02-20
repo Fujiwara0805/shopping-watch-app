@@ -218,39 +218,47 @@ const createDirectionalLocationIcon = (heading: number | null): google.maps.Icon
   };
 };
 
-// 施設マーカーアイコン生成
+// 施設マーカーアイコン生成（Lucide アイコンと統一した SVG パス）
 const FACILITY_ICON_CONFIGS: Record<FacilityLayerType, { color: string; svgPath: string }> = {
   trash_can: {
     color: '#6B7280',
-    svgPath: '<path d="M5 6h14M9 6V4h6v2M7 6l1 12h8l1-12" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>',
+    // Lucide Trash2
+    svgPath: '<path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2M19 6l-1.5 14a2 2 0 01-2 2h-7a2 2 0 01-2-2L5 6M10 11v6M14 11v6" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>',
   },
   bus_stop: {
     color: '#3B82F6',
-    svgPath: '<path d="M6 6h12a1 1 0 011 1v8a1 1 0 01-1 1H6a1 1 0 01-1-1V7a1 1 0 011-1zM7 16v2M17 16v2M8 12h2M14 12h2M5 10h14" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>',
+    // Lucide Bus
+    svgPath: '<path d="M8 6v6M15 6v6M2 12h19.6M18 18h3s.5-1.7.8-2.8c.1-.4.2-.8.2-1.2 0-.4-.1-.8-.2-1.2l-1.4-5C20.1 6.8 19.1 6 18 6H4a2 2 0 00-2 2v10h3M7 18h10M9 18a2.5 2.5 0 00-5 0M22 18a2.5 2.5 0 00-5 0" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>',
   },
   train_station: {
     color: '#EF4444',
-    svgPath: '<path d="M7 5h10a2 2 0 012 2v8a2 2 0 01-2 2H7a2 2 0 01-2-2V7a2 2 0 012-2zM9 17l-2 2M15 17l2 2M9 13h0M15 13h0M5 10h14" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>',
+    // Lucide TrainFront
+    svgPath: '<path d="M8 3.1V7a4 4 0 008 0V3.1M9 15l-1.5 3M15 15l1.5 3M9 19h6M21 3V2l-2 .5M3 3V2l2 .5M11.8 1.2A.5.5 0 0012.5 1h-1a.5.5 0 00.3.2z" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><rect x="4" y="3" width="16" height="12" rx="4" fill="none" stroke="white" stroke-width="1.5"/><path d="M9 13h.01M15 13h.01" stroke="white" stroke-width="2" stroke-linecap="round"/>',
   },
   evacuation_site: {
-    color: '#8B5CF6',
-    svgPath: '<path d="M12 3l8 14H4L12 3z" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 9v4M12 15h0" stroke="white" stroke-width="1.5" stroke-linecap="round"/>',
+    color: '#F59E0B',
+    // Lucide Shield
+    svgPath: '<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 01-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 01.5-.87l7-4a1 1 0 011 0l7 4A1 1 0 0120 6z" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>',
   },
   hot_spring: {
     color: '#06B6D4',
-    svgPath: '<path d="M8 10c0-2 2-4 4-4s4 2 4 4M12 6V3M8 6c0 0-2-1-2-3M16 6c0 0 2-1 2-3M6 20h12M8 14c0 2 2 6 4 6s4-4 4-6" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>',
+    // Lucide Droplets
+    svgPath: '<path d="M7 16.3c2.2 0 4-1.83 4-4.05 0-1.16-.57-2.26-1.71-3.19S7.29 6.75 7 5.3c-.29 1.45-1.14 2.84-2.29 3.76S3 11.1 3 12.25c0 2.22 1.8 4.05 4 4.05z" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M12.56 6.6A10.97 10.97 0 0014 3.02c.5 2.5 2 4.9 4 6.5s3 3.5 3 5.5a6.98 6.98 0 01-11.91 4.97" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>',
   },
   tourism_spot: {
     color: '#059669',
-    svgPath: '<path d="M12 2a8 8 0 018 8c0 5-8 13-8 13S4 15 4 10a8 8 0 018-8z" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="10" r="2.5" fill="white"/>',
+    // Lucide Camera
+    svgPath: '<path d="M14.5 4h-5L7 7H4a2 2 0 00-2 2v9a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2h-3l-2.5-3z" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="13" r="3" fill="none" stroke="white" stroke-width="1.5"/>',
   },
   restaurant: {
     color: '#EA580C',
-    svgPath: '<path d="M12 2v8M8 4c0 4 4 6 4 6s4-2 4-6M6 2v4a4 4 0 008 0V2M6 20h12M9 12v8M15 12v8" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>',
+    // Lucide Utensils
+    svgPath: '<path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 002-2V2M7 2v20M21 15V2v0a5 5 0 00-5 5v6c0 1.1.9 2 2 2h3zm0 0v7" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>',
   },
   toilet: {
     color: '#8B5CF6',
-    svgPath: '<path d="M6 3h4v4H6zM14 3h4v4h-4zM5 8h6l-1 12H6L5 8zM13 8h6l-1 12h-4l-1-12z" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>',
+    // Lucide Bath
+    svgPath: '<path d="M9 6l.463-.536a1.77 1.77 0 013.074 0L13 6M2 12h20M4 12v4a4 4 0 004 4h8a4 4 0 004-4v-4M6 12V5a2 2 0 012-2h1" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>',
   },
 };
 

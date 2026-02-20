@@ -72,7 +72,6 @@ function ReviewFormModal({ postId, onClose, onSubmitted }: {
 }) {
   const { data: session } = useSession();
   const [rating, setRating] = useState(0);
-  const [title, setTitle] = useState('');
   const [comment, setComment] = useState('');
   const [visitedDate, setVisitedDate] = useState('');
   const [nickname, setNickname] = useState('');
@@ -95,7 +94,7 @@ function ReviewFormModal({ postId, onClose, onSubmitted }: {
         body: JSON.stringify({
           post_id: postId,
           rating,
-          title: title.trim() || null,
+          title: null,
           comment: comment.trim() || null,
           visited_date: visitedDate || null,
           guest_nickname: !session?.user ? nickname.trim() || null : null,
@@ -180,26 +179,6 @@ function ReviewFormModal({ postId, onClose, onSubmitted }: {
             <StarRating rating={rating} size="lg" interactive onChange={setRating} />
           </div>
 
-          {/* Title */}
-          <div>
-            <label className="block text-sm font-medium mb-2" style={{ color: designTokens.colors.text.secondary }}>
-              タイトル
-            </label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              maxLength={100}
-              placeholder="ひと言で感想を（任意）"
-              className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-all focus:ring-2"
-              style={{
-                background: designTokens.colors.background.mist,
-                border: `1px solid ${designTokens.colors.secondary.stone}40`,
-                color: designTokens.colors.text.primary,
-              }}
-            />
-          </div>
-
           {/* Comment */}
           <div>
             <label className="block text-sm font-medium mb-2" style={{ color: designTokens.colors.text.secondary }}>
@@ -224,7 +203,7 @@ function ReviewFormModal({ postId, onClose, onSubmitted }: {
           </div>
 
           {/* Visited Date */}
-          <div>
+          <div className="w-1/2">
             <label className="block text-sm font-medium mb-2" style={{ color: designTokens.colors.text.secondary }}>
               訪問日
             </label>

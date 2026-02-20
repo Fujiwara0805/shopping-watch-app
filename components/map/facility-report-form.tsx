@@ -2,12 +2,10 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, MapPin, Trash2, Camera, Navigation, Loader2, Map as MapIcon, CheckCircle2 } from 'lucide-react';
+import { X, MapPin, Trash2, Navigation, Loader2, Map as MapIcon, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useSession } from 'next-auth/react';
-import { supabase } from '@/lib/supabaseClient';
 import { designTokens } from '@/lib/constants';
-import { v4 as uuidv4 } from 'uuid';
 import { useGoogleMapsApi } from '@/components/providers/GoogleMapsApiProvider';
 
 interface FacilityReportFormProps {
@@ -18,28 +16,21 @@ interface FacilityReportFormProps {
   onSuccess: () => void;
 }
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-
 type LocationMode = 'initial' | 'current_location' | 'map_marker';
 
 export function FacilityReportForm({ latitude, longitude, map: _parentMap, onClose, onSuccess }: FacilityReportFormProps) {
   const { data: session } = useSession();
   const { isLoaded: googleMapsLoaded } = useGoogleMapsApi();
-  const [storeName, setStoreName] = useState('');
   const [description, setDescription] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [markerPosition, setMarkerPosition] = useState({ lat: latitude, lng: longitude });
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [uploading, setUploading] = useState(false);
   const [gettingLocation, setGettingLocation] = useState(false);
   const [locationMode, setLocationMode] = useState<LocationMode>('initial');
   const [locationSet, setLocationSet] = useState(false);
   const miniMapContainerRef = useRef<HTMLDivElement | null>(null);
   const miniMapRef = useRef<google.maps.Map | null>(null);
   const markerRef = useRef<google.maps.Marker | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const miniMapInitializedRef = useRef(false);
 
   // Initialize mini-map when switching to map_marker mode
@@ -144,109 +135,23 @@ export function FacilityReportForm({ latitude, longitude, map: _parentMap, onClo
     }
   }, [locationMode, markerPosition.lat, markerPosition.lng, updateMarkerOnMap]);
 
-  // Clean up image preview URL on unmount
-  useEffect(() => {
-    return () => {
-      if (imagePreview) {
-        URL.revokeObjectURL(imagePreview);
-      }
-    };
-  }, [imagePreview]);
-
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (file.size > MAX_FILE_SIZE) {
-      setError('画像は10MB以下にしてください。');
-      return;
-    }
-
-    if (!file.type.startsWith('image/')) {
-      setError('画像ファイルを選択してください。');
-      return;
-    }
-
-    setError(null);
-    setImageFile(file);
-    setImagePreview(URL.createObjectURL(file));
-  };
-
-  const removeImage = () => {
-    if (imagePreview) {
-      URL.revokeObjectURL(imagePreview);
-    }
-    setImageFile(null);
-    setImagePreview(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
-
-  const uploadImageToStorage = async (file: File): Promise<string> => {
-    const fileExt = file.name.split('.').pop();
-    const uniqueFileName = `facility_${uuidv4()}.${fileExt}`;
-    const objectPath = `facility-reports/${uniqueFileName}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from('images')
-      .upload(objectPath, file, {
-        cacheControl: '3600',
-        upsert: true,
-      });
-
-    if (uploadError) {
-      throw new Error('画像のアップロードに失敗しました: ' + uploadError.message);
-    }
-
-    const { data: publicUrlData } = supabase.storage
-      .from('images')
-      .getPublicUrl(objectPath);
-
-    if (!publicUrlData?.publicUrl) {
-      throw new Error('画像URLの取得に失敗しました');
-    }
-
-    return publicUrlData.publicUrl;
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!storeName.trim()) {
-      setError('名前を入力してください。');
-      return;
-    }
 
     setSubmitting(true);
     setError(null);
 
     try {
-      let imageUrls: string[] | undefined;
-
-      if (imageFile) {
-        setUploading(true);
-        try {
-          const url = await uploadImageToStorage(imageFile);
-          imageUrls = [url];
-        } catch (uploadErr: any) {
-          setError(uploadErr.message || '画像のアップロードに失敗しました。');
-          setSubmitting(false);
-          setUploading(false);
-          return;
-        }
-        setUploading(false);
-      }
-
       const res = await fetch('/api/facility-reports', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           facilityType: 'trash_can',
-          storeName: storeName.trim(),
+          storeName: 'ゴミ箱',
           description: description.trim() || undefined,
           storeLatitude: markerPosition.lat,
           storeLongitude: markerPosition.lng,
-          imageUrls,
           userId: session?.user?.id || null,
         }),
       });
@@ -423,28 +328,6 @@ export function FacilityReportForm({ latitude, longitude, map: _parentMap, onClo
             )}
           </div>
 
-          {/* Name */}
-          <div>
-            <label
-              className="block text-sm font-medium mb-2"
-              style={{ color: designTokens.colors.text.secondary }}
-            >
-              名前・場所の説明 <span style={{ color: designTokens.colors.functional.error }}>*</span>
-            </label>
-            <input
-              type="text"
-              value={storeName}
-              onChange={(e) => setStoreName(e.target.value)}
-              maxLength={100}
-              placeholder="例: コンビニ前のゴミ箱、公園入口"
-              className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-all focus:ring-2"
-              style={{
-                background: designTokens.colors.background.mist,
-                border: `1px solid ${designTokens.colors.secondary.stone}40`,
-                color: designTokens.colors.text.primary,
-              }}
-            />
-          </div>
 
           {/* Description */}
           <div>
@@ -469,54 +352,6 @@ export function FacilityReportForm({ latitude, longitude, map: _parentMap, onClo
             />
           </div>
 
-          {/* Photo upload */}
-          <div>
-            <label
-              className="block text-sm font-medium mb-2"
-              style={{ color: designTokens.colors.text.secondary }}
-            >
-              写真（任意・10MBまで）
-            </label>
-            {imagePreview ? (
-              <div className="relative rounded-xl overflow-hidden" style={{ maxHeight: '200px' }}>
-                <img
-                  src={imagePreview}
-                  alt="プレビュー"
-                  className="w-full object-cover rounded-xl"
-                  style={{ maxHeight: '200px' }}
-                />
-                <button
-                  type="button"
-                  onClick={removeImage}
-                  className="absolute top-2 right-2 p-1.5 rounded-full backdrop-blur-sm"
-                  style={{ background: 'rgba(0,0,0,0.5)' }}
-                >
-                  <X className="h-4 w-4 text-white" />
-                </button>
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="w-full py-6 rounded-xl border-2 border-dashed flex flex-col items-center gap-2 transition-colors hover:bg-gray-50"
-                style={{
-                  borderColor: `${designTokens.colors.secondary.stone}40`,
-                  color: designTokens.colors.text.muted,
-                }}
-              >
-                <Camera className="h-8 w-8" />
-                <span className="text-sm">タップして写真を選択</span>
-                <span className="text-xs">JPG, PNG（10MBまで）</span>
-              </button>
-            )}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleImageChange}
-              className="hidden"
-            />
-          </div>
 
           {error && (
             <p className="text-sm font-medium" style={{ color: designTokens.colors.functional.error }}>
@@ -526,15 +361,15 @@ export function FacilityReportForm({ latitude, longitude, map: _parentMap, onClo
 
           <Button
             type="submit"
-            disabled={submitting || !storeName.trim()}
+            disabled={submitting}
             className="w-full h-12 rounded-xl font-semibold"
             style={{
-              background: storeName.trim() ? '#6B7280' : designTokens.colors.secondary.stone,
+              background: '#6B7280',
               color: designTokens.colors.text.inverse,
               opacity: submitting ? 0.7 : 1,
             }}
           >
-            {uploading ? '画像をアップロード中...' : submitting ? '送信中...' : 'ゴミ箱の場所を報告する'}
+            {submitting ? '送信中...' : 'ゴミ箱の場所を報告する'}
           </Button>
 
           <p className="text-xs text-center" style={{ color: designTokens.colors.text.muted }}>

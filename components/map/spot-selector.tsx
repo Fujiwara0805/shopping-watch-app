@@ -49,37 +49,43 @@ export function SpotSelector({ activeSpot, onSelect, loadingSpot, isOpen, onOpen
       <motion.button
         whileTap={{ scale: 0.95 }}
         onClick={() => onOpenChange(!isOpen)}
-        className="flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-semibold shadow-lg transition-all"
-        style={{
-          background: activeSpot
-            ? (activeConfig?.color || designTokens.colors.accent.lilac)
-            : designTokens.colors.background.white,
-          color: activeSpot ? '#fff' : designTokens.colors.text.primary,
-          border: `1px solid ${activeSpot ? 'transparent' : designTokens.colors.secondary.stone}40`,
-          boxShadow: designTokens.elevation.medium,
-        }}
+        className="flex flex-col items-center gap-1 relative"
       >
-        {activeConfig ? (
-          <>
-            <activeConfig.icon className="h-4 w-4 flex-shrink-0" />
-            <span>{activeConfig.label}</span>
-          </>
-        ) : (
-          <>
-            <MapPin className="h-4 w-4 flex-shrink-0" />
-            <span>スポット</span>
-          </>
-        )}
+        <div
+          className="w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-all"
+          style={{
+            background: activeSpot
+              ? (activeConfig?.color || designTokens.colors.accent.lilac)
+              : designTokens.colors.background.white,
+            border: `1px solid ${activeSpot ? 'transparent' : designTokens.colors.secondary.stone}40`,
+            boxShadow: designTokens.elevation.medium,
+          }}
+        >
+          {activeConfig ? (
+            <activeConfig.icon className="h-5 w-5 flex-shrink-0" style={{ color: '#fff' }} />
+          ) : (
+            <MapPin className="h-5 w-5 flex-shrink-0" style={{ color: designTokens.colors.text.primary }} />
+          )}
+        </div>
+        <span
+          className="text-[10px] font-semibold leading-none"
+          style={{
+            color: activeSpot ? (activeConfig?.color || designTokens.colors.text.primary) : designTokens.colors.text.primary,
+            textShadow: '0 0 4px rgba(255,255,255,0.8)',
+          }}
+        >
+          {activeConfig ? activeConfig.label : 'スポット'}
+        </span>
         {activeSpot && (
           <span
-            className="ml-1 h-4 w-4 rounded-full flex items-center justify-center"
-            style={{ background: 'rgba(255,255,255,0.3)' }}
+            className="absolute -top-1 -right-1 h-5 w-5 rounded-full flex items-center justify-center"
+            style={{ background: designTokens.colors.text.secondary }}
             onClick={(e) => {
               e.stopPropagation();
               onSelect(null);
             }}
           >
-            <X className="h-2.5 w-2.5" />
+            <X className="h-3 w-3" style={{ color: '#fff' }} />
           </span>
         )}
       </motion.button>
