@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence, useScroll, useTransform, useInView } from 'framer-motion';
-import { MapPin, Menu, X, ChevronRight, Calendar, LogOut, Search, Layers, Map, Users, ArrowRight, Compass, ExternalLink, Sparkles, MessageSquare, Trash2, Bus, TrainFront, Droplets, Camera, Utensils, Bath } from 'lucide-react';
+import { MapPin, Menu, X, ChevronRight, Calendar, LogOut, Search, Layers, Map, Users, ArrowRight, Compass, ExternalLink, Sparkles, MessageSquare, Trash2, Bus, TrainFront, MapPinned, Camera, Utensils, Toilet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useSession, signOut } from 'next-auth/react';
 import { NoteArticlesSection } from '@/components/external-content';
@@ -800,11 +800,11 @@ const SpotShowcaseSection = ({ onStart }: { onStart: () => void }) => {
       color: '#059669',
     },
     {
-      icon: Droplets,
+      icon: MapPinned,
       label: '温泉',
       count: '180+',
       description: '公衆浴場から名湯まで',
-      color: '#06B6D4',
+      color: '#EF4444',
     },
     {
       icon: Utensils,
@@ -814,7 +814,7 @@ const SpotShowcaseSection = ({ onStart }: { onStart: () => void }) => {
       color: '#EA580C',
     },
     {
-      icon: Bath,
+      icon: Toilet,
       label: 'トイレ',
       count: '160+',
       description: '公共トイレの場所を地図で確認',
@@ -832,7 +832,7 @@ const SpotShowcaseSection = ({ onStart }: { onStart: () => void }) => {
       label: '駅',
       count: '大分県内',
       description: 'JR九州の各駅を表示',
-      color: '#EF4444',
+      color: '#06B6D4',
     },
   ];
 

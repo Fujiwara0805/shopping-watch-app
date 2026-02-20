@@ -4,7 +4,7 @@ import { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import { useGeolocation } from '@/lib/hooks/use-geolocation';
 import { useGoogleMapsApi } from '@/components/providers/GoogleMapsApiProvider';
 import { Button } from '@/components/ui/button';
-import { MapPin, AlertTriangle, RefreshCw, Calendar, User, MapPinIcon, X, Loader2, Compass, Search, Trash2, Bus, TrainFront, Clock, Shield, Droplets, Camera, Utensils, Bath, ExternalLink } from 'lucide-react';
+import { MapPin, AlertTriangle, RefreshCw, Calendar, User, MapPinIcon, X, Loader2, Compass, Search, Trash2, Bus, TrainFront, Clock, University, MapPinned, Camera, Utensils, Toilet, ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -231,19 +231,19 @@ const FACILITY_ICON_CONFIGS: Record<FacilityLayerType, { color: string; svgPath:
     svgPath: '<path d="M8 6v6M15 6v6M2 12h19.6M18 18h3s.5-1.7.8-2.8c.1-.4.2-.8.2-1.2 0-.4-.1-.8-.2-1.2l-1.4-5C20.1 6.8 19.1 6 18 6H4a2 2 0 00-2 2v10h3M7 18h10M9 18a2.5 2.5 0 00-5 0M22 18a2.5 2.5 0 00-5 0" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>',
   },
   train_station: {
-    color: '#EF4444',
+    color: '#06B6D4',
     // Lucide TrainFront
     svgPath: '<path d="M8 3.1V7a4 4 0 008 0V3.1M9 15l-1.5 3M15 15l1.5 3M9 19h6M21 3V2l-2 .5M3 3V2l2 .5M11.8 1.2A.5.5 0 0012.5 1h-1a.5.5 0 00.3.2z" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><rect x="4" y="3" width="16" height="12" rx="4" fill="none" stroke="white" stroke-width="1.5"/><path d="M9 13h.01M15 13h.01" stroke="white" stroke-width="2" stroke-linecap="round"/>',
   },
   evacuation_site: {
     color: '#F59E0B',
-    // Lucide Shield
-    svgPath: '<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 01-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 01.5-.87l7-4a1 1 0 011 0l7 4A1 1 0 0120 6z" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>',
+    // Lucide University
+    svgPath: '<circle cx="12" cy="10" r="1" fill="none" stroke="white" stroke-width="1.5"/><path d="M22 20V8h-4l-6-4-6 4H2v12a2 2 0 002 2h16a2 2 0 002-2" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 17v.01" fill="none" stroke="white" stroke-width="1.5"/><path d="M6 13v.01" fill="none" stroke="white" stroke-width="1.5"/><path d="M18 17v.01" fill="none" stroke="white" stroke-width="1.5"/><path d="M18 13v.01" fill="none" stroke="white" stroke-width="1.5"/><path d="M14 22v-5a2 2 0 00-2-2a2 2 0 00-2 2v5" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>',
   },
   hot_spring: {
-    color: '#06B6D4',
-    // Lucide Droplets
-    svgPath: '<path d="M7 16.3c2.2 0 4-1.83 4-4.05 0-1.16-.57-2.26-1.71-3.19S7.29 6.75 7 5.3c-.29 1.45-1.14 2.84-2.29 3.76S3 11.1 3 12.25c0 2.22 1.8 4.05 4 4.05z" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M12.56 6.6A10.97 10.97 0 0014 3.02c.5 2.5 2 4.9 4 6.5s3 3.5 3 5.5a6.98 6.98 0 01-11.91 4.97" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>',
+    color: '#EF4444',
+    // Lucide MapPinned
+    svgPath: '<path d="M18 8c0 3.613-3.869 7.429-5.393 8.795a1 1 0 01-1.214 0C9.87 15.429 6 11.613 6 8a6 6 0 0112 0" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="8" r="2" fill="none" stroke="white" stroke-width="1.5"/><path d="M8.714 14h-3.71a1 1 0 00-.948.683l-2.004 6A1 1 0 003 22h18a1 1 0 00.948-1.316l-2-6a1 1 0 00-.949-.684h-3.712" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>',
   },
   tourism_spot: {
     color: '#059669',
@@ -257,8 +257,8 @@ const FACILITY_ICON_CONFIGS: Record<FacilityLayerType, { color: string; svgPath:
   },
   toilet: {
     color: '#8B5CF6',
-    // Lucide Bath
-    svgPath: '<path d="M9 6l.463-.536a1.77 1.77 0 013.074 0L13 6M2 12h20M4 12v4a4 4 0 004 4h8a4 4 0 004-4v-4M6 12V5a2 2 0 012-2h1" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>',
+    // Lucide Toilet
+    svgPath: '<path d="M7 12h13a1 1 0 011 1 5 5 0 01-5 5h-.598a.5.5 0 00-.424.765l1.544 2.47a.5.5 0 01-.424.765H5.402a.5.5 0 01-.424-.765L7 18" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 18a5 5 0 01-5-5V4a2 2 0 012-2h8a2 2 0 012 2v8" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>',
   },
 };
 
@@ -650,7 +650,7 @@ export function MapView() {
       // Fetch from Supabase DB (tourism_spot, hot_spring, restaurant, toilet)
       const userLat = savedLocation?.lat || latitude;
       const userLng = savedLocation?.lng || longitude;
-      fetchSupabaseSpots(type, userLat || undefined, userLng || undefined, 15)
+      fetchSupabaseSpots(type, userLat || undefined, userLng || undefined, 5)
         .finally(() => setLoadingSpot(null));
     } else if (map && FACILITY_PLACES_TYPE[type]) {
       // Use Google Places API (only train_station now)
@@ -665,16 +665,15 @@ export function MapView() {
     }
   }, [activeSpot, map, facilityMarkers, fetchTrashCanReports, searchNearby, clearActiveSpotMarkers, fetchStopsInBounds, getUserLocationCenter, fetchSupabaseSpots, savedLocation, latitude, longitude]);
 
-  // Effect: create trash can markers when reports change (prioritize 5km from user)
+  // Effect: create trash can markers when reports change (5km圏内のみ表示)
   useEffect(() => {
     if (activeSpot !== 'trash_can' || !map) return;
     const userLat = savedLocation?.lat || latitude;
     const userLng = savedLocation?.lng || longitude;
 
-    // Sort by distance from user, prioritize within 5km
-    let sortedReports = [...trashCanReports];
+    let filteredReports = [...trashCanReports];
     if (userLat && userLng) {
-      sortedReports = sortedReports
+      filteredReports = filteredReports
         .map(r => {
           const R = 6371;
           const dLat = (r.store_latitude - userLat) * Math.PI / 180;
@@ -683,10 +682,11 @@ export function MapView() {
           const dist = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
           return { ...r, _distance: dist };
         })
+        .filter(r => r._distance <= 5)
         .sort((a, b) => a._distance - b._distance);
     }
 
-    const items = sortedReports.map(r => ({
+    const items = filteredReports.map(r => ({
       lat: r.store_latitude,
       lng: r.store_longitude,
       name: r.store_name,
@@ -696,16 +696,32 @@ export function MapView() {
     createFacilityMarkersForType('trash_can', items);
   }, [trashCanReports, activeSpot, map, savedLocation, latitude, longitude]);
 
-  // Effect: create Places API markers when results change
+  // Effect: create Places API markers when results change (5km圏内のみ表示)
   useEffect(() => {
     if (!map) return;
     const placesTypeMap: Record<string, FacilityLayerType> = {
       train_station: 'train_station',
     };
+    const userLat = savedLocation?.lat || latitude;
+    const userLng = savedLocation?.lng || longitude;
+
     placesResults.forEach((results, placeType) => {
       const facilityType = placesTypeMap[placeType];
       if (!facilityType || activeSpot !== facilityType) return;
-      const items = results.map(r => ({
+
+      let filtered = results;
+      if (userLat && userLng) {
+        filtered = results.filter(r => {
+          const R = 6371;
+          const dLat = (r.lat - userLat) * Math.PI / 180;
+          const dLng = (r.lng - userLng) * Math.PI / 180;
+          const a = Math.sin(dLat / 2) ** 2 + Math.cos(userLat * Math.PI / 180) * Math.cos(r.lat * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+          const dist = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+          return dist <= 5;
+        });
+      }
+
+      const items = filtered.map(r => ({
         lat: r.lat,
         lng: r.lng,
         name: r.name,
@@ -714,7 +730,7 @@ export function MapView() {
       }));
       createFacilityMarkersForType(facilityType, items);
     });
-  }, [placesResults, activeSpot, map]);
+  }, [placesResults, activeSpot, map, savedLocation, latitude, longitude]);
 
   // Effect: create Supabase spot markers when data changes
   useEffect(() => {
@@ -732,7 +748,7 @@ export function MapView() {
     createFacilityMarkersForType(activeSpot, items);
   }, [supabaseSpots, activeSpot, map]);
 
-  // Filtered GTFS bus stops: within 2km of user location
+  // Filtered GTFS bus stops: within 5km of user location
   const filteredGtfsBusStops = useMemo(() => {
     if (!gtfsBusStops.length) return [];
     const userLat = savedLocation?.lat || latitude;
@@ -744,7 +760,7 @@ export function MapView() {
       const dLng = (stop.stop_lon - userLng) * Math.PI / 180;
       const a = Math.sin(dLat / 2) ** 2 + Math.cos(userLat * Math.PI / 180) * Math.cos(stop.stop_lat * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
       const dist = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-      return dist <= 2;
+      return dist <= 5;
     });
   }, [gtfsBusStops, savedLocation, latitude, longitude]);
 
@@ -778,7 +794,7 @@ export function MapView() {
     gtfsMarkersRef.current = newMarkers;
   }, [filteredGtfsBusStops, activeSpot, map]);
 
-  // Effect: create evacuation site markers from static data
+  // Effect: create evacuation site markers from static data (5km圏内のみ表示)
   useEffect(() => {
     if (!map || !window.google?.maps || activeSpot !== 'evacuation_site') return;
 
@@ -787,10 +803,24 @@ export function MapView() {
       existing.forEach(m => m.setMap(null));
     }
 
+    const userLat = savedLocation?.lat || latitude;
+    const userLng = savedLocation?.lng || longitude;
+
+    const filteredSites = userLat && userLng
+      ? evacuationSites.filter(site => {
+          const R = 6371;
+          const dLat = (site.lat - userLat) * Math.PI / 180;
+          const dLng = (site.lng - userLng) * Math.PI / 180;
+          const a = Math.sin(dLat / 2) ** 2 + Math.cos(userLat * Math.PI / 180) * Math.cos(site.lat * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+          const dist = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+          return dist <= 5;
+        })
+      : evacuationSites;
+
     const icon = createFacilityMarkerIcon('evacuation_site');
     const newMarkers: google.maps.Marker[] = [];
 
-    evacuationSites.forEach(site => {
+    filteredSites.forEach(site => {
       const marker = new window.google.maps.Marker({
         position: new window.google.maps.LatLng(site.lat, site.lng),
         map,
@@ -815,7 +845,7 @@ export function MapView() {
     });
 
     setFacilityMarkers(prev => new Map(prev).set('evacuation_site', newMarkers));
-  }, [activeSpot, map]);
+  }, [activeSpot, map, savedLocation, latitude, longitude]);
 
   // Effect: re-search on map idle (prioritize user location)
   useEffect(() => {
@@ -830,7 +860,7 @@ export function MapView() {
         // Supabase spots: re-fetch with map center for distance sorting
         const centerLat = userCenter?.lat() || mapCenter.lat();
         const centerLng = userCenter?.lng() || mapCenter.lng();
-        fetchSupabaseSpots(activeSpot, centerLat, centerLng, 15);
+        fetchSupabaseSpots(activeSpot, centerLat, centerLng, 5);
       } else if (activeSpot !== 'trash_can' && activeSpot !== 'evacuation_site') {
         const placeType = FACILITY_PLACES_TYPE[activeSpot];
         if (placeType) {
@@ -966,11 +996,11 @@ export function MapView() {
     const icons: Record<FacilityLayerType, React.ElementType> = {
       tourism_spot: Camera,
       restaurant: Utensils,
-      hot_spring: Droplets,
-      toilet: Bath,
+      hot_spring: MapPinned,
+      toilet: Toilet,
       bus_stop: Bus,
       train_station: TrainFront,
-      evacuation_site: Shield,
+      evacuation_site: University,
       trash_can: Trash2,
     };
     return icons[type];
@@ -980,10 +1010,10 @@ export function MapView() {
     const colors: Record<FacilityLayerType, string> = {
       tourism_spot: '#059669',
       restaurant: '#EA580C',
-      hot_spring: '#06B6D4',
+      hot_spring: '#EF4444',
       toilet: '#8B5CF6',
       bus_stop: '#3B82F6',
-      train_station: '#EF4444',
+      train_station: '#06B6D4',
       evacuation_site: '#F59E0B',
       trash_can: '#6B7280',
     };
@@ -1187,38 +1217,24 @@ export function MapView() {
           const data = selectedFacility.data;
 
           let name = '';
-          let subtitle = '';
           let facilityLat = 0;
           let facilityLng = 0;
-          let businessHours: string | null = null;
-          let closedDays: string | null = null;
-          let fee: string | null = null;
-          let phone: string | null = null;
           let website: string | null = null;
           let sourceUrl: string | null = null;
-          let accessInfo: string | null = null;
 
           if (isTrashCan) {
             name = (data as FacilityReportWithAuthor).store_name;
-            subtitle = (data as FacilityReportWithAuthor).description || '';
             facilityLat = (data as FacilityReportWithAuthor).store_latitude;
             facilityLng = (data as FacilityReportWithAuthor).store_longitude;
           } else if (isSupabaseType) {
             const sData = data as SupabaseSpotResult;
             name = sData.name;
-            subtitle = sData.address || sData.municipality || '';
             facilityLat = sData.lat;
             facilityLng = sData.lng;
-            businessHours = sData.business_hours || null;
-            closedDays = sData.closed_days || null;
-            fee = sData.fee || null;
-            phone = sData.phone || null;
             website = sData.website || null;
             sourceUrl = sData.source_url || null;
-            accessInfo = sData.access || null;
           } else {
             name = (data as PlaceResult).name;
-            subtitle = (data as PlaceResult).vicinity || '';
             facilityLat = (data as PlaceResult).lat;
             facilityLng = (data as PlaceResult).lng;
           }
@@ -1258,37 +1274,8 @@ export function MapView() {
                       <h3 className="text-lg font-semibold leading-tight line-clamp-2 mb-1" style={{ fontFamily: designTokens.typography.display, color: designTokens.colors.text.primary }}>
                         {name}
                       </h3>
-                      {subtitle && (
-                        <p className="text-xs line-clamp-2 leading-relaxed" style={{ color: designTokens.colors.text.secondary }}>
-                          {subtitle}
-                        </p>
-                      )}
                     </div>
                   </div>
-
-                  {/* Supabase spot details */}
-                  {isSupabaseType && (
-                    <div className="space-y-2 mb-3">
-                      {businessHours && (
-                        <div className="flex items-start gap-2 text-xs" style={{ color: designTokens.colors.text.secondary }}>
-                          <Clock className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
-                          <span className="line-clamp-2">{businessHours}</span>
-                        </div>
-                      )}
-                      {closedDays && (
-                        <div className="flex items-start gap-2 text-xs" style={{ color: designTokens.colors.text.secondary }}>
-                          <Calendar className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
-                          <span>定休日: {closedDays}</span>
-                        </div>
-                      )}
-                      {fee && (
-                        <div className="flex items-start gap-2 text-xs" style={{ color: designTokens.colors.text.secondary }}>
-                          <span className="flex-shrink-0 mt-0.5 font-medium">¥</span>
-                          <span className="line-clamp-2">{fee}</span>
-                        </div>
-                      )}
-                    </div>
-                  )}
 
                   {/* Author info + vote buttons for trash cans */}
                   {isTrashCan && (
