@@ -3,6 +3,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { MapPin, X } from 'lucide-react';
 import { designTokens, FACILITY_ICON_URLS } from '@/lib/constants';
+import { trackEvent } from '@/lib/services/analytics';
 import type { FacilityLayerType } from '@/types/facility-report';
 
 interface SpotConfig {
@@ -36,6 +37,7 @@ export function SpotSelector({ activeSpot, onSelect, loadingSpot, isOpen, onOpen
     if (activeSpot === type) {
       onSelect(null);
     } else {
+      trackEvent('spot_type_filter', { spot_type: type });
       onSelect(type);
     }
     onOpenChange(false);

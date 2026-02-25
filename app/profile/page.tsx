@@ -15,7 +15,7 @@ import { useSession, signOut } from 'next-auth/react';
 import { supabase } from '@/lib/supabaseClient';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/lib/hooks/use-toast';
-import { getHunterLevel } from '@/lib/hunter-level';
+import { getHunterLevel } from '@/lib/constants/hunter-levels';
 import { StampBoardModal } from '@/components/stamp-board/stamp-board-modal';
 import { getProfilePageData } from '@/app/_actions/profiles';
 import { Breadcrumb } from '@/components/seo/breadcrumb';

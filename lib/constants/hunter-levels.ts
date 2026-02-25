@@ -54,7 +54,7 @@ export const HUNTER_LEVELS: HunterLevel[] = [
 ];
 
 export const getHunterLevel = (likes: number): HunterLevel => {
-  return HUNTER_LEVELS.find(level => 
+  return HUNTER_LEVELS.find(level =>
     likes >= level.minLikes && likes <= level.maxLikes
   ) || HUNTER_LEVELS[0];
 };
@@ -63,7 +63,7 @@ export const calculateWeeklyLikes = async (userId: string): Promise<number> => {
   // 1週間前の日付を計算
   const oneWeekAgo = new Date();
   oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-  
+
   // Supabaseクエリで1週間のいいね数を取得
   // 実装は上記のHunterRankingPageを参考
   return 0; // 実装例

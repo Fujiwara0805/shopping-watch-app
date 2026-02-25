@@ -10,6 +10,7 @@ import { NoteArticlesSection } from '@/components/external-content';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { designTokens, OITA_MUNICIPALITIES, TARGET_AUDIENCE_OPTIONS, FACILITY_ICON_URLS } from '@/lib/constants';
+import { trackEvent } from '@/lib/services/analytics';
 import { useFeedback } from '@/lib/contexts/feedback-context';
 import { FeedbackModal } from '@/components/feedback/feedback-modal';
 
@@ -1410,10 +1411,13 @@ export default function Home() {
   }, []);
 
   const handleStart = () => {
+    trackEvent('cta_click', { cta_name: 'start_map', page: 'landing' });
     setShowLocationModal(true);
   };
 
   const handleEventSearch = (params: { city: string; target: string }) => {
+    trackEvent('cta_click', { cta_name: 'event_search', page: 'landing' });
+    trackEvent('event_search', { city: params.city, target: params.target });
     const searchParams = new URLSearchParams();
     searchParams.set('city', params.city?.trim() || 'all');
     if (params.target?.trim()) searchParams.set('target', params.target.trim());

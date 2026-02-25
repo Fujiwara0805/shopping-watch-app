@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from '@/lib/hooks/use-toast';
 import { Loader2, ArrowRight, Eye, EyeOff } from "lucide-react";
+import { trackEvent } from '@/lib/services/analytics';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -55,6 +56,7 @@ export default function RegisterPage() {
 
   const onSubmit = async (values: z.infer<typeof registerFormSchema>) => {
     setIsLoading(true);
+    trackEvent('register_attempt', { method: 'email' });
     try {
       const response = await fetch("/api/register", {
         method: "POST",

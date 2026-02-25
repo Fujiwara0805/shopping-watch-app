@@ -7,4 +7,5 @@ export * from './facility-icons';
 export * from './holidays';
 export * from './target-tags';
 export * from './locations';
+export * from './hunter-levels';
 

@@ -12,7 +12,7 @@ import { useLocalStorage } from 'usehooks-ts';
 import { useRouter } from 'next/navigation';
 import { CustomModal } from '@/components/ui/custom-modal';
 import { useLocationPermission } from '@/components/providers/LocationPermissionProvider';
-import { isWithinOitaUniversityArea } from '@/lib/utils';
+import { isWithinOitaUniversityArea } from '@/lib/utils/distance';
 import { Breadcrumb } from '@/components/seo/breadcrumb';
 import { COLORS } from '@/lib/constants/colors';
 

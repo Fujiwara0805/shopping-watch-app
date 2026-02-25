@@ -8,6 +8,7 @@ import { GoogleIcon } from "@/components/common/icons/GoogleIcon";
 import { LineConsentModal } from "@/components/common/LineConsentModal";
 import { Loader2, AlertTriangle, Eye, EyeOff, ArrowLeft, RefreshCw } from "lucide-react";
 import { motion } from "framer-motion";
+import { trackEvent } from '@/lib/services/analytics';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -78,6 +79,7 @@ export default function LoginPage() {
   const handleGoogleLogin = async () => {
     setIsLoading(true);
     setError(null);
+    trackEvent('login_attempt', { method: 'google' });
     await signIn("google", { redirect: false });
   };
 
@@ -95,6 +97,7 @@ export default function LoginPage() {
   const handleCredentialsLogin = async (values: z.infer<typeof loginFormSchema>) => {
     setIsLoading(true);
     setError(null);
+    trackEvent('login_attempt', { method: 'credentials' });
     const result = await signIn("credentials", {
       redirect: false,
       email: values.email,

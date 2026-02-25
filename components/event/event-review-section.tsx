@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Star, MessageSquarePlus, X, Calendar, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { designTokens } from '@/lib/constants';
+import { trackEvent } from '@/lib/services/analytics';
 
 interface ReviewData {
   id: string;
@@ -107,6 +108,7 @@ function ReviewFormModal({ postId, onClose, onSubmitted }: {
         return;
       }
 
+      trackEvent('review_submit', { event_id: postId, rating });
       onSubmitted();
       onClose();
     } catch {

@@ -19,6 +19,7 @@ import { generateSemanticEventUrl } from '@/lib/seo/url-helper';
 import { isHolidayOrSubstitute } from '@/lib/constants';
 import { Breadcrumb } from '@/components/seo/breadcrumb';
 import { designTokens } from '@/lib/constants';
+import { trackEvent } from '@/lib/services/analytics';
 
 // イベントデータの型定義
 interface EventPost {
@@ -450,6 +451,14 @@ export default function CalendarPage() {
 
   useEffect(() => { fetchAds(); }, [fetchAds]);
   useEffect(() => { fetchEvents(); }, [fetchEvents]);
+  useEffect(() => {
+    if (isInitialized) {
+      trackEvent('event_list_view', {
+        filter_city: selectedCity !== 'all' ? selectedCity : undefined,
+        filter_target: urlTarget ?? undefined,
+      });
+    }
+  }, [isInitialized, selectedCity, urlTarget]);
   useEffect(() => {
     setLoading(true);
     return () => { setLoading(true); setIsInitialized(false); };

@@ -20,6 +20,7 @@ import { usePlacesSearch, PlaceResult } from '@/lib/hooks/use-places-search';
 import { useGtfsStops } from '@/lib/hooks/use-gtfs-stops';
 import { useSupabaseSpots, SupabaseSpotResult, isSupabaseSpotType } from '@/lib/hooks/use-supabase-spots';
 import { BusStopTimetableCard } from '@/components/map/bus-stop-timetable-card';
+import { trackEvent } from '@/lib/services/analytics';
 import type { FacilityLayerType, FacilityReportWithAuthor } from '@/types/facility-report';
 import type { GtfsBusStop } from '@/types/gtfs';
 import { evacuationSites } from '@/lib/data/evacuation-sites-oita';
@@ -516,6 +517,7 @@ export function MapView() {
       marker.addListener('click', () => {
         setSelectedFacility({ type, data: item.data });
         setSelectedPost(null);
+        trackEvent('facility_detail_view', { facility_type: type, facility_id: String(item.name || '') });
       });
       newMarkers.push(marker);
     });
@@ -836,7 +838,7 @@ export function MapView() {
       const mapOptions: google.maps.MapOptions = { center, zoom: (savedLocation || (latitude && longitude)) ? 8 : 7, disableDefaultUI: true, zoomControl: true, gestureHandling: 'greedy', mapTypeId: window.google.maps.MapTypeId.ROADMAP, styles: organicMapStyles };
       const newMap = new window.google.maps.Map(container, mapOptions);
       mapInstanceRef.current = newMap;
-      window.google.maps.event.addListenerOnce(newMap, 'idle', () => { setMap(newMap); setMapInitialized(true); setInitializationError(null); });
+      window.google.maps.event.addListenerOnce(newMap, 'idle', () => { setMap(newMap); setMapInitialized(true); setInitializationError(null); trackEvent('map_view'); });
     } catch (error) { setInitializationError(`地図の初期化に失敗しました`); initializationTriedRef.current = false; return false; }
   }, [googleMapsLoaded, latitude, longitude, savedLocation, containerDimensions]);
 

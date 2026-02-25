@@ -46,3 +46,19 @@ export function isWithinRange(
   return distance <= rangeInMeters;
 }
 
+const OITA_UNIVERSITY_LAT = 33.1554;
+const OITA_UNIVERSITY_LON = 131.6034;
+const MAX_DISTANCE_KM = 5;
+
+export function getDistanceFromLatLonInKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  return calculateDistance(lat1, lon1, lat2, lon2) / 1000;
+}
+
+export function isWithinOitaUniversityArea(lat: number | null, lon: number | null): boolean {
+  if (lat === null || lon === null) {
+    return false;
+  }
+  const distance = getDistanceFromLatLonInKm(OITA_UNIVERSITY_LAT, OITA_UNIVERSITY_LON, lat, lon);
+  return distance <= MAX_DISTANCE_KM;
+}
+

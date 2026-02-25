@@ -14,17 +14,17 @@ interface RateLimitOptions {
  */
 export function rateLimit(req: NextRequest, options: RateLimitOptions) {
   const { maxRequests, windowMs, message = 'リクエストが多すぎます。しばらく時間をおいて再度お試しください。' } = options;
-  
+
   // IPアドレスを取得（プロキシ環境を考慮）
   const forwarded = req.headers.get('x-forwarded-for');
   const ip = forwarded ? forwarded.split(',')[0] : req.ip || 'unknown';
-  
+
   const now = Date.now();
   const key = `${ip}:${req.nextUrl.pathname}`;
-  
+
   // 既存の記録を取得
   const record = requestCounts.get(key);
-  
+
   if (!record) {
     // 初回リクエスト
     requestCounts.set(key, {
@@ -33,7 +33,7 @@ export function rateLimit(req: NextRequest, options: RateLimitOptions) {
     });
     return null;
   }
-  
+
   // 時間窓がリセットされた場合
   if (now > record.resetTime) {
     requestCounts.set(key, {
@@ -42,7 +42,7 @@ export function rateLimit(req: NextRequest, options: RateLimitOptions) {
     });
     return null;
   }
-  
+
   // 制限を超えた場合
   if (record.count >= maxRequests) {
     const resetTimeRemaining = Math.ceil((record.resetTime - now) / 1000);
@@ -51,11 +51,11 @@ export function rateLimit(req: NextRequest, options: RateLimitOptions) {
       retryAfter: resetTimeRemaining
     };
   }
-  
+
   // カウントを増加
   record.count++;
   requestCounts.set(key, record);
-  
+
   return null;
 }
 
@@ -65,13 +65,13 @@ export function rateLimit(req: NextRequest, options: RateLimitOptions) {
 export function cleanupRateLimitRecords() {
   const now = Date.now();
   const keysToDelete: string[] = [];
-  
+
   requestCounts.forEach((record, key) => {
     if (now > record.resetTime) {
       keysToDelete.push(key);
     }
   });
-  
+
   keysToDelete.forEach(key => {
     requestCounts.delete(key);
   });

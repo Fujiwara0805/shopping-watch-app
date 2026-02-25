@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { ThumbsUp, ThumbsDown } from 'lucide-react';
 import { designTokens } from '@/lib/constants';
+import { trackEvent } from '@/lib/services/analytics';
 import { v4 as uuidv4 } from 'uuid';
 
 interface FacilityVoteButtonsProps {
@@ -67,6 +68,7 @@ export function FacilityVoteButtons({ facilityReportId }: FacilityVoteButtonsPro
         setExistsCount(data.exists_count);
         setNotExistsCount(data.not_exists_count);
         setUserVoted(data.user_voted);
+        trackEvent('facility_vote', { facility_id: facilityReportId, vote_type: voteType });
       }
     } catch {
       // silent

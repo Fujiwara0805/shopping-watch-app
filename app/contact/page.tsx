@@ -17,6 +17,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { trackEvent } from '@/lib/services/analytics';
 import { Breadcrumb } from '@/components/seo/breadcrumb';
 
 const contactSchema = z.object({
@@ -55,6 +56,7 @@ export default function ContactPage() {
       });
 
       if (response.ok) {
+        trackEvent('contact_submit');
         toast({
           title: "お問い合わせありがとうございます！",
           description: "内容を確認後、担当者よりご連絡いたします。",

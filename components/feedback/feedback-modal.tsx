@@ -19,6 +19,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/lib/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { designTokens } from '@/lib/constants/colors';
+import { trackEvent } from '@/lib/services/analytics';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 
 const feedbackSchema = z.object({
@@ -140,6 +141,7 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose })
 
       if (response.ok) {
         setIsSubmitted(true);
+        trackEvent('feedback_submit', { rating: values.rating });
 
         const userEmail = session.user.email;
         const feedbackSubmittedKey = `tokudoku_feedback_submitted_${userEmail}`;

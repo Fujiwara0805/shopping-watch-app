@@ -6,6 +6,7 @@ import { X, MapPin, Trash2, Navigation, Loader2, Map as MapIcon, CheckCircle2 } 
 import { Button } from '@/components/ui/button';
 import { useSession } from 'next-auth/react';
 import { designTokens } from '@/lib/constants';
+import { trackEvent } from '@/lib/services/analytics';
 import { useGoogleMapsApi } from '@/components/providers/GoogleMapsApiProvider';
 
 interface FacilityReportFormProps {
@@ -162,6 +163,7 @@ export function FacilityReportForm({ latitude, longitude, map: _parentMap, onClo
         return;
       }
 
+      trackEvent('facility_report', { facility_type: 'trash_can' });
       onSuccess();
       onClose();
     } catch {

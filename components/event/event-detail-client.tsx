@@ -12,6 +12,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { designTokens, COLORS, TARGET_TAG_LABELS, TAG_ACTIVITY_LABELS } from '@/lib/constants';
 import { generateSemanticEventUrl } from '@/lib/seo/url-helper';
+import { trackEvent } from '@/lib/services/analytics';
 
 interface EventDetail {
   id: string;
@@ -229,6 +230,11 @@ export function EventDetailClient({ eventId }: EventDetailClientProps) {
           tag_activities: normalizeUrls(data.tag_activities),
         };
         setEvent(eventData);
+        trackEvent('event_detail_view', {
+          event_id: eventId,
+          event_name: eventData.event_name ?? undefined,
+          city: eventData.city ?? undefined,
+        });
 
         // Fetch nearby events and recommended events
         fetchRelatedEvents(eventData);

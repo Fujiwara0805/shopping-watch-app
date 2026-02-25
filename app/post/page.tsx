@@ -17,7 +17,7 @@ import { useGeolocation } from '@/lib/hooks/use-geolocation';
 import { useSession } from "next-auth/react";
 import { Loader2 } from "lucide-react";
 import { supabase } from '@/lib/supabaseClient';
-import { calculateExpiresAt } from '@/lib/expires-at-date';
+import { calculateExpiresAt } from '@/lib/utils/expires-at-date';
 import { v4 as uuidv4 } from 'uuid';
 import { CustomModal } from '@/components/ui/custom-modal';
 import { useToast } from '@/lib/hooks/use-toast';

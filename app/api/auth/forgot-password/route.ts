@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabaseClient';
-import { sendPasswordResetEmail } from '@/lib/emailService';
-import { rateLimit } from '@/lib/rateLimit';
+import { sendPasswordResetEmail } from '@/lib/services/email-service';
+import { rateLimit } from '@/lib/utils/rate-limit';
 import { randomBytes } from 'crypto';
 
 export async function POST(req: NextRequest) {
