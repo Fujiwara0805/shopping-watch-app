@@ -12,7 +12,8 @@ import { useSession } from 'next-auth/react';
 import { useToast } from '@/lib/hooks/use-toast';
 import { isWithinRange } from '@/lib/utils/distance';
 import { generateSemanticEventUrl } from '@/lib/seo/url-helper';
-import { designTokens, FACILITY_ICON_URLS } from '@/lib/constants';
+import { designTokens, FACILITY_ICON_URLS, FACILITY_COLORS } from '@/lib/constants';
+import { usePlacePhotos } from '@/lib/hooks/use-place-photos';
 import { SpotSelector } from '@/components/map/spot-selector';
 import { FacilityReportForm } from '@/components/map/facility-report-form';
 import { FacilityVoteButtons } from '@/components/map/facility-vote-buttons';
@@ -230,6 +231,96 @@ const createFacilityMarkerIcon = (type: FacilityLayerType): google.maps.Icon => 
   };
 };
 
+// 円形写真マーカーアイコン（Google Maps写真をCanvasで円形に描画）
+const createCircularPhotoMarkerIcon = (
+  photoUrl: string,
+  facilityType: FacilityLayerType,
+): Promise<google.maps.Icon> => {
+  const imageSize = 44;
+  const borderWidth = 3;
+  const canvasSize = imageSize + 4; // padding for border
+  const borderColor = FACILITY_COLORS[facilityType];
+
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const scale = 2;
+      const canvas = document.createElement('canvas');
+      canvas.width = canvasSize * scale;
+      canvas.height = canvasSize * scale;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        resolve(createFacilityMarkerIcon(facilityType));
+        return;
+      }
+
+      ctx.scale(scale, scale);
+      ctx.clearRect(0, 0, canvasSize, canvasSize);
+
+      const centerX = canvasSize / 2;
+      const centerY = canvasSize / 2;
+      const radius = imageSize / 2 - borderWidth;
+
+      // Draw drop shadow
+      ctx.save();
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.25)';
+      ctx.shadowBlur = 4;
+      ctx.shadowOffsetY = 1;
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, radius + borderWidth / 2, 0, Math.PI * 2);
+      ctx.fillStyle = '#ffffff';
+      ctx.fill();
+      ctx.restore();
+
+      // Draw circular clipped photo
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+      ctx.closePath();
+      ctx.clip();
+
+      // Cover-fit the image inside the circle
+      const imgAspect = img.width / img.height;
+      let dw = imageSize, dh = imageSize, ox = 0, oy = 0;
+      if (imgAspect > 1) {
+        dw = dh * imgAspect;
+        ox = -(dw - imageSize) / 2;
+      } else {
+        dh = dw / imgAspect;
+        oy = -(dh - imageSize) / 2;
+      }
+      ctx.drawImage(img, centerX - imageSize / 2 + ox, centerY - imageSize / 2 + oy, dw, dh);
+      ctx.restore();
+
+      // Draw colored border ring (category color)
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, radius + borderWidth / 2, 0, Math.PI * 2);
+      ctx.strokeStyle = borderColor;
+      ctx.lineWidth = borderWidth;
+      ctx.stroke();
+
+      // White outer ring for visibility
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, imageSize / 2, 0, Math.PI * 2);
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      resolve({
+        url: canvas.toDataURL('image/png'),
+        scaledSize: new window.google.maps.Size(canvasSize, canvasSize),
+        anchor: new window.google.maps.Point(canvasSize / 2, canvasSize / 2),
+      });
+    };
+    img.onerror = () => {
+      // Fallback to standard icon
+      resolve(createFacilityMarkerIcon(facilityType));
+    };
+    img.src = photoUrl;
+  });
+};
+
 // マップスタイル
 const organicMapStyles: google.maps.MapTypeStyle[] = [
   { featureType: "all", elementType: "geometry", stylers: [{ saturation: -20 }, { lightness: 10 }] },
@@ -302,6 +393,7 @@ export function MapView() {
 
   const { results: placesResults, searchNearby, clearResults } = usePlacesSearch();
   const { spots: supabaseSpots, fetchSpots: fetchSupabaseSpots, clearSpots: clearSupabaseSpots } = useSupabaseSpots();
+  const { lookupPhotosInBatches } = usePlacePhotos();
 
   // GTFS bus stop state
   const { stops: gtfsBusStops, loading: gtfsLoading, dataEmpty: gtfsDataEmpty, fetchError: gtfsFetchError, fetchStopsInBounds, clearStops: clearGtfsStops, setUserLocation: setGtfsUserLocation } = useGtfsStops();
@@ -494,6 +586,8 @@ export function MapView() {
   }, []);
 
   // Create facility markers for a given type
+  // Supabaseスポット（観光/グルメ/温泉/トイレ）はGoogle Maps写真で円形マーカーに
+  // プログレッシブ・エンハンスメント: まずアイコン表示 → 写真が見つかったら差し替え
   const createFacilityMarkersForType = useCallback((type: FacilityLayerType, items: Array<{ lat: number; lng: number; name: string; id: string; data: PlaceResult | FacilityReportWithAuthor | SupabaseSpotResult }>) => {
     if (!map || !window.google?.maps) return;
 
@@ -505,6 +599,7 @@ export function MapView() {
 
     const icon = createFacilityMarkerIcon(type);
     const newMarkers: google.maps.Marker[] = [];
+    const markerById = new Map<string, google.maps.Marker>();
 
     items.forEach(item => {
       const marker = new window.google.maps.Marker({
@@ -520,10 +615,33 @@ export function MapView() {
         trackEvent('facility_detail_view', { facility_type: type, facility_id: String(item.name || '') });
       });
       newMarkers.push(marker);
+      markerById.set(item.id, marker);
     });
 
     setFacilityMarkers(prev => new Map(prev).set(type, newMarkers));
-  }, [map, facilityMarkers]);
+
+    // Google Maps写真の非同期取得 (Supabaseスポットのみ)
+    if (isSupabaseSpotType(type) && items.length > 0) {
+      lookupPhotosInBatches(
+        map,
+        items.map(item => ({ id: item.id, name: item.name, lat: item.lat, lng: item.lng })),
+        async (spotId, photoUrl) => {
+          const marker = markerById.get(spotId);
+          if (marker && marker.getMap()) {
+            try {
+              const photoIcon = await createCircularPhotoMarkerIcon(photoUrl, type);
+              // マーカーがまだマップ上にあるか再確認（カテゴリ切替対策）
+              if (marker.getMap()) {
+                marker.setIcon(photoIcon);
+              }
+            } catch {
+              // Fallback: keep the existing icon
+            }
+          }
+        },
+      );
+    }
+  }, [map, facilityMarkers, lookupPhotosInBatches]);
 
   // Helper: get user's current location as LatLng (for 5km radius priority)
   const getUserLocationCenter = useCallback((): google.maps.LatLng | null => {

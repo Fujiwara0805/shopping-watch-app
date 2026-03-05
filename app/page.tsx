@@ -171,7 +171,7 @@ const ElevationCard = ({
 // ===================================================================
 
 // Hero背景画像URL
-const HERO_BG_IMAGE = 'https://res.cloudinary.com/dz9trbwma/image/upload/v1772416995/Gemini_Generated_Image_tlb61atlb61atlb6_mtlugk_c_pad_b_gen_fill_w_1024_h_1024_rpwvci.png';
+const HERO_BG_IMAGE = 'https://res.cloudinary.com/dz9trbwma/image/upload/f_auto,q_auto/v1772416995/Gemini_Generated_Image_tlb61atlb61atlb6_mtlugk_c_pad_b_gen_fill_w_1024_h_1024_rpwvci.png';
 
 const HeroSection = ({
   onStart,
@@ -526,17 +526,17 @@ const ChallengesSection = () => {
 
   const challenges = [
     {
-      imageUrl: 'https://res.cloudinary.com/dz9trbwma/image/upload/v1772416996/Gemini_Generated_Image_n5dwvwn5dwvwn5dw_nq711a_c_pad_b_gen_fill_w_1024_h_1024_ampt7h.png',
+      imageUrl: 'https://res.cloudinary.com/dz9trbwma/image/upload/f_auto,q_auto/v1772416996/Gemini_Generated_Image_n5dwvwn5dwvwn5dw_nq711a_c_pad_b_gen_fill_w_1024_h_1024_ampt7h.png',
       title: '観光情報がバラバラで見つからない',
       description: '各市町村が独自に情報発信しているため、大分県全体を横断して観光・グルメ・温泉を一括検索できる場所がない。',
     },
     {
-      imageUrl: 'https://res.cloudinary.com/dz9trbwma/image/upload/v1772416995/Gemini_Generated_Image_sauq56sauq56sauq_bgou7c_c_pad_b_gen_fill_w_1024_h_1024_dlmpvb.png',
+      imageUrl: 'https://res.cloudinary.com/dz9trbwma/image/upload/f_auto,q_auto/v1772416995/Gemini_Generated_Image_sauq56sauq56sauq_bgou7c_c_pad_b_gen_fill_w_1024_h_1024_dlmpvb.png',
       title: '「自分だけの旅」を求めて',
       description: 'ツアーではなく、自分のペースで巡りたい。一人旅もインバウンド旅行者も、本当に欲しいのは「地元の人だけが知る、生きた情報」。',
     },
     {
-      imageUrl: 'https://res.cloudinary.com/dz9trbwma/image/upload/v1772416995/Gemini_Generated_Image_tgqneqtgqneqtgqn_ekswrm_c_pad_b_gen_fill_w_1024_h_1024_vyp6lv.png',
+      imageUrl: 'https://res.cloudinary.com/dz9trbwma/image/upload/f_auto,q_auto/v1772416995/Gemini_Generated_Image_tgqneqtgqneqtgqn_ekswrm_c_pad_b_gen_fill_w_1024_h_1024_vyp6lv.png',
       title: '旅先で「困った」が多すぎる',
       description: 'トイレはどこ？ゴミ箱は？次のバスは？旅を楽しむための基本情報が、意外と見つからない。',
     },
@@ -1031,7 +1031,7 @@ const Footer = () => (
         <div>
           <div className="flex items-center gap-3 mb-4">
             <img
-              src="https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png"
+              src="https://res.cloudinary.com/dz9trbwma/image/upload/f_auto,q_auto/v1749032362/icon_n7nsgl.png"
               alt="TOKUDOKU"
               className="h-10 w-10 lg:h-12 lg:w-12"
             />
