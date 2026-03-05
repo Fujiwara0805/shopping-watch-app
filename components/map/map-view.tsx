@@ -68,7 +68,7 @@ const createSimpleCategoryIcon = (category: PostCategory) => {
   };
 };
 
-const optimizeCloudinaryImageUrl = (url: string): string => {
+const optimizeCloudinaryImageUrl = (url: string, maxSize?: number): string => {
   if (!url || typeof url !== 'string') return url;
   if (url.includes('res.cloudinary.com') && url.includes('/upload/')) {
     if (url.includes('q_auto') || url.includes('q_')) return url;
@@ -76,7 +76,9 @@ const optimizeCloudinaryImageUrl = (url: string): string => {
     if (uploadIndex !== -1) {
       const beforeUpload = url.substring(0, uploadIndex + '/upload/'.length);
       const afterUpload = url.substring(uploadIndex + '/upload/'.length);
-      return `${beforeUpload}q_auto:best,f_auto/${afterUpload}`;
+      // maxSize指定時はリサイズ変換も追加（マーカー用サムネイル等）
+      const resize = maxSize ? `w_${maxSize},h_${maxSize},c_fill,g_auto,` : '';
+      return `${beforeUpload}${resize}q_auto:best,f_auto/${afterUpload}`;
     }
   }
   return url;
@@ -112,7 +114,8 @@ const createCategoryPinIcon = async (imageUrls: string[] | null, title: string |
   if (!imageUrl || typeof imageUrl !== 'string' || !imageUrl.startsWith('http')) {
     return createSimpleCategoryIcon(category);
   }
-  const optimizedImageUrl = optimizeCloudinaryImageUrl(imageUrl);
+  // マーカーサイズ(45px) × デバイスピクセル比(2x) = 90px → 100px でリサイズ
+  const optimizedImageUrl = optimizeCloudinaryImageUrl(imageUrl, 100);
   const imageSize = 45;
   const borderWidth = 2;
   const textPadding = 4;
@@ -892,6 +895,7 @@ export function MapView() {
 
     const icon = createFacilityMarkerIcon('evacuation_site');
     const newMarkers: google.maps.Marker[] = [];
+    const markerById = new Map<string, google.maps.Marker>();
 
     filteredSites.forEach(site => {
       const marker = new window.google.maps.Marker({
@@ -915,10 +919,32 @@ export function MapView() {
         setSelectedGtfsBusStop(null);
       });
       newMarkers.push(marker);
+      markerById.set(site.id, marker);
     });
 
     setFacilityMarkers(prev => new Map(prev).set('evacuation_site', newMarkers));
-  }, [activeSpot, map, savedLocation, latitude, longitude]);
+
+    // Google Maps写真の非同期取得（避難所もプログレッシブ・エンハンスメント）
+    if (filteredSites.length > 0) {
+      lookupPhotosInBatches(
+        map,
+        filteredSites.map(s => ({ id: s.id, name: s.name, lat: s.lat, lng: s.lng })),
+        async (spotId, photoUrl) => {
+          const marker = markerById.get(spotId);
+          if (marker && marker.getMap()) {
+            try {
+              const photoIcon = await createCircularPhotoMarkerIcon(photoUrl, 'evacuation_site');
+              if (marker.getMap()) {
+                marker.setIcon(photoIcon);
+              }
+            } catch {
+              // Fallback: keep the existing icon
+            }
+          }
+        },
+      );
+    }
+  }, [activeSpot, map, savedLocation, latitude, longitude, lookupPhotosInBatches]);
 
   // Effect: re-search on map idle (prioritize user location)
   useEffect(() => {

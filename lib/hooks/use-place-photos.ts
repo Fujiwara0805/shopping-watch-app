@@ -11,6 +11,7 @@ const BATCH_DELAY_MS = 200;
 
 /**
  * Google Places API を使ってスポットの写真を取得するフック。
+ * nearbySearch + keyword でファジーマッチングし、日本語スポット名にも強い。
  * セッション内キャッシュ（ネガティブキャッシュ含む）で重複リクエストを防止する。
  */
 export function usePlacePhotos() {
@@ -37,19 +38,24 @@ export function usePlacePhotos() {
     return new Promise((resolve) => {
       try {
         const service = new google.maps.places.PlacesService(map);
-        service.findPlaceFromQuery(
+        const location = new google.maps.LatLng(spotLat, spotLng);
+
+        // nearbySearch: keyword でファジーマッチング + 狭い半径(200m)で位置精度を確保
+        service.nearbySearch(
           {
-            query: spotName,
-            fields: ['photos', 'geometry'],
-            locationBias: new google.maps.LatLng(spotLat, spotLng),
+            location,
+            radius: 200,
+            keyword: spotName,
           },
           (results, status) => {
             pendingRef.current.delete(spotId);
+
             if (
               status === google.maps.places.PlacesServiceStatus.OK &&
               results &&
               results.length > 0
             ) {
+              // 最初のresultから写真を取得（距離が近い順に返される）
               const photos = results[0].photos;
               if (photos && photos.length > 0) {
                 const photoUrl = photos[0].getUrl({ maxWidth: 100, maxHeight: 100 });
@@ -57,7 +63,54 @@ export function usePlacePhotos() {
                 resolve(photoUrl);
                 return;
               }
+
+              // 最初の結果に写真がなければ、2番目以降も試す
+              for (let i = 1; i < Math.min(results.length, 3); i++) {
+                const altPhotos = results[i].photos;
+                if (altPhotos && altPhotos.length > 0) {
+                  const photoUrl = altPhotos[0].getUrl({ maxWidth: 100, maxHeight: 100 });
+                  cacheRef.current.set(spotId, { photoUrl });
+                  resolve(photoUrl);
+                  return;
+                }
+              }
             }
+
+            // ZERO_RESULTS の場合、半径を広げて再検索（500m）
+            if (
+              status === google.maps.places.PlacesServiceStatus.ZERO_RESULTS ||
+              (status === google.maps.places.PlacesServiceStatus.OK && (!results || results.length === 0))
+            ) {
+              service.nearbySearch(
+                {
+                  location,
+                  radius: 500,
+                  keyword: spotName,
+                },
+                (retryResults, retryStatus) => {
+                  if (
+                    retryStatus === google.maps.places.PlacesServiceStatus.OK &&
+                    retryResults &&
+                    retryResults.length > 0
+                  ) {
+                    for (let i = 0; i < Math.min(retryResults.length, 3); i++) {
+                      const photos = retryResults[i].photos;
+                      if (photos && photos.length > 0) {
+                        const photoUrl = photos[0].getUrl({ maxWidth: 100, maxHeight: 100 });
+                        cacheRef.current.set(spotId, { photoUrl });
+                        resolve(photoUrl);
+                        return;
+                      }
+                    }
+                  }
+                  // No photo found after retry - cache negative result
+                  cacheRef.current.set(spotId, { photoUrl: null });
+                  resolve(null);
+                },
+              );
+              return;
+            }
+
             // No photo found - cache negative result
             cacheRef.current.set(spotId, { photoUrl: null });
             resolve(null);
