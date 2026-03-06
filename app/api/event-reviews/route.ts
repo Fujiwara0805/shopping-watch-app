@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { supabaseServer } from '@/lib/supabase-server';
-import { getGuestProfileId } from '@/app/_actions/facility-reports';
+import { getGuestProfileId } from '@/app/_actions/guest-profile';
 
 /**
  * GET /api/event-reviews?post_id=xxx
