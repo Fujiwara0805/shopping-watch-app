@@ -3,13 +3,13 @@
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence, useScroll, useTransform, useInView } from 'framer-motion';
-import { MapPin, Menu, X, ChevronRight, Calendar, LogOut, Search, Layers, Map, Users, ArrowRight, Compass, ExternalLink, Sparkles, MessageSquare } from 'lucide-react';
+import { MapPin, Menu, X, ChevronRight, Calendar, LogOut, Search, Map, ArrowRight, Compass, ExternalLink, Sparkles, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useSession, signOut } from 'next-auth/react';
 import { NoteArticlesSection } from '@/components/external-content';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { designTokens, OITA_MUNICIPALITIES, TARGET_AUDIENCE_OPTIONS, FACILITY_ICON_URLS } from '@/lib/constants';
+import { designTokens, OITA_MUNICIPALITIES, TARGET_AUDIENCE_OPTIONS } from '@/lib/constants';
 import { trackEvent } from '@/lib/services/analytics';
 import { useFeedback } from '@/lib/contexts/feedback-context';
 import { FeedbackModal } from '@/components/feedback/feedback-modal';
@@ -639,30 +639,30 @@ const SolutionSection = () => {
   const solutions = [
     {
       label: 'DISCOVER',
-      title: '1,000件超の観光スポットを地図で',
-      description: '歴史・神社仏閣、自然景観、レジャーなど大分県内1,000件以上の観光スポットを地図上に集約。行きたい場所がすぐに見つかります。',
-      iconUrl: FACILITY_ICON_URLS.tourism_spot,
-      color: '#059669',
-    },
-    {
-      label: 'TASTE',
-      title: '地元のグルメ・温泉を探す',
-      description: '100軒以上の飲食店と180箇所以上の温泉データを搭載。「この近くで何か食べたい」「温泉に入りたい」をすぐに解決。',
-      iconUrl: FACILITY_ICON_URLS.restaurant,
-      color: '#EA580C',
-    },
-    {
-      label: 'PRESERVE',
       title: '週末のイベント、もう見逃さない',
       description: '大分県内のイベント・祭り・マルシェをリアルタイムで集約。「知らなかった」を「行ってきた！」に変える。地域の文化を未来へつなぎます。',
       iconElement: <Sparkles className="w-5 h-5" />,
       color: designTokens.colors.accent.lilac,
     },
     {
-      label: 'NAVIGATE',
-      title: 'お出かけ先で困らないために',
-      description: 'トイレ・ゴミ箱・バス停・駅・避難所を地図上でかんたんに確認。旅先での「困った」をその場で解決します。',
-      iconUrl: FACILITY_ICON_URLS.toilet,
+      label: 'MAP',
+      title: 'イベントを地図でかんたん検索',
+      description: '現在地周辺や気になるエリアのイベントを地図上で直感的に探せます。開催場所まで迷わずたどり着けます。',
+      iconElement: <MapPin className="w-5 h-5" />,
+      color: designTokens.colors.primary.base,
+    },
+    {
+      label: 'REVIEW',
+      title: '参加者の声でイベントを選ぶ',
+      description: '実際に参加した人のレビューや評価を確認。次のお出かけ先選びの参考に。あなたの感想も気軽に投稿できます。',
+      iconElement: <MessageSquare className="w-5 h-5" />,
+      color: '#EA580C',
+    },
+    {
+      label: 'CONNECT',
+      title: '大分の「いま」とつながる',
+      description: '季節の祭り、地元のマルシェ、文化イベント。大分県18市町村のリアルタイムな情報で、地域の魅力を再発見。',
+      iconElement: <Calendar className="w-5 h-5" />,
       color: designTokens.colors.secondary.fern,
     },
   ];
@@ -689,7 +689,7 @@ const SolutionSection = () => {
               color: designTokens.colors.primary.base,
             }}
           >
-            大分のすべてを
+            大分のイベントを
             <br />
             ひとつの地図に
           </motion.h2>
@@ -703,9 +703,9 @@ const SolutionSection = () => {
               color: designTokens.colors.text.secondary,
             }}
           >
-            観光スポット・グルメ・温泉・イベント情報から、
+            大分県18市町村のイベント・祭り・マルシェ情報を
             <br className="hidden sm:block" />
-            トイレやゴミ箱などのお役立ち施設まで。大分の旅を、もっと自由に。
+            リアルタイムで集約。地図で見つけて、すぐに出かけよう。
           </motion.p>
         </div>
 
@@ -746,11 +746,7 @@ const SolutionSection = () => {
                         color: solution.color,
                       }}
                     >
-                      {'iconUrl' in solution ? (
-                        <img src={solution.iconUrl} alt={solution.label} className="w-5 h-5 object-contain" />
-                      ) : (
-                        solution.iconElement
-                      )}
+                      {solution.iconElement}
                     </div>
                     <h3
                       className="text-lg sm:text-xl md:text-2xl lg:text-2xl font-semibold leading-tight min-w-0"
@@ -788,162 +784,6 @@ const SolutionSection = () => {
 };
 
 
-// ===================================================================
-// SPOT SHOWCASE SECTION
-// ===================================================================
-
-const SpotShowcaseSection = ({ onStart }: { onStart: () => void }) => {
-  const sectionRef = useRef<HTMLElement>(null);
-  const isInView = useInView(sectionRef, { once: true, margin: '-100px' });
-
-  const spotCategories = [
-    {
-      iconUrl: FACILITY_ICON_URLS.tourism_spot,
-      label: '観光スポット',
-      count: '1,000+',
-      description: '自然景観・歴史・文化・レジャー',
-      color: '#059669',
-    },
-    {
-      iconUrl: FACILITY_ICON_URLS.hot_spring,
-      label: '温泉',
-      count: '180+',
-      description: '公衆浴場から名湯まで',
-      color: '#EF4444',
-    },
-    {
-      iconUrl: FACILITY_ICON_URLS.restaurant,
-      label: 'グルメ',
-      count: '100+',
-      description: '郷土料理・カフェ・飲食店',
-      color: '#EA580C',
-    },
-    {
-      iconUrl: FACILITY_ICON_URLS.toilet,
-      label: 'トイレ',
-      count: '160+',
-      description: '公共トイレの場所を地図で確認',
-      color: '#8B5CF6',
-    },
-    {
-      iconUrl: FACILITY_ICON_URLS.bus_stop,
-      label: 'バス停',
-      count: 'GTFS連携',
-      description: 'リアルタイム時刻表対応',
-      color: '#3B82F6',
-    },
-    {
-      iconUrl: FACILITY_ICON_URLS.train_station,
-      label: '駅',
-      count: '大分県内',
-      description: 'JR九州の各駅を表示',
-      color: '#06B6D4',
-    },
-  ];
-
-  return (
-    <section
-      ref={sectionRef}
-      className="py-24 sm:py-32 lg:py-40 px-6 relative overflow-hidden"
-      style={{ background: designTokens.colors.background.cloud }}
-    >
-      <div className="container mx-auto max-w-5xl lg:max-w-6xl relative z-10">
-        <div className="text-center mb-16 lg:mb-20">
-          <SectionLabel>Spot Data</SectionLabel>
-          <motion.h2
-            initial={{ opacity: 0, y: 30 }}
-            animate={isInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.6, delay: 0.1 }}
-            className="mt-4 text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-semibold leading-tight"
-            style={{
-              fontFamily: designTokens.typography.display,
-              color: designTokens.colors.primary.base,
-            }}
-          >
-            大分県全域のスポットデータ
-          </motion.h2>
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={isInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="mt-6 text-lg lg:text-xl max-w-2xl lg:max-w-3xl mx-auto leading-relaxed"
-            style={{
-              fontFamily: designTokens.typography.body,
-              color: designTokens.colors.text.secondary,
-            }}
-          >
-            大分県18市町村の観光資源を網羅的に収集。
-            <br className="hidden sm:block" />
-            地図を開くだけで、あなたの周りの魅力が一目でわかります。
-          </motion.p>
-        </div>
-
-        {/* Spot Category Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 lg:gap-6 mb-12">
-          {spotCategories.map((cat, index) => (
-              <motion.div
-                key={cat.label}
-                initial={{ opacity: 0, y: 20 }}
-                animate={isInView ? { opacity: 1, y: 0 } : {}}
-                transition={{ duration: 0.5, delay: 0.3 + index * 0.08 }}
-              >
-                <ElevationCard elevation="low" padding="md" hover={true} className="text-center h-full">
-                  <div
-                    className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3 overflow-hidden"
-                    style={{ background: `${cat.color}15` }}
-                  >
-                    <img src={cat.iconUrl} alt={cat.label} className="h-6 w-6 object-contain" />
-                  </div>
-                  <p
-                    className="text-2xl font-bold mb-1"
-                    style={{ fontFamily: designTokens.typography.display, color: cat.color }}
-                  >
-                    {cat.count}
-                  </p>
-                  <p
-                    className="text-sm font-semibold mb-1"
-                    style={{ color: designTokens.colors.text.primary }}
-                  >
-                    {cat.label}
-                  </p>
-                  <p
-                    className="text-xs leading-relaxed"
-                    style={{ color: designTokens.colors.text.muted }}
-                  >
-                    {cat.description}
-                  </p>
-                </ElevationCard>
-              </motion.div>
-          ))}
-        </div>
-
-        {/* CTA */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.6, delay: 0.8 }}
-          className="text-center"
-        >
-          <motion.button
-            whileHover={{ scale: 1.03, y: -2 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={onStart}
-            className="group inline-flex items-center gap-3 px-8 py-4 lg:px-10 lg:py-5 rounded-full font-semibold text-base transition-all"
-            style={{
-              background: designTokens.colors.accent.gold,
-              color: designTokens.colors.text.primary,
-              boxShadow: `0 6px 24px ${designTokens.colors.accent.gold}40`,
-            }}
-          >
-            <Map className="w-5 h-5" />
-            地図でスポットを探す
-            <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
-          </motion.button>
-        </motion.div>
-      </div>
-    </section>
-  );
-};
 
 // ===================================================================
 // FINAL CTA SECTION
@@ -1488,8 +1328,6 @@ export default function Home() {
       <ChallengesSection />
       
       <SolutionSection />
-
-      <SpotShowcaseSection onStart={handleStart} />
 
       <NoteArticlesSection username="kind_ixora3833" maxItems={4} />
       
