@@ -552,14 +552,25 @@ export function MapView() {
       {map && mapInitialized && (
         <div className="absolute top-20 right-4 z-30 flex flex-col gap-3">
           <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} whileTap={{ scale: 0.95 }}>
-            <Button onClick={() => router.push('/')} size="icon" className="h-12 w-12 rounded-full" style={{ background: `${designTokens.colors.background.white}F0`, color: designTokens.colors.primary.base, boxShadow: designTokens.elevation.medium, border: `1px solid ${designTokens.colors.secondary.stone}40` }}>
-              <Home className="h-6 w-6" />
-            </Button>
+            <button
+              onClick={() => router.push('/')}
+              className="flex flex-col items-center gap-0.5 rounded-2xl px-3 py-2"
+              style={{ background: `${designTokens.colors.background.white}F0`, color: designTokens.colors.primary.base, boxShadow: designTokens.elevation.medium, border: `1px solid ${designTokens.colors.secondary.stone}40` }}
+            >
+              <Home className="h-5 w-5" />
+              <span className="text-[10px] font-bold" style={{ color: designTokens.colors.primary.base }}>ホーム</span>
+            </button>
           </motion.div>
           <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.05 }} whileTap={{ scale: 0.95 }}>
-            <Button onClick={handleManualRefresh} size="icon" disabled={isRefreshing || loadingPosts} className="h-12 w-12 rounded-full disabled:opacity-50" style={{ background: `${designTokens.colors.background.white}F0`, color: designTokens.colors.primary.base, boxShadow: designTokens.elevation.medium, border: `1px solid ${designTokens.colors.secondary.stone}40` }}>
-              <RefreshCw className={`h-6 w-6 ${(isRefreshing || loadingPosts) ? 'animate-spin' : ''}`} />
-            </Button>
+            <button
+              onClick={handleManualRefresh}
+              disabled={isRefreshing || loadingPosts}
+              className="flex flex-col items-center gap-0.5 rounded-2xl px-3 py-2 disabled:opacity-50"
+              style={{ background: `${designTokens.colors.background.white}F0`, color: designTokens.colors.primary.base, boxShadow: designTokens.elevation.medium, border: `1px solid ${designTokens.colors.secondary.stone}40` }}
+            >
+              <RefreshCw className={`h-5 w-5 ${(isRefreshing || loadingPosts) ? 'animate-spin' : ''}`} />
+              <span className="text-[10px] font-bold" style={{ color: designTokens.colors.primary.base }}>更新</span>
+            </button>
           </motion.div>
         </div>
       )}
