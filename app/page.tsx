@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence, useScroll, useTransform, useInView } from 'framer-motion';
-import { MapPin, Menu, X, ChevronRight, Calendar, LogOut, Search, Map, ArrowRight, Compass, ExternalLink, Sparkles, MessageSquare } from 'lucide-react';
+import { MapPin, Menu, X, ChevronRight, Calendar, LogOut, Compass, ExternalLink, Sparkles, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useSession, signOut } from 'next-auth/react';
 import { NoteArticlesSection } from '@/components/external-content';
@@ -14,7 +14,6 @@ import { trackEvent } from '@/lib/services/analytics';
 import { useFeedback } from '@/lib/contexts/feedback-context';
 import { FeedbackModal } from '@/components/feedback/feedback-modal';
 import { supabase } from '@/lib/supabaseClient';
-import Image from 'next/image';
 
 // ===================================================================
 // TYPE DEFINITIONS
@@ -428,7 +427,7 @@ const HeroSection = ({
             大分の魅力をひとつに
             <br />
             <span className="relative inline-block mt-2">
-              <span className="relative z-10">観光・グルメ・温泉を探そう</span>
+              <span className="relative z-10">イベントを探そう</span>
               <motion.span
                 initial={{ scaleX: 0 }}
                 animate={{ scaleX: 1 }}
@@ -532,7 +531,6 @@ const HeroSection = ({
                       color: designTokens.colors.text.inverse,
                     }}
                   >
-                    <Search className="w-3.5 h-3.5 mr-1.5" />
                     イベントを探す
                   </Button>
                 </div>
@@ -558,15 +556,13 @@ const HeroSection = ({
                 boxShadow: `0 8px 32px ${designTokens.colors.accent.gold}50`,
               }}
             >
-              <Map className="w-5 h-5" />
               地図から探す
-              <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
             </motion.button>
             <p
               className="text-sm lg:text-base mt-4"
               style={{ color: designTokens.colors.text.muted }}
             >
-              登録不要 ー 1,000件以上の観光・グルメ・温泉スポットを地図で探せる
+              登録不要 ー 大分県内のイベント・祭り・マルシェを地図で探せる
             </p>
           </motion.div>
         </div>
@@ -610,8 +606,8 @@ const ChallengesSection = () => {
   const challenges = [
     {
       imageUrl: 'https://res.cloudinary.com/dz9trbwma/image/upload/f_auto,q_auto/v1772416996/Gemini_Generated_Image_n5dwvwn5dwvwn5dw_nq711a_c_pad_b_gen_fill_w_1024_h_1024_ampt7h.png',
-      title: '観光情報がバラバラで見つからない',
-      description: '各市町村が独自に情報発信しているため、大分県全体を横断して観光・グルメ・温泉を一括検索できる場所がない。',
+      title: 'イベント情報がバラバラで見つからない',
+      description: '各市町村が独自に情報発信しているため、大分県全体のイベント・祭り・マルシェを一括検索できる場所がない。',
     },
     {
       imageUrl: 'https://res.cloudinary.com/dz9trbwma/image/upload/f_auto,q_auto/v1772416995/Gemini_Generated_Image_sauq56sauq56sauq_bgou7c_c_pad_b_gen_fill_w_1024_h_1024_dlmpvb.png',
@@ -659,9 +655,9 @@ const ChallengesSection = () => {
               color: designTokens.colors.text.secondary,
             }}
           >
-            各々の市町村が独自の観光サイトで魅力的な情報を発信していますが、
+            各々の市町村が独自にイベント情報を発信していますが、
             <br className="hidden sm:block" />
-            大分県内の魅力を一括で検索できるサイトがあれば、もっと多くの人に大分の魅力を届けられるのではないかと考えました。
+            大分県内のイベントを一括で検索できるサイトがあれば、もっと多くの人に大分の魅力を届けられるのではないかと考えました。
           </motion.p>
         </div>
 
@@ -1018,13 +1014,11 @@ const EventShowcaseSection = () => {
                   {/* Image */}
                   <div className="relative w-full h-[160px] sm:h-[180px] overflow-hidden bg-gray-100">
                     {event.image_url ? (
-                      <Image
+                      <img
                         src={event.image_url}
                         alt={event.event_name}
-                        fill
-                        className="object-cover group-hover:scale-105 transition-transform duration-500"
-                        sizes="280px"
-                        unoptimized
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        loading="lazy"
                       />
                     ) : (
                       <div
@@ -1109,7 +1103,7 @@ const FinalCTASection = ({ onStart }: { onStart: () => void }) => {
             className="text-lg lg:text-xl max-w-md lg:max-w-lg mx-auto"
             style={{ color: `${designTokens.colors.text.inverse}90` }}
           >
-            観光・グルメ・温泉・イベント、すべて無料・登録不要。
+            イベント・祭り・マルシェ情報、すべて無料・登録不要。
           </p>
 
           <motion.button
@@ -1123,9 +1117,7 @@ const FinalCTASection = ({ onStart }: { onStart: () => void }) => {
               boxShadow: `0 12px 48px ${designTokens.colors.accent.gold}40`,
             }}
           >
-            <Compass className="w-6 h-6" />
             地図を開く
-            <ArrowRight className="w-6 h-6 transition-transform group-hover:translate-x-2" />
           </motion.button>
         </motion.div>
       </div>
@@ -1172,7 +1164,7 @@ const Footer = () => (
               color: designTokens.colors.text.secondary,
             }}
           >
-            大分の観光・グルメ・温泉・イベントを、
+            大分のイベント・祭り・マルシェを、
             <br />
             ひとつの地図で、もっと身近に。
           </p>
