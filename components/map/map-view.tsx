@@ -259,6 +259,7 @@ export function MapView() {
   const [checkingIn, setCheckingIn] = useState<string | null>(null);
   const [checkedInPosts, setCheckedInPosts] = useState<Set<string>>(new Set());
   const [navigatingToDetail, setNavigatingToDetail] = useState<string | null>(null);
+  const [isCreatingMarkers, setIsCreatingMarkers] = useState(false);
 
   // Event card swipe state
   const [eventCardIndex, setEventCardIndex] = useState(0);
@@ -389,6 +390,7 @@ export function MapView() {
 
   const createPostMarkers = useCallback(async () => {
     if (!map || !posts.length || !window.google?.maps) return;
+    setIsCreatingMarkers(true);
     postMarkers.forEach(marker => { if (marker?.setMap) marker.setMap(null); });
     const newMarkers: google.maps.Marker[] = [];
     const locationGroups = groupPostsByLocation(posts);
@@ -396,7 +398,7 @@ export function MapView() {
     const batchSize = 10;
     const processNextBatch = async () => {
       const batch = posts.slice(batchIndex, batchIndex + batchSize);
-      if (batch.length === 0) { setPostMarkers(newMarkers); return; }
+      if (batch.length === 0) { setPostMarkers(newMarkers); setIsCreatingMarkers(false); return; }
       const batchPromises = batch.map(async (post) => {
         if (!post.store_latitude || !post.store_longitude) return;
         const lat = Math.round(post.store_latitude * 10000) / 10000;
@@ -557,6 +559,17 @@ export function MapView() {
         </div>
       )}
 
+      {/* イベント情報表示中（左上） */}
+      <AnimatePresence>
+        {isCreatingMarkers && (
+          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="absolute top-20 left-4 z-40 backdrop-blur-sm px-4 py-2 rounded-full flex items-center gap-2" style={{ background: `${designTokens.colors.background.white}F5`, boxShadow: designTokens.elevation.medium }}>
+            <motion.div animate={{ rotate: 360 }} transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}>
+              <MapPin className="h-4 w-4" style={{ color: designTokens.colors.accent.lilac }} />
+            </motion.div>
+            <span className="text-sm font-medium" style={{ color: designTokens.colors.text.primary }}>イベント情報表示中...</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
       {/* 更新中表示 */}
       <AnimatePresence>
         {(isRefreshing || loadingPosts) && (

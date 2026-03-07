@@ -3,14 +3,11 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Bell, LogOut, Settings, Edit,  Store as StoreIcon, Calendar,  User, CheckCircle,  ArrowRight, Trophy, Compass, ShoppingBag, Megaphone, Trash2 } from 'lucide-react';
+import { LogOut, Settings, Edit,  Store as StoreIcon, Calendar,  User, ArrowRight, Trophy, Compass, ShoppingBag, Megaphone, Trash2 } from 'lucide-react';
 
 import { COLORS } from '@/lib/constants/colors';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
 import { useSession, signOut } from 'next-auth/react';
 import { supabase } from '@/lib/supabaseClient';
 import { cn } from '@/lib/utils';
@@ -136,91 +133,6 @@ const SettingItem = ({ icon: Icon, title, description, action, variant = "defaul
   </motion.div>
 );
 
-// LINE通知設定コンポーネント
-const LineNotificationSettings = ({ 
-  isConnected, 
-  loading, 
-  onNavigateToLineConnect,
-  onRefreshConnection 
-}: {
-  isConnected: boolean;
-  loading: boolean;
-  onNavigateToLineConnect: () => void;
-  onRefreshConnection: () => void;
-}) => (
-  <motion.div
-    whileHover={{ scale: 1.01 }}
-    className="p-3 bg-white rounded-lg border shadow-sm"
-    style={{ borderColor: COLORS.border }}
-  >
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <div className="space-y-0.5 flex-1 min-w-0">
-          <div className="flex items-center space-x-2">
-            <Label className="text-sm font-medium">LINE通知</Label>
-            {isConnected ? (
-              <Badge variant="secondary" className="text-xs" style={{ backgroundColor: `${COLORS.success}20`, color: COLORS.success }}>
-                <CheckCircle className="h-3 w-3 mr-1" />
-                接続済み
-              </Badge>
-            ) : (
-              <Badge variant="secondary" className="text-xs" style={{ backgroundColor: COLORS.border, color: COLORS.textSecondary }}>
-                未接続
-              </Badge>
-            )}
-          </div>
-          <p className="text-xs" style={{ color: COLORS.textMuted }}>
-            {isConnected 
-              ? "LINEでお得情報を受信中です" 
-              : "LINEでお得情報を受け取る"
-            }
-          </p>
-        </div>
-      </div>
-      
-      <div className="flex space-x-2">
-        {isConnected ? (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onRefreshConnection}
-            disabled={loading}
-            className="text-xs px-3 py-1 flex-1"
-            style={{ color: COLORS.success, borderColor: COLORS.success }}
-          >
-            {loading ? (
-              <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                className="h-3 w-3 mr-1"
-              >
-                ⟳
-              </motion.div>
-            ) : (
-              <CheckCircle className="h-3 w-3 mr-1" />
-            )}
-            {loading ? '確認中...' : '接続状況を確認'}
-          </Button>
-        ) : (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onNavigateToLineConnect}
-            className="text-xs px-3 py-1 flex-1"
-            style={{ color: COLORS.success, borderColor: COLORS.success }}
-          >
-            <svg className="h-3 w-3 mr-1" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63h2.386c.346 0 .627.285.627.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63.346 0 .628.285.628.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.282.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/>
-            </svg>
-            LINE設定へ
-            <ArrowRight className="h-3 w-3 ml-1" />
-          </Button>
-        )}
-      </div>
-    </div>
-  </motion.div>
-);
-
 function ProfilePageContent() {
   const { data: session } = useSession();
   const [profile, setProfile] = useState<AppProfile | null>(null);
@@ -230,11 +142,6 @@ function ProfilePageContent() {
   const { toast } = useToast();
   const [currentUserLevel, setCurrentUserLevel] = useState<any>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
-
-  // LINE接続状況の管理
-  const [isLineConnected, setIsLineConnected] = useState(false);
-  const [checkingLineConnection, setCheckingLineConnection] = useState(false);
-  
   // ボタンローディング状態の管理
   const [accountSettingsLoading, setAccountSettingsLoading] = useState(false);
   const [logoutLoading, setLogoutLoading] = useState(false);
@@ -322,43 +229,6 @@ function ProfilePageContent() {
     fetchProfileAndPostsCount();
   }, [session?.user?.id]);
 
-  // LINE接続状況の確認
-  const checkLineConnection = async (showToast = false) => {
-    try {
-      setCheckingLineConnection(true);
-      const response = await fetch('/api/line/check-connection');
-      const data = await response.json();
-      setIsLineConnected(data.isConnected);
-      
-      // showToastがtrueの場合のみトーストを表示
-      if (showToast && data.isConnected) {
-        toast({
-          title: "LINE接続確認完了",
-          description: "LINEアカウントが正常に接続されています。",
-        });
-      }
-    } catch (error) {
-      console.error('Error checking LINE connection:', error);
-      // エラーの場合は常にトーストを表示
-      if (showToast) {
-        toast({
-          title: "接続確認エラー",
-          description: "LINE接続状況の確認に失敗しました。",
-          variant: "destructive"
-        });
-      }
-    } finally {
-      setCheckingLineConnection(false);
-    }
-  };
-
-  // 初回LINE接続状況確認（トーストなし）
-  useEffect(() => {
-    if (session?.user?.id) {
-      checkLineConnection(false);
-    }
-  }, [session?.user?.id]);
-  
   const handleLogout = async () => {
     setLogoutLoading(true);
     try {
@@ -377,11 +247,6 @@ function ProfilePageContent() {
       // ページ遷移後にローディングを解除
       setTimeout(() => setAccountSettingsLoading(false), 100);
     }
-  };
-
-  // LINE設定ページへのナビゲーション
-  const handleNavigateToLineConnect = () => {
-    router.push('/line-connect');
   };
 
   // アカウント削除確認ダイアログを開く（警告表示）
@@ -556,28 +421,6 @@ function ProfilePageContent() {
       {/* メインコンテンツエリア - スクロール可能 */}
       <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
         <div className="h-full overflow-y-auto p-4 space-y-4 custom-scrollbar">
-          {/* 通知設定セクション */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="space-y-2"
-          >
-            <h3 className="text-lg font-bold flex items-center mb-2" style={{ color: COLORS.textPrimary, fontFamily: "'Noto Serif JP', serif" }}>
-              <Bell className="h-5 w-5 mr-2" style={{ color: COLORS.primary }} />
-              通知設定
-            </h3>
-            
-            <LineNotificationSettings
-              isConnected={isLineConnected}
-              loading={checkingLineConnection}
-              onNavigateToLineConnect={handleNavigateToLineConnect}
-              onRefreshConnection={() => checkLineConnection(true)}
-            />
-          </motion.div>
-          
-          <Separator className="my-3" />
-
           {/* アカウント設定セクション */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}

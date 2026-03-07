@@ -13,6 +13,8 @@ import { designTokens, OITA_MUNICIPALITIES, TARGET_AUDIENCE_OPTIONS } from '@/li
 import { trackEvent } from '@/lib/services/analytics';
 import { useFeedback } from '@/lib/contexts/feedback-context';
 import { FeedbackModal } from '@/components/feedback/feedback-modal';
+import { supabase } from '@/lib/supabaseClient';
+import Image from 'next/image';
 
 // ===================================================================
 // TYPE DEFINITIONS
@@ -163,6 +165,87 @@ const ElevationCard = ({
     >
       {children}
     </motion.div>
+  );
+};
+
+// ===================================================================
+// ANNOUNCEMENT SECTION
+// ===================================================================
+
+interface Announcement {
+  date: string;
+  title: string;
+}
+
+const announcements: Announcement[] = [
+  { date: '2026.03.06', title: 'トクドクがリニューアルしました！イベント検索がより便利に。' },
+  { date: '2026.03.01', title: '大分県内のイベント情報を随時更新中です。' },
+];
+
+const AnnouncementSection = () => {
+  const sectionRef = useRef<HTMLElement>(null);
+  const isInView = useInView(sectionRef, { once: true, margin: '-50px' });
+
+  return (
+    <section
+      ref={sectionRef}
+      className="py-10 sm:py-12 px-6 relative"
+      style={{ background: designTokens.colors.background.white }}
+    >
+      <div className="container mx-auto max-w-4xl">
+        <div className="text-center mb-6">
+          <SectionLabel>News</SectionLabel>
+          <motion.h2
+            initial={{ opacity: 0, y: 20 }}
+            animate={isInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="mt-2 text-2xl sm:text-3xl font-semibold"
+            style={{
+              fontFamily: designTokens.typography.display,
+              color: designTokens.colors.primary.base,
+            }}
+          >
+            お知らせ
+          </motion.h2>
+        </div>
+
+        <div className="space-y-3">
+          {announcements.map((item, index) => (
+            <motion.div
+              key={index}
+              initial={{ opacity: 0, y: 15 }}
+              animate={isInView ? { opacity: 1, y: 0 } : {}}
+              transition={{ duration: 0.4, delay: 0.2 + index * 0.1 }}
+              className="flex items-center gap-4 py-3 px-4 rounded-xl"
+              style={{
+                background: designTokens.colors.background.mist,
+                border: `1px solid ${designTokens.colors.secondary.stone}20`,
+              }}
+            >
+              <span
+                className="flex-shrink-0 text-xs font-bold px-3 py-1 rounded-full"
+                style={{
+                  background: `${designTokens.colors.primary.base}12`,
+                  color: designTokens.colors.primary.base,
+                  fontFamily: designTokens.typography.body,
+                }}
+              >
+                {item.date}
+              </span>
+              <span
+                className="text-sm sm:text-base"
+                style={{
+                  color: designTokens.colors.text.primary,
+                  fontFamily: designTokens.typography.body,
+                }}
+              >
+                {item.title}
+              </span>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
   );
 };
 
@@ -783,7 +866,204 @@ const SolutionSection = () => {
   );
 };
 
+// ===================================================================
+// EVENT SHOWCASE SECTION (マーキーアニメーション)
+// ===================================================================
 
+interface ShowcaseEvent {
+  id: string;
+  event_name: string;
+  store_name: string;
+  image_url: string | null;
+}
+
+const EventShowcaseSection = () => {
+  const sectionRef = useRef<HTMLElement>(null);
+  const isInView = useInView(sectionRef, { once: true, margin: '-100px' });
+  const [events, setEvents] = useState<ShowcaseEvent[]>([]);
+
+  useEffect(() => {
+    const fetchEvents = async () => {
+      const now = new Date().toISOString().split('T')[0];
+      const { data, error } = await supabase
+        .from('posts')
+        .select('id, event_name, store_name, image_urls, event_start_date, event_end_date')
+        .eq('is_deleted', false)
+        .eq('category', 'イベント情報')
+        .eq('prefecture', '大分県')
+        .or(`event_end_date.gte.${now},event_end_date.is.null`)
+        .order('event_start_date', { ascending: true })
+        .limit(20);
+
+      if (error || !data) return;
+
+      const mapped: ShowcaseEvent[] = data.map((item) => {
+        let imageUrl: string | null = null;
+        const urls = item.image_urls;
+        if (urls) {
+          if (typeof urls === 'string') {
+            try {
+              const parsed = JSON.parse(urls);
+              imageUrl = Array.isArray(parsed) && parsed.length > 0 ? parsed[0] : null;
+            } catch {
+              imageUrl = null;
+            }
+          } else if (Array.isArray(urls) && urls.length > 0) {
+            imageUrl = urls[0];
+          }
+        }
+        // Cloudinary最適化
+        if (imageUrl && imageUrl.includes('cloudinary.com') && !imageUrl.includes('w_300')) {
+          imageUrl = imageUrl.replace('/upload/', '/upload/f_auto,q_auto,w_300,h_200,c_fill/');
+        }
+        return {
+          id: item.id,
+          event_name: item.event_name || item.store_name,
+          store_name: item.store_name,
+          image_url: imageUrl,
+        };
+      });
+
+      setEvents(mapped);
+    };
+
+    fetchEvents();
+  }, []);
+
+  if (events.length === 0) return null;
+
+  // マーキー用に2セット用意（途切れなくループするため）
+  const doubledEvents = [...events, ...events];
+
+  return (
+    <section
+      ref={sectionRef}
+      className="py-20 sm:py-24 relative overflow-hidden"
+      style={{ background: designTokens.colors.primary.base }}
+    >
+      <OrganicMeshBackground variant="primary" />
+
+      <div className="relative z-10">
+        {/* Section Header */}
+        <div className="text-center mb-12 px-6">
+          <motion.span
+            initial={{ opacity: 0, y: 10 }}
+            animate={isInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.5 }}
+            className="inline-block text-xs lg:text-sm font-semibold tracking-[0.3em] uppercase"
+            style={{
+              color: designTokens.colors.accent.gold,
+              fontFamily: designTokens.typography.body,
+            }}
+          >
+            Event List
+          </motion.span>
+          <motion.h2
+            initial={{ opacity: 0, y: 20 }}
+            animate={isInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.6, delay: 0.1 }}
+            className="mt-3 text-3xl sm:text-4xl md:text-5xl font-semibold"
+            style={{
+              fontFamily: designTokens.typography.display,
+              color: '#FFFFFF',
+            }}
+          >
+            開催中のイベント
+          </motion.h2>
+          <motion.p
+            initial={{ opacity: 0, y: 15 }}
+            animate={isInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="mt-4 text-base sm:text-lg max-w-xl mx-auto"
+            style={{
+              color: 'rgba(255,255,255,0.7)',
+              fontFamily: designTokens.typography.body,
+            }}
+          >
+            大分県内で開催中・近日開催のイベントをチェック
+          </motion.p>
+        </div>
+
+        {/* マーキーアニメーション */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={isInView ? { opacity: 1 } : {}}
+          transition={{ duration: 0.8, delay: 0.3 }}
+          className="relative"
+        >
+          <style jsx>{`
+            @keyframes marquee {
+              0% { transform: translateX(0); }
+              100% { transform: translateX(-50%); }
+            }
+            .marquee-track {
+              animation: marquee 40s linear infinite;
+            }
+            .marquee-track:hover {
+              animation-play-state: paused;
+            }
+          `}</style>
+
+          <div className="overflow-hidden">
+            <div className="marquee-track flex gap-5 w-max">
+              {doubledEvents.map((event, index) => (
+                <div
+                  key={`${event.id}-${index}`}
+                  className="flex-shrink-0 w-[260px] sm:w-[280px] rounded-2xl overflow-hidden group cursor-pointer transition-transform duration-300 hover:scale-[1.03]"
+                  style={{
+                    background: designTokens.colors.background.white,
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+                  }}
+                >
+                  {/* Image */}
+                  <div className="relative w-full h-[160px] sm:h-[180px] overflow-hidden bg-gray-100">
+                    {event.image_url ? (
+                      <Image
+                        src={event.image_url}
+                        alt={event.event_name}
+                        fill
+                        className="object-cover group-hover:scale-105 transition-transform duration-500"
+                        sizes="280px"
+                        unoptimized
+                      />
+                    ) : (
+                      <div
+                        className="w-full h-full flex items-center justify-center"
+                        style={{ background: `${designTokens.colors.primary.base}15` }}
+                      >
+                        <Calendar className="w-10 h-10" style={{ color: `${designTokens.colors.primary.base}40` }} />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Text */}
+                  <div className="p-4">
+                    <h3
+                      className="text-sm font-semibold leading-snug line-clamp-2 mb-1"
+                      style={{
+                        color: designTokens.colors.text.primary,
+                        fontFamily: designTokens.typography.display,
+                      }}
+                    >
+                      {event.event_name}
+                    </h3>
+                    <p
+                      className="text-xs flex items-center gap-1"
+                      style={{ color: designTokens.colors.text.muted }}
+                    >
+                      <MapPin className="w-3 h-3 flex-shrink-0" />
+                      <span className="truncate">{event.store_name}</span>
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    </section>
+  );
+};
 
 // ===================================================================
 // FINAL CTA SECTION
@@ -1324,15 +1604,19 @@ export default function Home() {
         target={target}
         setTarget={setTarget}
       />
-      
+
+      <AnnouncementSection />
+
       <ChallengesSection />
-      
+
       <SolutionSection />
 
+      <EventShowcaseSection />
+
       <NoteArticlesSection username="kind_ixora3833" maxItems={4} />
-      
+
       <FinalCTASection onStart={handleStart} />
-      
+
       <Footer />
 
       <LocationModal
