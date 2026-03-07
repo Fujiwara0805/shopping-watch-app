@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { GoogleIcon } from "@/components/common/icons/GoogleIcon";
-import { LineConsentModal } from "@/components/common/LineConsentModal";
 import { Loader2, AlertTriangle, Eye, EyeOff, ArrowLeft, RefreshCw } from "lucide-react";
 import { motion } from "framer-motion";
 import { trackEvent } from '@/lib/services/analytics';
@@ -39,7 +38,6 @@ export default function LoginPage() {
   const searchParams = useSearchParams();
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [showLineConsentModal, setShowLineConsentModal] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   const form = useForm<z.infer<typeof loginFormSchema>>({
@@ -81,17 +79,6 @@ export default function LoginPage() {
     setError(null);
     trackEvent('login_attempt', { method: 'google' });
     await signIn("google", { redirect: false });
-  };
-
-  const handleLineLogin = () => {
-    setShowLineConsentModal(true);
-  };
-
-  const handleConfirmLineLogin = async () => {
-    setShowLineConsentModal(false);
-    setIsLoading(true);
-    setError(null);
-    await signIn("line", { redirect: false });
   };
 
   const handleCredentialsLogin = async (values: z.infer<typeof loginFormSchema>) => {
@@ -314,14 +301,6 @@ export default function LoginPage() {
           </motion.div>
         </motion.div>
 
-        <LineConsentModal
-          isOpen={showLineConsentModal}
-          onClose={() => {
-            setShowLineConsentModal(false);
-            setIsLoading(false);
-          }}
-          onConfirm={handleConfirmLineLogin}
-        />
       </>
     );
   }
