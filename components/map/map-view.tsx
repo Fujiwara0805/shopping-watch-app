@@ -4,7 +4,7 @@ import { useRef, useEffect, useState, useCallback } from 'react';
 import { useGeolocation } from '@/lib/hooks/use-geolocation';
 import { useGoogleMapsApi } from '@/components/providers/GoogleMapsApiProvider';
 import { Button } from '@/components/ui/button';
-import { MapPin, AlertTriangle, RefreshCw, Calendar, MapPinIcon, X, Loader2, Compass, Search } from 'lucide-react';
+import { MapPin, AlertTriangle, RefreshCw, Calendar, MapPinIcon, X, Loader2, Compass, Search, Home } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -548,10 +548,15 @@ export function MapView() {
     <div className="w-full h-full relative" style={{ background: designTokens.colors.background.mist }}>
       <div ref={mapContainerRef} className="w-full h-full" style={{ touchAction: 'manipulation', WebkitOverflowScrolling: 'touch', WebkitTouchCallout: 'none', WebkitUserSelect: 'none', userSelect: 'none' }} />
 
-      {/* 更新ボタン（右上） */}
+      {/* ホームボタン + 更新ボタン（右上） */}
       {map && mapInitialized && (
-        <div className="absolute top-20 right-4 z-30">
+        <div className="absolute top-20 right-4 z-30 flex flex-col gap-3">
           <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} whileTap={{ scale: 0.95 }}>
+            <Button onClick={() => router.push('/')} size="icon" className="h-12 w-12 rounded-full" style={{ background: `${designTokens.colors.background.white}F0`, color: designTokens.colors.primary.base, boxShadow: designTokens.elevation.medium, border: `1px solid ${designTokens.colors.secondary.stone}40` }}>
+              <Home className="h-6 w-6" />
+            </Button>
+          </motion.div>
+          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.05 }} whileTap={{ scale: 0.95 }}>
             <Button onClick={handleManualRefresh} size="icon" disabled={isRefreshing || loadingPosts} className="h-12 w-12 rounded-full disabled:opacity-50" style={{ background: `${designTokens.colors.background.white}F0`, color: designTokens.colors.primary.base, boxShadow: designTokens.elevation.medium, border: `1px solid ${designTokens.colors.secondary.stone}40` }}>
               <RefreshCw className={`h-6 w-6 ${(isRefreshing || loadingPosts) ? 'animate-spin' : ''}`} />
             </Button>
