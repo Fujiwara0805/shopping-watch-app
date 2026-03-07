@@ -28,6 +28,7 @@ const BREADCRUMB_MAP: Record<string, { label: string; icon?: React.ElementType }
   'contact': { label: 'お問い合わせ', icon: MessageSquare },
   'faq': { label: 'よくある質問', icon: HelpCircle },
   'release-notes': { label: 'リリースノート', icon: FileText },
+  'announcements': { label: 'お知らせ', icon: FileText },
   'about': { label: 'トクドクとは', icon: HelpCircle },
   'login': { label: 'ログイン', icon: User },
   'register': { label: '新規登録', icon: User },

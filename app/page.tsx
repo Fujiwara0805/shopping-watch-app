@@ -184,6 +184,7 @@ const announcements: Announcement[] = [
 const AnnouncementSection = () => {
   const sectionRef = useRef<HTMLElement>(null);
   const isInView = useInView(sectionRef, { once: true, margin: '-50px' });
+  const router = useRouter();
 
   return (
     <section
@@ -209,17 +210,18 @@ const AnnouncementSection = () => {
         </div>
 
         <div className="space-y-3">
-          {announcements.map((item, index) => (
+          {announcements.slice(0, 3).map((item, index) => (
             <motion.div
               key={index}
               initial={{ opacity: 0, y: 15 }}
               animate={isInView ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.4, delay: 0.2 + index * 0.1 }}
-              className="flex items-center gap-4 py-3 px-4 rounded-xl"
+              className="flex items-center gap-4 py-3 px-4 rounded-xl cursor-pointer hover:opacity-80 transition-opacity"
               style={{
                 background: designTokens.colors.background.mist,
                 border: `1px solid ${designTokens.colors.secondary.stone}20`,
               }}
+              onClick={() => router.push('/announcements')}
             >
               <span
                 className="flex-shrink-0 text-xs font-bold px-3 py-1 rounded-full"
@@ -240,9 +242,29 @@ const AnnouncementSection = () => {
               >
                 {item.title}
               </span>
+              <ChevronRight
+                className="w-4 h-4 flex-shrink-0 ml-auto"
+                style={{ color: designTokens.colors.text.muted }}
+              />
             </motion.div>
           ))}
         </div>
+
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={isInView ? { opacity: 1 } : {}}
+          transition={{ duration: 0.4, delay: 0.5 }}
+          className="text-center mt-6"
+        >
+          <button
+            onClick={() => router.push('/announcements')}
+            className="text-sm font-medium hover:opacity-70 transition-opacity inline-flex items-center gap-1"
+            style={{ color: designTokens.colors.primary.base }}
+          >
+            すべてのお知らせを見る
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </motion.div>
       </div>
     </section>
   );
@@ -874,8 +896,7 @@ interface ShowcaseEvent {
 }
 
 const EventShowcaseSection = () => {
-  const sectionRef = useRef<HTMLElement>(null);
-  const isInView = useInView(sectionRef, { once: true, margin: '-100px' });
+  const router = useRouter();
   const [events, setEvents] = useState<ShowcaseEvent[]>([]);
 
   useEffect(() => {
@@ -928,131 +949,113 @@ const EventShowcaseSection = () => {
 
   if (events.length === 0) return null;
 
-  // マーキー用に2セット用意（途切れなくループするため）
-  const doubledEvents = [...events, ...events];
-
   return (
-    <section
-      ref={sectionRef}
-      className="py-20 sm:py-24 relative overflow-hidden"
-      style={{ background: designTokens.colors.primary.base }}
-    >
+    <section className="relative py-24 overflow-hidden" style={{ background: designTokens.colors.primary.base }}>
       <OrganicMeshBackground variant="primary" />
 
-      <div className="relative z-10">
-        {/* Section Header */}
-        <div className="text-center mb-12 px-6">
-          <motion.span
-            initial={{ opacity: 0, y: 10 }}
-            animate={isInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.5 }}
-            className="inline-block text-xs lg:text-sm font-semibold tracking-[0.3em] uppercase"
-            style={{
-              color: designTokens.colors.accent.gold,
-              fontFamily: designTokens.typography.body,
-            }}
+      <div className="container mx-auto max-w-6xl relative z-10 px-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="text-center mb-12"
+        >
+          <span
+            className="block text-xs font-semibold tracking-[0.3em] uppercase mb-4"
+            style={{ color: designTokens.colors.accent.gold, fontFamily: designTokens.typography.body }}
           >
             Event List
-          </motion.span>
-          <motion.h2
-            initial={{ opacity: 0, y: 20 }}
-            animate={isInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.6, delay: 0.1 }}
-            className="mt-3 text-3xl sm:text-4xl md:text-5xl font-semibold"
+          </span>
+          <h2
+            className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4"
+            style={{ color: '#FFFFFF', fontFamily: designTokens.typography.display }}
+          >
+            開催中のイベント
+          </h2>
+          <p
+            className="text-lg max-w-xl mx-auto"
+            style={{ color: 'rgba(255,255,255,0.7)', fontFamily: designTokens.typography.body }}
+          >
+            大分県内で開催中・近日開催のイベントをチェック
+          </p>
+        </motion.div>
+      </div>
+
+      {/* マーキーアニメーション（framer-motion） */}
+      <div className="relative w-full overflow-hidden">
+        <motion.div
+          className="flex gap-4"
+          animate={{ x: ['0%', '-50%'] }}
+          transition={{ x: { duration: events.length * 4, repeat: Infinity, ease: 'linear' } }}
+          style={{ width: 'max-content' }}
+        >
+          {[...events, ...events].map((event, index) => (
+            <div
+              key={`${event.id}-${index}`}
+              className="flex-shrink-0 w-[260px] sm:w-[320px] relative group cursor-pointer overflow-hidden rounded-2xl"
+              style={{ border: '1px solid rgba(255,255,255,0.15)' }}
+              onClick={() => router.push(`/map`)}
+            >
+              <div className="relative aspect-[4/3]">
+                {event.image_url ? (
+                  <img
+                    src={event.image_url}
+                    alt={event.event_name}
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    loading="lazy"
+                  />
+                ) : (
+                  <div
+                    className="w-full h-full flex items-center justify-center"
+                    style={{ background: `${designTokens.colors.primary.light}` }}
+                  >
+                    <Calendar className="w-10 h-10" style={{ color: 'rgba(255,255,255,0.4)' }} />
+                  </div>
+                )}
+                <div
+                  className="absolute inset-0"
+                  style={{ background: `linear-gradient(to top, ${designTokens.colors.primary.base} 0%, transparent 60%)` }}
+                />
+                <div className="absolute bottom-3 left-3 right-3">
+                  <h3
+                    className="text-sm font-bold truncate"
+                    style={{ color: '#FFFFFF', textShadow: '0 1px 6px rgba(0,0,0,0.8)' }}
+                  >
+                    {event.event_name}
+                  </h3>
+                  <p
+                    className="text-xs truncate mt-0.5 flex items-center gap-1"
+                    style={{ color: 'rgba(255,255,255,0.7)' }}
+                  >
+                    <MapPin className="w-3 h-3 flex-shrink-0" />
+                    {event.store_name}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </motion.div>
+      </div>
+
+      <div className="container mx-auto max-w-6xl relative z-10 px-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="text-center mt-10"
+        >
+          <Button
+            onClick={() => router.push('/map')}
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-full font-medium transition-all hover:scale-105 min-h-[48px]"
             style={{
-              fontFamily: designTokens.typography.display,
+              background: 'rgba(255,255,255,0.1)',
+              border: '1px solid rgba(255,255,255,0.2)',
               color: '#FFFFFF',
             }}
           >
-            開催中のイベント
-          </motion.h2>
-          <motion.p
-            initial={{ opacity: 0, y: 15 }}
-            animate={isInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="mt-4 text-base sm:text-lg max-w-xl mx-auto"
-            style={{
-              color: 'rgba(255,255,255,0.7)',
-              fontFamily: designTokens.typography.body,
-            }}
-          >
-            大分県内で開催中・近日開催のイベントをチェック
-          </motion.p>
-        </div>
-
-        {/* マーキーアニメーション */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={isInView ? { opacity: 1 } : {}}
-          transition={{ duration: 0.8, delay: 0.3 }}
-          className="relative"
-        >
-          <style jsx>{`
-            @keyframes marquee {
-              0% { transform: translateX(0); }
-              100% { transform: translateX(-50%); }
-            }
-            .marquee-track {
-              animation: marquee 40s linear infinite;
-            }
-            .marquee-track:hover {
-              animation-play-state: paused;
-            }
-          `}</style>
-
-          <div className="overflow-hidden">
-            <div className="marquee-track flex gap-5 w-max">
-              {doubledEvents.map((event, index) => (
-                <div
-                  key={`${event.id}-${index}`}
-                  className="flex-shrink-0 w-[260px] sm:w-[280px] rounded-2xl overflow-hidden group cursor-pointer transition-transform duration-300 hover:scale-[1.03]"
-                  style={{
-                    background: designTokens.colors.background.white,
-                    boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
-                  }}
-                >
-                  {/* Image */}
-                  <div className="relative w-full h-[160px] sm:h-[180px] overflow-hidden bg-gray-100">
-                    {event.image_url ? (
-                      <img
-                        src={event.image_url}
-                        alt={event.event_name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        loading="lazy"
-                      />
-                    ) : (
-                      <div
-                        className="w-full h-full flex items-center justify-center"
-                        style={{ background: `${designTokens.colors.primary.base}15` }}
-                      >
-                        <Calendar className="w-10 h-10" style={{ color: `${designTokens.colors.primary.base}40` }} />
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Text */}
-                  <div className="p-4">
-                    <h3
-                      className="text-sm font-semibold leading-snug line-clamp-2 mb-1"
-                      style={{
-                        color: designTokens.colors.text.primary,
-                        fontFamily: designTokens.typography.display,
-                      }}
-                    >
-                      {event.event_name}
-                    </h3>
-                    <p
-                      className="text-xs flex items-center gap-1"
-                      style={{ color: designTokens.colors.text.muted }}
-                    >
-                      <MapPin className="w-3 h-3 flex-shrink-0" />
-                      <span className="truncate">{event.store_name}</span>
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+            <Calendar className="w-5 h-5" />
+            すべてのイベントを見る
+          </Button>
         </motion.div>
       </div>
     </section>
