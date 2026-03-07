@@ -903,34 +903,35 @@ const EventShowcaseSection = () => {
   const [events, setEvents] = useState<ShowcaseEvent[]>([]);
   const [loadedImages, setLoadedImages] = useState<Set<string>>(new Set());
 
-  const formatDate = (startDate: string | null, endDate: string | null): string => {
-    if (!startDate) return '';
-    const start = new Date(startDate);
-    const startStr = start.toLocaleDateString('ja-JP', { month: 'long', day: 'numeric' });
-    if (endDate && startDate !== endDate) {
-      const end = new Date(endDate);
-      const endStr = end.toLocaleDateString('ja-JP', { month: 'long', day: 'numeric' });
-      return `${startStr} 〜 ${endStr}`;
-    }
-    return startStr;
-  };
-
   useEffect(() => {
     const fetchEvents = async () => {
-      const now = new Date().toISOString().split('T')[0];
+      const now = new Date();
       const { data, error } = await supabase
         .from('posts')
         .select('id, event_name, store_name, city, image_urls, event_start_date, event_end_date')
         .eq('is_deleted', false)
         .eq('category', 'イベント情報')
         .eq('prefecture', '大分県')
-        .or(`event_end_date.gte.${now},event_end_date.is.null`)
-        .order('event_start_date', { ascending: true })
-        .limit(8);
+        .order('event_start_date', { ascending: true });
 
       if (error || !data) return;
 
-      const mapped: ShowcaseEvent[] = data.map((item) => {
+      // isEventNotEnded: 終了日あり → その日23:59:59まで、終了日なし → 開始日23:59:59まで
+      const filtered = data.filter((event) => {
+        if (event.event_end_date) {
+          const endDate = new Date(event.event_end_date);
+          endDate.setHours(23, 59, 59, 999);
+          return now <= endDate;
+        }
+        if (event.event_start_date) {
+          const startDate = new Date(event.event_start_date);
+          startDate.setHours(23, 59, 59, 999);
+          return now <= startDate;
+        }
+        return true;
+      });
+
+      const mapped: ShowcaseEvent[] = filtered.map((item) => {
         let imageUrl: string | null = null;
         const urls = item.image_urls;
         if (urls) {
@@ -967,133 +968,132 @@ const EventShowcaseSection = () => {
 
   if (events.length === 0) return null;
 
+  // マーキー用に2セット繰り返し
+  const duplicatedEvents = [...events, ...events];
+
   return (
     <section className="relative py-24 overflow-hidden" style={{ background: designTokens.colors.primary.base }}>
       <OrganicMeshBackground variant="primary" />
 
-      <div className="container mx-auto max-w-3xl relative z-10 px-4">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="text-center mb-12"
-        >
-          <span
-            className="block text-xs font-semibold tracking-[0.3em] uppercase mb-4"
-            style={{ color: designTokens.colors.accent.gold, fontFamily: designTokens.typography.body }}
+      <div className="relative z-10">
+        <div className="container mx-auto max-w-3xl px-4">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-12"
           >
-            Event List
-          </span>
-          <h2
-            className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4"
-            style={{ color: '#FFFFFF', fontFamily: designTokens.typography.display }}
-          >
-            開催中のイベント
-          </h2>
-          <p
-            className="text-lg max-w-xl mx-auto"
-            style={{ color: 'rgba(255,255,255,0.7)', fontFamily: designTokens.typography.body }}
-          >
-            大分県内で開催中・近日開催のイベントをチェック
-          </p>
-        </motion.div>
+            <span
+              className="block text-xs font-semibold tracking-[0.3em] uppercase mb-4"
+              style={{ color: designTokens.colors.accent.gold, fontFamily: designTokens.typography.body }}
+            >
+              Event List
+            </span>
+            <h2
+              className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4"
+              style={{ color: '#FFFFFF', fontFamily: designTokens.typography.display }}
+            >
+              開催中のイベント
+            </h2>
+            <p
+              className="text-lg max-w-xl mx-auto"
+              style={{ color: 'rgba(255,255,255,0.7)', fontFamily: designTokens.typography.body }}
+            >
+              大分県内で開催中・近日開催のイベントをチェック
+            </p>
+          </motion.div>
+        </div>
 
-        {/* イベントリスト */}
-        <div className="space-y-3">
-          {events.map((event, index) => {
-            const dateStr = formatDate(event.event_start_date, event.event_end_date);
-            const isLoaded = event.image_url ? loadedImages.has(event.id) : true;
-
-            return (
-              <motion.div
-                key={event.id}
-                initial={{ opacity: 0, y: 15 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.3, delay: index * 0.05 }}
-                className="rounded-xl overflow-hidden cursor-pointer transition-all hover:scale-[1.01]"
-                style={{
-                  background: 'rgba(255,255,255,0.08)',
-                  border: '1px solid rgba(255,255,255,0.12)',
-                }}
-                onClick={() => router.push('/map')}
-              >
-                <div className="flex">
+        {/* マーキーアニメーション */}
+        <div className="relative w-full overflow-hidden group">
+          <motion.div
+            className="flex gap-4 w-max"
+            animate={{ x: ['0%', '-50%'] }}
+            transition={{ duration: Math.max(20, events.length * 4), repeat: Infinity, ease: 'linear' }}
+            style={{ willChange: 'transform' }}
+          >
+            {duplicatedEvents.map((event, index) => {
+              const isLoaded = event.image_url ? loadedImages.has(`${event.id}-${index}`) : true;
+              return (
+                <div
+                  key={`${event.id}-${index}`}
+                  className="relative w-56 sm:w-64 flex-shrink-0 aspect-[4/3] rounded-2xl overflow-hidden cursor-pointer group/card"
+                  onClick={() => router.push('/area/大分県')}
+                >
                   {/* 画像 */}
-                  <div
-                    className="relative w-28 h-28 sm:w-32 sm:h-32 flex-shrink-0"
-                    style={{ background: 'rgba(255,255,255,0.05)' }}
-                  >
-                    {event.image_url ? (
-                      <>
-                        {!isLoaded && (
-                          <div className="absolute inset-0 animate-pulse" style={{ background: 'rgba(255,255,255,0.08)' }} />
-                        )}
-                        <img
-                          src={event.image_url}
-                          alt={event.event_name}
-                          className={`w-full h-full object-cover transition-opacity duration-300 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
-                          loading="lazy"
-                          onLoad={() => setLoadedImages(prev => new Set(prev).add(event.id))}
-                        />
-                      </>
-                    ) : (
-                      <div className="flex items-center justify-center h-full">
-                        <Calendar className="h-10 w-10" style={{ color: 'rgba(255,255,255,0.25)' }} />
-                      </div>
-                    )}
-                  </div>
+                  {event.image_url ? (
+                    <>
+                      {!isLoaded && (
+                        <div className="absolute inset-0 animate-pulse" style={{ background: 'rgba(255,255,255,0.08)' }} />
+                      )}
+                      <img
+                        src={event.image_url}
+                        alt={event.event_name}
+                        className={`w-full h-full object-cover transition-all duration-500 group-hover/card:scale-105 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
+                        loading="lazy"
+                        onLoad={() => setLoadedImages(prev => new Set(prev).add(`${event.id}-${index}`))}
+                      />
+                    </>
+                  ) : (
+                    <div
+                      className="w-full h-full flex items-center justify-center"
+                      style={{ background: 'rgba(255,255,255,0.05)' }}
+                    >
+                      <Calendar className="h-10 w-10" style={{ color: 'rgba(255,255,255,0.25)' }} />
+                    </div>
+                  )}
 
-                  {/* コンテンツ */}
-                  <div className="flex-1 p-3 sm:p-4 min-w-0 flex flex-col justify-center">
+                  {/* グラデーションオーバーレイ */}
+                  <div
+                    className="absolute inset-0"
+                    style={{
+                      background: 'linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.2) 50%, transparent 100%)',
+                    }}
+                  />
+
+                  {/* テキスト情報 */}
+                  <div className="absolute bottom-0 left-0 right-0 p-3">
                     <h3
-                      className="font-semibold text-sm sm:text-base mb-1.5 line-clamp-2 leading-snug"
+                      className="font-semibold text-sm leading-snug line-clamp-2 mb-1"
                       style={{ color: '#FFFFFF', fontFamily: designTokens.typography.display }}
                     >
                       {event.event_name}
                     </h3>
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-1.5 text-xs sm:text-sm" style={{ color: 'rgba(255,255,255,0.7)' }}>
-                        <MapPin className="h-3.5 w-3.5 flex-shrink-0" style={{ color: designTokens.colors.accent.gold }} />
-                        <span className="truncate">
-                          {event.city && <span className="font-medium">{event.city} </span>}
-                          {event.store_name}
-                        </span>
-                      </div>
-                      {dateStr && (
-                        <div className="flex items-center gap-1.5 text-xs sm:text-sm" style={{ color: 'rgba(255,255,255,0.5)' }}>
-                          <Calendar className="h-3.5 w-3.5 flex-shrink-0" style={{ color: 'rgba(255,255,255,0.4)' }} />
-                          <span>{dateStr}</span>
-                        </div>
-                      )}
-                    </div>
+                    <p
+                      className="text-xs line-clamp-1"
+                      style={{ color: 'rgba(255,255,255,0.7)' }}
+                    >
+                      {event.store_name}
+                    </p>
                   </div>
                 </div>
-              </motion.div>
-            );
-          })}
+              );
+            })}
+          </motion.div>
         </div>
 
         {/* CTAボタン */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="text-center mt-10"
-        >
-          <Button
-            onClick={() => router.push('/map')}
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-full font-medium transition-all hover:scale-105 min-h-[48px]"
-            style={{
-              background: 'rgba(255,255,255,0.1)',
-              border: '1px solid rgba(255,255,255,0.2)',
-              color: '#FFFFFF',
-            }}
+        <div className="container mx-auto max-w-3xl px-4">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mt-10"
           >
-            <Calendar className="w-5 h-5" />
-            すべてのイベントを見る
-          </Button>
-        </motion.div>
+            <Button
+              onClick={() => router.push('/area/大分県')}
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-full font-medium transition-all hover:scale-105 min-h-[48px]"
+              style={{
+                background: 'rgba(255,255,255,0.1)',
+                border: '1px solid rgba(255,255,255,0.2)',
+                color: '#FFFFFF',
+              }}
+            >
+              <Calendar className="w-5 h-5" />
+              すべてのイベントを見る
+            </Button>
+          </motion.div>
+        </div>
       </div>
     </section>
   );
