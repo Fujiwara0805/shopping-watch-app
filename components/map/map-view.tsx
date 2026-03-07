@@ -554,7 +554,7 @@ export function MapView() {
           <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} whileTap={{ scale: 0.95 }}>
             <button
               onClick={() => router.push('/')}
-              className="flex flex-col items-center gap-0.5 rounded-2xl px-3 py-2"
+              className="flex flex-col items-center gap-0.5 rounded-2xl px-3 py-2 min-w-[52px]"
               style={{ background: `${designTokens.colors.background.white}F0`, color: designTokens.colors.primary.base, boxShadow: designTokens.elevation.medium, border: `1px solid ${designTokens.colors.secondary.stone}40` }}
             >
               <Home className="h-5 w-5" />
@@ -565,7 +565,7 @@ export function MapView() {
             <button
               onClick={handleManualRefresh}
               disabled={isRefreshing || loadingPosts}
-              className="flex flex-col items-center gap-0.5 rounded-2xl px-3 py-2 disabled:opacity-50"
+              className="flex flex-col items-center gap-0.5 rounded-2xl px-3 py-2 min-w-[52px] disabled:opacity-50"
               style={{ background: `${designTokens.colors.background.white}F0`, color: designTokens.colors.primary.base, boxShadow: designTokens.elevation.medium, border: `1px solid ${designTokens.colors.secondary.stone}40` }}
             >
               <RefreshCw className={`h-5 w-5 ${(isRefreshing || loadingPosts) ? 'animate-spin' : ''}`} />
