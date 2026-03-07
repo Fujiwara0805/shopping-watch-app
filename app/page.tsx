@@ -892,25 +892,41 @@ interface ShowcaseEvent {
   id: string;
   event_name: string;
   store_name: string;
+  city: string | null;
   image_url: string | null;
+  event_start_date: string | null;
+  event_end_date: string | null;
 }
 
 const EventShowcaseSection = () => {
   const router = useRouter();
   const [events, setEvents] = useState<ShowcaseEvent[]>([]);
+  const [loadedImages, setLoadedImages] = useState<Set<string>>(new Set());
+
+  const formatDate = (startDate: string | null, endDate: string | null): string => {
+    if (!startDate) return '';
+    const start = new Date(startDate);
+    const startStr = start.toLocaleDateString('ja-JP', { month: 'long', day: 'numeric' });
+    if (endDate && startDate !== endDate) {
+      const end = new Date(endDate);
+      const endStr = end.toLocaleDateString('ja-JP', { month: 'long', day: 'numeric' });
+      return `${startStr} 〜 ${endStr}`;
+    }
+    return startStr;
+  };
 
   useEffect(() => {
     const fetchEvents = async () => {
       const now = new Date().toISOString().split('T')[0];
       const { data, error } = await supabase
         .from('posts')
-        .select('id, event_name, store_name, image_urls, event_start_date, event_end_date')
+        .select('id, event_name, store_name, city, image_urls, event_start_date, event_end_date')
         .eq('is_deleted', false)
         .eq('category', 'イベント情報')
         .eq('prefecture', '大分県')
         .or(`event_end_date.gte.${now},event_end_date.is.null`)
         .order('event_start_date', { ascending: true })
-        .limit(20);
+        .limit(8);
 
       if (error || !data) return;
 
@@ -929,7 +945,6 @@ const EventShowcaseSection = () => {
             imageUrl = urls[0];
           }
         }
-        // Cloudinary最適化
         if (imageUrl && imageUrl.includes('cloudinary.com') && !imageUrl.includes('w_300')) {
           imageUrl = imageUrl.replace('/upload/', '/upload/f_auto,q_auto,w_300,h_200,c_fill/');
         }
@@ -937,7 +952,10 @@ const EventShowcaseSection = () => {
           id: item.id,
           event_name: item.event_name || item.store_name,
           store_name: item.store_name,
+          city: item.city || null,
           image_url: imageUrl,
+          event_start_date: item.event_start_date || null,
+          event_end_date: item.event_end_date || null,
         };
       });
 
@@ -953,7 +971,7 @@ const EventShowcaseSection = () => {
     <section className="relative py-24 overflow-hidden" style={{ background: designTokens.colors.primary.base }}>
       <OrganicMeshBackground variant="primary" />
 
-      <div className="container mx-auto max-w-6xl relative z-10 px-4">
+      <div className="container mx-auto max-w-3xl relative z-10 px-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -979,65 +997,84 @@ const EventShowcaseSection = () => {
             大分県内で開催中・近日開催のイベントをチェック
           </p>
         </motion.div>
-      </div>
 
-      {/* マーキーアニメーション（framer-motion） */}
-      <div className="relative w-full overflow-hidden">
-        <motion.div
-          className="flex gap-4"
-          animate={{ x: ['0%', '-50%'] }}
-          transition={{ x: { duration: events.length * 4, repeat: Infinity, ease: 'linear' } }}
-          style={{ width: 'max-content' }}
-        >
-          {[...events, ...events].map((event, index) => (
-            <div
-              key={`${event.id}-${index}`}
-              className="flex-shrink-0 w-[260px] sm:w-[320px] relative group cursor-pointer overflow-hidden rounded-2xl"
-              style={{ border: '1px solid rgba(255,255,255,0.15)' }}
-              onClick={() => router.push(`/map`)}
-            >
-              <div className="relative aspect-[4/3]">
-                {event.image_url ? (
-                  <img
-                    src={event.image_url}
-                    alt={event.event_name}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    loading="lazy"
-                  />
-                ) : (
+        {/* イベントリスト */}
+        <div className="space-y-3">
+          {events.map((event, index) => {
+            const dateStr = formatDate(event.event_start_date, event.event_end_date);
+            const isLoaded = event.image_url ? loadedImages.has(event.id) : true;
+
+            return (
+              <motion.div
+                key={event.id}
+                initial={{ opacity: 0, y: 15 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.3, delay: index * 0.05 }}
+                className="rounded-xl overflow-hidden cursor-pointer transition-all hover:scale-[1.01]"
+                style={{
+                  background: 'rgba(255,255,255,0.08)',
+                  border: '1px solid rgba(255,255,255,0.12)',
+                }}
+                onClick={() => router.push('/map')}
+              >
+                <div className="flex">
+                  {/* 画像 */}
                   <div
-                    className="w-full h-full flex items-center justify-center"
-                    style={{ background: `${designTokens.colors.primary.light}` }}
+                    className="relative w-28 h-28 sm:w-32 sm:h-32 flex-shrink-0"
+                    style={{ background: 'rgba(255,255,255,0.05)' }}
                   >
-                    <Calendar className="w-10 h-10" style={{ color: 'rgba(255,255,255,0.4)' }} />
+                    {event.image_url ? (
+                      <>
+                        {!isLoaded && (
+                          <div className="absolute inset-0 animate-pulse" style={{ background: 'rgba(255,255,255,0.08)' }} />
+                        )}
+                        <img
+                          src={event.image_url}
+                          alt={event.event_name}
+                          className={`w-full h-full object-cover transition-opacity duration-300 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
+                          loading="lazy"
+                          onLoad={() => setLoadedImages(prev => new Set(prev).add(event.id))}
+                        />
+                      </>
+                    ) : (
+                      <div className="flex items-center justify-center h-full">
+                        <Calendar className="h-10 w-10" style={{ color: 'rgba(255,255,255,0.25)' }} />
+                      </div>
+                    )}
                   </div>
-                )}
-                <div
-                  className="absolute inset-0"
-                  style={{ background: `linear-gradient(to top, ${designTokens.colors.primary.base} 0%, transparent 60%)` }}
-                />
-                <div className="absolute bottom-3 left-3 right-3">
-                  <h3
-                    className="text-sm font-bold truncate"
-                    style={{ color: '#FFFFFF', textShadow: '0 1px 6px rgba(0,0,0,0.8)' }}
-                  >
-                    {event.event_name}
-                  </h3>
-                  <p
-                    className="text-xs truncate mt-0.5 flex items-center gap-1"
-                    style={{ color: 'rgba(255,255,255,0.7)' }}
-                  >
-                    <MapPin className="w-3 h-3 flex-shrink-0" />
-                    {event.store_name}
-                  </p>
-                </div>
-              </div>
-            </div>
-          ))}
-        </motion.div>
-      </div>
 
-      <div className="container mx-auto max-w-6xl relative z-10 px-4">
+                  {/* コンテンツ */}
+                  <div className="flex-1 p-3 sm:p-4 min-w-0 flex flex-col justify-center">
+                    <h3
+                      className="font-semibold text-sm sm:text-base mb-1.5 line-clamp-2 leading-snug"
+                      style={{ color: '#FFFFFF', fontFamily: designTokens.typography.display }}
+                    >
+                      {event.event_name}
+                    </h3>
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-1.5 text-xs sm:text-sm" style={{ color: 'rgba(255,255,255,0.7)' }}>
+                        <MapPin className="h-3.5 w-3.5 flex-shrink-0" style={{ color: designTokens.colors.accent.gold }} />
+                        <span className="truncate">
+                          {event.city && <span className="font-medium">{event.city} </span>}
+                          {event.store_name}
+                        </span>
+                      </div>
+                      {dateStr && (
+                        <div className="flex items-center gap-1.5 text-xs sm:text-sm" style={{ color: 'rgba(255,255,255,0.5)' }}>
+                          <Calendar className="h-3.5 w-3.5 flex-shrink-0" style={{ color: 'rgba(255,255,255,0.4)' }} />
+                          <span>{dateStr}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+
+        {/* CTAボタン */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}

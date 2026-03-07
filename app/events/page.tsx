@@ -896,7 +896,7 @@ export default function CalendarPage() {
                   </div>
                 </ElevationCard>
                 {/* 開催中のイベントを見る（一番下のイベントカードの下に配置） */}
-                <div className="flex justify-center pt-4 pb-4 px-4">
+                <div className="flex justify-center pt-10 pb-8 px-4">
                   <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { Compass, MapPin, Calendar, ExternalLink, AlertCircle, Phone, FileText, DollarSign, Link as LinkIcon, ChevronLeft, ChevronRight, X, CalendarPlusIcon, Shield, ScrollText, Search, Home, ChevronRight as ChevronRightIcon, ArrowLeft, Share2, Users, Sparkles } from 'lucide-react';
+import { Compass, MapPin, Calendar, ExternalLink, AlertCircle, Phone, FileText, DollarSign, Link as LinkIcon, ChevronLeft, ChevronRight, X, CalendarPlusIcon, Shield, ScrollText, Home, ChevronRight as ChevronRightIcon, ArrowLeft, Share2, Users, Sparkles } from 'lucide-react';
 import { EventReviewSection } from '@/components/event/event-review-section';
 import { supabase } from '@/lib/supabaseClient';
 import Script from 'next/script';
@@ -976,7 +976,6 @@ export function EventDetailClient({ eventId }: EventDetailClientProps) {
                     boxShadow: `0 8px 24px ${designTokens.colors.accent.lilac}40`,
                   }}
                 >
-                  <Search className="mr-2 h-5 w-5" />
                   {event.url ? '詳細情報を確認' : '地図で確認'}
                 </Button>
               </motion.div>
@@ -990,7 +989,6 @@ export function EventDetailClient({ eventId }: EventDetailClientProps) {
                     color: designTokens.colors.text.secondary,
                   }}
                 >
-                  <ArrowLeft className="mr-2 h-5 w-5" />
                   戻る
                 </Button>
               </motion.div>
