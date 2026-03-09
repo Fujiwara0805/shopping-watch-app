@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence, useScroll, useTransform, useInView } from 'framer-motion';
-import { MapPin, Menu, X, ChevronRight, Calendar, LogOut, Compass, ExternalLink, Sparkles, MessageSquare } from 'lucide-react';
+import { MapPin, Menu, X, ChevronRight, ChevronLeft, Calendar, LogOut, Compass, ExternalLink, Sparkles, MessageSquare, ArrowUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useSession, signOut } from 'next-auth/react';
 import { NoteArticlesSection } from '@/components/external-content';
@@ -122,6 +122,38 @@ const SectionLabel = ({ children }: { children: string }) => {
   );
 };
 
+// 有機的セクション区切り線（Nikenme+ GoldDivider相当）
+const OrganicDivider = ({ className = '' }: { className?: string }) => {
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, margin: '-30px' });
+
+  return (
+    <div ref={ref} className={`flex items-center justify-center gap-3 py-2 ${className}`}>
+      <motion.div
+        initial={{ scaleX: 0 }}
+        animate={isInView ? { scaleX: 1 } : {}}
+        transition={{ duration: 0.6, ease: 'easeOut' }}
+        className="h-px flex-1 max-w-[80px] origin-right"
+        style={{ background: `linear-gradient(to left, ${designTokens.colors.accent.gold}60, transparent)` }}
+      />
+      <motion.div
+        initial={{ scale: 0, rotate: 45 }}
+        animate={isInView ? { scale: 1, rotate: 45 } : {}}
+        transition={{ duration: 0.4, delay: 0.3 }}
+        className="w-2 h-2"
+        style={{ background: designTokens.colors.accent.gold }}
+      />
+      <motion.div
+        initial={{ scaleX: 0 }}
+        animate={isInView ? { scaleX: 1 } : {}}
+        transition={{ duration: 0.6, ease: 'easeOut' }}
+        className="h-px flex-1 max-w-[80px] origin-left"
+        style={{ background: `linear-gradient(to right, ${designTokens.colors.accent.gold}60, transparent)` }}
+      />
+    </div>
+  );
+};
+
 // エレベーションカード
 const ElevationCard = ({ 
   children, 
@@ -195,6 +227,7 @@ const AnnouncementSection = () => {
       <div className="container mx-auto max-w-4xl">
         <div className="text-center mb-6">
           <SectionLabel>News</SectionLabel>
+          <OrganicDivider className="my-2" />
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
@@ -274,8 +307,12 @@ const AnnouncementSection = () => {
 // HERO SECTION
 // ===================================================================
 
-// Hero背景画像URL
-const HERO_BG_IMAGE = 'https://res.cloudinary.com/dz9trbwma/image/upload/f_auto,q_auto/v1772416995/Gemini_Generated_Image_tlb61atlb61atlb6_mtlugk_c_pad_b_gen_fill_w_1024_h_1024_rpwvci.png';
+// Hero背景画像URL（複数のクロスフェード用）
+const HERO_BG_IMAGES = [
+  'https://res.cloudinary.com/dz9trbwma/image/upload/f_auto,q_auto/v1772416995/Gemini_Generated_Image_tlb61atlb61atlb6_mtlugk_c_pad_b_gen_fill_w_1024_h_1024_rpwvci.png',
+  'https://res.cloudinary.com/dz9trbwma/image/upload/f_auto,q_auto/v1772416996/Gemini_Generated_Image_n5dwvwn5dwvwn5dw_nq711a_c_pad_b_gen_fill_w_1024_h_1024_ampt7h.png',
+  'https://res.cloudinary.com/dz9trbwma/image/upload/f_auto,q_auto/v1772416995/Gemini_Generated_Image_sauq56sauq56sauq_bgou7c_c_pad_b_gen_fill_w_1024_h_1024_dlmpvb.png',
+];
 
 const HeroSection = ({
   onStart,
@@ -293,10 +330,19 @@ const HeroSection = ({
   setTarget: (v: string) => void;
 }) => {
   const heroRef = useRef<HTMLElement>(null);
+  const [currentBgIndex, setCurrentBgIndex] = useState(0);
   const { scrollYProgress } = useScroll({
     target: heroRef,
     offset: ['start start', 'end start'],
   });
+
+  // 背景画像の自動クロスフェード
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentBgIndex(prev => (prev + 1) % HERO_BG_IMAGES.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
   
   const opacity = useTransform(scrollYProgress, [0, 0.6], [1, 0]);
   const y = useTransform(scrollYProgress, [0, 0.6], [0, 100]);
@@ -312,18 +358,25 @@ const HeroSection = ({
       className="relative min-h-screen flex items-center justify-center overflow-hidden"
       style={{ marginTop: '-4px' }}
     >
-      {/* Background Image with Parallax */}
-      <motion.div 
+      {/* Background Image with Parallax + Crossfade */}
+      <motion.div
         className="absolute inset-0 z-0"
         style={{ y: bgY, scale: bgScale }}
       >
-        <div 
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-          style={{ 
-            backgroundImage: `url(${HERO_BG_IMAGE})`,
-            backgroundPosition: 'center 30%',
-          }}
-        />
+        <AnimatePresence mode="popLayout">
+          <motion.div
+            key={currentBgIndex}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 1.5, ease: 'easeInOut' }}
+            className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+            style={{
+              backgroundImage: `url(${HERO_BG_IMAGES[currentBgIndex]})`,
+              backgroundPosition: 'center 30%',
+            }}
+          />
+        </AnimatePresence>
         
         {/* Gradient Overlay - 白色を濃くして背景画像を適度に覆う */}
         <div 
@@ -547,13 +600,15 @@ const HeroSection = ({
                       city: city === 'all' ? '' : city,
                       target: target === 'none' ? '' : target,
                     })}
-                    className="flex-1 md:flex-initial h-10 rounded-lg text-sm font-semibold transition-all hover:opacity-90 md:px-6"
+                    className="flex-1 md:flex-initial h-10 rounded-lg text-sm font-semibold transition-all hover:opacity-90 md:px-6 relative overflow-hidden group/btn"
                     style={{
                       background: designTokens.colors.accent.lilac,
                       color: designTokens.colors.text.inverse,
                     }}
                   >
-                    イベントを探す
+                    <span className="relative z-10">イベントを探す</span>
+                    {/* Shimmer effect */}
+                    <span className="absolute inset-0 -translate-x-full group-hover/btn:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
                   </Button>
                 </div>
               </div>
@@ -624,6 +679,7 @@ const HeroSection = ({
 const ChallengesSection = () => {
   const sectionRef = useRef<HTMLElement>(null);
   const isInView = useInView(sectionRef, { once: true, margin: '-100px' });
+  const [slideIndex, setSlideIndex] = useState(0);
 
   const challenges = [
     {
@@ -643,8 +699,50 @@ const ChallengesSection = () => {
     },
   ];
 
+  // モバイル自動スライド
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setSlideIndex(prev => (prev + 1) % challenges.length);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [challenges.length]);
+
+  const ChallengeCard = ({ challenge }: { challenge: typeof challenges[0] }) => (
+    <ElevationCard elevation="low" padding="none" hover={true} className="overflow-hidden h-full">
+      <div className="aspect-[4/3] lg:aspect-[5/4] w-full overflow-hidden bg-white/80">
+        <img
+          src={challenge.imageUrl}
+          alt=""
+          className="w-full h-full object-cover"
+          loading="lazy"
+          decoding="async"
+        />
+      </div>
+      <div className="px-5 sm:px-6 lg:px-8 py-5 sm:py-6 lg:py-8 text-center">
+        <h3
+          className="text-lg sm:text-xl lg:text-2xl font-semibold mb-3"
+          style={{
+            fontFamily: designTokens.typography.display,
+            color: designTokens.colors.primary.base,
+          }}
+        >
+          {challenge.title}
+        </h3>
+        <p
+          className="text-sm sm:text-base lg:text-lg leading-relaxed text-center"
+          style={{
+            fontFamily: designTokens.typography.body,
+            color: designTokens.colors.text.secondary,
+          }}
+        >
+          {challenge.description}
+        </p>
+      </div>
+    </ElevationCard>
+  );
+
   return (
-    <section 
+    <section
       ref={sectionRef}
       className="py-24 sm:py-32 lg:py-40 px-6 relative overflow-hidden"
       style={{ background: designTokens.colors.background.cloud }}
@@ -653,6 +751,7 @@ const ChallengesSection = () => {
         {/* Section Header */}
         <div className="text-center mb-20 lg:mb-24">
           <SectionLabel>Challenges</SectionLabel>
+          <OrganicDivider className="my-3" />
           <motion.h2
             initial={{ opacity: 0, y: 30 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
@@ -683,8 +782,55 @@ const ChallengesSection = () => {
           </motion.p>
         </div>
 
-        {/* Challenges List - PC: 3列グリッド・画像・テキスト大きく / モバイル: 縦並び */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 lg:gap-10">
+        {/* Mobile: Carousel */}
+        <div className="md:hidden relative">
+          <div className="overflow-hidden">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={slideIndex}
+                initial={{ opacity: 0, x: 60 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -60 }}
+                transition={{ duration: 0.4 }}
+              >
+                <ChallengeCard challenge={challenges[slideIndex]} />
+              </motion.div>
+            </AnimatePresence>
+          </div>
+          {/* Navigation */}
+          <div className="flex items-center justify-center gap-4 mt-6">
+            <button
+              onClick={() => setSlideIndex(prev => prev === 0 ? challenges.length - 1 : prev - 1)}
+              className="p-2 rounded-full"
+              style={{ background: `${designTokens.colors.primary.base}10`, color: designTokens.colors.primary.base }}
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <div className="flex gap-2">
+              {challenges.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setSlideIndex(i)}
+                  className="w-2.5 h-2.5 rounded-full transition-all duration-300"
+                  style={{
+                    background: i === slideIndex ? designTokens.colors.accent.gold : `${designTokens.colors.secondary.stone}40`,
+                    transform: i === slideIndex ? 'scale(1.2)' : 'scale(1)',
+                  }}
+                />
+              ))}
+            </div>
+            <button
+              onClick={() => setSlideIndex(prev => (prev + 1) % challenges.length)}
+              className="p-2 rounded-full"
+              style={{ background: `${designTokens.colors.primary.base}10`, color: designTokens.colors.primary.base }}
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
+        {/* Desktop: 3-column Grid */}
+        <div className="hidden md:grid md:grid-cols-3 gap-6 md:gap-8 lg:gap-10">
           {challenges.map((challenge, index) => (
             <motion.div
               key={challenge.title}
@@ -692,39 +838,21 @@ const ChallengesSection = () => {
               animate={isInView ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.5, delay: 0.3 + index * 0.1 }}
             >
-              <ElevationCard elevation="low" padding="none" hover={true} className="overflow-hidden h-full">
-                <div className="aspect-[4/3] lg:aspect-[5/4] w-full overflow-hidden bg-white/80">
-                  <img
-                    src={challenge.imageUrl}
-                    alt=""
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <div className="px-5 sm:px-6 lg:px-8 py-5 sm:py-6 lg:py-8 text-center">
-                  <h3
-                    className="text-lg sm:text-xl lg:text-2xl font-semibold mb-3"
-                    style={{
-                      fontFamily: designTokens.typography.display,
-                      color: designTokens.colors.primary.base,
-                    }}
-                  >
-                    {challenge.title}
-                  </h3>
-                  <p
-                    className="text-sm sm:text-base lg:text-lg leading-relaxed text-center"
-                    style={{
-                      fontFamily: designTokens.typography.body,
-                      color: designTokens.colors.text.secondary,
-                    }}
-                  >
-                    {challenge.description}
-                  </p>
-                </div>
-              </ElevationCard>
+              <ChallengeCard challenge={challenge} />
             </motion.div>
           ))}
         </div>
       </div>
+
+      {/* Section Bottom Animated Line */}
+      <motion.div
+        initial={{ scaleX: 0 }}
+        whileInView={{ scaleX: 1 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.8, ease: 'easeOut' }}
+        className="absolute bottom-0 left-0 right-0 h-px origin-left"
+        style={{ background: `linear-gradient(90deg, transparent, ${designTokens.colors.accent.gold}30, transparent)` }}
+      />
     </section>
   );
 };
@@ -736,6 +864,7 @@ const ChallengesSection = () => {
 const SolutionSection = () => {
   const sectionRef = useRef<HTMLElement>(null);
   const isInView = useInView(sectionRef, { once: true, margin: '-100px' });
+  const [slideIndex, setSlideIndex] = useState(0);
 
   const solutions = [
     {
@@ -768,6 +897,75 @@ const SolutionSection = () => {
     },
   ];
 
+  // モバイル自動スライド
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setSlideIndex(prev => (prev + 1) % solutions.length);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [solutions.length]);
+
+  const SolutionCard = ({ solution, className = '' }: { solution: typeof solutions[0]; className?: string }) => (
+    <ElevationCard
+      elevation="medium"
+      padding="lg"
+      className={`relative overflow-hidden group h-full ${className}`}
+    >
+      {/* Background Accent */}
+      <div
+        className="absolute top-0 right-0 w-72 h-72 opacity-[0.06] group-hover:opacity-[0.12] transition-opacity duration-500"
+        style={{
+          background: `radial-gradient(circle at top right, ${solution.color} 0%, transparent 70%)`,
+        }}
+      />
+
+      <div className="relative z-10">
+        <span
+          className="text-xs font-bold tracking-[0.2em] mb-2 block"
+          style={{ color: solution.color }}
+        >
+          {solution.label}
+        </span>
+        <div className="flex items-center gap-3 mb-3">
+          <motion.div
+            whileHover={{ scale: 1.15, rotate: 5 }}
+            className="flex-shrink-0 w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center overflow-hidden transition-transform duration-300"
+            style={{
+              background: `${solution.color}18`,
+              color: solution.color,
+            }}
+          >
+            {solution.iconElement}
+          </motion.div>
+          <h3
+            className="text-lg sm:text-xl md:text-2xl lg:text-2xl font-semibold leading-tight min-w-0"
+            style={{
+              fontFamily: designTokens.typography.display,
+              color: designTokens.colors.primary.base,
+            }}
+          >
+            {solution.title}
+          </h3>
+        </div>
+        <p
+          className="text-base lg:text-lg leading-relaxed max-w-xl"
+          style={{
+            fontFamily: designTokens.typography.body,
+            color: designTokens.colors.text.secondary,
+          }}
+        >
+          {solution.description}
+        </p>
+      </div>
+
+      {/* Bottom Accent Line */}
+      <div
+        className="absolute bottom-0 left-0 right-0 h-1 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left"
+        style={{ background: solution.color }}
+      />
+    </ElevationCard>
+  );
+
   return (
     <section
       ref={sectionRef}
@@ -780,6 +978,7 @@ const SolutionSection = () => {
         {/* Section Header */}
         <div className="text-center mb-20 lg:mb-24">
           <SectionLabel>Solution</SectionLabel>
+          <OrganicDivider className="my-3" />
           <motion.h2
             initial={{ opacity: 0, y: 30 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
@@ -810,8 +1009,55 @@ const SolutionSection = () => {
           </motion.p>
         </div>
 
-        {/* Solutions Grid - PC: 2x2 / モバイル: 縦並び */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8 xl:gap-10">
+        {/* Mobile: Carousel */}
+        <div className="md:hidden relative">
+          <div className="overflow-hidden">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={slideIndex}
+                initial={{ opacity: 0, x: 60 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -60 }}
+                transition={{ duration: 0.4 }}
+              >
+                <SolutionCard solution={solutions[slideIndex]} />
+              </motion.div>
+            </AnimatePresence>
+          </div>
+          {/* Navigation */}
+          <div className="flex items-center justify-center gap-4 mt-6">
+            <button
+              onClick={() => setSlideIndex(prev => prev === 0 ? solutions.length - 1 : prev - 1)}
+              className="p-2 rounded-full"
+              style={{ background: `${designTokens.colors.primary.base}10`, color: designTokens.colors.primary.base }}
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <div className="flex gap-2">
+              {solutions.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setSlideIndex(i)}
+                  className="w-2.5 h-2.5 rounded-full transition-all duration-300"
+                  style={{
+                    background: i === slideIndex ? designTokens.colors.accent.gold : `${designTokens.colors.secondary.stone}40`,
+                    transform: i === slideIndex ? 'scale(1.2)' : 'scale(1)',
+                  }}
+                />
+              ))}
+            </div>
+            <button
+              onClick={() => setSlideIndex(prev => (prev + 1) % solutions.length)}
+              className="p-2 rounded-full"
+              style={{ background: `${designTokens.colors.primary.base}10`, color: designTokens.colors.primary.base }}
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
+        {/* Desktop: 2x2 Grid */}
+        <div className="hidden md:grid md:grid-cols-2 gap-6 lg:gap-8 xl:gap-10">
           {solutions.map((solution, index) => (
             <motion.div
               key={solution.label}
@@ -819,67 +1065,21 @@ const SolutionSection = () => {
               animate={isInView ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.6, delay: 0.3 + index * 0.15 }}
             >
-              <ElevationCard
-                elevation="medium"
-                padding="lg"
-                className="relative overflow-hidden group h-full"
-              >
-                {/* Background Accent */}
-                <div
-                  className="absolute top-0 right-0 w-72 h-72 opacity-[0.06] group-hover:opacity-[0.12] transition-opacity duration-500"
-                  style={{
-                    background: `radial-gradient(circle at top right, ${solution.color} 0%, transparent 70%)`,
-                  }}
-                />
-
-                <div className="relative z-10">
-                  <span
-                    className="text-xs font-bold tracking-[0.2em] mb-2 block"
-                    style={{ color: solution.color }}
-                  >
-                    {solution.label}
-                  </span>
-                  <div className="flex items-center gap-3 mb-3">
-                    <div
-                      className="flex-shrink-0 w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center overflow-hidden transition-transform duration-300 group-hover:scale-105"
-                      style={{
-                        background: `${solution.color}18`,
-                        color: solution.color,
-                      }}
-                    >
-                      {solution.iconElement}
-                    </div>
-                    <h3
-                      className="text-lg sm:text-xl md:text-2xl lg:text-2xl font-semibold leading-tight min-w-0"
-                      style={{
-                        fontFamily: designTokens.typography.display,
-                        color: designTokens.colors.primary.base,
-                      }}
-                    >
-                      {solution.title}
-                    </h3>
-                  </div>
-                  <p
-                    className="text-base lg:text-lg leading-relaxed max-w-xl"
-                    style={{
-                      fontFamily: designTokens.typography.body,
-                      color: designTokens.colors.text.secondary,
-                    }}
-                  >
-                    {solution.description}
-                  </p>
-                </div>
-
-                {/* Bottom Accent Line */}
-                <div
-                  className="absolute bottom-0 left-0 right-0 h-1 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left"
-                  style={{ background: solution.color }}
-                />
-              </ElevationCard>
+              <SolutionCard solution={solution} />
             </motion.div>
           ))}
         </div>
       </div>
+
+      {/* Section Bottom Animated Line */}
+      <motion.div
+        initial={{ scaleX: 0 }}
+        whileInView={{ scaleX: 1 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.8, ease: 'easeOut' }}
+        className="absolute bottom-0 left-0 right-0 h-px origin-left"
+        style={{ background: `linear-gradient(90deg, transparent, ${designTokens.colors.accent.gold}30, transparent)` }}
+      />
     </section>
   );
 };
@@ -946,8 +1146,8 @@ const EventShowcaseSection = () => {
             imageUrl = urls[0];
           }
         }
-        if (imageUrl && imageUrl.includes('cloudinary.com') && !imageUrl.includes('w_300')) {
-          imageUrl = imageUrl.replace('/upload/', '/upload/f_auto,q_auto,w_300,h_200,c_fill/');
+        if (imageUrl && imageUrl.includes('cloudinary.com') && !imageUrl.includes('w_256')) {
+          imageUrl = imageUrl.replace('/upload/', '/upload/f_auto,q_auto,w_256,h_192,c_fill/');
         }
         return {
           id: item.id,
@@ -1030,7 +1230,8 @@ const EventShowcaseSection = () => {
                         src={event.image_url}
                         alt={event.event_name}
                         className={`w-full h-full object-cover transition-all duration-500 group-hover/card:scale-105 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
-                        loading="lazy"
+                        loading={index < 5 ? 'eager' : 'lazy'}
+                        decoding="async"
                         onLoad={() => setLoadedImages(prev => new Set(prev).add(`${event.id}-${index}`))}
                       />
                     </>
@@ -1150,14 +1351,21 @@ const FinalCTASection = ({ onStart }: { onStart: () => void }) => {
             whileHover={{ scale: 1.03, y: -4 }}
             whileTap={{ scale: 0.97 }}
             onClick={onStart}
-            className="group inline-flex items-center gap-3 px-12 py-5 lg:px-16 lg:py-6 rounded-xl font-semibold text-lg lg:text-xl transition-all"
+            className="group inline-flex items-center gap-3 px-12 py-5 lg:px-16 lg:py-6 rounded-xl font-semibold text-lg lg:text-xl transition-all relative overflow-hidden"
             style={{
               background: designTokens.colors.accent.gold,
               color: designTokens.colors.text.primary,
               boxShadow: `0 12px 48px ${designTokens.colors.accent.gold}40`,
             }}
           >
-            地図を開く
+            <span className="relative z-10">地図を開く</span>
+            {/* Auto shimmer effect */}
+            <motion.span
+              animate={{ x: ['-200%', '200%'] }}
+              transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut', repeatDelay: 2 }}
+              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/25 to-transparent"
+              style={{ width: '50%' }}
+            />
           </motion.button>
         </motion.div>
       </div>
@@ -1210,59 +1418,38 @@ const Footer = () => (
           </p>
         </div>
 
-        {/* Links */}
-        <div className="grid grid-cols-2 gap-8 lg:gap-12">
-          <div>
-            <h4 
-              className="font-semibold mb-4 text-sm lg:text-base tracking-wide"
-              style={{ color: designTokens.colors.primary.base }}
-            >
-              サービス
-            </h4>
-            <ul className="space-y-3">
-              {[
-                { href: 'https://www.nobody-inc.jp/', label: '会社概要', external: true },
-                { href: '/contact', label: 'お問い合わせ' },
-                { href: '/release-notes', label: 'リリースノート' },
-              ].map((link) => (
-                <li key={link.href}>
-                  <a 
-                    href={link.href}
-                    {...(link.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
-                    className="text-sm lg:text-base transition-colors hover:underline"
-                    style={{ color: designTokens.colors.text.secondary }}
-                  >
-                    {link.label}
-                    {link.external && <ExternalLink className="inline w-3 h-3 ml-1" />}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div>
-            <h4 
-              className="font-semibold mb-4 text-sm lg:text-base tracking-wide"
-              style={{ color: designTokens.colors.primary.base }}
-            >
-              規約
-            </h4>
-            <ul className="space-y-3">
-              {[
-                { href: '/terms/terms-of-service', label: '利用規約' },
-                { href: '/terms/privacy-policy', label: 'プライバシーポリシー' },
-                { href: '/terms/service-policy', label: 'サービスポリシー' },
-              ].map((link) => (
-                <li key={link.href}>
-                  <a 
-                    href={link.href}
-                    className="text-sm lg:text-base transition-colors hover:underline"
-                    style={{ color: designTokens.colors.text.secondary }}
-                  >
-                    {link.label}
-                  </a>
-                </li>
-              ))}
-            </ul>
+        {/* Links - Grid Card Layout */}
+        <div>
+          <div className="grid grid-cols-2 gap-3 lg:gap-4">
+            {[
+              { href: 'https://www.nobody-inc.jp/', label: '会社概要', icon: <ExternalLink className="w-4 h-4" />, external: true },
+              { href: '/contact', label: 'お問い合わせ', icon: <MessageSquare className="w-4 h-4" /> },
+              { href: '/release-notes', label: 'リリースノート', icon: <Sparkles className="w-4 h-4" /> },
+              { href: '/terms/terms-of-service', label: '利用規約', icon: <ChevronRight className="w-4 h-4" /> },
+              { href: '/terms/privacy-policy', label: 'プライバシー', icon: <ChevronRight className="w-4 h-4" /> },
+              { href: '/terms/service-policy', label: 'サービスポリシー', icon: <ChevronRight className="w-4 h-4" /> },
+            ].map((link) => (
+              <a
+                key={link.href}
+                href={link.href}
+                {...(link.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all hover:scale-[1.02]"
+                style={{
+                  background: designTokens.colors.background.white,
+                  boxShadow: designTokens.elevation.subtle,
+                  border: `1px solid ${designTokens.colors.secondary.stone}20`,
+                  color: designTokens.colors.text.secondary,
+                }}
+              >
+                <span
+                  className="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center"
+                  style={{ background: `${designTokens.colors.primary.base}10`, color: designTokens.colors.primary.base }}
+                >
+                  {link.icon}
+                </span>
+                <span className="text-sm font-medium">{link.label}</span>
+              </a>
+            ))}
           </div>
         </div>
       </div>
@@ -1662,6 +1849,29 @@ export default function Home() {
         isOpen={showFeedbackModal}
         onClose={() => setShowFeedbackModal(false)}
       />
+
+      {/* Floating Scroll to Top Button */}
+      <AnimatePresence>
+        {scrollPosition > 600 && (
+          <motion.button
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            transition={{ duration: 0.3 }}
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            className="fixed bottom-6 right-6 z-50 w-12 h-12 rounded-full flex items-center justify-center shadow-lg"
+            style={{
+              background: designTokens.colors.accent.gold,
+              color: designTokens.colors.text.primary,
+              boxShadow: `0 4px 16px ${designTokens.colors.accent.gold}40`,
+            }}
+            whileHover={{ scale: 1.1, y: -2 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <ArrowUp className="w-5 h-5" />
+          </motion.button>
+        )}
+      </AnimatePresence>
     </main>
   );
 }

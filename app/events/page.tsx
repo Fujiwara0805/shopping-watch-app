@@ -18,6 +18,7 @@ import { Ad } from '@/types/ad';
 import { generateSemanticEventUrl } from '@/lib/seo/url-helper';
 import { isHolidayOrSubstitute } from '@/lib/constants';
 import { Breadcrumb } from '@/components/seo/breadcrumb';
+import { optimizeThumbnail } from '@/lib/utils/image';
 import { designTokens } from '@/lib/constants';
 import { trackEvent } from '@/lib/services/analytics';
 
@@ -576,13 +577,17 @@ export default function CalendarPage() {
   const getImageUrl = (event: CalendarEvent): string | null => {
     const imageUrls = event.fullData.image_urls;
     if (!imageUrls) return null;
+    let url: string | null = null;
     if (typeof imageUrls === 'string') {
       try {
         const parsed = JSON.parse(imageUrls);
-        return Array.isArray(parsed) && parsed.length > 0 ? parsed[0] : null;
+        url = Array.isArray(parsed) && parsed.length > 0 ? parsed[0] : null;
       } catch { return null; }
+    } else {
+      url = Array.isArray(imageUrls) && imageUrls.length > 0 ? imageUrls[0] : null;
     }
-    return Array.isArray(imageUrls) && imageUrls.length > 0 ? imageUrls[0] : null;
+    // サムネイル（80×80px）用にCloudinary最適化
+    return url ? optimizeThumbnail(url, 80) : null;
   };
 
   const handleDeleteEvent = async (eventId: string, e: React.MouseEvent) => {

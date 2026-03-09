@@ -14,6 +14,7 @@ import { isWithinRange } from '@/lib/utils/distance';
 import { generateSemanticEventUrl } from '@/lib/seo/url-helper';
 import { designTokens } from '@/lib/constants';
 import { trackEvent } from '@/lib/services/analytics';
+import { optimizeThumbnail } from '@/lib/utils/image';
 
 declare global {
   interface Window { google: any; }
@@ -57,19 +58,11 @@ const createSimpleCategoryIcon = (category: PostCategory) => {
   };
 };
 
-const optimizeCloudinaryImageUrl = (url: string, maxSize?: number): string => {
-  if (!url || typeof url !== 'string') return url;
-  if (url.includes('res.cloudinary.com') && url.includes('/upload/')) {
-    if (url.includes('q_auto') || url.includes('q_')) return url;
-    const uploadIndex = url.indexOf('/upload/');
-    if (uploadIndex !== -1) {
-      const beforeUpload = url.substring(0, uploadIndex + '/upload/'.length);
-      const afterUpload = url.substring(uploadIndex + '/upload/'.length);
-      const resize = maxSize ? `w_${maxSize},h_${maxSize},c_fill,g_auto,` : '';
-      return `${beforeUpload}${resize}q_auto:best,f_auto/${afterUpload}`;
-    }
-  }
-  return url;
+// マーカーアイコンキャッシュ（画像付きアイコンの再生成を防止）
+const markerIconCache = new Map<string, google.maps.Icon>();
+
+const getMarkerIconCacheKey = (imageUrl: string, title: string): string => {
+  return `${imageUrl}|${title}`;
 };
 
 const wrapText = (text: string, maxWidth: number, ctx: CanvasRenderingContext2D): string[] => {
@@ -102,8 +95,12 @@ const createCategoryPinIcon = async (imageUrls: string[] | null, title: string |
   if (!imageUrl || typeof imageUrl !== 'string' || !imageUrl.startsWith('http')) {
     return createSimpleCategoryIcon(category);
   }
-  // マーカーサイズ(45px) × デバイスピクセル比(2x) = 90px → 100px でリサイズ
-  const optimizedImageUrl = optimizeCloudinaryImageUrl(imageUrl, 100);
+  // キャッシュチェック
+  const cacheKey = getMarkerIconCacheKey(imageUrl, title || '');
+  const cached = markerIconCache.get(cacheKey);
+  if (cached) return cached;
+  // マーカーサイズ(45px) × デバイスピクセル比(2x) = 90px → 60px で十分
+  const optimizedImageUrl = optimizeThumbnail(imageUrl, 60);
   const imageSize = 45;
   const borderWidth = 2;
   const textPadding = 4;
@@ -171,7 +168,9 @@ const createCategoryPinIcon = async (imageUrls: string[] | null, title: string |
           ctx.fillText(line, textX, lineY);
         });
       }
-      resolve({ url: canvas.toDataURL('image/png'), scaledSize: new window.google.maps.Size(canvasWidth, canvasHeight), anchor: new window.google.maps.Point(canvasWidth / 2, imageSize) });
+      const icon: google.maps.Icon = { url: canvas.toDataURL('image/png'), scaledSize: new window.google.maps.Size(canvasWidth, canvasHeight), anchor: new window.google.maps.Point(canvasWidth / 2, imageSize) };
+      markerIconCache.set(cacheKey, icon);
+      resolve(icon);
     };
     img.onerror = () => { resolve(createSimpleCategoryIcon(category)); };
     img.src = optimizedImageUrl;
@@ -394,41 +393,53 @@ export function MapView() {
     postMarkers.forEach(marker => { if (marker?.setMap) marker.setMap(null); });
     const newMarkers: google.maps.Marker[] = [];
     const locationGroups = groupPostsByLocation(posts);
-    let batchIndex = 0;
-    const batchSize = 10;
-    const processNextBatch = async () => {
-      const batch = posts.slice(batchIndex, batchIndex + batchSize);
-      if (batch.length === 0) { setPostMarkers(newMarkers); setIsCreatingMarkers(false); return; }
-      const batchPromises = batch.map(async (post) => {
-        if (!post.store_latitude || !post.store_longitude) return;
-        const lat = Math.round(post.store_latitude * 10000) / 10000;
-        const lng = Math.round(post.store_longitude * 10000) / 10000;
-        const locationKey = `${lat},${lng}`;
-        const groupPosts = locationGroups[locationKey] || [post];
-        const indexInGroup = groupPosts.findIndex(p => p.id === post.id);
-        const offsetPosition = getOffsetPosition(post.store_latitude, post.store_longitude, indexInGroup, groupPosts.length);
-        const position = new window.google.maps.LatLng(offsetPosition.lat, offsetPosition.lng);
-        const title = post.category === 'イベント情報' ? (post.event_name || post.content) : post.content;
-        const markerIcon = await createCategoryPinIcon(post.image_urls, title, (post.category as PostCategory) || 'イベント情報');
-        const marker = new window.google.maps.Marker({ position, map, title: `${post.store_name} - ${post.category || '投稿'}`, icon: markerIcon, animation: window.google.maps.Animation.DROP, zIndex: indexInGroup + 1 });
-        marker.addListener('click', () => {
-          if (selectedMarkerRef.current) { selectedMarkerRef.current.setAnimation(null); }
-          marker.setAnimation(window.google.maps.Animation.BOUNCE);
-          setTimeout(() => { if (marker.getAnimation() !== null) marker.setAnimation(null); }, 1400);
-          selectedMarkerRef.current = marker;
-          const sortedIndex = posts.findIndex(p => p.id === post.id);
-          setEventCardIndex(sortedIndex >= 0 ? sortedIndex : 0);
-          setSelectedPost(post);
-          setNearbyPosts(posts);
-        });
-        return marker;
+
+    // Phase 1: 即座にSVGアイコンで全マーカーを表示
+    posts.forEach((post) => {
+      if (!post.store_latitude || !post.store_longitude) return;
+      const lat = Math.round(post.store_latitude * 10000) / 10000;
+      const lng = Math.round(post.store_longitude * 10000) / 10000;
+      const locationKey = `${lat},${lng}`;
+      const groupPosts = locationGroups[locationKey] || [post];
+      const indexInGroup = groupPosts.findIndex(p => p.id === post.id);
+      const offsetPosition = getOffsetPosition(post.store_latitude, post.store_longitude, indexInGroup, groupPosts.length);
+      const position = new window.google.maps.LatLng(offsetPosition.lat, offsetPosition.lng);
+      const simpleIcon = createSimpleCategoryIcon((post.category as PostCategory) || 'イベント情報');
+      const marker = new window.google.maps.Marker({ position, map, title: `${post.store_name} - ${post.category || '投稿'}`, icon: simpleIcon, animation: window.google.maps.Animation.DROP, zIndex: indexInGroup + 1 });
+      marker.addListener('click', () => {
+        if (selectedMarkerRef.current) { selectedMarkerRef.current.setAnimation(null); }
+        marker.setAnimation(window.google.maps.Animation.BOUNCE);
+        setTimeout(() => { if (marker.getAnimation() !== null) marker.setAnimation(null); }, 1400);
+        selectedMarkerRef.current = marker;
+        const sortedIndex = posts.findIndex(p => p.id === post.id);
+        setEventCardIndex(sortedIndex >= 0 ? sortedIndex : 0);
+        setSelectedPost(post);
+        setNearbyPosts(posts);
       });
-      const batchMarkers = await Promise.all(batchPromises);
-      newMarkers.push(...batchMarkers.filter((m): m is google.maps.Marker => m != null));
+      newMarkers.push(marker);
+    });
+    setPostMarkers(newMarkers);
+    setIsCreatingMarkers(false);
+
+    // Phase 2: バックグラウンドで画像付きアイコンにアップグレード
+    let batchIndex = 0;
+    const batchSize = 20;
+    const upgradeNextBatch = async () => {
+      const batch = posts.slice(batchIndex, batchIndex + batchSize);
+      if (batch.length === 0) return;
+      const upgradePromises = batch.map(async (post, i) => {
+        const markerIndex = batchIndex + i;
+        const marker = newMarkers[markerIndex];
+        if (!marker || !post.store_latitude || !post.store_longitude) return;
+        const title = post.category === 'イベント情報' ? (post.event_name || post.content) : post.content;
+        const imageIcon = await createCategoryPinIcon(post.image_urls, title, (post.category as PostCategory) || 'イベント情報');
+        if (marker.getMap()) marker.setIcon(imageIcon);
+      });
+      await Promise.all(upgradePromises);
       batchIndex += batchSize;
-      setTimeout(processNextBatch, 100);
+      if (batchIndex < posts.length) setTimeout(upgradeNextBatch, 50);
     };
-    processNextBatch();
+    upgradeNextBatch();
   }, [map, posts]);
 
   const initializeMap = useCallback(() => {
@@ -580,9 +591,9 @@ export function MapView() {
         {isCreatingMarkers && (
           <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="absolute top-20 left-4 z-40 backdrop-blur-sm px-4 py-2 rounded-full flex items-center gap-2" style={{ background: `${designTokens.colors.background.white}F5`, boxShadow: designTokens.elevation.medium }}>
             <motion.div animate={{ rotate: 360 }} transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}>
-              <MapPin className="h-4 w-4" style={{ color: designTokens.colors.accent.lilac }} />
+              <RefreshCw className="h-4 w-4" style={{ color: designTokens.colors.accent.lilac }} />
             </motion.div>
-            <span className="text-sm font-medium" style={{ color: designTokens.colors.text.primary }}>イベント情報表示中...</span>
+            <span className="text-sm font-medium" style={{ color: designTokens.colors.text.primary }}>イベント読み込み中...</span>
           </motion.div>
         )}
       </AnimatePresence>
@@ -667,7 +678,7 @@ export function MapView() {
                   <div className="flex gap-4 mb-3">
                     <div className="flex-shrink-0 relative w-20 h-20 rounded-xl overflow-hidden" style={{ background: designTokens.colors.background.cloud }}>
                       {post.image_urls && post.image_urls.length > 0 ? (
-                        <img src={optimizeCloudinaryImageUrl(post.image_urls[0])} alt={post.store_name} className="w-full h-full object-cover" loading="eager" />
+                        <img src={optimizeThumbnail(post.image_urls[0], 80)} alt={post.store_name} className="w-full h-full object-cover" loading="eager" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center"><Calendar className="h-8 w-8" style={{ color: designTokens.colors.text.muted }} /></div>
                       )}

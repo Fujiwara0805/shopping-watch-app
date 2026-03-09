@@ -11,6 +11,7 @@ import Script from 'next/script';
 import Link from 'next/link';
 import Image from 'next/image';
 import { designTokens, COLORS, TARGET_TAG_LABELS, TAG_ACTIVITY_LABELS } from '@/lib/constants';
+import { optimizeThumbnail, optimizeResponsive } from '@/lib/utils/image';
 import { generateSemanticEventUrl } from '@/lib/seo/url-helper';
 import { trackEvent } from '@/lib/services/analytics';
 
@@ -507,7 +508,7 @@ export function EventDetailClient({ eventId }: EventDetailClientProps) {
                     className="w-full h-full relative"
                   >
                     <Image
-                      src={event.image_urls[currentImageIndex]}
+                      src={optimizeResponsive(event.image_urls[currentImageIndex], 768)}
                       alt={event.event_name || event.store_name}
                       fill
                       className="object-contain"
@@ -864,7 +865,8 @@ export function EventDetailClient({ eventId }: EventDetailClientProps) {
                 <div className="space-y-3">
                   {surroundingEvents.map((se) => {
                     const imgUrls = se.image_urls;
-                    const firstImg = Array.isArray(imgUrls) && imgUrls.length > 0 ? imgUrls[0] : null;
+                    const rawImg = Array.isArray(imgUrls) && imgUrls.length > 0 ? imgUrls[0] : null;
+                    const firstImg = rawImg ? optimizeThumbnail(rawImg, 64) : null;
                     const isSameVenue =
                       event.store_latitude != null &&
                       event.store_longitude != null &&
@@ -923,7 +925,8 @@ export function EventDetailClient({ eventId }: EventDetailClientProps) {
                 <div className="space-y-3">
                   {recommendedEvents.map((re) => {
                     const imgUrls = re.image_urls;
-                    const firstImg = Array.isArray(imgUrls) && imgUrls.length > 0 ? imgUrls[0] : null;
+                    const rawImg = Array.isArray(imgUrls) && imgUrls.length > 0 ? imgUrls[0] : null;
+                    const firstImg = rawImg ? optimizeThumbnail(rawImg, 64) : null;
                     return (
                       <motion.div
                         key={re.id}
