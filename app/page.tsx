@@ -309,9 +309,9 @@ const AnnouncementSection = () => {
 
 // Hero背景画像URL（複数のクロスフェード用）
 const HERO_BG_IMAGES = [
-  'https://res.cloudinary.com/dz9trbwma/image/upload/f_auto,q_auto/v1772416995/Gemini_Generated_Image_tlb61atlb61atlb6_mtlugk_c_pad_b_gen_fill_w_1024_h_1024_rpwvci.png',
   'https://res.cloudinary.com/dz9trbwma/image/upload/f_auto,q_auto/v1772416996/Gemini_Generated_Image_n5dwvwn5dwvwn5dw_nq711a_c_pad_b_gen_fill_w_1024_h_1024_ampt7h.png',
   'https://res.cloudinary.com/dz9trbwma/image/upload/f_auto,q_auto/v1772416995/Gemini_Generated_Image_sauq56sauq56sauq_bgou7c_c_pad_b_gen_fill_w_1024_h_1024_dlmpvb.png',
+  'https://res.cloudinary.com/dz9trbwma/image/upload/f_auto,q_auto/v1772416995/Gemini_Generated_Image_tgqneqtgqneqtgqn_ekswrm_c_pad_b_gen_fill_w_1024_h_1024_vyp6lv.png',
 ];
 
 const HeroSection = ({
@@ -378,43 +378,56 @@ const HeroSection = ({
           />
         </AnimatePresence>
         
-        {/* Gradient Overlay - 白色を濃くして背景画像を適度に覆う */}
+        {/* Gradient Overlay - 背景画像を活かしつつテキスト読みやすさを確保 */}
         <div 
           className="absolute inset-0"
           style={{
             background: `linear-gradient(
               180deg,
-              ${designTokens.colors.background.white}E6 0%,
-              ${designTokens.colors.background.white}D9 25%,
-              ${designTokens.colors.background.white}CC 50%,
-              ${designTokens.colors.background.white}D9 75%,
-              ${designTokens.colors.background.white}F2 100%
+              rgba(0,0,0,0.25) 0%,
+              rgba(0,0,0,0.15) 25%,
+              rgba(0,0,0,0.20) 50%,
+              rgba(0,0,0,0.30) 75%,
+              rgba(0,0,0,0.45) 100%
             )`,
           }}
         />
         
-        {/* サイドのビネット効果（白をやや濃く） */}
+        {/* テキストエリア周辺のコントラスト強調 */}
+        <div 
+          className="absolute inset-0"
+          style={{
+            background: `radial-gradient(
+              ellipse 80% 60% at 50% 50%,
+              rgba(0,0,0,0.20) 0%,
+              rgba(0,0,0,0.10) 40%,
+              transparent 70%
+            )`,
+          }}
+        />
+        
+        {/* サイドのビネット効果 */}
         <div 
           className="absolute inset-0"
           style={{
             background: `radial-gradient(
               ellipse at center,
               transparent 0%,
-              transparent 45%,
-              ${designTokens.colors.background.white}60 100%
+              transparent 50%,
+              rgba(0,0,0,0.15) 100%
             )`,
           }}
         />
         
         {/* カラーアクセントオーバーレイ */}
         <div 
-          className="absolute inset-0 mix-blend-soft-light opacity-30"
+          className="absolute inset-0 mix-blend-soft-light opacity-20"
           style={{
             background: `linear-gradient(
               135deg,
-              ${designTokens.colors.accent.gold}40 0%,
+              ${designTokens.colors.accent.gold}30 0%,
               transparent 50%,
-              ${designTokens.colors.accent.lilac}30 100%
+              ${designTokens.colors.accent.lilac}20 100%
             )`,
           }}
         />
@@ -460,9 +473,9 @@ const HeroSection = ({
         <div 
           className="absolute inset-0 -mx-6 rounded-3xl hidden md:block"
           style={{
-            background: `${designTokens.colors.background.white}60`,
-            backdropFilter: 'blur(20px)',
-            WebkitBackdropFilter: 'blur(20px)',
+            background: 'rgba(0,0,0,0.25)',
+            backdropFilter: 'blur(16px)',
+            WebkitBackdropFilter: 'blur(16px)',
             margin: '-20px',
             padding: '20px',
           }}
@@ -478,8 +491,10 @@ const HeroSection = ({
             <span
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium"
               style={{
-                background: `${designTokens.colors.accent.gold}20`,
-                color: designTokens.colors.accent.goldDark,
+                background: 'rgba(255,255,255,0.2)',
+                backdropFilter: 'blur(8px)',
+                WebkitBackdropFilter: 'blur(8px)',
+                color: 'rgba(255,255,255,0.95)',
                 fontFamily: designTokens.typography.body,
               }}
             >
@@ -493,22 +508,23 @@ const HeroSection = ({
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.4 }}
-            className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-semibold leading-[1.1] tracking-tight"
+            className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-semibold leading-[1.2] tracking-tight"
             style={{
               fontFamily: designTokens.typography.display,
-              color: designTokens.colors.text.primary,
+              color: '#FFFFFF',
+              textShadow: '0 2px 12px rgba(0,0,0,0.3), 0 1px 4px rgba(0,0,0,0.2)',
             }}
           >
-            大分の魅力をひとつに
+            大分県内のイベントを探して、
             <br />
             <span className="relative inline-block mt-2">
-              <span className="relative z-10">イベントを探そう</span>
+              <span className="relative z-10">地域の魅力と出会う時間へ。</span>
               <motion.span
                 initial={{ scaleX: 0 }}
                 animate={{ scaleX: 1 }}
                 transition={{ duration: 0.6, delay: 1.2 }}
-                className="absolute bottom-2 left-0 right-0 h-4 -z-10 origin-left rounded-sm"
-                style={{ background: `${designTokens.colors.accent.gold}50` }}
+                className="absolute bottom-1 sm:bottom-2 left-0 right-0 h-3 sm:h-4 -z-10 origin-left rounded-sm"
+                style={{ background: `${designTokens.colors.accent.gold}70` }}
               />
             </span>
           </motion.h1>
@@ -637,7 +653,7 @@ const HeroSection = ({
             </motion.button>
             <p
               className="text-sm lg:text-base mt-4"
-              style={{ color: designTokens.colors.text.muted }}
+              style={{ color: 'rgba(255,255,255,0.8)', textShadow: '0 1px 4px rgba(0,0,0,0.2)' }}
             >
               登録不要 ー 大分県内のイベント・祭り・マルシェを地図で探せる
             </p>
@@ -679,7 +695,6 @@ const HeroSection = ({
 const ChallengesSection = () => {
   const sectionRef = useRef<HTMLElement>(null);
   const isInView = useInView(sectionRef, { once: true, margin: '-100px' });
-  const [slideIndex, setSlideIndex] = useState(0);
 
   const challenges = [
     {
@@ -699,44 +714,38 @@ const ChallengesSection = () => {
     },
   ];
 
-  // モバイル自動スライド
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setSlideIndex(prev => (prev + 1) % challenges.length);
-    }, 4000);
-    return () => clearInterval(interval);
-  }, [challenges.length]);
-
-  const ChallengeCard = ({ challenge }: { challenge: typeof challenges[0] }) => (
+  const ChallengeCard = ({ challenge, reverse }: { challenge: typeof challenges[0]; reverse?: boolean }) => (
     <ElevationCard elevation="low" padding="none" hover={true} className="overflow-hidden h-full">
-      <div className="aspect-[4/3] lg:aspect-[5/4] w-full overflow-hidden bg-white/80">
-        <img
-          src={challenge.imageUrl}
-          alt=""
-          className="w-full h-full object-cover"
-          loading="lazy"
-          decoding="async"
-        />
-      </div>
-      <div className="px-5 sm:px-6 lg:px-8 py-5 sm:py-6 lg:py-8 text-center">
-        <h3
-          className="text-lg sm:text-xl lg:text-2xl font-semibold mb-3"
-          style={{
-            fontFamily: designTokens.typography.display,
-            color: designTokens.colors.primary.base,
-          }}
-        >
-          {challenge.title}
-        </h3>
-        <p
-          className="text-sm sm:text-base lg:text-lg leading-relaxed text-center"
-          style={{
-            fontFamily: designTokens.typography.body,
-            color: designTokens.colors.text.secondary,
-          }}
-        >
-          {challenge.description}
-        </p>
+      <div className={`flex flex-col ${reverse ? 'md:flex-row-reverse' : 'md:flex-row'}`}>
+        <div className="aspect-[4/3] md:aspect-auto md:w-1/2 w-full overflow-hidden bg-white/80 flex-shrink-0">
+          <img
+            src={challenge.imageUrl}
+            alt=""
+            className="w-full h-full object-cover"
+            loading="lazy"
+            decoding="async"
+          />
+        </div>
+        <div className="px-5 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-10 flex flex-col justify-center md:w-1/2">
+          <h3
+            className="text-lg sm:text-xl lg:text-2xl font-semibold mb-3"
+            style={{
+              fontFamily: designTokens.typography.display,
+              color: designTokens.colors.primary.base,
+            }}
+          >
+            {challenge.title}
+          </h3>
+          <p
+            className="text-sm sm:text-base lg:text-lg leading-relaxed"
+            style={{
+              fontFamily: designTokens.typography.body,
+              color: designTokens.colors.text.secondary,
+            }}
+          >
+            {challenge.description}
+          </p>
+        </div>
       </div>
     </ElevationCard>
   );
@@ -776,69 +785,22 @@ const ChallengesSection = () => {
               color: designTokens.colors.text.secondary,
             }}
           >
-            各々の市町村が独自にイベント情報を発信していますが、
+            イベント情報が各市町村に散らばり、見つけにくい現状。
             <br className="hidden sm:block" />
-            大分県内のイベントを一括で検索できるサイトがあれば、もっと多くの人に大分の魅力を届けられるのではないかと考えました。
+            一括で探せる場所があれば、もっと届くはず。
           </motion.p>
         </div>
 
-        {/* Mobile: Carousel */}
-        <div className="md:hidden relative">
-          <div className="overflow-hidden">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={slideIndex}
-                initial={{ opacity: 0, x: 60 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -60 }}
-                transition={{ duration: 0.4 }}
-              >
-                <ChallengeCard challenge={challenges[slideIndex]} />
-              </motion.div>
-            </AnimatePresence>
-          </div>
-          {/* Navigation */}
-          <div className="flex items-center justify-center gap-4 mt-6">
-            <button
-              onClick={() => setSlideIndex(prev => prev === 0 ? challenges.length - 1 : prev - 1)}
-              className="p-2 rounded-full"
-              style={{ background: `${designTokens.colors.primary.base}10`, color: designTokens.colors.primary.base }}
-            >
-              <ChevronLeft className="w-5 h-5" />
-            </button>
-            <div className="flex gap-2">
-              {challenges.map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => setSlideIndex(i)}
-                  className="w-2.5 h-2.5 rounded-full transition-all duration-300"
-                  style={{
-                    background: i === slideIndex ? designTokens.colors.accent.gold : `${designTokens.colors.secondary.stone}40`,
-                    transform: i === slideIndex ? 'scale(1.2)' : 'scale(1)',
-                  }}
-                />
-              ))}
-            </div>
-            <button
-              onClick={() => setSlideIndex(prev => (prev + 1) % challenges.length)}
-              className="p-2 rounded-full"
-              style={{ background: `${designTokens.colors.primary.base}10`, color: designTokens.colors.primary.base }}
-            >
-              <ChevronRight className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-
-        {/* Desktop: 3-column Grid */}
-        <div className="hidden md:grid md:grid-cols-3 gap-6 md:gap-8 lg:gap-10">
+        {/* 3枚を縦に1枚ずつ表示 */}
+        <div className="flex flex-col gap-8 md:gap-10 lg:gap-12 max-w-4xl mx-auto">
           {challenges.map((challenge, index) => (
             <motion.div
               key={challenge.title}
-              initial={{ opacity: 0, y: 24 }}
+              initial={{ opacity: 0, y: 40 }}
               animate={isInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.5, delay: 0.3 + index * 0.1 }}
+              transition={{ duration: 0.6, delay: 0.2 + index * 0.15 }}
             >
-              <ChallengeCard challenge={challenge} />
+              <ChallengeCard challenge={challenge} reverse={index % 2 === 1} />
             </motion.div>
           ))}
         </div>
@@ -864,8 +826,6 @@ const ChallengesSection = () => {
 const SolutionSection = () => {
   const sectionRef = useRef<HTMLElement>(null);
   const isInView = useInView(sectionRef, { once: true, margin: '-100px' });
-  const [slideIndex, setSlideIndex] = useState(0);
-
   const solutions = [
     {
       label: 'DISCOVER',
@@ -896,14 +856,6 @@ const SolutionSection = () => {
       color: designTokens.colors.secondary.fern,
     },
   ];
-
-  // モバイル自動スライド
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setSlideIndex(prev => (prev + 1) % solutions.length);
-    }, 4000);
-    return () => clearInterval(interval);
-  }, [solutions.length]);
 
   const SolutionCard = ({ solution, className = '' }: { solution: typeof solutions[0]; className?: string }) => (
     <ElevationCard
@@ -1009,55 +961,8 @@ const SolutionSection = () => {
           </motion.p>
         </div>
 
-        {/* Mobile: Carousel */}
-        <div className="md:hidden relative">
-          <div className="overflow-hidden">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={slideIndex}
-                initial={{ opacity: 0, x: 60 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -60 }}
-                transition={{ duration: 0.4 }}
-              >
-                <SolutionCard solution={solutions[slideIndex]} />
-              </motion.div>
-            </AnimatePresence>
-          </div>
-          {/* Navigation */}
-          <div className="flex items-center justify-center gap-4 mt-6">
-            <button
-              onClick={() => setSlideIndex(prev => prev === 0 ? solutions.length - 1 : prev - 1)}
-              className="p-2 rounded-full"
-              style={{ background: `${designTokens.colors.primary.base}10`, color: designTokens.colors.primary.base }}
-            >
-              <ChevronLeft className="w-5 h-5" />
-            </button>
-            <div className="flex gap-2">
-              {solutions.map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => setSlideIndex(i)}
-                  className="w-2.5 h-2.5 rounded-full transition-all duration-300"
-                  style={{
-                    background: i === slideIndex ? designTokens.colors.accent.gold : `${designTokens.colors.secondary.stone}40`,
-                    transform: i === slideIndex ? 'scale(1.2)' : 'scale(1)',
-                  }}
-                />
-              ))}
-            </div>
-            <button
-              onClick={() => setSlideIndex(prev => (prev + 1) % solutions.length)}
-              className="p-2 rounded-full"
-              style={{ background: `${designTokens.colors.primary.base}10`, color: designTokens.colors.primary.base }}
-            >
-              <ChevronRight className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-
-        {/* Desktop: 2x2 Grid */}
-        <div className="hidden md:grid md:grid-cols-2 gap-6 lg:gap-8 xl:gap-10">
+        {/* カード一覧: モバイル縦並び / デスクトップ 2x2 グリッド */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8 xl:gap-10">
           {solutions.map((solution, index) => (
             <motion.div
               key={solution.label}
@@ -1193,13 +1098,15 @@ const EventShowcaseSection = () => {
               className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4"
               style={{ color: '#FFFFFF', fontFamily: designTokens.typography.display }}
             >
-              開催中のイベント
+            大分県内のイベントを紹介
             </h2>
             <p
               className="text-lg max-w-xl mx-auto"
               style={{ color: 'rgba(255,255,255,0.7)', fontFamily: designTokens.typography.body }}
             >
-              大分県内で開催中・近日開催のイベントをチェック
+              大分県内で開催中・近日開催の
+              <br />
+              イベントをチェック。
             </p>
           </motion.div>
         </div>
@@ -1826,11 +1733,11 @@ export default function Home() {
 
       <AnnouncementSection />
 
+      <EventShowcaseSection />
+
       <ChallengesSection />
 
       <SolutionSection />
-
-      <EventShowcaseSection />
 
       <NoteArticlesSection username="kind_ixora3833" maxItems={4} />
 
@@ -1859,7 +1766,7 @@ export default function Home() {
             exit={{ opacity: 0, scale: 0.8 }}
             transition={{ duration: 0.3 }}
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-            className="fixed bottom-6 right-6 z-50 w-12 h-12 rounded-full flex items-center justify-center shadow-lg"
+            className="fixed bottom-6 right-6 z-50 w-12 h-14 rounded-full flex flex-col items-center justify-center gap-0.5 shadow-lg"
             style={{
               background: designTokens.colors.accent.gold,
               color: designTokens.colors.text.primary,
@@ -1868,7 +1775,8 @@ export default function Home() {
             whileHover={{ scale: 1.1, y: -2 }}
             whileTap={{ scale: 0.95 }}
           >
-            <ArrowUp className="w-5 h-5" />
+            <ArrowUp className="w-4 h-4" />
+            <span className="text-[9px] font-bold leading-none tracking-wide">TOP</span>
           </motion.button>
         )}
       </AnimatePresence>
