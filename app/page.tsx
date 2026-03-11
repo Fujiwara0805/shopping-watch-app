@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence, useScroll, useTransform, useInView } from 'framer-motion';
-import { MapPin, Menu, X, ChevronRight, ChevronLeft, Calendar, LogOut, Compass, ExternalLink, Sparkles, MessageSquare, ArrowUp } from 'lucide-react';
+import { MapPin, Menu, X, ChevronRight, ChevronLeft, Calendar, LogOut, Compass, ExternalLink, Sparkles, MessageSquare, Home as HomeIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useSession, signOut } from 'next-auth/react';
 import { NoteArticlesSection } from '@/components/external-content';
@@ -23,74 +23,56 @@ import { supabase } from '@/lib/supabaseClient';
 // DECORATIVE COMPONENTS
 // ===================================================================
 
-// 有機的グラデーションメッシュ背景
+// 有機的グラデーションメッシュ背景（CSS アニメーション版 - GPU コンポジタで処理）
 const OrganicMeshBackground = ({ variant = 'mist' }: { variant?: 'mist' | 'cloud' | 'primary' }) => {
   const backgrounds = {
     mist: designTokens.colors.background.mist,
     cloud: designTokens.colors.background.cloud,
     primary: designTokens.colors.primary.base,
   };
-  
+
   const isDark = variant === 'primary';
-  
+
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      {/* Base */}
-      <div 
-        className="absolute inset-0"
-        style={{ background: backgrounds[variant] }}
-      />
-      
-      {/* Animated Mesh Orbs */}
-      <motion.div
-        animate={{
-          x: [0, 40, 0],
-          y: [0, -30, 0],
-          scale: [1, 1.15, 1],
-        }}
-        transition={{ duration: 25, repeat: Infinity, ease: 'easeInOut' }}
-        className="absolute -top-1/4 -left-1/4 w-1/2 h-1/2"
+      <div className="absolute inset-0" style={{ background: backgrounds[variant] }} />
+
+      {/* CSS animated orbs - prefers-reduced-motion 対応 */}
+      <div
+        className="absolute -top-1/4 -left-1/4 w-1/2 h-1/2 animate-mesh-orb-1 motion-reduce:animate-none"
         style={{
           background: isDark
             ? `radial-gradient(circle, ${designTokens.colors.accent.gold}20 0%, transparent 70%)`
             : `radial-gradient(circle, ${designTokens.colors.secondary.fern}15 0%, transparent 70%)`,
           filter: 'blur(80px)',
+          willChange: 'transform',
+          contain: 'layout style paint',
         }}
       />
-      
-      <motion.div
-        animate={{
-          x: [0, -50, 0],
-          y: [0, 40, 0],
-          scale: [1.1, 1, 1.1],
-        }}
-        transition={{ duration: 30, repeat: Infinity, ease: 'easeInOut' }}
-        className="absolute -bottom-1/4 -right-1/4 w-2/3 h-2/3"
+      <div
+        className="absolute -bottom-1/4 -right-1/4 w-2/3 h-2/3 animate-mesh-orb-2 motion-reduce:animate-none"
         style={{
           background: isDark
             ? `radial-gradient(circle, ${designTokens.colors.accent.lilac}15 0%, transparent 70%)`
             : `radial-gradient(circle, ${designTokens.colors.secondary.stone}25 0%, transparent 70%)`,
           filter: 'blur(100px)',
+          willChange: 'transform',
+          contain: 'layout style paint',
         }}
       />
-      
-      <motion.div
-        animate={{
-          x: [0, 30, 0],
-          y: [0, 50, 0],
-        }}
-        transition={{ duration: 22, repeat: Infinity, ease: 'easeInOut' }}
-        className="absolute top-1/3 right-1/4 w-1/3 h-1/3"
+      <div
+        className="absolute top-1/3 right-1/4 w-1/3 h-1/3 animate-mesh-orb-3 motion-reduce:animate-none"
         style={{
           background: isDark
             ? `radial-gradient(circle, ${designTokens.colors.primary.light}10 0%, transparent 70%)`
             : `radial-gradient(circle, ${designTokens.colors.accent.lilac}10 0%, transparent 70%)`,
           filter: 'blur(60px)',
+          willChange: 'transform',
+          contain: 'layout style paint',
         }}
       />
-      
-      {/* Subtle Noise Texture */}
-      <div 
+
+      <div
         className="absolute inset-0 opacity-[0.02]"
         style={{
           backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
@@ -433,33 +415,22 @@ const HeroSection = ({
         />
       </motion.div>
 
-      {/* Animated Accent Orbs (背景の上に配置) */}
+      {/* Animated Accent Orbs - CSS アニメーション（GPU コンポジタ処理） */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none z-[1]">
-        <motion.div
-          animate={{
-            x: [0, 40, 0],
-            y: [0, -30, 0],
-            scale: [1, 1.15, 1],
-          }}
-          transition={{ duration: 25, repeat: Infinity, ease: 'easeInOut' }}
-          className="absolute -top-1/4 -left-1/4 w-1/2 h-1/2"
+        <div
+          className="absolute -top-1/4 -left-1/4 w-1/2 h-1/2 animate-mesh-orb-1 motion-reduce:animate-none"
           style={{
             background: `radial-gradient(circle, ${designTokens.colors.accent.gold}15 0%, transparent 70%)`,
             filter: 'blur(80px)',
+            willChange: 'transform',
           }}
         />
-        
-        <motion.div
-          animate={{
-            x: [0, -50, 0],
-            y: [0, 40, 0],
-            scale: [1.1, 1, 1.1],
-          }}
-          transition={{ duration: 30, repeat: Infinity, ease: 'easeInOut' }}
-          className="absolute -bottom-1/4 -right-1/4 w-2/3 h-2/3"
+        <div
+          className="absolute -bottom-1/4 -right-1/4 w-2/3 h-2/3 animate-mesh-orb-2 motion-reduce:animate-none"
           style={{
             background: `radial-gradient(circle, ${designTokens.colors.accent.lilac}12 0%, transparent 70%)`,
             filter: 'blur(100px)',
+            willChange: 'transform',
           }}
         />
       </div>
@@ -1208,72 +1179,167 @@ const EventShowcaseSection = () => {
 };
 
 // ===================================================================
-// FINAL CTA SECTION
+// CONTACT SECTION
 // ===================================================================
 
-const FinalCTASection = ({ onStart }: { onStart: () => void }) => {
+const ContactSection = () => {
   const sectionRef = useRef<HTMLElement>(null);
-  const isInView = useInView(sectionRef, { once: true, margin: '-100px' });
+  const isInView = useInView(sectionRef, { once: true, margin: '-50px' });
 
   return (
-    <section 
+    <section
       ref={sectionRef}
-      className="py-32 sm:py-40 lg:py-48 px-6 relative overflow-hidden"
-      style={{ background: designTokens.colors.primary.base }}
+      className="py-20 sm:py-24 px-6 relative"
+      style={{ background: designTokens.colors.background.cloud }}
     >
-      <OrganicMeshBackground variant="primary" />
-
-      <div className="container mx-auto max-w-3xl lg:max-w-4xl relative z-10 text-center">
-        <motion.div
-          initial={{ opacity: 0, y: 40 }}
+      <div className="container mx-auto max-w-3xl text-center">
+        <SectionLabel>Contact</SectionLabel>
+        <OrganicDivider className="my-3" />
+        <motion.h2
+          initial={{ opacity: 0, y: 20 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.8 }}
-          className="space-y-8 lg:space-y-10"
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="mt-4 text-2xl sm:text-3xl font-semibold"
+          style={{
+            fontFamily: designTokens.typography.display,
+            color: designTokens.colors.primary.base,
+          }}
         >
-          <span 
-            className="inline-block text-xs lg:text-sm font-semibold tracking-[0.3em] uppercase"
-            style={{ color: designTokens.colors.accent.gold }}
+          お問い合わせ
+        </motion.h2>
+        <motion.p
+          initial={{ opacity: 0, y: 15 }}
+          animate={isInView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="mt-4 text-base lg:text-lg leading-relaxed"
+          style={{
+            fontFamily: designTokens.typography.body,
+            color: designTokens.colors.text.secondary,
+          }}
+        >
+          サービスに関するご質問やご要望は、
+          <br className="hidden sm:block" />
+          お気軽にお問い合わせください。
+        </motion.p>
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          animate={isInView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.5, delay: 0.3 }}
+          className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4"
+        >
+          <a
+            href="mailto:sobota@nobody-info.com"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all hover:scale-[1.02]"
+            style={{
+              background: designTokens.colors.background.white,
+              boxShadow: designTokens.elevation.medium,
+              border: `1px solid ${designTokens.colors.secondary.stone}30`,
+              color: designTokens.colors.primary.base,
+            }}
           >
-            Get Started
-          </span>
+            <MessageSquare className="w-4 h-4" />
+            sobota@nobody-info.com
+          </a>
+          <a
+            href="/contact"
+            className="inline-flex items-center gap-1 text-sm font-medium hover:opacity-70 transition-opacity"
+            style={{ color: designTokens.colors.primary.base }}
+          >
+            お問い合わせフォーム
+            <ChevronRight className="w-4 h-4" />
+          </a>
+        </motion.div>
+      </div>
+    </section>
+  );
+};
 
-          <h2
-            className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-semibold leading-tight"
+// ===================================================================
+// COMPANY SECTION
+// ===================================================================
+
+const CompanySection = () => {
+  const sectionRef = useRef<HTMLElement>(null);
+  const isInView = useInView(sectionRef, { once: true, margin: '-50px' });
+
+  const companyInfo = [
+    { label: '会社名', value: '株式会社Nobody' },
+    { label: '代表者', value: '藤原泰樹' },
+    { label: '所在地', value: '大分県大分市大字旦野原700番地 大分大学研究マネジメント機構4階423' },
+    { label: '設立', value: '2025年8月' },
+    { label: '資本金', value: '30万円' },
+    { label: '事業内容', value: 'アプリケーション開発、AI導入支援、地域課題解決プラットフォームの運営' },
+  ];
+
+  return (
+    <section
+      ref={sectionRef}
+      className="py-20 sm:py-24 px-6 relative"
+      style={{ background: designTokens.colors.background.mist }}
+    >
+      <div className="container mx-auto max-w-3xl">
+        <div className="text-center mb-10">
+          <SectionLabel>Company</SectionLabel>
+          <OrganicDivider className="my-3" />
+          <motion.h2
+            initial={{ opacity: 0, y: 20 }}
+            animate={isInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="mt-4 text-2xl sm:text-3xl font-semibold"
             style={{
               fontFamily: designTokens.typography.display,
-              color: designTokens.colors.text.inverse,
+              color: designTokens.colors.primary.base,
             }}
           >
-            さあ、大分を探検しよう
-          </h2>
+            運営会社
+          </motion.h2>
+        </div>
 
-          <p
-            className="text-lg lg:text-xl max-w-md lg:max-w-lg mx-auto"
-            style={{ color: `${designTokens.colors.text.inverse}90` }}
-          >
-            イベント・祭り・マルシェ情報、すべて無料・登録不要。
-          </p>
-
-          <motion.button
-            whileHover={{ scale: 1.03, y: -4 }}
-            whileTap={{ scale: 0.97 }}
-            onClick={onStart}
-            className="group inline-flex items-center gap-3 px-12 py-5 lg:px-16 lg:py-6 rounded-xl font-semibold text-lg lg:text-xl transition-all relative overflow-hidden"
-            style={{
-              background: designTokens.colors.accent.gold,
-              color: designTokens.colors.text.primary,
-              boxShadow: `0 12px 48px ${designTokens.colors.accent.gold}40`,
-            }}
-          >
-            <span className="relative z-10">地図を開く</span>
-            {/* Auto shimmer effect */}
-            <motion.span
-              animate={{ x: ['-200%', '200%'] }}
-              transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut', repeatDelay: 2 }}
-              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/25 to-transparent"
-              style={{ width: '50%' }}
-            />
-          </motion.button>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={isInView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.5, delay: 0.2 }}
+        >
+          <ElevationCard elevation="low" padding="lg" hover={false}>
+            <dl className="divide-y" style={{ borderColor: `${designTokens.colors.secondary.stone}20` }}>
+              {companyInfo.map((item) => (
+                <div key={item.label} className="flex flex-col sm:flex-row py-4 first:pt-0 last:pb-0 gap-1 sm:gap-8">
+                  <dt
+                    className="text-sm font-semibold sm:w-28 flex-shrink-0"
+                    style={{ color: designTokens.colors.text.muted, fontFamily: designTokens.typography.body }}
+                  >
+                    {item.label}
+                  </dt>
+                  <dd
+                    className="text-sm sm:text-base"
+                    style={{ color: designTokens.colors.text.primary, fontFamily: designTokens.typography.body }}
+                  >
+                    {item.value}
+                  </dd>
+                </div>
+              ))}
+              <div className="flex flex-col sm:flex-row py-4 last:pb-0 gap-1 sm:gap-8">
+                <dt
+                  className="text-sm font-semibold sm:w-28 flex-shrink-0"
+                  style={{ color: designTokens.colors.text.muted, fontFamily: designTokens.typography.body }}
+                >
+                  Website
+                </dt>
+                <dd>
+                  <a
+                    href="https://www.nobody-inc.jp/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm sm:text-base inline-flex items-center gap-1 hover:opacity-70 transition-opacity"
+                    style={{ color: designTokens.colors.primary.base }}
+                  >
+                    https://www.nobody-inc.jp/
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                </dd>
+              </div>
+            </dl>
+          </ElevationCard>
         </motion.div>
       </div>
     </section>
@@ -1383,10 +1449,9 @@ const Footer = () => (
 // HEADER NAVIGATION
 // ===================================================================
 
-const Header = ({ scrollPosition, onFeedbackOpen }: { scrollPosition: number; onFeedbackOpen: () => void }) => {
+const Header = ({ isScrolled, onFeedbackOpen }: { isScrolled: boolean; onFeedbackOpen: () => void }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { data: session } = useSession();
-  const isScrolled = scrollPosition > 50;
 
   return (
     <>
@@ -1631,7 +1696,8 @@ const LocationModal = ({
 export default function Home() {
   const router = useRouter();
   const { showFeedbackModal, setShowFeedbackModal, openFeedbackModal } = useFeedback();
-  const [scrollPosition, setScrollPosition] = useState(0);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [showScrollTop, setShowScrollTop] = useState(false);
   const [showLocationModal, setShowLocationModal] = useState(false);
 
   // Search form state（LP離脱・リロード時にリセット）
@@ -1639,9 +1705,21 @@ export default function Home() {
   const [target, setTarget] = useState('none');
 
   useEffect(() => {
-    const handleScroll = () => setScrollPosition(window.scrollY);
+    let rafId: number | null = null;
+    const handleScroll = () => {
+      if (rafId !== null) return;
+      rafId = requestAnimationFrame(() => {
+        const y = window.scrollY;
+        setIsScrolled(y > 50);
+        setShowScrollTop(y > 600);
+        rafId = null;
+      });
+    };
     window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      if (rafId !== null) cancelAnimationFrame(rafId);
+    };
   }, []);
 
   // bfcache 復元時（戻るボタンで LP に戻った場合など）に検索フォームをリセット
@@ -1720,7 +1798,7 @@ export default function Home() {
       }}
     >
 
-      <Header scrollPosition={scrollPosition} onFeedbackOpen={openFeedbackModal} />
+      <Header isScrolled={isScrolled} onFeedbackOpen={openFeedbackModal} />
       
       <HeroSection
         onStart={handleStart}
@@ -1741,7 +1819,9 @@ export default function Home() {
 
       <NoteArticlesSection username="kind_ixora3833" maxItems={4} />
 
-      <FinalCTASection onStart={handleStart} />
+      <ContactSection />
+
+      <CompanySection />
 
       <Footer />
 
@@ -1757,26 +1837,32 @@ export default function Home() {
         onClose={() => setShowFeedbackModal(false)}
       />
 
-      {/* Floating Scroll to Top Button */}
+      {/* Floating Scroll to Top Button（マップ画面のアイコンデザイン踏襲） */}
       <AnimatePresence>
-        {scrollPosition > 600 && (
+        {showScrollTop && (
           <motion.button
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.8 }}
             transition={{ duration: 0.3 }}
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-            className="fixed bottom-6 right-6 z-50 w-12 h-14 rounded-full flex flex-col items-center justify-center gap-0.5 shadow-lg"
+            className="fixed bottom-6 right-6 z-50 flex flex-col items-center gap-0.5 rounded-2xl px-3 py-2 min-w-[52px]"
             style={{
-              background: designTokens.colors.accent.gold,
-              color: designTokens.colors.text.primary,
-              boxShadow: `0 4px 16px ${designTokens.colors.accent.gold}40`,
+              background: `${designTokens.colors.background.white}F0`,
+              color: designTokens.colors.primary.base,
+              boxShadow: designTokens.elevation.medium,
+              border: `1px solid ${designTokens.colors.secondary.stone}40`,
             }}
-            whileHover={{ scale: 1.1, y: -2 }}
+            whileHover={{ scale: 1.05, y: -2 }}
             whileTap={{ scale: 0.95 }}
           >
-            <ArrowUp className="w-4 h-4" />
-            <span className="text-[9px] font-bold leading-none tracking-wide">TOP</span>
+            <HomeIcon className="h-5 w-5" />
+            <span
+              className="text-[10px] font-bold"
+              style={{ color: designTokens.colors.primary.base }}
+            >
+              トップ
+            </span>
           </motion.button>
         )}
       </AnimatePresence>

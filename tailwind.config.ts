@@ -80,10 +80,25 @@ const config: Config = {
             height: '0',
           },
         },
+        'mesh-orb-1': {
+          '0%, 100%': { transform: 'translate(0, 0) scale(1)' },
+          '50%': { transform: 'translate(40px, -30px) scale(1.15)' },
+        },
+        'mesh-orb-2': {
+          '0%, 100%': { transform: 'translate(0, 0) scale(1.1)' },
+          '50%': { transform: 'translate(-50px, 40px) scale(1)' },
+        },
+        'mesh-orb-3': {
+          '0%, 100%': { transform: 'translate(0, 0)' },
+          '50%': { transform: 'translate(30px, 50px)' },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
+        'mesh-orb-1': 'mesh-orb-1 25s ease-in-out infinite',
+        'mesh-orb-2': 'mesh-orb-2 30s ease-in-out infinite',
+        'mesh-orb-3': 'mesh-orb-3 22s ease-in-out infinite',
       },
     },
   },
