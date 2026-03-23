@@ -20,6 +20,27 @@ declare global {
   interface Window { google: any; }
 }
 
+// Lightweight image component with loading spinner
+const CardImage = ({ src, alt }: { src: string; alt: string }) => {
+  const [loaded, setLoaded] = useState(false);
+  return (
+    <>
+      {!loaded && (
+        <div className="absolute inset-0 flex items-center justify-center" style={{ background: designTokens.colors.background.cloud }}>
+          <div className="w-5 h-5 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: `${designTokens.colors.primary.light}40`, borderTopColor: 'transparent' }} />
+        </div>
+      )}
+      <img
+        src={src}
+        alt={alt}
+        className={`w-full h-full object-cover transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'}`}
+        loading="eager"
+        onLoad={() => setLoaded(true)}
+      />
+    </>
+  );
+};
+
 // 型定義
 interface PostMarkerData {
   id: string;
@@ -50,11 +71,13 @@ const createSimpleCategoryIcon = (category: PostCategory) => {
   const size = 40;
   const config = getCategoryConfig(category);
   const iconSvg = `<g transform="translate(${size/2 - 5}, ${size/2 - 5}) scale(0.75)"><rect x="2" y="4" width="12" height="10" rx="1" fill="none" stroke="white" stroke-width="1.5"/><line x1="2" y1="7" x2="14" y2="7" stroke="white" stroke-width="1.5"/><line x1="5" y1="2" x2="5" y2="5" stroke="white" stroke-width="1.5" stroke-linecap="round"/><line x1="11" y1="2" x2="11" y2="5" stroke="white" stroke-width="1.5" stroke-linecap="round"/></g>`;
-  const svgIcon = `<svg width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg"><circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="${config.color}" stroke="#ffffff" stroke-width="2"/>${iconSvg}</svg>`;
+  // Animated spinner ring to indicate loading
+  const spinnerSvg = `<circle cx="${size/2}" cy="${size/2}" r="${size/2 + 2}" fill="none" stroke="${config.color}" stroke-width="2" stroke-dasharray="8 6" opacity="0.5"><animateTransform attributeName="transform" type="rotate" from="0 ${size/2} ${size/2}" to="360 ${size/2} ${size/2}" dur="1.2s" repeatCount="indefinite"/></circle>`;
+  const svgIcon = `<svg width="${size + 8}" height="${size + 8}" xmlns="http://www.w3.org/2000/svg"><g transform="translate(4,4)"><circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="${config.color}" stroke="#ffffff" stroke-width="2"/>${iconSvg}${spinnerSvg}</g></svg>`;
   return {
     url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svgIcon),
-    scaledSize: new window.google.maps.Size(size, size),
-    anchor: new window.google.maps.Point(size / 2, size),
+    scaledSize: new window.google.maps.Size(size + 8, size + 8),
+    anchor: new window.google.maps.Point((size + 8) / 2, size + 4),
   };
 };
 
@@ -678,7 +701,7 @@ export function MapView() {
                   <div className="flex gap-4 mb-3">
                     <div className="flex-shrink-0 relative w-20 h-20 rounded-xl overflow-hidden" style={{ background: designTokens.colors.background.cloud }}>
                       {post.image_urls && post.image_urls.length > 0 ? (
-                        <img src={optimizeThumbnail(post.image_urls[0], 80)} alt={post.store_name} className="w-full h-full object-cover" loading="eager" />
+                        <CardImage src={optimizeThumbnail(post.image_urls[0], 80)} alt={post.store_name} />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center"><Calendar className="h-8 w-8" style={{ color: designTokens.colors.text.muted }} /></div>
                       )}

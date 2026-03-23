@@ -299,7 +299,7 @@ const BottomTabNav = ({
   const tabs = [
     { icon: HomeIcon, label: 'ホーム', action: () => window.scrollTo({ top: 0, behavior: 'smooth' }) },
     { icon: Calendar, label: 'イベント', action: () => router.push('/events') },
-    { icon: MapPin, label: '地図', action: onMapClick, accent: true },
+    { icon: Compass, label: '地図', action: onMapClick, accent: true },
     { icon: BookOpen, label: '記事', action: () => window.open('https://note.com/kind_ixora3833', '_blank') },
     { icon: Menu, label: 'メニュー', action: onMenuOpen },
   ];
@@ -350,9 +350,9 @@ const BottomTabNav = ({
 // ===================================================================
 
 const HERO_BG_IMAGES = [
-  'https://res.cloudinary.com/dz9trbwma/image/upload/f_auto,q_auto/v1772416996/Gemini_Generated_Image_n5dwvwn5dwvwn5dw_nq711a_c_pad_b_gen_fill_w_1024_h_1024_ampt7h.png',
-  'https://res.cloudinary.com/dz9trbwma/image/upload/f_auto,q_auto/v1772416995/Gemini_Generated_Image_sauq56sauq56sauq_bgou7c_c_pad_b_gen_fill_w_1024_h_1024_dlmpvb.png',
-  'https://res.cloudinary.com/dz9trbwma/image/upload/f_auto,q_auto/v1772416995/Gemini_Generated_Image_tgqneqtgqneqtgqn_ekswrm_c_pad_b_gen_fill_w_1024_h_1024_vyp6lv.png',
+  'https://res.cloudinary.com/dz9trbwma/image/upload/f_auto,q_auto,w_1200/v1772416996/Gemini_Generated_Image_n5dwvwn5dwvwn5dw_nq711a_c_pad_b_gen_fill_w_1024_h_1024_ampt7h.png',
+  'https://res.cloudinary.com/dz9trbwma/image/upload/f_auto,q_auto,w_1200/v1772416995/Gemini_Generated_Image_sauq56sauq56sauq_bgou7c_c_pad_b_gen_fill_w_1024_h_1024_dlmpvb.png',
+  'https://res.cloudinary.com/dz9trbwma/image/upload/f_auto,q_auto,w_1200/v1772416995/Gemini_Generated_Image_tgqneqtgqneqtgqn_ekswrm_c_pad_b_gen_fill_w_1024_h_1024_vyp6lv.png',
 ];
 
 const HeroSection = ({
@@ -435,7 +435,7 @@ const HeroSection = ({
             className="text-sm sm:text-base font-medium mb-4"
             style={{ color: 'rgba(255,255,255,0.75)' }}
           >
-            Discover Oita&apos;s Local Events
+            Oita Event Guide
           </motion.p>
 
           {/* Main Headline */}
@@ -443,17 +443,15 @@ const HeroSection = ({
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.4 }}
-            className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-[1.15] tracking-tight mb-6"
+            className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold leading-[1.2] tracking-tight mb-6"
             style={{
               fontFamily: designTokens.typography.display,
               color: '#FFFFFF',
               textShadow: '0 2px 16px rgba(0,0,0,0.3)',
             }}
           >
-            大分県内のイベントを探して、
-            <br />
-            <span className="relative inline-block mt-1">
-              <span className="relative z-10">地域の魅力と出会う時間へ。</span>
+            <span className="relative inline-block">
+              <span className="relative z-10">大分県内のイベントを探して、地域の魅力と出会う時間へ。</span>
               <motion.span
                 initial={{ scaleX: 0 }}
                 animate={{ scaleX: 1 }}
@@ -819,7 +817,9 @@ const EventShowcaseSection = ({ onPreloadImages }: { onPreloadImages?: (urls: st
                 {event.image_url ? (
                   <>
                     {!isLoaded && (
-                      <div className="absolute inset-0 animate-pulse rounded-3xl" style={{ background: 'rgba(255,255,255,0.06)' }} />
+                      <div className="absolute inset-0 flex items-center justify-center rounded-3xl" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                        <div className="w-7 h-7 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: 'rgba(255,255,255,0.25)', borderTopColor: 'transparent' }} />
+                      </div>
                     )}
                     <img
                       src={event.image_url}
@@ -891,21 +891,22 @@ const EventShowcaseSection = ({ onPreloadImages }: { onPreloadImages?: (urls: st
 // ===================================================================
 
 const ChallengesSection = () => {
+  const [loadedImages, setLoadedImages] = useState<Set<number>>(new Set());
   const challenges = [
     {
-      imageUrl: 'https://res.cloudinary.com/dz9trbwma/image/upload/f_auto,q_auto/v1772416996/Gemini_Generated_Image_n5dwvwn5dwvwn5dw_nq711a_c_pad_b_gen_fill_w_1024_h_1024_ampt7h.png',
+      imageUrl: 'https://res.cloudinary.com/dz9trbwma/image/upload/f_auto,q_auto,w_800/v1772416996/Gemini_Generated_Image_n5dwvwn5dwvwn5dw_nq711a_c_pad_b_gen_fill_w_1024_h_1024_ampt7h.png',
       title: 'イベント情報がバラバラで見つからない',
       description: '各市町村が独自に情報発信しているため、大分県全体のイベント・祭り・マルシェを一括検索できる場所がない。',
     },
     {
-      imageUrl: 'https://res.cloudinary.com/dz9trbwma/image/upload/f_auto,q_auto/v1772416995/Gemini_Generated_Image_sauq56sauq56sauq_bgou7c_c_pad_b_gen_fill_w_1024_h_1024_dlmpvb.png',
-      title: '「自分だけの旅」を求めて',
-      description: 'ツアーではなく、自分のペースで巡りたい。一人旅もインバウンド旅行者も、本当に欲しいのは「地元の人だけが知る、生きた情報」。',
+      imageUrl: 'https://res.cloudinary.com/dz9trbwma/image/upload/f_auto,q_auto,w_800/v1772416995/Gemini_Generated_Image_sauq56sauq56sauq_bgou7c_c_pad_b_gen_fill_w_1024_h_1024_dlmpvb.png',
+      title: '地元のイベントを見逃してしまう',
+      description: '「知っていれば行ったのに」——SNSや口コミだけでは、大分の魅力的なイベントを見つけきれない。',
     },
     {
-      imageUrl: 'https://res.cloudinary.com/dz9trbwma/image/upload/f_auto,q_auto/v1772416995/Gemini_Generated_Image_tgqneqtgqneqtgqn_ekswrm_c_pad_b_gen_fill_w_1024_h_1024_vyp6lv.png',
-      title: '旅先で「困った」が多すぎる',
-      description: 'トイレはどこ？ゴミ箱は？次のバスは？旅を楽しむための基本情報が、意外と見つからない。',
+      imageUrl: 'https://res.cloudinary.com/dz9trbwma/image/upload/f_auto,q_auto,w_800/v1772416995/Gemini_Generated_Image_tgqneqtgqneqtgqn_ekswrm_c_pad_b_gen_fill_w_1024_h_1024_vyp6lv.png',
+      title: '開催日や場所がすぐに分からない',
+      description: 'いつ、どこで開催されるのか。イベントの日程や会場情報をまとめて確認できる場所がない。',
     },
   ];
 
@@ -915,7 +916,7 @@ const ChallengesSection = () => {
       style={{ background: designTokens.colors.background.mist }}
     >
       <div className="container mx-auto max-w-6xl">
-        <AppSectionHeader label="Challenges" title="もっと多くの人に大分の魅力を届けたい" />
+        <AppSectionHeader label="Challenges" title="大分のイベント情報、もっと届けたい" />
 
         <p
           className="text-base sm:text-lg mb-10 max-w-2xl leading-relaxed"
@@ -937,12 +938,19 @@ const ChallengesSection = () => {
               className="relative w-[85vw] sm:w-[70vw] md:w-full flex-shrink-0 snap-start rounded-3xl overflow-hidden group"
               style={{ aspectRatio: '16/9' }}
             >
+              {/* Loading skeleton */}
+              {!loadedImages.has(index) && (
+                <div className="absolute inset-0 flex items-center justify-center rounded-3xl" style={{ background: designTokens.colors.secondary.stone + '30' }}>
+                  <div className="w-8 h-8 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: `${designTokens.colors.primary.light}40`, borderTopColor: 'transparent' }} />
+                </div>
+              )}
               <img
                 src={challenge.imageUrl}
                 alt=""
-                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                className={`w-full h-full object-cover transition-all duration-700 group-hover:scale-105 ${loadedImages.has(index) ? 'opacity-100' : 'opacity-0'}`}
                 loading="lazy"
                 decoding="async"
+                onLoad={() => setLoadedImages(prev => new Set(prev).add(index))}
               />
               {/* Gradient overlay - stronger for text readability */}
               <div
@@ -981,7 +989,7 @@ const SolutionSection = () => {
     {
       label: 'DISCOVER',
       title: '週末のイベント、もう見逃さない',
-      description: '大分県内のイベント・祭り・マルシェをリアルタイムで集約。「知らなかった」を「行ってきた！」に変える。',
+      description: '大分県内のイベント情報をリアルタイムで集約。「知らなかった」を「行ってきた！」に変える。',
       iconElement: <Sparkles className="w-6 h-6" />,
       color: designTokens.colors.accent.lilac,
     },
@@ -1001,8 +1009,8 @@ const SolutionSection = () => {
     },
     {
       label: 'CONNECT',
-      title: '大分の「いま」とつながる',
-      description: '季節の祭り、地元のマルシェ、文化イベント。18市町村のリアルタイム情報で再発見。',
+      title: '大分のイベントを見逃さない',
+      description: '季節の祭り、地元のマルシェ、文化イベント。18市町村のイベント情報をまとめてチェック。',
       iconElement: <Calendar className="w-6 h-6" />,
       color: designTokens.colors.secondary.fern,
     },
@@ -1014,14 +1022,14 @@ const SolutionSection = () => {
       style={{ background: designTokens.colors.background.cloud }}
     >
       <div className="container mx-auto max-w-6xl">
-        <AppSectionHeader label="Solution" title="大分のイベントをひとつの地図に" />
+        <AppSectionHeader label="Solution" title="大分のイベント情報をひとつの場所に" />
 
         <p
           className="text-base sm:text-lg mb-10 max-w-2xl leading-relaxed"
           style={{ fontFamily: designTokens.typography.body, color: designTokens.colors.text.secondary }}
         >
-          大分県18市町村のイベント・祭り・マルシェ情報を
-          リアルタイムで集約。地図で見つけて、すぐに出かけよう。
+          大分県18市町村のイベント情報を集約。
+          地図やリストから、気になるイベントをすぐに見つけよう。
         </p>
 
         {/* Mobile: Horizontal scroll, Desktop: 2x2 Grid */}
@@ -1236,7 +1244,7 @@ const Footer = () => (
             TOKUDOKU
           </span>
           <span className="text-xs hidden sm:inline" style={{ color: designTokens.colors.text.muted }}>
-            大分のイベントを、ひとつの地図で。
+            大分のイベント情報を、ひとつの場所で。
           </span>
         </div>
         <div className="flex items-center gap-4">
