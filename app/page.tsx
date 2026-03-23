@@ -4,6 +4,7 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence, useScroll, useTransform, useInView } from 'framer-motion';
 import { MapPin, Menu, X, ChevronRight, Calendar, LogOut, Compass, ExternalLink, Sparkles, MessageSquare, Home as HomeIcon, Search, BookOpen } from 'lucide-react';
+import { generateSemanticEventUrl } from '@/lib/seo/url-helper';
 import { Button } from '@/components/ui/button';
 import { useSession, signOut } from 'next-auth/react';
 import { NoteArticlesSection } from '@/components/external-content';
@@ -450,8 +451,10 @@ const HeroSection = ({
               textShadow: '0 2px 16px rgba(0,0,0,0.3)',
             }}
           >
+            大分県内のイベントを探して、
+            <br className="md:hidden" />
             <span className="relative inline-block">
-              <span className="relative z-10">大分県内のイベントを探して、地域の魅力と出会う時間へ。</span>
+              <span className="relative z-10">地域の魅力と出会う時間へ。</span>
               <motion.span
                 initial={{ scaleX: 0 }}
                 animate={{ scaleX: 1 }}
@@ -726,7 +729,7 @@ const EventShowcaseSection = ({ onPreloadImages }: { onPreloadImages?: (urls: st
           }
         }
         if (imageUrl && imageUrl.includes('cloudinary.com') && !imageUrl.includes('w_256')) {
-          imageUrl = imageUrl.replace('/upload/', '/upload/f_auto,q_auto,w_400,h_530,c_fill/');
+          imageUrl = imageUrl.replace('/upload/', '/upload/f_auto,q_60,w_300,h_400,c_fill/');
         }
         return {
           id: item.id,
@@ -741,22 +744,32 @@ const EventShowcaseSection = ({ onPreloadImages }: { onPreloadImages?: (urls: st
 
       setEvents(mapped);
 
-      // Preload map marker thumbnails (60px) for instant map icon display
-      const imageUrlsForPreload: string[] = [];
-      mapped.forEach(event => {
+      // Preload LP card images + map marker thumbnails for fast display
+      const allPreloadUrls: string[] = [];
+
+      // 1. LP card images (visible first)
+      mapped.slice(0, 6).forEach(event => {
         if (event.image_url) {
-          // Extract original URL before LP-specific transforms
-          const originalUrl = event.image_url.replace(/\/upload\/f_auto,q_auto,w_400,h_530,c_fill\//, '/upload/');
-          const thumbnailUrl = optimizeThumbnail(originalUrl, 60);
-          const preloadImg = new Image();
-          preloadImg.crossOrigin = 'anonymous';
-          preloadImg.src = thumbnailUrl;
-          imageUrlsForPreload.push(thumbnailUrl);
+          allPreloadUrls.push(event.image_url);
         }
       });
 
-      // Inject <link rel="preload"> for top 10 images into head
-      imageUrlsForPreload.slice(0, 10).forEach(url => {
+      // 2. Map marker thumbnails (60px)
+      mapped.forEach(event => {
+        if (event.image_url) {
+          const originalUrl = event.image_url.replace(/\/upload\/f_auto,q_60,w_300,h_400,c_fill\//, '/upload/');
+          const thumbnailUrl = optimizeThumbnail(originalUrl, 60);
+          allPreloadUrls.push(thumbnailUrl);
+        }
+      });
+
+      // Inject <link rel="preload"> + Image() preload for top URLs
+      allPreloadUrls.slice(0, 12).forEach(url => {
+        // Programmatic preload
+        const preloadImg = new window.Image();
+        preloadImg.crossOrigin = 'anonymous';
+        preloadImg.src = url;
+        // Link preload hint
         if (!document.querySelector(`link[href="${url}"]`)) {
           const link = document.createElement('link');
           link.rel = 'preload';
@@ -811,7 +824,15 @@ const EventShowcaseSection = ({ onPreloadImages }: { onPreloadImages?: (urls: st
                 viewport={{ once: true }}
                 transition={{ duration: 0.4, delay: Math.min(index * 0.08, 0.4) }}
                 className="relative w-64 sm:w-72 flex-shrink-0 aspect-[3/4] rounded-3xl overflow-hidden cursor-pointer snap-start group"
-                onClick={() => router.push('/area/大分県')}
+                onClick={() => {
+                  const eventUrl = generateSemanticEventUrl({
+                    eventId: event.id,
+                    eventName: event.event_name,
+                    city: event.city || undefined,
+                    prefecture: '大分県',
+                  });
+                  router.push(eventUrl);
+                }}
               >
                 {/* Image */}
                 {event.image_url ? (
@@ -935,8 +956,7 @@ const ChallengesSection = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: index * 0.1 }}
-              className="relative w-[85vw] sm:w-[70vw] md:w-full flex-shrink-0 snap-start rounded-3xl overflow-hidden group"
-              style={{ aspectRatio: '16/9' }}
+              className="relative w-64 sm:w-72 md:w-full flex-shrink-0 snap-start rounded-3xl overflow-hidden group aspect-[3/4] md:aspect-video"
             >
               {/* Loading skeleton */}
               {!loadedImages.has(index) && (

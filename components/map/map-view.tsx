@@ -71,13 +71,11 @@ const createSimpleCategoryIcon = (category: PostCategory) => {
   const size = 40;
   const config = getCategoryConfig(category);
   const iconSvg = `<g transform="translate(${size/2 - 5}, ${size/2 - 5}) scale(0.75)"><rect x="2" y="4" width="12" height="10" rx="1" fill="none" stroke="white" stroke-width="1.5"/><line x1="2" y1="7" x2="14" y2="7" stroke="white" stroke-width="1.5"/><line x1="5" y1="2" x2="5" y2="5" stroke="white" stroke-width="1.5" stroke-linecap="round"/><line x1="11" y1="2" x2="11" y2="5" stroke="white" stroke-width="1.5" stroke-linecap="round"/></g>`;
-  // Animated spinner ring to indicate loading
-  const spinnerSvg = `<circle cx="${size/2}" cy="${size/2}" r="${size/2 + 2}" fill="none" stroke="${config.color}" stroke-width="2" stroke-dasharray="8 6" opacity="0.5"><animateTransform attributeName="transform" type="rotate" from="0 ${size/2} ${size/2}" to="360 ${size/2} ${size/2}" dur="1.2s" repeatCount="indefinite"/></circle>`;
-  const svgIcon = `<svg width="${size + 8}" height="${size + 8}" xmlns="http://www.w3.org/2000/svg"><g transform="translate(4,4)"><circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="${config.color}" stroke="#ffffff" stroke-width="2"/>${iconSvg}${spinnerSvg}</g></svg>`;
+  const svgIcon = `<svg width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg"><circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="${config.color}" stroke="#ffffff" stroke-width="2"/>${iconSvg}</svg>`;
   return {
     url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svgIcon),
-    scaledSize: new window.google.maps.Size(size + 8, size + 8),
-    anchor: new window.google.maps.Point((size + 8) / 2, size + 4),
+    scaledSize: new window.google.maps.Size(size, size),
+    anchor: new window.google.maps.Point(size / 2, size),
   };
 };
 

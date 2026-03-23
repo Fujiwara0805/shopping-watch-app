@@ -316,6 +316,9 @@ export default function CalendarPage() {
       const monthStart = startOfMonth(currentDate);
       const monthEnd = endOfMonth(currentDate);
 
+      // Server-side date filtering to reduce data transfer
+      const today = format(now, 'yyyy-MM-dd');
+
       let query = supabase
         .from('posts')
         .select(`
@@ -325,7 +328,8 @@ export default function CalendarPage() {
         `)
         .eq('is_deleted', false)
         .eq('category', 'イベント情報')
-        .eq('prefecture', selectedPrefecture);
+        .eq('prefecture', selectedPrefecture)
+        .or(`event_end_date.gte.${today},event_start_date.gte.${today}`);
 
       if (selectedCity !== 'all') {
         query = query.eq('city', selectedCity);
@@ -444,7 +448,6 @@ export default function CalendarPage() {
     } catch (error) {
       console.error('イベント取得エラー:', error);
     } finally {
-      await new Promise(resolve => setTimeout(resolve, 300));
       setLoading(false);
       setIsInitialized(true);
     }
@@ -617,12 +620,17 @@ export default function CalendarPage() {
             className="fixed inset-0 z-50 flex items-center justify-center"
             style={{ background: designTokens.colors.background.mist }}
           >
-            <motion.div 
-              animate={{ rotate: 360 }}
-              transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-            >
-              <Compass className="h-12 w-12" style={{ color: designTokens.colors.accent.gold }} />
-            </motion.div>
+            <div className="flex flex-col items-center gap-4">
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+              >
+                <Compass className="h-12 w-12" style={{ color: designTokens.colors.accent.gold }} />
+              </motion.div>
+              <p className="text-sm font-medium" style={{ color: designTokens.colors.text.secondary }}>
+                イベント情報を読み込み中...
+              </p>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
