@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MapPin, Menu, X, ChevronRight, Calendar, LogOut, Compass, ExternalLink, Sparkles, MessageSquare, Home as HomeIcon, Search, BookOpen } from 'lucide-react';
+import { MapPin, Menu, X, ChevronRight, Calendar, LogOut, Compass, ExternalLink, Sparkles, MessageSquare, Home as HomeIcon, Search, BookOpen, Gift, Trophy } from 'lucide-react';
 import { generateSemanticEventUrl } from '@/lib/seo/url-helper';
 import { Button } from '@/components/ui/button';
 import { useSession, signOut } from 'next-auth/react';
@@ -524,7 +524,8 @@ const HeroSection = ({
 // ===================================================================
 
 const announcements: Announcement[] = [
-  { date: '2026.03.06', title: 'トクドクがリニューアルしました！イベント検索がより便利に。' },
+  { date: '2026.03.24', title: 'スタンプラリー機能（β版）を追加しました。イベントにGPSチェックイン機能を搭載しました。' },
+  { date: '2026.03.06', title: 'トクドクがリニューアルしました! イベント検索がより便利に。' },
   { date: '2026.03.01', title: '大分県内のイベント情報を随時更新中です。' },
 ];
 
@@ -883,11 +884,11 @@ const ChallengesSection = () => {
 const SolutionSection = () => {
   const solutions = [
     {
-      label: 'DISCOVER',
-      title: '週末のイベント、もう見逃さない',
-      description: '大分県内のイベント情報をリアルタイムで集約。「知らなかった」を「行ってきた！」に変える。',
-      iconElement: <Sparkles className="w-6 h-6" />,
-      color: designTokens.colors.accent.lilac,
+      label: 'STAMP RALLY',
+      title: 'チェックインでスタンプGET',
+      description: 'イベント会場でGPSチェックイン! 9つ集めるとAmazonギフトカードをプレゼント。',
+      iconElement: <Trophy className="w-6 h-6" />,
+      color: designTokens.colors.accent.goldDark,
     },
     {
       label: 'MAP',
@@ -897,17 +898,17 @@ const SolutionSection = () => {
       color: designTokens.colors.primary.base,
     },
     {
-      label: 'REVIEW',
-      title: '参加者の声でイベントを選ぶ',
-      description: '実際に参加した人のレビューや評価を確認。次のお出かけ先選びの参考に。',
-      iconElement: <MessageSquare className="w-6 h-6" />,
-      color: '#EA580C',
+      label: 'DISCOVER',
+      title: '週末のイベント、もう見逃さない',
+      description: '大分県内のイベント情報をリアルタイムで集約。「知らなかった」を「行ってきた!」に変える。',
+      iconElement: <Sparkles className="w-6 h-6" />,
+      color: designTokens.colors.accent.lilac,
     },
     {
-      label: 'CONNECT',
-      title: '大分のイベントを見逃さない',
-      description: '季節の祭り、地元のマルシェ、文化イベント。18市町村のイベント情報をまとめてチェック。',
-      iconElement: <Calendar className="w-6 h-6" />,
+      label: 'REWARD',
+      title: '参加するほどおトクに',
+      description: 'スタンプラリーで大分の魅力を巡ろう。β版公開記念のAmazonギフトカード特典を実施中!',
+      iconElement: <Gift className="w-6 h-6" />,
       color: designTokens.colors.secondary.fern,
     },
   ];
@@ -918,14 +919,14 @@ const SolutionSection = () => {
       style={{ background: designTokens.colors.background.cloud }}
     >
       <div className="container mx-auto max-w-6xl">
-        <AppSectionHeader label="Solution" title="大分のイベント情報をひとつの場所に" />
+        <AppSectionHeader label="Solution" title="探す、行く、集める。新しいイベント体験" />
 
         <p
           className="text-base sm:text-lg mb-10 max-w-2xl leading-relaxed"
           style={{ fontFamily: designTokens.typography.body, color: designTokens.colors.text.secondary }}
         >
-          大分県18市町村のイベント情報を集約。
-          地図やリストから、気になるイベントをすぐに見つけよう。
+          大分県18市町村のイベントを地図で探して、現地でチェックイン。
+          スタンプを集めて特典をもらおう。
         </p>
 
         {/* Mobile: Horizontal scroll, Desktop: 2x2 Grid */}
