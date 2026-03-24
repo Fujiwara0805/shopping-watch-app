@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence, useScroll, useTransform, useInView } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { MapPin, Menu, X, ChevronRight, Calendar, LogOut, Compass, ExternalLink, Sparkles, MessageSquare, Home as HomeIcon, Search, BookOpen } from 'lucide-react';
 import { generateSemanticEventUrl } from '@/lib/seo/url-helper';
 import { Button } from '@/components/ui/button';
@@ -15,7 +15,6 @@ import { trackEvent } from '@/lib/services/analytics';
 import { useFeedback } from '@/lib/contexts/feedback-context';
 import { FeedbackModal } from '@/components/feedback/feedback-modal';
 import { supabase } from '@/lib/supabaseClient';
-import { optimizeThumbnail } from '@/lib/utils/image';
 
 // ===================================================================
 // TYPE DEFINITIONS
@@ -103,10 +102,8 @@ const ElevationCard = ({
 }) => {
   const paddingMap = { none: '', sm: 'p-4', md: 'p-6', lg: 'p-8', xl: 'p-10' };
   return (
-    <motion.div
-      whileHover={hover ? { y: -6, boxShadow: designTokens.elevation.high } : {}}
-      transition={{ duration: 0.3, ease: 'easeOut' }}
-      className={`relative rounded-3xl overflow-hidden ${paddingMap[padding]} ${className}`}
+    <div
+      className={`relative rounded-3xl overflow-hidden ${paddingMap[padding]} ${hover ? 'transition-shadow duration-300 hover:shadow-xl' : ''} ${className}`}
       style={{
         background: designTokens.colors.background.white,
         boxShadow: designTokens.elevation[elevation],
@@ -115,7 +112,7 @@ const ElevationCard = ({
       }}
     >
       {children}
-    </motion.div>
+    </div>
   );
 };
 
@@ -127,10 +124,7 @@ const Header = ({ isScrolled, onFeedbackOpen, onMenuOpen }: { isScrolled: boolea
   const router = useRouter();
 
   return (
-    <motion.nav
-      initial={{ y: -100 }}
-      animate={{ y: 0 }}
-      transition={{ duration: 0.6, delay: 0.2 }}
+    <nav
       className="fixed top-0 left-0 right-0 z-50 transition-all duration-300"
       style={{
         background: isScrolled ? `rgba(244,245,242,0.85)` : 'transparent',
@@ -140,7 +134,6 @@ const Header = ({ isScrolled, onFeedbackOpen, onMenuOpen }: { isScrolled: boolea
       }}
     >
       <div className="container mx-auto px-5 h-14 sm:h-16 flex items-center justify-between">
-        {/* Logo */}
         <a href="/" className="flex items-center gap-2">
           <span
             className="font-bold text-lg tracking-wider"
@@ -152,8 +145,6 @@ const Header = ({ isScrolled, onFeedbackOpen, onMenuOpen }: { isScrolled: boolea
             TOKU<span style={{ color: designTokens.colors.accent.gold }}>DOKU</span>
           </span>
         </a>
-
-        {/* Desktop Nav Links */}
         <div className="hidden md:flex items-center gap-6">
           {[
             { label: 'イベント', href: '/events' },
@@ -169,20 +160,16 @@ const Header = ({ isScrolled, onFeedbackOpen, onMenuOpen }: { isScrolled: boolea
               {link.label}
             </a>
           ))}
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+          <button
             onClick={onMenuOpen}
-            className="p-2 rounded-xl transition-colors"
+            className="p-2 rounded-xl transition-colors hover:opacity-70"
             style={{ color: isScrolled ? designTokens.colors.primary.base : '#FFFFFF' }}
           >
             <Menu className="h-5 w-5" />
-          </motion.button>
+          </button>
         </div>
-
-        {/* Mobile: Logo only, no hamburger (BottomTabNav handles it) */}
       </div>
-    </motion.nav>
+    </nav>
   );
 };
 
@@ -218,15 +205,13 @@ const SideMenu = ({ isOpen, onClose, onFeedbackOpen }: { isOpen: boolean; onClos
                 <span className="font-semibold text-lg" style={{ color: designTokens.colors.primary.base }}>
                   Menu
                 </span>
-                <motion.button
-                  whileHover={{ rotate: 90 }}
-                  transition={{ duration: 0.2 }}
+                <button
                   onClick={onClose}
-                  className="p-2 rounded-lg"
+                  className="p-2 rounded-lg hover:opacity-70 transition-opacity"
                   style={{ color: designTokens.colors.primary.base }}
                 >
                   <X className="h-6 w-6" />
-                </motion.button>
+                </button>
               </div>
               <nav className="space-y-1">
                 {[
@@ -237,43 +222,34 @@ const SideMenu = ({ isOpen, onClose, onFeedbackOpen }: { isOpen: boolean; onClos
                   { href: '/terms/privacy-policy', label: 'プライバシーポリシー' },
                   { href: '/contact', label: 'お問い合わせ' },
                   { href: '/release-notes', label: 'リリースノート' },
-                ].map((item, index) => (
-                  <motion.a
+                ].map((item) => (
+                  <a
                     key={item.href}
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: index * 0.04 }}
                     href={item.href}
                     className="block px-4 py-3 rounded-xl font-medium transition-colors hover:bg-gray-50"
                     style={{ color: designTokens.colors.text.secondary }}
                     onClick={onClose}
                   >
                     {item.label}
-                  </motion.a>
+                  </a>
                 ))}
-                <motion.button
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.3 }}
+                <button
                   onClick={() => { onClose(); onFeedbackOpen(); }}
                   className="flex items-center w-full px-4 py-3 rounded-xl font-medium hover:bg-gray-50"
                   style={{ color: designTokens.colors.accent.lilacDark }}
                 >
                   <MessageSquare className="h-5 w-5 mr-2" />
                   ご意見
-                </motion.button>
+                </button>
                 {session && (
-                  <motion.button
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.35 }}
+                  <button
                     onClick={async () => { onClose(); await signOut({ callbackUrl: '/' }); }}
                     className="flex items-center w-full px-4 py-3 rounded-xl font-medium mt-4 hover:bg-gray-50"
                     style={{ color: designTokens.colors.functional.error }}
                   >
                     <LogOut className="h-5 w-5 mr-2" />
                     ログアウト
-                  </motion.button>
+                  </button>
                 )}
               </nav>
             </div>
@@ -371,79 +347,51 @@ const HeroSection = ({
   target: string;
   setTarget: (v: string) => void;
 }) => {
-  const heroRef = useRef<HTMLElement>(null);
   const [currentBgIndex, setCurrentBgIndex] = useState(0);
   const [showSearchExpanded, setShowSearchExpanded] = useState(false);
-  const { scrollYProgress } = useScroll({
-    target: heroRef,
-    offset: ['start start', 'end start'],
-  });
 
+  // Background rotation: 8s interval (reduced CPU from 5s), no parallax
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentBgIndex(prev => (prev + 1) % HERO_BG_IMAGES.length);
-    }, 5000);
+    }, 8000);
     return () => clearInterval(interval);
   }, []);
 
-  const opacity = useTransform(scrollYProgress, [0, 0.6], [1, 0]);
-  const y = useTransform(scrollYProgress, [0, 0.6], [0, 80]);
-  const bgY = useTransform(scrollYProgress, [0, 1], [0, 150]);
-  const bgScale = useTransform(scrollYProgress, [0, 1], [1, 1.1]);
-
   return (
-    <section
-      ref={heroRef}
-      className="relative min-h-screen flex items-end overflow-hidden"
-    >
-      {/* Background Image with Parallax + Crossfade */}
-      <motion.div className="absolute inset-0 z-0" style={{ y: bgY, scale: bgScale }}>
-        <AnimatePresence mode="popLayout">
-          <motion.div
-            key={currentBgIndex}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 1.5, ease: 'easeInOut' }}
-            className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+    <section className="relative min-h-screen flex items-end overflow-hidden">
+      {/* Background — CSS-only crossfade, no framer-motion */}
+      <div className="absolute inset-0 z-0">
+        {HERO_BG_IMAGES.map((url, i) => (
+          <div
+            key={i}
+            className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-1000 ease-in-out"
             style={{
-              backgroundImage: `url(${HERO_BG_IMAGES[currentBgIndex]})`,
+              backgroundImage: `url(${url})`,
               backgroundPosition: 'center 30%',
+              opacity: i === currentBgIndex ? 1 : 0,
             }}
           />
-        </AnimatePresence>
-
-        {/* Single strong bottom gradient */}
+        ))}
         <div
           className="absolute inset-0"
           style={{
             background: 'linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.1) 40%, rgba(0,0,0,0.55) 100%)',
           }}
         />
-      </motion.div>
+      </div>
 
-      {/* Main Content - Bottom aligned */}
-      <motion.div
-        style={{ opacity, y }}
-        className="relative z-10 w-full px-5 pb-12 sm:pb-16 md:pb-20 pt-28"
-      >
+      {/* Main Content */}
+      <div className="relative z-10 w-full px-5 pb-12 sm:pb-16 md:pb-20 pt-28 animate-fade-in-up">
         <div className="container mx-auto max-w-5xl">
-          {/* Tagline */}
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.3 }}
+          <p
             className="text-sm sm:text-base font-medium mb-4"
             style={{ color: 'rgba(255,255,255,0.75)' }}
           >
             Oita Event Guide
-          </motion.p>
+          </p>
 
-          {/* Main Headline */}
-          <motion.h1
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.4 }}
+          <h1
             className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold leading-[1.2] tracking-tight mb-6"
             style={{
               fontFamily: designTokens.typography.display,
@@ -455,131 +403,103 @@ const HeroSection = ({
             <br className="md:hidden" />
             <span className="relative inline-block">
               <span className="relative z-10">地域の魅力と出会う時間へ。</span>
-              <motion.span
-                initial={{ scaleX: 0 }}
-                animate={{ scaleX: 1 }}
-                transition={{ duration: 0.6, delay: 1.2 }}
-                className="absolute bottom-1 sm:bottom-2 left-0 right-0 h-3 sm:h-4 -z-10 origin-left rounded-sm"
+              <span
+                className="absolute bottom-1 sm:bottom-2 left-0 right-0 h-3 sm:h-4 -z-10 rounded-sm"
                 style={{ background: `${designTokens.colors.accent.gold}60` }}
               />
             </span>
-          </motion.h1>
+          </h1>
 
-          {/* Search Bar (pill-style) */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.7 }}
-            className="max-w-lg"
-          >
-            {/* Collapsed search bar */}
-            <motion.button
+          {/* Search Bar */}
+          <div className="max-w-lg">
+            <button
               onClick={() => setShowSearchExpanded(!showSearchExpanded)}
-              className="w-full flex items-center gap-3 px-5 py-4 rounded-2xl text-left transition-all"
+              className="w-full flex items-center gap-3 px-5 py-4 rounded-2xl text-left transition-all active:scale-[0.99]"
               style={{
                 background: 'rgba(255,255,255,0.95)',
-                backdropFilter: 'blur(12px)',
                 boxShadow: '0 8px 32px rgba(0,0,0,0.15)',
               }}
-              whileHover={{ scale: 1.01 }}
-              whileTap={{ scale: 0.99 }}
             >
               <Search className="w-5 h-5 flex-shrink-0" style={{ color: designTokens.colors.primary.base }} />
               <span className="text-sm sm:text-base font-medium" style={{ color: designTokens.colors.text.secondary }}>
                 大分のイベントを探す...
               </span>
               <ChevronRight className="w-5 h-5 ml-auto flex-shrink-0" style={{ color: designTokens.colors.text.muted }} />
-            </motion.button>
+            </button>
 
-            {/* Expanded search form */}
-            <AnimatePresence>
-              {showSearchExpanded && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0, marginTop: 0 }}
-                  animate={{ opacity: 1, height: 'auto', marginTop: 12 }}
-                  exit={{ opacity: 0, height: 0, marginTop: 0 }}
-                  transition={{ duration: 0.3 }}
-                  className="overflow-hidden"
+            {/* Expanded search form — CSS transition instead of AnimatePresence */}
+            {showSearchExpanded && (
+              <div className="mt-3 animate-fade-in">
+                <div
+                  className="rounded-2xl p-5 space-y-4"
+                  style={{
+                    background: 'rgba(255,255,255,0.95)',
+                    boxShadow: '0 8px 32px rgba(0,0,0,0.15)',
+                  }}
                 >
-                  <div
-                    className="rounded-2xl p-5 space-y-4"
-                    style={{
-                      background: 'rgba(255,255,255,0.95)',
-                      backdropFilter: 'blur(12px)',
-                      boxShadow: '0 8px 32px rgba(0,0,0,0.15)',
-                    }}
-                  >
-                    <div className="space-y-3">
-                      <div className="space-y-1.5">
-                        <Label className="text-xs font-semibold" style={{ color: designTokens.colors.text.secondary }}>
-                          エリア
-                        </Label>
-                        <Select value={city} onValueChange={setCity}>
-                          <SelectTrigger className="h-11 rounded-xl text-sm" style={{ borderColor: `${designTokens.colors.secondary.stone}40` }}>
-                            <SelectValue placeholder="大分県内の市町村" />
-                          </SelectTrigger>
-                          <SelectContent className="rounded-xl">
-                            <SelectItem value="all">すべてのエリア</SelectItem>
-                            {OITA_MUNICIPALITIES.map((m) => (
-                              <SelectItem key={m} value={m}>{m}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label className="text-xs font-semibold" style={{ color: designTokens.colors.text.secondary }}>
-                          対象者（任意）
-                        </Label>
-                        <Select value={target} onValueChange={setTarget}>
-                          <SelectTrigger className="h-11 rounded-xl text-sm" style={{ borderColor: `${designTokens.colors.secondary.stone}40` }}>
-                            <SelectValue placeholder="指定なし" />
-                          </SelectTrigger>
-                          <SelectContent className="rounded-xl">
-                            {TARGET_AUDIENCE_OPTIONS.map((opt) => (
-                              <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
+                  <div className="space-y-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-semibold" style={{ color: designTokens.colors.text.secondary }}>
+                        エリア
+                      </Label>
+                      <Select value={city} onValueChange={setCity}>
+                        <SelectTrigger className="h-11 rounded-xl text-sm" style={{ borderColor: `${designTokens.colors.secondary.stone}40` }}>
+                          <SelectValue placeholder="大分県内の市町村" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl">
+                          <SelectItem value="all">すべてのエリア</SelectItem>
+                          {OITA_MUNICIPALITIES.map((m) => (
+                            <SelectItem key={m} value={m}>{m}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        onClick={() => { setCity('all'); setTarget('none'); }}
-                        className="flex-1 h-11 rounded-xl text-sm font-medium"
-                        style={{ borderColor: designTokens.colors.secondary.stone, color: designTokens.colors.text.secondary }}
-                      >
-                        クリア
-                      </Button>
-                      <Button
-                        onClick={() => {
-                          setShowSearchExpanded(false);
-                          onEventSearch({ city: city === 'all' ? '' : city, target: target === 'none' ? '' : target });
-                        }}
-                        className="flex-[2] h-11 rounded-xl text-sm font-semibold"
-                        style={{ background: designTokens.colors.accent.lilac, color: '#FFFFFF' }}
-                      >
-                        イベントを探す
-                      </Button>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-semibold" style={{ color: designTokens.colors.text.secondary }}>
+                        対象者（任意）
+                      </Label>
+                      <Select value={target} onValueChange={setTarget}>
+                        <SelectTrigger className="h-11 rounded-xl text-sm" style={{ borderColor: `${designTokens.colors.secondary.stone}40` }}>
+                          <SelectValue placeholder="指定なし" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl">
+                          {TARGET_AUDIENCE_OPTIONS.map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </motion.div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => { setCity('all'); setTarget('none'); }}
+                      className="flex-1 h-11 rounded-xl text-sm font-medium"
+                      style={{ borderColor: designTokens.colors.secondary.stone, color: designTokens.colors.text.secondary }}
+                    >
+                      クリア
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        setShowSearchExpanded(false);
+                        onEventSearch({ city: city === 'all' ? '' : city, target: target === 'none' ? '' : target });
+                      }}
+                      className="flex-[2] h-11 rounded-xl text-sm font-semibold"
+                      style={{ background: designTokens.colors.accent.lilac, color: '#FFFFFF' }}
+                    >
+                      イベントを探す
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Secondary CTA */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.9 }}
-            className="mt-6 flex items-center gap-4"
-          >
-            <motion.button
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
+          <div className="mt-6 flex items-center gap-4">
+            <button
               onClick={onStart}
-              className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full font-semibold text-sm sm:text-base"
+              className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full font-semibold text-sm sm:text-base active:scale-[0.97] transition-transform"
               style={{
                 background: designTokens.colors.accent.gold,
                 color: designTokens.colors.text.primary,
@@ -588,13 +508,13 @@ const HeroSection = ({
             >
               <MapPin className="w-4 h-4" />
               地図から探す
-            </motion.button>
+            </button>
             <span className="text-xs sm:text-sm" style={{ color: 'rgba(255,255,255,0.65)' }}>
               登録不要 ・ 無料
             </span>
-          </motion.div>
+          </div>
         </div>
-      </motion.div>
+      </div>
     </section>
   );
 };
@@ -610,12 +530,9 @@ const announcements: Announcement[] = [
 
 const AnnouncementSection = () => {
   const router = useRouter();
-  const sectionRef = useRef<HTMLElement>(null);
-  const isInView = useInView(sectionRef, { once: true, margin: '-50px' });
 
   return (
     <section
-      ref={sectionRef}
       className="py-10 sm:py-12 px-5 relative"
       style={{ background: designTokens.colors.background.white }}
     >
@@ -624,11 +541,8 @@ const AnnouncementSection = () => {
 
         <div className="space-y-3">
           {announcements.map((item, index) => (
-            <motion.div
+            <div
               key={index}
-              initial={{ opacity: 0, y: 15 }}
-              animate={isInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.4, delay: 0.1 + index * 0.1 }}
               className="flex items-center gap-4 py-3 px-4 rounded-xl cursor-pointer hover:opacity-80 transition-opacity"
               style={{
                 background: designTokens.colors.background.mist,
@@ -655,16 +569,11 @@ const AnnouncementSection = () => {
                 className="w-4 h-4 flex-shrink-0 ml-auto"
                 style={{ color: designTokens.colors.text.muted }}
               />
-            </motion.div>
+            </div>
           ))}
         </div>
 
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={isInView ? { opacity: 1 } : {}}
-          transition={{ duration: 0.4, delay: 0.4 }}
-          className="text-center mt-6"
-        >
+        <div className="text-center mt-6">
           <button
             onClick={() => router.push('/announcements')}
             className="text-sm font-medium hover:opacity-70 transition-opacity inline-flex items-center gap-1"
@@ -673,7 +582,7 @@ const AnnouncementSection = () => {
             すべてのお知らせを見る
             <ChevronRight className="w-4 h-4" />
           </button>
-        </motion.div>
+        </div>
       </div>
     </section>
   );
@@ -744,38 +653,13 @@ const EventShowcaseSection = ({ onPreloadImages }: { onPreloadImages?: (urls: st
 
       setEvents(mapped);
 
-      // Preload LP card images + map marker thumbnails for fast display
-      const allPreloadUrls: string[] = [];
-
-      // 1. LP card images (visible first)
-      mapped.slice(0, 6).forEach(event => {
-        if (event.image_url) {
-          allPreloadUrls.push(event.image_url);
-        }
-      });
-
-      // 2. Map marker thumbnails (60px)
-      mapped.forEach(event => {
-        if (event.image_url) {
-          const originalUrl = event.image_url.replace(/\/upload\/f_auto,q_60,w_300,h_400,c_fill\//, '/upload/');
-          const thumbnailUrl = optimizeThumbnail(originalUrl, 60);
-          allPreloadUrls.push(thumbnailUrl);
-        }
-      });
-
-      // Inject <link rel="preload"> + Image() preload for top URLs
-      allPreloadUrls.slice(0, 12).forEach(url => {
-        // Programmatic preload
-        const preloadImg = new window.Image();
-        preloadImg.crossOrigin = 'anonymous';
-        preloadImg.src = url;
-        // Link preload hint
-        if (!document.querySelector(`link[href="${url}"]`)) {
+      // Lightweight preload: only first 4 visible LP card images
+      mapped.slice(0, 4).forEach(event => {
+        if (event.image_url && !document.querySelector(`link[href="${event.image_url}"]`)) {
           const link = document.createElement('link');
           link.rel = 'preload';
           link.as = 'image';
-          link.href = url;
-          link.crossOrigin = 'anonymous';
+          link.href = event.image_url;
           document.head.appendChild(link);
         }
       });
@@ -817,12 +701,8 @@ const EventShowcaseSection = ({ onPreloadImages }: { onPreloadImages?: (urls: st
           {events.map((event, index) => {
             const isLoaded = event.image_url ? loadedImages.has(event.id) : true;
             return (
-              <motion.div
+              <div
                 key={event.id}
-                initial={{ opacity: 0, x: 30 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.4, delay: Math.min(index * 0.08, 0.4) }}
                 className="relative w-64 sm:w-72 flex-shrink-0 aspect-[3/4] rounded-3xl overflow-hidden cursor-pointer snap-start group"
                 onClick={() => {
                   const eventUrl = generateSemanticEventUrl({
@@ -898,7 +778,7 @@ const EventShowcaseSection = ({ onPreloadImages }: { onPreloadImages?: (urls: st
                     )}
                   </div>
                 </div>
-              </motion.div>
+              </div>
             );
           })}
         </div>
@@ -950,12 +830,8 @@ const ChallengesSection = () => {
         {/* Mobile: Horizontal scroll, Desktop: Vertical stack */}
         <div className="flex md:flex-col gap-4 md:gap-6 overflow-x-auto md:overflow-visible snap-x snap-mandatory md:snap-none scrollbar-hide pb-2 md:pb-0 -mx-5 px-5 md:mx-0 md:px-0">
           {challenges.map((challenge, index) => (
-            <motion.div
+            <div
               key={challenge.title}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
               className="relative w-64 sm:w-72 md:w-full flex-shrink-0 snap-start rounded-3xl overflow-hidden group aspect-[3/4] md:aspect-video"
             >
               {/* Loading skeleton */}
@@ -992,7 +868,7 @@ const ChallengesSection = () => {
                   {challenge.description}
                 </p>
               </div>
-            </motion.div>
+            </div>
           ))}
         </div>
       </div>
@@ -1055,12 +931,8 @@ const SolutionSection = () => {
         {/* Mobile: Horizontal scroll, Desktop: 2x2 Grid */}
         <div className="flex md:grid md:grid-cols-2 gap-4 md:gap-6 overflow-x-auto md:overflow-visible snap-x snap-mandatory md:snap-none scrollbar-hide pb-2 md:pb-0 -mx-5 px-5 md:mx-0 md:px-0">
           {solutions.map((solution, index) => (
-            <motion.div
+            <div
               key={solution.label}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
               className="w-72 sm:w-80 md:w-auto flex-shrink-0 snap-start"
             >
               <div
@@ -1107,7 +979,7 @@ const SolutionSection = () => {
                   style={{ background: solution.color }}
                 />
               </div>
-            </motion.div>
+            </div>
           ))}
         </div>
       </div>
@@ -1120,9 +992,6 @@ const SolutionSection = () => {
 // ===================================================================
 
 const ContactCompanySection = () => {
-  const sectionRef = useRef<HTMLElement>(null);
-  const isInView = useInView(sectionRef, { once: true, margin: '-50px' });
-
   const companyInfo = [
     { label: '会社名', value: '株式会社Nobody' },
     { label: '代表者', value: '藤原泰樹' },
@@ -1134,18 +1003,13 @@ const ContactCompanySection = () => {
 
   return (
     <section
-      ref={sectionRef}
       className="py-16 sm:py-20 px-5 relative"
       style={{ background: designTokens.colors.primary.base }}
     >
       <div className="container mx-auto max-w-6xl">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-16">
           {/* Contact */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={isInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.5, delay: 0.1 }}
-          >
+          <div>
             <span className="block text-xs font-bold tracking-[0.25em] uppercase mb-2" style={{ color: designTokens.colors.accent.gold }}>
               Contact
             </span>
@@ -1184,14 +1048,10 @@ const ContactCompanySection = () => {
                 <ChevronRight className="w-4 h-4" />
               </a>
             </div>
-          </motion.div>
+          </div>
 
           {/* Company */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={isInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.5, delay: 0.2 }}
-          >
+          <div>
             <span className="block text-xs font-bold tracking-[0.25em] uppercase mb-2" style={{ color: designTokens.colors.accent.gold }}>
               Company
             </span>
@@ -1230,7 +1090,7 @@ const ContactCompanySection = () => {
                 </dd>
               </div>
             </dl>
-          </motion.div>
+          </div>
         </div>
       </div>
     </section>
@@ -1338,25 +1198,21 @@ const LocationModal = ({
               位置情報を使用します。
             </p>
             <div className="space-y-3">
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
+              <button
                 onClick={onAllow}
-                className="w-full py-4 rounded-xl font-semibold flex items-center justify-center gap-2"
+                className="w-full py-4 rounded-xl font-semibold flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
                 style={{ background: designTokens.colors.accent.lilac, color: '#FFFFFF' }}
               >
                 <MapPin className="w-5 h-5" />
                 位置情報を許可して探索
-              </motion.button>
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
+              </button>
+              <button
                 onClick={onDeny}
-                className="w-full py-4 rounded-xl font-medium"
+                className="w-full py-4 rounded-xl font-medium active:scale-[0.98] transition-transform"
                 style={{ color: designTokens.colors.text.secondary, background: `${designTokens.colors.secondary.stone}20` }}
               >
                 今はスキップ
-              </motion.button>
+              </button>
             </div>
             <p className="text-xs mt-6" style={{ color: designTokens.colors.text.muted }}>
               ※ブラウザの設定で位置情報の許可をONにしてください
