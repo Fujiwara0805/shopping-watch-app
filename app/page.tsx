@@ -145,7 +145,7 @@ const Header = ({ isScrolled, onFeedbackOpen, onMenuOpen }: { isScrolled: boolea
             TOKU<span style={{ color: designTokens.colors.accent.gold }}>DOKU</span>
           </span>
         </a>
-        <div className="hidden md:flex items-center gap-6">
+        <div className="flex items-center gap-6">
           {[
             { label: 'イベント', href: '/events' },
             { label: '地図で探す', href: '/map' },
@@ -154,7 +154,7 @@ const Header = ({ isScrolled, onFeedbackOpen, onMenuOpen }: { isScrolled: boolea
             <a
               key={link.href}
               href={link.href}
-              className="text-sm font-medium transition-opacity hover:opacity-70"
+              className="hidden md:inline text-sm font-medium transition-opacity hover:opacity-70"
               style={{ color: isScrolled ? designTokens.colors.text.secondary : 'rgba(255,255,255,0.85)' }}
             >
               {link.label}
@@ -1321,7 +1321,7 @@ export default function Home() {
 
   return (
     <main
-      className="min-h-screen pb-20 md:pb-0"
+      className="min-h-screen"
       style={{
         background: designTokens.colors.background.mist,
         fontFamily: designTokens.typography.body,
@@ -1361,11 +1361,6 @@ export default function Home() {
       <ContactCompanySection />
 
       <Footer />
-
-      <BottomTabNav
-        onMapClick={handleStart}
-        onMenuOpen={() => setIsMenuOpen(true)}
-      />
 
       <LocationModal
         isOpen={showLocationModal}
