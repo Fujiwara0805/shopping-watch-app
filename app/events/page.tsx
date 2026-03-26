@@ -190,6 +190,7 @@ export default function CalendarPage() {
   const [cityList, setCityList] = useState<string[]>([]);
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [deletingEventId, setDeletingEventId] = useState<string | null>(null);
+  const [loadingEventId, setLoadingEventId] = useState<string | null>(null);
   const [selectedDayIndex, setSelectedDayIndex] = useState(0);
   const dateStripRef = useRef<HTMLDivElement>(null);
 
@@ -465,6 +466,7 @@ export default function CalendarPage() {
   }, [isInitialized, selectedCity, urlTarget]);
   useEffect(() => {
     setLoading(true);
+    setLoadingEventId(null);
     return () => { setLoading(true); setIsInitialized(false); };
   }, []);
 
@@ -523,8 +525,20 @@ export default function CalendarPage() {
 
   useEffect(() => {
     if (daysWithEvents.length === 0) { setSelectedDayIndex(0); return; }
+
+    // sessionStorageから保存された日付を復元
+    const savedDate = sessionStorage.getItem('events_selected_date');
+    if (savedDate) {
+      const targetIndex = daysWithEvents.findIndex(day => format(day, 'yyyy-MM-dd') === savedDate);
+      if (targetIndex >= 0) {
+        setSelectedDayIndex(targetIndex);
+        sessionStorage.removeItem('events_selected_date');
+        return;
+      }
+    }
+
     if (selectedDayIndex >= daysWithEvents.length) setSelectedDayIndex(daysWithEvents.length - 1);
-  }, [currentDate, daysWithEvents.length, selectedDayIndex]);
+  }, [currentDate, daysWithEvents, selectedDayIndex]);
 
   useEffect(() => {
     if (daysWithEvents.length === 0 || !dateStripRef.current) return;
@@ -548,6 +562,10 @@ export default function CalendarPage() {
   }, [selectedDay, getEventsForDay, ads]);
 
   const handleEventClick = (event: CalendarEvent) => {
+    if (selectedDay) {
+      sessionStorage.setItem('events_selected_date', format(selectedDay, 'yyyy-MM-dd'));
+    }
+    setLoadingEventId(event.id);
     const semanticUrl = generateSemanticEventUrl({
       eventId: event.id,
       eventName: event.name,
@@ -647,10 +665,7 @@ export default function CalendarPage() {
           </motion.div>
           
           {/* ヘッダー */}
-          <motion.header 
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
+          <header
             className="sticky top-0 z-40"
             style={{ 
               background: `${designTokens.colors.primary.base}F5`,
@@ -711,7 +726,7 @@ export default function CalendarPage() {
                 </motion.button>
               </div>
             </div>
-          </motion.header>
+          </header>
 
           {/* コンテンツエリア */}
           <div className="container mx-auto px-4 py-6 max-w-4xl pb-28">
@@ -855,12 +870,17 @@ export default function CalendarPage() {
                             <motion.div
                               whileHover={{ scale: 1.01 }}
                               whileTap={{ scale: 0.99 }}
-                              className="flex gap-4 cursor-pointer rounded-xl p-3 transition-colors"
-                              style={{ 
+                              className="relative flex gap-4 cursor-pointer rounded-xl p-3 transition-colors"
+                              style={{
                                 background: isToday ? `${designTokens.colors.accent.gold}10` : 'transparent',
                               }}
                               onClick={() => handleEventClick(event)}
                             >
+                              {loadingEventId === event.id && (
+                                <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl" style={{ background: `${designTokens.colors.background.white}CC` }}>
+                                  <Loader2 className="h-6 w-6 animate-spin" style={{ color: designTokens.colors.accent.gold }} />
+                                </div>
+                              )}
                               {imageUrl ? (
                                 <div className="flex-shrink-0 relative w-20 h-20 rounded-xl overflow-hidden">
                                   <Image
@@ -872,25 +892,25 @@ export default function CalendarPage() {
                                   />
                                 </div>
                               ) : (
-                                <div 
+                                <div
                                   className="flex-shrink-0 w-20 h-20 rounded-xl flex items-center justify-center"
                                   style={{ background: designTokens.colors.background.cloud }}
                                 >
                                   <CalendarIcon className="h-8 w-8" style={{ color: designTokens.colors.text.muted }} />
                                 </div>
                               )}
-                              
+
                               <div className="flex-1 min-w-0">
-                                <div 
+                                <div
                                   className="font-semibold text-base mb-1.5 line-clamp-2"
-                                  style={{ 
+                                  style={{
                                     fontFamily: designTokens.typography.display,
                                     color: designTokens.colors.primary.dark,
                                   }}
                                 >
                                   {event.name}
                                 </div>
-                                <div 
+                                <div
                                   className="flex items-center gap-2 text-sm"
                                   style={{ color: designTokens.colors.text.secondary }}
                                 >
@@ -898,7 +918,7 @@ export default function CalendarPage() {
                                   <span className="truncate">{event.fullData.store_name}</span>
                                 </div>
                               </div>
-                              
+
                               <ChevronRight className="h-5 w-5 flex-shrink-0 self-center" style={{ color: designTokens.colors.text.muted }} />
                             </motion.div>
                           </motion.div>
