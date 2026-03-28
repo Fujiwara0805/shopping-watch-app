@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MapPin, Menu, X, ChevronRight, Calendar, LogOut, Compass, ExternalLink, Sparkles, MessageSquare, Home as HomeIcon, Search, BookOpen, Gift, Trophy } from 'lucide-react';
+import { MapPin, Menu, X, ChevronRight, Calendar, LogOut, Compass, ExternalLink, Sparkles, MessageSquare, Home as HomeIcon, BookOpen, Gift, Trophy } from 'lucide-react';
 import { generateSemanticEventUrl } from '@/lib/seo/url-helper';
 import { Button } from '@/components/ui/button';
 import { useSession, signOut } from 'next-auth/react';
@@ -46,7 +46,7 @@ const AppSectionHeader = ({
   light = false,
 }: {
   label: string;
-  title: string;
+  title: string | React.ReactNode;
   rightAction?: { text: string; onClick: () => void };
   light?: boolean;
 }) => (
@@ -420,7 +420,6 @@ const HeroSection = ({
                 boxShadow: '0 8px 32px rgba(0,0,0,0.15)',
               }}
             >
-              <Search className="w-5 h-5 flex-shrink-0" style={{ color: designTokens.colors.primary.base }} />
               <span className="text-sm sm:text-base font-medium" style={{ color: designTokens.colors.text.secondary }}>
                 大分のイベントを探す...
               </span>
@@ -506,7 +505,6 @@ const HeroSection = ({
                 boxShadow: `0 6px 24px ${designTokens.colors.accent.gold}40`,
               }}
             >
-              <MapPin className="w-4 h-4" />
               地図から探す
             </button>
             <span className="text-xs sm:text-sm" style={{ color: 'rgba(255,255,255,0.65)' }}>
@@ -828,12 +826,12 @@ const ChallengesSection = () => {
           一括で探せる場所があれば、もっと届くはず。
         </p>
 
-        {/* Mobile: Horizontal scroll, Desktop: Vertical stack */}
-        <div className="flex md:flex-col gap-4 md:gap-6 overflow-x-auto md:overflow-visible snap-x snap-mandatory md:snap-none scrollbar-hide pb-2 md:pb-0 -mx-5 px-5 md:mx-0 md:px-0">
+        {/* Mobile: Horizontal scroll, Desktop: Horizontal flex */}
+        <div className="flex gap-4 md:gap-6 overflow-x-auto md:overflow-visible snap-x snap-mandatory md:snap-none scrollbar-hide pb-2 md:pb-0 -mx-5 px-5 md:mx-0 md:px-0">
           {challenges.map((challenge, index) => (
             <div
               key={challenge.title}
-              className="relative w-64 sm:w-72 md:w-full flex-shrink-0 snap-start rounded-3xl overflow-hidden group aspect-[3/4] md:aspect-video"
+              className="relative w-64 sm:w-72 md:flex-1 flex-shrink-0 snap-start rounded-3xl overflow-hidden group aspect-[3/4] md:aspect-square"
             >
               {/* Loading skeleton */}
               {!loadedImages.has(index) && (
@@ -863,7 +861,7 @@ const ChallengesSection = () => {
                   {challenge.title}
                 </h3>
                 <p
-                  className="text-sm sm:text-base leading-relaxed line-clamp-2 md:line-clamp-none max-w-xl"
+                  className="hidden md:block text-sm sm:text-base leading-relaxed line-clamp-2 md:line-clamp-none max-w-xl"
                   style={{ color: 'rgba(255,255,255,0.75)' }}
                 >
                   {challenge.description}
@@ -886,6 +884,7 @@ const SolutionSection = () => {
     {
       label: 'STAMP RALLY',
       title: 'チェックインでスタンプGET',
+      beta: true,
       description: 'イベント会場でGPSチェックイン! 9つ集めるとAmazonギフトカードをプレゼント。',
       iconElement: <Trophy className="w-6 h-6" />,
       color: designTokens.colors.accent.goldDark,
@@ -893,13 +892,15 @@ const SolutionSection = () => {
     {
       label: 'MAP',
       title: 'イベントを地図でかんたん検索',
+      beta: false,
       description: '現在地周辺や気になるエリアのイベントを地図上で直感的に探せます。',
       iconElement: <MapPin className="w-6 h-6" />,
       color: designTokens.colors.primary.base,
     },
     {
       label: 'DISCOVER',
-      title: '週末のイベント、もう見逃さない',
+      title: '週末のイベントを見逃さない',
+      beta: false,
       description: '大分県内のイベント情報をリアルタイムで集約。「知らなかった」を「行ってきた!」に変える。',
       iconElement: <Sparkles className="w-6 h-6" />,
       color: designTokens.colors.accent.lilac,
@@ -907,6 +908,7 @@ const SolutionSection = () => {
     {
       label: 'REWARD',
       title: '参加するほどおトクに',
+      beta: true,
       description: 'スタンプラリーで大分の魅力を巡ろう。β版公開記念のAmazonギフトカード特典を実施中!',
       iconElement: <Gift className="w-6 h-6" />,
       color: designTokens.colors.secondary.fern,
@@ -919,7 +921,7 @@ const SolutionSection = () => {
       style={{ background: designTokens.colors.background.cloud }}
     >
       <div className="container mx-auto max-w-6xl">
-        <AppSectionHeader label="Solution" title="探す、行く、集める。新しいイベント体験" />
+        <AppSectionHeader label="Solution" title={<><span>探す、行く、集める。</span><br className="sm:hidden" /><span>新しいイベント体験</span></>} />
 
         <p
           className="text-base sm:text-lg mb-10 max-w-2xl leading-relaxed"
@@ -961,10 +963,15 @@ const SolutionSection = () => {
                     {solution.label}
                   </span>
                   <h3
-                    className="text-base sm:text-xl font-bold mb-3 leading-tight"
+                    className="text-base sm:text-xl font-bold mb-3 leading-tight flex items-center gap-2 flex-wrap"
                     style={{ fontFamily: designTokens.typography.display, color: designTokens.colors.primary.base }}
                   >
                     {solution.title}
+                    {solution.beta && (
+                      <span className="text-xs font-bold px-1.5 py-0.5 rounded-md" style={{ background: `${solution.color}20`, color: solution.color }}>
+                        β版
+                      </span>
+                    )}
                   </h3>
                   <p
                     className="text-sm sm:text-base leading-relaxed"
@@ -1204,7 +1211,6 @@ const LocationModal = ({
                 className="w-full py-4 rounded-xl font-semibold flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
                 style={{ background: designTokens.colors.accent.lilac, color: '#FFFFFF' }}
               >
-                <MapPin className="w-5 h-5" />
                 位置情報を許可して探索
               </button>
               <button
