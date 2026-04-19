@@ -675,11 +675,11 @@ export default function CalendarPage() {
                 <ScrollText className="h-5 w-5 flex-shrink-0" style={{ color: designTokens.colors.accent.gold }} />
               </div>
 
-              {/* 市町村フィルター : 月切り替え : マップボタン — モバイル 2:1:2 / PC 1:2:1 */}
+              {/* 市町村フィルター : 月切り替え : マップボタン — モバイル 1:1:1 / PC 1:2:1 */}
               <div className="flex items-center gap-2">
                 <Select value={selectedCity} onValueChange={setSelectedCity}>
                   <SelectTrigger
-                    className="flex-[2] sm:flex-1 min-w-0 h-9 rounded-full border-0 text-xs sm:text-sm font-medium"
+                    className="flex-1 min-w-0 h-9 rounded-full border-0 text-xs sm:text-sm font-medium"
                     style={{
                       background: `${designTokens.colors.background.white}20`,
                       color: designTokens.colors.text.inverse,
@@ -695,7 +695,7 @@ export default function CalendarPage() {
                   </SelectContent>
                 </Select>
 
-                <div className="flex-1 sm:flex-[2] min-w-0 flex items-center justify-between gap-1">
+                <div className="flex-1 sm:flex-[2] min-w-0 flex items-center justify-between gap-0.5 sm:gap-1">
                   <motion.button
                     whileTap={{ scale: 0.9 }}
                     onClick={handlePreviousMonth}
@@ -734,7 +734,7 @@ export default function CalendarPage() {
 
                 <button
                   onClick={() => router.push('/map')}
-                  className="flex-[2] sm:flex-1 min-w-0 inline-flex items-center justify-center gap-1 px-2 h-9 rounded-full text-xs sm:text-sm font-semibold transition-transform active:scale-95"
+                  className="flex-1 min-w-0 inline-flex items-center justify-center gap-1 px-2 h-9 rounded-full text-xs sm:text-sm font-semibold transition-transform active:scale-95"
                   style={{
                     background: designTokens.colors.accent.gold,
                     color: designTokens.colors.text.primary,
