@@ -72,3 +72,23 @@ export const optimizeResponsive = (url: string, maxWidth: number): string => {
     crop: 'limit',
   });
 };
+
+/**
+ * 丸型サムネイル（マップマーカー等）向けに最適化。
+ * Cloudinary 側で r_max を適用し、サーバー生成のまま URL を返すことで
+ * Canvas / DataURL 処理なしに Google Maps の marker icon.url へ直接渡せる。
+ */
+export const optimizeCircularThumbnail = (url: string, size: number): string => {
+  if (!url || typeof url !== 'string') return url;
+  if (!url.includes('res.cloudinary.com') || !url.includes('/upload/')) return url;
+
+  const baseOptimized = optimizeCloudinaryUrl(url, {
+    width: size,
+    height: size,
+    crop: 'fill',
+    gravity: 'auto',
+  });
+  // r_max (最大半径) を付与。既に r_max を含んでいる場合は冪等に戻す。
+  if (baseOptimized.includes('r_max')) return baseOptimized;
+  return baseOptimized.replace('/upload/', '/upload/r_max,');
+};

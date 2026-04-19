@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { Slot } from '@radix-ui/react-slot';
 import { cva, type VariantProps } from 'class-variance-authority';
+import { Loader2 } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 
@@ -37,17 +38,94 @@ export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
   asChild?: boolean;
+  loading?: boolean;
 }
 
+const AUTO_LOADING_MIN_MS = 500;
+
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, asChild = false, ...props }, ref) => {
-    const Comp = asChild ? Slot : 'button';
+  (
+    {
+      className,
+      variant,
+      size,
+      asChild = false,
+      loading,
+      onClick,
+      disabled,
+      children,
+      ...props
+    },
+    ref
+  ) => {
+    const [autoLoading, setAutoLoading] = React.useState(false);
+    const mountedRef = React.useRef(true);
+
+    React.useEffect(() => {
+      mountedRef.current = true;
+      return () => {
+        mountedRef.current = false;
+      };
+    }, []);
+
+    const isLoading = loading || autoLoading;
+
+    const handleClick = React.useCallback(
+      (e: React.MouseEvent<HTMLButtonElement>) => {
+        if (isLoading || disabled) {
+          e.preventDefault();
+          return;
+        }
+
+        setAutoLoading(true);
+        const minDelay = new Promise<void>((r) => setTimeout(r, AUTO_LOADING_MIN_MS));
+        let result: unknown;
+        if (onClick) {
+          try {
+            result = onClick(e);
+          } catch (err) {
+            setAutoLoading(false);
+            throw err;
+          }
+        }
+
+        const settle = () => {
+          if (mountedRef.current) setAutoLoading(false);
+        };
+
+        if (result && typeof (result as PromiseLike<unknown>).then === 'function') {
+          Promise.all([result as PromiseLike<unknown>, minDelay]).then(settle, settle);
+        } else {
+          minDelay.then(settle);
+        }
+      },
+      [onClick, isLoading, disabled]
+    );
+
+    if (asChild) {
+      return (
+        <Slot
+          className={cn(buttonVariants({ variant, size, className }))}
+          ref={ref}
+          onClick={onClick}
+          {...props}
+        >
+          {children}
+        </Slot>
+      );
+    }
+
     return (
-      <Comp
+      <button
         className={cn(buttonVariants({ variant, size, className }))}
         ref={ref}
+        onClick={handleClick}
+        disabled={disabled || isLoading}
+        aria-busy={isLoading || undefined}
         {...props}
-      />
+      >
+        {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : children}
+      </button>
     );
   }
 );

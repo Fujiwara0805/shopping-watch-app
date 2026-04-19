@@ -4,7 +4,7 @@ import { useRef, useEffect, useState, useCallback } from 'react';
 import { useGeolocation } from '@/lib/hooks/use-geolocation';
 import { useGoogleMapsApi } from '@/components/providers/GoogleMapsApiProvider';
 import { Button } from '@/components/ui/button';
-import { MapPin, AlertTriangle, RefreshCw, Calendar, MapPinIcon, X, Loader2, Compass, Search, Home } from 'lucide-react';
+import { MapPin, AlertTriangle, RefreshCw, Calendar, MapPinIcon, X, Loader2, Compass, List } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -14,7 +14,7 @@ import { isWithinRange } from '@/lib/utils/distance';
 import { generateSemanticEventUrl } from '@/lib/seo/url-helper';
 import { designTokens } from '@/lib/constants';
 import { trackEvent } from '@/lib/services/analytics';
-import { optimizeThumbnail } from '@/lib/utils/image';
+import { optimizeThumbnail, optimizeCircularThumbnail } from '@/lib/utils/image';
 
 declare global {
   interface Window { google: any; }
@@ -79,35 +79,12 @@ const createSimpleCategoryIcon = (category: PostCategory) => {
   };
 };
 
-// マーカーアイコンキャッシュ（画像付きアイコンの再生成を防止）
-const markerIconCache = new Map<string, google.maps.Icon>();
-
-const getMarkerIconCacheKey = (imageUrl: string, title: string): string => {
-  return `${imageUrl}|${title}`;
-};
-
-const wrapText = (text: string, maxWidth: number, ctx: CanvasRenderingContext2D): string[] => {
-  const lines: string[] = [];
-  let currentLine = '';
-  for (let i = 0; i < text.length; i++) {
-    const testLine = currentLine + text[i];
-    const metrics = ctx.measureText(testLine);
-    if (metrics.width > maxWidth && currentLine.length > 0) {
-      lines.push(currentLine);
-      currentLine = text[i];
-    } else {
-      currentLine = testLine;
-    }
-  }
-  if (currentLine.length > 0) lines.push(currentLine);
-  if (lines.length > 3) {
-    lines.length = 3;
-    lines[2] = lines[2].slice(0, -1) + '…';
-  }
-  return lines;
-};
-
-const createCategoryPinIcon = async (imageUrls: string[] | null, title: string | null, category: PostCategory): Promise<google.maps.Icon> => {
+/**
+ * 画像付きマーカーアイコンを Cloudinary の r_max で「サーバーサイド丸型 PNG」として生成し、
+ * URL のまま google.maps.Marker.icon へ渡す。Canvas / toDataURL を一切使わないため
+ * メモリ・CPU 負荷が極小。ブラウザの HTTP キャッシュ + CDN により即時表示。
+ */
+const createImageMarkerIcon = (imageUrls: string[] | null, category: PostCategory): google.maps.Icon => {
   let parsedUrls = imageUrls;
   if (typeof imageUrls === 'string') {
     try { parsedUrls = JSON.parse(imageUrls); } catch { parsedUrls = null; }
@@ -116,86 +93,14 @@ const createCategoryPinIcon = async (imageUrls: string[] | null, title: string |
   if (!imageUrl || typeof imageUrl !== 'string' || !imageUrl.startsWith('http')) {
     return createSimpleCategoryIcon(category);
   }
-  // キャッシュチェック
-  const cacheKey = getMarkerIconCacheKey(imageUrl, title || '');
-  const cached = markerIconCache.get(cacheKey);
-  if (cached) return cached;
-  // マーカーサイズ(45px) × デバイスピクセル比(2x) = 90px → 60px で十分
-  const optimizedImageUrl = optimizeThumbnail(imageUrl, 60);
-  const imageSize = 45;
-  const borderWidth = 2;
-  const textPadding = 4;
-  const maxTextWidth = 80;
-  const lineHeight = 12;
-  const displayTitle = title || '';
-
-  return new Promise<google.maps.Icon>((resolve) => {
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => {
-      const tempCanvas = document.createElement('canvas');
-      const tempCtx = tempCanvas.getContext('2d');
-      if (!tempCtx) { resolve(createSimpleCategoryIcon(category)); return; }
-      tempCtx.font = '600 10px "Hiragino Sans", "Noto Sans JP", sans-serif';
-      const textLines = wrapText(displayTitle, maxTextWidth, tempCtx);
-      const numLines = textLines.length;
-      let maxLineWidth = 0;
-      textLines.forEach(line => { const lineWidth = tempCtx.measureText(line).width; if (lineWidth > maxLineWidth) maxLineWidth = lineWidth; });
-      const textHeight = numLines * lineHeight + 4;
-      const canvasWidth = Math.max(imageSize, Math.ceil(maxLineWidth) + 12) + 4;
-      const canvasHeight = imageSize + textPadding + textHeight;
-      const scale = 2;
-      const canvas = document.createElement('canvas');
-      canvas.width = canvasWidth * scale;
-      canvas.height = canvasHeight * scale;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) { resolve(createSimpleCategoryIcon(category)); return; }
-      ctx.scale(scale, scale);
-      ctx.clearRect(0, 0, canvasWidth, canvasHeight);
-      const imageOffsetX = (canvasWidth - imageSize) / 2;
-      ctx.save();
-      ctx.translate(imageOffsetX, 0);
-      ctx.beginPath();
-      ctx.arc(imageSize / 2, imageSize / 2, imageSize / 2 - borderWidth, 0, Math.PI * 2);
-      ctx.closePath();
-      ctx.clip();
-      const imgAspect = img.width / img.height;
-      let drawWidth = imageSize, drawHeight = imageSize, offsetX = 0, offsetY = 0;
-      if (imgAspect > 1) { drawWidth = drawHeight * imgAspect; offsetX = -(drawWidth - imageSize) / 2; }
-      else { drawHeight = drawWidth / imgAspect; offsetY = -(drawHeight - imageSize) / 2; }
-      ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
-      ctx.restore();
-      ctx.save();
-      ctx.translate(imageOffsetX, 0);
-      ctx.beginPath();
-      ctx.arc(imageSize / 2, imageSize / 2, imageSize / 2 - borderWidth / 2, 0, Math.PI * 2);
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = borderWidth;
-      ctx.stroke();
-      ctx.restore();
-      if (textLines.length > 0) {
-        ctx.font = '600 10px "Hiragino Sans", "Noto Sans JP", sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'top';
-        const textStartY = imageSize + textPadding;
-        const textX = canvasWidth / 2;
-        ctx.lineWidth = 3;
-        ctx.lineJoin = 'round';
-        ctx.strokeStyle = '#ffffff';
-        ctx.fillStyle = designTokens.colors.text.primary;
-        textLines.forEach((line, index) => {
-          const lineY = textStartY + index * lineHeight;
-          ctx.strokeText(line, textX, lineY);
-          ctx.fillText(line, textX, lineY);
-        });
-      }
-      const icon: google.maps.Icon = { url: canvas.toDataURL('image/png'), scaledSize: new window.google.maps.Size(canvasWidth, canvasHeight), anchor: new window.google.maps.Point(canvasWidth / 2, imageSize) };
-      markerIconCache.set(cacheKey, icon);
-      resolve(icon);
-    };
-    img.onerror = () => { resolve(createSimpleCategoryIcon(category)); };
-    img.src = optimizedImageUrl;
-  });
+  // 丸型 64px PNG を直接マーカーアイコン URL に使う（Canvas 不要）
+  const circularUrl = optimizeCircularThumbnail(imageUrl, 64);
+  const size = 52;
+  return {
+    url: circularUrl,
+    scaledSize: new window.google.maps.Size(size, size),
+    anchor: new window.google.maps.Point(size / 2, size / 2),
+  };
 };
 
 const createDirectionalLocationIcon = (heading: number | null): google.maps.Icon => {
@@ -408,14 +313,15 @@ export function MapView() {
     return { lat: baseLat + offsetDistance * Math.cos(angle), lng: baseLng + offsetDistance * Math.sin(angle) / Math.cos(baseLat * Math.PI / 180) };
   };
 
-  const createPostMarkers = useCallback(async () => {
+  const createPostMarkers = useCallback(() => {
     if (!map || !posts.length || !window.google?.maps) return;
     setIsCreatingMarkers(true);
     postMarkers.forEach(marker => { if (marker?.setMap) marker.setMap(null); });
     const newMarkers: google.maps.Marker[] = [];
     const locationGroups = groupPostsByLocation(posts);
 
-    // Phase 1: 即座にSVGアイコンで全マーカーを表示
+    // Cloudinary r_max による丸型 PNG URL を直接 marker icon に渡す。
+    // Canvas / toDataURL / markerIconCache を廃し、単一パスで即時レンダリング。
     posts.forEach((post) => {
       if (!post.store_latitude || !post.store_longitude) return;
       const lat = Math.round(post.store_latitude * 10000) / 10000;
@@ -425,12 +331,21 @@ export function MapView() {
       const indexInGroup = groupPosts.findIndex(p => p.id === post.id);
       const offsetPosition = getOffsetPosition(post.store_latitude, post.store_longitude, indexInGroup, groupPosts.length);
       const position = new window.google.maps.LatLng(offsetPosition.lat, offsetPosition.lng);
-      const simpleIcon = createSimpleCategoryIcon((post.category as PostCategory) || 'イベント情報');
-      const marker = new window.google.maps.Marker({ position, map, title: `${post.store_name} - ${post.category || '投稿'}`, icon: simpleIcon, animation: window.google.maps.Animation.DROP, zIndex: indexInGroup + 1 });
+      const category = (post.category as PostCategory) || 'イベント情報';
+      const icon = createImageMarkerIcon(post.image_urls, category);
+      const marker = new window.google.maps.Marker({
+        position,
+        map,
+        title: `${post.store_name} - ${post.category || '投稿'}`,
+        icon,
+        animation: window.google.maps.Animation.DROP,
+        zIndex: indexInGroup + 1,
+        optimized: true,
+      });
       marker.addListener('click', () => {
         if (selectedMarkerRef.current) { selectedMarkerRef.current.setAnimation(null); }
         marker.setAnimation(window.google.maps.Animation.BOUNCE);
-        setTimeout(() => { if (marker.getAnimation() !== null) marker.setAnimation(null); }, 1400);
+        setTimeout(() => { if (marker.getAnimation() !== null) marker.setAnimation(null); }, 800);
         selectedMarkerRef.current = marker;
         const sortedIndex = posts.findIndex(p => p.id === post.id);
         setEventCardIndex(sortedIndex >= 0 ? sortedIndex : 0);
@@ -441,26 +356,6 @@ export function MapView() {
     });
     setPostMarkers(newMarkers);
     setIsCreatingMarkers(false);
-
-    // Phase 2: バックグラウンドで画像付きアイコンにアップグレード
-    let batchIndex = 0;
-    const batchSize = 20;
-    const upgradeNextBatch = async () => {
-      const batch = posts.slice(batchIndex, batchIndex + batchSize);
-      if (batch.length === 0) return;
-      const upgradePromises = batch.map(async (post, i) => {
-        const markerIndex = batchIndex + i;
-        const marker = newMarkers[markerIndex];
-        if (!marker || !post.store_latitude || !post.store_longitude) return;
-        const title = post.category === 'イベント情報' ? (post.event_name || post.content) : post.content;
-        const imageIcon = await createCategoryPinIcon(post.image_urls, title, (post.category as PostCategory) || 'イベント情報');
-        if (marker.getMap()) marker.setIcon(imageIcon);
-      });
-      await Promise.all(upgradePromises);
-      batchIndex += batchSize;
-      if (batchIndex < posts.length) setTimeout(upgradeNextBatch, 50);
-    };
-    upgradeNextBatch();
   }, [map, posts]);
 
   const initializeMap = useCallback(() => {
@@ -585,12 +480,12 @@ export function MapView() {
         <div className="absolute top-20 right-4 z-30 flex flex-col gap-3">
           <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} whileTap={{ scale: 0.95 }}>
             <button
-              onClick={() => router.push('/')}
+              onClick={() => router.push('/events')}
               className="flex flex-col items-center gap-0.5 rounded-2xl px-3 py-2 min-w-[52px]"
               style={{ background: `${designTokens.colors.background.white}F0`, color: designTokens.colors.primary.base, boxShadow: designTokens.elevation.medium, border: `1px solid ${designTokens.colors.secondary.stone}40` }}
             >
-              <Home className="h-5 w-5" />
-              <span className="text-[10px] font-bold" style={{ color: designTokens.colors.primary.base }}>ホーム</span>
+              <List className="h-5 w-5" />
+              <span className="text-[10px] font-bold" style={{ color: designTokens.colors.primary.base }}>一覧</span>
             </button>
           </motion.div>
           <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.05 }} whileTap={{ scale: 0.95 }}>
@@ -733,7 +628,7 @@ export function MapView() {
                       className="w-full py-3 rounded-xl font-semibold flex items-center justify-center gap-2 disabled:opacity-80"
                       style={{ background: designTokens.colors.accent.lilac, color: designTokens.colors.text.inverse }}
                     >
-                      {navigatingToDetail === post.id ? (<><Loader2 className="h-4 w-4 animate-spin" />読み込み中...</>) : (<><Search className="h-4 w-4" />詳細を見る</>)}
+                      {navigatingToDetail === post.id ? (<><Loader2 className="h-4 w-4 animate-spin" />読み込み中...</>) : '詳細を見る'}
                     </Button>
                   </motion.div>
                 </div>

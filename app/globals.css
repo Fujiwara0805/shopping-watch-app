@@ -100,4 +100,52 @@
   .animate-fade-in {
     animation: fade-in 0.3s ease-out both;
   }
+
+  /* Storybook-world ambient animations — used on LP picture-book sections */
+  @keyframes gentle-sway {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-6px) rotate(1.5deg); }
+  }
+  @keyframes gentle-float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+  @keyframes stamp-pop {
+    0% { opacity: 0; transform: scale(0.4) rotate(-20deg); }
+    60% { opacity: 1; transform: scale(1.1) rotate(8deg); }
+    100% { opacity: 1; transform: scale(1) rotate(-6deg); }
+  }
+  @keyframes page-turn-hint {
+    0%, 100% { transform: rotateY(0deg); }
+    50% { transform: rotateY(6deg); }
+  }
+  .animate-gentle-sway { animation: gentle-sway 6s ease-in-out infinite; }
+  .animate-gentle-float { animation: gentle-float 4s ease-in-out infinite; }
+  .animate-stamp-pop { animation: stamp-pop 0.9s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+  .animate-page-turn-hint { animation: page-turn-hint 8s ease-in-out infinite; }
+
+  /* 和紙テクスチャ: ほんの少しのノイズを重ねる */
+  .texture-washi {
+    background-image:
+      radial-gradient(rgba(194, 184, 163, 0.12) 1px, transparent 1px),
+      radial-gradient(rgba(138, 154, 91, 0.06) 1px, transparent 1px);
+    background-size: 18px 18px, 24px 24px;
+    background-position: 0 0, 9px 9px;
+  }
+
+  /* 絵本ページ風の柔らかい境界 */
+  .book-page-edge {
+    box-shadow:
+      0 1px 0 rgba(194, 184, 163, 0.4) inset,
+      0 -1px 0 rgba(194, 184, 163, 0.3) inset,
+      0 10px 30px -10px rgba(45, 52, 54, 0.15);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .animate-gentle-sway,
+    .animate-gentle-float,
+    .animate-page-turn-hint {
+      animation: none;
+    }
+  }
 }

@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MapPin, Menu, X, ChevronRight, Calendar, LogOut, Compass, ExternalLink, Sparkles, MessageSquare, Home as HomeIcon, BookOpen, Gift, Trophy } from 'lucide-react';
+import { MapPin, Menu, X, ChevronRight, Calendar, LogOut, Compass, ExternalLink, Sparkles, MessageSquare, Home as HomeIcon, BookOpen, Gift, Trophy, Footprints, Award, Quote, Heart } from 'lucide-react';
 import { generateSemanticEventUrl } from '@/lib/seo/url-helper';
 import { Button } from '@/components/ui/button';
 import { useSession, signOut } from 'next-auth/react';
@@ -996,6 +996,556 @@ const SolutionSection = () => {
 };
 
 // ===================================================================
+// STORY JOURNEY SECTION (Picture-book chapters — 4 steps)
+// ===================================================================
+
+const StoryJourneySection = () => {
+  const router = useRouter();
+
+  const chapters = [
+    {
+      number: '01',
+      icon: <MapPin className="w-6 h-6" />,
+      title: '地図をひらく',
+      subtitle: 'Open the map',
+      body: '大分の街を一枚の地図に。気になるエリアをタップすると、そこで生まれている物語がそっと顔を出します。',
+      bg: designTokens.colors.accent.lilac,
+      tint: designTokens.colors.accent.lilacDark,
+    },
+    {
+      number: '02',
+      icon: <Footprints className="w-6 h-6" />,
+      title: '足を運ぶ',
+      subtitle: 'Walk there',
+      body: 'マルシェ、祭り、企画展。画面を閉じて、会場へ。そこに待つ光景は、スクロールでは見つからない。',
+      bg: designTokens.colors.secondary.fern,
+      tint: designTokens.colors.secondary.fernDark,
+    },
+    {
+      number: '03',
+      icon: <Award className="w-6 h-6" />,
+      title: 'スタンプを残す',
+      subtitle: 'Collect a stamp',
+      body: '会場でGPSチェックイン。地図の上に、小さな星が灯ります。訪れた証は、あなたのページにそっと保存。',
+      bg: designTokens.colors.accent.gold,
+      tint: designTokens.colors.accent.goldDark,
+    },
+    {
+      number: '04',
+      icon: <Sparkles className="w-6 h-6" />,
+      title: '物語が続く',
+      subtitle: 'The story continues',
+      body: 'ひとつの体験が、次の一歩へつながる。大分18市町村、ひとつの県が、ひとつの物語になっていきます。',
+      bg: designTokens.colors.primary.base,
+      tint: designTokens.colors.primary.dark,
+    },
+  ];
+
+  return (
+    <section
+      className="py-16 sm:py-20 px-5 relative overflow-hidden"
+      style={{ background: designTokens.colors.background.mist }}
+    >
+      {/* 和紙テクスチャ */}
+      <div className="absolute inset-0 texture-washi opacity-50 pointer-events-none" aria-hidden />
+
+      <div className="container mx-auto max-w-6xl relative">
+        <AppSectionHeader
+          label="Story"
+          title={<><span>4つの章でつづる、</span><br className="sm:hidden" /><span>大分との出会いかた</span></>}
+        />
+
+        <p
+          className="text-base sm:text-lg mb-10 max-w-2xl leading-relaxed"
+          style={{ fontFamily: designTokens.typography.body, color: designTokens.colors.text.secondary }}
+        >
+          トクドクは、検索アプリでもチケット販売所でもありません。
+          一冊の絵本のように、大分の今日をめくる場所です。
+        </p>
+
+        {/* Mobile: snap scroll / Desktop: 4-col grid */}
+        <div className="flex md:grid md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 overflow-x-auto md:overflow-visible snap-x snap-mandatory md:snap-none scrollbar-hide pb-2 md:pb-0 -mx-5 px-5 md:mx-0 md:px-0">
+          {chapters.map((chapter, index) => (
+            <div
+              key={chapter.number}
+              className="relative w-72 sm:w-80 md:w-auto flex-shrink-0 snap-start book-page-edge rounded-[28px] overflow-hidden animate-fade-in-up"
+              style={{
+                background: designTokens.colors.background.white,
+                border: `1px solid ${designTokens.colors.secondary.stone}25`,
+                animationDelay: `${index * 120}ms`,
+              }}
+            >
+              {/* Chapter header band */}
+              <div
+                className="relative px-6 pt-6 pb-10"
+                style={{
+                  background: `linear-gradient(135deg, ${chapter.bg}28 0%, ${chapter.bg}12 100%)`,
+                }}
+              >
+                <div className="flex items-start justify-between">
+                  <div>
+                    <span
+                      className="block text-xs font-bold tracking-[0.3em] uppercase mb-1"
+                      style={{ color: chapter.tint }}
+                    >
+                      chapter
+                    </span>
+                    <span
+                      className="block text-5xl font-bold leading-none"
+                      style={{
+                        fontFamily: designTokens.typography.display,
+                        color: chapter.tint,
+                        opacity: 0.35,
+                      }}
+                    >
+                      {chapter.number}
+                    </span>
+                  </div>
+                  <div
+                    className="w-12 h-12 rounded-2xl flex items-center justify-center animate-gentle-float"
+                    style={{
+                      background: designTokens.colors.background.white,
+                      color: chapter.tint,
+                      boxShadow: `0 6px 20px -6px ${chapter.bg}50`,
+                      animationDelay: `${index * 300}ms`,
+                    }}
+                  >
+                    {chapter.icon}
+                  </div>
+                </div>
+              </div>
+
+              {/* Chapter body */}
+              <div className="px-6 pb-7 -mt-5 relative">
+                <h3
+                  className="text-lg sm:text-xl font-bold mb-1 leading-tight"
+                  style={{
+                    fontFamily: designTokens.typography.display,
+                    color: designTokens.colors.text.primary,
+                  }}
+                >
+                  {chapter.title}
+                </h3>
+                <p
+                  className="text-[11px] font-semibold tracking-[0.15em] uppercase mb-3"
+                  style={{ color: chapter.tint }}
+                >
+                  {chapter.subtitle}
+                </p>
+                <p
+                  className="text-sm leading-relaxed"
+                  style={{
+                    color: designTokens.colors.text.secondary,
+                    fontFamily: designTokens.typography.body,
+                  }}
+                >
+                  {chapter.body}
+                </p>
+              </div>
+
+              {/* Page corner fold decoration */}
+              <div
+                className="absolute bottom-0 right-0 w-10 h-10 pointer-events-none"
+                style={{
+                  background: `linear-gradient(135deg, transparent 50%, ${chapter.bg}18 50%)`,
+                }}
+              />
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-10 flex items-center justify-center">
+          <button
+            onClick={() => router.push('/map')}
+            className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full font-semibold text-sm sm:text-base active:scale-[0.97] transition-transform"
+            style={{
+              background: designTokens.colors.primary.base,
+              color: '#FFFFFF',
+              boxShadow: `0 8px 24px -6px ${designTokens.colors.primary.base}60`,
+            }}
+          >
+            最初のページをひらく
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+// ===================================================================
+// STAMP RALLY SHOWCASE (3x3 stamp grid)
+// ===================================================================
+
+const STAMP_DATA = [
+  { label: '別府', filled: true, color: designTokens.colors.accent.gold },
+  { label: '由布院', filled: true, color: designTokens.colors.secondary.fern },
+  { label: '大分市', filled: true, color: designTokens.colors.accent.lilac },
+  { label: '臼杵', filled: true, color: designTokens.colors.accent.gold },
+  { label: '中津', filled: false, color: designTokens.colors.secondary.stone },
+  { label: '竹田', filled: true, color: designTokens.colors.secondary.fern },
+  { label: '佐伯', filled: false, color: designTokens.colors.secondary.stone },
+  { label: '日田', filled: true, color: designTokens.colors.accent.lilac },
+  { label: '国東', filled: false, color: designTokens.colors.secondary.stone },
+];
+
+const StampRallyShowcaseSection = () => {
+  const router = useRouter();
+  const filledCount = STAMP_DATA.filter((s) => s.filled).length;
+
+  return (
+    <section
+      className="py-16 sm:py-20 px-5 relative overflow-hidden"
+      style={{
+        background: `linear-gradient(180deg, ${designTokens.colors.background.mist} 0%, ${designTokens.colors.accent.gold}14 100%)`,
+      }}
+    >
+      <div className="container mx-auto max-w-6xl relative">
+        <div className="grid md:grid-cols-2 gap-10 md:gap-16 items-center">
+          {/* Left: copy */}
+          <div>
+            <div className="flex items-center gap-2 mb-4">
+              <span
+                className="text-xs font-bold tracking-[0.25em] uppercase"
+                style={{ color: designTokens.colors.accent.goldDark }}
+              >
+                Stamp Rally
+              </span>
+              <span
+                className="text-[10px] font-bold px-2 py-0.5 rounded-md"
+                style={{
+                  background: `${designTokens.colors.accent.goldDark}18`,
+                  color: designTokens.colors.accent.goldDark,
+                }}
+              >
+                β版
+              </span>
+            </div>
+            <h2
+              className="text-2xl sm:text-3xl md:text-4xl font-bold leading-tight mb-5"
+              style={{
+                fontFamily: designTokens.typography.display,
+                color: designTokens.colors.text.primary,
+              }}
+            >
+              9つのスタンプで、
+              <br />
+              大分を一冊の本にする。
+            </h2>
+            <p
+              className="text-base sm:text-lg leading-relaxed mb-6"
+              style={{ color: designTokens.colors.text.secondary }}
+            >
+              イベント会場でGPSチェックインすると、地図の上にまちのスタンプがそっと押されます。
+              9つ集めたら、β版期間限定で
+              <span className="font-semibold" style={{ color: designTokens.colors.accent.goldDark }}>Amazonギフトカード</span>
+              をプレゼント。
+            </p>
+
+            {/* Progress */}
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-semibold" style={{ color: designTokens.colors.text.muted }}>
+                  サンプルの進捗
+                </span>
+                <span className="text-sm font-bold" style={{ color: designTokens.colors.accent.goldDark }}>
+                  {filledCount} / 9
+                </span>
+              </div>
+              <div
+                className="h-2 rounded-full overflow-hidden"
+                style={{ background: `${designTokens.colors.secondary.stone}40` }}
+              >
+                <div
+                  className="h-full rounded-full transition-all duration-1000"
+                  style={{
+                    width: `${(filledCount / 9) * 100}%`,
+                    background: `linear-gradient(90deg, ${designTokens.colors.accent.gold} 0%, ${designTokens.colors.accent.goldDark} 100%)`,
+                  }}
+                />
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button
+                onClick={() => router.push('/map')}
+                className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-full font-semibold text-sm active:scale-[0.97] transition-transform"
+                style={{
+                  background: designTokens.colors.accent.goldDark,
+                  color: '#FFFFFF',
+                  boxShadow: `0 8px 24px -6px ${designTokens.colors.accent.goldDark}60`,
+                }}
+              >
+                <Trophy className="w-4 h-4" />
+                スタンプ集めをはじめる
+              </button>
+              <button
+                onClick={() => router.push('/events')}
+                className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-full font-semibold text-sm active:scale-[0.97] transition-transform"
+                style={{
+                  background: 'transparent',
+                  color: designTokens.colors.text.primary,
+                  border: `1px solid ${designTokens.colors.secondary.stone}60`,
+                }}
+              >
+                対象イベントを見る
+              </button>
+            </div>
+          </div>
+
+          {/* Right: stamp grid book-page */}
+          <div className="relative">
+            <div
+              className="book-page-edge rounded-[32px] p-6 sm:p-8 relative animate-page-turn-hint"
+              style={{
+                background: designTokens.colors.background.white,
+                border: `1px solid ${designTokens.colors.secondary.stone}30`,
+                transformOrigin: 'left center',
+                perspective: '1200px',
+              }}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <BookOpen className="w-4 h-4" style={{ color: designTokens.colors.text.muted }} />
+                  <span
+                    className="text-xs font-semibold tracking-[0.2em] uppercase"
+                    style={{ color: designTokens.colors.text.muted }}
+                  >
+                    My Stamp Book
+                  </span>
+                </div>
+                <span
+                  className="text-[10px] font-semibold"
+                  style={{ color: designTokens.colors.text.muted }}
+                >
+                  OITA · 2026
+                </span>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3 sm:gap-4">
+                {STAMP_DATA.map((stamp, index) => (
+                  <div
+                    key={stamp.label}
+                    className="aspect-square rounded-2xl flex items-center justify-center relative"
+                    style={{
+                      background: stamp.filled
+                        ? `${stamp.color}12`
+                        : `${designTokens.colors.secondary.stone}15`,
+                      border: `1.5px dashed ${stamp.filled ? stamp.color + '55' : designTokens.colors.secondary.stone + '60'}`,
+                    }}
+                  >
+                    {stamp.filled ? (
+                      <div
+                        className="w-full h-full flex flex-col items-center justify-center gap-1 animate-stamp-pop"
+                        style={{ animationDelay: `${index * 140}ms` }}
+                      >
+                        <div
+                          className="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center"
+                          style={{
+                            background: stamp.color,
+                            color: '#FFFFFF',
+                            boxShadow: `0 4px 12px -3px ${stamp.color}80`,
+                          }}
+                        >
+                          <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
+                        </div>
+                        <span
+                          className="text-[10px] sm:text-xs font-bold"
+                          style={{ color: stamp.color }}
+                        >
+                          {stamp.label}
+                        </span>
+                      </div>
+                    ) : (
+                      <span
+                        className="text-[10px] sm:text-xs font-medium"
+                        style={{ color: designTokens.colors.text.muted, opacity: 0.6 }}
+                      >
+                        {stamp.label}
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* Reward footer */}
+              <div
+                className="mt-5 pt-4 flex items-center gap-3 border-t border-dashed"
+                style={{ borderColor: `${designTokens.colors.secondary.stone}50` }}
+              >
+                <Gift
+                  className="w-5 h-5 flex-shrink-0"
+                  style={{ color: designTokens.colors.accent.goldDark }}
+                />
+                <p
+                  className="text-xs leading-relaxed"
+                  style={{ color: designTokens.colors.text.secondary }}
+                >
+                  9マス埋めると <span className="font-bold" style={{ color: designTokens.colors.accent.goldDark }}>Amazonギフトカード</span> を自動エントリー
+                </p>
+              </div>
+            </div>
+
+            {/* decorative bookmark */}
+            <div
+              className="absolute -top-2 right-8 w-6 h-14 rounded-b-md animate-gentle-sway"
+              style={{
+                background: `linear-gradient(180deg, ${designTokens.colors.accent.goldDark} 0%, ${designTokens.colors.accent.gold} 100%)`,
+                clipPath: 'polygon(0 0, 100% 0, 100% 100%, 50% 80%, 0 100%)',
+              }}
+              aria-hidden
+            />
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+// ===================================================================
+// VOICES SECTION (Storybook testimonial cards)
+// ===================================================================
+
+const VOICES_DATA = [
+  {
+    name: 'Aoi · 20代',
+    city: '大分市',
+    quote: '「週末、何しようかな」って呟くだけで、地図を開いたくなるようになりました。暮らしの温度が少し上がった気がします。',
+    accent: designTokens.colors.accent.lilac,
+    accentDark: designTokens.colors.accent.lilacDark,
+    emoji: '🌿',
+  },
+  {
+    name: 'Ken · 40代',
+    city: '由布市',
+    quote: '近所で開催されるマルシェやワークショップが一覧で見られるので、家族で出かける口実ができて、休日が楽しみになりました。',
+    accent: designTokens.colors.accent.gold,
+    accentDark: designTokens.colors.accent.goldDark,
+    emoji: '📖',
+  },
+  {
+    name: 'Misaki · 30代',
+    city: '別府市',
+    quote: '地元のマルシェに気づけず悔しい想いをしてきたけど、今は「明日行けるイベント」が朝のコーヒー時間に届く感じ。',
+    accent: designTokens.colors.secondary.fern,
+    accentDark: designTokens.colors.secondary.fernDark,
+    emoji: '☕',
+  },
+];
+
+const VoicesSection = () => {
+  return (
+    <section
+      className="py-16 sm:py-20 px-5 relative overflow-hidden"
+      style={{ background: designTokens.colors.background.white }}
+    >
+      {/* 和紙テクスチャ */}
+      <div className="absolute inset-0 texture-washi opacity-40 pointer-events-none" aria-hidden />
+
+      <div className="container mx-auto max-w-6xl relative">
+        <AppSectionHeader
+          label="Voices"
+          title={<><span>ページの余白に、</span><br className="sm:hidden" /><span>そっと寄せられた言葉</span></>}
+        />
+
+        <p
+          className="text-base sm:text-lg mb-10 max-w-2xl leading-relaxed"
+          style={{ fontFamily: designTokens.typography.body, color: designTokens.colors.text.secondary }}
+        >
+          トクドクを使って、大分の日常がどう変わったか。
+          利用者の方から届いた声を、一冊の本の引用のようにお届けします。
+        </p>
+
+        <div className="grid md:grid-cols-3 gap-5 md:gap-6">
+          {VOICES_DATA.map((voice, index) => (
+            <div
+              key={voice.name}
+              className="relative book-page-edge rounded-[28px] p-7 animate-fade-in-up"
+              style={{
+                background: designTokens.colors.background.white,
+                border: `1px solid ${designTokens.colors.secondary.stone}25`,
+                animationDelay: `${index * 150}ms`,
+              }}
+            >
+              {/* Quote mark as decorative element */}
+              <div
+                className="absolute -top-3 left-6 w-10 h-10 rounded-2xl flex items-center justify-center"
+                style={{
+                  background: voice.accent,
+                  color: '#FFFFFF',
+                  boxShadow: `0 6px 18px -4px ${voice.accent}70`,
+                }}
+              >
+                <Quote className="w-4 h-4" />
+              </div>
+
+              <div className="pt-5">
+                <p
+                  className="text-base leading-[1.9] mb-6"
+                  style={{
+                    fontFamily: designTokens.typography.body,
+                    color: designTokens.colors.text.primary,
+                  }}
+                >
+                  {voice.quote}
+                </p>
+
+                <div
+                  className="pt-5 flex items-center justify-between border-t border-dashed"
+                  style={{ borderColor: `${designTokens.colors.secondary.stone}55` }}
+                >
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="w-9 h-9 rounded-full flex items-center justify-center text-base"
+                      style={{ background: `${voice.accent}20` }}
+                      aria-hidden
+                    >
+                      {voice.emoji}
+                    </div>
+                    <div>
+                      <p
+                        className="text-sm font-semibold"
+                        style={{ color: designTokens.colors.text.primary }}
+                      >
+                        {voice.name}
+                      </p>
+                      <p
+                        className="text-xs flex items-center gap-1"
+                        style={{ color: voice.accentDark }}
+                      >
+                        <MapPin className="w-3 h-3" />
+                        {voice.city}
+                      </p>
+                    </div>
+                  </div>
+                  <Heart className="w-4 h-4" style={{ color: voice.accent, opacity: 0.6 }} />
+                </div>
+              </div>
+
+              {/* Page corner */}
+              <div
+                className="absolute bottom-0 right-0 w-8 h-8 pointer-events-none"
+                style={{
+                  background: `linear-gradient(135deg, transparent 50%, ${voice.accent}18 50%)`,
+                  borderBottomRightRadius: '28px',
+                }}
+              />
+            </div>
+          ))}
+        </div>
+
+        <p
+          className="text-center text-xs mt-10"
+          style={{ color: designTokens.colors.text.muted }}
+        >
+          ※ サービスβ版のユーザーヒアリングから構成したサンプルボイスです。
+        </p>
+      </div>
+    </section>
+  );
+};
+
+// ===================================================================
 // CONTACT + COMPANY (Merged dark section)
 // ===================================================================
 
@@ -1362,7 +1912,11 @@ export default function Home() {
 
       <SolutionSection />
 
+      <StoryJourneySection />
+
       <NoteArticlesSection username="kind_ixora3833" maxItems={4} />
+
+      <VoicesSection />
 
       <ContactCompanySection />
 
