@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, MapPin, Compass, BookOpen, ChevronDown, ChevronUp, RefreshCw, Trash2, Loader2, ExternalLink, ScrollText, SlidersHorizontal, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, MapPin, BookOpen, Trash2, Loader2, ScrollText, Map as MapIcon } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
@@ -10,8 +10,7 @@ import { useToast } from '@/lib/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, parseISO, getDay, getYear, addDays } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, parseISO, getDay } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import Image from 'next/image';
 import { Ad } from '@/types/ad';
@@ -166,8 +165,6 @@ export default function CalendarPage() {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [ads, setAds] = useState<Ad[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isLongTermEventsOpen, setIsLongTermEventsOpen] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
   
   const urlCity = searchParams.get('city');
@@ -186,7 +183,6 @@ export default function CalendarPage() {
   const [selectedPrefecture] = useState('大分県');
   const [selectedCity, setSelectedCity] = useState(getInitialCity);
   const [selectedEnableCheckin] = useState<'all' | 'true' | 'false'>('all');
-  const [filterSheetOpen, setFilterSheetOpen] = useState(false);
   const [cityList, setCityList] = useState<string[]>([]);
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [deletingEventId, setDeletingEventId] = useState<string | null>(null);
@@ -470,10 +466,6 @@ export default function CalendarPage() {
     return () => { setLoading(true); setIsInitialized(false); };
   }, []);
 
-  const longTermEvents = useMemo(() => {
-    return events.filter(event => !isSameMonth(event.startDate, event.endDate));
-  }, [events]);
-
   const shortTermEvents = useMemo(() => {
     return events.filter(event => isSameMonth(event.startDate, event.endDate));
   }, [events]);
@@ -632,19 +624,14 @@ export default function CalendarPage() {
       {/* ローディング画面 */}
       <AnimatePresence>
         {loading && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-center justify-center"
             style={{ background: designTokens.colors.background.mist }}
           >
             <div className="flex flex-col items-center gap-4">
-              <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-              >
-                <Compass className="h-12 w-12" style={{ color: designTokens.colors.accent.gold }} />
-              </motion.div>
+              <Loader2 className="h-12 w-12 animate-spin" style={{ color: designTokens.colors.accent.gold }} />
               <p className="text-sm font-medium" style={{ color: designTokens.colors.text.secondary }}>
                 イベント情報を読み込み中...
               </p>
@@ -655,81 +642,115 @@ export default function CalendarPage() {
 
       {!loading && (
         <>
-          {/* パンくずリスト */}
-          <motion.div 
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="px-4 pt-3"
-          >
-            <Breadcrumb />
-          </motion.div>
-          
-          {/* ヘッダー */}
-          <header
+          {/* 固定ヘッダー (パンくず + タイトル + 月ナビ + 市町村フィルター) */}
+          <div
             className="sticky top-0 z-40"
-            style={{ 
+            style={{
               background: `${designTokens.colors.primary.base}F5`,
               backdropFilter: 'blur(20px)',
+              WebkitBackdropFilter: 'blur(20px)',
               borderBottom: `1px solid ${designTokens.colors.primary.dark}30`,
             }}
           >
-            <div className="max-w-4xl mx-auto px-4 py-4">
-              <div className="flex items-center justify-center gap-3 mb-3">
-                <ScrollText className="h-5 w-5" style={{ color: designTokens.colors.accent.gold }} />
-                <h1 
-                  className="text-xl font-semibold tracking-wide"
-                  style={{ 
+            <div className="max-w-4xl mx-auto px-4 pt-3 pb-4">
+              {/* パンくず (ヘッダーがダーク背景のためテキストを白系にオーバーライド) */}
+              <div
+                className="mb-2 [&_nav]:!py-1 [&_nav]:!px-0 [&_a]:!text-white/80 [&_a_span]:!text-white/80 [&_[aria-current='page']]:!text-white [&_[aria-current='page']_span]:!text-white [&_.text-muted-foreground]:!text-white/60 [&_.text-primary]:!text-white [&_.text-foreground]:!text-white"
+              >
+                <Breadcrumb />
+              </div>
+
+              {/* タイトル (左右にアイコン、中央寄せ) */}
+              <div className="flex items-center justify-center gap-2 mb-3">
+                <ScrollText className="h-5 w-5 flex-shrink-0" style={{ color: designTokens.colors.accent.gold }} />
+                <h1
+                  className="text-lg sm:text-xl font-semibold tracking-wide truncate"
+                  style={{
                     fontFamily: designTokens.typography.display,
                     color: designTokens.colors.text.inverse,
                   }}
                 >
                   {selectedCity === 'all' ? '大分県内のイベント' : `${selectedCity}内のイベント`}
                 </h1>
-                <ScrollText className="h-5 w-5" style={{ color: designTokens.colors.accent.gold }} />
+                <ScrollText className="h-5 w-5 flex-shrink-0" style={{ color: designTokens.colors.accent.gold }} />
               </div>
 
-              {/* 月切り替え */}
-              <div className="flex items-center justify-center gap-4">
-                <motion.button 
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                  onClick={handlePreviousMonth} 
-                  className="p-2 rounded-full transition-colors"
-                  style={{ 
-                    background: `${designTokens.colors.background.white}20`,
-                    color: designTokens.colors.text.inverse,
-                  }}
-                >
-                  <ChevronLeft className="h-5 w-5" />
-                </motion.button>
-                <div 
-                  className="px-6 py-2 rounded-full font-semibold"
-                  style={{ 
-                    background: designTokens.colors.background.white,
-                    color: designTokens.colors.primary.base,
+              {/* 市町村フィルター : 月切り替え : マップボタン — モバイル 2:1:2 / PC 1:2:1 */}
+              <div className="flex items-center gap-2">
+                <Select value={selectedCity} onValueChange={setSelectedCity}>
+                  <SelectTrigger
+                    className="flex-[2] sm:flex-1 min-w-0 h-9 rounded-full border-0 text-xs sm:text-sm font-medium"
+                    style={{
+                      background: `${designTokens.colors.background.white}20`,
+                      color: designTokens.colors.text.inverse,
+                    }}
+                  >
+                    <SelectValue placeholder="市町村を選択" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl">
+                    <SelectItem value="all">全ての市町村</SelectItem>
+                    {cityList.map((city) => (
+                      <SelectItem key={city} value={city}>{city}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <div className="flex-1 sm:flex-[2] min-w-0 flex items-center justify-between gap-1">
+                  <motion.button
+                    whileTap={{ scale: 0.9 }}
+                    onClick={handlePreviousMonth}
+                    className="flex-shrink-0 p-1.5 rounded-full transition-colors"
+                    style={{
+                      background: `${designTokens.colors.background.white}25`,
+                      color: designTokens.colors.text.inverse,
+                    }}
+                    aria-label="前の月"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </motion.button>
+                  <div
+                    className="flex-1 min-w-0 text-center px-1 sm:px-2 py-1.5 rounded-full text-xs sm:text-sm font-semibold whitespace-nowrap overflow-hidden text-ellipsis"
+                    style={{
+                      background: designTokens.colors.background.white,
+                      color: designTokens.colors.primary.base,
+                    }}
+                  >
+                    <span className="sm:hidden">{format(currentDate, 'M月', { locale: ja })}</span>
+                    <span className="hidden sm:inline">{format(currentDate, 'yyyy年 M月', { locale: ja })}</span>
+                  </div>
+                  <motion.button
+                    whileTap={{ scale: 0.9 }}
+                    onClick={handleNextMonth}
+                    className="flex-shrink-0 p-1.5 rounded-full transition-colors"
+                    style={{
+                      background: `${designTokens.colors.background.white}25`,
+                      color: designTokens.colors.text.inverse,
+                    }}
+                    aria-label="次の月"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </motion.button>
+                </div>
+
+                <button
+                  onClick={() => router.push('/map')}
+                  className="flex-[2] sm:flex-1 min-w-0 inline-flex items-center justify-center gap-1 px-2 h-9 rounded-full text-xs sm:text-sm font-semibold transition-transform active:scale-95"
+                  style={{
+                    background: designTokens.colors.accent.gold,
+                    color: designTokens.colors.text.primary,
                     boxShadow: designTokens.elevation.low,
                   }}
+                  aria-label="マップを開く"
                 >
-                  {format(currentDate, 'yyyy年 M月', { locale: ja })}
-                </div>
-                <motion.button 
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                  onClick={handleNextMonth} 
-                  className="p-2 rounded-full transition-colors"
-                  style={{ 
-                    background: `${designTokens.colors.background.white}20`,
-                    color: designTokens.colors.text.inverse,
-                  }}
-                >
-                  <ChevronRight className="h-5 w-5" />
-                </motion.button>
+                  <MapIcon className="h-4 w-4 flex-shrink-0" />
+                  <span className="truncate">Mapを開く</span>
+                </button>
               </div>
             </div>
-          </header>
+          </div>
 
           {/* コンテンツエリア */}
-          <div className="container mx-auto px-4 py-6 max-w-4xl pb-28">
+          <div className="container mx-auto px-4 pt-4 pb-10 max-w-4xl">
 
             {/* 日付タブ */}
             {daysWithEvents.length > 0 && (
@@ -791,7 +812,7 @@ export default function CalendarPage() {
               </motion.div>
             )}
 
-            {/* イベント一覧 */}
+            {/* イベント2列グリッド */}
             {daysWithEvents.length === 0 ? (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -808,209 +829,135 @@ export default function CalendarPage() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.25 }}
+                className="grid grid-cols-2 gap-3 sm:gap-4"
               >
-                <ElevationCard elevation="medium" hover={false} className="overflow-hidden">
-                  <div className="divide-y" style={{ borderColor: `${designTokens.colors.secondary.stone}30` }}>
-                    {eventsForSelectedDayWithAds.map((item, index) => {
-                      if (item.type === 'ad' && item.ad) {
-                        return (
-                          <div key={`ad-${index}`} className="p-4">
-                            <AdCard
-                              ad={item.ad}
-                              onView={() => trackAdView(item.ad!.id)}
-                              onClick={() => trackAdClick(item.ad!.id)}
-                            />
+                {eventsForSelectedDayWithAds.map((item, index) => {
+                  if (item.type === 'ad' && item.ad) {
+                    return (
+                      <div key={`ad-${index}`} className="col-span-2">
+                        <AdCard
+                          ad={item.ad}
+                          onView={() => trackAdView(item.ad!.id)}
+                          onClick={() => trackAdClick(item.ad!.id)}
+                        />
+                      </div>
+                    );
+                  }
+                  if (item.type === 'event' && item.event) {
+                    const event = item.event;
+                    const imageUrl = getImageUrl(event);
+                    const isAuthor = event.fullData.author_user_id === currentUserId;
+                    const isToday = isSameDay(selectedDay, new Date());
+
+                    return (
+                      <motion.div
+                        key={event.id}
+                        initial={{ opacity: 0, y: 6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.04 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => handleEventClick(event)}
+                        className="relative rounded-2xl overflow-hidden cursor-pointer"
+                        style={{
+                          background: designTokens.colors.background.white,
+                          boxShadow: designTokens.elevation.low,
+                          border: `1px solid ${isToday ? designTokens.colors.accent.gold : `${designTokens.colors.secondary.stone}30`}`,
+                        }}
+                      >
+                        {loadingEventId === event.id && (
+                          <div className="absolute inset-0 z-20 flex items-center justify-center" style={{ background: `${designTokens.colors.background.white}CC` }}>
+                            <Loader2 className="h-6 w-6 animate-spin" style={{ color: designTokens.colors.accent.gold }} />
                           </div>
-                        );
-                      }
-                      if (item.type === 'event' && item.event) {
-                        const event = item.event;
-                        const imageUrl = getImageUrl(event);
-                        const isAuthor = event.fullData.author_user_id === currentUserId;
-                        const isToday = isSameDay(selectedDay, new Date());
+                        )}
 
-                        return (
-                          <motion.div
-                            key={event.id}
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ delay: index * 0.05 }}
-                            className="p-4"
-                          >
-                            {isAuthor && (
-                              <div className="flex items-center justify-between mb-2">
-                                <Badge 
-                                  className="text-xs"
-                                  style={{ 
-                                    background: designTokens.colors.functional.info,
-                                    color: designTokens.colors.text.inverse,
-                                  }}
-                                >
-                                  自分の投稿
-                                </Badge>
-                                <Button
-                                  onClick={(e) => handleDeleteEvent(event.id, e)}
-                                  disabled={deletingEventId === event.id}
-                                  size="icon"
-                                  className="h-8 w-8 rounded-full"
-                                  style={{ 
-                                    background: designTokens.colors.functional.error,
-                                    color: designTokens.colors.text.inverse,
-                                  }}
-                                >
-                                  {deletingEventId === event.id ? (
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                  ) : (
-                                    <Trash2 className="h-4 w-4" />
-                                  )}
-                                </Button>
-                              </div>
-                            )}
-                            
-                            <motion.div
-                              whileHover={{ scale: 1.01 }}
-                              whileTap={{ scale: 0.99 }}
-                              className="relative flex gap-4 cursor-pointer rounded-xl p-3 transition-colors"
+                        {/* サムネイル */}
+                        <div
+                          className="relative w-full"
+                          style={{ aspectRatio: '1 / 1', background: designTokens.colors.background.cloud }}
+                        >
+                          {imageUrl ? (
+                            <Image
+                              src={imageUrl}
+                              alt={event.name}
+                              fill
+                              className="object-cover"
+                              sizes="(max-width: 640px) 50vw, 200px"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <CalendarIcon className="h-10 w-10" style={{ color: designTokens.colors.text.muted }} />
+                            </div>
+                          )}
+                          {isToday && (
+                            <span
+                              className="absolute top-2 left-2 text-[10px] font-bold px-2 py-0.5 rounded-full"
                               style={{
-                                background: isToday ? `${designTokens.colors.accent.gold}10` : 'transparent',
+                                background: designTokens.colors.accent.gold,
+                                color: designTokens.colors.text.primary,
                               }}
-                              onClick={() => handleEventClick(event)}
                             >
-                              {loadingEventId === event.id && (
-                                <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl" style={{ background: `${designTokens.colors.background.white}CC` }}>
-                                  <Loader2 className="h-6 w-6 animate-spin" style={{ color: designTokens.colors.accent.gold }} />
-                                </div>
-                              )}
-                              {imageUrl ? (
-                                <div className="flex-shrink-0 relative w-20 h-20 rounded-xl overflow-hidden">
-                                  <Image
-                                    src={imageUrl}
-                                    alt={event.name}
-                                    fill
-                                    className="object-cover"
-                                    sizes="80px"
-                                  />
-                                </div>
-                              ) : (
-                                <div
-                                  className="flex-shrink-0 w-20 h-20 rounded-xl flex items-center justify-center"
-                                  style={{ background: designTokens.colors.background.cloud }}
-                                >
-                                  <CalendarIcon className="h-8 w-8" style={{ color: designTokens.colors.text.muted }} />
-                                </div>
-                              )}
+                              今日
+                            </span>
+                          )}
+                          {isAuthor && (
+                            <Badge
+                              className="absolute top-2 right-2 text-[10px] px-1.5 py-0.5"
+                              style={{
+                                background: designTokens.colors.functional.info,
+                                color: designTokens.colors.text.inverse,
+                              }}
+                            >
+                              自分
+                            </Badge>
+                          )}
+                        </div>
 
-                              <div className="flex-1 min-w-0">
-                                <div
-                                  className="font-semibold text-base mb-1.5 line-clamp-2"
-                                  style={{
-                                    fontFamily: designTokens.typography.display,
-                                    color: designTokens.colors.primary.dark,
-                                  }}
-                                >
-                                  {event.name}
-                                </div>
-                                <div
-                                  className="flex items-center gap-2 text-sm"
-                                  style={{ color: designTokens.colors.text.secondary }}
-                                >
-                                  <MapPin className="h-3.5 w-3.5 flex-shrink-0" style={{ color: designTokens.colors.functional.error }} />
-                                  <span className="truncate">{event.fullData.store_name}</span>
-                                </div>
-                              </div>
+                        {/* 本文 */}
+                        <div className="p-3">
+                          <div
+                            className="font-semibold text-sm leading-snug line-clamp-2 mb-1.5"
+                            style={{
+                              fontFamily: designTokens.typography.display,
+                              color: designTokens.colors.primary.dark,
+                              minHeight: '2.5em',
+                            }}
+                          >
+                            {event.name}
+                          </div>
+                          <div
+                            className="flex items-center gap-1 text-xs"
+                            style={{ color: designTokens.colors.text.secondary }}
+                          >
+                            <MapPin className="h-3 w-3 flex-shrink-0" style={{ color: designTokens.colors.functional.error }} />
+                            <span className="truncate">{event.fullData.store_name}</span>
+                          </div>
+                        </div>
 
-                              <ChevronRight className="h-5 w-5 flex-shrink-0 self-center" style={{ color: designTokens.colors.text.muted }} />
-                            </motion.div>
-                          </motion.div>
-                        );
-                      }
-                      return null;
-                    })}
-                  </div>
-                </ElevationCard>
-                {/* 開催中のイベントを見る（一番下のイベントカードの下に配置） */}
-                <div className="flex justify-center pt-10 pb-8 px-4">
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => router.push('/map')}
-                    className="px-6 py-3 rounded-xl font-semibold text-sm flex items-center justify-center gap-2"
-                    style={{
-                      background: designTokens.colors.accent.gold,
-                      color: designTokens.colors.text.primary,
-                      boxShadow: designTokens.elevation.high,
-                    }}
-                  >
-                    <Compass className="h-4 w-4" />
-                    開催中のイベントを見る
-                  </motion.button>
-                </div>
+                        {isAuthor && (
+                          <Button
+                            onClick={(e) => handleDeleteEvent(event.id, e)}
+                            disabled={deletingEventId === event.id}
+                            size="icon"
+                            className="absolute bottom-2 right-2 h-7 w-7 rounded-full z-10"
+                            style={{
+                              background: designTokens.colors.functional.error,
+                              color: designTokens.colors.text.inverse,
+                            }}
+                          >
+                            {deletingEventId === event.id ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-3.5 w-3.5" />
+                            )}
+                          </Button>
+                        )}
+                      </motion.div>
+                    );
+                  }
+                  return null;
+                })}
               </motion.div>
             ) : null}
-          </div>
-
-          {/* フローティングナビゲーション（絞込のみ） */}
-          <div className="fixed bottom-6 right-4 z-30 flex flex-col gap-3">
-            <Sheet open={filterSheetOpen} onOpenChange={setFilterSheetOpen}>
-              <SheetTrigger asChild>
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <Button
-                    size="icon"
-                    className="h-16 w-16 rounded-2xl flex flex-col items-center justify-center gap-1"
-                    style={{ 
-                      background: designTokens.colors.secondary.fern,
-                      color: designTokens.colors.text.inverse,
-                      boxShadow: designTokens.elevation.high,
-                    }}
-                  >
-                    <SlidersHorizontal className="h-6 w-6" />
-                    <span className="text-xs font-medium">絞込</span>
-                  </Button>
-                </motion.div>
-              </SheetTrigger>
-              <SheetContent 
-                side="bottom" 
-                className="rounded-t-3xl"
-                style={{ 
-                  background: designTokens.colors.background.white,
-                  borderTop: `1px solid ${designTokens.colors.secondary.stone}30`,
-                }}
-              >
-                <SheetHeader>
-                  <SheetTitle 
-                    className="text-lg font-semibold"
-                    style={{ color: designTokens.colors.primary.base }}
-                  >
-                    市町村で絞り込む
-                  </SheetTitle>
-                </SheetHeader>
-                <div className="pt-6 pb-8">
-                  <Select value={selectedCity} onValueChange={(v) => { setSelectedCity(v); setFilterSheetOpen(false); }}>
-                    <SelectTrigger 
-                      className="w-full h-12 rounded-xl"
-                      style={{ 
-                        background: designTokens.colors.background.mist,
-                        borderColor: `${designTokens.colors.secondary.stone}50`,
-                        color: designTokens.colors.text.primary,
-                      }}
-                    >
-                      <SelectValue placeholder="市町村を選択" />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-xl">
-                      <SelectItem value="all">全ての市町村</SelectItem>
-                      {cityList.map((city) => (
-                        <SelectItem key={city} value={city}>{city}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </SheetContent>
-            </Sheet>
           </div>
         </>
       )}
