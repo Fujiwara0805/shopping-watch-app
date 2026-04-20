@@ -54,6 +54,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       onClick,
       disabled,
       children,
+      type,
       ...props
     },
     ref
@@ -74,6 +75,13 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       (e: React.MouseEvent<HTMLButtonElement>) => {
         if (isLoading || disabled) {
           e.preventDefault();
+          return;
+        }
+
+        // type="submit" ではクリック直後の autoLoading で disabled 化・子の差し替えが走り、
+        // ブラウザのフォーム既定送信が発火しないことがある（例: 新規投稿の「投稿する」）。
+        if (type === 'submit') {
+          onClick?.(e);
           return;
         }
 
@@ -99,7 +107,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           minDelay.then(settle);
         }
       },
-      [onClick, isLoading, disabled]
+      [onClick, isLoading, disabled, type]
     );
 
     if (asChild) {
@@ -117,6 +125,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
     return (
       <button
+        type={type}
         className={cn(buttonVariants({ variant, size, className }))}
         ref={ref}
         onClick={handleClick}
