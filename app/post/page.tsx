@@ -338,22 +338,13 @@ export default function PostPage() {
 
   // 投稿処理
   const handleActualSubmit = async (values: any) => {
-    console.warn('[PostSubmit] ③ handleActualSubmit 開始', {
-      selectedCategory,
-      hasSession: !!session?.user?.id,
-      expiryOption: values?.expiryOption,
-      storeIdLen: values?.storeId?.length ?? 0,
-    });
-
     if (!session?.user?.id) {
-      console.warn('[PostSubmit] 中断: 未ログイン');
       router.push(`/login?callbackUrl=${encodeURIComponent(window.location.pathname)}`);
       return;
     }
 
     // 必須フィールドの検証
     if (!values.content || values.content.length < 5) {
-      console.warn('[PostSubmit] 中断: 投稿内容が短い', { len: values?.content?.length });
       setSubmitError("投稿内容を5文字以上入力してください。");
       return;
     }
@@ -361,26 +352,20 @@ export default function PostPage() {
     // イベント情報の場合の追加検証
     if (selectedCategory === 'イベント情報') {
       if (values.customExpiryDays && (values.customExpiryDays < 1 || values.customExpiryDays > 90)) {
-        console.warn('[PostSubmit] 中断: customExpiryDays 範囲外', values.customExpiryDays);
         setSubmitError("掲載期間は1日〜90日の範囲で設定してください。");
         return;
       }
       if (!values.eventName) {
-        console.warn('[PostSubmit] 中断: イベント名なし');
         setSubmitError("イベント名を入力してください。");
         return;
       }
       if (!values.eventStartDate) {
-        console.warn('[PostSubmit] 中断: 開催開始日なし');
         setSubmitError("開催開始日を入力してください。");
         return;
       }
     } else {
       // その他のカテゴリーの場合、掲載期間の選択を確認
       if (!values.expiryOption) {
-        console.warn('[PostSubmit] 中断: expiryOption なし', {
-          formExpiry: form.getValues('expiryOption'),
-        });
         setSubmitError("掲載期間を選択してください。");
         return;
       }
@@ -440,14 +425,6 @@ export default function PostPage() {
         }
       }
 
-      if (!expiresAt) {
-        console.warn('[PostSubmit] 警告: expiresAt が空（このまま createPost すると DB で失敗する可能性）', {
-          selectedCategory,
-          valuesExpiryOption: values.expiryOption,
-          formExpiryOption: form.getValues('expiryOption'),
-        });
-      }
-
       // 🔥 店舗の位置情報を取得
       const storeLatitude = form.getValues("store_latitude") as number | undefined;
       const storeLongitude = form.getValues("store_longitude") as number | undefined;
@@ -483,21 +460,11 @@ export default function PostPage() {
         tagActivities: Object.keys(selectedTagActivities).length > 0 ? selectedTagActivities : undefined,
       };
 
-      console.warn('[PostSubmit] ④ createPost 直前', {
-        expiresAt: postInput.expiresAt,
-        expiryOption: postInput.expiryOption,
-        category: postInput.category,
-      });
-
       const { postId, error: createError } = await createPost(postInput);
-
-      console.warn('[PostSubmit] ⑤ createPost 応答', { postId, createError });
 
       if (createError || !postId) {
         throw new Error(createError || '投稿の保存に失敗しました');
       }
-
-      console.warn('[PostSubmit] ⑥ 成功 → /post/complete へ遷移');
 
       // フォームリセット
       const resetValues: any = {
@@ -533,7 +500,7 @@ export default function PostPage() {
       router.push('/post/complete');
 
     } catch (error: any) {
-      console.error('[PostSubmit] 例外:', error);
+      console.error("PostPage: onSubmit error:", error);
       setSubmitError(error.message || "投稿処理中にエラーが発生しました。");
     } finally {
       setIsUploading(false);
@@ -542,27 +509,13 @@ export default function PostPage() {
   };
 
   const triggerConfirmationModal = (values: any) => {
-    console.warn('[PostSubmit] ① フォーム送信成功 → 確認モーダル', {
-      category: values?.category,
-      expiryOption: values?.expiryOption,
-      contentLen: values?.content?.length,
-    });
     setFormDataToSubmit(values);
     setShowConfirmModal(true);
   };
-
-  const onSubmitValidationFailed = (errors: Record<string, unknown>) => {
-    console.warn('[PostSubmit] フォームバリデーション失敗（この場合は確認モーダルは開きません）', errors);
-  };
   
   const handleConfirmSubmit = () => {
-    console.warn('[PostSubmit] ② 確認モーダルで OK（この後 handleActualSubmit）', {
-      hasPayload: !!formDataToSubmit,
-    });
     if (formDataToSubmit) {
       handleActualSubmit(formDataToSubmit);
-    } else {
-      console.warn('[PostSubmit] ② 中断: formDataToSubmit が null');
     }
   };
 
@@ -863,10 +816,7 @@ export default function PostPage() {
             <Breadcrumb />
           </div>
           <Form {...form}>
-            <form
-              onSubmit={form.handleSubmit(triggerConfirmationModal, onSubmitValidationFailed)}
-              className="space-y-6 pb-20"
-            >
+            <form onSubmit={form.handleSubmit(triggerConfirmationModal)} className="space-y-6 pb-20">
               {/* カテゴリー選択 */}
               <FormField
                 control={form.control}
@@ -1597,13 +1547,6 @@ export default function PostPage() {
                     "w-full text-xl py-3",
                     (!isValid || isSubmitting || isUploading) && "bg-gray-400 cursor-not-allowed hover:bg-gray-400"
                   )}
-                  onClick={() =>
-                    console.warn('[PostSubmit] 0. 「投稿する」クリック', {
-                      isValid,
-                      isSubmitting,
-                      isUploading,
-                    })
-                  }
                 >
                   {(isSubmitting || isUploading) ? (
                     <>
