@@ -826,26 +826,26 @@ export default function PostPage() {
                     <FormLabel className="text-xl flex font-semibold items-center">
                       <Tag className="mr-2 h-6 w-6" /> カテゴリー<span className="text-destructive ml-1">※</span>
                     </FormLabel>
-                    <FormControl>
-                      <Select
-                        value={selectedCategory}
-                        onValueChange={(value: PostCategory) => {
-                          setSelectedCategory(value);
-                          field.onChange(value);
-                        }}
-                      >
+                    <Select
+                      value={selectedCategory}
+                      onValueChange={(value: PostCategory) => {
+                        setSelectedCategory(value);
+                        field.onChange(value);
+                      }}
+                    >
+                      <FormControl>
                         <SelectTrigger className="mt-1">
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="イベント情報">イベント情報</SelectItem>
-                          <SelectItem value="聖地巡礼">聖地巡礼</SelectItem>
-                          <SelectItem value="観光スポット">観光スポット</SelectItem>
-                          <SelectItem value="温泉">温泉</SelectItem>
-                          <SelectItem value="グルメ">グルメ</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </FormControl>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="イベント情報">イベント情報</SelectItem>
+                        <SelectItem value="聖地巡礼">聖地巡礼</SelectItem>
+                        <SelectItem value="観光スポット">観光スポット</SelectItem>
+                        <SelectItem value="温泉">温泉</SelectItem>
+                        <SelectItem value="グルメ">グルメ</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -958,20 +958,20 @@ export default function PostPage() {
                       <FormLabel className="text-xl flex font-semibold items-center">
                         <ClockIcon className="mr-2 h-6 w-6" /> 掲載期間<span className="text-destructive ml-1">※</span>
                       </FormLabel>
-                      <FormControl>
-                        <Select
-                          value={field.value}
-                          onValueChange={field.onChange}
-                        >
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                      >
+                        <FormControl>
                           <SelectTrigger className="mt-1">
                             <SelectValue placeholder="掲載期間を選択" />
                           </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="90days">90日間</SelectItem>
-                            <SelectItem value="unlimited">期間を設けない（手動削除まで表示）</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </FormControl>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="90days">90日間</SelectItem>
+                          <SelectItem value="unlimited">期間を設けない（手動削除まで表示）</SelectItem>
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
