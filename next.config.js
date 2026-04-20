@@ -26,48 +26,15 @@ const nextConfig = {
       },
     ],
   },
-  // LCP改善：コンパイル最適化
+  // 本番の console.log のみ除去（error/warn は残して調査可能に）
+  // ※ 過去に splitChunks を上書きしていた時期があり、Next のチャンクと不整合で
+  // 「.css を script として実行しようとして MIME で拒否」となる事例があったため、
+  // クライアントの splitChunks は触らない（Next 既定に任せる）。
   compiler: {
-    removeConsole: process.env.NODE_ENV === 'production',
-  },
-  // LCP改善：バンドル最適化
-  webpack: (config, { dev, isServer }) => {
-    if (!dev && !isServer) {
-      // プロダクションビルド時の最適化
-      config.optimization.splitChunks = {
-        chunks: 'all',
-        cacheGroups: {
-          default: false,
-          vendors: false,
-          // フレームワークコードを分離
-          framework: {
-            chunks: 'all',
-            name: 'framework',
-            test: /(?<!node_modules.*)[\\/]node_modules[\\/](react|react-dom|scheduler|prop-types|use-subscription)[\\/]/,
-            priority: 40,
-            enforce: true,
-          },
-          // 共通ライブラリを分離
-          lib: {
-            test(module) {
-              return module.size() > 160000 && /node_modules[/\\]/.test(module.identifier());
-            },
-            name: 'lib',
-            priority: 30,
-            minChunks: 1,
-            reuseExistingChunk: true,
-          },
-          // 共通コンポーネントを分離
-          commons: {
-            name: 'commons',
-            minChunks: 2,
-            priority: 20,
-            reuseExistingChunk: true,
-          },
-        },
-      };
-    }
-    return config;
+    removeConsole:
+      process.env.NODE_ENV === 'production'
+        ? { exclude: ['error', 'warn'] }
+        : false,
   },
   // LCP改善：ヘッダー最適化
   async headers() {

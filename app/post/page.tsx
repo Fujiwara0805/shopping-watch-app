@@ -827,7 +827,7 @@ export default function PostPage() {
                       <Tag className="mr-2 h-6 w-6" /> カテゴリー<span className="text-destructive ml-1">※</span>
                     </FormLabel>
                     <Select
-                      value={selectedCategory}
+                      value={field.value}
                       onValueChange={(value: PostCategory) => {
                         setSelectedCategory(value);
                         field.onChange(value);
