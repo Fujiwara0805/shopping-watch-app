@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { fetchGoogleAnalyticsData, generateDummyAnalyticsData } from '@/lib/services/google-analytics';
 
+// クエリ (?period=) を読むためビルド時に静的化できない。動的ルートとして扱う。
+export const dynamic = 'force-dynamic';
+
 /**
  * Analytics データ取得API
  * Google Analytics 4 Data APIを使用
