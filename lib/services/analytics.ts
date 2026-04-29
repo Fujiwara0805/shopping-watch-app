@@ -46,12 +46,24 @@ type NavigationEvents = {
   stamp_board_open: Record<string, never>;
 };
 
+/** 待ち合わせイベント（イベントを口実にした集合機能） */
+type MeetupEvents = {
+  meetup_room_create: { post_id: string; type: 'open' | 'host' | 'closed' };
+  meetup_join: { room_id: string; status: 'going' | 'maybe' | 'cancelled' };
+  meetup_leave: { room_id: string };
+  meetup_message_send: { room_id: string };
+  meetup_report: { room_id?: string };
+  meetup_email_verify_request: Record<string, never>;
+  meetup_email_verified: Record<string, never>;
+};
+
 /** 全カスタムイベント */
 type AnalyticsEventMap = MapEvents &
   EventDiscoveryEvents &
   UserActionEvents &
   EngagementEvents &
-  NavigationEvents;
+  NavigationEvents &
+  MeetupEvents;
 
 // ============================================================
 // Public API

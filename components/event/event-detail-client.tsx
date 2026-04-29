@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Compass, MapPin, Calendar, ExternalLink, AlertCircle, Phone, FileText, DollarSign, Link as LinkIcon, ChevronLeft, ChevronRight, X, CalendarPlusIcon, Shield, ScrollText, Home, ChevronRight as ChevronRightIcon, ArrowLeft, Share2, Users, Sparkles } from 'lucide-react';
 import { EventReviewSection } from '@/components/event/event-review-section';
+import { MeetupSection } from '@/components/meetup/meetup-section';
 import { supabase } from '@/lib/supabaseClient';
 import Script from 'next/script';
 import Link from 'next/link';
@@ -840,6 +841,9 @@ export function EventDetailClient({ eventId }: EventDetailClientProps) {
                 </div>
               </motion.div>
             )}
+
+            {/* 待ち合わせノート（読書会ノート風） */}
+            <MeetupSection postId={eventId} eventName={event.event_name} />
 
             {/* 感想・レビューセクション */}
             <div style={{ borderTop: `1px dashed ${designTokens.colors.secondary.stone}50` }} className="pt-6">

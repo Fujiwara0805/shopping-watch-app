@@ -2,6 +2,7 @@ import { AuthOptions, Profile as NextAuthProfile, Account as NextAuthAccount, Us
 import GoogleProvider from 'next-auth/providers/google';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { supabase } from '@/lib/supabaseClient';
+import { signSupabaseJwt } from '@/lib/supabase-jwt';
 import { v4 as uuidv4 } from 'uuid';
 import bcrypt from 'bcryptjs';
 
@@ -256,6 +257,19 @@ export const authOptions: AuthOptions = {
         console.log("JWT Callback: Account, User, or Profile missing (app_users context).");
       }
 
+      // Mint a Supabase-compatible JWT so the browser can talk to Supabase Realtime / RLS as this user.
+      // Refreshes whenever the NextAuth jwt callback runs (initial login + session refresh).
+      if (token.userId && !token.error) {
+        try {
+          const supabaseToken = signSupabaseJwt(token.userId as string);
+          if (supabaseToken) {
+            token.supabaseAccessToken = supabaseToken;
+          }
+        } catch (e: any) {
+          console.error("JWT Callback: Failed to sign Supabase JWT:", e.message);
+        }
+      }
+
       console.log("JWT Callback: Returning token (app_users context):", JSON.stringify(token, null, 2));
       return token;
     },
@@ -275,6 +289,9 @@ export const authOptions: AuthOptions = {
       }
       if (token.role) {
         session.user.role = token.role as string; // Add role to session
+      }
+      if (token.supabaseAccessToken) {
+        session.supabaseAccessToken = token.supabaseAccessToken as string;
       }
 
       if (token.error) {

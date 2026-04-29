@@ -167,3 +167,79 @@ export async function sendPasswordResetEmail({ to, resetToken }: SendPasswordRes
     throw new Error(`メール送信に失敗しました: ${error.message}`);
   }
 }
+
+interface SendMeetupVerificationEmailParams {
+  to: string;
+  verifyToken: string;
+}
+
+export async function sendMeetupVerificationEmail({ to, verifyToken }: SendMeetupVerificationEmailParams) {
+  if (!process.env.RESEND_API_KEY) {
+    throw new Error('メール送信の設定が完了していません。');
+  }
+  if (!process.env.NEXT_PUBLIC_APP_URL) {
+    throw new Error('アプリケーションURLが設定されていません。');
+  }
+
+  const verifyUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/meetup/verify-email?token=${verifyToken}`;
+  const fromEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
+  const fromName = process.env.RESEND_FROM_NAME || 'トクドク';
+
+  const { data, error } = await resend.emails.send({
+    from: `${fromName} <${fromEmail}>`,
+    to: [to],
+    subject: '【トクドク】待ち合わせ機能のメール確認',
+    html: `
+      <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #F4F5F2;">
+        <div style="background-color: white; border-radius: 16px; padding: 40px; box-shadow: 0 4px 12px rgba(110,127,128,0.12);">
+          <div style="text-align: center; margin-bottom: 24px;">
+            <h1 style="color: #2D3436; margin: 0; font-size: 22px; font-weight: 600;">メールアドレスの確認</h1>
+            <div style="width: 48px; height: 4px; background: linear-gradient(90deg, #E2C275, transparent); border-radius: 2px; margin: 12px auto 0;"></div>
+          </div>
+
+          <p style="color: #2D3436; font-size: 15px; line-height: 1.7; margin-bottom: 16px;">
+            トクドクの<strong>待ち合わせ機能</strong>を安心してお使いいただくため、メールアドレスのご確認をお願いします。
+          </p>
+          <p style="color: #636E72; font-size: 14px; line-height: 1.7; margin-bottom: 24px;">
+            確認すると Verified バッジが付き、ホストルームへの参加など一部機能が解禁されます。
+          </p>
+
+          <div style="text-align: center; margin: 28px 0;">
+            <a href="${verifyUrl}"
+               style="background-color: #BFA3D1; color: white; padding: 14px 32px; text-decoration: none; border-radius: 12px; display: inline-block; font-weight: 600; font-size: 15px;">
+              メールアドレスを確認する
+            </a>
+          </div>
+
+          <div style="background-color: #FFF8E1; border: 1px solid #E2C275; border-radius: 8px; padding: 14px; margin: 20px 0;">
+            <p style="color: #8B6F1A; font-size: 13px; margin: 0;">
+              ⏰ このリンクは <strong>24 時間</strong> で期限切れになります。
+            </p>
+          </div>
+
+          <div style="border-top: 1px dashed #C2B8A3; padding-top: 20px; margin-top: 28px;">
+            <p style="color: #95A5A6; font-size: 12px; line-height: 1.6;">
+              ボタンが機能しない場合は、以下の URL をブラウザに貼り付けてください：
+            </p>
+            <p style="word-break: break-all; color: #9B7FB5; font-size: 11px; background-color: #F4F5F2; padding: 10px; border-radius: 6px; font-family: 'Courier New', monospace;">
+              ${verifyUrl}
+            </p>
+          </div>
+
+          <p style="color: #95A5A6; font-size: 11px; text-align: center; margin: 20px 0 0;">
+            心当たりがない場合は、このメールを無視してください。<br>
+            © ${new Date().getFullYear()} トクドク
+          </p>
+        </div>
+      </div>
+    `,
+  });
+
+  if (error) {
+    throw new Error(`メール送信エラー: ${error.message}`);
+  }
+  if (!data) {
+    throw new Error('メール送信レスポンスが空でした。');
+  }
+  return { success: true, messageId: data.id };
+}
