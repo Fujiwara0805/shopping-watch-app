@@ -61,10 +61,6 @@ const CustomModal = React.forwardRef<
       };
     }, [isOpen, onClose]);
 
-    // Generate unique IDs for title and description for aria attributes
-    const titleId = React.useId();
-    const descriptionId = React.useId();
-
     return (
       <DialogPrimitive.Root open={isOpen} onOpenChange={handleOpenChange}>
         <AnimatePresence>
@@ -86,8 +82,6 @@ const CustomModal = React.forwardRef<
               </DialogPrimitive.Overlay>
               <DialogPrimitive.Content
                 onEscapeKeyDown={onClose} // Radix UIのEscapeキー処理
-                aria-labelledby={titleId} // Set aria-labelledby
-                aria-describedby={description ? descriptionId : undefined} // Set aria-describedby only if description exists
                 className={cn(
                   "fixed inset-0 z-50 flex items-center justify-center p-4", // 中央配置コンテナ
                   dialogContentClassName
@@ -110,11 +104,11 @@ const CustomModal = React.forwardRef<
                 >
                   <div className="flex items-start justify-between px-6 py-5 border-b border-border rounded-t-xl">
                     <div className="space-y-1.5">
-                      <DialogPrimitive.Title id={titleId} className="text-xl font-semibold text-foreground">
+                      <DialogPrimitive.Title className="text-xl font-semibold text-foreground">
                         {title}
                       </DialogPrimitive.Title>
                       {description && (
-                        <DialogPrimitive.Description id={descriptionId} className="text-sm text-muted-foreground">
+                        <DialogPrimitive.Description className="text-sm text-muted-foreground">
                           {description}
                         </DialogPrimitive.Description>
                       )}
