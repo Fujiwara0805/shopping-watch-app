@@ -2,6 +2,13 @@ import './globals.css';
 import type { Metadata, Viewport } from 'next';
 import { Noto_Sans_JP } from 'next/font/google';
 import { RootLayoutClient } from './layout-client';
+import {
+  SITE_ICON_32,
+  SITE_ICON_180,
+  SITE_ICON_192,
+  SITE_ICON_512,
+  SITE_OG_IMAGE,
+} from '@/lib/constants/site-assets';
 
 /**
  * ========================================
@@ -35,7 +42,6 @@ const SITE_NAME = 'TALE';
 const SITE_TITLE = '各地域イベント・お祭り・マルシェの情報を探すならTALE';
 const SITE_URL = 'https://tokudoku.com';
 const SITE_DESCRIPTION = '各地域のイベント、お祭り、マルシェの情報を探すなら。いつもの街に、まだ知らない景色がある。地域のお祭り、マルシェ、ワークショップを地図から発見。気になる場所をまとめて、あなただけのオリジナルマップに。あなたの街をもっと好きになる——完全無料の地域情報サイト。';
-const OG_IMAGE = 'https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png';
 
 // SEO用キーワード（各地域対応 + 大分県全18市町村 + イベントカテゴリ）
 const SEO_KEYWORDS = [
@@ -112,11 +118,10 @@ export const metadata: Metadata = {
     description: SITE_DESCRIPTION,
     images: [
       {
-        url: OG_IMAGE,
+        url: SITE_OG_IMAGE,
         width: 1200,
         height: 630,
         alt: SITE_TITLE,
-        type: 'image/png',
       },
     ],
   },
@@ -126,7 +131,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: SITE_TITLE,
     description: SITE_DESCRIPTION,
-    images: [OG_IMAGE],
+    images: [SITE_OG_IMAGE],
     creator: '@tokudoku',
     site: '@tokudoku',
   },
@@ -134,13 +139,13 @@ export const metadata: Metadata = {
   // アイコン設定
   icons: {
     icon: [
-      { url: OG_IMAGE, sizes: '32x32', type: 'image/png' },
-      { url: OG_IMAGE, sizes: '192x192', type: 'image/png' },
+      { url: SITE_ICON_32, sizes: '32x32', type: 'image/png' },
+      { url: SITE_ICON_192, sizes: '192x192', type: 'image/png' },
     ],
     apple: [
-      { url: OG_IMAGE, sizes: '180x180', type: 'image/png' },
+      { url: SITE_ICON_180, sizes: '180x180', type: 'image/png' },
     ],
-    shortcut: OG_IMAGE,
+    shortcut: SITE_ICON_32,
   },
   
   // マニフェスト
@@ -228,7 +233,7 @@ export default function RootLayout({
                   url: SITE_URL,
                   logo: {
                     '@type': 'ImageObject',
-                    url: OG_IMAGE,
+                    url: SITE_ICON_512,
                     width: 512,
                     height: 512,
                   },

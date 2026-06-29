@@ -11,6 +11,7 @@ import {
   cityToSlug,
   toISODateString 
 } from '@/lib/seo/utils';
+import { SITE_OG_IMAGE } from '@/lib/constants/site-assets';
 
 interface EventStructuredDataEnhancedProps {
   event: SEOEventData;
@@ -45,7 +46,7 @@ function generateEventStructuredData(event: SEOEventData): EventJsonLd {
   
   // デフォルト画像を追加
   if (images.length === 0) {
-    images = ['https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png'];
+    images = [SITE_OG_IMAGE];
   }
   
   // 日付の処理
@@ -352,4 +353,3 @@ export function AreaStructuredData({
 }
 
 export default EventStructuredDataEnhanced;
-

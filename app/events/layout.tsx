@@ -1,4 +1,5 @@
 import { Metadata } from 'next';
+import { SITE_OG_IMAGE } from '@/lib/constants/site-assets';
 
 export const metadata: Metadata = {
   title: '大分のイベント情報【今日・今週末】お祭り・マルシェ一覧 | TALE',
@@ -13,7 +14,7 @@ export const metadata: Metadata = {
     url: 'https://tokudoku.com/events',
     images: [
       {
-        url: 'https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png',
+        url: SITE_OG_IMAGE,
         width: 1200,
         height: 630,
         alt: 'TALE - 大分県のイベント情報',
@@ -24,7 +25,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: '大分のイベント情報【今日・今週末】お祭り・マルシェ一覧',
     description: '大分県内で今日・今週末に開催されるイベント一覧。お祭り、マルシェ、ワークショップを探そう。',
-    images: ['https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png'],
+    images: [SITE_OG_IMAGE],
     site: '@tokudoku',
     creator: '@tokudoku',
   },

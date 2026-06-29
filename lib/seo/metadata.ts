@@ -13,6 +13,7 @@ import {
   generateOgImageUrl,
   cityToSlug,
 } from './utils';
+import { SITE_OG_IMAGE } from '@/lib/constants/site-assets';
 
 /**
  * イベント詳細ページのメタデータを生成
@@ -24,7 +25,7 @@ export function generateEventMetadata(event: SEOEventData): Metadata {
   const citySlug = cityToSlug(city || '大分市');
   
   // 画像URLの処理
-  let imageUrl = 'https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png';
+  let imageUrl = SITE_OG_IMAGE;
   if (event.image_urls) {
     try {
       const images = typeof event.image_urls === 'string'
@@ -179,7 +180,7 @@ export function generateAreaMetadata(params: {
       locale: 'ja_JP',
       images: [
         {
-          url: 'https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png',
+          url: SITE_OG_IMAGE,
           width: 1200,
           height: 630,
           alt: `${locationName}のイベント情報`,
@@ -191,7 +192,7 @@ export function generateAreaMetadata(params: {
       card: 'summary_large_image',
       title,
       description,
-      images: ['https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png'],
+      images: [SITE_OG_IMAGE],
     },
     
     alternates: {
@@ -268,7 +269,7 @@ export function generateEventsListMetadata(params?: {
       locale: 'ja_JP',
       images: [
         {
-          url: 'https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png',
+          url: SITE_OG_IMAGE,
           width: 1200,
           height: 630,
           alt: 'TALE - 各地域のイベント一覧',
@@ -280,7 +281,7 @@ export function generateEventsListMetadata(params?: {
       card: 'summary_large_image',
       title,
       description,
-      images: ['https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png'],
+      images: [SITE_OG_IMAGE],
     },
     
     robots: {
@@ -309,7 +310,7 @@ export function generateExpiredEventMetadata(eventName: string): Metadata {
       locale: 'ja_JP',
       images: [
         {
-          url: 'https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png',
+          url: SITE_OG_IMAGE,
           width: 1200,
           height: 630,
           alt: `${eventName}（終了） - TALE`,
@@ -336,4 +337,3 @@ export function generateNotFoundMetadata(): Metadata {
     },
   };
 }
-

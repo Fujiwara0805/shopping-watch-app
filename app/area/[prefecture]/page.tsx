@@ -4,6 +4,7 @@ import { isEventNotEnded } from '@/lib/seo/utils';
 import { AreaStructuredData, EventListStructuredData } from '@/components/seo/event-structured-data';
 import { PrefectureEventListClient } from '@/components/seo/prefecture-event-list';
 import { SEOEventData } from '@/lib/seo/types';
+import { SITE_OG_IMAGE } from '@/lib/constants/site-assets';
 
 /** 1時間ごとにISR再生成し、終了イベントを除外 */
 export const revalidate = 3600;
@@ -89,7 +90,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       url: `https://tokudoku.com/area/${encodeURIComponent(prefecture)}`,
       images: [
         {
-          url: 'https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png',
+          url: SITE_OG_IMAGE,
           width: 1200,
           height: 630,
           alt: `${prefecture}のイベント情報`,
@@ -100,7 +101,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       card: 'summary_large_image',
       title: `${prefecture}のイベント情報`,
       description: `${prefecture}で開催されるお祭り、マルシェ、ワークショップ情報`,
-      images: ['https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png'],
+      images: [SITE_OG_IMAGE],
     },
     alternates: {
       canonical: `https://tokudoku.com/area/${encodeURIComponent(prefecture)}`,

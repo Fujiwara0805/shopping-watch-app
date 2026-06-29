@@ -15,6 +15,7 @@ import { trackEvent } from '@/lib/services/analytics';
 import { useFeedback } from '@/lib/contexts/feedback-context';
 import { FeedbackModal } from '@/components/feedback/feedback-modal';
 import { supabase } from '@/lib/supabaseClient';
+import { SITE_ICON_64 } from '@/lib/constants/site-assets';
 
 // ===================================================================
 // TYPE DEFINITIONS
@@ -1434,7 +1435,7 @@ const Footer = () => (
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <img
-            src="https://res.cloudinary.com/dz9trbwma/image/upload/f_auto,q_auto/v1749032362/icon_n7nsgl.png"
+            src={SITE_ICON_64}
             alt="TALE"
             className="h-8 w-8"
           />

@@ -4,6 +4,7 @@ import { cityToSlug } from '@/lib/seo/utils';
 import Link from 'next/link';
 import Image from 'next/image';
 import { OITA_LOCATIONS } from '@/lib/constants';
+import { SITE_OG_IMAGE } from '@/lib/constants/site-assets';
 
 export const metadata: Metadata = {
   title: '大分県の今日のイベント | 本日開催中のお祭り・マルシェ情報 | TALE',
@@ -18,7 +19,7 @@ export const metadata: Metadata = {
     url: 'https://tokudoku.com/events/today',
     images: [
       {
-        url: 'https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png',
+        url: SITE_OG_IMAGE,
         width: 1200,
         height: 630,
         alt: 'TALE - 今日のイベント',
@@ -29,7 +30,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: '大分県の今日のイベント | 本日開催中',
     description: '大分県内で今日開催されているイベント情報。今すぐ参加できるお祭り・マルシェを探そう。',
-    images: ['https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png'],
+    images: [SITE_OG_IMAGE],
     site: '@tokudoku',
     creator: '@tokudoku',
   },

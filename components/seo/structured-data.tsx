@@ -5,6 +5,7 @@
  */
 
 import Script from 'next/script';
+import { SITE_ICON_512 } from '@/lib/constants/site-assets';
 
 interface WebsiteStructuredDataProps {
   url?: string;
@@ -26,7 +27,7 @@ export function WebsiteStructuredData({ url = 'https://tokudoku.com' }: WebsiteS
         url: url,
         logo: {
           '@type': 'ImageObject',
-          url: 'https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png',
+          url: SITE_ICON_512,
           width: 512,
           height: 512,
         },
@@ -333,7 +334,7 @@ export function LocalBusinessStructuredData() {
     '@id': 'https://tokudoku.com/#localbusiness',
     name: 'TALE',
     alternateName: 'トクドク',
-    image: 'https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png',
+    image: SITE_ICON_512,
     description: 'TALE（旧トクドク）は、各地域のイベント、お祭り、マルシェの情報を地図で発見できる完全無料の地域密着イベントサイトです。現在地から近いイベントをかんたん検索。週末の予定探しに最適。大分県をはじめ各地域の最新イベント情報をリアルタイムでチェックできます。',
     url: 'https://tokudoku.com',
     telephone: '',
@@ -363,4 +364,3 @@ export function LocalBusinessStructuredData() {
     />
   );
 }
-

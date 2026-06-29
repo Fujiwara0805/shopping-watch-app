@@ -3,6 +3,8 @@
  * URL生成、スラッグ変換、メタデータ生成のヘルパー関数
  */
 
+import { SITE_OG_IMAGE } from '@/lib/constants/site-assets';
+
 // 大分県の市町村マッピング（日本語 → ローマ字）
 export const OITA_CITIES: Record<string, string> = {
   '大分市': 'oita',
@@ -272,7 +274,7 @@ export function generateOgImageUrl(params: {
   }
   
   // デフォルトのOG画像
-  return 'https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png';
+  return SITE_OG_IMAGE;
 }
 
 /**
@@ -324,4 +326,3 @@ export function isEventNotEnded(
   }
   return true;
 }
-
