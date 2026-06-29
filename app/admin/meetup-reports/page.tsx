@@ -8,7 +8,7 @@ import { ShieldAlert } from 'lucide-react';
 export const dynamic = 'force-dynamic';
 
 export const metadata = {
-  title: '待ち合わせ通報管理 | トクドク Admin',
+  title: '待ち合わせ通報管理 | TALE Admin',
   robots: { index: false, follow: false },
 };
 

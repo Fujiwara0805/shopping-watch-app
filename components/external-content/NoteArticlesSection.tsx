@@ -3,71 +3,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, useInView } from 'framer-motion';
 import { ExternalLink, BookOpen, ChevronRight, ArrowUpRight, Calendar } from 'lucide-react';
-
-// ===================================================================
-// DESIGN SYSTEM: "Oita Organic Elegance"
-// 大分の自然と伝統を表現する洗練されたカラーパレット
-// ===================================================================
-
-const designTokens = {
-  colors: {
-    // メインカラー
-    primary: {
-      base: '#6E7F80',      // スモークブルー
-      dark: '#5A6B6C',
-      light: '#8A9A9B',
-      contrast: '#FFFFFF',
-    },
-    // サブカラー
-    secondary: {
-      fern: '#8A9A5B',       // フェルン・オリーブグリーン
-      fernLight: '#A4B47A',
-      fernDark: '#6F7D48',
-      stone: '#C2B8A3',      // ストーンベージュ
-      stoneLight: '#D4CCBA',
-      stoneDark: '#A89E8A',
-    },
-    // アクセントカラー
-    accent: {
-      lilac: '#BFA3D1',      // マジック・ライラック
-      lilacLight: '#D4C2E3',
-      lilacDark: '#9B7FB5',
-      gold: '#E2C275',       // ゴールドダスト
-      goldLight: '#EDD49A',
-      goldDark: '#C9A85C',
-    },
-    // 背景色
-    background: {
-      mist: '#F4F5F2',       // ミストホワイト
-      cloud: '#E6E9E5',      // クラウドグレー
-      white: '#FFFFFF',
-    },
-    // テキスト色
-    text: {
-      primary: '#2D3436',
-      secondary: '#636E72',
-      muted: '#95A5A6',
-      inverse: '#FFFFFF',
-    },
-    // 機能色
-    functional: {
-      error: '#E74C3C',
-      success: '#27AE60',
-      warning: '#F39C12',
-      info: '#3498DB',
-    },
-  },
-  typography: {
-    display: "'Sora', 'Noto Sans JP', sans-serif",
-    body: "'IBM Plex Sans JP', 'Noto Sans JP', sans-serif",
-  },
-  elevation: {
-    subtle: '0 1px 3px rgba(110, 127, 128, 0.08)',
-    low: '0 2px 8px rgba(110, 127, 128, 0.10)',
-    medium: '0 4px 16px rgba(110, 127, 128, 0.12)',
-    high: '0 8px 32px rgba(110, 127, 128, 0.15)',
-  },
-};
+// DESIGN SYSTEM "Oita Organic Elegance" は共有トークンを正とする（重複定義を排除）
+import { designTokens } from '@/lib/constants/colors';
 
 // ===================================================================
 // TYPES

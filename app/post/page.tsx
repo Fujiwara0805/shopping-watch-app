@@ -53,7 +53,6 @@ const createPostSchema = (category: PostCategory) => {
     phoneNumber: z.string().max(15).optional(),
     prefecture: z.string().max(20).optional(),
     city: z.string().max(50).optional(),
-    enableCheckin: z.boolean().default(false),
     collaboration: z.string().max(200).optional(),
   };
 
@@ -118,10 +117,10 @@ const calculateEventExpiryDays = (startDate: string, endDate?: string): number =
 // カテゴリーごとの表示項目
 const getCategoryFields = (category: PostCategory): string[] => {
   if (category === 'イベント情報') {
-    return ['location', 'eventName', 'eventDate', 'eventPrice', 'eventArea', 'url', 'image', 'phoneNumber', 'file', 'enableCheckin'];
+    return ['location', 'eventName', 'eventDate', 'eventPrice', 'eventArea', 'url', 'image', 'phoneNumber', 'file', 'targetTags'];
   }
   // 聖地巡礼、観光スポット、温泉、グルメ
-  return ['location', 'eventArea', 'url', 'image', 'phoneNumber', 'enableCheckin', 'collaboration'];
+  return ['location', 'eventArea', 'url', 'image', 'phoneNumber', 'targetTags', 'collaboration'];
 };
 
 // フィールドの表示名とアイコン
@@ -136,7 +135,7 @@ const getFieldDisplayInfo = (field: string) => {
     eventDate: { label: '開催期日', icon: CalendarDays },
     eventPrice: { label: '料金', icon: Tag },
     eventArea: { label: 'エリア情報', icon: MapPin },
-    enableCheckin: { label: 'GPSチェックイン', icon: MapPin },
+    targetTags: { label: '対象者タグ', icon: Users },
     collaboration: { label: 'コラボ', icon: Users },
   };
   
@@ -208,7 +207,6 @@ export default function PostPage() {
       eventPrice: '',
       prefecture: '',
       city: '',
-      enableCheckin: false,
       collaboration: '',
     },
     mode: 'onChange',
@@ -232,7 +230,6 @@ export default function PostPage() {
       phoneNumber: '',
       prefecture: '',
       city: '',
-      enableCheckin: false,
       collaboration: '',
     };
 
@@ -443,7 +440,6 @@ export default function PostPage() {
         prefecture: values.prefecture && values.prefecture.trim() !== '' ? values.prefecture : null,
         city: values.city && values.city.trim() !== '' ? values.city : null,
         authorRole: session?.user?.role === 'admin' ? 'admin' : 'user',
-        enableCheckin: values.enableCheckin || false,
         collaboration: selectedCategory !== 'イベント情報' && values.collaboration ? values.collaboration.trim() : null,
         storeLatitude: storeLatitude !== undefined && !isNaN(storeLatitude) ? Number(storeLatitude) : undefined,
         storeLongitude: storeLongitude !== undefined && !isNaN(storeLongitude) ? Number(storeLongitude) : undefined,
@@ -477,7 +473,6 @@ export default function PostPage() {
         phoneNumber: '',
         prefecture: '',
         city: '',
-        enableCheckin: false,
         collaboration: '',
       };
 
@@ -693,7 +688,7 @@ export default function PostPage() {
     eventDate: false,
     eventPrice: false,
     eventArea: false,
-    enableCheckin: false,
+    targetTags: false,
     collaboration: false,
   });
 
@@ -742,8 +737,10 @@ export default function PostPage() {
             form.setValue('prefecture', '', { shouldValidate: true });
             form.setValue('city', '', { shouldValidate: true });
             break;
-          case 'enableCheckin':
-            form.setValue('enableCheckin', false, { shouldValidate: true });
+          case 'targetTags':
+            setSelectedTags([]);
+            setSelectedTagActivities({});
+            setExpandedActivityTags({});
             break;
           case 'collaboration':
             form.setValue('collaboration', '', { shouldValidate: true });
@@ -1341,39 +1338,8 @@ export default function PostPage() {
                                     </div>
                               )}
 
-                              {/* チェックイン対象フラグ */}
-                              {field === 'enableCheckin' && (
-                                <>
-                                <FormField
-                                  control={form.control}
-                                  name="enableCheckin"
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <div className="p-4 bg-gradient-to-r from-background to-muted rounded-lg border-2 border-primary/20">
-                                        <div className="flex items-start space-x-3">
-                                          <input
-                                            type="checkbox"
-                                            id="enable-checkin"
-                                            checked={field.value}
-                                            onChange={(e) => field.onChange(e.target.checked)}
-                                            className="mt-1 h-5 w-5 rounded border-input text-primary focus:ring-primary"
-                                          />
-                                          <div className="flex-1">
-                                            <Label htmlFor="enable-checkin" className="cursor-pointer text-base font-semibold text-primary">
-                                              📍 GPSチェックイン対象にする
-                                            </Label>
-                                            <p className="text-sm text-muted-foreground mt-1">
-                                              有効にすると、ユーザーが現地でGPSチェックインできるようになります。（500m以内）
-                                            </p>
-                                          </div>
-                                        </div>
-                                      </div>
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
-
-                                {/* 対象者タグ */}
+                              {/* 対象者タグ */}
+                              {field === 'targetTags' && (
                                 <div className="mt-4">
                                   <div className="p-4 bg-gradient-to-r from-background to-muted rounded-lg border-2 border-primary/20">
                                     <Label className="text-base font-semibold text-primary flex items-center gap-2 mb-3">
@@ -1500,7 +1466,6 @@ export default function PostPage() {
                                     )}
                                   </div>
                                 </div>
-                                </>
                               )}
 
                               {/* コラボフィールド（新規カテゴリーのみ） */}

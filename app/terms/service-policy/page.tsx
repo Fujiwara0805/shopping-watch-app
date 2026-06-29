@@ -29,7 +29,7 @@ export default function ServicePolicyPage() {
               </h2>
               <div className="space-y-3">
                 <p className="text-base leading-7">
-                  <span className="font-bold text-gray-900">トクドク</span>は、ユーザー同士でお得な商品情報をリアルタイムで共有するコミュニティプラットフォームです。近所のスーパーマーケットやドラッグストア等の特売情報、タイムセール情報を写真付きで投稿・共有し、お得な買い物をサポートします。
+                  <span className="font-bold text-gray-900">TALE</span>は、ユーザー同士でお得な商品情報をリアルタイムで共有するコミュニティプラットフォームです。近所のスーパーマーケットやドラッグストア等の特売情報、タイムセール情報を写真付きで投稿・共有し、お得な買い物をサポートします。
                 </p>
                 <p className="text-base leading-7">
                   また、グループ共有機能により、家族や友人間でのTODOリスト共有も可能です。

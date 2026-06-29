@@ -54,7 +54,7 @@ export default function TermsGatewayPage() {
               規約・ポリシー
             </CardTitle>
             <p className="text-muted-foreground pt-2">
-              トクドクを安全にご利用いただくための各種規約です。
+              TALEを安全にご利用いただくための各種規約です。
             </p>
           </CardHeader>
           <CardContent className="space-y-4">

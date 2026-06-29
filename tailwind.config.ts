@@ -14,10 +14,17 @@ const config: Config = {
         'gradient-conic':
           'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
       },
+      /* DESIGN.md §5: border-radius は一律 0（全 rounded-* ユーティリティを直角化） */
       borderRadius: {
-        lg: 'var(--radius)',
-        md: 'calc(var(--radius) - 2px)',
-        sm: 'calc(var(--radius) - 4px)',
+        none: '0',
+        sm: '0',
+        DEFAULT: '0',
+        md: '0',
+        lg: '0',
+        xl: '0',
+        '2xl': '0',
+        '3xl': '0',
+        full: '0',
       },
       colors: {
         background: 'hsl(var(--background))',
@@ -62,6 +69,21 @@ const config: Config = {
         },
         'line-green': '#00C300',
         'line-dark-green': '#00B000',
+        /* DESIGN.md §2: KURKKU カテゴリカラーシステム（色＝ナビゲーション） */
+        category: {
+          information: '#829a2a',
+          eat: '#eeb200',
+          people: '#949490',
+          experience: '#89b2c9',
+          art: '#dc8f74',
+          event: '#4082ab',
+          sustainability: '#5f9133',
+          farm: '#9eaf19',
+          stay: '#a8aaa9',
+          other: '#dcdedd',
+        },
+        highlight: '#ffff00',
+        'nav-bg': '#eff4f8',
       },
       keyframes: {
         'accordion-down': {
@@ -80,25 +102,10 @@ const config: Config = {
             height: '0',
           },
         },
-        'mesh-orb-1': {
-          '0%, 100%': { transform: 'translate(0, 0) scale(1)' },
-          '50%': { transform: 'translate(40px, -30px) scale(1.15)' },
-        },
-        'mesh-orb-2': {
-          '0%, 100%': { transform: 'translate(0, 0) scale(1.1)' },
-          '50%': { transform: 'translate(-50px, 40px) scale(1)' },
-        },
-        'mesh-orb-3': {
-          '0%, 100%': { transform: 'translate(0, 0)' },
-          '50%': { transform: 'translate(30px, 50px)' },
-        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
-        'mesh-orb-1': 'mesh-orb-1 25s ease-in-out infinite',
-        'mesh-orb-2': 'mesh-orb-2 30s ease-in-out infinite',
-        'mesh-orb-3': 'mesh-orb-3 22s ease-in-out infinite',
       },
     },
   },

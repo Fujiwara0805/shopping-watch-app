@@ -92,7 +92,7 @@ export default function ContactPage() {
   const faqItems = [
     {
       q: 'アプリのアイコンやロゴは何を表していますか？',
-      a: 'トクドクのアイコンは伝書鳩です。伝書鳩が「情報を届ける」という意味を込めています。「おとく地図」画面では、ユーザーの現在地を表しています。また、画面左上のアイコンをクリックするとタイムライン画面に戻ります。困った時はアイコンをタップしてください。'
+      a: 'TALEのアイコンは伝書鳩です。伝書鳩が「情報を届ける」という意味を込めています。「おとく地図」画面では、ユーザーの現在地を表しています。また、画面左上のアイコンをクリックするとタイムライン画面に戻ります。困った時はアイコンをタップしてください。'
     },
     {
       q: '投稿の中で見る顔アイコンは何ですか？',
@@ -294,7 +294,7 @@ export default function ContactPage() {
               className="mt-8 pt-6 border-t border-border text-center text-base sm:text-lg text-muted-foreground bg-green-50/50 p-4 rounded-lg"
             >
               <h3 className="font-semibold text-foreground mb-2 text-xl sm:text-2xl">運営情報</h3>
-              <p className="text-base sm:text-lg">トクドク開発チーム</p>
+              <p className="text-base sm:text-lg">TALE開発チーム</p>
               <p className="mt-4 text-sm sm:text-base">
                 お問い合わせへの返信は、通常3~5営業日以内に行います。<br/>
                 (個人開発のため時間を要してしまいます。大変申し訳ございません)<br/>

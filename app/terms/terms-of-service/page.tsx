@@ -31,7 +31,7 @@ export default function TermsOfServicePage() {
                 <div className="flex items-start space-x-3">
                   <span className="flex-shrink-0 w-6 h-6 bg-blue-100 text-blue-800 rounded-full flex items-center justify-center text-xs font-bold">1</span>
                   <p className="text-base leading-7">
-                    本規約は、<span className="font-bold">トクドク開発チーム</span>（以下「当社」）が提供するサービス「<span className="font-bold">トクドク</span>」（以下「本サービス」）の利用条件を定めるものです。
+                    本規約は、<span className="font-bold">TALE開発チーム</span>（以下「当社」）が提供するサービス「<span className="font-bold">TALE</span>」（以下「本サービス」、旧称「トクドク」）の利用条件を定めるものです。
                   </p>
                 </div>
                 <div className="flex items-start space-x-3">

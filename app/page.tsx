@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MapPin, Menu, X, ChevronRight, Calendar, LogOut, Compass, ExternalLink, Sparkles, MessageSquare, Home as HomeIcon, BookOpen, Gift, Trophy, Footprints, Award, Quote, Heart } from 'lucide-react';
+import { MapPin, Menu, X, ChevronRight, Calendar, LogOut, Compass, ExternalLink, Sparkles, MessageSquare, Home as HomeIcon, BookOpen, Footprints, Quote, Heart } from 'lucide-react';
 import { generateSemanticEventUrl } from '@/lib/seo/url-helper';
 import { Button } from '@/components/ui/button';
 import { useSession, signOut } from 'next-auth/react';
@@ -142,7 +142,7 @@ const Header = ({ isScrolled, onFeedbackOpen, onMenuOpen }: { isScrolled: boolea
               color: isScrolled ? designTokens.colors.primary.base : '#FFFFFF',
             }}
           >
-            TOKU<span style={{ color: designTokens.colors.accent.gold }}>DOKU</span>
+            TA<span style={{ color: designTokens.colors.accent.gold }}>LE</span>
           </span>
         </a>
         <div className="flex items-center gap-6">
@@ -399,7 +399,7 @@ const HeroSection = ({
               textShadow: '0 2px 16px rgba(0,0,0,0.3)',
             }}
           >
-            大分県内のイベントを探して、
+            あなたの街のイベントを探して、
             <br className="md:hidden" />
             <span className="relative inline-block">
               <span className="relative z-10">地域の魅力と出会う時間へ。</span>
@@ -421,7 +421,7 @@ const HeroSection = ({
               }}
             >
               <span className="text-sm sm:text-base font-medium" style={{ color: designTokens.colors.text.secondary }}>
-                大分のイベントを探す...
+                気になるエリアのイベントを探す...
               </span>
               <ChevronRight className="w-5 h-5 ml-auto flex-shrink-0" style={{ color: designTokens.colors.text.muted }} />
             </button>
@@ -443,7 +443,7 @@ const HeroSection = ({
                       </Label>
                       <Select value={city} onValueChange={setCity}>
                         <SelectTrigger className="h-11 rounded-xl text-sm" style={{ borderColor: `${designTokens.colors.secondary.stone}40` }}>
-                          <SelectValue placeholder="大分県内の市町村" />
+                          <SelectValue placeholder="エリアを選択" />
                         </SelectTrigger>
                         <SelectContent className="rounded-xl">
                           <SelectItem value="all">すべてのエリア</SelectItem>
@@ -522,9 +522,9 @@ const HeroSection = ({
 // ===================================================================
 
 const announcements: Announcement[] = [
-  { date: '2026.03.24', title: 'スタンプラリー機能（β版）を追加しました。イベントにGPSチェックイン機能を搭載しました。' },
-  { date: '2026.03.06', title: 'トクドクがリニューアルしました! イベント検索がより便利に。' },
-  { date: '2026.03.01', title: '大分県内のイベント情報を随時更新中です。' },
+  { date: '2026.06.29', title: 'サービス名を「トクドク」から「TALE」へ変更しました。URL・機能・データはそのままご利用いただけます。' },
+  { date: '2026.03.06', title: 'TALE（旧トクドク）がリニューアルしました! イベント検索がより便利に。' },
+  { date: '2026.03.01', title: '地域のイベント情報を随時更新中です。' },
 ];
 
 const AnnouncementSection = () => {
@@ -816,7 +816,7 @@ const ChallengesSection = () => {
       style={{ background: designTokens.colors.background.mist }}
     >
       <div className="container mx-auto max-w-6xl">
-        <AppSectionHeader label="Challenges" title="大分のイベント情報、もっと届けたい" />
+        <AppSectionHeader label="Challenges" title="地域のイベント情報、もっと届けたい" />
 
         <p
           className="text-base sm:text-lg mb-10 max-w-2xl leading-relaxed"
@@ -882,14 +882,6 @@ const ChallengesSection = () => {
 const SolutionSection = () => {
   const solutions = [
     {
-      label: 'STAMP RALLY',
-      title: 'チェックインでスタンプGET',
-      beta: true,
-      description: 'イベント会場でGPSチェックイン! 9つ集めるとAmazonギフトカードをプレゼント。',
-      iconElement: <Trophy className="w-6 h-6" />,
-      color: designTokens.colors.accent.goldDark,
-    },
-    {
       label: 'MAP',
       title: 'イベントを地図でかんたん検索',
       beta: false,
@@ -901,16 +893,16 @@ const SolutionSection = () => {
       label: 'DISCOVER',
       title: '週末のイベントを見逃さない',
       beta: false,
-      description: '大分県内のイベント情報をリアルタイムで集約。「知らなかった」を「行ってきた!」に変える。',
+      description: '各地域のイベント情報をリアルタイムで集約。「知らなかった」を「行ってきた!」に変える。',
       iconElement: <Sparkles className="w-6 h-6" />,
       color: designTokens.colors.accent.lilac,
     },
     {
-      label: 'REWARD',
-      title: '参加するほどおトクに',
-      beta: true,
-      description: 'スタンプラリーで大分の魅力を巡ろう。β版公開記念のAmazonギフトカード特典を実施中!',
-      iconElement: <Gift className="w-6 h-6" />,
+      label: 'MY MAP',
+      title: '気になる場所をマイマップに',
+      beta: false,
+      description: '行きたいイベントやお店をまとめて、あなただけのオリジナルマップをつくれます。',
+      iconElement: <Heart className="w-6 h-6" />,
       color: designTokens.colors.secondary.fern,
     },
   ];
@@ -927,8 +919,8 @@ const SolutionSection = () => {
           className="text-base sm:text-lg mb-10 max-w-2xl leading-relaxed"
           style={{ fontFamily: designTokens.typography.body, color: designTokens.colors.text.secondary }}
         >
-          大分県18市町村のイベントを地図で探して、現地でチェックイン。
-          スタンプを集めて特典をもらおう。
+          気になるイベントを地図で探して、行きたい場所をあなただけのマップにまとめよう。
+          お祭り・マルシェ・ワークショップとの出会いが、ぐっと近くなる。
         </p>
 
         {/* Mobile: Horizontal scroll, Desktop: 2x2 Grid */}
@@ -1008,7 +1000,7 @@ const StoryJourneySection = () => {
       icon: <MapPin className="w-6 h-6" />,
       title: '地図をひらく',
       subtitle: 'Open the map',
-      body: '大分の街を一枚の地図に。気になるエリアをタップすると、そこで生まれている物語がそっと顔を出します。',
+      body: 'あなたの街を一枚の地図に。気になるエリアをタップすると、そこで生まれている物語がそっと顔を出します。',
       bg: designTokens.colors.accent.lilac,
       tint: designTokens.colors.accent.lilacDark,
     },
@@ -1023,10 +1015,10 @@ const StoryJourneySection = () => {
     },
     {
       number: '03',
-      icon: <Award className="w-6 h-6" />,
-      title: 'スタンプを残す',
-      subtitle: 'Collect a stamp',
-      body: '会場でGPSチェックイン。地図の上に、小さな星が灯ります。訪れた証は、あなたのページにそっと保存。',
+      icon: <Heart className="w-6 h-6" />,
+      title: '地図にためる',
+      subtitle: 'Save to your map',
+      body: '気になったイベントやお店は、ワンタップでマイマップへ。あなただけの「行きたい」が一枚の地図に集まります。',
       bg: designTokens.colors.accent.gold,
       tint: designTokens.colors.accent.goldDark,
     },
@@ -1035,7 +1027,7 @@ const StoryJourneySection = () => {
       icon: <Sparkles className="w-6 h-6" />,
       title: '物語が続く',
       subtitle: 'The story continues',
-      body: 'ひとつの体験が、次の一歩へつながる。大分18市町村、ひとつの県が、ひとつの物語になっていきます。',
+      body: 'ひとつの体験が、次の一歩へつながる。あなたの街が、いくつもの物語になっていきます。',
       bg: designTokens.colors.primary.base,
       tint: designTokens.colors.primary.dark,
     },
@@ -1052,15 +1044,15 @@ const StoryJourneySection = () => {
       <div className="container mx-auto max-w-6xl relative">
         <AppSectionHeader
           label="Story"
-          title={<><span>4つの章でつづる、</span><br className="sm:hidden" /><span>大分との出会いかた</span></>}
+          title={<><span>4つの章でつづる、</span><br className="sm:hidden" /><span>まちとの出会いかた</span></>}
         />
 
         <p
           className="text-base sm:text-lg mb-10 max-w-2xl leading-relaxed"
           style={{ fontFamily: designTokens.typography.body, color: designTokens.colors.text.secondary }}
         >
-          トクドクは、検索アプリでもチケット販売所でもありません。
-          一冊の絵本のように、大分の今日をめくる場所です。
+          TALEは、検索アプリでもチケット販売所でもありません。
+          一冊の絵本のように、あなたの街の今日をめくる場所です。
         </p>
 
         {/* Mobile: snap scroll / Desktop: 4-col grid */}
@@ -1174,235 +1166,6 @@ const StoryJourneySection = () => {
 };
 
 // ===================================================================
-// STAMP RALLY SHOWCASE (3x3 stamp grid)
-// ===================================================================
-
-const STAMP_DATA = [
-  { label: '別府', filled: true, color: designTokens.colors.accent.gold },
-  { label: '由布院', filled: true, color: designTokens.colors.secondary.fern },
-  { label: '大分市', filled: true, color: designTokens.colors.accent.lilac },
-  { label: '臼杵', filled: true, color: designTokens.colors.accent.gold },
-  { label: '中津', filled: false, color: designTokens.colors.secondary.stone },
-  { label: '竹田', filled: true, color: designTokens.colors.secondary.fern },
-  { label: '佐伯', filled: false, color: designTokens.colors.secondary.stone },
-  { label: '日田', filled: true, color: designTokens.colors.accent.lilac },
-  { label: '国東', filled: false, color: designTokens.colors.secondary.stone },
-];
-
-const StampRallyShowcaseSection = () => {
-  const router = useRouter();
-  const filledCount = STAMP_DATA.filter((s) => s.filled).length;
-
-  return (
-    <section
-      className="py-16 sm:py-20 px-5 relative overflow-hidden"
-      style={{
-        background: `linear-gradient(180deg, ${designTokens.colors.background.mist} 0%, ${designTokens.colors.accent.gold}14 100%)`,
-      }}
-    >
-      <div className="container mx-auto max-w-6xl relative">
-        <div className="grid md:grid-cols-2 gap-10 md:gap-16 items-center">
-          {/* Left: copy */}
-          <div>
-            <div className="flex items-center gap-2 mb-4">
-              <span
-                className="text-xs font-bold tracking-[0.25em] uppercase"
-                style={{ color: designTokens.colors.accent.goldDark }}
-              >
-                Stamp Rally
-              </span>
-              <span
-                className="text-[10px] font-bold px-2 py-0.5 rounded-md"
-                style={{
-                  background: `${designTokens.colors.accent.goldDark}18`,
-                  color: designTokens.colors.accent.goldDark,
-                }}
-              >
-                β版
-              </span>
-            </div>
-            <h2
-              className="text-2xl sm:text-3xl md:text-4xl font-bold leading-tight mb-5"
-              style={{
-                fontFamily: designTokens.typography.display,
-                color: designTokens.colors.text.primary,
-              }}
-            >
-              9つのスタンプで、
-              <br />
-              大分を一冊の本にする。
-            </h2>
-            <p
-              className="text-base sm:text-lg leading-relaxed mb-6"
-              style={{ color: designTokens.colors.text.secondary }}
-            >
-              イベント会場でGPSチェックインすると、地図の上にまちのスタンプがそっと押されます。
-              9つ集めたら、β版期間限定で
-              <span className="font-semibold" style={{ color: designTokens.colors.accent.goldDark }}>Amazonギフトカード</span>
-              をプレゼント。
-            </p>
-
-            {/* Progress */}
-            <div className="mb-6">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-semibold" style={{ color: designTokens.colors.text.muted }}>
-                  サンプルの進捗
-                </span>
-                <span className="text-sm font-bold" style={{ color: designTokens.colors.accent.goldDark }}>
-                  {filledCount} / 9
-                </span>
-              </div>
-              <div
-                className="h-2 rounded-full overflow-hidden"
-                style={{ background: `${designTokens.colors.secondary.stone}40` }}
-              >
-                <div
-                  className="h-full rounded-full transition-all duration-1000"
-                  style={{
-                    width: `${(filledCount / 9) * 100}%`,
-                    background: `linear-gradient(90deg, ${designTokens.colors.accent.gold} 0%, ${designTokens.colors.accent.goldDark} 100%)`,
-                  }}
-                />
-              </div>
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-3">
-              <button
-                onClick={() => router.push('/map')}
-                className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-full font-semibold text-sm active:scale-[0.97] transition-transform"
-                style={{
-                  background: designTokens.colors.accent.goldDark,
-                  color: '#FFFFFF',
-                  boxShadow: `0 8px 24px -6px ${designTokens.colors.accent.goldDark}60`,
-                }}
-              >
-                <Trophy className="w-4 h-4" />
-                スタンプ集めをはじめる
-              </button>
-              <button
-                onClick={() => router.push('/events')}
-                className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-full font-semibold text-sm active:scale-[0.97] transition-transform"
-                style={{
-                  background: 'transparent',
-                  color: designTokens.colors.text.primary,
-                  border: `1px solid ${designTokens.colors.secondary.stone}60`,
-                }}
-              >
-                対象イベントを見る
-              </button>
-            </div>
-          </div>
-
-          {/* Right: stamp grid book-page */}
-          <div className="relative">
-            <div
-              className="book-page-edge rounded-[32px] p-6 sm:p-8 relative animate-page-turn-hint"
-              style={{
-                background: designTokens.colors.background.white,
-                border: `1px solid ${designTokens.colors.secondary.stone}30`,
-                transformOrigin: 'left center',
-                perspective: '1200px',
-              }}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <BookOpen className="w-4 h-4" style={{ color: designTokens.colors.text.muted }} />
-                  <span
-                    className="text-xs font-semibold tracking-[0.2em] uppercase"
-                    style={{ color: designTokens.colors.text.muted }}
-                  >
-                    My Stamp Book
-                  </span>
-                </div>
-                <span
-                  className="text-[10px] font-semibold"
-                  style={{ color: designTokens.colors.text.muted }}
-                >
-                  OITA · 2026
-                </span>
-              </div>
-
-              <div className="grid grid-cols-3 gap-3 sm:gap-4">
-                {STAMP_DATA.map((stamp, index) => (
-                  <div
-                    key={stamp.label}
-                    className="aspect-square rounded-2xl flex items-center justify-center relative"
-                    style={{
-                      background: stamp.filled
-                        ? `${stamp.color}12`
-                        : `${designTokens.colors.secondary.stone}15`,
-                      border: `1.5px dashed ${stamp.filled ? stamp.color + '55' : designTokens.colors.secondary.stone + '60'}`,
-                    }}
-                  >
-                    {stamp.filled ? (
-                      <div
-                        className="w-full h-full flex flex-col items-center justify-center gap-1 animate-stamp-pop"
-                        style={{ animationDelay: `${index * 140}ms` }}
-                      >
-                        <div
-                          className="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center"
-                          style={{
-                            background: stamp.color,
-                            color: '#FFFFFF',
-                            boxShadow: `0 4px 12px -3px ${stamp.color}80`,
-                          }}
-                        >
-                          <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
-                        </div>
-                        <span
-                          className="text-[10px] sm:text-xs font-bold"
-                          style={{ color: stamp.color }}
-                        >
-                          {stamp.label}
-                        </span>
-                      </div>
-                    ) : (
-                      <span
-                        className="text-[10px] sm:text-xs font-medium"
-                        style={{ color: designTokens.colors.text.muted, opacity: 0.6 }}
-                      >
-                        {stamp.label}
-                      </span>
-                    )}
-                  </div>
-                ))}
-              </div>
-
-              {/* Reward footer */}
-              <div
-                className="mt-5 pt-4 flex items-center gap-3 border-t border-dashed"
-                style={{ borderColor: `${designTokens.colors.secondary.stone}50` }}
-              >
-                <Gift
-                  className="w-5 h-5 flex-shrink-0"
-                  style={{ color: designTokens.colors.accent.goldDark }}
-                />
-                <p
-                  className="text-xs leading-relaxed"
-                  style={{ color: designTokens.colors.text.secondary }}
-                >
-                  9マス埋めると <span className="font-bold" style={{ color: designTokens.colors.accent.goldDark }}>Amazonギフトカード</span> を自動エントリー
-                </p>
-              </div>
-            </div>
-
-            {/* decorative bookmark */}
-            <div
-              className="absolute -top-2 right-8 w-6 h-14 rounded-b-md animate-gentle-sway"
-              style={{
-                background: `linear-gradient(180deg, ${designTokens.colors.accent.goldDark} 0%, ${designTokens.colors.accent.gold} 100%)`,
-                clipPath: 'polygon(0 0, 100% 0, 100% 100%, 50% 80%, 0 100%)',
-              }}
-              aria-hidden
-            />
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-};
-
-// ===================================================================
 // VOICES SECTION (Storybook testimonial cards)
 // ===================================================================
 
@@ -1452,7 +1215,7 @@ const VoicesSection = () => {
           className="text-base sm:text-lg mb-10 max-w-2xl leading-relaxed"
           style={{ fontFamily: designTokens.typography.body, color: designTokens.colors.text.secondary }}
         >
-          トクドクを使って、大分の日常がどう変わったか。
+          TALEを使って、あなたの街の日常がどう変わったか。
           利用者の方から届いた声を、一冊の本の引用のようにお届けします。
         </p>
 
@@ -1672,17 +1435,17 @@ const Footer = () => (
         <div className="flex items-center gap-3">
           <img
             src="https://res.cloudinary.com/dz9trbwma/image/upload/f_auto,q_auto/v1749032362/icon_n7nsgl.png"
-            alt="TOKUDOKU"
+            alt="TALE"
             className="h-8 w-8"
           />
           <span
             className="font-bold text-base tracking-wider"
             style={{ fontFamily: designTokens.typography.display, color: designTokens.colors.primary.base }}
           >
-            TOKUDOKU
+            TALE
           </span>
           <span className="text-xs hidden sm:inline" style={{ color: designTokens.colors.text.muted }}>
-            大分のイベント情報を、ひとつの場所で。
+            地域のイベント情報を、ひとつの場所で。
           </span>
         </div>
         <div className="flex items-center gap-4">
@@ -1704,7 +1467,7 @@ const Footer = () => (
       </div>
       <div className="text-center mt-6">
         <p className="text-xs" style={{ color: designTokens.colors.text.muted }}>
-          &copy; 2026 TOKUDOKU by Nobody Inc. All rights reserved.
+          &copy; 2026 TALE by Nobody Inc. All rights reserved.
         </p>
       </div>
     </div>

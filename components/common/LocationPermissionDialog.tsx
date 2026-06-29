@@ -17,7 +17,7 @@ export function LocationPermissionDialog({
   isOpen,
   onAllow,
   onDeny,
-  appName = "トクドク",
+  appName = "TALE",
   permissionState
 }: LocationPermissionDialogProps) {
   if (!isOpen) return null;

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { LogOut, Settings, Edit,  Store as StoreIcon, Calendar,  User, ArrowRight, Trophy, Compass, ShoppingBag, Megaphone, Trash2 } from 'lucide-react';
+import { LogOut, Settings, Edit,  Store as StoreIcon, Calendar,  User, ArrowRight, Compass, ShoppingBag, Megaphone, Trash2 } from 'lucide-react';
 
 import { COLORS } from '@/lib/constants/colors';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -13,7 +13,6 @@ import { supabase } from '@/lib/supabaseClient';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/lib/hooks/use-toast';
 import { getHunterLevel } from '@/lib/constants/hunter-levels';
-import { StampBoardModal } from '@/components/stamp-board/stamp-board-modal';
 import { getProfilePageData } from '@/app/_actions/profiles';
 import { Breadcrumb } from '@/components/seo/breadcrumb';
 import {
@@ -149,9 +148,6 @@ function ProfilePageContent() {
   
   // アカウント削除確認ダイアログ
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  
-  // スタンプボードモーダルの管理
-  const [stampBoardOpen, setStampBoardOpen] = useState(false);
 
   // PWA viewport height fix
   const [viewportHeight, setViewportHeight] = useState('100vh');
@@ -434,33 +430,6 @@ function ProfilePageContent() {
             </h3>
             
             <div className="space-y-2">
-              {/* 🎫 スタンプボードボタン */}
-              <motion.div
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="group"
-              >
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start p-3 h-auto rounded-lg border hover:shadow-sm transition-all duration-300"
-                  style={{ borderColor: COLORS.border, backgroundColor: `${COLORS.cream}20` }}
-                  onClick={() => setStampBoardOpen(true)}
-                >
-                  <div className="flex items-center space-x-3 w-full">
-                    <div className="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: COLORS.primary }}>
-                      <Trophy className="h-5 w-5 text-white" />
-                    </div>
-                    <div className="flex-1 text-left min-w-0">
-                      <p className="font-medium text-sm group-hover:translate-x-1 transition-transform duration-200" style={{ color: COLORS.primary }}>
-                        スタンプボード
-                      </p>
-                      <p className="text-xs truncate" style={{ color: COLORS.textSecondary }}>チェックインスタンプを確認</p>
-                    </div>
-                    <ArrowRight className="h-4 w-4 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-200" style={{ color: COLORS.primary }} />
-                  </div>
-                </Button>
-              </motion.div>
-
               {/* 🔥 adminユーザーの場合は投稿ボタンと広告作成ボタンを表示 */}
               {userRole === 'admin' && (
                 <>
@@ -551,12 +520,6 @@ function ProfilePageContent() {
           </Button>
         </motion.div>
       </div>
-
-      {/* スタンプボードモーダル */}
-      <StampBoardModal
-        isOpen={stampBoardOpen}
-        onClose={() => setStampBoardOpen(false)}
-      />
 
       {/* アカウント削除確認ダイアログ */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

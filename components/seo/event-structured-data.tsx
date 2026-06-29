@@ -135,7 +135,7 @@ function generateBreadcrumbStructuredData(event: SEOEventData): BreadcrumbJsonLd
     {
       '@type': 'ListItem' as const,
       position: 1,
-      name: 'トクドク',
+      name: 'TALE',
       item: 'https://tokudoku.com',
     },
     {
@@ -298,7 +298,7 @@ export function AreaStructuredData({
     url,
     isPartOf: {
       '@type': 'WebSite',
-      name: 'トクドク',
+      name: 'TALE',
       url: 'https://tokudoku.com',
     },
     about: {
@@ -317,7 +317,7 @@ export function AreaStructuredData({
         {
           '@type': 'ListItem',
           position: 1,
-          name: 'トクドク',
+          name: 'TALE',
           item: 'https://tokudoku.com',
         },
         {

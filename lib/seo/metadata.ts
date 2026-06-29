@@ -69,16 +69,16 @@ export function generateEventMetadata(event: SEOEventData): Metadata {
     title,
     description,
     keywords: keywords.join(', '),
-    authors: [{ name: 'トクドク' }],
-    creator: 'トクドク',
-    publisher: 'トクドク',
+    authors: [{ name: 'TALE' }],
+    creator: 'TALE',
+    publisher: 'TALE',
     
     openGraph: {
       title,
       description,
       type: 'article',
       url: canonicalUrl,
-      siteName: 'トクドク',
+      siteName: 'TALE',
       locale: 'ja_JP',
       images: [
         {
@@ -139,8 +139,8 @@ export function generateAreaMetadata(params: {
   const locationName = city ? `${prefecture}${city}` : prefecture;
   
   const title = city
-    ? `${city}のイベント情報 - お祭り・マルシェ | トクドク`
-    : `${prefecture}のイベント情報 - お祭り・マルシェ | トクドク`;
+    ? `${city}のイベント情報 - お祭り・マルシェ | TALE`
+    : `${prefecture}のイベント情報 - お祭り・マルシェ | TALE`;
   
   const description = `${locationName}で今日・今週末に開催されるお祭り、マルシェ、ワークショップなどのイベント情報一覧。${eventCount > 0 ? `現在${eventCount}件のイベントが掲載中。` : ''}近日開催のイベントを地図で検索。リアルタイム更新の地域密着イベント情報。`;
   
@@ -157,6 +157,7 @@ export function generateAreaMetadata(params: {
     '地域イベント',
     '週末',
     '予定',
+    'TALE',
     'トクドク',
   ].filter(Boolean);
   
@@ -174,7 +175,7 @@ export function generateAreaMetadata(params: {
       description,
       type: 'website',
       url: canonicalUrl,
-      siteName: 'トクドク',
+      siteName: 'TALE',
       locale: 'ja_JP',
       images: [
         {
@@ -219,8 +220,8 @@ export function generateEventsListMetadata(params?: {
 }): Metadata {
   const { category, city, month } = params || {};
   
-  let title = '大分県のイベント一覧';
-  let description = '大分県内で開催されるお祭り、マルシェ、ワークショップなどのイベント情報を一覧表示。';
+  let title = '各地域のイベント一覧';
+  let description = '各地域のイベント、お祭り、マルシェの情報を探すなら。各地で開催されるお祭り、マルシェ、ワークショップなどのイベント情報を一覧表示。';
   
   if (city) {
     title = `${city}のイベント一覧`;
@@ -237,7 +238,7 @@ export function generateEventsListMetadata(params?: {
     description = `${month}開催の${description}`;
   }
   
-  title += ' | トクドク';
+  title += ' | TALE';
   description += '週末の予定探しに最適。リアルタイム更新の地域密着イベント情報。';
   
   const keywords = [
@@ -250,6 +251,7 @@ export function generateEventsListMetadata(params?: {
     'マルシェ',
     'ワークショップ',
     '地域イベント',
+    'TALE',
     'トクドク',
   ].filter(Boolean);
   
@@ -262,14 +264,14 @@ export function generateEventsListMetadata(params?: {
       title,
       description,
       type: 'website',
-      siteName: 'トクドク',
+      siteName: 'TALE',
       locale: 'ja_JP',
       images: [
         {
           url: 'https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png',
           width: 1200,
           height: 630,
-          alt: 'トクドク - 大分県のイベント一覧',
+          alt: 'TALE - 各地域のイベント一覧',
         },
       ],
     },
@@ -293,8 +295,8 @@ export function generateEventsListMetadata(params?: {
  * SEO: リンクジュース維持のためインデックス対象にし、最新イベントへ誘導
  */
 export function generateExpiredEventMetadata(eventName: string): Metadata {
-  const title = `${eventName}（終了）| 大分のイベント情報 - トクドク`;
-  const description = `「${eventName}」は終了しました。大分県の最新イベント・お祭り・マルシェ情報はトクドクでチェック。今日開催中のイベントも確認できます。`;
+  const title = `${eventName}（終了）| 各地域のイベント情報 - TALE`;
+  const description = `「${eventName}」は終了しました。各地域のイベント、お祭り、マルシェの最新情報はTALEでチェック。今日開催中のイベントも確認できます。`;
 
   return {
     title,
@@ -303,14 +305,14 @@ export function generateExpiredEventMetadata(eventName: string): Metadata {
       title,
       description,
       type: 'article',
-      siteName: 'トクドク',
+      siteName: 'TALE',
       locale: 'ja_JP',
       images: [
         {
           url: 'https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png',
           width: 1200,
           height: 630,
-          alt: `${eventName}（終了） - トクドク`,
+          alt: `${eventName}（終了） - TALE`,
         },
       ],
     },
@@ -326,7 +328,7 @@ export function generateExpiredEventMetadata(eventName: string): Metadata {
  */
 export function generateNotFoundMetadata(): Metadata {
   return {
-    title: 'ページが見つかりません - トクドク',
+    title: 'ページが見つかりません - TALE',
     description: '指定されたページが見つかりませんでした。',
     robots: {
       index: false,

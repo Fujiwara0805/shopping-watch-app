@@ -10,7 +10,6 @@ import { supabase } from '@/lib/supabaseClient';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { useToast } from '@/lib/hooks/use-toast';
-import { isWithinRange } from '@/lib/utils/distance';
 import { generateSemanticEventUrl } from '@/lib/seo/url-helper';
 import { designTokens } from '@/lib/constants';
 import { trackEvent } from '@/lib/services/analytics';
@@ -55,7 +54,6 @@ interface PostMarkerData {
   event_name: string | null;
   event_start_date?: string | null;
   event_end_date?: string | null;
-  enable_checkin?: boolean | null;
   city?: string | null;
   prefecture?: string | null;
   distance?: number | null;
@@ -274,8 +272,6 @@ export function MapView() {
   const hasInitialLoadedRef = useRef(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const selectedCategory: PostCategory = 'イベント情報';
-  const [checkingIn, setCheckingIn] = useState<string | null>(null);
-  const [checkedInPosts, setCheckedInPosts] = useState<Set<string>>(new Set());
   const [navigatingToDetail, setNavigatingToDetail] = useState<string | null>(null);
   const [isCreatingMarkers, setIsCreatingMarkers] = useState(false);
 
@@ -298,39 +294,6 @@ export function MapView() {
       }
     } catch (error) { console.error('位置情報の読み込みに失敗:', error); }
   }, []);
-
-  useEffect(() => {
-    const fetchCheckedInPosts = async () => {
-      if (!session?.user?.id) return;
-      try {
-        const { data, error } = await supabase.from('check_ins').select('post_id').eq('user_id', session.user.id);
-        if (error) throw error;
-        if (data) setCheckedInPosts(new Set(data.map(c => c.post_id)));
-      } catch (error) { console.error('チェックイン取得エラー:', error); }
-    };
-    fetchCheckedInPosts();
-  }, [session?.user?.id]);
-
-  const handleCheckIn = async (post: PostMarkerData) => {
-    const effectiveLatitude = savedLocation?.lat || latitude;
-    const effectiveLongitude = savedLocation?.lng || longitude;
-    if (!session?.user?.id || !effectiveLatitude || !effectiveLongitude) {
-      toast({ title: 'エラー', description: 'ログインまたは位置情報が取得できません', variant: 'destructive' });
-      return;
-    }
-    setCheckingIn(post.id);
-    try {
-      const { error } = await supabase.from('check_ins').insert({ user_id: session.user.id, post_id: post.id, event_name: post.event_name || post.content, latitude: effectiveLatitude, longitude: effectiveLongitude });
-      if (error) {
-        if (error.code === '23505') { toast({ title: '既にチェックイン済みです', description: 'このイベントには既にチェックインしています' }); }
-        else { throw error; }
-      } else {
-        setCheckedInPosts(prev => new Set(prev).add(post.id));
-        toast({ title: '🎉 チェックイン完了！', description: 'スタンプを獲得しました' });
-      }
-    } catch (error: any) { toast({ title: 'チェックインエラー', description: error?.message || 'データベースへの保存に失敗しました', variant: 'destructive' }); }
-    finally { setCheckingIn(null); }
-  };
 
   const updateContainerDimensions = useCallback(() => {
     if (!mapContainerRef.current) return false;
@@ -361,7 +324,7 @@ export function MapView() {
     setLoadingPosts(true);
     try {
       const now = new Date();
-      const { data, error } = await supabase.from('posts').select('id, category, store_name, content, store_latitude, store_longitude, event_name, event_start_date, event_end_date, created_at, expires_at, image_urls, enable_checkin, city, prefecture').eq('is_deleted', false).eq('category', selectedCategory);
+      const { data, error } = await supabase.from('posts').select('id, category, store_name, content, store_latitude, store_longitude, event_name, event_start_date, event_end_date, created_at, expires_at, image_urls, city, prefecture').eq('is_deleted', false).eq('category', selectedCategory);
       if (error || !data) { setPosts([]); return; }
       const filteredData = data.filter((post) => {
         if (!post.event_start_date) return false;
@@ -630,14 +593,6 @@ export function MapView() {
           const post = posts[currentIdx];
           if (!post) return null;
           const displayTitle = post.category === 'イベント情報' ? (post.event_name || post.content) : post.content;
-          const effectiveLatitude = savedLocation?.lat || latitude;
-          const effectiveLongitude = savedLocation?.lng || longitude;
-          let isWithinRangeResult = false;
-          if (effectiveLatitude && effectiveLongitude && post.store_latitude && post.store_longitude) {
-            isWithinRangeResult = isWithinRange(effectiveLatitude, effectiveLongitude, post.store_latitude, post.store_longitude, 1000);
-          }
-          const canCheckIn = !!session?.user?.id && post.enable_checkin === true && !!effectiveLatitude && !!effectiveLongitude && !!post.store_latitude && !!post.store_longitude && isWithinRangeResult;
-          const isCheckedIn = checkedInPosts.has(post.id);
 
           const handleSwipe = (direction: 'left' | 'right') => {
             if (selectedMarkerRef.current) { selectedMarkerRef.current.setAnimation(null); }
@@ -676,13 +631,6 @@ export function MapView() {
                     <p className="text-[10px] font-medium whitespace-nowrap" style={{ color: designTokens.colors.text.muted }}>
                       ＜ーースワイプーー＞
                     </p>
-                  </div>
-                )}
-                {canCheckIn && (
-                  <div onClick={(e) => { e.stopPropagation(); if (!isCheckedIn && checkingIn !== post.id) handleCheckIn(post); }} className={`absolute -top-3 left-4 z-30 cursor-pointer transition-all ${isCheckedIn || checkingIn === post.id ? 'cursor-default' : 'hover:scale-105'}`}>
-                    <div className="px-4 py-2 rounded-full font-semibold text-sm" style={{ background: isCheckedIn ? designTokens.colors.functional.success : designTokens.colors.accent.lilac, color: designTokens.colors.text.inverse, boxShadow: designTokens.elevation.medium }}>
-                      {checkingIn === post.id ? <Loader2 className="h-4 w-4 animate-spin" /> : isCheckedIn ? '✓ 完了' : 'Check In'}
-                    </div>
                   </div>
                 )}
                 <div className="absolute top-4 right-4 z-10">
@@ -735,10 +683,6 @@ export function MapView() {
           );
         })()}
       </AnimatePresence>
-
-      <style jsx global>{`
-        @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=IBM+Plex+Sans+JP:wght@400;500;600&family=Noto+Sans+JP:wght@400;500;600;700&display=swap');
-      `}</style>
     </div>
   );
 }

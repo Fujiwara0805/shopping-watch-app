@@ -54,7 +54,7 @@ export function SocialMediaSection({
             最新情報
           </h2>
           <p className="text-base sm:text-lg text-[#5c3a21] mt-4 font-semibold">
-            トクドクの最新ニュースをチェック
+            TALEの最新ニュースをチェック
           </p>
         </motion.div>
 

@@ -30,15 +30,19 @@ const notoSansJP = Noto_Sans_JP({
 });
 
 // サイト基本情報
-const SITE_NAME = 'トクドク';
+const SITE_NAME = 'TALE';
+// 検索結果・OGP・SNSで表示する統一タイトル
+const SITE_TITLE = '各地域イベント・お祭り・マルシェの情報を探すならTALE';
 const SITE_URL = 'https://tokudoku.com';
-const SITE_DESCRIPTION = 'いつもの街に、まだ知らない景色がある。県内全域のお祭り、マルシェ、ワークショップを地図から発見。気になる場所をまとめて、あなただけのオリジナルマップに。大分をもっと好きになる——完全無料の地域情報サイト。';
+const SITE_DESCRIPTION = '各地域のイベント、お祭り、マルシェの情報を探すなら。いつもの街に、まだ知らない景色がある。地域のお祭り、マルシェ、ワークショップを地図から発見。気になる場所をまとめて、あなただけのオリジナルマップに。あなたの街をもっと好きになる——完全無料の地域情報サイト。';
 const OG_IMAGE = 'https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png';
 
-// SEO用キーワード（大分県全18市町村 + イベントカテゴリ）
+// SEO用キーワード（各地域対応 + 大分県全18市町村 + イベントカテゴリ）
 const SEO_KEYWORDS = [
-  // ブランド名
-  'トクドク',
+  // ブランド名（移行期: 新名TALE + 旧名トクドクを併記しSEO評価を引き継ぐ）
+  'TALE', 'トクドク',
+  // 地域（各地域）
+  '各地域', '地域情報',
   // 地域（県）
   '大分', '大分県',
   // 市部（14市）
@@ -62,7 +66,7 @@ const SEO_KEYWORDS = [
 export const metadata: Metadata = {
   // 基本メタデータ
   title: {
-    default: `大分のイベント・観光・穴場スポットの情報を探すなら${SITE_NAME} | 大分県内のイベントやスポット情報を掲載`,
+    default: SITE_TITLE,
     template: `%s | ${SITE_NAME}`,
   },
   description: SITE_DESCRIPTION,
@@ -104,24 +108,24 @@ export const metadata: Metadata = {
     locale: 'ja_JP',
     url: SITE_URL,
     siteName: SITE_NAME,
-    title: `大分のイベント・観光・穴場スポットの情報を探すなら${SITE_NAME}`,
-    description: 'いつもの街に、まだ知らない景色がある。県内全域のお祭り、マルシェ、ワークショップを地図から発見。気になる場所をまとめて、あなただけのオリジナルマップに。大分をもっと好きになる——完全無料の地域情報サイト。',
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
     images: [
       {
         url: OG_IMAGE,
         width: 1200,
         height: 630,
-        alt: `大分のイベント・観光・穴場スポットの情報を探すなら${SITE_NAME}`,
+        alt: SITE_TITLE,
         type: 'image/png',
       },
     ],
   },
-  
+
   // Twitter Card
   twitter: {
     card: 'summary_large_image',
-    title: `大分のイベント・観光・穴場スポットの情報を探すなら${SITE_NAME}`,
-    description: 'いつもの街に、まだ知らない景色がある。県内全域のお祭り、マルシェ、ワークショップを地図から発見。気になる場所をまとめて、あなただけのオリジナルマップに。大分をもっと好きになる——完全無料の地域情報サイト。',
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
     images: [OG_IMAGE],
     creator: '@tokudoku',
     site: '@tokudoku',
@@ -180,8 +184,8 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#6E7F80' },
-    { media: '(prefers-color-scheme: dark)', color: '#5A6B6C' },
+    { media: '(prefers-color-scheme: light)', color: '#829A2A' },
+    { media: '(prefers-color-scheme: dark)', color: '#6B7F23' },
   ],
 };
 
@@ -204,7 +208,7 @@ export default function RootLayout({
         
         {/* 追加のSEOメタタグ（Metadata APIで設定できないもの） */}
         <meta name="mobile-web-app-capable" content="yes" />
-        <meta name="msapplication-TileColor" content="#6E7F80" />
+        <meta name="msapplication-TileColor" content="#829A2A" />
         <meta name="msapplication-config" content="/browserconfig.xml" />
         
         {/* 構造化データ (JSON-LD) - サイト全体 */}
@@ -219,6 +223,8 @@ export default function RootLayout({
                   '@type': 'Organization',
                   '@id': `${SITE_URL}/#organization`,
                   name: SITE_NAME,
+                  // 移行期: 旧サービス名を alternateName として保持しSEO評価を引き継ぐ
+                  alternateName: 'トクドク',
                   url: SITE_URL,
                   logo: {
                     '@type': 'ImageObject',
@@ -227,39 +233,44 @@ export default function RootLayout({
                     height: 512,
                   },
                   description: SITE_DESCRIPTION,
-                  areaServed: {
-                    '@type': 'AdministrativeArea',
-                    name: '大分県',
-                    containsPlace: [
-                      // 14市
-                      { '@type': 'City', name: '大分市' },
-                      { '@type': 'City', name: '別府市' },
-                      { '@type': 'City', name: '中津市' },
-                      { '@type': 'City', name: '日田市' },
-                      { '@type': 'City', name: '佐伯市' },
-                      { '@type': 'City', name: '臼杵市' },
-                      { '@type': 'City', name: '津久見市' },
-                      { '@type': 'City', name: '竹田市' },
-                      { '@type': 'City', name: '豊後高田市' },
-                      { '@type': 'City', name: '杵築市' },
-                      { '@type': 'City', name: '宇佐市' },
-                      { '@type': 'City', name: '豊後大野市' },
-                      { '@type': 'City', name: '由布市' },
-                      { '@type': 'City', name: '国東市' },
-                      // 1村3町
-                      { '@type': 'AdministrativeArea', name: '姫島村' },
-                      { '@type': 'AdministrativeArea', name: '日出町' },
-                      { '@type': 'AdministrativeArea', name: '九重町' },
-                      { '@type': 'AdministrativeArea', name: '玖珠町' },
-                    ],
-                  },
+                  // 各地域対応として日本全体を、加えて重点カバレッジの大分県（18市町村）を明示
+                  areaServed: [
+                    { '@type': 'Country', name: '日本' },
+                    {
+                      '@type': 'AdministrativeArea',
+                      name: '大分県',
+                      containsPlace: [
+                        // 14市
+                        { '@type': 'City', name: '大分市' },
+                        { '@type': 'City', name: '別府市' },
+                        { '@type': 'City', name: '中津市' },
+                        { '@type': 'City', name: '日田市' },
+                        { '@type': 'City', name: '佐伯市' },
+                        { '@type': 'City', name: '臼杵市' },
+                        { '@type': 'City', name: '津久見市' },
+                        { '@type': 'City', name: '竹田市' },
+                        { '@type': 'City', name: '豊後高田市' },
+                        { '@type': 'City', name: '杵築市' },
+                        { '@type': 'City', name: '宇佐市' },
+                        { '@type': 'City', name: '豊後大野市' },
+                        { '@type': 'City', name: '由布市' },
+                        { '@type': 'City', name: '国東市' },
+                        // 1村3町
+                        { '@type': 'AdministrativeArea', name: '姫島村' },
+                        { '@type': 'AdministrativeArea', name: '日出町' },
+                        { '@type': 'AdministrativeArea', name: '九重町' },
+                        { '@type': 'AdministrativeArea', name: '玖珠町' },
+                      ],
+                    },
+                  ],
                 },
                 // WebSite with SearchAction
                 {
                   '@type': 'WebSite',
                   '@id': `${SITE_URL}/#website`,
                   url: SITE_URL,
-                  name: `大分のイベント・観光・穴場スポットの情報を探すなら${SITE_NAME}`,
+                  name: SITE_TITLE,
+                  alternateName: 'トクドク',
                   description: SITE_DESCRIPTION,
                   publisher: { '@id': `${SITE_URL}/#organization` },
                   inLanguage: 'ja',
@@ -277,6 +288,7 @@ export default function RootLayout({
                   '@type': 'WebApplication',
                   '@id': `${SITE_URL}/#webapp`,
                   name: SITE_NAME,
+                  alternateName: 'トクドク',
                   url: SITE_URL,
                   applicationCategory: 'LifestyleApplication',
                   operatingSystem: 'Web',
@@ -287,14 +299,14 @@ export default function RootLayout({
                     priceCurrency: 'JPY',
                   },
                   featureList: [
-                    '大分県内の地域イベント検索',
+                    '各地域のイベント検索',
                     '地図上でスポット位置を確認',
                     '現在地周辺のイベント表示',
                     'お祭り・マルシェ・ワークショップ情報',
                     '完全無料・登録不要',
                     'リアルタイム情報更新',
                   ],
-                  description: 'いつもの街に、まだ知らない景色がある。県内全域のお祭り、マルシェ、ワークショップを地図から発見。気になる場所をまとめて、あなただけのオリジナルマップに。大分をもっと好きになる——完全無料の地域情報サイト。',
+                  description: SITE_DESCRIPTION,
                 },
                 // BreadcrumbList (トップページ)
                 {

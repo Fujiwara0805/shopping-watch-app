@@ -1,70 +1,90 @@
 /**
  * アプリケーション共通カラーパレット
- * LP "Oita Organic Elegance" を基準に全画面で統一
+ * DESIGN.md "KURKKU FIELDS" を基準に全画面で統一
+ * 互換性のため designTokens のキー構造は維持し、値のみ KURKKU パレットへ差し替え。
  */
 
 // ===================================================================
-// DESIGN SYSTEM: "Oita Organic Elegance"
+// DESIGN SYSTEM: "KURKKU FIELDS"（カテゴリ別カラーコーディング / 直角 / 純黒）
 // ===================================================================
 export const designTokens = {
   colors: {
     primary: {
-      base: '#6E7F80',      // スモークブルー
-      dark: '#5A6B6C',
-      light: '#8A9A9B',
+      base: '#829A2A',      // オリーブグリーン（INFORMATION / ブランド基調）
+      dark: '#6B7F23',
+      light: '#9EAF19',     // ライムグリーン（FARM）
       contrast: '#FFFFFF',
     },
     secondary: {
-      fern: '#8A9A5B',
-      fernLight: '#A4B47A',
-      fernDark: '#6F7D48',
-      stone: '#C2B8A3',
-      stoneLight: '#D4CCBA',
-      stoneDark: '#A89E8A',
+      fern: '#5F9133',      // ディープグリーン（SUSTAINABILITY）
+      fernLight: '#9EAF19', // ライムグリーン（FARM）
+      fernDark: '#4D7329',
+      stone: '#949490',     // ウォームグレー（PEOPLE）
+      stoneLight: '#A8AAA9',// ミディアムグレー（STAY）
+      stoneDark: '#6F6F6C',
     },
     accent: {
-      lilac: '#BFA3D1',
-      lilacLight: '#D4C2E3',
-      lilacDark: '#9B7FB5',
-      gold: '#E2C275',
-      goldLight: '#EDD49A',
-      goldDark: '#C9A85C',
+      lilac: '#DC8F74',     // テラコッタ（ART）= 主アクセント（地図ピン・CTA）
+      lilacLight: '#E8B5A2',
+      lilacDark: '#C4715A',
+      gold: '#EEB200',      // ウォームアンバー（EAT）= 強調・特典
+      goldLight: '#F4CF66',
+      goldDark: '#C99500',
     },
     background: {
-      mist: '#F4F5F2',
-      cloud: '#E6E9E5',
+      mist: '#FFFFFF',      // ページ地（KURKKU は白）
+      cloud: '#EFF4F8',     // ナビ／muted 背景
       white: '#FFFFFF',
     },
     text: {
-      primary: '#2D3436',
-      secondary: '#636E72',
-      muted: '#95A5A6',
+      primary: '#000000',   // 純黒（本文・見出し）
+      secondary: '#3D3D3B',
+      muted: '#949490',     // ウォームグレー（PEOPLE）
       inverse: '#FFFFFF',
     },
     functional: {
-      error: '#E74C3C',
-      success: '#27AE60',
-      warning: '#F39C12',
-      info: '#3498DB',
+      error: '#C04040',     // Danger（テラコッタ寄りの赤）
+      success: '#5F9133',   // Success（SUSTAINABILITY と兼用）
+      warning: '#D4960A',   // Warning（アンバー系黄土）
+      info: '#4082AB',      // Info（EVENT ディープブルー）
     },
+    // KURKKU カテゴリカラーシステム（ブランドの核心 / 色＝ナビゲーション）
+    category: {
+      information: '#829A2A',  // オリーブグリーン
+      eat: '#EEB200',         // ウォームアンバー
+      people: '#949490',      // ウォームグレー
+      experience: '#89B2C9',  // スカイブルー
+      art: '#DC8F74',         // テラコッタ
+      event: '#4082AB',       // ディープブルー
+      sustainability: '#5F9133', // ディープグリーン
+      farm: '#9EAF19',        // ライムグリーン
+      stay: '#A8AAA9',        // ミディアムグレー
+      other: '#DCDEDD',       // ライトグレー
+    },
+    highlight: '#FFFF00',     // アテンション用イエロー
+    navBg: '#EFF4F8',         // ナビゲーション背景
   },
+  // DESIGN.md §6: 影がカードの唯一の立体表現（X オフセット 2px・わずかに暖色寄り）
   elevation: {
-    subtle: '0 1px 3px rgba(110, 127, 128, 0.08)',
-    low: '0 2px 8px rgba(110, 127, 128, 0.10)',
-    medium: '0 4px 16px rgba(110, 127, 128, 0.12)',
-    high: '0 8px 32px rgba(110, 127, 128, 0.15)',
-    dramatic: '0 16px 48px rgba(110, 127, 128, 0.20)',
+    subtle: 'none',
+    low: '2px 4px 5px 0px rgba(4, 0, 0, 0.15)',
+    medium: '2px 4px 5px 0px rgba(4, 0, 0, 0.3)',
+    high: '2px 6px 10px 0px rgba(4, 0, 0, 0.3)',
+    dramatic: '4px 8px 18px 0px rgba(4, 0, 0, 0.35)',
   },
+  // DESIGN.md §5: border-radius は一律 0（全要素直角）
   radius: {
-    sm: '8px',
-    md: '12px',
-    lg: '16px',
-    xl: '24px',
-    full: '9999px',
+    sm: '0',
+    md: '0',
+    lg: '0',
+    xl: '0',
+    full: '0',
   },
   typography: {
-    display: "'Sora', 'Noto Sans JP', sans-serif",
-    body: "'IBM Plex Sans JP', 'Noto Sans JP', sans-serif",
+    // DESIGN.md §3: 和文は Noto Sans JP 一本（明朝なし）／EN ラベルのみ Helvetica スタック
+    display: "var(--font-noto-sans-jp), 'Noto Sans JP', sans-serif",
+    body: "var(--font-noto-sans-jp), 'Noto Sans JP', sans-serif",
+    enLabel: 'Helvetica, "Helvetica Neue", Roboto, sans-serif',
   },
 } as const;
 
@@ -91,29 +111,3 @@ export const COLORS = {
 
 export type ColorKey = keyof typeof COLORS;
 export type ColorValue = (typeof COLORS)[ColorKey];
-
-export const CSS_VARIABLES = {
-  '--color-primary': COLORS.primary,
-  '--color-primary-dark': COLORS.primaryDark,
-  '--color-secondary': COLORS.secondary,
-  '--color-background': COLORS.background,
-  '--color-surface': COLORS.surface,
-  '--color-cream': COLORS.cream,
-  '--color-mint': COLORS.mint,
-  '--color-border': COLORS.border,
-} as const;
-
-export const GRADIENTS = {
-  primary: `linear-gradient(to right, ${COLORS.textSecondary}, ${COLORS.primary}, ${COLORS.textSecondary})`,
-  primaryHover: `linear-gradient(to right, ${COLORS.primaryDark}, ${COLORS.secondary}, ${COLORS.primaryDark})`,
-  parchment: `linear-gradient(to bottom, ${COLORS.surface}, ${COLORS.background})`,
-  gold: `linear-gradient(to right, ${COLORS.cream}, ${COLORS.surface}, ${COLORS.cream})`,
-} as const;
-
-export const SHADOWS = {
-  sm: '0 1px 2px rgba(45, 52, 54, 0.1)',
-  md: '0 4px 6px rgba(45, 52, 54, 0.1)',
-  lg: '0 10px 15px rgba(45, 52, 54, 0.15)',
-  xl: '0 20px 25px rgba(45, 52, 54, 0.2)',
-  rpg: '8px 8px 0px 0px rgba(45, 52, 54, 0.2)',
-} as const;

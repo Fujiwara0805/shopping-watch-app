@@ -21,7 +21,6 @@ export interface CreatePostInput {
   prefecture: string | null;
   city: string | null;
   authorRole: 'admin' | 'user';
-  enableCheckin: boolean;
   collaboration?: string | null;
   // 位置情報
   storeLatitude?: number;
@@ -112,7 +111,6 @@ export async function createPost(input: CreatePostInput): Promise<{ postId: stri
       prefecture: input.prefecture,
       city: input.city,
       author_role: input.authorRole,
-      enable_checkin: input.enableCheckin,
       expiry_option: input.expiryOption,
       custom_expiry_minutes: input.customExpiryMinutes,
       expires_at: input.expiresAt,

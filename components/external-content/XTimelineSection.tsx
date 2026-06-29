@@ -179,7 +179,7 @@ export function XTimelineSection({ username, className = '' }: XTimelineSectionP
                         className="h-10 w-10"
                       />
                       <div className="text-left">
-                        <p className="font-bold text-gray-900">トクドク公式</p>
+                        <p className="font-bold text-gray-900">TALE公式</p>
                         <p className="text-sm text-gray-500">@{username}</p>
                       </div>
                     </div>

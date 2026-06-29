@@ -431,7 +431,7 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose })
                     className="text-xs"
                     style={{ color: designTokens.colors.text.secondary }}
                   >
-                    引き続きTOKUDOKUをお楽しみください
+                    引き続きTALEをお楽しみください
                   </p>
                 </motion.div>
               </div>

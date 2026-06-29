@@ -77,15 +77,15 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const events = await getPrefectureEvents(prefecture);
 
   return {
-    title: `${prefecture}のイベント情報 - お祭り・マルシェ・ワークショップ | トクドク`,
+    title: `${prefecture}のイベント情報 - お祭り・マルシェ・ワークショップ | TALE`,
     description: `${prefecture}で開催中・開催予定のイベント${events.length}件。お祭り、マルシェ、ワークショップなどの情報一覧。現在地から近いイベントを地図で検索。`,
-    keywords: `${prefecture},イベント,お祭り,秋祭り,夏祭り,マルシェ,ワークショップ,フェスティバル,地域イベント,週末,予定,体験イベント,トクドク`,
+    keywords: `${prefecture},イベント,お祭り,秋祭り,夏祭り,マルシェ,ワークショップ,フェスティバル,地域イベント,週末,予定,体験イベント,TALE,トクドク`,
     openGraph: {
-      title: `${prefecture}のイベント情報 | トクドク`,
+      title: `${prefecture}のイベント情報 | TALE`,
       description: `${prefecture}で開催されるイベント情報を地図で検索`,
       type: 'website',
       locale: 'ja_JP',
-      siteName: 'トクドク',
+      siteName: 'TALE',
       url: `https://tokudoku.com/area/${encodeURIComponent(prefecture)}`,
       images: [
         {

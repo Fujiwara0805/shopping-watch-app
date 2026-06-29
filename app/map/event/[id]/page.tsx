@@ -37,7 +37,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   if (!event) {
     return {
-      title: 'イベントが見つかりません - トクドク',
+      title: 'イベントが見つかりません - TALE',
       description: '指定されたイベントが見つかりませんでした。',
       robots: {
         index: false,
@@ -59,7 +59,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   // 旧URLはnoindexにして、新URLにcanonicalを向ける
   return {
-    title: `${eventName} - トクドク`,
+    title: `${eventName} - TALE`,
     description: `${eventName}の詳細情報`,
     alternates: {
       canonical: canonicalUrl,

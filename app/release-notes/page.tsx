@@ -191,13 +191,13 @@ const releaseNotes: ReleaseNote[] = [
     date: '2025-09-28',
     type: 'patch',
     title: 'ビジネス認証システムの導入と投稿機能の改善',
-    description: 'トクドクが認証した企業の投稿に「認証済み」バッジを表示する機能を追加しました。また、投稿画面の画像表示機能を強化し、より使いやすい投稿体験を提供します。',
+    description: 'TALEが認証した企業の投稿に「認証済み」バッジを表示する機能を追加しました。また、投稿画面の画像表示機能を強化し、より使いやすい投稿体験を提供します。',
     isLatest: false,
     changes: [
       {
         type: 'new',
         title: 'ビジネス認証バッジシステム',
-        description: 'app_usersテーブルのroleが「business」のユーザーの投稿に「認証済み」バッジを表示する機能を実装。星アイコンと青色のデザインで、トクドクが認証した企業であることを明確に示します。'
+        description: 'app_usersテーブルのroleが「business」のユーザーの投稿に「認証済み」バッジを表示する機能を実装。星アイコンと青色のデザインで、TALEが認証した企業であることを明確に示します。'
       },
       {
         type: 'new',
@@ -326,7 +326,7 @@ const releaseNotes: ReleaseNote[] = [
     date: '2025-09-16',
     type: 'major',
     title: '投稿システムの大幅刷新 - カテゴリ統合とクーポン機能の実装',
-    description: 'トクドクの投稿システムを大幅に改善しました。カテゴリとジャンルを統合し、より直感的な分類システムを実現。さらに、クーポン配布機能や来客状況の表示など、店舗と利用者をつなぐ新機能を多数追加しました。',
+    description: 'TALEの投稿システムを大幅に改善しました。カテゴリとジャンルを統合し、より直感的な分類システムを実現。さらに、クーポン配布機能や来客状況の表示など、店舗と利用者をつなぐ新機能を多数追加しました。',
     isLatest: false, // 🔥 変更: false に設定
     changes: [
       {
@@ -416,7 +416,7 @@ const releaseNotes: ReleaseNote[] = [
     date: '2025-08-03',
     type: 'major',
     title: 'おすそわけ機能の実装 - 投稿者を直接応援できる新システム',
-    description: 'トクドクに待望の「おすそわけ機能」が登場しました！おとくな情報を投稿してくれる方におすそわけ（支援購入）できる画期的な機能です。Stripe決済システムを導入し、安全で便利なおすそわけの仕組みを実現しました。',
+    description: 'TALEに待望の「おすそわけ機能」が登場しました！おとくな情報を投稿してくれる方におすそわけ（支援購入）できる画期的な機能です。Stripe決済システムを導入し、安全で便利なおすそわけの仕組みを実現しました。',
     isLatest: false, // 🔥 変更: false に設定
     changes: [
       {
@@ -487,7 +487,7 @@ const releaseNotes: ReleaseNote[] = [
       {
         type: 'security',
         title: '決済セキュリティの実装',
-        description: 'PCI DSS準拠のStripe決済システムを導入し、クレジットカード情報の安全な処理を実現。すべての決済データは暗号化され、トクドクのサーバーには保存されません。'
+        description: 'PCI DSS準拠のStripe決済システムを導入し、クレジットカード情報の安全な処理を実現。すべての決済データは暗号化され、TALEのサーバーには保存されません。'
       },
       {
         type: 'new',
@@ -562,7 +562,7 @@ const releaseNotes: ReleaseNote[] = [
       {
         type: 'new',
         title: '友達招待機能の追加',
-        description: 'タイムライン画面に招待機能を追加。トクドクサービスへの招待メッセージをコピーして、SNSを通じて友達を招待できるようになりました。'
+        description: 'タイムライン画面に招待機能を追加。TALEサービスへの招待メッセージをコピーして、SNSを通じて友達を招待できるようになりました。'
       },
       {
         type: 'improvement',
@@ -796,13 +796,13 @@ const releaseNotes: ReleaseNote[] = [
     date: '2025-06-21',
     type: 'minor',
     title: 'LINE通知機能の追加',
-    description: 'トクドクのLINE公式アカウントとの連携機能を追加しました。お気に入り店舗の新着情報をLINEでも受け取れるようになり、より便利にお得情報をキャッチできます。',
+    description: 'TALEのLINE公式アカウントとの連携機能を追加しました。お気に入り店舗の新着情報をLINEでも受け取れるようになり、より便利にお得情報をキャッチできます。',
     isLatest: false,
     changes: [
       {
         type: 'new',
         title: 'LINE公式アカウント連携機能',
-        description: 'トクドクのLINE公式アカウント（@208uubra）を友達追加することで、アプリとLINEアカウントを連携できるようになりました。'
+        description: 'TALEのLINE公式アカウント（@208uubra）を友達追加することで、アプリとLINEアカウントを連携できるようになりました。'
       },
       {
         type: 'new',
@@ -821,7 +821,7 @@ const releaseNotes: ReleaseNote[] = [
     date: '2025-06-18',
     type: 'minor',
     title: 'アプリの品質向上のためのアップデート',
-    description: 'いつもトクドクをご利用いただきありがとうございます。皆様により快適なアプリ体験を提供するため、サービスの安定性向上に関するアップデートを行いました。',
+    description: 'いつもTALEをご利用いただきありがとうございます。皆様により快適なアプリ体験を提供するため、サービスの安定性向上に関するアップデートを行いました。',
     isLatest: false,
     changes: [
       {
@@ -840,8 +840,8 @@ const releaseNotes: ReleaseNote[] = [
     version: '1.0.0',
     date: '2025-06-16',
     type: 'major',
-    title: 'トクドク β版 正式リリース！',
-    description: 'みんなでお得な情報を共有できるアプリ「トクドク」のβ版がついに正式リリースされました！',
+    title: 'TALE（旧トクドク） β版 正式リリース！',
+    description: 'みんなでお得な情報を共有できるアプリ「TALE」（リリース当時の名称は「トクドク」）のβ版がついに正式リリースされました！',
     isLatest: false,
     changes: [
       {

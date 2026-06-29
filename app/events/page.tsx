@@ -182,7 +182,6 @@ export default function CalendarPage() {
   const [sortBy] = useState<'date' | 'distance'>('date');
   const [selectedPrefecture] = useState('大分県');
   const [selectedCity, setSelectedCity] = useState(getInitialCity);
-  const [selectedEnableCheckin] = useState<'all' | 'true' | 'false'>('all');
   const [cityList, setCityList] = useState<string[]>([]);
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [deletingEventId, setDeletingEventId] = useState<string | null>(null);
@@ -320,7 +319,7 @@ export default function CalendarPage() {
         .from('posts')
         .select(`
           id, app_profile_id, event_name, store_name, event_start_date, event_end_date,
-          city, prefecture, content, store_latitude, store_longitude, image_urls, enable_checkin, target_tags,
+          city, prefecture, content, store_latitude, store_longitude, image_urls, target_tags,
           author:app_profiles!posts_app_profile_id_fkey (user_id)
         `)
         .eq('is_deleted', false)
@@ -375,13 +374,6 @@ export default function CalendarPage() {
         uniqueEventNames.add(post.event_name);
         return true;
       });
-
-      if (selectedEnableCheckin !== 'all') {
-        processedPosts = processedPosts.filter((post: any) => {
-          const enableCheckin = post.enable_checkin === true;
-          return selectedEnableCheckin === 'true' ? enableCheckin : !enableCheckin;
-        });
-      }
 
       if (urlTarget && urlTarget.trim() !== '') {
         processedPosts = processedPosts.filter((post: any) => {
@@ -448,7 +440,7 @@ export default function CalendarPage() {
       setLoading(false);
       setIsInitialized(true);
     }
-  }, [currentDate, selectedPrefecture, selectedCity, selectedEnableCheckin, sortBy, userLocation, hasSearchParams, urlStartDate, urlEndDate, urlTarget]);
+  }, [currentDate, selectedPrefecture, selectedCity, sortBy, userLocation, hasSearchParams, urlStartDate, urlEndDate, urlTarget]);
 
   useEffect(() => { fetchAds(); }, [fetchAds]);
   useEffect(() => { fetchEvents(); }, [fetchEvents]);
@@ -963,7 +955,6 @@ export default function CalendarPage() {
       )}
 
       <style jsx global>{`
-        @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=IBM+Plex+Sans+JP:wght@400;500;600&family=Noto+Sans+JP:wght@400;500;600;700&display=swap');
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
         [data-date-tab] {

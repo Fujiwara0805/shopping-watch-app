@@ -6,22 +6,22 @@ import Image from 'next/image';
 import { OITA_LOCATIONS } from '@/lib/constants';
 
 export const metadata: Metadata = {
-  title: '大分県の今日のイベント | 本日開催中のお祭り・マルシェ情報 | トクドク',
+  title: '大分県の今日のイベント | 本日開催中のお祭り・マルシェ情報 | TALE',
   description: '大分県内で今日開催されているイベント情報。大分市・別府市・中津市・日田市・由布市など県内全域のお祭り、マルシェ、ワークショップをリアルタイムで確認。今すぐ参加できるイベントを探そう。',
-  keywords: '大分 イベント 今日,大分県 今日のイベント,大分市 イベント 今日,別府 イベント 今日,本日開催,今日のお祭り,大分 マルシェ 今日,トクドク',
+  keywords: '大分 イベント 今日,大分県 今日のイベント,大分市 イベント 今日,別府 イベント 今日,本日開催,今日のお祭り,大分 マルシェ 今日,TALE,トクドク',
   openGraph: {
     title: '大分県の今日のイベント | 本日開催中のお祭り・マルシェ情報',
     description: '大分県内で今日開催されているイベント情報。今すぐ参加できるお祭り、マルシェ、ワークショップを探そう。',
     type: 'website',
     locale: 'ja_JP',
-    siteName: 'トクドク',
+    siteName: 'TALE',
     url: 'https://tokudoku.com/events/today',
     images: [
       {
         url: 'https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png',
         width: 1200,
         height: 630,
-        alt: 'トクドク - 今日のイベント',
+        alt: 'TALE - 今日のイベント',
       },
     ],
   },
@@ -220,7 +220,8 @@ export default async function TodayEventsPage() {
               url: 'https://tokudoku.com/events/today',
               isPartOf: {
                 '@type': 'WebSite',
-                name: 'トクドク',
+                name: 'TALE',
+                alternateName: 'トクドク',
                 url: 'https://tokudoku.com',
               },
               about: {

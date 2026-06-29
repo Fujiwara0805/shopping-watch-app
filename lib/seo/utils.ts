@@ -196,7 +196,7 @@ export function generateMetaDescription(params: {
 
 /**
  * タイトルタグを生成
- * フォーマット: [イベント名] | [市町村名]のイベント情報 - トクドク
+ * フォーマット: [イベント名] | [市町村名]のイベント情報 - TALE
  */
 export function generateTitle(params: {
   eventName: string;
@@ -213,10 +213,10 @@ export function generateTitle(params: {
   }
   
   if (location) {
-    return `${eventName} | ${location}のイベント情報 - トクドク`;
+    return `${eventName} | ${location}のイベント情報 - TALE`;
   }
-  
-  return `${eventName} | 大分県のイベント情報 - トクドク`;
+
+  return `${eventName} | 大分県のイベント情報 - TALE`;
 }
 
 /**
@@ -233,6 +233,7 @@ export function generateKeywords(params: {
   
   const keywords: string[] = [
     eventName,
+    'TALE',
     'トクドク',
     '大分',
     'イベント',

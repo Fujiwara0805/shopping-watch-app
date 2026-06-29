@@ -21,7 +21,8 @@ export function WebsiteStructuredData({ url = 'https://tokudoku.com' }: WebsiteS
       {
         '@type': 'Organization',
         '@id': `${url}/#organization`,
-        name: 'トクドク',
+        name: 'TALE',
+        alternateName: 'トクドク',
         url: url,
         logo: {
           '@type': 'ImageObject',
@@ -29,23 +30,24 @@ export function WebsiteStructuredData({ url = 'https://tokudoku.com' }: WebsiteS
           width: 512,
           height: 512,
         },
-        description: '地域イベント情報を地図で探せる完全無料のイベント発見プラットフォーム。大分県内のお祭り、マルシェ、ワークショップなどの地域密着イベントをリアルタイムで検索できます。',
+        description: '各地域のイベント、お祭り、マルシェの情報を地図で探せる完全無料のイベント発見プラットフォーム。各地域のお祭り、マルシェ、ワークショップなどの地域密着イベントをリアルタイムで検索できます。',
         sameAs: [],
         contactPoint: {
           '@type': 'ContactPoint',
           contactType: 'Customer Service',
           availableLanguage: ['ja'],
         },
-        areaServed: {
-          '@type': 'Place',
-          name: '大分県',
-        },
+        areaServed: [
+          { '@type': 'Country', name: '日本' },
+          { '@type': 'Place', name: '大分県' },
+        ],
       },
       {
         '@type': 'WebSite',
         '@id': `${url}/#website`,
         url: url,
-        name: '大分のイベント・観光・穴場スポットの情報を探すならトクドク',
+        name: '各地域イベント・お祭り・マルシェの情報を探すならTALE',
+        alternateName: 'トクドク',
         description: '地域のお祭り、マルシェ、ワークショップを地図で発見！現在地から近いイベントをかんたん検索。週末の予定探しに最適な、完全無料の地域密着イベントアプリです。',
         publisher: {
           '@id': `${url}/#organization`,
@@ -63,7 +65,8 @@ export function WebsiteStructuredData({ url = 'https://tokudoku.com' }: WebsiteS
       {
         '@type': 'WebApplication',
         '@id': `${url}/#webapp`,
-        name: 'トクドク',
+        name: 'TALE',
+        alternateName: 'トクドク',
         url: url,
         applicationCategory: 'LifestyleApplication',
         operatingSystem: 'Web, iOS, Android',
@@ -221,18 +224,26 @@ export function FAQStructuredData() {
     mainEntity: [
       {
         '@type': 'Question',
-        name: 'トクドクとは何ですか？',
+        name: 'TALEとは何ですか？',
         acceptedAnswer: {
           '@type': 'Answer',
-          text: 'トクドクは、大分県内の地域イベント情報を地図上で検索できる完全無料のイベント発見プラットフォームです。お祭り、マルシェ、ワークショップなどの地域密着型イベントをリアルタイムで発見できます。位置情報を活用することで、現在地周辺のイベントを簡単に見つけることができます。',
+          text: 'TALEは、各地域のイベント、お祭り、マルシェの情報を地図上で検索できる完全無料のイベント発見プラットフォームです。お祭り、マルシェ、ワークショップなどの地域密着型イベントをリアルタイムで発見できます。位置情報を活用することで、現在地周辺のイベントを簡単に見つけることができます。',
         },
       },
       {
         '@type': 'Question',
-        name: 'トクドクの利用料金はいくらですか？',
+        name: '以前の「トクドク」とは何ですか？TALEと同じサービスですか？',
         acceptedAnswer: {
           '@type': 'Answer',
-          text: 'トクドクは完全無料でご利用いただけます。アカウント登録も不要で、今すぐイベント検索を始められます。すべての機能を無料でお使いいただけます。',
+          text: 'はい、同じサービスです。「トクドク」は2026年に「TALE」へ名称変更しました。URL（tokudoku.com）や機能、これまでの投稿データはそのまま引き継がれています。',
+        },
+      },
+      {
+        '@type': 'Question',
+        name: 'TALEの利用料金はいくらですか？',
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: 'TALEは完全無料でご利用いただけます。アカウント登録も不要で、今すぐイベント検索を始められます。すべての機能を無料でお使いいただけます。',
         },
       },
       {
@@ -240,7 +251,7 @@ export function FAQStructuredData() {
         name: 'どのようなイベント情報が掲載されていますか？',
         acceptedAnswer: {
           '@type': 'Answer',
-          text: 'トクドクでは、大分県内のお祭り、マルシェ、ワークショップなど、さまざまな地域密着型イベント情報を掲載しています。終了したイベントは自動的に非表示になるため、常に最新の情報をご覧いただけます。',
+          text: 'TALEでは、各地域のお祭り、マルシェ、ワークショップなど、さまざまな地域密着型イベント情報を掲載しています。終了したイベントは自動的に非表示になるため、常に最新の情報をご覧いただけます。',
         },
       },
       {
@@ -248,7 +259,7 @@ export function FAQStructuredData() {
         name: 'どうやってイベントを探すのですか？',
         acceptedAnswer: {
           '@type': 'Answer',
-          text: 'トクドクでは地図上にイベント情報がマーカーで表示されます。マップを移動・拡大縮小して、気になるエリアのイベントを探すことができます。位置情報を許可すると、現在地周辺のイベントが自動的に表示されます。マーカーをタップすると、イベントの詳細情報を確認できます。',
+          text: 'TALEでは地図上にイベント情報がマーカーで表示されます。マップを移動・拡大縮小して、気になるエリアのイベントを探すことができます。位置情報を許可すると、現在地周辺のイベントが自動的に表示されます。マーカーをタップすると、イベントの詳細情報を確認できます。',
         },
       },
       {
@@ -272,7 +283,7 @@ export function FAQStructuredData() {
         name: '大分県以外のイベントも掲載されていますか？',
         acceptedAnswer: {
           '@type': 'Answer',
-          text: '現在、トクドクは大分県内のイベント情報に特化していますが、今後は他の地域へもサービスを拡大していく予定です。',
+          text: 'はい。TALEは各地域のイベント、お祭り、マルシェの情報に対応しています。現在は大分県の情報が特に充実しており、対応エリアを順次拡大しています。お住まいの地域のイベントもぜひ投稿・チェックしてください。',
         },
       },
       {
@@ -280,7 +291,7 @@ export function FAQStructuredData() {
         name: 'イベント情報の更新頻度は？',
         acceptedAnswer: {
           '@type': 'Answer',
-          text: 'トクドクのイベント情報はリアルタイムで更新されます。終了したイベントは自動的に表示されなくなり、新しいイベントが随時追加されます。常に最新のイベント情報をご覧いただけます。',
+          text: 'TALEのイベント情報はリアルタイムで更新されます。終了したイベントは自動的に表示されなくなり、新しいイベントが随時追加されます。常に最新のイベント情報をご覧いただけます。',
         },
       },
       {
@@ -288,7 +299,7 @@ export function FAQStructuredData() {
         name: 'スマートフォンで使えますか？',
         acceptedAnswer: {
           '@type': 'Answer',
-          text: 'はい、トクドクはスマートフォン、タブレット、パソコンなど、あらゆるデバイスでご利用いただけます。ウェブブラウザから簡単にアクセスでき、アプリのインストールは不要です。',
+          text: 'はい、TALEはスマートフォン、タブレット、パソコンなど、あらゆるデバイスでご利用いただけます。ウェブブラウザから簡単にアクセスでき、アプリのインストールは不要です。',
         },
       },
       {
@@ -320,9 +331,10 @@ export function LocalBusinessStructuredData() {
     '@context': 'https://schema.org',
     '@type': 'LocalBusiness',
     '@id': 'https://tokudoku.com/#localbusiness',
-    name: 'トクドク',
+    name: 'TALE',
+    alternateName: 'トクドク',
     image: 'https://res.cloudinary.com/dz9trbwma/image/upload/v1749032362/icon_n7nsgl.png',
-    description: '大分県のお祭り、イベント、マルシェ、ワークショップを地図で発見！現在地から近いイベントをかんたん検索。週末の予定探しに最適な、完全無料の地域密着イベントサイトです。リアルタイムで更新される最新イベント情報をチェックしよう。',
+    description: 'TALE（旧トクドク）は、各地域のイベント、お祭り、マルシェの情報を地図で発見できる完全無料の地域密着イベントサイトです。現在地から近いイベントをかんたん検索。週末の予定探しに最適。大分県をはじめ各地域の最新イベント情報をリアルタイムでチェックできます。',
     url: 'https://tokudoku.com',
     telephone: '',
     priceRange: '無料',

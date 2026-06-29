@@ -1,36 +1,36 @@
-@import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=IBM+Plex+Sans+JP:wght@400;500;600&family=Noto+Sans+JP:wght@400;500;600;700&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
-  /* Oita Organic Elegance - LP と全画面で統一 */
+  /* KURKKU FIELDS - 全画面で統一（カテゴリ別カラーコーディング / 直角 / 純黒） */
   :root {
-    --background: 60 14% 95%;       /* mist #F4F5F2 */
-    --foreground: 192 9% 19%;       /* text primary #2D3436 */
+    --background: 0 0% 100%;        /* white #FFFFFF */
+    --foreground: 0 0% 0%;          /* black #000000 */
     --card: 0 0% 100%;
-    --card-foreground: 192 9% 19%;
+    --card-foreground: 0 0% 0%;
     --popover: 0 0% 100%;
-    --popover-foreground: 192 9% 19%;
-    --primary: 183 7% 47%;          /* primary base #6E7F80 */
+    --popover-foreground: 0 0% 0%;
+    --primary: 73 57% 38%;          /* olive #829A2A（INFORMATION / ブランド） */
     --primary-foreground: 0 0% 100%;
-    --secondary: 78 18% 51%;        /* fern #8A9A5B */
-    --secondary-foreground: 192 9% 19%;
-    --muted: 60 9% 93%;             /* cloud #E6E9E5 */
-    --muted-foreground: 195 9% 40%; /* text secondary #636E72 */
-    --accent: 43 67% 67%;           /* gold #E2C275 */
-    --accent-foreground: 192 9% 19%;
-    --destructive: 6 78% 57%;       /* error #E74C3C */
+    --secondary: 92 48% 38%;        /* deep green #5F9133（SUSTAINABILITY） */
+    --secondary-foreground: 0 0% 100%;
+    --muted: 207 38% 95%;           /* nav bg #EFF4F8 */
+    --muted-foreground: 60 2% 57%;  /* warm gray #949490（PEOPLE） */
+    --accent: 16 60% 66%;           /* terracotta #DC8F74（ART / 主アクセント） */
+    --accent-foreground: 0 0% 0%;
+    --destructive: 0 50% 50%;       /* danger #C04040 */
     --destructive-foreground: 0 0% 100%;
-    --border: 38 16% 74%;           /* stone #C2B8A3 */
-    --input: 38 16% 74%;
-    --ring: 183 7% 47%;
-    --radius: 0.5rem;
+    --border: 160 3% 87%;           /* light gray #DCDEDD */
+    --input: 160 3% 87%;
+    --ring: 73 57% 38%;             /* olive */
+    --radius: 0;                    /* DESIGN.md §5: 全要素直角 */
 
-    /* Typography tokens */
-    --font-display: 'Sora', 'Noto Sans JP', sans-serif;
-    --font-body: 'IBM Plex Sans JP', 'Noto Sans JP', sans-serif;
+    /* Typography tokens — DESIGN.md §3: Noto Sans JP 単一書体（next/font 自己ホスト） */
+    --font-display: var(--font-noto-sans-jp), 'Noto Sans JP', sans-serif;
+    --font-body: var(--font-noto-sans-jp), 'Noto Sans JP', sans-serif;
+    /* EN ラベル専用スタック（"ONLINE SHOP" 等） */
+    --font-en-label: Helvetica, 'Helvetica Neue', Roboto, sans-serif;
   }
 
   * {
@@ -47,10 +47,21 @@
     font-family: var(--font-body);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    /* DESIGN.md §3.5: letter-spacing 0.1em をグローバル適用・広めの行間で静謐な空気感 */
+    line-height: 1.8;
+    letter-spacing: 0.1em;
   }
 
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-display);
+    /* DESIGN.md §3.4/§3.5: 見出しは行間タイト・字間 0.1em */
+    line-height: 1.23;
+    letter-spacing: 0.1em;
+  }
+
+  /* DESIGN.md §3.4: フォーム入力は字間 normal に戻して可読性を確保 */
+  input, select, textarea {
+    letter-spacing: normal;
   }
 
   /* モバイルでのズーム防止 */
@@ -124,21 +135,18 @@
   .animate-stamp-pop { animation: stamp-pop 0.9s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
   .animate-page-turn-hint { animation: page-turn-hint 8s ease-in-out infinite; }
 
-  /* 和紙テクスチャ: ほんの少しのノイズを重ねる */
+  /* 微細ノイズテクスチャ（中立グレー） */
   .texture-washi {
     background-image:
-      radial-gradient(rgba(194, 184, 163, 0.12) 1px, transparent 1px),
-      radial-gradient(rgba(138, 154, 91, 0.06) 1px, transparent 1px);
+      radial-gradient(rgba(148, 148, 144, 0.10) 1px, transparent 1px),
+      radial-gradient(rgba(148, 148, 144, 0.05) 1px, transparent 1px);
     background-size: 18px 18px, 24px 24px;
     background-position: 0 0, 9px 9px;
   }
 
-  /* 絵本ページ風の柔らかい境界 */
+  /* カード境界（KURKKU §6: 直角＋シャドウのみ） */
   .book-page-edge {
-    box-shadow:
-      0 1px 0 rgba(194, 184, 163, 0.4) inset,
-      0 -1px 0 rgba(194, 184, 163, 0.3) inset,
-      0 10px 30px -10px rgba(45, 52, 54, 0.15);
+    box-shadow: 2px 4px 5px 0px rgba(4, 0, 0, 0.3);
   }
 
   @media (prefers-reduced-motion: reduce) {

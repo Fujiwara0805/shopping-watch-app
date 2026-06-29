@@ -43,7 +43,6 @@ type EngagementEvents = {
 /** ナビゲーションイベント */
 type NavigationEvents = {
   cta_click: { cta_name: string; page: string };
-  stamp_board_open: Record<string, never>;
 };
 
 /** 待ち合わせイベント（イベントを口実にした集合機能） */

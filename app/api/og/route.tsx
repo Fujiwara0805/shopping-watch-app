@@ -13,7 +13,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
 
     // URLパラメータから情報を取得
-    const title = searchParams.get('title') || 'トクドク';
+    const title = searchParams.get('title') || 'TALE';
     const subtitle = searchParams.get('subtitle') || '地域イベント発見アプリ';
     const eventName = searchParams.get('event');
     const location = searchParams.get('location');
@@ -191,7 +191,7 @@ export async function GET(request: Request) {
  * 使用例:
  * 
  * 基本的な使い方:
- * /api/og?title=トクドク&subtitle=地域イベント発見アプリ
+ * /api/og?title=TALE&subtitle=地域イベント発見アプリ
  * 
  * イベント情報付き:
  * /api/og?event=大分夏祭り&location=大分市中心部&date=2025年8月15日

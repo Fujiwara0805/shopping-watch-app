@@ -86,7 +86,7 @@ export function LocationPermissionProvider({
           isOpen={showPermissionModal}
           onAllow={handleAllowLocation}
           onDeny={handleDenyLocation}
-          appName="トクドク"
+          appName="TALE"
           permissionState={permissionState}
         />
       )}
