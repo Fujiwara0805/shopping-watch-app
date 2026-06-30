@@ -328,9 +328,7 @@ const BottomTabNav = ({
 // ===================================================================
 
 const HERO_BG_IMAGES = [
-  'https://res.cloudinary.com/dz9trbwma/image/upload/f_auto,q_auto,w_1200/v1772416996/Gemini_Generated_Image_n5dwvwn5dwvwn5dw_nq711a_c_pad_b_gen_fill_w_1024_h_1024_ampt7h.png',
-  'https://res.cloudinary.com/dz9trbwma/image/upload/f_auto,q_auto,w_1200/v1772416995/Gemini_Generated_Image_sauq56sauq56sauq_bgou7c_c_pad_b_gen_fill_w_1024_h_1024_dlmpvb.png',
-  'https://res.cloudinary.com/dz9trbwma/image/upload/f_auto,q_auto,w_1200/v1772416995/Gemini_Generated_Image_tgqneqtgqneqtgqn_ekswrm_c_pad_b_gen_fill_w_1024_h_1024_vyp6lv.png',
+  'https://res.cloudinary.com/dz9trbwma/image/upload/f_auto,q_auto,w_1200/v1782787776/ChatGPT_Image_2026%E5%B9%B46%E6%9C%8830%E6%97%A5_11_43_21_e9ewzu.png',
 ];
 
 const HeroSection = ({
@@ -352,7 +350,9 @@ const HeroSection = ({
   const [showSearchExpanded, setShowSearchExpanded] = useState(false);
 
   // Background rotation: 8s interval (reduced CPU from 5s), no parallax
+  // 画像が1枚だけのときはローテーション不要（無駄な再レンダリングを避ける）
   useEffect(() => {
+    if (HERO_BG_IMAGES.length <= 1) return;
     const interval = setInterval(() => {
       setCurrentBgIndex(prev => (prev + 1) % HERO_BG_IMAGES.length);
     }, 8000);
