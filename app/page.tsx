@@ -324,12 +324,21 @@ const BottomTabNav = ({
 };
 
 // ===================================================================
-// HERO SECTION (Roadtrippers-style: bottom-aligned, immersive)
+// HERO SECTION (immersive: full-bleed looping video background, bottom-aligned text)
 // ===================================================================
 
-const HERO_BG_IMAGES = [
-  'https://res.cloudinary.com/dz9trbwma/image/upload/f_auto,q_auto,w_1200/v1782787776/ChatGPT_Image_2026%E5%B9%B46%E6%9C%8830%E6%97%A5_11_43_21_e9ewzu.png',
-];
+// Hero video (Cloudinary) — 低コスト・高画質を両立する最適化:
+//   q_auto          … 自動画質最適化
+//   ac_none         … 音声トラック除去（ミュート再生のため不要）
+//   fps_24          … 背景ループ用に24fpsへ（体感劣化なくサイズ削減）
+//   w_1920 / w_1440 … WebMはフルHD(1920)で配信し全画面でもボケない。重いMP4フォールバックは1440に抑制。
+//                     c_limit で元動画(1920px)を超えてアップスケールしない。
+//   WebM(VP9 ≈885KB) を優先し、MP4(H.264) をフォールバック。so_0 ポスター(1920)で初期表示を即時化。
+const HERO_VIDEO_BASE = 'https://res.cloudinary.com/dz9trbwma/video/upload';
+const HERO_VIDEO_ID = 'v1782789979/0630_cgkiyo';
+const HERO_VIDEO_WEBM = `${HERO_VIDEO_BASE}/q_auto,ac_none,w_1920,c_limit,fps_24/${HERO_VIDEO_ID}.webm`;
+const HERO_VIDEO_MP4 = `${HERO_VIDEO_BASE}/q_auto,ac_none,w_1440,c_limit,fps_24/${HERO_VIDEO_ID}.mp4`;
+const HERO_VIDEO_POSTER = `${HERO_VIDEO_BASE}/so_0,f_auto,q_auto,w_1920,c_limit/${HERO_VIDEO_ID}.jpg`;
 
 const HeroSection = ({
   onStart,
@@ -346,34 +355,25 @@ const HeroSection = ({
   target: string;
   setTarget: (v: string) => void;
 }) => {
-  const [currentBgIndex, setCurrentBgIndex] = useState(0);
   const [showSearchExpanded, setShowSearchExpanded] = useState(false);
-
-  // Background rotation: 8s interval (reduced CPU from 5s), no parallax
-  // 画像が1枚だけのときはローテーション不要（無駄な再レンダリングを避ける）
-  useEffect(() => {
-    if (HERO_BG_IMAGES.length <= 1) return;
-    const interval = setInterval(() => {
-      setCurrentBgIndex(prev => (prev + 1) % HERO_BG_IMAGES.length);
-    }, 8000);
-    return () => clearInterval(interval);
-  }, []);
 
   return (
     <section className="relative min-h-screen flex items-end overflow-hidden">
-      {/* Background — CSS-only crossfade, no framer-motion */}
+      {/* Background — looping, optimized Cloudinary video */}
       <div className="absolute inset-0 z-0">
-        {HERO_BG_IMAGES.map((url, i) => (
-          <div
-            key={i}
-            className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-1000 ease-in-out"
-            style={{
-              backgroundImage: `url(${url})`,
-              backgroundPosition: 'center 30%',
-              opacity: i === currentBgIndex ? 1 : 0,
-            }}
-          />
-        ))}
+        <video
+          className="absolute inset-0 w-full h-full object-cover"
+          autoPlay
+          loop
+          muted
+          playsInline
+          preload="metadata"
+          poster={HERO_VIDEO_POSTER}
+          aria-hidden
+        >
+          <source src={HERO_VIDEO_WEBM} type="video/webm" />
+          <source src={HERO_VIDEO_MP4} type="video/mp4" />
+        </video>
         <div
           className="absolute inset-0"
           style={{
